@@ -107,7 +107,7 @@ export default function BlogEditor() {
         await contentService.createBlogPost(postData as any);
         toast.success(publish ? 'Post published!' : 'Post saved as draft');
       } else {
-        await contentService.updateBlogPost(postId, postData);
+        await contentService.updateBlogPost(postId, postData as any);
         if (publish && formData.status !== 'published') {
           await contentService.publishPost(postId);
         }

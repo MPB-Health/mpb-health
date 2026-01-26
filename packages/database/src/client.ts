@@ -1,7 +1,8 @@
+/// <reference types="vite/client" />
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 const hasValidConfig = Boolean(
   supabaseUrl &&
@@ -12,8 +13,8 @@ const hasValidConfig = Boolean(
 );
 
 if (!hasValidConfig) {
-  const isDevelopment = import.meta.env.DEV;
-  const isProduction = import.meta.env.PROD;
+  const isDevelopment = (import.meta as any).env?.DEV;
+  const isProduction = (import.meta as any).env?.PROD;
 
   if (isProduction) {
     console.error(

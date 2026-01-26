@@ -12,7 +12,8 @@
       "types": "./dist/index.d.ts"
     },
     "./tailwind": {
-      "import": "./tailwind.preset.js"
+      "import": "./tailwind.preset.js",
+      "require": "./tailwind.preset.js"
     }
   },
   "files": [
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@mpbhealth/typescript-config": "workspace:*",
     "tsup": "^8.3.5",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vite": "^5.0.12"
   }
 }

@@ -69,7 +69,7 @@ export class PriorityService {
     // Check household size
     if (lead.household_size && lead.household_size >= 3) {
       reasons.push(`Family size: ${lead.household_size} members`);
-      if (priority !== 'critical') {
+      if ((priority as LeadPriority) !== 'critical') {
         priority = 'high';
       }
     }
@@ -89,7 +89,7 @@ export class PriorityService {
     // Check for urgency in source CTA
     if (this.containsUrgencyKeywords(lead.source_cta)) {
       reasons.push('Source CTA indicates urgency');
-      if (priority !== 'critical') {
+      if ((priority as LeadPriority) !== 'critical') {
         priority = 'high';
       }
     }

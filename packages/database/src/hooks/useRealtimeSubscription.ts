@@ -4,7 +4,7 @@ import { supabase } from '../client';
 
 type PostgresChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
 
-interface UseRealtimeSubscriptionOptions<T> {
+interface UseRealtimeSubscriptionOptions<T extends Record<string, any>> {
   /** Table name to subscribe to */
   table: string;
   /** Schema (default: 'public') */
@@ -34,7 +34,7 @@ interface UseRealtimeSubscriptionReturn {
   resubscribe: () => void;
 }
 
-export function useRealtimeSubscription<T = any>(
+export function useRealtimeSubscription<T extends Record<string, any> = Record<string, any>>(
   options: UseRealtimeSubscriptionOptions<T>
 ): UseRealtimeSubscriptionReturn {
   const {
@@ -72,7 +72,7 @@ export function useRealtimeSubscription<T = any>(
     const channel = supabase
       .channel(channelName)
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         channelConfig,
         (payload: RealtimePostgresChangesPayload<T>) => {
           onChange?.(payload);
@@ -132,7 +132,7 @@ export function useRealtimeSubscription<T = any>(
 }
 
 // Hook for subscribing to multiple tables at once
-interface MultiTableSubscription<T> {
+interface MultiTableSubscription<T extends Record<string, any>> {
   table: string;
   schema?: string;
   event?: PostgresChangeEvent;
@@ -142,7 +142,7 @@ interface MultiTableSubscription<T> {
   onDelete?: (payload: T) => void;
 }
 
-export function useMultiTableSubscription<T = any>(
+export function useMultiTableSubscription<T extends Record<string, any> = Record<string, any>>(
   subscriptions: MultiTableSubscription<T>[],
   enabled: boolean = true
 ): { status: 'connecting' | 'connected' | 'disconnected' | 'error' } {
@@ -170,7 +170,7 @@ export function useMultiTableSubscription<T = any>(
 
       const channel = supabase
         .channel(channelName)
-        .on('postgres_changes', channelConfig, (payload) => {
+        .on('postgres_changes' as any, channelConfig, (payload: any) => {
           switch (payload.eventType) {
             case 'INSERT':
               sub.onInsert?.(payload.new as T);

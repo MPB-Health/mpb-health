@@ -27,7 +27,13 @@ export interface ZohoSyncConfig {
   retryDelayMs: number;
 }
 
-export type ZohoSyncStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'conflict';
+export type ZohoSyncStatusValue = 'pending' | 'processing' | 'completed' | 'failed' | 'conflict' | 'idle';
+
+export interface ZohoSyncStatus {
+  lastSync: Date | null;
+  status: ZohoSyncStatusValue;
+  pendingCount: number;
+}
 
 export interface ZohoFieldMapping {
   id: string;
@@ -43,8 +49,11 @@ export interface ZohoSyncResult {
   success: boolean;
   zohoId?: string;
   error?: string;
-  syncedAt: Date;
-  attempts: number;
+  message?: string;
+  synced?: number;
+  failed?: number;
+  syncedAt?: Date;
+  attempts?: number;
 }
 
 export interface ZohoSyncQueueItem {
@@ -54,7 +63,7 @@ export interface ZohoSyncQueueItem {
   zohoId?: string;
   operation: 'create' | 'update' | 'delete';
   payload: Record<string, unknown>;
-  status: ZohoSyncStatus;
+  status: ZohoSyncStatusValue;
   attempts: number;
   errorMessage?: string;
   createdAt: Date;

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 import { supabase } from '../client';
 
 interface UseSupabaseQueryOptions<T> {
@@ -8,7 +7,7 @@ interface UseSupabaseQueryOptions<T> {
   /** Columns to select (default: '*') */
   select?: string;
   /** Filter function to apply to the query */
-  filter?: (query: PostgrestFilterBuilder<any, any, any>) => PostgrestFilterBuilder<any, any, any>;
+  filter?: (query: any) => any;
   /** Whether to fetch immediately (default: true) */
   immediate?: boolean;
   /** Dependencies that trigger a refetch when changed */
@@ -73,7 +72,8 @@ export function useSupabaseQuery<T = any>(
       if (single) {
         setData(result as T | null);
       } else {
-        const transformedData = transform ? transform(result || []) : (result as T[]);
+        const resultArray = (result || []) as any[];
+        const transformedData = transform ? transform(resultArray) : (resultArray as T[]);
         setData(transformedData);
       }
     } catch (err) {

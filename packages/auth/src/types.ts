@@ -1,3 +1,6 @@
+// Import types for use in this file
+import type { UserRole as UserRoleType } from './services/userRolesService';
+
 // Re-export types from services for backwards compatibility
 export type { UserRole } from './services/userRolesService';
 export type { SecurityEvent, SecurityEventType, SecurityEventSeverity, SecurityAlert } from './services/securityEventService';
@@ -10,7 +13,7 @@ export type { LoginAttemptResult, RateLimitStatus } from './services/rateLimitSe
 export interface AuthUser {
   id: string;
   email: string;
-  role: UserRole;
+  role: UserRoleType;
   firstName?: string;
   lastName?: string;
   metadata?: Record<string, unknown>;

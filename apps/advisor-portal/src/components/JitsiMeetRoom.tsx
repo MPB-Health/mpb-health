@@ -10,7 +10,7 @@ declare global {
 interface JitsiAPI {
   dispose: () => void;
   executeCommand: (command: string, ...args: unknown[]) => void;
-  on: (event: string, callback: (...args: unknown[]) => void) => void;
+  on: (event: string, callback: (args: any) => void) => void;
 }
 
 interface JitsiMeetRoomProps {

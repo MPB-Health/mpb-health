@@ -1,0 +1,32 @@
+{
+  "name": "@mpbhealth/services",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mpbhealth/database": "workspace:*"
+  },
+  "devDependencies": {
+    "@mpbhealth/typescript-config": "workspace:*",
+    "tsup": "^8.3.5",
+    "typescript": "^5.5.0"
+  }
+}

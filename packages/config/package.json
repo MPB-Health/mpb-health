@@ -1,0 +1,33 @@
+{
+  "name": "@mpbhealth/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./tailwind": {
+      "import": "./tailwind.preset.js"
+    }
+  },
+  "files": [
+    "dist",
+    "tailwind.preset.js"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@mpbhealth/typescript-config": "workspace:*",
+    "tsup": "^8.3.5",
+    "typescript": "^5.5.0"
+  }
+}

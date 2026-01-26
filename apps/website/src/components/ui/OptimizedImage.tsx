@@ -1,0 +1,268 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { cn } from '../../lib/utils';
+
+interface OptimizedImageProps {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  className?: string;
+  imgClassName?: string;
+  loading?: 'lazy' | 'eager';
+  priority?: boolean;
+  objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
+  objectPosition?: string;
+  aspectRatio?: string;
+  sizes?: string;
+  placeholder?: 'blur' | 'empty';
+  onLoad?: () => void;
+  onError?: () => void;
+}
+
+// Default responsive sizes for srcSet
+const DEFAULT_WIDTHS = [320, 640, 768, 1024, 1280, 1536];
+
+// Default sizes attribute for responsive images
+const DEFAULT_SIZES = '(max-width: 640px) 100vw, (max-width: 1024px) 75vw, 50vw';
+
+/**
+ * Generate srcSet for responsive images
+ */
+const generateSrcSet = (src: string, widths: number[] = DEFAULT_WIDTHS): string => {
+  // For external URLs, return as-is
+  if (src.startsWith('http') && !src.includes('mpb.health')) {
+    return '';
+  }
+
+  return widths
+    .map((width) => {
+      const separator = src.includes('?') ? '&' : '?';
+      return `${src}${separator}w=${width}&f=webp ${width}w`;
+    })
+    .join(', ');
+};
+
+/**
+ * OptimizedImage component with:
+ * - Lazy loading (native + IntersectionObserver fallback)
+ * - Aspect ratio container to prevent CLS
+ * - srcSet for responsive images
+ * - WebP format preference
+ * - Blur placeholder support
+ * - Explicit dimensions for layout stability
+ */
+export const OptimizedImage: React.FC<OptimizedImageProps> = ({
+  src,
+  alt,
+  width,
+  height,
+  className,
+  imgClassName,
+  loading = 'lazy',
+  priority = false,
+  objectFit = 'cover',
+  objectPosition = 'center',
+  aspectRatio,
+  sizes = DEFAULT_SIZES,
+  placeholder = 'empty',
+  onLoad,
+  onError,
+}) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isInView, setIsInView] = useState(priority);
+  const [hasError, setHasError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Use IntersectionObserver for lazy loading
+  useEffect(() => {
+    if (priority || loading === 'eager') {
+      setIsInView(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsInView(true);
+            observer.disconnect();
+          }
+        });
+      },
+      {
+        rootMargin: '200px', // Start loading 200px before entering viewport
+        threshold: 0,
+      }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [priority, loading]);
+
+  const handleLoad = () => {
+    setIsLoaded(true);
+    onLoad?.();
+  };
+
+  const handleError = () => {
+    setHasError(true);
+    onError?.();
+  };
+
+  // Calculate aspect ratio style
+  const getAspectRatioStyle = (): React.CSSProperties => {
+    if (aspectRatio) {
+      return { aspectRatio };
+    }
+    if (width && height) {
+      return { aspectRatio: `${width} / ${height}` };
+    }
+    return {};
+  };
+
+  // Generate srcSet for responsive images
+  const srcSet = generateSrcSet(src);
+
+  // Determine object-fit class
+  const objectFitClasses = {
+    cover: 'object-cover',
+    contain: 'object-contain',
+    fill: 'object-fill',
+    none: 'object-none',
+    'scale-down': 'object-scale-down',
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        'relative overflow-hidden',
+        className
+      )}
+      style={getAspectRatioStyle()}
+    >
+      {/* Blur placeholder */}
+      {placeholder === 'blur' && !isLoaded && !hasError && (
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-neutral-200 to-neutral-300 animate-pulse"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Skeleton placeholder */}
+      {placeholder === 'empty' && !isLoaded && !hasError && (
+        <div
+          className="absolute inset-0 bg-neutral-100"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Actual image */}
+      {isInView && !hasError && (
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          width={width}
+          height={height}
+          loading={priority ? 'eager' : loading}
+          decoding={priority ? 'sync' : 'async'}
+          srcSet={srcSet || undefined}
+          sizes={srcSet ? sizes : undefined}
+          onLoad={handleLoad}
+          onError={handleError}
+          className={cn(
+            'transition-opacity duration-300',
+            objectFitClasses[objectFit],
+            isLoaded ? 'opacity-100' : 'opacity-0',
+            imgClassName
+          )}
+          style={{
+            objectPosition,
+            width: width ? `${width}px` : '100%',
+            height: height ? `${height}px` : '100%',
+          }}
+        />
+      )}
+
+      {/* Error fallback */}
+      {hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 text-neutral-400">
+          <svg
+            className="w-12 h-12"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Hero image optimized for above-the-fold content
+ * Uses eager loading and fetchpriority="high"
+ */
+export const HeroImage: React.FC<Omit<OptimizedImageProps, 'loading' | 'priority'>> = (props) => (
+  <OptimizedImage {...props} loading="eager" priority />
+);
+
+/**
+ * Background image with cover fit
+ */
+export const BackgroundImage: React.FC<
+  Omit<OptimizedImageProps, 'objectFit'> & { overlay?: boolean; overlayOpacity?: number }
+> = ({ overlay = false, overlayOpacity = 0.5, className, ...props }) => (
+  <div className={cn('absolute inset-0', className)}>
+    <OptimizedImage
+      {...props}
+      objectFit="cover"
+      className="w-full h-full"
+      imgClassName="w-full h-full"
+    />
+    {overlay && (
+      <div
+        className="absolute inset-0 bg-black"
+        style={{ opacity: overlayOpacity }}
+        aria-hidden="true"
+      />
+    )}
+  </div>
+);
+
+/**
+ * Thumbnail image with fixed dimensions
+ */
+export const ThumbnailImage: React.FC<
+  Omit<OptimizedImageProps, 'width' | 'height'> & { size?: 'sm' | 'md' | 'lg' }
+> = ({ size = 'md', className, ...props }) => {
+  const sizes = {
+    sm: { width: 64, height: 64 },
+    md: { width: 128, height: 128 },
+    lg: { width: 256, height: 256 },
+  };
+
+  return (
+    <OptimizedImage
+      {...props}
+      {...sizes[size]}
+      className={cn('rounded-lg', className)}
+    />
+  );
+};
+
+export default OptimizedImage;
+

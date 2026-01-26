@@ -1,0 +1,217 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-feature-settings: 'kern' 1, 'tnum' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+  
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-delayed-1 {
+    animation-delay: 0.1s;
+  }
+
+  .animate-delayed-2 {
+    animation-delay: 0.2s;
+  }
+
+  .animate-delayed-3 {
+    animation-delay: 0.3s;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeInContent 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInContent {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 2000px;
+    }
+  }
+}
+
+/* Print styles for Plan Comparison */
+@media print {
+  /* Hide navigation, footer, and non-essential UI */
+  header,
+  footer,
+  nav,
+  .print\\:hidden,
+  button:not(.print-keep),
+  .sticky,
+  [class*="animate-"],
+  .backdrop-blur-sm {
+    display: none !important;
+  }
+
+  /* Reset page styling */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Remove gradients and use solid colors */
+  * {
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .bg-gradient-to-r,
+  .bg-gradient-to-b,
+  .bg-gradient-to-br,
+  [class*="from-"],
+  [class*="via-"],
+  [class*="to-"] {
+    background: transparent !important;
+  }
+
+  /* Make text visible */
+  .bg-clip-text {
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    -webkit-text-fill-color: inherit !important;
+    color: #1a365d !important;
+  }
+
+  /* Card styling for print */
+  [class*="Card"],
+  .rounded-xl,
+  .rounded-2xl {
+    border: 1px solid #e2e8f0 !important;
+    background: white !important;
+    page-break-inside: avoid;
+  }
+
+  /* Table/grid styling */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  /* Page settings */
+  @page {
+    margin: 0.5in;
+    size: landscape;
+  }
+
+  /* Ensure content fits */
+  .max-w-7xl {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Make checkmarks visible */
+  .text-white {
+    color: #16a34a !important;
+  }
+
+  /* Headers */
+  h1, h2, h3, h4 {
+    color: #1e3a5f !important;
+    page-break-after: avoid;
+  }
+
+  /* Print header */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 20pt;
+    border-bottom: 2px solid #1e3a5f;
+    padding-bottom: 10pt;
+  }
+}
+
+@layer components {
+  .prose {
+    color: #404040;
+    line-height: 1.75;
+  }
+
+  .prose p {
+    margin-bottom: 1.25em;
+  }
+
+  .prose p:last-child {
+    margin-bottom: 0;
+  }
+
+  .prose ul {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    padding-left: 1.5em;
+    list-style-type: disc;
+  }
+
+  .prose li {
+    margin-bottom: 0.5em;
+    line-height: 1.75;
+  }
+
+  .prose li:last-child {
+    margin-bottom: 0;
+  }
+
+  .prose strong {
+    font-weight: 700;
+    color: #171717;
+  }
+
+  .prose a {
+    color: #2563eb;
+    text-decoration: underline;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .prose a:hover {
+    color: #1d4ed8;
+  }
+
+  .prose a:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}

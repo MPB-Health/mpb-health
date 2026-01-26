@@ -1,0 +1,44 @@
+{
+  "plans": [
+    {
+      "id": "care-plus",
+      "name": "Care+ (Best Value)",
+      "description": "Enhanced sharing with additional benefits and lower sharing thresholds.",
+      "features": [
+        "Enhanced Health Sharing",
+        "Mental Health Coverage",
+        "Maternity Benefits",
+        "Lower IUA Options"
+      ],
+      "anchor": "#care-plus",
+      "target_audience": "individuals"
+    },
+    {
+      "id": "direct",
+      "name": "Direct (Best for Preventive)",
+      "description": "Ideal to pair with a DPC membership for large medical bills.",
+      "features": [
+        "All Care+ Benefits",
+        "Preventive Sharing",
+        "Annual Check Up Allowance"
+      ],
+      "anchor": "#direct",
+      "target_audience": "individuals"
+    },
+    {
+      "id": "secure-hsa",
+      "name": "Secure HSA (Best for Self Employed)",
+      "description": "Health Sharing plan paired with a high deductable plan compatible with Health Savings Accounts (*1099 or business ID required).",
+      "features": [
+        "HSA Compatible",
+        "High-Deductible Protection",
+         "Preventive Care as mandated by ACA",
+        "Tax Advantages",
+        "RX Benefits"
+      ],
+      "anchor": "#secure-hsa",
+      "requirements": "*1099 or business ID requirement",
+      "target_audience": "business"
+    }
+  ]
+}

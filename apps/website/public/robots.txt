@@ -1,0 +1,38 @@
+# MPB Health Robots.txt
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Disallow admin and member portals
+Disallow: /admin
+Disallow: /advisor
+Disallow: /member
+
+# Disallow forms that are not publicly accessible
+Disallow: /employee-removal
+Disallow: /list-bill-setup
+Disallow: /list-bill-update
+Disallow: /list-bill-conversion
+
+# Allow specific public pages
+Allow: /
+Allow: /about-us
+Allow: /contact
+Allow: /plans
+Allow: /enrollment
+Allow: /how-it-works
+Allow: /faq
+Allow: /blog
+Allow: /advisors
+Allow: /benefits
+Allow: /features
+Allow: /quote
+Allow: /get-started
+Allow: /individuals-families
+Allow: /businesses-organizations
+Allow: /advisor-directory
+Allow: /resource-library
+
+# Sitemap location
+Sitemap: https://mpbhealth.com/sitemap.xml

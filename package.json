@@ -1,0 +1,33 @@
+{
+  "name": "mpbhealth-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:website": "turbo run dev --filter=website",
+    "dev:crm": "turbo run dev --filter=crm",
+    "dev:advisor": "turbo run dev --filter=advisor-portal",
+    "dev:admin": "turbo run dev --filter=admin-portal",
+    "build": "turbo run build",
+    "build:website": "turbo run build --filter=website",
+    "build:crm": "turbo run build --filter=crm",
+    "build:advisor": "turbo run build --filter=advisor-portal",
+    "build:admin": "turbo run build --filter=admin-portal",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/database/src/types/database.ts",
+    "db:migrate": "supabase db push",
+    "db:reset": "supabase db reset",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "prettier": "^3.4.2",
+    "@changesets/cli": "^2.27.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

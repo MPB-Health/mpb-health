@@ -1,0 +1,273 @@
+# MPB Health - Apache Configuration for React SPA on A2 VPS
+# =============================================================
+# This .htaccess file configures Apache to properly serve a React Single Page Application
+# with client-side routing via React Router. It includes security headers, performance
+# optimizations, and proper handling of modern web application requirements.
+
+# IMPORTANT: Ensure these Apache modules are enabled on your A2 VPS:
+# - mod_rewrite (URL rewriting for React Router)
+# - mod_deflate (gzip compression)
+# - mod_headers (HTTP headers manipulation)
+# - mod_expires (browser caching)
+# - mod_mime (MIME type handling)
+
+<IfModule mod_rewrite.c>
+  # Enable the rewrite engine
+  RewriteEngine On
+
+  # Set the base directory (update this if your app is in a subdirectory)
+  RewriteBase /
+
+  # Force HTTPS (uncomment if SSL certificate is configured)
+  # RewriteCond %{HTTPS} off
+  # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Prevent access to hidden files and directories (security)
+  RewriteCond %{REQUEST_URI} "!(^|/)\.well-known/([^./]+./?)+$" [NC]
+  RewriteCond %{SCRIPT_FILENAME} -d [OR]
+  RewriteCond %{SCRIPT_FILENAME} -f
+  RewriteRule "(^|/)\." - [F]
+
+  # Block access to .env files and sensitive configuration
+  RewriteRule ^\.env - [F,L]
+  RewriteRule ^\.env\..*$ - [F,L]
+
+  # Explicit routes for common SPA paths (helps with some Apache configs)
+  RewriteRule ^login/?$ /index.html [L,QSA]
+  RewriteRule ^advisor/login/?$ /index.html [L,QSA]
+  RewriteRule ^admin/login/?$ /index.html [L,QSA]
+  RewriteRule ^member(/.*)?$ /index.html [L,QSA]
+  RewriteRule ^advisor(/.*)?$ /index.html [L,QSA]
+  RewriteRule ^admin(/.*)?$ /index.html [L,QSA]
+
+  # Handle React Router - If the requested file/directory doesn't exist,
+  # serve index.html to let React Router handle the routing
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L,QSA]
+</IfModule>
+
+# =============================================================
+# MIME Types - Ensure modern file types are served correctly
+# =============================================================
+<IfModule mod_mime.c>
+  # JavaScript
+  AddType application/javascript js mjs
+  AddType application/json json map
+
+  # Web Fonts
+  AddType font/woff woff
+  AddType font/woff2 woff2
+  AddType application/vnd.ms-fontobject eot
+  AddType font/ttf ttf
+  AddType font/otf otf
+
+  # Images
+  AddType image/svg+xml svg svgz
+  AddType image/webp webp
+  AddType image/avif avif
+
+  # Video
+  AddType video/mp4 mp4
+  AddType video/webm webm
+
+  # Other
+  AddType text/css css
+  AddType text/html html htm
+  AddType application/manifest+json webmanifest
+
+  # UTF-8 Encoding
+  AddDefaultCharset utf-8
+  AddCharset utf-8 .html .css .js .json .xml .txt .csv
+</IfModule>
+
+# =============================================================
+# Compression - Enable gzip compression for text-based assets
+# =============================================================
+<IfModule mod_deflate.c>
+  # Compress HTML, CSS, JavaScript, Text, XML, and fonts
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/json
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE application/xhtml+xml
+  AddOutputFilterByType DEFLATE application/rss+xml
+  AddOutputFilterByType DEFLATE application/atom+xml
+  AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+  AddOutputFilterByType DEFLATE font/opentype
+  AddOutputFilterByType DEFLATE font/otf
+  AddOutputFilterByType DEFLATE font/ttf
+  AddOutputFilterByType DEFLATE font/woff
+  AddOutputFilterByType DEFLATE font/woff2
+  AddOutputFilterByType DEFLATE image/svg+xml
+  AddOutputFilterByType DEFLATE image/x-icon
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/xml
+
+  # Remove browser bugs (only needed for really old browsers)
+  BrowserMatch ^Mozilla/4 gzip-only-text/html
+  BrowserMatch ^Mozilla/4\.0[678] no-gzip
+  BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+  Header append Vary User-Agent
+</IfModule>
+
+# =============================================================
+# Browser Caching - Set cache control headers for assets
+# =============================================================
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Default expiration: 1 hour after request
+  ExpiresDefault "access plus 1 hour"
+
+  # HTML (no caching - always fetch fresh)
+  ExpiresByType text/html "access plus 0 seconds"
+
+  # Data files (no caching)
+  ExpiresByType application/json "access plus 0 seconds"
+  ExpiresByType application/xml "access plus 0 seconds"
+  ExpiresByType text/xml "access plus 0 seconds"
+
+  # CSS and JavaScript (cache for 1 year - Vite adds hashes to filenames)
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+
+  # Web Fonts (cache for 1 year)
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+  ExpiresByType font/ttf "access plus 1 year"
+  ExpiresByType font/otf "access plus 1 year"
+
+  # Images (cache for 1 year)
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/jpg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/avif "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+
+  # Video (cache for 1 year)
+  ExpiresByType video/mp4 "access plus 1 year"
+  ExpiresByType video/webm "access plus 1 year"
+
+  # Manifest (cache for 1 week)
+  ExpiresByType application/manifest+json "access plus 1 week"
+</IfModule>
+
+# Alternative cache control using mod_headers (if mod_expires is not available)
+<IfModule mod_headers.c>
+  # Assets in /assets/ directory (Vite hashed files) can be cached forever
+  <FilesMatch "^assets/.*\.(js|css|woff|woff2|ttf|otf|eot|svg|jpg|jpeg|png|gif|webp|avif|mp4|webm)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # HTML files should NEVER be cached - critical for SPA deployments
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
+
+# CRITICAL: Ensure index.html is never cached (applies to root requests too)
+<IfModule mod_headers.c>
+  <Files "index.html">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    # Add ETag for validation
+    FileETag MTime Size
+  </Files>
+</IfModule>
+
+# For SPA routing - ensure rewritten requests to index.html also get no-cache headers
+<IfModule mod_headers.c>
+  # Set no-cache for any request that ends up serving index.html
+  SetEnvIf Request_URI "^(?!/assets/).*$" NO_CACHE_HEADER
+  Header set Cache-Control "no-cache, no-store, must-revalidate" env=NO_CACHE_HEADER
+</IfModule>
+
+# =============================================================
+# Security Headers
+# =============================================================
+<IfModule mod_headers.c>
+  # Prevent clickjacking attacks
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Prevent MIME type sniffing
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Enable XSS protection in older browsers
+  Header always set X-XSS-Protection "1; mode=block"
+
+  # Referrer Policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Content Security Policy (CSP) - Tailored for MPB Health with all integrations
+  # Includes: Google Analytics, Facebook Pixel, LinkedIn, Twitter, Pinterest, TikTok,
+  # Reddit, Snapchat, Hotjar, Zoho SalesIQ, Mailchimp, Supabase, Calendly, Cognito Forms
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://connect.facebook.net https://snap.licdn.com https://static.ads-twitter.com https://s.pinimg.com https://ct.pinterest.com https://analytics.tiktok.com https://www.redditstatic.com https://sc-static.net https://www.clarity.ms https://static.hotjar.com https://salesiq.zohopublic.com https://salesiq.zoho.com https://salesiq.zohopublic.eu https://js.zohocdn.com https://static.zohocdn.com https://chimpstatic.com https://*.mailchimp.com https://www.cognitoforms.com https://static.cognitoforms.com https://assets.calendly.com https://vercel.live https://*.vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://css.zohocdn.com https://static.zohocdn.com https://static.cognitoforms.com https://www.cognitoforms.com https://assets.calendly.com; font-src 'self' data: https://fonts.gstatic.com https://css.zohocdn.com https://static.zohocdn.com https://static.cognitoforms.com https://www.cognitoforms.com https://assets.calendly.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.facebook.com https://px.ads.linkedin.com https://analytics.twitter.com https://ct.pinterest.com https://pixel-config.reddit.com https://analytics.tiktok.com https://www.reddit.com https://tr.snapchat.com https://www.clarity.ms https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://salesiq.zohopublic.com https://salesiq.zoho.com https://salesiq.zohopublic.eu wss://salesiq.zohopublic.com wss://salesiq.zoho.com wss://vts.zohopublic.com https://ipapi.co https://ipwho.is https://ip-api.com https://api.bigdatacloud.net https://api.zippopotam.us https://*.list-manage.com https://*.mailchimp.com https://www.cognitoforms.com https://static.cognitoforms.com https://calendly.com https://vercel.live https://*.vercel.live wss://vercel.live wss://*.vercel.live; frame-src 'self' https://player.vimeo.com https://salesiq.zohopublic.com https://salesiq.zoho.com https://salesiq.zohopublic.eu https://vars.hotjar.com https://www.cognitoforms.com https://www.google.com https://calendly.com https://drive.google.com https://docs.google.com https://vercel.live https://ct.pinterest.com; child-src 'self' https://salesiq.zohopublic.com https://salesiq.zoho.com https://salesiq.zohopublic.eu https://www.cognitoforms.com https://calendly.com; media-src 'self' https: data:;"
+
+  # Permissions Policy (formerly Feature Policy)
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+
+  # Remove server signature
+  Header unset Server
+  Header unset X-Powered-By
+</IfModule>
+
+# Hide server signature
+ServerSignature Off
+
+# =============================================================
+# Error Pages - Critical for SPA routing
+# =============================================================
+# Serve index.html for all 404 errors to enable client-side routing
+ErrorDocument 404 /index.html
+ErrorDocument 403 /index.html
+
+# =============================================================
+# Prevent Directory Listing
+# =============================================================
+Options -Indexes
+
+# =============================================================
+# Protect sensitive files
+# =============================================================
+<FilesMatch "^\.">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
+
+<FilesMatch "(^#.*#|\.(bak|conf|dist|fla|in[ci]|log|orig|psd|sh|sql|sw[op])|~)$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
+
+# Deny access to .env files
+<FilesMatch "^\.env">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
+
+# =============================================================
+# PHP Configuration (if PHP is running on the server)
+# =============================================================
+<IfModule mod_php.c>
+  php_flag display_errors Off
+  php_value upload_max_filesize 10M
+  php_value post_max_size 10M
+  php_value max_execution_time 300
+  php_value max_input_time 300
+</IfModule>
+
+# =============================================================
+# END OF CONFIGURATION
+# =============================================================

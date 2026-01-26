@@ -1,0 +1,253 @@
+{
+  "meta": {
+    "schema_version": "1.0.0",
+    "rate_year": 2026,
+    "source_documents": [
+      {
+        "product": "Care+ Membership",
+        "file": "Care+.pdf",
+        "mounted_path": "/mnt/data/Care+.pdf",
+        "last_updated_label": "October 2025",
+        "effective_billing_label": "December 20, 2025"
+      },
+      {
+        "product": "Direct Membership",
+        "file": "Direct.pdf",
+        "mounted_path": "/mnt/data/Direct.pdf",
+        "last_updated_label": "October 2025",
+        "effective_billing_label": "December 20, 2025"
+      },
+      {
+        "product": "Secure HSA Membership",
+        "file": "Secure HSA.pdf",
+        "mounted_path": "/mnt/data/Secure HSA.pdf",
+        "last_updated_label": "October 2025",
+        "effective_billing_label": "December 20, 2025"
+      }
+    ],
+    "tobacco_vape_household_surcharge_monthly_usd": 50,
+    "notes": [
+      "All amounts are monthly membership contributions in USD.",
+      "Surcharge applies once per household when one or more tobacco/vape users are present."
+    ],
+    "generated_at_utc": "2026-01-22T16:15:28Z"
+  },
+  "products": [
+    {
+      "product_code": "care_plus",
+      "display_name": "Care+ Membership",
+      "iua_tiers_usd": [
+        1250,
+        2500,
+        5000
+      ],
+      "benefits": null,
+      "rates_monthly_usd": {
+        "1250": {
+          "18-29": {
+            "member_only": 268,
+            "member_spouse": 467,
+            "member_child": 467,
+            "member_family": 702
+          },
+          "30-49": {
+            "member_only": 298,
+            "member_spouse": 494,
+            "member_child": 494,
+            "member_family": 713
+          },
+          "50-64": {
+            "member_only": 381,
+            "member_spouse": 668,
+            "member_child": 668,
+            "member_family": 947
+          }
+        },
+        "2500": {
+          "18-29": {
+            "member_only": 203,
+            "member_spouse": 344,
+            "member_child": 344,
+            "member_family": 563
+          },
+          "30-49": {
+            "member_only": 216,
+            "member_spouse": 387,
+            "member_child": 387,
+            "member_family": 575
+          },
+          "50-64": {
+            "member_only": 318,
+            "member_spouse": 537,
+            "member_child": 537,
+            "member_family": 748
+          }
+        },
+        "5000": {
+          "18-29": {
+            "member_only": 166,
+            "member_spouse": 284,
+            "member_child": 284,
+            "member_family": 445
+          },
+          "30-49": {
+            "member_only": 193,
+            "member_spouse": 341,
+            "member_child": 341,
+            "member_family": 503
+          },
+          "50-64": {
+            "member_only": 247,
+            "member_spouse": 442,
+            "member_child": 442,
+            "member_family": 647
+          }
+        }
+      }
+    },
+    {
+      "product_code": "direct",
+      "display_name": "Direct Membership",
+      "iua_tiers_usd": [
+        1250,
+        2500,
+        5000
+      ],
+      "benefits": null,
+      "rates_monthly_usd": {
+        "1250": {
+          "18-29": {
+            "member_only": 295,
+            "member_spouse": 504,
+            "member_child": 504,
+            "member_family": 762
+          },
+          "30-49": {
+            "member_only": 321,
+            "member_spouse": 540,
+            "member_child": 540,
+            "member_family": 773
+          },
+          "50-64": {
+            "member_only": 415,
+            "member_spouse": 698,
+            "member_child": 698,
+            "member_family": 1006
+          }
+        },
+        "2500": {
+          "18-29": {
+            "member_only": 229,
+            "member_spouse": 390,
+            "member_child": 390,
+            "member_family": 623
+          },
+          "30-49": {
+            "member_only": 280,
+            "member_spouse": 490,
+            "member_child": 490,
+            "member_family": 700
+          },
+          "50-64": {
+            "member_only": 353,
+            "member_spouse": 580,
+            "member_child": 580,
+            "member_family": 855
+          }
+        },
+        "5000": {
+          "18-29": {
+            "member_only": 201,
+            "member_spouse": 325,
+            "member_child": 325,
+            "member_family": 505
+          },
+          "30-49": {
+            "member_only": 250,
+            "member_spouse": 415,
+            "member_child": 415,
+            "member_family": 630
+          },
+          "50-64": {
+            "member_only": 282,
+            "member_spouse": 480,
+            "member_child": 480,
+            "member_family": 707
+          }
+        }
+      }
+    },
+    {
+      "product_code": "secure_hsa",
+      "display_name": "Secure HSA Membership",
+      "iua_tiers_usd": [
+        1250,
+        2500,
+        5000
+      ],
+      "benefits": null,
+      "rates_monthly_usd": {
+        "1250": {
+          "18-29": {
+            "member_only": 326,
+            "member_spouse": 576,
+            "member_child": 576,
+            "member_family": 816
+          },
+          "30-49": {
+            "member_only": 359,
+            "member_spouse": 603,
+            "member_child": 603,
+            "member_family": 817
+          },
+          "50-64": {
+            "member_only": 448,
+            "member_spouse": 774,
+            "member_child": 774,
+            "member_family": 1070
+          }
+        },
+        "2500": {
+          "18-29": {
+            "member_only": 257,
+            "member_spouse": 448,
+            "member_child": 448,
+            "member_family": 642
+          },
+          "30-49": {
+            "member_only": 289,
+            "member_spouse": 488,
+            "member_child": 488,
+            "member_family": 679
+          },
+          "50-64": {
+            "member_only": 391,
+            "member_spouse": 646,
+            "member_child": 646,
+            "member_family": 852
+          }
+        },
+        "5000": {
+          "18-29": {
+            "member_only": 239,
+            "member_spouse": 393,
+            "member_child": 393,
+            "member_family": 564
+          },
+          "30-49": {
+            "member_only": 266,
+            "member_spouse": 450,
+            "member_child": 450,
+            "member_family": 598
+          },
+          "50-64": {
+            "member_only": 320,
+            "member_spouse": 551,
+            "member_child": 551,
+            "member_family": 753
+          }
+        }
+      }
+    }
+  ]
+}

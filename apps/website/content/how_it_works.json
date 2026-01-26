@@ -1,0 +1,38 @@
+{
+  "title": "How MPB Health Works",
+  "subtitle": "Follow the steps to see how community medical cost sharing operates.",
+  "steps": [
+    {
+      "title": "Join MPB Health",
+      "body": "Become a member of a community that shares eligible medical costs. Your advisor helps you pick the right membership for your needs."
+    },
+    {
+      "title": "Choose your IUA",
+      "body": "Select your Initial Unshareable Amount (IUA): your portion before community sharing begins."
+    },
+    {
+      "title": "Make your Monthly Share",
+      "body": "Contribute a fixed monthly share to the community pool. Staying current keeps your eligibility for sharing active."
+    },
+    {
+      "title": "Get Care When You Need It",
+      "body": "Start with $0 virtual care for everyday needs; use quality networks for in-person visits and simple pre-notification for major procedures."
+    },
+    {
+      "title": "An Expense Happens",
+      "body": "For a new medical need, keep itemized bills and provider details ready for submission."
+    },
+    {
+      "title": "Submit Your Bills",
+      "body": "Upload bills through the member portal. Our team reviews them against the sharing guidelines."
+    },
+    {
+      "title": "Community Shares the Cost",
+      "body": "After your IUA, the community pool helps pay eligible expenses. You receive clear explanations of what's shared."
+    },
+    {
+      "title": "Ongoing Support",
+      "body": "Advisors, second opinions, and mental health resources support you over time. Consider HSA-compatible options if tax-advantaged saving matters."
+    }
+  ]
+}

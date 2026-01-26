@@ -1,0 +1,138 @@
+{
+  "schema": "mpb.rateTables.v2",
+  "tobacco_household_monthly_surcharge": 50,
+  "versions": [
+    {
+      "id": "current",
+      "effective_date": "2025-01-01",
+      "products": {
+        "CarePlus": {
+          "iua_options": [1250, 2500, 5000],
+          "rate_tables": {
+            "1250": {
+              "18-29": { "MemberOnly": 245, "MemberSpouse": 430, "MemberChild": 370, "MemberFamily": 615 },
+              "30-49": { "MemberOnly": 273, "MemberSpouse": 478, "MemberChild": 408, "MemberFamily": 673 },
+              "50-64": { "MemberOnly": 352, "MemberSpouse": 615, "MemberChild": 527, "MemberFamily": 867 }
+            },
+            "2500": {
+              "18-29": { "MemberOnly": 185, "MemberSpouse": 324, "MemberChild": 280, "MemberFamily": 465 },
+              "30-49": { "MemberOnly": 205, "MemberSpouse": 359, "MemberChild": 308, "MemberFamily": 508 },
+              "50-64": { "MemberOnly": 300, "MemberSpouse": 525, "MemberChild": 450, "MemberFamily": 740 }
+            },
+            "5000": {
+              "18-29": { "MemberOnly": 160, "MemberSpouse": 280, "MemberChild": 242, "MemberFamily": 402 },
+              "30-49": { "MemberOnly": 185, "MemberSpouse": 324, "MemberChild": 278, "MemberFamily": 458 },
+              "50-64": { "MemberOnly": 235, "MemberSpouse": 411, "MemberChild": 352, "MemberFamily": 580 }
+            }
+          }
+        },
+        "Direct": {
+          "iua_options": [1250, 2500, 5000],
+          "rate_tables": {
+            "1250": {
+              "18-29": { "MemberOnly": 295, "MemberSpouse": 517, "MemberChild": 443, "MemberFamily": 738 },
+              "30-49": { "MemberOnly": 300, "MemberSpouse": 525, "MemberChild": 450, "MemberFamily": 750 },
+              "50-64": { "MemberOnly": 386, "MemberSpouse": 676, "MemberChild": 579, "MemberFamily": 965 }
+            },
+            "2500": {
+              "18-29": { "MemberOnly": 230, "MemberSpouse": 403, "MemberChild": 345, "MemberFamily": 575 },
+              "30-49": { "MemberOnly": 280, "MemberSpouse": 490, "MemberChild": 420, "MemberFamily": 700 },
+              "50-64": { "MemberOnly": 350, "MemberSpouse": 613, "MemberChild": 525, "MemberFamily": 875 }
+            },
+            "5000": {
+              "18-29": { "MemberOnly": 190, "MemberSpouse": 333, "MemberChild": 285, "MemberFamily": 475 },
+              "30-49": { "MemberOnly": 250, "MemberSpouse": 438, "MemberChild": 375, "MemberFamily": 625 },
+              "50-64": { "MemberOnly": 275, "MemberSpouse": 481, "MemberChild": 413, "MemberFamily": 688 }
+            }
+          }
+        },
+        "SecureHSA": {
+          "iua_options": [1250, 2500, 5000],
+          "rate_tables": {
+            "1250": {
+              "18-29": { "MemberOnly": 309, "MemberSpouse": 541, "MemberChild": 463, "MemberFamily": 772 },
+              "30-49": { "MemberOnly": 336, "MemberSpouse": 588, "MemberChild": 504, "MemberFamily": 840 },
+              "50-64": { "MemberOnly": 419, "MemberSpouse": 733, "MemberChild": 628, "MemberFamily": 1047 }
+            },
+            "2500": {
+              "18-29": { "MemberOnly": 256, "MemberSpouse": 448, "MemberChild": 384, "MemberFamily": 640 },
+              "30-49": { "MemberOnly": 276, "MemberSpouse": 483, "MemberChild": 414, "MemberFamily": 690 },
+              "50-64": { "MemberOnly": 369, "MemberSpouse": 646, "MemberChild": 554, "MemberFamily": 923 }
+            },
+            "5000": {
+              "18-29": { "MemberOnly": 231, "MemberSpouse": 404, "MemberChild": 347, "MemberFamily": 578 },
+              "30-49": { "MemberOnly": 256, "MemberSpouse": 448, "MemberChild": 384, "MemberFamily": 640 },
+              "50-64": { "MemberOnly": 301, "MemberSpouse": 527, "MemberChild": 451, "MemberFamily": 752 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "2026-01-01",
+      "effective_date": "2026-01-01",
+      "products": {
+        "CarePlus": {
+          "iua_options": [1250, 2500, 5000],
+          "rate_tables": {
+            "1250": {
+              "18-29": { "MemberOnly": 268, "MemberSpouse": 467, "MemberChild": 467, "MemberFamily": 702 },
+              "30-49": { "MemberOnly": 298, "MemberSpouse": 494, "MemberChild": 494, "MemberFamily": 713 },
+              "50-64": { "MemberOnly": 381, "MemberSpouse": 668, "MemberChild": 668, "MemberFamily": 947 }
+            },
+            "2500": {
+              "18-29": { "MemberOnly": 203, "MemberSpouse": 344, "MemberChild": 344, "MemberFamily": 563 },
+              "30-49": { "MemberOnly": 216, "MemberSpouse": 387, "MemberChild": 387, "MemberFamily": 575 },
+              "50-64": { "MemberOnly": 318, "MemberSpouse": 537, "MemberChild": 537, "MemberFamily": 748 }
+            },
+            "5000": {
+              "18-29": { "MemberOnly": 166, "MemberSpouse": 284, "MemberChild": 284, "MemberFamily": 445 },
+              "30-49": { "MemberOnly": 193, "MemberSpouse": 341, "MemberChild": 341, "MemberFamily": 503 },
+              "50-64": { "MemberOnly": 247, "MemberSpouse": 442, "MemberChild": 442, "MemberFamily": 647 }
+            }
+          }
+        },
+        "Direct": {
+          "iua_options": [1250, 2500, 5000],
+          "rate_tables": {
+            "1250": {
+              "18-29": { "MemberOnly": 295, "MemberSpouse": 504, "MemberChild": 504, "MemberFamily": 762 },
+              "30-49": { "MemberOnly": 321, "MemberSpouse": 540, "MemberChild": 540, "MemberFamily": 773 },
+              "50-64": { "MemberOnly": 415, "MemberSpouse": 698, "MemberChild": 698, "MemberFamily": 1006 }
+            },
+            "2500": {
+              "18-29": { "MemberOnly": 229, "MemberSpouse": 390, "MemberChild": 390, "MemberFamily": 623 },
+              "30-49": { "MemberOnly": 280, "MemberSpouse": 490, "MemberChild": 490, "MemberFamily": 700 },
+              "50-64": { "MemberOnly": 353, "MemberSpouse": 580, "MemberChild": 580, "MemberFamily": 855 }
+            },
+            "5000": {
+              "18-29": { "MemberOnly": 201, "MemberSpouse": 325, "MemberChild": 325, "MemberFamily": 505 },
+              "30-49": { "MemberOnly": 250, "MemberSpouse": 415, "MemberChild": 415, "MemberFamily": 630 },
+              "50-64": { "MemberOnly": 282, "MemberSpouse": 480, "MemberChild": 480, "MemberFamily": 707 }
+            }
+          }
+        },
+        "SecureHSA": {
+          "iua_options": [1250, 2500, 5000],
+          "rate_tables": {
+            "1250": {
+              "18-29": { "MemberOnly": 326, "MemberSpouse": 576, "MemberChild": 576, "MemberFamily": 816 },
+              "30-49": { "MemberOnly": 359, "MemberSpouse": 603, "MemberChild": 603, "MemberFamily": 817 },
+              "50-64": { "MemberOnly": 448, "MemberSpouse": 774, "MemberChild": 774, "MemberFamily": 1070 }
+            },
+            "2500": {
+              "18-29": { "MemberOnly": 257, "MemberSpouse": 448, "MemberChild": 448, "MemberFamily": 642 },
+              "30-49": { "MemberOnly": 289, "MemberSpouse": 488, "MemberChild": 488, "MemberFamily": 679 },
+              "50-64": { "MemberOnly": 391, "MemberSpouse": 646, "MemberChild": 646, "MemberFamily": 852 }
+            },
+            "5000": {
+              "18-29": { "MemberOnly": 239, "MemberSpouse": 393, "MemberChild": 393, "MemberFamily": 564 },
+              "30-49": { "MemberOnly": 266, "MemberSpouse": 450, "MemberChild": 450, "MemberFamily": 598 },
+              "50-64": { "MemberOnly": 320, "MemberSpouse": 551, "MemberChild": 551, "MemberFamily": 753 }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

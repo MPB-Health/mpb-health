@@ -1,3 +1,19 @@
+// Type declarations for environment access
+declare const process: { env: Record<string, string | undefined> } | undefined;
+
+interface ImportMetaEnv {
+  readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_ANON_KEY?: string;
+  readonly VITE_GA_MEASUREMENT_ID?: string;
+  readonly VITE_FB_PIXEL_ID?: string;
+  readonly NODE_ENV?: string;
+  readonly [key: string]: string | undefined;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 interface Env {
   VITE_SUPABASE_URL: string;
   VITE_SUPABASE_ANON_KEY: string;
@@ -7,12 +23,24 @@ interface Env {
 }
 
 export function getEnv<K extends keyof Env>(key: K): Env[K] | undefined {
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env[key] as Env[K];
+  // Try Vite's import.meta.env first (browser/Vite)
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      return import.meta.env[key] as Env[K];
+    }
+  } catch {
+    // import.meta not available
   }
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env[key] as Env[K];
+
+  // Fall back to process.env (Node.js)
+  try {
+    if (typeof process !== 'undefined' && process?.env) {
+      return process.env[key] as Env[K];
+    }
+  } catch {
+    // process not available
   }
+
   return undefined;
 }
 

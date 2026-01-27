@@ -29,5 +29,11 @@ export type { SeparatorProps } from './components/Separator';
 
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './components/Accordion';
 
+// Login
+export { LoginLayout } from './components/LoginLayout';
+export type { LoginLayoutProps } from './components/LoginLayout';
+export { LoginVisualPanel } from './components/LoginVisualPanel';
+export type { LoginVisualPanelProps } from './components/LoginVisualPanel';
+
 // Utilities
 export { cn } from './utils';

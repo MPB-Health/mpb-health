@@ -11,7 +11,8 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/styles.css",
+    "./login-animations.css": "./src/components/login-animations.css"
   },
   "files": [
     "dist"

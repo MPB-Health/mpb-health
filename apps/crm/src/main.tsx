@@ -6,6 +6,7 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { CRMProvider } from './contexts/CRMContext';
 import './index.css';
+import '@mpbhealth/ui/login-animations.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

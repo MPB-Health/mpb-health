@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
 import { lazyDefault } from './utils/lazyUtils';
 import './index.css';
+import '@mpbhealth/ui/login-animations.css';
 
 // Lazy load the App itself for better error isolation
 const App = lazyDefault(() => import('./App'));

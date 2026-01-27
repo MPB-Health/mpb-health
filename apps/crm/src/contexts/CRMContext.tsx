@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import {
   createLeadService,
   createPipelineService,
@@ -19,6 +19,7 @@ import {
   type NotificationService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
+import { useOrg } from './OrgContext';
 
 interface CRMContextType {
   // Services
@@ -50,6 +51,8 @@ interface CRMContextType {
 const CRMContext = createContext<CRMContextType | null>(null);
 
 export function CRMProvider({ children }: { children: ReactNode }) {
+  const { activeOrgId, orgLoading } = useOrg();
+
   // Initialize services
   const [services] = useState(() => ({
     leadService: createLeadService(supabase),
@@ -71,7 +74,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [refreshing, setRefreshing] = useState(false);
 
   // Refresh functions
-  const refreshDashboard = async () => {
+  const refreshDashboard = useCallback(async () => {
     setRefreshing(true);
     try {
       const [stats, stages, activities] = await Promise.all([
@@ -88,18 +91,18 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [services]);
 
-  const refreshLeads = async () => {
+  const refreshLeads = useCallback(async () => {
     try {
       const { leads } = await services.leadService.getLeads({}, 10, 0);
       setRecentLeads(leads);
     } catch (error) {
       console.error('Error refreshing leads:', error);
     }
-  };
+  }, [services]);
 
-  const refreshTasks = async () => {
+  const refreshTasks = useCallback(async () => {
     try {
       const [today, overdue] = await Promise.all([
         services.taskService.getTasksDueToday(),
@@ -110,10 +113,12 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error refreshing tasks:', error);
     }
-  };
+  }, [services]);
 
-  // Initial load
+  // Reload all data when active org changes (RLS will scope results server-side)
   useEffect(() => {
+    if (orgLoading || !activeOrgId) return;
+
     const loadInitialData = async () => {
       setLoading(true);
       await Promise.all([
@@ -125,7 +130,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     };
 
     loadInitialData();
-  }, []);
+  }, [activeOrgId, orgLoading, refreshDashboard, refreshLeads, refreshTasks]);
 
   // Set up real-time notifications
   useEffect(() => {
@@ -139,7 +144,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     return () => {
       services.notificationService.unsubscribeAll();
     };
-  }, []);
+  }, [services, refreshLeads, refreshDashboard]);
 
   return (
     <CRMContext.Provider

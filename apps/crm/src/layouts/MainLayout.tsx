@@ -13,24 +13,28 @@ import {
   X,
   Bell,
   Search,
+  Shield,
 } from 'lucide-react';
+import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrg } from '../contexts/OrgContext';
 import { useCRM } from '../contexts/CRMContext';
 
 interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  permission?: string; // Required permission to show this nav item
 }
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Leads', href: '/leads', icon: Users },
-  { name: 'Pipeline', href: '/pipeline', icon: Kanban },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.view' },
+  { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.view' },
+  { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.view' },
+  { name: 'Calendar', href: '/calendar', icon: Calendar, permission: 'tasks.view' },
+  { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.view' },
+  { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -38,6 +42,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
 
   const handleSignOut = async () => {
@@ -46,6 +51,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   const totalPendingTasks = tasksDueToday.length + overdueTasks.length;
+
+  // Filter nav items based on permissions
+  const visibleNav = navigation.filter((item) => {
+    if (!item.permission) return true;
+    return can(item.permission);
+  });
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -80,9 +91,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </button>
           </div>
 
+          {/* Org Switcher */}
+          <div className="border-b border-neutral-200">
+            <OrgSwitcher
+              orgs={orgs}
+              activeOrg={activeOrg}
+              onSwitch={switchOrg}
+              className="px-2 py-2"
+            />
+          </div>
+
           {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
+            {visibleNav.map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <Link
@@ -118,7 +139,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <p className="text-sm font-medium text-neutral-900 truncate">
                   {user?.email?.split('@')[0]}
                 </p>
-                <p className="text-xs text-neutral-500 truncate">{user?.email}</p>
+                {orgRole && (
+                  <div className="flex items-center gap-1">
+                    <Shield className="w-3 h-3 text-neutral-400" />
+                    <p className="text-xs text-neutral-500 capitalize">{orgRole}</p>
+                  </div>
+                )}
               </div>
             </div>
             <button

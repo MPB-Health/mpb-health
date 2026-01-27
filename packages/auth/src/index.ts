@@ -78,6 +78,55 @@ export { RouteGuard } from './components/RouteGuard';
 
 // Hooks
 export { useSession } from './hooks/useSession';
+export { useOrg, type UseOrgReturn } from './hooks/useOrg';
+export { usePermission, type UsePermissionReturn } from './hooks/usePermission';
+
+// Org & Permission Services
+export {
+  orgService,
+  getUserOrgs,
+  getOrg,
+  getUserOrgRole,
+  getOrgMembers,
+  inviteMember,
+  updateMemberRole,
+  removeMember,
+  invalidateCache,
+  DEFAULT_ORG_ID,
+  ORG_ROLE_LABELS,
+  ORG_ROLE_HIERARCHY,
+  type Org,
+  type OrgMembership,
+  type OrgWithMembership,
+  type OrgRole,
+  type OrgMembershipStatus,
+} from './services/orgService';
+
+export {
+  permissionService,
+  loadUserPermissions,
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
+  getAllPermissions,
+  invalidatePermissionCache,
+  type Permission,
+  type UserPermissionSet,
+} from './services/permissionService';
+
+export {
+  auditService,
+  logAuditEvent,
+  queryAuditEvents,
+  getEntityAuditTrail,
+  AUDIT_ACTIONS,
+  type AuditEvent,
+  type AuditLogInput,
+  type AuditQueryOptions,
+} from './services/auditService';
+
+// Org Switcher Component
+export { OrgSwitcher, type OrgSwitcherProps } from './components/OrgSwitcher';
 
 // Types (re-exported for convenience)
 export type { AuthUser, AuthState } from './types';

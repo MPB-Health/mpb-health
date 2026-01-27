@@ -125,6 +125,11 @@ export interface LeadUpdateInput {
   phone?: string;
   household_size?: number;
   zip_code?: string;
+  current_insurance?: string;
+  monthly_premium?: string;
+  coverage_preference?: string;
+  primary_concern?: string;
+  contact_preference?: string;
   pipeline_stage?: string;
   priority?: LeadPriority;
   assigned_to?: string;

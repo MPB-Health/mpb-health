@@ -16,6 +16,13 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
+import { PermissionGate } from '../components/PermissionGate';
+import { EditLeadModal } from '../components/EditLeadModal';
+import { AddNoteModal, LogCallModal, LogMeetingModal } from '../components/QuickActionModals';
+import { AddTaskModal } from '../components/AddTaskModal';
+import { AIInsightsPanel } from '../components/AIInsightsPanel';
+import { useOrg } from '../contexts/OrgContext';
+import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type { Lead, LeadActivity, LeadTask } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/crm-core';
 
@@ -23,6 +30,7 @@ export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { leadService, activityService, taskService, zohoService, pipelineStages } = useCRM();
+  const { activeOrgId } = useOrg();
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<LeadActivity[]>([]);
@@ -30,6 +38,11 @@ export default function LeadDetail() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<'activities' | 'tasks'>('activities');
+  const [showEditLead, setShowEditLead] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [showLogCall, setShowLogCall] = useState(false);
+  const [showLogMeeting, setShowLogMeeting] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
 
   const loadLead = async () => {
     if (!id) return;
@@ -57,6 +70,14 @@ export default function LeadDetail() {
     const result = await leadService.updateLeadStage(lead.id, newStage);
     if (result.success) {
       await activityService.logStageChange(lead.id, lead.pipeline_stage, newStage);
+      logAuditEvent({
+        orgId: activeOrgId || '',
+        action: AUDIT_ACTIONS.LEAD_STAGE_CHANGED,
+        entityType: 'lead',
+        entityId: lead.id,
+        before: { pipeline_stage: lead.pipeline_stage },
+        after: { pipeline_stage: newStage },
+      }).catch(console.error);
       toast.success('Stage updated');
       loadLead();
     } else {
@@ -79,27 +100,15 @@ export default function LeadDetail() {
     }
   };
 
-  const handleAddNote = async () => {
-    const note = prompt('Enter note:');
-    if (!note || !lead) return;
-
-    await activityService.addNote(lead.id, 'Note added', note);
-    toast.success('Note added');
-    loadLead();
-  };
-
-  const handleLogCall = async () => {
-    const outcome = prompt('Call outcome:');
-    if (!outcome || !lead) return;
-
-    await activityService.logCall(lead.id, outcome);
-    toast.success('Call logged');
-    loadLead();
-  };
-
   const handleCompleteTask = async (taskId: string) => {
     const result = await taskService.completeTask(taskId);
     if (result.success) {
+      logAuditEvent({
+        orgId: activeOrgId || '',
+        action: AUDIT_ACTIONS.TASK_COMPLETED,
+        entityType: 'task',
+        entityId: taskId,
+      }).catch(console.error);
       toast.success('Task completed');
       loadLead();
     } else {
@@ -156,10 +165,15 @@ export default function LeadDetail() {
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
             <span>Sync to Zoho</span>
           </button>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50">
-            <Edit2 className="w-4 h-4" />
-            <span>Edit</span>
-          </button>
+          <PermissionGate permission="leads.update">
+            <button
+              onClick={() => setShowEditLead(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+            >
+              <Edit2 className="w-4 h-4" />
+              <span>Edit</span>
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -247,25 +261,31 @@ export default function LeadDetail() {
             <h2 className="text-lg font-semibold text-neutral-900 mb-4">Quick Actions</h2>
             <div className="grid grid-cols-3 gap-3">
               <button
-                onClick={handleAddNote}
+                onClick={() => setShowAddNote(true)}
                 className="flex flex-col items-center p-3 rounded-lg hover:bg-neutral-50 border border-neutral-200"
               >
                 <MessageSquare className="w-5 h-5 text-neutral-600 mb-1" />
                 <span className="text-xs text-neutral-600">Note</span>
               </button>
               <button
-                onClick={handleLogCall}
+                onClick={() => setShowLogCall(true)}
                 className="flex flex-col items-center p-3 rounded-lg hover:bg-neutral-50 border border-neutral-200"
               >
                 <PhoneCall className="w-5 h-5 text-neutral-600 mb-1" />
                 <span className="text-xs text-neutral-600">Call</span>
               </button>
-              <button className="flex flex-col items-center p-3 rounded-lg hover:bg-neutral-50 border border-neutral-200">
+              <button
+                onClick={() => setShowLogMeeting(true)}
+                className="flex flex-col items-center p-3 rounded-lg hover:bg-neutral-50 border border-neutral-200"
+              >
                 <Video className="w-5 h-5 text-neutral-600 mb-1" />
                 <span className="text-xs text-neutral-600">Meeting</span>
               </button>
             </div>
           </div>
+
+          {/* AI Insights */}
+          <AIInsightsPanel leadId={lead.id} />
         </div>
 
         {/* Right column - Activities and tasks */}
@@ -293,6 +313,14 @@ export default function LeadDetail() {
               >
                 Tasks ({tasks.filter((t) => !t.completed).length})
               </button>
+              {activeTab === 'tasks' && (
+                <button
+                  onClick={() => setShowAddTask(true)}
+                  className="px-3 py-2 mr-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg self-center"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* Content */}
@@ -366,6 +394,38 @@ export default function LeadDetail() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <EditLeadModal
+        open={showEditLead}
+        onClose={() => setShowEditLead(false)}
+        lead={lead}
+        onSuccess={() => loadLead()}
+      />
+      <AddNoteModal
+        open={showAddNote}
+        onClose={() => setShowAddNote(false)}
+        leadId={lead.id}
+        onSuccess={() => loadLead()}
+      />
+      <LogCallModal
+        open={showLogCall}
+        onClose={() => setShowLogCall(false)}
+        leadId={lead.id}
+        onSuccess={() => loadLead()}
+      />
+      <LogMeetingModal
+        open={showLogMeeting}
+        onClose={() => setShowLogMeeting(false)}
+        leadId={lead.id}
+        onSuccess={() => loadLead()}
+      />
+      <AddTaskModal
+        open={showAddTask}
+        onClose={() => setShowAddTask(false)}
+        leadId={lead.id}
+        onSuccess={() => loadLead()}
+      />
     </div>
   );
 }

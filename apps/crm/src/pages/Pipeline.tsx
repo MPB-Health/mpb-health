@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { RefreshCw, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
+import { PipelineFilters } from '../components/PipelineFilters';
 import type { Lead } from '@mpbhealth/crm-core';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
 
@@ -11,6 +12,8 @@ export default function Pipeline() {
   const [leadsByStage, setLeadsByStage] = useState<Record<string, Lead[]>>({});
   const [loading, setLoading] = useState(true);
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterFn, setFilterFn] = useState<((lead: Lead) => boolean) | null>(null);
 
   const loadLeads = async () => {
     setLoading(true);
@@ -99,10 +102,22 @@ export default function Pipeline() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50">
-            <Filter className="w-4 h-4" />
-            <span>Filter</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center space-x-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
+                showFilters || filterFn
+                  ? 'border-primary-500 text-primary-700 bg-primary-50'
+                  : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filter</span>
+            </button>
+            {showFilters && (
+              <PipelineFilters onFilter={(fn) => setFilterFn(() => fn)} />
+            )}
+          </div>
           <button
             onClick={loadLeads}
             className="flex items-center space-x-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
@@ -116,7 +131,8 @@ export default function Pipeline() {
       {/* Pipeline board */}
       <div className="flex space-x-4 overflow-x-auto pb-4">
         {pipelineStages.map((stage) => {
-          const stageLeads = leadsByStage[stage.name] || [];
+          const rawStageLeads = leadsByStage[stage.name] || [];
+          const stageLeads = filterFn ? rawStageLeads.filter(filterFn) : rawStageLeads;
 
           return (
             <div

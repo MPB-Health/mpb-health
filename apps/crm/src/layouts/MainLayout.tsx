@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import type { Lead } from '@mpbhealth/crm-core';
 import {
   LayoutDashboard,
   Users,
@@ -43,7 +44,37 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
-  const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
+  const { dashboardStats, tasksDueToday, overdueTasks, leadService } = useCRM();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Lead[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const { leads } = await leadService.getLeads({ search: searchQuery }, 5, 0);
+      setSearchResults(leads);
+      setShowSearchResults(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, leadService]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -172,13 +203,51 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </button>
 
               {/* Search */}
-              <div className="hidden sm:flex items-center bg-neutral-100 rounded-lg px-3 py-2 w-64">
-                <Search className="w-4 h-4 text-neutral-400 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search leads..."
-                  className="bg-transparent border-none outline-none text-sm w-full text-neutral-700 placeholder-neutral-400"
-                />
+              <div ref={searchRef} className="hidden sm:block relative w-64">
+                <div className="flex items-center bg-neutral-100 rounded-lg px-3 py-2">
+                  <Search className="w-4 h-4 text-neutral-400 mr-2" />
+                  <input
+                    type="text"
+                    placeholder="Search leads..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim()) {
+                        navigate(`/leads?search=${encodeURIComponent(searchQuery)}`);
+                        setShowSearchResults(false);
+                        setSearchQuery('');
+                      }
+                    }}
+                    className="bg-transparent border-none outline-none text-sm w-full text-neutral-700 placeholder-neutral-400"
+                  />
+                </div>
+                {showSearchResults && searchResults.length > 0 && (
+                  <div className="absolute top-full mt-1 w-full bg-white border border-neutral-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    {searchResults.map((lead) => (
+                      <Link
+                        key={lead.id}
+                        to={`/leads/${lead.id}`}
+                        onClick={() => { setShowSearchResults(false); setSearchQuery(''); }}
+                        className="block px-3 py-2.5 hover:bg-neutral-50 border-b border-neutral-100 last:border-b-0"
+                      >
+                        <p className="text-sm font-medium text-neutral-900">
+                          {lead.first_name} {lead.last_name}
+                        </p>
+                        <p className="text-xs text-neutral-500">{lead.email}</p>
+                      </Link>
+                    ))}
+                    <button
+                      onClick={() => {
+                        navigate(`/leads?search=${encodeURIComponent(searchQuery)}`);
+                        setShowSearchResults(false);
+                        setSearchQuery('');
+                      }}
+                      className="w-full text-center text-xs text-primary-600 py-2 hover:bg-neutral-50"
+                    >
+                      View all results
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

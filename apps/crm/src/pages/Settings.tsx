@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, Check, X, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
+import type { NotificationPreferences } from '@mpbhealth/crm-core';
 
 export default function Settings() {
-  const { zohoService, pipelineStages } = useCRM();
+  const { zohoService, pipelineStages, preferencesService } = useCRM();
   const [zohoStatus, setZohoStatus] = useState<{
     configured: boolean;
     error?: string;
@@ -16,6 +17,27 @@ export default function Settings() {
   } | null>(null);
   const [checking, setChecking] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Load preferences
+  useEffect(() => {
+    preferencesService.getPreferences().then(setPrefs);
+  }, [preferencesService]);
+
+  // Debounced save
+  const updatePref = useCallback((key: keyof NotificationPreferences, value: unknown) => {
+    setPrefs((prev) => prev ? { ...prev, [key]: value } as NotificationPreferences : prev);
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      const result = await preferencesService.upsertPreferences({ [key]: value });
+      if (result.success) {
+        toast.success('Settings saved');
+      } else {
+        toast.error('Failed to save settings');
+      }
+    }, 800);
+  }, [preferencesService]);
 
   const checkZohoConnection = async () => {
     setChecking(true);
@@ -192,11 +214,11 @@ export default function Settings() {
       {/* General Settings */}
       <div className="bg-white rounded-xl border border-neutral-200 p-6">
         <h2 className="text-lg font-semibold text-neutral-900 mb-6">
-          General Settings
+          Notification Preferences
         </h2>
 
-        <div className="space-y-6">
-          <div>
+        {prefs ? (
+          <div className="space-y-6">
             <label className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-neutral-900">Email Notifications</p>
@@ -206,13 +228,12 @@ export default function Settings() {
               </div>
               <input
                 type="checkbox"
-                defaultChecked
+                checked={prefs.email_notifications}
+                onChange={(e) => updatePref('email_notifications', e.target.checked)}
                 className="w-5 h-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
               />
             </label>
-          </div>
 
-          <div>
             <label className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-neutral-900">Desktop Notifications</p>
@@ -222,13 +243,12 @@ export default function Settings() {
               </div>
               <input
                 type="checkbox"
-                defaultChecked
+                checked={prefs.desktop_notifications}
+                onChange={(e) => updatePref('desktop_notifications', e.target.checked)}
                 className="w-5 h-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
               />
             </label>
-          </div>
 
-          <div>
             <label className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-neutral-900">Auto-sync to Zoho</p>
@@ -238,12 +258,72 @@ export default function Settings() {
               </div>
               <input
                 type="checkbox"
-                defaultChecked
+                checked={prefs.auto_sync_zoho}
+                onChange={(e) => updatePref('auto_sync_zoho', e.target.checked)}
                 className="w-5 h-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
               />
             </label>
+
+            <hr className="border-neutral-200" />
+
+            <label className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-neutral-900">Quiet Hours</p>
+                <p className="text-sm text-neutral-500">
+                  Suppress notifications during these hours
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={prefs.quiet_hours_enabled}
+                onChange={(e) => updatePref('quiet_hours_enabled', e.target.checked)}
+                className="w-5 h-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              />
+            </label>
+
+            {prefs.quiet_hours_enabled && (
+              <div className="grid grid-cols-2 gap-4 pl-4">
+                <div>
+                  <label className="block text-sm text-neutral-500 mb-1">Start</label>
+                  <input
+                    type="time"
+                    value={prefs.quiet_hours_start}
+                    onChange={(e) => updatePref('quiet_hours_start', e.target.value)}
+                    className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-neutral-500 mb-1">End</label>
+                  <input
+                    type="time"
+                    value={prefs.quiet_hours_end}
+                    onChange={(e) => updatePref('quiet_hours_end', e.target.value)}
+                    className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm text-neutral-500 mb-1">Timezone</label>
+              <select
+                value={prefs.timezone}
+                onChange={(e) => updatePref('timezone', e.target.value)}
+                className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm"
+              >
+                {Intl.supportedValuesOf?.('timeZone')?.slice(0, 50).map((tz) => (
+                  <option key={tz} value={tz}>{tz}</option>
+                )) || (
+                  <option value={prefs.timezone}>{prefs.timezone}</option>
+                )}
+              </select>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center justify-center h-24">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
+          </div>
+        )}
       </div>
     </div>
   );

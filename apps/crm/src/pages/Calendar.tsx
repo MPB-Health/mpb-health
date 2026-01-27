@@ -1,10 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useCRM } from '../contexts/CRMContext';
+import { AddEventModal } from '../components/AddEventModal';
+import type { CalendarEvent } from '@mpbhealth/crm-core';
 
 export default function Calendar() {
-  const { tasksDueToday, overdueTasks } = useCRM();
+  const { tasksDueToday, overdueTasks, calendarService, refreshCalendar } = useCRM();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | undefined>();
+  const [monthEvents, setMonthEvents] = useState<CalendarEvent[]>([]);
+
+  // Load events when month changes
+  useEffect(() => {
+    const loadEvents = async () => {
+      const events = await calendarService.getEventsForMonth(
+        currentDate.getFullYear(),
+        currentDate.getMonth()
+      );
+      setMonthEvents(events);
+    };
+    loadEvents();
+  }, [currentDate, calendarService]);
 
   const daysInMonth = new Date(
     currentDate.getFullYear(),
@@ -63,6 +80,37 @@ export default function Calendar() {
     });
   };
 
+  const getEventsForDay = (day: number) => {
+    const date = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      day
+    );
+    date.setHours(0, 0, 0, 0);
+    const nextDay = new Date(date);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    return monthEvents.filter((event) => {
+      const eventDate = new Date(event.start_time);
+      return eventDate >= date && eventDate < nextDay;
+    });
+  };
+
+  const handleDayClick = (day: number) => {
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    setSelectedDate(d.toISOString().split('T')[0]);
+    setShowAddEvent(true);
+  };
+
+  const handleEventCreated = async () => {
+    const events = await calendarService.getEventsForMonth(
+      currentDate.getFullYear(),
+      currentDate.getMonth()
+    );
+    setMonthEvents(events);
+    refreshCalendar();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -73,7 +121,10 @@ export default function Calendar() {
             View and manage your schedule
           </p>
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 rounded-lg text-sm font-medium text-white hover:bg-primary-700">
+        <button
+          onClick={() => { setSelectedDate(undefined); setShowAddEvent(true); }}
+          className="flex items-center space-x-2 px-4 py-2 bg-primary-600 rounded-lg text-sm font-medium text-white hover:bg-primary-700"
+        >
           <Plus className="w-4 h-4" />
           <span>Add Event</span>
         </button>
@@ -131,14 +182,15 @@ export default function Calendar() {
           {Array.from({ length: daysInMonth }).map((_, index) => {
             const day = index + 1;
             const dayTasks = getTasksForDay(day);
-            const hasOverdue = dayTasks.some(
-              (t) => !t.completed && new Date(t.due_date) < new Date()
-            );
+            const dayEvents = getEventsForDay(day);
+            const allItems = [...dayTasks.map(t => ({ id: t.id, title: t.title, type: 'task' as const, overdue: !t.completed && new Date(t.due_date) < new Date(), completed: t.completed })), ...dayEvents.map(e => ({ id: e.id, title: e.title, type: 'event' as const, overdue: false, completed: e.status === 'completed' }))];
+            const hasOverdue = allItems.some((item) => item.overdue);
 
             return (
               <div
                 key={day}
-                className={`h-24 p-2 rounded-lg border ${
+                onClick={() => handleDayClick(day)}
+                className={`h-24 p-2 rounded-lg border cursor-pointer ${
                   isToday(day)
                     ? 'bg-primary-50 border-primary-200'
                     : 'bg-white border-neutral-200 hover:bg-neutral-50'
@@ -152,7 +204,7 @@ export default function Calendar() {
                   >
                     {day}
                   </span>
-                  {dayTasks.length > 0 && (
+                  {allItems.length > 0 && (
                     <span
                       className={`w-5 h-5 rounded-full text-xs flex items-center justify-center ${
                         hasOverdue
@@ -160,28 +212,30 @@ export default function Calendar() {
                           : 'bg-primary-100 text-primary-700'
                       }`}
                     >
-                      {dayTasks.length}
+                      {allItems.length}
                     </span>
                   )}
                 </div>
                 <div className="mt-1 space-y-1">
-                  {dayTasks.slice(0, 2).map((task) => (
+                  {allItems.slice(0, 2).map((item) => (
                     <div
-                      key={task.id}
+                      key={item.id}
                       className={`text-xs px-1 py-0.5 rounded truncate ${
-                        task.completed
+                        item.completed
                           ? 'bg-neutral-100 text-neutral-500 line-through'
-                          : hasOverdue
+                          : item.overdue
                           ? 'bg-red-100 text-red-700'
+                          : item.type === 'event'
+                          ? 'bg-purple-100 text-purple-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}
                     >
-                      {task.title}
+                      {item.title}
                     </div>
                   ))}
-                  {dayTasks.length > 2 && (
+                  {allItems.length > 2 && (
                     <div className="text-xs text-neutral-400">
-                      +{dayTasks.length - 2} more
+                      +{allItems.length - 2} more
                     </div>
                   )}
                 </div>
@@ -239,6 +293,13 @@ export default function Calendar() {
           )}
         </div>
       </div>
+
+      <AddEventModal
+        open={showAddEvent}
+        onClose={() => setShowAddEvent(false)}
+        defaultDate={selectedDate}
+        onSuccess={handleEventCreated}
+      />
     </div>
   );
 }

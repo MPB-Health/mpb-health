@@ -10,6 +10,9 @@ import {
   Phone,
 } from 'lucide-react';
 import { useCRM } from '../contexts/CRMContext';
+import { PermissionGate } from '../components/PermissionGate';
+import { AddLeadModal } from '../components/AddLeadModal';
+import { AdvancedFiltersPanel } from '../components/AdvancedFiltersPanel';
 import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/crm-core';
 
@@ -21,6 +24,7 @@ export default function LeadsList() {
   const [filters, setFilters] = useState<LeadFilters>({});
   const [page, setPage] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [showAddLead, setShowAddLead] = useState(false);
   const pageSize = 20;
 
   const loadLeads = async () => {
@@ -76,10 +80,15 @@ export default function LeadsList() {
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 rounded-lg text-sm font-medium text-white hover:bg-primary-700">
-            <Plus className="w-4 h-4" />
-            <span>Add Lead</span>
-          </button>
+          <PermissionGate permission="leads.create">
+            <button
+              onClick={() => setShowAddLead(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 rounded-lg text-sm font-medium text-white hover:bg-primary-700"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Lead</span>
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -129,6 +138,17 @@ export default function LeadsList() {
           </button>
         </div>
       </div>
+
+      {/* Advanced filters */}
+      {showFilters && (
+        <AdvancedFiltersPanel
+          filters={filters}
+          onChange={(newFilters) => {
+            setFilters((prev) => ({ ...prev, ...newFilters }));
+            setPage(0);
+          }}
+        />
+      )}
 
       {/* Leads table */}
       <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
@@ -268,6 +288,11 @@ export default function LeadsList() {
           </>
         )}
       </div>
+      <AddLeadModal
+        open={showAddLead}
+        onClose={() => setShowAddLead(false)}
+        onSuccess={() => loadLeads()}
+      />
     </div>
   );
 }

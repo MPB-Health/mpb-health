@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Plus, CheckCircle2, Clock, AlertCircle, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
+import { PermissionGate } from '../components/PermissionGate';
+import { AddTaskModal } from '../components/AddTaskModal';
 import type { LeadTask } from '@mpbhealth/crm-core';
 
 export default function Tasks() {
@@ -10,6 +12,7 @@ export default function Tasks() {
   const [allTasks, setAllTasks] = useState<LeadTask[]>([]);
   const [filter, setFilter] = useState<'all' | 'today' | 'overdue' | 'completed'>('all');
   const [loading, setLoading] = useState(true);
+  const [showAddTask, setShowAddTask] = useState(false);
 
   const loadTasks = async () => {
     setLoading(true);
@@ -84,10 +87,15 @@ export default function Tasks() {
             {incompleteTasks} pending, {completedTasks} completed
           </p>
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 rounded-lg text-sm font-medium text-white hover:bg-primary-700">
-          <Plus className="w-4 h-4" />
-          <span>Add Task</span>
-        </button>
+        <PermissionGate permission="tasks.create">
+          <button
+            onClick={() => setShowAddTask(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 rounded-lg text-sm font-medium text-white hover:bg-primary-700"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Task</span>
+          </button>
+        </PermissionGate>
       </div>
 
       {/* Stats */}
@@ -248,6 +256,12 @@ export default function Tasks() {
           })
         )}
       </div>
+
+      <AddTaskModal
+        open={showAddTask}
+        onClose={() => setShowAddTask(false)}
+        onSuccess={() => loadTasks()}
+      />
     </div>
   );
 }

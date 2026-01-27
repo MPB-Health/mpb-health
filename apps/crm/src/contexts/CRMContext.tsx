@@ -6,17 +6,24 @@ import {
   createTaskService,
   createZohoService,
   createNotificationService,
+  createCalendarService,
+  createInsightsService,
+  createPreferencesService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
   type LeadTask,
   type LeadActivity,
+  type CalendarEvent,
   type LeadService,
   type PipelineService,
   type ActivityService,
   type TaskService,
   type ZohoService,
   type NotificationService,
+  type CalendarService,
+  type InsightsService,
+  type PreferencesService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -29,6 +36,9 @@ interface CRMContextType {
   taskService: TaskService;
   zohoService: ZohoService;
   notificationService: NotificationService;
+  calendarService: CalendarService;
+  insightsService: InsightsService;
+  preferencesService: PreferencesService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
@@ -37,6 +47,7 @@ interface CRMContextType {
   tasksDueToday: LeadTask[];
   overdueTasks: LeadTask[];
   recentActivities: LeadActivity[];
+  calendarEvents: CalendarEvent[];
 
   // Loading states
   loading: boolean;
@@ -46,6 +57,7 @@ interface CRMContextType {
   refreshDashboard: () => Promise<void>;
   refreshLeads: () => Promise<void>;
   refreshTasks: () => Promise<void>;
+  refreshCalendar: () => Promise<void>;
 }
 
 const CRMContext = createContext<CRMContextType | null>(null);
@@ -61,6 +73,9 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     taskService: createTaskService(supabase),
     zohoService: createZohoService(supabase, supabaseUrl),
     notificationService: createNotificationService(supabase),
+    calendarService: createCalendarService(supabase),
+    insightsService: createInsightsService(supabase, supabaseUrl),
+    preferencesService: createPreferencesService(supabase),
   }));
 
   // State
@@ -70,6 +85,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [tasksDueToday, setTasksDueToday] = useState<LeadTask[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<LeadTask[]>([]);
   const [recentActivities, setRecentActivities] = useState<LeadActivity[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -115,6 +131,15 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     }
   }, [services]);
 
+  const refreshCalendar = useCallback(async () => {
+    try {
+      const events = await services.calendarService.getUpcomingEvents(30);
+      setCalendarEvents(events);
+    } catch (error) {
+      console.error('Error refreshing calendar:', error);
+    }
+  }, [services]);
+
   // Reload all data when active org changes (RLS will scope results server-side)
   useEffect(() => {
     if (orgLoading || !activeOrgId) return;
@@ -125,12 +150,13 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         refreshDashboard(),
         refreshLeads(),
         refreshTasks(),
+        refreshCalendar(),
       ]);
       setLoading(false);
     };
 
     loadInitialData();
-  }, [activeOrgId, orgLoading, refreshDashboard, refreshLeads, refreshTasks]);
+  }, [activeOrgId, orgLoading, refreshDashboard, refreshLeads, refreshTasks, refreshCalendar]);
 
   // Set up real-time notifications
   useEffect(() => {
@@ -156,11 +182,13 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         tasksDueToday,
         overdueTasks,
         recentActivities,
+        calendarEvents,
         loading,
         refreshing,
         refreshDashboard,
         refreshLeads,
         refreshTasks,
+        refreshCalendar,
       }}
     >
       {children}

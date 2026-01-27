@@ -73,6 +73,25 @@ export type {
   NotificationStats,
 } from './notifications/types';
 
+// Calendar
+export { CalendarService, createCalendarService } from './calendar/calendarService';
+export type {
+  CalendarEvent,
+  CalendarEventType,
+  CalendarEventStatus,
+  CalendarEventCreateInput,
+  CalendarEventUpdateInput,
+  CalendarFilters,
+} from './calendar/types';
+
+// AI Insights
+export { InsightsService, createInsightsService } from './insights/insightsService';
+export type {
+  AILeadInsight,
+  ScoreFactor,
+  AIGeneratedDraft,
+} from './insights/types';
+
 // Re-export all from submodules for convenience
 export * from './leads';
 export * from './activities';
@@ -80,3 +99,5 @@ export * from './tasks';
 export * from './zoho';
 export * from './priority';
 export * from './notifications';
+export * from './calendar';
+export * from './insights';

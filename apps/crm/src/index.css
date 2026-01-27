@@ -1,8 +1,22 @@
+@import '@mpbhealth/ui/theme-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* CRM-specific violet accent overrides */
 :root {
+  --accent-50: 245 243 255;
+  --accent-100: 237 233 254;
+  --accent-200: 221 214 254;
+  --accent-300: 196 181 253;
+  --accent-400: 167 139 250;
+  --accent-500: 139 92 246;
+  --accent-600: 124 58 237;
+  --accent-700: 109 40 217;
+  --accent-800: 91 33 182;
+  --accent-900: 76 29 149;
+
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-synthesis: none;
@@ -12,7 +26,8 @@
 }
 
 body {
-  @apply bg-neutral-50 text-neutral-900;
+  @apply bg-surface-primary text-th-text-primary;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Custom scrollbar */
@@ -22,28 +37,28 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-neutral-100;
+  @apply bg-surface-tertiary;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-neutral-300 rounded-full;
+  @apply bg-th-border rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-neutral-400;
+  @apply bg-th-border-strong;
 }
 
 /* Pipeline board styles */
 .pipeline-column {
-  @apply bg-neutral-100 rounded-lg p-4 min-h-[calc(100vh-200px)];
+  @apply bg-surface-tertiary rounded-lg p-4 min-h-[calc(100vh-200px)];
 }
 
 .lead-card {
-  @apply bg-white rounded-lg shadow-sm border border-neutral-200 p-4 mb-3 cursor-grab;
+  @apply bg-surface-primary rounded-lg shadow-sm border border-th-border p-4 mb-3 cursor-grab;
 }
 
 .lead-card:hover {
-  @apply shadow-md border-primary-200;
+  @apply shadow-md border-th-accent-200;
 }
 
 .lead-card.dragging {
@@ -57,7 +72,7 @@ body {
 
 .activity-timeline::before {
   content: '';
-  @apply absolute left-3 top-2 bottom-2 w-0.5 bg-neutral-200;
+  @apply absolute left-3 top-2 bottom-2 w-0.5 bg-th-border;
 }
 
 .activity-item {
@@ -66,7 +81,7 @@ body {
 
 .activity-item::before {
   content: '';
-  @apply absolute -left-5 top-1.5 w-3 h-3 bg-white border-2 border-primary-500 rounded-full;
+  @apply absolute -left-5 top-1.5 w-3 h-3 bg-surface-primary border-2 border-th-accent-500 rounded-full;
 }
 
 /* Modal animations */
@@ -96,4 +111,9 @@ body {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.2s ease-out;
+}
+
+/* Smooth theme transition */
+*, *::before, *::after {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.05s ease;
 }

@@ -20,10 +20,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading || orgLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-4 text-sm text-neutral-500">Loading workspace...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600 mx-auto" />
+          <p className="mt-4 text-sm text-th-text-tertiary">Loading workspace...</p>
         </div>
       </div>
     );
@@ -35,10 +35,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!activeOrgId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
         <div className="text-center max-w-md px-4">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-2">No Organization</h2>
-          <p className="text-neutral-600">
+          <h2 className="text-xl font-semibold text-th-text-primary mb-2">No Organization</h2>
+          <p className="text-th-text-secondary">
             You're not a member of any organization. Contact your administrator to get access.
           </p>
         </div>

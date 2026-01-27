@@ -21,22 +21,22 @@ interface TemplatePreviewProps {
 
 export function TemplatePreview({ body, subject }: TemplatePreviewProps) {
   return (
-    <div className="border border-neutral-200 rounded-lg overflow-hidden">
-      <div className="bg-neutral-50 px-4 py-2 border-b border-neutral-200">
-        <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+    <div className="border border-th-border rounded-lg overflow-hidden">
+      <div className="bg-surface-secondary px-4 py-2 border-b border-th-border">
+        <span className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
           Preview
         </span>
       </div>
       <div className="p-4 space-y-2">
         {subject && (
           <div>
-            <span className="text-xs text-neutral-400">Subject: </span>
-            <span className="text-sm font-medium text-neutral-700">
+            <span className="text-xs text-th-text-tertiary">Subject: </span>
+            <span className="text-sm font-medium text-th-text-secondary">
               {renderPreview(subject)}
             </span>
           </div>
         )}
-        <div className="text-sm text-neutral-600 whitespace-pre-wrap">
+        <div className="text-sm text-th-text-secondary whitespace-pre-wrap">
           {renderPreview(body)}
         </div>
       </div>

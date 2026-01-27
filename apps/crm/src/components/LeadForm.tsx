@@ -228,7 +228,7 @@ export function LeadForm({ initialValues, onSubmit, onCancel, submitLabel = 'Sav
       {/* Edit-only fields */}
       {isEdit && (
         <>
-          <hr className="border-neutral-200" />
+          <hr className="border-th-border" />
           <div className="grid grid-cols-2 gap-4">
             <SelectField
               label="Priority"
@@ -262,7 +262,7 @@ export function LeadForm({ initialValues, onSubmit, onCancel, submitLabel = 'Sav
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+          className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary transition-colors"
         >
           Cancel
         </button>

@@ -96,14 +96,14 @@ export default function Profile() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900">My Profile</h1>
-        <p className="text-neutral-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-th-text-primary">My Profile</h1>
+        <p className="text-th-text-tertiary text-sm mt-1">
           Manage your profile and view your achievements
         </p>
       </div>
 
       {/* Profile card */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-start space-x-6">
           {/* Avatar */}
           <div className="relative">
@@ -114,11 +114,11 @@ export default function Profile() {
                 className="w-24 h-24 rounded-full object-cover"
               />
             ) : (
-              <div className="w-24 h-24 bg-neutral-200 rounded-full flex items-center justify-center">
-                <User className="w-12 h-12 text-neutral-400" />
+              <div className="w-24 h-24 bg-surface-tertiary rounded-full flex items-center justify-center">
+                <User className="w-12 h-12 text-th-text-tertiary" />
               </div>
             )}
-            <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-700 transition-colors">
+            <label className="absolute bottom-0 right-0 w-8 h-8 bg-th-accent-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-th-accent-700 transition-colors">
               <Camera className="w-4 h-4 text-white" />
               <input
                 type="file"
@@ -135,7 +135,7 @@ export default function Profile() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    <label className="block text-sm font-medium text-th-text-secondary mb-1">
                       First Name
                     </label>
                     <input
@@ -144,11 +144,11 @@ export default function Profile() {
                       onChange={(e) =>
                         setFormData({ ...formData, first_name: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    <label className="block text-sm font-medium text-th-text-secondary mb-1">
                       Last Name
                     </label>
                     <input
@@ -157,12 +157,12 @@ export default function Profile() {
                       onChange={(e) =>
                         setFormData({ ...formData, last_name: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
                     Phone
                   </label>
                   <input
@@ -171,11 +171,11 @@ export default function Profile() {
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
                     Bio
                   </label>
                   <textarea
@@ -184,21 +184,21 @@ export default function Profile() {
                       setFormData({ ...formData, bio: e.target.value })
                     }
                     rows={3}
-                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                   />
                 </div>
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                    className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
                   >
                     <Save className="w-4 h-4" />
                     <span>{saving ? 'Saving...' : 'Save Changes'}</span>
                   </button>
                   <button
                     onClick={() => setEditing(false)}
-                    className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors"
+                    className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                   >
                     Cancel
                   </button>
@@ -208,19 +208,19 @@ export default function Profile() {
               <>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-neutral-900">
+                    <h2 className="text-xl font-bold text-th-text-primary">
                       {profile.first_name} {profile.last_name}
                     </h2>
-                    <p className="text-neutral-500">{profile.specialization}</p>
+                    <p className="text-th-text-tertiary">{profile.specialization}</p>
                   </div>
                   <button
                     onClick={() => setEditing(true)}
-                    className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors"
+                    className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                   >
                     Edit Profile
                   </button>
                 </div>
-                <div className="flex items-center space-x-6 mt-4 text-sm text-neutral-600">
+                <div className="flex items-center space-x-6 mt-4 text-sm text-th-text-secondary">
                   <div className="flex items-center space-x-2">
                     <Mail className="w-4 h-4" />
                     <span>{profile.email}</span>
@@ -233,7 +233,7 @@ export default function Profile() {
                   )}
                 </div>
                 {profile.bio && (
-                  <p className="mt-4 text-neutral-600">{profile.bio}</p>
+                  <p className="mt-4 text-th-text-secondary">{profile.bio}</p>
                 )}
               </>
             )}
@@ -243,55 +243,55 @@ export default function Profile() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-5">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-blue-600" />
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-900">
+              <p className="text-2xl font-bold text-th-text-primary">
                 {trainingStats.completedModules}
               </p>
-              <p className="text-sm text-neutral-500">Modules Completed</p>
+              <p className="text-sm text-th-text-tertiary">Modules Completed</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-5">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Video className="w-5 h-5 text-purple-600" />
+            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+              <Video className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-900">
+              <p className="text-2xl font-bold text-th-text-primary">
                 {stats.meetingsAttended}
               </p>
-              <p className="text-sm text-neutral-500">Meetings Attended</p>
+              <p className="text-sm text-th-text-tertiary">Meetings Attended</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-5">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-900">
+              <p className="text-2xl font-bold text-th-text-primary">
                 {stats.formsSubmitted}
               </p>
-              <p className="text-sm text-neutral-500">Forms Submitted</p>
+              <p className="text-sm text-th-text-tertiary">Forms Submitted</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-5">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Award className="w-5 h-5 text-yellow-600" />
+            <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+              <Award className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-900">
+              <p className="text-2xl font-bold text-th-text-primary">
                 {certifications.length}
               </p>
-              <p className="text-sm text-neutral-500">Certifications</p>
+              <p className="text-sm text-th-text-tertiary">Certifications</p>
             </div>
           </div>
         </div>
@@ -299,11 +299,11 @@ export default function Profile() {
 
       {/* Certifications */}
       {certifications.length > 0 && (
-        <div className="bg-white rounded-xl border border-neutral-200">
-          <div className="p-5 border-b border-neutral-100">
-            <h2 className="font-semibold text-neutral-900">Certifications</h2>
+        <div className="bg-surface-primary rounded-xl border border-th-border">
+          <div className="p-5 border-b border-th-border-subtle">
+            <h2 className="font-semibold text-th-text-primary">Certifications</h2>
           </div>
-          <div className="divide-y divide-neutral-100">
+          <div className="divide-y divide-th-border-subtle">
             {certifications.map((cert) => (
               <div key={cert.id} className="flex items-center space-x-4 p-5">
                 {cert.badge_url ? (
@@ -313,16 +313,16 @@ export default function Profile() {
                     className="w-12 h-12 rounded-lg"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <Award className="w-6 h-6 text-yellow-600" />
+                  <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                    <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                   </div>
                 )}
                 <div className="flex-1">
-                  <p className="font-semibold text-neutral-900">{cert.name}</p>
+                  <p className="font-semibold text-th-text-primary">{cert.name}</p>
                   {cert.description && (
-                    <p className="text-sm text-neutral-500">{cert.description}</p>
+                    <p className="text-sm text-th-text-tertiary">{cert.description}</p>
                   )}
-                  <div className="flex items-center space-x-4 mt-1 text-sm text-neutral-500">
+                  <div className="flex items-center space-x-4 mt-1 text-sm text-th-text-tertiary">
                     <span>Issued: {new Date(cert.issued_at).toLocaleDateString()}</span>
                     {cert.expires_at && (
                       <span>
@@ -339,7 +339,7 @@ export default function Profile() {
       )}
 
       {/* Status */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-5">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div
@@ -348,23 +348,23 @@ export default function Profile() {
                   ? 'bg-green-500'
                   : profile.status === 'pending'
                   ? 'bg-yellow-500'
-                  : 'bg-neutral-400'
+                  : 'bg-neutral-400 dark:bg-neutral-600'
               }`}
             />
             <div>
-              <p className="font-medium text-neutral-900 capitalize">
+              <p className="font-medium text-th-text-primary capitalize">
                 {profile.status}
               </p>
-              <p className="text-sm text-neutral-500">Account Status</p>
+              <p className="text-sm text-th-text-tertiary">Account Status</p>
             </div>
           </div>
           {profile.onboarding_completed ? (
-            <span className="flex items-center space-x-2 text-green-600">
+            <span className="flex items-center space-x-2 text-green-600 dark:text-green-400">
               <CheckCircle2 className="w-5 h-5" />
               <span>Onboarding Complete</span>
             </span>
           ) : (
-            <span className="text-yellow-600">Onboarding In Progress</span>
+            <span className="text-yellow-600 dark:text-yellow-400">Onboarding In Progress</span>
           )}
         </div>
       </div>

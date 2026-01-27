@@ -116,7 +116,7 @@ export function SendDraftModal({
           rows={6}
         />
 
-        <div className="border-t border-neutral-200 pt-4">
+        <div className="border-t border-th-border pt-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -126,9 +126,9 @@ export function SendDraftModal({
                   target: { name: 'save_as_template', value: e.target.checked ? 'true' : 'false' },
                 } as any)
               }
-              className="w-4 h-4 rounded border-neutral-300"
+              className="w-4 h-4 rounded border-th-border"
             />
-            <span className="text-sm text-neutral-700">Save as reusable template</span>
+            <span className="text-sm text-th-text-secondary">Save as reusable template</span>
           </label>
           {values.save_as_template === 'true' && (
             <div className="mt-2">
@@ -149,7 +149,7 @@ export function SendDraftModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary transition-colors"
           >
             Cancel
           </button>

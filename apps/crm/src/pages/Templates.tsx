@@ -112,15 +112,15 @@ export default function Templates() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Templates</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Templates</h1>
+          <p className="text-sm text-th-text-tertiary mt-1">
             Email and SMS templates for lead communication
           </p>
         </div>
         <PermissionGate permission="settings.manage">
           <button
             onClick={openCreate}
-            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg text-sm font-medium hover:bg-th-accent-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>New Template</span>
@@ -130,18 +130,18 @@ export default function Templates() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center bg-white border border-neutral-200 rounded-lg px-3 py-2">
-          <Search className="w-4 h-4 text-neutral-400 mr-2" />
+        <div className="flex items-center bg-surface-primary border border-th-border rounded-lg px-3 py-2">
+          <Search className="w-4 h-4 text-th-text-tertiary mr-2" />
           <input
             type="text"
             placeholder="Search templates..."
             onChange={(e) => handleSearch(e.target.value)}
-            className="bg-transparent border-none outline-none text-sm w-48 text-neutral-700 placeholder-neutral-400"
+            className="bg-transparent border-none outline-none text-sm w-48 text-th-text-secondary placeholder-th-text-tertiary"
           />
         </div>
         <select
           onChange={(e) => handleTypeFilter(e.target.value)}
-          className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-700"
+          className="bg-surface-primary border border-th-border rounded-lg px-3 py-2 text-sm text-th-text-secondary"
         >
           {TYPE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -149,7 +149,7 @@ export default function Templates() {
         </select>
         <select
           onChange={(e) => handleCategoryFilter(e.target.value)}
-          className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-700"
+          className="bg-surface-primary border border-th-border rounded-lg px-3 py-2 text-sm text-th-text-secondary"
         >
           {CATEGORY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -160,51 +160,51 @@ export default function Templates() {
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
         </div>
       ) : templates.length === 0 ? (
-        <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center">
-          <p className="text-neutral-500 text-sm">No templates found</p>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
+          <p className="text-th-text-tertiary text-sm">No templates found</p>
           <button
             onClick={openCreate}
-            className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
+            className="mt-3 text-sm text-th-accent-600 hover:text-th-accent-700 font-medium"
           >
             Create your first template
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-neutral-200">
-            <thead className="bg-neutral-50">
+        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+          <table className="min-w-full divide-y divide-th-border">
+            <thead className="bg-surface-secondary">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                   Usage
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200">
+            <tbody className="divide-y divide-th-border">
               {templates.map((template) => (
-                <tr key={template.id} className="hover:bg-neutral-50">
+                <tr key={template.id} className="hover:bg-surface-secondary">
                   <td className="px-6 py-4">
                     <div>
-                      <p className="text-sm font-medium text-neutral-900">{template.name}</p>
+                      <p className="text-sm font-medium text-th-text-primary">{template.name}</p>
                       {template.description && (
-                        <p className="text-xs text-neutral-500 mt-0.5 truncate max-w-xs">
+                        <p className="text-xs text-th-text-tertiary mt-0.5 truncate max-w-xs">
                           {template.description}
                         </p>
                       )}
@@ -213,13 +213,13 @@ export default function Templates() {
                   <td className="px-6 py-4">
                     <TypeBadge type={template.template_type} />
                   </td>
-                  <td className="px-6 py-4 text-sm text-neutral-600 capitalize">
+                  <td className="px-6 py-4 text-sm text-th-text-secondary capitalize">
                     {template.category}
                   </td>
-                  <td className="px-6 py-4 text-sm text-neutral-600">
+                  <td className="px-6 py-4 text-sm text-th-text-secondary">
                     {template.usage_count} uses
                     {template.ai_performance_score !== null && (
-                      <span className="ml-2 text-xs text-neutral-400">
+                      <span className="ml-2 text-xs text-th-text-tertiary">
                         AI: {template.ai_performance_score}%
                       </span>
                     )}
@@ -230,7 +230,7 @@ export default function Templates() {
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer ${
                         template.is_active
                           ? 'bg-green-100 text-green-700'
-                          : 'bg-neutral-100 text-neutral-500'
+                          : 'bg-surface-tertiary text-th-text-tertiary'
                       }`}
                     >
                       {template.is_active ? 'Active' : 'Inactive'}
@@ -240,21 +240,21 @@ export default function Templates() {
                     <div className="flex items-center justify-end space-x-2">
                       <button
                         onClick={() => openEdit(template)}
-                        className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded"
+                        className="p-1.5 text-th-text-tertiary hover:text-th-text-secondary rounded"
                         title="Edit"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDuplicate(template.id)}
-                        className="p-1.5 text-neutral-400 hover:text-neutral-600 rounded"
+                        className="p-1.5 text-th-text-tertiary hover:text-th-text-secondary rounded"
                         title="Duplicate"
                       >
                         <Copy className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(template.id)}
-                        className="p-1.5 text-neutral-400 hover:text-red-600 rounded"
+                        className="p-1.5 text-th-text-tertiary hover:text-red-600 rounded"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />

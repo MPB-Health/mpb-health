@@ -24,7 +24,7 @@ export default function Login() {
       emailPlaceholder="admin@mpb.health"
       tagline="Empowering Health, Securing Futures"
       formFooter={
-        <p className="text-center text-sm text-neutral-500">
+        <p className="text-center text-sm text-th-text-tertiary">
           Access restricted to authorized administrators only
         </p>
       }

@@ -17,7 +17,7 @@ export const featureFlags: FeatureFlags = {
   enableEmailNotifications: true,
   enableSMSNotifications: false,
   enableAIInsights: true,
-  enableDarkMode: false,
+  enableDarkMode: true,
   enableBetaFeatures: false,
 };
 

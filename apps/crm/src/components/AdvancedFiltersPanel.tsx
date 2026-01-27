@@ -40,13 +40,13 @@ export function AdvancedFiltersPanel({ filters, onChange }: AdvancedFiltersPanel
   ].filter(Boolean).length;
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-4 space-y-4">
+    <div className="bg-surface-primary rounded-xl border border-th-border p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-neutral-700">Advanced Filters</h3>
+        <h3 className="text-sm font-medium text-th-text-secondary">Advanced Filters</h3>
         {activeCount > 0 && (
           <button
             onClick={() => onChange({})}
-            className="text-xs text-primary-600 hover:text-primary-700"
+            className="text-xs text-th-accent-600 hover:text-th-accent-700"
           >
             Clear all ({activeCount})
           </button>

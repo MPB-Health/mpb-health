@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { advisorLeadService } from '@mpbhealth/advisor-core';
+import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 export default function Dashboard() {
@@ -41,91 +42,52 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">
-          Welcome back, {profile?.first_name}!
-        </h1>
-        <p className="text-primary-100 mt-1">
-          Here's what's happening with your training and meetings.
-        </p>
-      </div>
+      <GradientHeader
+        title={`Welcome back, ${profile?.first_name}!`}
+        subtitle="Here's what's happening with your training and meetings."
+      />
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500">Training Progress</p>
-              <p className="text-xl font-bold text-neutral-900">
-                {trainingStats.completionPercentage.toFixed(0)}%
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 h-2 bg-neutral-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all"
-              style={{ width: `${trainingStats.completionPercentage}%` }}
-            />
-          </div>
-        </div>
+        <MetricCard
+          label="Training Progress"
+          value={`${trainingStats.completionPercentage.toFixed(0)}%`}
+          icon={<GraduationCap className="w-5 h-5" />}
+        />
 
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500">Modules Completed</p>
-              <p className="text-xl font-bold text-neutral-900">
-                {trainingStats.completedModules}/{trainingStats.totalModules}
-              </p>
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          label="Modules Completed"
+          value={`${trainingStats.completedModules}/${trainingStats.totalModules}`}
+          icon={<CheckCircle2 className="w-5 h-5" />}
+        />
 
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Video className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500">Upcoming Meetings</p>
-              <p className="text-xl font-bold text-neutral-900">
-                {upcomingMeetings.length}
-              </p>
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          label="Upcoming Meetings"
+          value={upcomingMeetings.length}
+          icon={<Video className="w-5 h-5" />}
+        />
 
         <button
           onClick={() => navigate('/leads')}
-          className="bg-white rounded-xl border border-neutral-200 p-5 text-left hover:border-primary-300 transition-colors"
+          className="text-left"
         >
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500">Assigned Leads</p>
-              <p className="text-xl font-bold text-neutral-900">
-                {assignedLeadCount}
-              </p>
-            </div>
-          </div>
+          <MetricCard
+            label="Assigned Leads"
+            value={assignedLeadCount}
+            icon={<Users className="w-5 h-5" />}
+            className="hover:border-th-accent-300 cursor-pointer"
+          />
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Continue Training */}
-        <div className="bg-white rounded-xl border border-neutral-200">
-          <div className="flex items-center justify-between p-5 border-b border-neutral-100">
-            <h2 className="font-semibold text-neutral-900">Continue Training</h2>
+        <div className="bg-surface-primary rounded-xl border border-th-border">
+          <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
+            <h2 className="font-semibold text-th-text-primary">Continue Training</h2>
             <button
               onClick={() => navigate('/training')}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-1"
+              className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center space-x-1"
             >
               <span>View All</span>
               <ArrowRight className="w-4 h-4" />
@@ -142,34 +104,34 @@ export default function Dashboard() {
                     <button
                       key={module.id}
                       onClick={() => navigate(`/training/${module.id}`)}
-                      className="w-full flex items-center space-x-4 p-3 rounded-lg hover:bg-neutral-50 transition-colors text-left"
+                      className="w-full flex items-center space-x-4 p-3 rounded-lg hover:bg-surface-tertiary transition-colors text-left"
                     >
-                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <GraduationCap className="w-6 h-6 text-primary-600" />
+                      <div className="w-12 h-12 bg-th-accent-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="w-6 h-6 text-th-accent-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-neutral-900 truncate">
+                        <p className="font-medium text-th-text-primary truncate">
                           {module.title}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
-                          <Clock className="w-4 h-4 text-neutral-400" />
-                          <span className="text-sm text-neutral-500">
+                          <Clock className="w-4 h-4 text-th-text-tertiary" />
+                          <span className="text-sm text-th-text-tertiary">
                             {progress?.time_spent_minutes || 0} min spent
                           </span>
                         </div>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-neutral-400" />
+                      <ArrowRight className="w-5 h-5 text-th-text-tertiary" />
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <div className="text-center py-8 text-neutral-500">
-                <GraduationCap className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
+              <div className="text-center py-8 text-th-text-tertiary">
+                <GraduationCap className="w-12 h-12 mx-auto mb-3 text-th-text-tertiary" />
                 <p>No modules in progress</p>
                 <button
                   onClick={() => navigate('/training')}
-                  className="mt-3 text-primary-600 hover:text-primary-700 font-medium"
+                  className="mt-3 text-th-accent-600 hover:text-th-accent-700 font-medium"
                 >
                   Start Training
                 </button>
@@ -179,12 +141,12 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming Meetings */}
-        <div className="bg-white rounded-xl border border-neutral-200">
-          <div className="flex items-center justify-between p-5 border-b border-neutral-100">
-            <h2 className="font-semibold text-neutral-900">Upcoming Meetings</h2>
+        <div className="bg-surface-primary rounded-xl border border-th-border">
+          <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
+            <h2 className="font-semibold text-th-text-primary">Upcoming Meetings</h2>
             <button
               onClick={() => navigate('/meetings')}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-1"
+              className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center space-x-1"
             >
               <span>View All</span>
               <ArrowRight className="w-4 h-4" />
@@ -197,29 +159,29 @@ export default function Dashboard() {
                   <button
                     key={meeting.id}
                     onClick={() => navigate(`/meetings/${meeting.id}`)}
-                    className="w-full flex items-center space-x-4 p-3 rounded-lg hover:bg-neutral-50 transition-colors text-left"
+                    className="w-full flex items-center space-x-4 p-3 rounded-lg hover:bg-surface-tertiary transition-colors text-left"
                   >
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Video className="w-6 h-6 text-purple-600" />
+                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Video className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-neutral-900 truncate">
+                      <p className="font-medium text-th-text-primary truncate">
                         {meeting.title}
                       </p>
                       <div className="flex items-center space-x-2 mt-1">
-                        <Calendar className="w-4 h-4 text-neutral-400" />
-                        <span className="text-sm text-neutral-500">
+                        <Calendar className="w-4 h-4 text-th-text-tertiary" />
+                        <span className="text-sm text-th-text-tertiary">
                           {format(new Date(meeting.scheduled_at), 'MMM d, h:mm a')}
                         </span>
                       </div>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-neutral-400" />
+                    <ArrowRight className="w-5 h-5 text-th-text-tertiary" />
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-neutral-500">
-                <Video className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
+              <div className="text-center py-8 text-th-text-tertiary">
+                <Video className="w-12 h-12 mx-auto mb-3 text-th-text-tertiary" />
                 <p>No upcoming meetings</p>
               </div>
             )}
@@ -228,43 +190,43 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Links */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-5">
-        <h2 className="font-semibold text-neutral-900 mb-4">Quick Actions</h2>
+      <div className="bg-surface-primary rounded-xl border border-th-border p-5">
+        <h2 className="font-semibold text-th-text-primary mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
             onClick={() => navigate('/leads')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 transition-colors"
           >
-            <Users className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">My Leads</span>
+            <Users className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">My Leads</span>
           </button>
           <button
             onClick={() => navigate('/training')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 transition-colors"
           >
-            <GraduationCap className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">Training</span>
+            <GraduationCap className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">Training</span>
           </button>
           <button
             onClick={() => navigate('/forms')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 transition-colors"
           >
-            <FileText className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">Forms</span>
+            <FileText className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">Forms</span>
           </button>
           <button
             onClick={() => navigate('/sops')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 transition-colors"
           >
-            <FileText className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">SOPs</span>
+            <FileText className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">SOPs</span>
           </button>
           <button
             onClick={() => navigate('/profile')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 transition-colors"
           >
-            <Award className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">Profile</span>
+            <Award className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">Profile</span>
           </button>
         </div>
       </div>

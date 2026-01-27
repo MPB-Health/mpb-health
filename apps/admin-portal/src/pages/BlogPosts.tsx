@@ -97,13 +97,13 @@ export default function BlogPosts() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
       case 'draft':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300';
       case 'archived':
-        return 'bg-neutral-100 text-neutral-700';
+        return 'bg-surface-tertiary text-th-text-secondary';
       default:
-        return 'bg-neutral-100 text-neutral-700';
+        return 'bg-surface-tertiary text-th-text-secondary';
     }
   };
 
@@ -112,14 +112,14 @@ export default function BlogPosts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Blog Posts</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Blog Posts</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
             Manage your blog content
           </p>
         </div>
         <button
           onClick={() => navigate('/content/blog/new')}
-          className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
           <span>New Post</span>
@@ -129,21 +129,21 @@ export default function BlogPosts() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-tertiary" />
           <input
             type="text"
             placeholder="Search posts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent text-th-text-primary placeholder-th-text-tertiary"
           />
         </div>
         <div className="flex items-center space-x-2">
-          <Filter className="w-5 h-5 text-neutral-400" />
+          <Filter className="w-5 h-5 text-th-text-tertiary" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
           >
             <option value="">All Status</option>
             <option value="draft">Draft</option>
@@ -153,7 +153,7 @@ export default function BlogPosts() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2.5 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -166,38 +166,38 @@ export default function BlogPosts() {
       </div>
 
       {/* Posts table */}
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600"></div>
           </div>
         ) : posts.length > 0 ? (
           <table className="w-full">
-            <thead className="bg-neutral-50 border-b border-neutral-200">
+            <thead className="bg-surface-secondary border-b border-th-border">
               <tr>
-                <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                   Title
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                   Category
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                   Status
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                   Views
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                   Date
                 </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">
+                <th className="text-right py-3 px-4 text-sm font-medium text-th-text-tertiary">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-th-border-subtle">
               {posts.map((post) => (
-                <tr key={post.id} className="hover:bg-neutral-50">
+                <tr key={post.id} className="hover:bg-surface-tertiary">
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-3">
                       {post.featured_image ? (
@@ -207,16 +207,16 @@ export default function BlogPosts() {
                           className="w-12 h-12 rounded-lg object-cover"
                         />
                       ) : (
-                        <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-neutral-400" />
+                        <div className="w-12 h-12 bg-surface-tertiary rounded-lg flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-th-text-tertiary" />
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-neutral-900 line-clamp-1">
+                        <p className="font-medium text-th-text-primary line-clamp-1">
                           {post.title}
                         </p>
                         {post.author_name && (
-                          <p className="text-sm text-neutral-500">
+                          <p className="text-sm text-th-text-tertiary">
                             by {post.author_name}
                           </p>
                         )}
@@ -224,7 +224,7 @@ export default function BlogPosts() {
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm text-neutral-600">{post.category}</span>
+                    <span className="text-sm text-th-text-secondary">{post.category}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span
@@ -236,12 +236,12 @@ export default function BlogPosts() {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center space-x-1 text-sm text-neutral-500">
+                    <div className="flex items-center space-x-1 text-sm text-th-text-tertiary">
                       <Eye className="w-4 h-4" />
                       <span>{post.view_count}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-sm text-neutral-500">
+                  <td className="py-3 px-4 text-sm text-th-text-tertiary">
                     {post.published_at
                       ? format(new Date(post.published_at), 'MMM d, yyyy')
                       : format(new Date(post.created_at), 'MMM d, yyyy')}
@@ -252,15 +252,15 @@ export default function BlogPosts() {
                         onClick={() =>
                           setActiveMenu(activeMenu === post.id ? null : post.id)
                         }
-                        className="p-2 text-neutral-400 hover:text-neutral-600 rounded-lg hover:bg-neutral-100"
+                        className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
                       >
                         <MoreVertical className="w-5 h-5" />
                       </button>
                       {activeMenu === post.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 z-10">
+                        <div className="absolute right-0 mt-2 w-48 bg-surface-primary rounded-lg shadow-lg border border-th-border py-1 z-10">
                           <button
                             onClick={() => navigate(`/content/blog/${post.id}`)}
-                            className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                            className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-th-text-secondary hover:bg-surface-tertiary"
                           >
                             <Edit className="w-4 h-4" />
                             <span>Edit</span>
@@ -268,7 +268,7 @@ export default function BlogPosts() {
                           {post.status === 'draft' ? (
                             <button
                               onClick={() => handlePublish(post.id)}
-                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-th-text-secondary hover:bg-surface-tertiary"
                             >
                               <Globe className="w-4 h-4" />
                               <span>Publish</span>
@@ -276,7 +276,7 @@ export default function BlogPosts() {
                           ) : post.status === 'published' ? (
                             <button
                               onClick={() => handleUnpublish(post.id)}
-                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-th-text-secondary hover:bg-surface-tertiary"
                             >
                               <EyeOff className="w-4 h-4" />
                               <span>Unpublish</span>
@@ -284,7 +284,7 @@ export default function BlogPosts() {
                           ) : null}
                           <button
                             onClick={() => handleDelete(post.id)}
-                            className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                           >
                             <Trash2 className="w-4 h-4" />
                             <span>Delete</span>
@@ -299,11 +299,11 @@ export default function BlogPosts() {
           </table>
         ) : (
           <div className="text-center py-12">
-            <FileText className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-            <p className="text-neutral-500">No posts found</p>
+            <FileText className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
+            <p className="text-th-text-tertiary">No posts found</p>
             <button
               onClick={() => navigate('/content/blog/new')}
-              className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
+              className="mt-4 text-th-accent-600 hover:text-th-accent-700 font-medium"
             >
               Create your first post
             </button>

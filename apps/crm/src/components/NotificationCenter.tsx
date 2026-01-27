@@ -93,7 +93,7 @@ export function NotificationCenter() {
     <div ref={dropdownRef} className="relative">
       <button
         onClick={handleToggle}
-        className="relative p-2 text-neutral-500 hover:text-neutral-700"
+        className="relative p-2 text-th-text-tertiary hover:text-th-text-secondary"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
@@ -104,14 +104,14 @@ export function NotificationCenter() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-neutral-200 rounded-xl shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-surface-primary border border-th-border rounded-xl shadow-lg z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200">
-            <h3 className="text-sm font-semibold text-neutral-900">Notifications</h3>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-th-border">
+            <h3 className="text-sm font-semibold text-th-text-primary">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                className="text-xs text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
               >
                 <Check className="w-3 h-3" />
                 Mark all read
@@ -123,12 +123,12 @@ export function NotificationCenter() {
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600" />
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-th-accent-600" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-8 text-center">
-                <Bell className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
-                <p className="text-sm text-neutral-500">No notifications</p>
+                <Bell className="w-8 h-8 text-th-text-tertiary mx-auto mb-2" />
+                <p className="text-sm text-th-text-tertiary">No notifications</p>
               </div>
             ) : (
               <>
@@ -161,8 +161,8 @@ function NotificationGroup({
 }) {
   return (
     <div>
-      <div className="px-4 py-1.5 bg-neutral-50">
-        <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
+      <div className="px-4 py-1.5 bg-surface-secondary">
+        <span className="text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">
           {label}
         </span>
       </div>
@@ -172,21 +172,21 @@ function NotificationGroup({
           <button
             key={notification.id}
             onClick={() => onClick(notification)}
-            className={`w-full text-left px-4 py-3 hover:bg-neutral-50 flex items-start gap-3 ${
+            className={`w-full text-left px-4 py-3 hover:bg-surface-secondary flex items-start gap-3 ${
               !notification.read ? 'bg-blue-50/50' : ''
             } ${PRIORITY_COLORS[notification.priority]}`}
           >
             <div className="mt-0.5">
-              <Icon className="w-4 h-4 text-neutral-400" />
+              <Icon className="w-4 h-4 text-th-text-tertiary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`text-sm ${!notification.read ? 'font-medium text-neutral-900' : 'text-neutral-700'}`}>
+              <p className={`text-sm ${!notification.read ? 'font-medium text-th-text-primary' : 'text-th-text-secondary'}`}>
                 {notification.title}
               </p>
               {notification.body && (
-                <p className="text-xs text-neutral-500 mt-0.5">{notification.body}</p>
+                <p className="text-xs text-th-text-tertiary mt-0.5">{notification.body}</p>
               )}
-              <p className="text-[10px] text-neutral-400 mt-0.5">
+              <p className="text-[10px] text-th-text-tertiary mt-0.5">
                 {formatTimeAgo(notification.created_at)}
               </p>
             </div>

@@ -82,7 +82,7 @@ export default function JitsiMeetRoom({
   return (
     <div
       ref={containerRef}
-      className="w-full h-full min-h-[500px] bg-neutral-900 rounded-lg overflow-hidden"
+      className="w-full h-full min-h-[500px] bg-neutral-900 dark:bg-black rounded-lg overflow-hidden"
     />
   );
 }

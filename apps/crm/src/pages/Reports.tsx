@@ -35,8 +35,8 @@ export default function Reports() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Reports</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Reports</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
             Analytics and performance metrics
           </p>
         </div>
@@ -44,26 +44,26 @@ export default function Reports() {
 
       {/* Key metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <p className="text-sm text-neutral-500">Total Leads</p>
-          <p className="text-3xl font-bold text-neutral-900 mt-2">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <p className="text-sm text-th-text-tertiary">Total Leads</p>
+          <p className="text-3xl font-bold text-th-text-primary mt-2">
             {dashboardStats?.total_leads || 0}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <p className="text-sm text-neutral-500">Conversion Rate</p>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <p className="text-sm text-th-text-tertiary">Conversion Rate</p>
           <p className="text-3xl font-bold text-green-600 mt-2">
             {dashboardStats?.conversion_rate?.toFixed(1) || 0}%
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <p className="text-sm text-neutral-500">Avg Days to Close</p>
-          <p className="text-3xl font-bold text-neutral-900 mt-2">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <p className="text-sm text-th-text-tertiary">Avg Days to Close</p>
+          <p className="text-3xl font-bold text-th-text-primary mt-2">
             {dashboardStats?.avg_days_to_close?.toFixed(0) || 0}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <p className="text-sm text-neutral-500">New Today</p>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <p className="text-sm text-th-text-tertiary">New Today</p>
           <p className="text-3xl font-bold text-blue-600 mt-2">
             {dashboardStats?.new_leads || 0}
           </p>
@@ -73,8 +73,8 @@ export default function Reports() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pipeline distribution */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="text-lg font-semibold text-neutral-900 mb-6">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h2 className="text-lg font-semibold text-th-text-primary mb-6">
             Pipeline Distribution
           </h2>
           <div className="h-80">
@@ -111,8 +111,8 @@ export default function Reports() {
         </div>
 
         {/* Priority distribution */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="text-lg font-semibold text-neutral-900 mb-6">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h2 className="text-lg font-semibold text-th-text-primary mb-6">
             Leads by Priority
           </h2>
           <div className="h-80">
@@ -149,7 +149,7 @@ export default function Reports() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-full text-neutral-500">
+              <div className="flex items-center justify-center h-full text-th-text-tertiary">
                 No priority data available
               </div>
             )}
@@ -158,20 +158,20 @@ export default function Reports() {
       </div>
 
       {/* Pipeline stages table */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
-        <h2 className="text-lg font-semibold text-neutral-900 mb-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <h2 className="text-lg font-semibold text-th-text-primary mb-6">
           Pipeline Stage Breakdown
         </h2>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-neutral-200">
-              <th className="text-left py-3 text-sm font-medium text-neutral-500">
+            <tr className="border-b border-th-border">
+              <th className="text-left py-3 text-sm font-medium text-th-text-tertiary">
                 Stage
               </th>
-              <th className="text-right py-3 text-sm font-medium text-neutral-500">
+              <th className="text-right py-3 text-sm font-medium text-th-text-tertiary">
                 Count
               </th>
-              <th className="text-right py-3 text-sm font-medium text-neutral-500">
+              <th className="text-right py-3 text-sm font-medium text-th-text-tertiary">
                 Percentage
               </th>
             </tr>
@@ -183,22 +183,22 @@ export default function Reports() {
               const percentage = ((count / total) * 100).toFixed(1);
 
               return (
-                <tr key={stage.id} className="border-b border-neutral-100">
+                <tr key={stage.id} className="border-b border-th-border-subtle">
                   <td className="py-3">
                     <div className="flex items-center space-x-3">
                       <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: stage.color }}
                       />
-                      <span className="text-sm font-medium text-neutral-900">
+                      <span className="text-sm font-medium text-th-text-primary">
                         {stage.display_name}
                       </span>
                     </div>
                   </td>
-                  <td className="text-right py-3 text-sm text-neutral-600">
+                  <td className="text-right py-3 text-sm text-th-text-secondary">
                     {count}
                   </td>
-                  <td className="text-right py-3 text-sm text-neutral-600">
+                  <td className="text-right py-3 text-sm text-th-text-secondary">
                     {percentage}%
                   </td>
                 </tr>

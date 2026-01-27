@@ -71,10 +71,10 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Sparkles className="w-5 h-5 text-purple-500" />
-          <h2 className="text-lg font-semibold text-neutral-900">AI Insights</h2>
+          <h2 className="text-lg font-semibold text-th-text-primary">AI Insights</h2>
         </div>
         <div className="flex items-center justify-center h-24">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
@@ -85,11 +85,11 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
 
   if (!insights) {
     return (
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Sparkles className="w-5 h-5 text-purple-500" />
-            <h2 className="text-lg font-semibold text-neutral-900">AI Insights</h2>
+            <h2 className="text-lg font-semibold text-th-text-primary">AI Insights</h2>
           </div>
           <button
             onClick={handleRefresh}
@@ -100,7 +100,7 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
             Generate
           </button>
         </div>
-        <p className="text-sm text-neutral-500 text-center py-4">
+        <p className="text-sm text-th-text-tertiary text-center py-4">
           No AI insights yet. Click Generate to analyze this lead.
         </p>
       </div>
@@ -108,12 +108,12 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-6 space-y-4">
+    <div className="bg-surface-primary rounded-xl border border-th-border p-6 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Sparkles className="w-5 h-5 text-purple-500" />
-          <h2 className="text-lg font-semibold text-neutral-900">AI Insights</h2>
+          <h2 className="text-lg font-semibold text-th-text-primary">AI Insights</h2>
         </div>
         <button
           onClick={handleRefresh}
@@ -138,13 +138,13 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
               strokeLinecap="round"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-neutral-900">
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-th-text-primary">
             {insights.ai_score}
           </span>
         </div>
         <div>
-          <p className="text-sm font-medium text-neutral-900">AI Score</p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-sm font-medium text-th-text-primary">AI Score</p>
+          <p className="text-xs text-th-text-tertiary">
             {Math.round(insights.conversion_probability * 100)}% conversion probability
           </p>
           <span className={`inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-xs font-medium ${urgencyColors[insights.urgency]}`}>
@@ -156,7 +156,7 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
       {/* Score factors */}
       {insights.score_factors && insights.score_factors.length > 0 && (
         <div>
-          <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Score Factors</p>
+          <p className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider mb-2">Score Factors</p>
           <div className="space-y-1.5">
             {insights.score_factors.slice(0, 4).map((factor, i) => (
               <div key={i} className="flex items-center gap-2 text-xs">
@@ -165,9 +165,9 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
                 ) : factor.impact === 'negative' ? (
                   <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
                 ) : (
-                  <Zap className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  <Zap className="w-3.5 h-3.5 text-th-text-tertiary flex-shrink-0" />
                 )}
-                <span className="text-neutral-700">{factor.description}</span>
+                <span className="text-th-text-secondary">{factor.description}</span>
               </div>
             ))}
           </div>
@@ -184,26 +184,26 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
       {/* Conversation summary */}
       {insights.conversation_summary && (
         <div>
-          <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-1">Summary</p>
-          <p className="text-sm text-neutral-600">{insights.conversation_summary}</p>
+          <p className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider mb-1">Summary</p>
+          <p className="text-sm text-th-text-secondary">{insights.conversation_summary}</p>
         </div>
       )}
 
       {/* Draft generation */}
       <div>
-        <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Generate Draft</p>
+        <p className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider mb-2">Generate Draft</p>
         <div className="flex gap-2">
           <button
             onClick={() => handleGenerateDraft('email')}
             disabled={draftLoading !== null}
-            className="flex-1 px-3 py-1.5 text-xs font-medium bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
+            className="flex-1 px-3 py-1.5 text-xs font-medium bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary disabled:opacity-50"
           >
             {draftLoading === 'email' ? 'Generating...' : 'Email Draft'}
           </button>
           <button
             onClick={() => handleGenerateDraft('sms')}
             disabled={draftLoading !== null}
-            className="flex-1 px-3 py-1.5 text-xs font-medium bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
+            className="flex-1 px-3 py-1.5 text-xs font-medium bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary disabled:opacity-50"
           >
             {draftLoading === 'sms' ? 'Generating...' : 'SMS Draft'}
           </button>
@@ -212,9 +212,9 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
 
       {/* Generated draft */}
       {draft && (
-        <div className="bg-neutral-50 rounded-lg p-3 relative">
+        <div className="bg-surface-secondary rounded-lg p-3 relative">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs font-medium text-neutral-500">{draft.type.toUpperCase()} Draft</p>
+            <p className="text-xs font-medium text-th-text-tertiary">{draft.type.toUpperCase()} Draft</p>
             <div className="flex items-center gap-1">
               {leadEmail && (
                 <button
@@ -225,15 +225,15 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
                   <Send className="w-4 h-4" />
                 </button>
               )}
-              <button onClick={handleCopy} className="text-neutral-400 hover:text-neutral-600 p-0.5">
+              <button onClick={handleCopy} className="text-th-text-tertiary hover:text-th-text-secondary p-0.5">
                 {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
           </div>
           {draft.subject && (
-            <p className="text-xs text-neutral-500 mb-1">Subject: {draft.subject}</p>
+            <p className="text-xs text-th-text-tertiary mb-1">Subject: {draft.subject}</p>
           )}
-          <p className="text-sm text-neutral-700 whitespace-pre-wrap">{draft.body}</p>
+          <p className="text-sm text-th-text-secondary whitespace-pre-wrap">{draft.body}</p>
         </div>
       )}
 

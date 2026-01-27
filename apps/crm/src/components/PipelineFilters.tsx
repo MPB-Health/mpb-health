@@ -31,16 +31,16 @@ export function PipelineFilters({ onFilter }: PipelineFiltersProps) {
   };
 
   return (
-    <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-neutral-200 rounded-xl shadow-lg p-4 z-20 space-y-3">
+    <div className="absolute right-0 top-full mt-2 w-64 bg-surface-primary border border-th-border rounded-xl shadow-lg p-4 z-20 space-y-3">
       <div>
-        <label className="block text-xs font-medium text-neutral-500 mb-1">Priority</label>
+        <label className="block text-xs font-medium text-th-text-tertiary mb-1">Priority</label>
         <select
           value={priority}
           onChange={(e) => {
             setPriority(e.target.value);
             applyFilters(e.target.value, tag);
           }}
-          className="w-full border border-neutral-200 rounded-lg px-3 py-1.5 text-sm"
+          className="w-full border border-th-border rounded-lg px-3 py-1.5 text-sm"
         >
           {PRIORITY_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
@@ -51,7 +51,7 @@ export function PipelineFilters({ onFilter }: PipelineFiltersProps) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-neutral-500 mb-1">Tag</label>
+        <label className="block text-xs font-medium text-th-text-tertiary mb-1">Tag</label>
         <input
           value={tag}
           onChange={(e) => {
@@ -59,7 +59,7 @@ export function PipelineFilters({ onFilter }: PipelineFiltersProps) {
             applyFilters(priority, e.target.value);
           }}
           placeholder="Filter by tag..."
-          className="w-full border border-neutral-200 rounded-lg px-3 py-1.5 text-sm"
+          className="w-full border border-th-border rounded-lg px-3 py-1.5 text-sm"
         />
       </div>
 
@@ -69,7 +69,7 @@ export function PipelineFilters({ onFilter }: PipelineFiltersProps) {
           setTag('');
           onFilter(null);
         }}
-        className="w-full text-xs text-primary-600 hover:text-primary-700 text-center py-1"
+        className="w-full text-xs text-th-accent-600 hover:text-th-accent-700 text-center py-1"
       >
         Clear filters
       </button>

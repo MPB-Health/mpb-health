@@ -4,24 +4,27 @@ import {
   Users,
   UserPlus,
   FileText,
-  FolderOpen,
   Settings,
   ClipboardList,
   LogOut,
-  Menu,
-  X,
   Bell,
-  ChevronDown,
 } from 'lucide-react';
-import { useState } from 'react';
+import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
+import { getPortalUrl } from '@mpbhealth/config';
 import { useAdmin } from '../contexts/AdminContext';
 
-const navigation = [
+const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Users', href: '/users', icon: Users },
-  { name: 'Enrollments', href: '/enrollments', icon: UserPlus, badge: true },
+  {
+    name: 'Enrollments',
+    href: '/enrollments',
+    icon: UserPlus,
+    // badge is set dynamically below
+  },
   {
     name: 'Content',
+    href: '#',
     icon: FileText,
     children: [
       { name: 'Blog Posts', href: '/content/blog' },
@@ -35,8 +38,6 @@ const navigation = [
 export default function MainLayout() {
   const navigate = useNavigate();
   const { user, logout, pendingEnrollments, loading } = useAdmin();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [contentOpen, setContentOpen] = useState(false);
 
   // Redirect to login if not authenticated
   if (!loading && !user) {
@@ -45,170 +46,112 @@ export default function MainLayout() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-surface-secondary">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
       </div>
     );
   }
 
+  // Build navigation with dynamic badge
+  const navWithBadges: NavItem[] = navigation.map((item) => {
+    if (item.name === 'Enrollments' && pendingEnrollments > 0) {
+      return {
+        ...item,
+        badge: (
+          <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-medium">
+            {pendingEnrollments}
+          </span>
+        ),
+      };
+    }
+    return item;
+  });
+
   return (
-    <div className="min-h-screen bg-neutral-50">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+    <AppLayout
+      appName="Admin Portal"
+      logoSrc="/logo.png"
+      navigation={navWithBadges}
+      portalSwitcher={
+        <PortalSwitcher
+          currentPortal="admin"
+          canAccessAdmin={true}
+          canAccessCRM={true}
+          canAccessAdvisor={true}
+          getPortalUrl={getPortalUrl}
         />
+      }
+      renderNavLink={(item, props) => (
+        <NavLink
+          key={item.name}
+          to={item.href}
+          onClick={props.onClick}
+          className={({ isActive }) =>
+            `${props.className} ${
+              isActive
+                ? 'bg-white/15 text-white'
+                : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+            }`
+          }
+        >
+          {props.children}
+        </NavLink>
       )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-slate-900 text-white transform transition-transform lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-700">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">MPB</span>
-            </div>
-            <span className="font-semibold">Admin Portal</span>
-          </div>
+      renderChildNavLink={(child, props) => (
+        <NavLink
+          key={child.name}
+          to={child.href}
+          onClick={props.onClick}
+          className={({ isActive }) =>
+            `${props.className} ${
+              isActive
+                ? 'bg-white/15 text-white'
+                : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+            }`
+          }
+        >
+          {props.children}
+        </NavLink>
+      )}
+      topBarActions={
+        pendingEnrollments > 0 ? (
           <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 text-slate-400 hover:text-white"
+            onClick={() => navigate('/enrollments')}
+            className="relative p-2 text-th-text-secondary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary transition-colors"
           >
-            <X className="w-5 h-5" />
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
           </button>
-        </div>
-
-        <nav className="p-4 space-y-1">
-          {navigation.map((item) =>
-            item.children ? (
-              <div key={item.name}>
-                <button
-                  onClick={() => setContentOpen(!contentOpen)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <item.icon className="w-5 h-5" />
-                    <span>{item.name}</span>
-                  </div>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      contentOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-                {contentOpen && (
-                  <div className="ml-8 mt-1 space-y-1">
-                    {item.children.map((child) => (
-                      <NavLink
-                        key={child.name}
-                        to={child.href}
-                        onClick={() => setSidebarOpen(false)}
-                        className={({ isActive }) =>
-                          `block px-3 py-2 rounded-lg text-sm transition-colors ${
-                            isActive
-                              ? 'bg-primary-600 text-white'
-                              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                          }`
-                        }
-                      >
-                        {child.name}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary-600 text-white'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`
-                }
-              >
-                <div className="flex items-center space-x-3">
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                </div>
-                {item.badge && pendingEnrollments > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-                    {pendingEnrollments}
-                  </span>
-                )}
-              </NavLink>
-            )
-          )}
-        </nav>
-
-        {/* User section */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
+        ) : undefined
+      }
+      userSection={
+        <div className="space-y-2">
           <div className="flex items-center space-x-3 px-3 py-2">
-            <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium">
+            <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-sm font-medium text-white">
                 {user?.first_name?.[0]}
                 {user?.last_name?.[0]}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="text-sm font-medium text-white truncate">
                 {user?.first_name} {user?.last_name}
               </p>
-              <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
+              <p className="text-xs text-white/50 capitalize">{user?.role}</p>
             </div>
           </div>
 
           <button
             onClick={logout}
-            className="flex items-center space-x-3 px-3 py-2 mt-2 w-full rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+            className="flex items-center space-x-3 px-3 py-2 w-full rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.08] transition-colors"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-[18px] h-[18px]" />
             <span>Sign Out</span>
           </button>
         </div>
-      </aside>
-
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-white border-b border-neutral-200">
-          <div className="flex items-center justify-between h-16 px-4">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 text-neutral-500 hover:text-neutral-700"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            <div className="flex-1" />
-
-            <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              {pendingEnrollments > 0 && (
-                <button
-                  onClick={() => navigate('/enrollments')}
-                  className="relative p-2 text-neutral-500 hover:text-neutral-700"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-                </button>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* Page content */}
-        <main className="p-6">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+      }
+    >
+      <Outlet />
+    </AppLayout>
   );
 }

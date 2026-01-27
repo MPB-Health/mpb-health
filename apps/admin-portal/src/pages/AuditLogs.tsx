@@ -72,17 +72,17 @@ export default function AuditLogs() {
   const getActionColor = (action: string) => {
     switch (action) {
       case 'create':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
       case 'update':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
       case 'delete':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
       case 'login':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
       case 'logout':
-        return 'bg-neutral-100 text-neutral-700';
+        return 'bg-surface-tertiary text-th-text-secondary';
       default:
-        return 'bg-neutral-100 text-neutral-700';
+        return 'bg-surface-tertiary text-th-text-secondary';
     }
   };
 
@@ -93,14 +93,14 @@ export default function AuditLogs() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Audit Logs</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Audit Logs</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
             Track all system activities and changes
           </p>
         </div>
         <button
           onClick={handleExport}
-          className="flex items-center space-x-2 px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
         >
           <Download className="w-5 h-5" />
           <span>Export CSV</span>
@@ -108,10 +108,10 @@ export default function AuditLogs() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-4">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
               Action
             </label>
             <select
@@ -120,7 +120,7 @@ export default function AuditLogs() {
                 setActionFilter(e.target.value);
                 setPage(0);
               }}
-              className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
             >
               <option value="">All Actions</option>
               <option value="create">Create</option>
@@ -131,7 +131,7 @@ export default function AuditLogs() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
               Entity Type
             </label>
             <select
@@ -140,7 +140,7 @@ export default function AuditLogs() {
                 setEntityFilter(e.target.value);
                 setPage(0);
               }}
-              className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
             >
               <option value="">All Entities</option>
               <option value="user">User</option>
@@ -152,7 +152,7 @@ export default function AuditLogs() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
               From Date
             </label>
             <input
@@ -162,11 +162,11 @@ export default function AuditLogs() {
                 setFromDate(e.target.value);
                 setPage(0);
               }}
-              className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
               To Date
             </label>
             <input
@@ -176,44 +176,44 @@ export default function AuditLogs() {
                 setToDate(e.target.value);
                 setPage(0);
               }}
-              className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
             />
           </div>
         </div>
       </div>
 
       {/* Logs table */}
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600"></div>
           </div>
         ) : logs.length > 0 ? (
           <>
             <table className="w-full">
-              <thead className="bg-neutral-50 border-b border-neutral-200">
+              <thead className="bg-surface-secondary border-b border-th-border">
                 <tr>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                     Timestamp
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                     User
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                     Action
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                     Entity
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">
                     Details
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100">
+              <tbody className="divide-y divide-th-border-subtle">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-neutral-50">
-                    <td className="py-3 px-4 text-sm text-neutral-600">
+                  <tr key={log.id} className="hover:bg-surface-tertiary">
+                    <td className="py-3 px-4 text-sm text-th-text-secondary">
                       {format(
                         new Date(log.created_at),
                         'MMM d, yyyy h:mm:ss a'
@@ -221,10 +221,10 @@ export default function AuditLogs() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-neutral-200 rounded-full flex items-center justify-center">
-                          <User className="w-3 h-3 text-neutral-500" />
+                        <div className="w-6 h-6 bg-surface-tertiary rounded-full flex items-center justify-center">
+                          <User className="w-3 h-3 text-th-text-tertiary" />
                         </div>
-                        <span className="text-sm text-neutral-900">
+                        <span className="text-sm text-th-text-primary">
                           {log.user_email || 'System'}
                         </span>
                       </div>
@@ -240,17 +240,17 @@ export default function AuditLogs() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="text-sm">
-                        <span className="text-neutral-900 capitalize">
+                        <span className="text-th-text-primary capitalize">
                           {log.entity_type.replace('_', ' ')}
                         </span>
                         {log.entity_id && (
-                          <span className="text-neutral-500 ml-1">
+                          <span className="text-th-text-tertiary ml-1">
                             ({log.entity_id.slice(0, 8)}...)
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-sm text-neutral-500">
+                    <td className="py-3 px-4 text-sm text-th-text-tertiary">
                       {log.ip_address && <span>IP: {log.ip_address}</span>}
                     </td>
                   </tr>
@@ -259,8 +259,8 @@ export default function AuditLogs() {
             </table>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between p-4 border-t border-neutral-200">
-              <p className="text-sm text-neutral-500">
+            <div className="flex items-center justify-between p-4 border-t border-th-border">
+              <p className="text-sm text-th-text-tertiary">
                 Showing {page * pageSize + 1} to{' '}
                 {Math.min((page + 1) * pageSize, total)} of {total} entries
               </p>
@@ -268,17 +268,17 @@ export default function AuditLogs() {
                 <button
                   onClick={() => setPage(page - 1)}
                   disabled={page === 0}
-                  className="p-2 border border-neutral-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50"
+                  className="p-2 border border-th-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-tertiary text-th-text-secondary"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <span className="text-sm text-neutral-700">
+                <span className="text-sm text-th-text-secondary">
                   Page {page + 1} of {totalPages}
                 </span>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={page >= totalPages - 1}
-                  className="p-2 border border-neutral-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50"
+                  className="p-2 border border-th-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-tertiary text-th-text-secondary"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -287,8 +287,8 @@ export default function AuditLogs() {
           </>
         ) : (
           <div className="text-center py-12">
-            <ClipboardList className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-            <p className="text-neutral-500">No audit logs found</p>
+            <ClipboardList className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
+            <p className="text-th-text-tertiary">No audit logs found</p>
           </div>
         )}
       </div>

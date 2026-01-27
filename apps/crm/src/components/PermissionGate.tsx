@@ -58,8 +58,8 @@ export function AccessDenied() {
           />
         </svg>
       </div>
-      <h2 className="text-xl font-semibold text-neutral-900 mb-2">Access Denied</h2>
-      <p className="text-neutral-600 max-w-md">
+      <h2 className="text-xl font-semibold text-th-text-primary mb-2">Access Denied</h2>
+      <p className="text-th-text-secondary max-w-md">
         You don't have permission to access this page. Contact your organization admin if you believe
         this is an error.
       </p>

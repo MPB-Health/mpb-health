@@ -1,8 +1,41 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
+        // Semantic surface colors (auto-switch light/dark via CSS vars)
+        surface: {
+          primary: 'rgb(var(--surface-primary) / <alpha-value>)',
+          secondary: 'rgb(var(--surface-secondary) / <alpha-value>)',
+          tertiary: 'rgb(var(--surface-tertiary) / <alpha-value>)',
+          elevated: 'rgb(var(--surface-elevated) / <alpha-value>)',
+          inset: 'rgb(var(--surface-inset) / <alpha-value>)',
+        },
+        'th-text': {
+          primary: 'rgb(var(--text-primary) / <alpha-value>)',
+          secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
+          tertiary: 'rgb(var(--text-tertiary) / <alpha-value>)',
+          inverse: 'rgb(var(--text-inverse) / <alpha-value>)',
+        },
+        'th-border': {
+          DEFAULT: 'rgb(var(--border-primary) / <alpha-value>)',
+          subtle: 'rgb(var(--border-subtle) / <alpha-value>)',
+          strong: 'rgb(var(--border-strong) / <alpha-value>)',
+        },
+        'th-accent': {
+          50: 'rgb(var(--accent-50) / <alpha-value>)',
+          100: 'rgb(var(--accent-100) / <alpha-value>)',
+          200: 'rgb(var(--accent-200) / <alpha-value>)',
+          300: 'rgb(var(--accent-300) / <alpha-value>)',
+          400: 'rgb(var(--accent-400) / <alpha-value>)',
+          500: 'rgb(var(--accent-500) / <alpha-value>)',
+          600: 'rgb(var(--accent-600) / <alpha-value>)',
+          700: 'rgb(var(--accent-700) / <alpha-value>)',
+          800: 'rgb(var(--accent-800) / <alpha-value>)',
+          900: 'rgb(var(--accent-900) / <alpha-value>)',
+        },
+        // Static color palettes (always available regardless of theme)
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -112,12 +145,26 @@ export default {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
         'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
         'elevated': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+        'glow-sm': '0 0 15px -3px rgb(var(--accent-500) / 0.3)',
+        'glow-md': '0 0 25px -5px rgb(var(--accent-500) / 0.4)',
+        'glow-lg': '0 0 40px -5px rgb(var(--accent-500) / 0.5)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.08)',
+        'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.32)',
+      },
+      backdropBlur: {
+        'xs': '2px',
+        'glass': '16px',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
+        'slide-in-left': 'slideInLeft 0.3s ease-out',
+        'slide-in-right': 'slideInRight 0.3s ease-out',
+        'glow': 'glow 2s ease-in-out infinite alternate',
+        'shimmer': 'shimmer 2s linear infinite',
+        'pulse-subtle': 'pulseSubtle 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -135,6 +182,26 @@ export default {
         scaleIn: {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        slideInLeft: {
+          '0%': { transform: 'translateX(-100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        slideInRight: {
+          '0%': { transform: 'translateX(100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        glow: {
+          '0%': { boxShadow: '0 0 5px rgb(var(--accent-500) / 0.2)' },
+          '100%': { boxShadow: '0 0 20px rgb(var(--accent-500) / 0.4)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        pulseSubtle: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
         },
       },
     },

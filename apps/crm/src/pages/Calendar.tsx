@@ -116,14 +116,14 @@ export default function Calendar() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Calendar</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Calendar</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
             View and manage your schedule
           </p>
         </div>
         <button
           onClick={() => { setSelectedDate(undefined); setShowAddEvent(true); }}
-          className="flex items-center space-x-2 px-4 py-2 bg-primary-600 rounded-lg text-sm font-medium text-white hover:bg-primary-700"
+          className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
         >
           <Plus className="w-4 h-4" />
           <span>Add Event</span>
@@ -131,30 +131,30 @@ export default function Calendar() {
       </div>
 
       {/* Calendar */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-neutral-900">
+          <h2 className="text-xl font-semibold text-th-text-primary">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
           <div className="flex items-center space-x-2">
             <button
               onClick={prevMonth}
-              className="p-2 hover:bg-neutral-100 rounded-lg"
+              className="p-2 hover:bg-surface-tertiary rounded-lg"
             >
-              <ChevronLeft className="w-5 h-5 text-neutral-600" />
+              <ChevronLeft className="w-5 h-5 text-th-text-secondary" />
             </button>
             <button
               onClick={() => setCurrentDate(new Date())}
-              className="px-3 py-1 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg"
+              className="px-3 py-1 text-sm font-medium text-th-accent-600 hover:bg-th-accent-50 rounded-lg"
             >
               Today
             </button>
             <button
               onClick={nextMonth}
-              className="p-2 hover:bg-neutral-100 rounded-lg"
+              className="p-2 hover:bg-surface-tertiary rounded-lg"
             >
-              <ChevronRight className="w-5 h-5 text-neutral-600" />
+              <ChevronRight className="w-5 h-5 text-th-text-secondary" />
             </button>
           </div>
         </div>
@@ -164,7 +164,7 @@ export default function Calendar() {
           {dayNames.map((day) => (
             <div
               key={day}
-              className="text-center text-sm font-medium text-neutral-500 py-2"
+              className="text-center text-sm font-medium text-th-text-tertiary py-2"
             >
               {day}
             </div>
@@ -175,7 +175,7 @@ export default function Calendar() {
         <div className="grid grid-cols-7 gap-1">
           {/* Empty cells for days before the first day of the month */}
           {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-            <div key={`empty-${index}`} className="h-24 bg-neutral-50 rounded-lg" />
+            <div key={`empty-${index}`} className="h-24 bg-surface-secondary rounded-lg" />
           ))}
 
           {/* Days of the month */}
@@ -192,14 +192,14 @@ export default function Calendar() {
                 onClick={() => handleDayClick(day)}
                 className={`h-24 p-2 rounded-lg border cursor-pointer ${
                   isToday(day)
-                    ? 'bg-primary-50 border-primary-200'
-                    : 'bg-white border-neutral-200 hover:bg-neutral-50'
+                    ? 'bg-th-accent-50 border-th-accent-200'
+                    : 'bg-surface-primary border-th-border hover:bg-surface-secondary'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span
                     className={`text-sm font-medium ${
-                      isToday(day) ? 'text-primary-700' : 'text-neutral-700'
+                      isToday(day) ? 'text-th-accent-700' : 'text-th-text-secondary'
                     }`}
                   >
                     {day}
@@ -209,7 +209,7 @@ export default function Calendar() {
                       className={`w-5 h-5 rounded-full text-xs flex items-center justify-center ${
                         hasOverdue
                           ? 'bg-red-100 text-red-700'
-                          : 'bg-primary-100 text-primary-700'
+                          : 'bg-th-accent-100 text-th-accent-700'
                       }`}
                     >
                       {allItems.length}
@@ -222,7 +222,7 @@ export default function Calendar() {
                       key={item.id}
                       className={`text-xs px-1 py-0.5 rounded truncate ${
                         item.completed
-                          ? 'bg-neutral-100 text-neutral-500 line-through'
+                          ? 'bg-surface-tertiary text-th-text-tertiary line-through'
                           : item.overdue
                           ? 'bg-red-100 text-red-700'
                           : item.type === 'event'
@@ -234,7 +234,7 @@ export default function Calendar() {
                     </div>
                   ))}
                   {allItems.length > 2 && (
-                    <div className="text-xs text-neutral-400">
+                    <div className="text-xs text-th-text-tertiary">
                       +{allItems.length - 2} more
                     </div>
                   )}
@@ -247,21 +247,21 @@ export default function Calendar() {
 
       {/* Upcoming tasks sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h3 className="font-semibold text-neutral-900 mb-4">Tasks Due Today</h3>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h3 className="font-semibold text-th-text-primary mb-4">Tasks Due Today</h3>
           {tasksDueToday.length === 0 ? (
-            <p className="text-neutral-500 text-sm">No tasks due today</p>
+            <p className="text-th-text-tertiary text-sm">No tasks due today</p>
           ) : (
             <div className="space-y-3">
               {tasksDueToday.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg"
                 >
-                  <span className="text-sm font-medium text-neutral-900">
+                  <span className="text-sm font-medium text-th-text-primary">
                     {task.title}
                   </span>
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-xs text-th-text-tertiary">
                     {task.task_type}
                   </span>
                 </div>
@@ -270,10 +270,10 @@ export default function Calendar() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h3 className="font-semibold text-neutral-900 mb-4">Overdue Tasks</h3>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h3 className="font-semibold text-th-text-primary mb-4">Overdue Tasks</h3>
           {overdueTasks.length === 0 ? (
-            <p className="text-neutral-500 text-sm">No overdue tasks</p>
+            <p className="text-th-text-tertiary text-sm">No overdue tasks</p>
           ) : (
             <div className="space-y-3">
               {overdueTasks.map((task) => (

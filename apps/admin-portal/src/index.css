@@ -1,8 +1,24 @@
+@import '@mpbhealth/ui/theme-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   Admin Portal - Blue/Indigo Accent Overrides
+   ============================================================================ */
 :root {
+  --accent-50: 238 242 255;
+  --accent-100: 224 231 254;
+  --accent-200: 199 210 254;
+  --accent-300: 165 180 252;
+  --accent-400: 129 140 248;
+  --accent-500: 99 102 241;
+  --accent-600: 79 70 229;
+  --accent-700: 67 56 202;
+  --accent-800: 55 48 163;
+  --accent-900: 49 46 129;
+
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -16,25 +32,50 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: rgb(var(--surface-secondary));
+  color: rgb(var(--text-primary));
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom scrollbar */
+/* ============================================================================
+   Smooth theme transition
+   ============================================================================ */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+}
+
+/* Exclude elements that need instant transitions */
+input,
+textarea,
+select,
+button,
+a,
+[class*="animate-"] {
+  transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+}
+
+/* ============================================================================
+   Custom scrollbar
+   ============================================================================ */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: rgb(var(--surface-tertiary));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgb(var(--border-default));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgb(var(--text-tertiary));
 }

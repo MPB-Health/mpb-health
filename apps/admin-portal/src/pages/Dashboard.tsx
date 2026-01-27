@@ -5,8 +5,6 @@ import {
   UserPlus,
   TrendingUp,
   Activity,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react';
 import {
   LineChart,
@@ -20,12 +18,14 @@ import {
   Bar,
 } from 'recharts';
 import { analyticsService, type ActivityMetric } from '@mpbhealth/admin-core';
+import { GradientHeader, MetricCard, useChartTheme } from '@mpbhealth/ui';
 import { useAdmin } from '../contexts/AdminContext';
 import CRMOverviewCard from '../components/CRMOverviewCard';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, metrics, pendingEnrollments } = useAdmin();
+  const chartTheme = useChartTheme();
   const [leadActivity, setLeadActivity] = useState<ActivityMetric[]>([]);
   const [leadSources, setLeadSources] = useState<{ source: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,121 +53,90 @@ export default function Dashboard() {
     {
       name: 'Total Users',
       value: metrics?.total_users || 0,
-      change: '+12%',
-      trend: 'up',
+      change: 12,
       icon: Users,
-      color: 'blue',
     },
     {
       name: 'Active Advisors',
       value: metrics?.active_advisors || 0,
-      change: '+5%',
-      trend: 'up',
+      change: 5,
       icon: UserPlus,
-      color: 'green',
     },
     {
       name: 'New Leads (Month)',
       value: metrics?.new_leads_this_month || 0,
-      change: '+23%',
-      trend: 'up',
+      change: 23,
       icon: TrendingUp,
-      color: 'purple',
     },
     {
       name: 'Conversion Rate',
       value: `${(metrics?.conversion_rate || 0).toFixed(1)}%`,
-      change: '-2%',
-      trend: 'down',
+      change: -2,
       icon: Activity,
-      color: 'yellow',
     },
   ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-neutral-900">
-          Welcome back, {user?.first_name}
-        </h1>
-        <p className="text-neutral-500 text-sm mt-1">
-          Here's what's happening with your platform today.
-        </p>
-      </div>
+      <GradientHeader
+        title={`Welcome back, ${user?.first_name}`}
+        subtitle="Here's what's happening with your platform today."
+      />
 
       {/* Pending enrollments alert */}
       {pendingEnrollments > 0 && (
         <button
           onClick={() => navigate('/enrollments')}
-          className="w-full flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-xl hover:bg-yellow-100 transition-colors"
+          className="w-full flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-yellow-600" />
+            <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-800/40 rounded-full flex items-center justify-center">
+              <UserPlus className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div className="text-left">
-              <p className="font-medium text-yellow-800">
+              <p className="font-medium text-yellow-800 dark:text-yellow-200">
                 {pendingEnrollments} pending enrollment{pendingEnrollments !== 1 ? 's' : ''}
               </p>
-              <p className="text-sm text-yellow-600">
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
                 Review and approve new applications
               </p>
             </div>
           </div>
-          <ArrowUpRight className="w-5 h-5 text-yellow-600" />
+          <TrendingUp className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
         </button>
       )}
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div
+          <MetricCard
             key={stat.name}
-            className="bg-white rounded-xl border border-neutral-200 p-5"
-          >
-            <div className="flex items-center justify-between">
-              <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center bg-${stat.color}-100`}
-              >
-                <stat.icon className={`w-5 h-5 text-${stat.color}-600`} />
-              </div>
-              <div
-                className={`flex items-center space-x-1 text-sm ${
-                  stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                }`}
-              >
-                {stat.trend === 'up' ? (
-                  <ArrowUpRight className="w-4 h-4" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4" />
-                )}
-                <span>{stat.change}</span>
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-neutral-900 mt-3">{stat.value}</p>
-            <p className="text-sm text-neutral-500">{stat.name}</p>
-          </div>
+            label={stat.name}
+            value={stat.value}
+            icon={<stat.icon className="w-5 h-5" />}
+            trend={{ value: stat.change }}
+          />
         ))}
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Lead activity chart */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="font-semibold text-neutral-900 mb-6">Lead Activity</h2>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h2 className="font-semibold text-th-text-primary mb-6">Lead Activity</h2>
           <div className="h-64">
             {loading ? (
               <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600"></div>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={leadActivity}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    tick={{ fontSize: 12, fill: chartTheme.textColor }}
                     tickFormatter={(date) =>
                       new Date(date).toLocaleDateString('en-US', {
                         month: 'short',
@@ -175,13 +144,13 @@ export default function Dashboard() {
                       })
                     }
                   />
-                  <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} />
+                  <YAxis tick={{ fontSize: 12, fill: chartTheme.textColor }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1E293B',
-                      border: 'none',
+                      backgroundColor: chartTheme.tooltipBg,
+                      border: `1px solid ${chartTheme.tooltipBorder}`,
                       borderRadius: '8px',
-                      color: '#F8FAFC',
+                      color: chartTheme.tooltipText,
                     }}
                     labelFormatter={(date) =>
                       new Date(date).toLocaleDateString('en-US', {
@@ -194,7 +163,7 @@ export default function Dashboard() {
                   <Line
                     type="monotone"
                     dataKey="value"
-                    stroke="#3B82F6"
+                    stroke={chartTheme.colors[1]}
                     strokeWidth={2}
                     dot={false}
                   />
@@ -205,33 +174,33 @@ export default function Dashboard() {
         </div>
 
         {/* Lead sources chart */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="font-semibold text-neutral-900 mb-6">Top Lead Sources</h2>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h2 className="font-semibold text-th-text-primary mb-6">Top Lead Sources</h2>
           <div className="h-64">
             {loading ? (
               <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600"></div>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={leadSources} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis type="number" tick={{ fontSize: 12, fill: '#6B7280' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+                  <XAxis type="number" tick={{ fontSize: 12, fill: chartTheme.textColor }} />
                   <YAxis
                     dataKey="source"
                     type="category"
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    tick={{ fontSize: 12, fill: chartTheme.textColor }}
                     width={100}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1E293B',
-                      border: 'none',
+                      backgroundColor: chartTheme.tooltipBg,
+                      border: `1px solid ${chartTheme.tooltipBorder}`,
                       borderRadius: '8px',
-                      color: '#F8FAFC',
+                      color: chartTheme.tooltipText,
                     }}
                   />
-                  <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="count" fill={chartTheme.colors[1]} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -243,38 +212,38 @@ export default function Dashboard() {
       <CRMOverviewCard />
 
       {/* Quick actions */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
-        <h2 className="font-semibold text-neutral-900 mb-4">Quick Actions</h2>
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <h2 className="font-semibold text-th-text-primary mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
             onClick={() => navigate('/users')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
           >
-            <Users className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">Manage Users</span>
+            <Users className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">Manage Users</span>
           </button>
           <button
             onClick={() => navigate('/enrollments')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
           >
-            <UserPlus className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">
+            <UserPlus className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">
               Review Enrollments
             </span>
           </button>
           <button
             onClick={() => navigate('/content/blog/new')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
           >
-            <TrendingUp className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">New Blog Post</span>
+            <TrendingUp className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">New Blog Post</span>
           </button>
           <button
             onClick={() => navigate('/settings')}
-            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
           >
-            <Activity className="w-8 h-8 text-primary-600 mb-2" />
-            <span className="text-sm font-medium text-neutral-700">Settings</span>
+            <Activity className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">Settings</span>
           </button>
         </div>
       </div>

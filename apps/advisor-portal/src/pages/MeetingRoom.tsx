@@ -81,7 +81,7 @@ export default function MeetingRoom() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
       </div>
     );
   }
@@ -89,10 +89,10 @@ export default function MeetingRoom() {
   if (!meeting) {
     return (
       <div className="text-center py-12">
-        <p className="text-neutral-500">Meeting not found</p>
+        <p className="text-th-text-tertiary">Meeting not found</p>
         <button
           onClick={() => navigate('/meetings')}
-          className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
+          className="mt-4 text-th-accent-600 hover:text-th-accent-700 font-medium"
         >
           Back to Meetings
         </button>
@@ -110,30 +110,30 @@ export default function MeetingRoom() {
       {/* Back button */}
       <button
         onClick={() => navigate('/meetings')}
-        className="flex items-center space-x-2 text-neutral-600 hover:text-neutral-900"
+        className="flex items-center space-x-2 text-th-text-secondary hover:text-th-text-primary"
       >
         <ArrowLeft className="w-5 h-5" />
         <span>Back to Meetings</span>
       </button>
 
       {/* Meeting info */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-4">
             <div
               className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                isLive ? 'bg-red-100' : 'bg-purple-100'
+                isLive ? 'bg-red-100 dark:bg-red-900/30' : 'bg-purple-100 dark:bg-purple-900/30'
               }`}
             >
               {isLive ? (
-                <Radio className="w-7 h-7 text-red-600 animate-pulse" />
+                <Radio className="w-7 h-7 text-red-600 dark:text-red-400 animate-pulse" />
               ) : (
-                <Video className="w-7 h-7 text-purple-600" />
+                <Video className="w-7 h-7 text-purple-600 dark:text-purple-400" />
               )}
             </div>
             <div>
               <div className="flex items-center space-x-3">
-                <h1 className="text-2xl font-bold text-neutral-900">
+                <h1 className="text-2xl font-bold text-th-text-primary">
                   {meeting.title}
                 </h1>
                 {isLive && (
@@ -142,7 +142,7 @@ export default function MeetingRoom() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center space-x-4 mt-2 text-sm text-neutral-500">
+              <div className="flex items-center space-x-4 mt-2 text-sm text-th-text-tertiary">
                 <span className="flex items-center space-x-1">
                   <Calendar className="w-4 h-4" />
                   <span>
@@ -163,10 +163,10 @@ export default function MeetingRoom() {
           <span
             className={`px-3 py-1 text-sm rounded-full ${
               meeting.meeting_type === 'training'
-                ? 'bg-blue-100 text-blue-700'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                 : meeting.meeting_type === 'team'
-                ? 'bg-purple-100 text-purple-700'
-                : 'bg-neutral-100 text-neutral-700'
+                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                : 'bg-surface-tertiary text-th-text-secondary'
             }`}
           >
             {meeting.meeting_type}
@@ -174,13 +174,13 @@ export default function MeetingRoom() {
         </div>
 
         {meeting.description && (
-          <p className="text-neutral-600 mt-4">{meeting.description}</p>
+          <p className="text-th-text-secondary mt-4">{meeting.description}</p>
         )}
       </div>
 
       {/* Meeting room */}
       {(isLive || meeting.status === 'scheduled') && (
-        <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
           {inMeeting ? (
             <JitsiMeetRoom
               meeting={meeting}
@@ -190,11 +190,11 @@ export default function MeetingRoom() {
             />
           ) : (
             <div className="p-12 text-center">
-              <Video className="w-16 h-16 mx-auto mb-4 text-neutral-300" />
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+              <Video className="w-16 h-16 mx-auto mb-4 text-th-text-tertiary" />
+              <h3 className="text-lg font-semibold text-th-text-primary mb-2">
                 {isLive ? 'Meeting is Live!' : 'Meeting Room'}
               </h3>
-              <p className="text-neutral-500 mb-6">
+              <p className="text-th-text-tertiary mb-6">
                 {isLive
                   ? 'Click below to join the meeting in progress'
                   : 'Click below to join when the meeting starts'}
@@ -204,7 +204,7 @@ export default function MeetingRoom() {
                 className={`px-8 py-3 rounded-lg font-medium transition-colors ${
                   isLive
                     ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                    : 'bg-th-accent-600 text-white hover:bg-th-accent-700'
                 }`}
               >
                 {isLive ? 'Join Live Meeting' : 'Join Meeting'}
@@ -216,8 +216,8 @@ export default function MeetingRoom() {
 
       {/* Meeting resources */}
       {meeting.resources && meeting.resources.length > 0 && (
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="font-semibold text-neutral-900 mb-4">Meeting Resources</h2>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h2 className="font-semibold text-th-text-primary mb-4">Meeting Resources</h2>
           <div className="space-y-3">
             {meeting.resources.map((resource) => (
               <a
@@ -225,15 +225,15 @@ export default function MeetingRoom() {
                 href={resource.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 transition-colors"
               >
                 <div className="flex items-center space-x-3">
-                  <FileText className="w-5 h-5 text-neutral-400" />
-                  <span className="font-medium text-neutral-700">
+                  <FileText className="w-5 h-5 text-th-text-tertiary" />
+                  <span className="font-medium text-th-text-secondary">
                     {resource.name}
                   </span>
                 </div>
-                <ExternalLink className="w-4 h-4 text-neutral-400" />
+                <ExternalLink className="w-4 h-4 text-th-text-tertiary" />
               </a>
             ))}
           </div>
@@ -242,9 +242,9 @@ export default function MeetingRoom() {
 
       {/* Meeting recording */}
       {meeting.status === 'completed' && meeting.recording_url && (
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="font-semibold text-neutral-900 mb-4">Meeting Recording</h2>
-          <div className="aspect-video bg-neutral-900 rounded-lg">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h2 className="font-semibold text-th-text-primary mb-4">Meeting Recording</h2>
+          <div className="aspect-video bg-neutral-900 dark:bg-black rounded-lg">
             <video
               src={meeting.recording_url}
               controls

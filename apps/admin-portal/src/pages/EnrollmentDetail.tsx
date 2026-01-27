@@ -142,7 +142,7 @@ export default function EnrollmentDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
       </div>
     );
   }
@@ -150,10 +150,10 @@ export default function EnrollmentDetail() {
   if (!enrollment) {
     return (
       <div className="text-center py-12">
-        <p className="text-neutral-500">Enrollment not found</p>
+        <p className="text-th-text-tertiary">Enrollment not found</p>
         <button
           onClick={() => navigate('/enrollments')}
-          className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
+          className="mt-4 text-th-accent-600 hover:text-th-accent-700 font-medium"
         >
           Back to Enrollments
         </button>
@@ -168,33 +168,33 @@ export default function EnrollmentDetail() {
       {/* Back button */}
       <button
         onClick={() => navigate('/enrollments')}
-        className="flex items-center space-x-2 text-neutral-600 hover:text-neutral-900"
+        className="flex items-center space-x-2 text-th-text-secondary hover:text-th-text-primary"
       >
         <ArrowLeft className="w-5 h-5" />
         <span>Back to Enrollments</span>
       </button>
 
       {/* Header */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-bold text-neutral-900">
+              <h1 className="text-2xl font-bold text-th-text-primary">
                 {enrollment.applicant_name}
               </h1>
               <span
                 className={`px-3 py-1 text-sm rounded-full capitalize ${
                   enrollment.application_type === 'advisor'
-                    ? 'bg-purple-100 text-purple-700'
+                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
                     : enrollment.application_type === 'member'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-green-100 text-green-700'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                 }`}
               >
                 {enrollment.application_type}
               </span>
             </div>
-            <div className="flex items-center space-x-4 mt-2 text-sm text-neutral-500">
+            <div className="flex items-center space-x-4 mt-2 text-sm text-th-text-tertiary">
               <div className="flex items-center space-x-1">
                 <Mail className="w-4 h-4" />
                 <span>{enrollment.applicant_email}</span>
@@ -210,21 +210,21 @@ export default function EnrollmentDetail() {
           <span
             className={`px-4 py-2 text-sm rounded-lg capitalize ${
               enrollment.status === 'approved'
-                ? 'bg-green-100 text-green-700'
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                 : enrollment.status === 'rejected'
-                ? 'bg-red-100 text-red-700'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                 : enrollment.status === 'on_hold'
-                ? 'bg-yellow-100 text-yellow-700'
+                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
                 : enrollment.status === 'in_review'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-neutral-100 text-neutral-700'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                : 'bg-surface-tertiary text-th-text-secondary'
             }`}
           >
             {enrollment.status.replace('_', ' ')}
           </span>
         </div>
 
-        <div className="flex items-center space-x-6 mt-4 text-sm text-neutral-500">
+        <div className="flex items-center space-x-6 mt-4 text-sm text-th-text-tertiary">
           <span>
             Submitted: {format(new Date(enrollment.submitted_at), 'MMMM d, yyyy h:mm a')}
           </span>
@@ -237,30 +237,30 @@ export default function EnrollmentDetail() {
       </div>
 
       {/* Documents */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
-        <h2 className="font-semibold text-neutral-900 mb-4">Documents</h2>
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <h2 className="font-semibold text-th-text-primary mb-4">Documents</h2>
         {enrollment.documents && enrollment.documents.length > 0 ? (
           <div className="space-y-3">
             {enrollment.documents.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg"
+                className="flex items-center justify-between p-4 bg-surface-secondary rounded-lg"
               >
                 <div className="flex items-center space-x-3">
-                  <FileText className="w-5 h-5 text-neutral-400" />
+                  <FileText className="w-5 h-5 text-th-text-tertiary" />
                   <div>
-                    <p className="font-medium text-neutral-900">{doc.name}</p>
-                    <p className="text-sm text-neutral-500">{doc.type}</p>
+                    <p className="font-medium text-th-text-primary">{doc.name}</p>
+                    <p className="text-sm text-th-text-tertiary">{doc.type}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   {doc.status === 'verified' ? (
-                    <span className="flex items-center space-x-1 text-green-600">
+                    <span className="flex items-center space-x-1 text-green-600 dark:text-green-400">
                       <CheckCircle2 className="w-4 h-4" />
                       <span className="text-sm">Verified</span>
                     </span>
                   ) : doc.status === 'rejected' ? (
-                    <span className="flex items-center space-x-1 text-red-600">
+                    <span className="flex items-center space-x-1 text-red-600 dark:text-red-400">
                       <XCircle className="w-4 h-4" />
                       <span className="text-sm">Rejected</span>
                     </span>
@@ -268,19 +268,19 @@ export default function EnrollmentDetail() {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleVerifyDocument(doc.id, 'verified')}
-                        className="p-1 text-green-600 hover:bg-green-50 rounded"
+                        className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                       >
                         <CheckCircle2 className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleVerifyDocument(doc.id, 'rejected')}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded"
+                        className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                       >
                         <XCircle className="w-5 h-5" />
                       </button>
                     </div>
                   ) : (
-                    <span className="flex items-center space-x-1 text-neutral-400">
+                    <span className="flex items-center space-x-1 text-th-text-tertiary">
                       <Clock className="w-4 h-4" />
                       <span className="text-sm">Pending</span>
                     </span>
@@ -289,7 +289,7 @@ export default function EnrollmentDetail() {
                     href={doc.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded"
+                    className="p-2 text-th-text-tertiary hover:text-th-text-secondary hover:bg-surface-tertiary rounded"
                   >
                     <Download className="w-5 h-5" />
                   </a>
@@ -298,15 +298,15 @@ export default function EnrollmentDetail() {
             ))}
           </div>
         ) : (
-          <p className="text-neutral-500">No documents uploaded</p>
+          <p className="text-th-text-tertiary">No documents uploaded</p>
         )}
       </div>
 
       {/* Notes */}
       {enrollment.notes && (
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="font-semibold text-neutral-900 mb-4">Notes</h2>
-          <pre className="whitespace-pre-wrap text-sm text-neutral-600">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h2 className="font-semibold text-th-text-primary mb-4">Notes</h2>
+          <pre className="whitespace-pre-wrap text-sm text-th-text-secondary">
             {enrollment.notes}
           </pre>
         </div>
@@ -314,8 +314,8 @@ export default function EnrollmentDetail() {
 
       {/* Actions */}
       {canTakeAction && (
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="font-semibold text-neutral-900 mb-4">Actions</h2>
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <h2 className="font-semibold text-th-text-primary mb-4">Actions</h2>
           <div className="flex flex-wrap gap-3">
             {enrollment.status === 'pending' && (
               <button
@@ -345,7 +345,7 @@ export default function EnrollmentDetail() {
             <button
               onClick={handlePutOnHold}
               disabled={processing}
-              className="flex items-center space-x-2 px-4 py-2 border border-yellow-300 text-yellow-700 rounded-lg font-medium hover:bg-yellow-50 disabled:opacity-50 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 border border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300 rounded-lg font-medium hover:bg-yellow-50 dark:hover:bg-yellow-900/20 disabled:opacity-50 transition-colors"
             >
               <AlertCircle className="w-4 h-4" />
               <span>Put on Hold</span>
@@ -362,8 +362,8 @@ export default function EnrollmentDetail() {
             onClick={() => setShowRejectModal(false)}
           />
           <div className="relative min-h-screen flex items-center justify-center p-4">
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+            <div className="relative bg-surface-primary rounded-xl shadow-xl w-full max-w-md p-6 border border-th-border">
+              <h3 className="text-lg font-semibold text-th-text-primary mb-4">
                 Reject Enrollment
               </h3>
               <textarea
@@ -371,12 +371,12 @@ export default function EnrollmentDetail() {
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Enter reason for rejection..."
                 rows={4}
-                className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
               />
               <div className="flex justify-end space-x-3 mt-4">
                 <button
                   onClick={() => setShowRejectModal(false)}
-                  className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors"
+                  className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                 >
                   Cancel
                 </button>

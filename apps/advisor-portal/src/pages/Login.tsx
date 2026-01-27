@@ -24,9 +24,9 @@ export default function Login() {
       emailPlaceholder="advisor@mympb.com"
       tagline="Empowering Health, Securing Futures"
       formFooter={
-        <p className="text-center text-sm text-neutral-500">
+        <p className="text-center text-sm text-th-text-tertiary">
           Need help?{' '}
-          <a href="#" className="text-primary-600 hover:text-primary-700 font-medium">
+          <a href="#" className="text-th-accent-600 hover:text-th-accent-700 font-medium">
             Contact Support
           </a>
         </p>

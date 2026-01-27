@@ -64,18 +64,18 @@ export default function Bulletins() {
   };
 
   const getCategoryColor = (category: string, priority: string) => {
-    if (priority === 'urgent') return 'bg-red-100 text-red-700 border-red-200';
-    if (priority === 'high') return 'bg-orange-100 text-orange-700 border-orange-200';
+    if (priority === 'urgent') return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
+    if (priority === 'high') return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800';
 
     switch (category) {
       case 'alert':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
       case 'announcement':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800';
       case 'news':
-        return 'bg-green-100 text-green-700 border-green-200';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800';
       default:
-        return 'bg-neutral-100 text-neutral-700 border-neutral-200';
+        return 'bg-surface-tertiary text-th-text-secondary border-th-border';
     }
   };
 
@@ -88,7 +88,7 @@ export default function Bulletins() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
       </div>
     );
   }
@@ -98,8 +98,8 @@ export default function Bulletins() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Bulletins</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Bulletins</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
             Important announcements and updates
           </p>
         </div>
@@ -107,14 +107,14 @@ export default function Bulletins() {
 
       {/* Category filters */}
       <div className="flex items-center space-x-2">
-        <Filter className="w-5 h-5 text-neutral-400" />
+        <Filter className="w-5 h-5 text-th-text-tertiary" />
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedCategory(null)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               !selectedCategory
-                ? 'bg-primary-100 text-primary-700'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                ? 'bg-th-accent-100 text-th-accent-700'
+                : 'bg-surface-tertiary text-th-text-secondary hover:bg-surface-tertiary'
             }`}
           >
             All
@@ -125,8 +125,8 @@ export default function Bulletins() {
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
                 selectedCategory === cat
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  ? 'bg-th-accent-100 text-th-accent-700'
+                  : 'bg-surface-tertiary text-th-text-secondary hover:bg-surface-tertiary'
               }`}
             >
               {cat}
@@ -146,8 +146,8 @@ export default function Bulletins() {
             return (
               <div
                 key={bulletin.id}
-                className={`bg-white rounded-xl border p-5 transition-all ${
-                  isRead ? 'border-neutral-200' : 'border-primary-300 shadow-md'
+                className={`bg-surface-primary rounded-xl border p-5 transition-all ${
+                  isRead ? 'border-th-border' : 'border-th-accent-300 shadow-md'
                 }`}
                 onClick={() => !isRead && markAsRead(bulletin.id)}
               >
@@ -158,21 +158,21 @@ export default function Bulletins() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
                       {bulletin.is_pinned && (
-                        <Pin className="w-4 h-4 text-primary-500" />
+                        <Pin className="w-4 h-4 text-th-accent-500" />
                       )}
-                      <h3 className="font-semibold text-neutral-900">
+                      <h3 className="font-semibold text-th-text-primary">
                         {bulletin.title}
                       </h3>
                       {!isRead && (
-                        <span className="px-2 py-0.5 bg-primary-500 text-white text-xs rounded-full">
+                        <span className="px-2 py-0.5 bg-th-accent-500 text-white text-xs rounded-full">
                           New
                         </span>
                       )}
                     </div>
-                    <p className="text-neutral-600 mt-2 whitespace-pre-wrap">
+                    <p className="text-th-text-secondary mt-2 whitespace-pre-wrap">
                       {bulletin.content}
                     </p>
-                    <div className="flex items-center space-x-4 mt-4 text-sm text-neutral-500">
+                    <div className="flex items-center space-x-4 mt-4 text-sm text-th-text-tertiary">
                       <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${colorClass}`}>
                         {bulletin.category}
                       </span>
@@ -192,9 +192,9 @@ export default function Bulletins() {
             );
           })
         ) : (
-          <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center">
-            <Bell className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-            <p className="text-neutral-500">No bulletins at this time</p>
+          <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
+            <Bell className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
+            <p className="text-th-text-tertiary">No bulletins at this time</p>
           </div>
         )}
       </div>

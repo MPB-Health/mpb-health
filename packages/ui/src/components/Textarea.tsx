@@ -16,7 +16,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="block text-sm font-medium text-neutral-700"
+            className="block text-sm font-medium text-th-text-primary"
           >
             {label}
           </label>
@@ -24,18 +24,18 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           id={textareaId}
           className={cn(
-            'flex min-h-[80px] w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y',
-            error && 'border-accent-red focus-visible:ring-accent-red',
+            'flex min-h-[80px] w-full rounded-lg border border-th-border bg-surface-primary px-3 py-2 text-sm text-th-text-primary ring-offset-surface-primary placeholder:text-th-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-th-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y transition-colors duration-150',
+            error && 'border-error-500 focus-visible:ring-error-500',
             className
           )}
           ref={ref}
           {...props}
         />
         {error && (
-          <p className="text-xs text-accent-red mt-1">{error}</p>
+          <p className="text-xs text-error-500 mt-1">{error}</p>
         )}
         {helperText && !error && (
-          <p className="text-xs text-neutral-500 mt-1">{helperText}</p>
+          <p className="text-xs text-th-text-tertiary mt-1">{helperText}</p>
         )}
       </div>
     );

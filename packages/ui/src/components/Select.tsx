@@ -18,7 +18,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-neutral-700"
+            className="block text-sm font-medium text-th-text-primary"
           >
             {label}
           </label>
@@ -27,8 +27,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           <select
             id={selectId}
             className={cn(
-              'flex h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none',
-              error && 'border-accent-red focus-visible:ring-accent-red',
+              'flex h-10 w-full rounded-lg border border-th-border bg-surface-primary px-3 py-2 text-sm text-th-text-primary ring-offset-surface-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-th-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-colors duration-150',
+              error && 'border-error-500 focus-visible:ring-error-500',
               className
             )}
             ref={ref}
@@ -36,13 +36,13 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           >
             {children}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-th-text-tertiary pointer-events-none" />
         </div>
         {error && (
-          <p className="text-xs text-accent-red mt-1">{error}</p>
+          <p className="text-xs text-error-500 mt-1">{error}</p>
         )}
         {helperText && !error && (
-          <p className="text-xs text-neutral-500 mt-1">{helperText}</p>
+          <p className="text-xs text-th-text-tertiary mt-1">{helperText}</p>
         )}
       </div>
     );

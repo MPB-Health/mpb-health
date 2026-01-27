@@ -125,7 +125,7 @@ export default function BlogEditor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
       </div>
     );
   }
@@ -136,7 +136,7 @@ export default function BlogEditor() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/content/blog')}
-          className="flex items-center space-x-2 text-neutral-600 hover:text-neutral-900"
+          className="flex items-center space-x-2 text-th-text-secondary hover:text-th-text-primary"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Back to Posts</span>
@@ -145,7 +145,7 @@ export default function BlogEditor() {
           <button
             onClick={() => handleSave(false)}
             disabled={saving}
-            className="flex items-center space-x-2 px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
           >
             <Save className="w-4 h-4" />
             <span>Save Draft</span>
@@ -153,7 +153,7 @@ export default function BlogEditor() {
           <button
             onClick={() => handleSave(true)}
             disabled={saving}
-            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
           >
             <Globe className="w-4 h-4" />
             <span>Publish</span>
@@ -162,7 +162,7 @@ export default function BlogEditor() {
       </div>
 
       {/* Editor */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6 space-y-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6 space-y-6">
         {/* Title */}
         <div>
           <input
@@ -170,31 +170,31 @@ export default function BlogEditor() {
             value={formData.title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Post title..."
-            className="w-full text-3xl font-bold text-neutral-900 border-0 focus:outline-none focus:ring-0 placeholder-neutral-300"
+            className="w-full text-3xl font-bold text-th-text-primary bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-th-text-tertiary"
           />
         </div>
 
         {/* Slug */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             URL Slug
           </label>
           <div className="flex items-center">
-            <span className="text-neutral-400 text-sm">/blog/</span>
+            <span className="text-th-text-tertiary text-sm">/blog/</span>
             <input
               type="text"
               value={formData.slug}
               onChange={(e) =>
                 setFormData({ ...formData, slug: e.target.value })
               }
-              className="flex-1 px-2 py-1 text-sm border-0 border-b border-neutral-200 focus:outline-none focus:border-primary-500"
+              className="flex-1 px-2 py-1 text-sm bg-transparent border-0 border-b border-th-border focus:outline-none focus:border-th-accent-500 text-th-text-primary"
             />
           </div>
         </div>
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             Category *
           </label>
           <input
@@ -204,25 +204,25 @@ export default function BlogEditor() {
               setFormData({ ...formData, category: e.target.value })
             }
             placeholder="e.g., Health Tips, News, Guides"
-            className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
           />
         </div>
 
         {/* Tags */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             Tags
           </label>
           <div className="flex flex-wrap gap-2 mb-2">
             {formData.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm flex items-center space-x-1"
+                className="px-3 py-1 bg-th-accent-100 dark:bg-th-accent-900/30 text-th-accent-700 dark:text-th-accent-300 rounded-full text-sm flex items-center space-x-1"
               >
                 <span>{tag}</span>
                 <button
                   onClick={() => removeTag(tag)}
-                  className="text-primary-500 hover:text-primary-700"
+                  className="text-th-accent-500 hover:text-th-accent-700"
                 >
                   &times;
                 </button>
@@ -236,11 +236,11 @@ export default function BlogEditor() {
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
               placeholder="Add a tag..."
-              className="flex-1 px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="flex-1 px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
             />
             <button
               onClick={addTag}
-              className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50"
+              className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary"
             >
               Add
             </button>
@@ -249,7 +249,7 @@ export default function BlogEditor() {
 
         {/* Featured Image */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             Featured Image URL
           </label>
           <input
@@ -259,7 +259,7 @@ export default function BlogEditor() {
               setFormData({ ...formData, featured_image: e.target.value })
             }
             placeholder="https://..."
-            className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
           />
           {formData.featured_image && (
             <img
@@ -272,7 +272,7 @@ export default function BlogEditor() {
 
         {/* Excerpt */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             Excerpt
           </label>
           <textarea
@@ -282,13 +282,13 @@ export default function BlogEditor() {
             }
             placeholder="Brief summary of the post..."
             rows={2}
-            className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
           />
         </div>
 
         {/* Content */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             Content *
           </label>
           <textarea
@@ -298,7 +298,7 @@ export default function BlogEditor() {
             }
             placeholder="Write your post content here... (Markdown supported)"
             rows={20}
-            className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+            className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 font-mono text-sm text-th-text-primary placeholder-th-text-tertiary"
           />
         </div>
       </div>

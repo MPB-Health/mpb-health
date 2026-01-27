@@ -119,7 +119,7 @@ export default function LeadDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
       </div>
     );
   }
@@ -127,8 +127,8 @@ export default function LeadDetail() {
   if (!lead) {
     return (
       <div className="text-center py-12">
-        <p className="text-neutral-500">Lead not found</p>
-        <Link to="/leads" className="text-primary-600 hover:underline mt-2 inline-block">
+        <p className="text-th-text-tertiary">Lead not found</p>
+        <Link to="/leads" className="text-th-accent-600 hover:underline mt-2 inline-block">
           Back to leads
         </Link>
       </div>
@@ -145,22 +145,22 @@ export default function LeadDetail() {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate('/leads')}
-            className="p-2 hover:bg-neutral-100 rounded-lg"
+            className="p-2 hover:bg-surface-tertiary rounded-lg"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-500" />
+            <ArrowLeft className="w-5 h-5 text-th-text-tertiary" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">
+            <h1 className="text-2xl font-bold text-th-text-primary">
               {lead.first_name} {lead.last_name}
             </h1>
-            <p className="text-neutral-500 text-sm">{lead.email}</p>
+            <p className="text-th-text-tertiary text-sm">{lead.email}</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
           <button
             onClick={handleSyncToZoho}
             disabled={syncing}
-            className="flex items-center space-x-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
             <span>Sync to Zoho</span>
@@ -168,7 +168,7 @@ export default function LeadDetail() {
           <PermissionGate permission="leads.update">
             <button
               onClick={() => setShowEditLead(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+              className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
             >
               <Edit2 className="w-4 h-4" />
               <span>Edit</span>
@@ -181,32 +181,32 @@ export default function LeadDetail() {
         {/* Left column - Lead info */}
         <div className="lg:col-span-1 space-y-6">
           {/* Contact info */}
-          <div className="bg-white rounded-xl border border-neutral-200 p-6">
-            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Contact Info</h2>
+          <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+            <h2 className="text-lg font-semibold text-th-text-primary mb-4">Contact Info</h2>
             <div className="space-y-4">
               <div className="flex items-center text-sm">
-                <Mail className="w-4 h-4 text-neutral-400 mr-3" />
-                <a href={`mailto:${lead.email}`} className="text-primary-600 hover:underline">
+                <Mail className="w-4 h-4 text-th-text-tertiary mr-3" />
+                <a href={`mailto:${lead.email}`} className="text-th-accent-600 hover:underline">
                   {lead.email}
                 </a>
               </div>
               {lead.phone && (
                 <div className="flex items-center text-sm">
-                  <Phone className="w-4 h-4 text-neutral-400 mr-3" />
-                  <a href={`tel:${lead.phone}`} className="text-primary-600 hover:underline">
+                  <Phone className="w-4 h-4 text-th-text-tertiary mr-3" />
+                  <a href={`tel:${lead.phone}`} className="text-th-accent-600 hover:underline">
                     {lead.phone}
                   </a>
                 </div>
               )}
               {lead.zip_code && (
                 <div className="flex items-center text-sm">
-                  <MapPin className="w-4 h-4 text-neutral-400 mr-3" />
-                  <span className="text-neutral-600">{lead.zip_code}</span>
+                  <MapPin className="w-4 h-4 text-th-text-tertiary mr-3" />
+                  <span className="text-th-text-secondary">{lead.zip_code}</span>
                 </div>
               )}
               <div className="flex items-center text-sm">
-                <Calendar className="w-4 h-4 text-neutral-400 mr-3" />
-                <span className="text-neutral-600">
+                <Calendar className="w-4 h-4 text-th-text-tertiary mr-3" />
+                <span className="text-th-text-secondary">
                   Created {formatTimeAgo(lead.created_at)}
                 </span>
               </div>
@@ -214,15 +214,15 @@ export default function LeadDetail() {
           </div>
 
           {/* Status */}
-          <div className="bg-white rounded-xl border border-neutral-200 p-6">
-            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Status</h2>
+          <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+            <h2 className="text-lg font-semibold text-th-text-primary mb-4">Status</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-neutral-500 mb-2">Pipeline Stage</label>
+                <label className="block text-sm text-th-text-tertiary mb-2">Pipeline Stage</label>
                 <select
                   value={lead.pipeline_stage}
                   onChange={(e) => handleStageChange(e.target.value)}
-                  className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-th-border rounded-lg px-3 py-2 text-sm"
                 >
                   {pipelineStages.map((s) => (
                     <option key={s.id} value={s.name}>
@@ -232,7 +232,7 @@ export default function LeadDetail() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-neutral-500 mb-2">Priority</label>
+                <label className="block text-sm text-th-text-tertiary mb-2">Priority</label>
                 <span
                   className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${priorityColors.bg} ${priorityColors.text}`}
                 >
@@ -240,7 +240,7 @@ export default function LeadDetail() {
                 </span>
               </div>
               <div>
-                <label className="block text-sm text-neutral-500 mb-2">Zoho Status</label>
+                <label className="block text-sm text-th-text-tertiary mb-2">Zoho Status</label>
                 <span
                   className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                     lead.zoho_sync_status === 'synced'
@@ -257,29 +257,29 @@ export default function LeadDetail() {
           </div>
 
           {/* Quick actions */}
-          <div className="bg-white rounded-xl border border-neutral-200 p-6">
-            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Quick Actions</h2>
+          <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+            <h2 className="text-lg font-semibold text-th-text-primary mb-4">Quick Actions</h2>
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setShowAddNote(true)}
-                className="flex flex-col items-center p-3 rounded-lg hover:bg-neutral-50 border border-neutral-200"
+                className="flex flex-col items-center p-3 rounded-lg hover:bg-surface-secondary border border-th-border"
               >
-                <MessageSquare className="w-5 h-5 text-neutral-600 mb-1" />
-                <span className="text-xs text-neutral-600">Note</span>
+                <MessageSquare className="w-5 h-5 text-th-text-secondary mb-1" />
+                <span className="text-xs text-th-text-secondary">Note</span>
               </button>
               <button
                 onClick={() => setShowLogCall(true)}
-                className="flex flex-col items-center p-3 rounded-lg hover:bg-neutral-50 border border-neutral-200"
+                className="flex flex-col items-center p-3 rounded-lg hover:bg-surface-secondary border border-th-border"
               >
-                <PhoneCall className="w-5 h-5 text-neutral-600 mb-1" />
-                <span className="text-xs text-neutral-600">Call</span>
+                <PhoneCall className="w-5 h-5 text-th-text-secondary mb-1" />
+                <span className="text-xs text-th-text-secondary">Call</span>
               </button>
               <button
                 onClick={() => setShowLogMeeting(true)}
-                className="flex flex-col items-center p-3 rounded-lg hover:bg-neutral-50 border border-neutral-200"
+                className="flex flex-col items-center p-3 rounded-lg hover:bg-surface-secondary border border-th-border"
               >
-                <Video className="w-5 h-5 text-neutral-600 mb-1" />
-                <span className="text-xs text-neutral-600">Meeting</span>
+                <Video className="w-5 h-5 text-th-text-secondary mb-1" />
+                <span className="text-xs text-th-text-secondary">Meeting</span>
               </button>
             </div>
           </div>
@@ -290,15 +290,15 @@ export default function LeadDetail() {
 
         {/* Right column - Activities and tasks */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-neutral-200">
+          <div className="bg-surface-primary rounded-xl border border-th-border">
             {/* Tabs */}
-            <div className="flex border-b border-neutral-200">
+            <div className="flex border-b border-th-border">
               <button
                 onClick={() => setActiveTab('activities')}
                 className={`flex-1 px-6 py-4 text-sm font-medium ${
                   activeTab === 'activities'
-                    ? 'text-primary-600 border-b-2 border-primary-600'
-                    : 'text-neutral-500 hover:text-neutral-700'
+                    ? 'text-th-accent-600 border-b-2 border-th-accent-600'
+                    : 'text-th-text-tertiary hover:text-th-text-secondary'
                 }`}
               >
                 Activities ({activities.length})
@@ -307,8 +307,8 @@ export default function LeadDetail() {
                 onClick={() => setActiveTab('tasks')}
                 className={`flex-1 px-6 py-4 text-sm font-medium ${
                   activeTab === 'tasks'
-                    ? 'text-primary-600 border-b-2 border-primary-600'
-                    : 'text-neutral-500 hover:text-neutral-700'
+                    ? 'text-th-accent-600 border-b-2 border-th-accent-600'
+                    : 'text-th-text-tertiary hover:text-th-text-secondary'
                 }`}
               >
                 Tasks ({tasks.filter((t) => !t.completed).length})
@@ -316,7 +316,7 @@ export default function LeadDetail() {
               {activeTab === 'tasks' && (
                 <button
                   onClick={() => setShowAddTask(true)}
-                  className="px-3 py-2 mr-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg self-center"
+                  className="px-3 py-2 mr-2 text-sm text-th-accent-600 hover:bg-th-accent-50 rounded-lg self-center"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -329,21 +329,21 @@ export default function LeadDetail() {
                 <div className="activity-timeline">
                   {activities.map((activity) => (
                     <div key={activity.id} className="activity-item">
-                      <p className="text-sm font-medium text-neutral-900">
+                      <p className="text-sm font-medium text-th-text-primary">
                         {activity.title}
                       </p>
                       {activity.description && (
-                        <p className="text-sm text-neutral-500 mt-1">
+                        <p className="text-sm text-th-text-tertiary mt-1">
                           {activity.description}
                         </p>
                       )}
-                      <p className="text-xs text-neutral-400 mt-1">
+                      <p className="text-xs text-th-text-tertiary mt-1">
                         {formatTimeAgo(activity.created_at)}
                       </p>
                     </div>
                   ))}
                   {activities.length === 0 && (
-                    <p className="text-neutral-500 text-center py-8">
+                    <p className="text-th-text-tertiary text-center py-8">
                       No activities yet
                     </p>
                   )}
@@ -355,8 +355,8 @@ export default function LeadDetail() {
                       key={task.id}
                       className={`flex items-center justify-between p-4 rounded-lg border ${
                         task.completed
-                          ? 'bg-neutral-50 border-neutral-200'
-                          : 'bg-white border-neutral-200'
+                          ? 'bg-surface-secondary border-th-border'
+                          : 'bg-surface-primary border-th-border'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
@@ -364,19 +364,19 @@ export default function LeadDetail() {
                           type="checkbox"
                           checked={task.completed}
                           onChange={() => !task.completed && handleCompleteTask(task.id)}
-                          className="w-5 h-5 rounded border-neutral-300"
+                          className="w-5 h-5 rounded border-th-border"
                         />
                         <div>
                           <p
                             className={`text-sm font-medium ${
                               task.completed
-                                ? 'text-neutral-400 line-through'
-                                : 'text-neutral-900'
+                                ? 'text-th-text-tertiary line-through'
+                                : 'text-th-text-primary'
                             }`}
                           >
                             {task.title}
                           </p>
-                          <p className="text-xs text-neutral-500">
+                          <p className="text-xs text-th-text-tertiary">
                             Due: {new Date(task.due_date).toLocaleDateString()}
                           </p>
                         </div>
@@ -384,7 +384,7 @@ export default function LeadDetail() {
                     </div>
                   ))}
                   {tasks.length === 0 && (
-                    <p className="text-neutral-500 text-center py-8">
+                    <p className="text-th-text-tertiary text-center py-8">
                       No tasks yet
                     </p>
                   )}

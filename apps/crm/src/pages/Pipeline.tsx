@@ -86,7 +86,7 @@ export default function Pipeline() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
       </div>
     );
   }
@@ -96,8 +96,8 @@ export default function Pipeline() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Pipeline</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Pipeline</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
             Drag and drop leads between stages
           </p>
         </div>
@@ -107,8 +107,8 @@ export default function Pipeline() {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center space-x-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
                 showFilters || filterFn
-                  ? 'border-primary-500 text-primary-700 bg-primary-50'
-                  : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+                  ? 'border-th-accent-500 text-th-accent-700 bg-th-accent-50'
+                  : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
               }`}
             >
               <Filter className="w-4 h-4" />
@@ -120,7 +120,7 @@ export default function Pipeline() {
           </div>
           <button
             onClick={loadLeads}
-            className="flex items-center space-x-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+            className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Refresh</span>
@@ -148,11 +148,11 @@ export default function Pipeline() {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: stage.color }}
                   />
-                  <h3 className="font-semibold text-neutral-900">
+                  <h3 className="font-semibold text-th-text-primary">
                     {stage.display_name}
                   </h3>
                 </div>
-                <span className="text-sm text-neutral-500 bg-white px-2 py-0.5 rounded-full">
+                <span className="text-sm text-th-text-tertiary bg-surface-primary px-2 py-0.5 rounded-full">
                   {stageLeads.length}
                 </span>
               </div>
@@ -171,26 +171,26 @@ export default function Pipeline() {
                     <Link to={`/leads/${lead.id}`}>
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-medium text-neutral-900">
+                          <p className="font-medium text-th-text-primary">
                             {lead.first_name} {lead.last_name}
                           </p>
-                          <p className="text-sm text-neutral-500 mt-1">
+                          <p className="text-sm text-th-text-tertiary mt-1">
                             {lead.email}
                           </p>
                         </div>
                         {lead.lead_score > 0 && (
-                          <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">
+                          <span className="text-xs bg-th-accent-100 text-th-accent-700 px-2 py-0.5 rounded-full">
                             {lead.lead_score}
                           </span>
                         )}
                       </div>
                       {lead.phone && (
-                        <p className="text-sm text-neutral-500 mt-2">
+                        <p className="text-sm text-th-text-tertiary mt-2">
                           {lead.phone}
                         </p>
                       )}
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100">
-                        <span className="text-xs text-neutral-400">
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-th-border-subtle">
+                        <span className="text-xs text-th-text-tertiary">
                           {formatTimeAgo(lead.created_at)}
                         </span>
                         {lead.tags && lead.tags.length > 0 && (
@@ -198,7 +198,7 @@ export default function Pipeline() {
                             {lead.tags.slice(0, 2).map((tag) => (
                               <span
                                 key={tag}
-                                className="text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded"
+                                className="text-xs bg-surface-tertiary text-th-text-secondary px-2 py-0.5 rounded"
                               >
                                 {tag}
                               </span>
@@ -210,7 +210,7 @@ export default function Pipeline() {
                   </div>
                 ))}
                 {stageLeads.length === 0 && (
-                  <div className="text-center py-8 text-neutral-400 text-sm">
+                  <div className="text-center py-8 text-th-text-tertiary text-sm">
                     No leads in this stage
                   </div>
                 )}

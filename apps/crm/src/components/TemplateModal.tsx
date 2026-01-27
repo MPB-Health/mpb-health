@@ -185,13 +185,13 @@ export function TemplateModal({ open, onClose, template, onSuccess }: TemplateMo
             placeholder="Write your template content here..."
           />
           <div className="flex flex-wrap gap-1.5 mt-2">
-            <span className="text-xs text-neutral-500 mr-1">Insert:</span>
+            <span className="text-xs text-th-text-tertiary mr-1">Insert:</span>
             {VARIABLES.map((v) => (
               <button
                 key={v.key}
                 type="button"
                 onClick={() => insertVariable(v.key)}
-                className="px-2 py-0.5 text-xs bg-neutral-100 text-neutral-600 rounded hover:bg-neutral-200 transition-colors"
+                className="px-2 py-0.5 text-xs bg-surface-tertiary text-th-text-secondary rounded hover:bg-surface-secondary transition-colors"
               >
                 {`{{${v.key}}}`}
               </button>
@@ -220,7 +220,7 @@ export function TemplateModal({ open, onClose, template, onSuccess }: TemplateMo
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary transition-colors"
           >
             Cancel
           </button>

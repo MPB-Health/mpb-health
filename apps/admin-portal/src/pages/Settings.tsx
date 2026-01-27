@@ -114,14 +114,14 @@ export default function Settings() {
       case 'error':
         return <AlertCircle className="w-5 h-5 text-red-500" />;
       default:
-        return <XCircle className="w-5 h-5 text-neutral-400" />;
+        return <XCircle className="w-5 h-5 text-th-text-tertiary" />;
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
       </div>
     );
   }
@@ -131,15 +131,15 @@ export default function Settings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Settings</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Settings</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
             Configure system settings and integrations
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
         >
           <Save className="w-5 h-5" />
           <span>{saving ? 'Saving...' : 'Save Changes'}</span>
@@ -150,27 +150,27 @@ export default function Settings() {
       {Object.entries(settings).map(([category, categorySettings]) => (
         <div
           key={category}
-          className="bg-white rounded-xl border border-neutral-200 p-6"
+          className="bg-surface-primary rounded-xl border border-th-border p-6"
         >
-          <h2 className="text-lg font-semibold text-neutral-900 capitalize mb-6">
+          <h2 className="text-lg font-semibold text-th-text-primary capitalize mb-6">
             {category} Settings
           </h2>
           <div className="space-y-6">
             {categorySettings.map((setting) => (
               <div key={setting.key}>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-neutral-700">
+                  <label className="block text-sm font-medium text-th-text-secondary">
                     {setting.key
                       .split('_')
                       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
                       .join(' ')}
                   </label>
                   {setting.is_sensitive && (
-                    <span className="text-xs text-yellow-600">Sensitive</span>
+                    <span className="text-xs text-yellow-600 dark:text-yellow-400">Sensitive</span>
                   )}
                 </div>
                 {setting.description && (
-                  <p className="text-sm text-neutral-500 mb-2">
+                  <p className="text-sm text-th-text-tertiary mb-2">
                     {setting.description}
                   </p>
                 )}
@@ -185,9 +185,9 @@ export default function Settings() {
                           [setting.key]: e.target.checked,
                         })
                       }
-                      className="w-4 h-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      className="w-4 h-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                     />
-                    <span className="text-sm text-neutral-700">
+                    <span className="text-sm text-th-text-secondary">
                       {editedSettings[setting.key] ? 'Enabled' : 'Disabled'}
                     </span>
                   </label>
@@ -201,7 +201,7 @@ export default function Settings() {
                         [setting.key]: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
                   />
                 )}
               </div>
@@ -211,25 +211,25 @@ export default function Settings() {
       ))}
 
       {/* Integrations */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-center space-x-2 mb-6">
-          <Plug className="w-5 h-5 text-neutral-500" />
-          <h2 className="text-lg font-semibold text-neutral-900">Integrations</h2>
+          <Plug className="w-5 h-5 text-th-text-tertiary" />
+          <h2 className="text-lg font-semibold text-th-text-primary">Integrations</h2>
         </div>
         <div className="space-y-4">
           {integrations.length > 0 ? (
             integrations.map((integration) => (
               <div
                 key={integration.id}
-                className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg"
+                className="flex items-center justify-between p-4 bg-surface-secondary rounded-lg"
               >
                 <div className="flex items-center space-x-4">
                   {getIntegrationStatusIcon(integration.status)}
                   <div>
-                    <p className="font-medium text-neutral-900">
+                    <p className="font-medium text-th-text-primary">
                       {integration.name}
                     </p>
-                    <p className="text-sm text-neutral-500 capitalize">
+                    <p className="text-sm text-th-text-tertiary capitalize">
                       {integration.type}
                       {integration.last_sync_at && (
                         <span className="ml-2">
@@ -239,7 +239,7 @@ export default function Settings() {
                       )}
                     </p>
                     {integration.error_message && (
-                      <p className="text-sm text-red-600 mt-1">
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">
                         {integration.error_message}
                       </p>
                     )}
@@ -249,7 +249,7 @@ export default function Settings() {
                   <button
                     onClick={() => handleTestIntegration(integration.id)}
                     disabled={testingIntegration === integration.id}
-                    className="flex items-center space-x-1 px-3 py-1.5 border border-neutral-200 rounded-lg text-sm text-neutral-700 hover:bg-white disabled:opacity-50"
+                    className="flex items-center space-x-1 px-3 py-1.5 border border-th-border rounded-lg text-sm text-th-text-secondary hover:bg-surface-primary disabled:opacity-50"
                   >
                     <RefreshCw
                       className={`w-4 h-4 ${
@@ -262,8 +262,8 @@ export default function Settings() {
                     onClick={() => handleToggleIntegration(integration)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                       integration.status === 'active'
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50'
+                        : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50'
                     }`}
                   >
                     {integration.status === 'active' ? 'Disable' : 'Enable'}
@@ -272,7 +272,7 @@ export default function Settings() {
               </div>
             ))
           ) : (
-            <p className="text-neutral-500 text-center py-4">
+            <p className="text-th-text-tertiary text-center py-4">
               No integrations configured
             </p>
           )}

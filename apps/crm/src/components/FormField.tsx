@@ -32,13 +32,13 @@ export function InputField({
 }: InputFieldProps) {
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-neutral-700 mb-1">
+      <label htmlFor={name} className="block text-sm font-medium text-th-text-secondary mb-1">
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <div className="relative">
         {icon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-th-text-tertiary">
             {icon}
           </div>
         )}
@@ -51,9 +51,9 @@ export function InputField({
           required={required}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors disabled:bg-neutral-50 disabled:text-neutral-400 ${
+          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent transition-colors disabled:bg-surface-secondary disabled:text-th-text-tertiary ${
             icon ? 'pl-10' : ''
-          } ${error ? 'border-red-300 focus:ring-red-500' : 'border-neutral-200'}`}
+          } ${error ? 'border-red-300 focus:ring-red-500' : 'border-th-border'}`}
         />
       </div>
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
@@ -90,7 +90,7 @@ export function SelectField({
 }: SelectFieldProps) {
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-neutral-700 mb-1">
+      <label htmlFor={name} className="block text-sm font-medium text-th-text-secondary mb-1">
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
@@ -101,8 +101,8 @@ export function SelectField({
         onChange={onChange}
         required={required}
         disabled={disabled}
-        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors disabled:bg-neutral-50 disabled:text-neutral-400 ${
-          error ? 'border-red-300 focus:ring-red-500' : 'border-neutral-200'
+        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent transition-colors disabled:bg-surface-secondary disabled:text-th-text-tertiary ${
+          error ? 'border-red-300 focus:ring-red-500' : 'border-th-border'
         }`}
       >
         {placeholder && (
@@ -150,7 +150,7 @@ export function TextareaField({
 }: TextareaFieldProps) {
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-neutral-700 mb-1">
+      <label htmlFor={name} className="block text-sm font-medium text-th-text-secondary mb-1">
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
@@ -163,8 +163,8 @@ export function TextareaField({
         required={required}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors resize-none disabled:bg-neutral-50 disabled:text-neutral-400 ${
-          error ? 'border-red-300 focus:ring-red-500' : 'border-neutral-200'
+        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent transition-colors resize-none disabled:bg-surface-secondary disabled:text-th-text-tertiary ${
+          error ? 'border-red-300 focus:ring-red-500' : 'border-th-border'
         }`}
       />
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
@@ -188,7 +188,7 @@ export function SubmitButton({ loading, label, loadingLabel, disabled }: SubmitB
     <button
       type="submit"
       disabled={loading || disabled}
-      className="w-full flex items-center justify-center gap-2 bg-primary-600 text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className="w-full flex items-center justify-center gap-2 bg-th-accent-600 text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-th-accent-700 focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
       {loading ? (loadingLabel || 'Saving...') : label}
@@ -226,11 +226,11 @@ export function CheckboxField({
         checked={checked}
         onChange={onChange}
         disabled={disabled}
-        className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+        className="mt-0.5 h-4 w-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500 disabled:opacity-50"
       />
       <div>
-        <span className="text-sm font-medium text-neutral-700">{label}</span>
-        {description && <p className="text-xs text-neutral-500 mt-0.5">{description}</p>}
+        <span className="text-sm font-medium text-th-text-secondary">{label}</span>
+        {description && <p className="text-xs text-th-text-tertiary mt-0.5">{description}</p>}
       </div>
     </label>
   );

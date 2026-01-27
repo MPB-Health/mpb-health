@@ -78,16 +78,16 @@ export default function Meetings() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900">Meetings</h1>
-        <p className="text-neutral-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-th-text-primary">Meetings</h1>
+        <p className="text-th-text-tertiary text-sm mt-1">
           View and join your scheduled meetings
         </p>
       </div>
 
       {/* Live meetings */}
       {liveMeetings.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-          <div className="flex items-center space-x-2 text-red-700 mb-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <div className="flex items-center space-x-2 text-red-700 dark:text-red-400 mb-4">
             <Radio className="w-5 h-5 animate-pulse" />
             <span className="font-semibold">Live Now</span>
           </div>
@@ -96,15 +96,15 @@ export default function Meetings() {
               <button
                 key={meeting.id}
                 onClick={() => navigate(`/meetings/${meeting.id}`)}
-                className="w-full flex items-center justify-between p-4 bg-white rounded-lg border border-red-200 hover:border-red-300 transition-colors"
+                className="w-full flex items-center justify-between p-4 bg-surface-primary rounded-lg border border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700 transition-colors"
               >
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <Video className="w-6 h-6 text-red-600" />
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                    <Video className="w-6 h-6 text-red-600 dark:text-red-400" />
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold text-neutral-900">{meeting.title}</p>
-                    <p className="text-sm text-neutral-500">
+                    <p className="font-semibold text-th-text-primary">{meeting.title}</p>
+                    <p className="text-sm text-th-text-tertiary">
                       {meeting.duration_minutes} minutes
                     </p>
                   </div>
@@ -120,8 +120,8 @@ export default function Meetings() {
 
       {/* Pending invitations */}
       {pendingInvitations.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-          <div className="flex items-center space-x-2 text-yellow-700 mb-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+          <div className="flex items-center space-x-2 text-yellow-700 dark:text-yellow-400 mb-4">
             <Calendar className="w-5 h-5" />
             <span className="font-semibold">Pending Invitations</span>
           </div>
@@ -129,14 +129,14 @@ export default function Meetings() {
             {pendingInvitations.map((invitation) => (
               <div
                 key={invitation.id}
-                className="bg-white rounded-lg border border-yellow-200 p-4"
+                className="bg-surface-primary rounded-lg border border-yellow-200 dark:border-yellow-800 p-4"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-neutral-900">
+                    <p className="font-semibold text-th-text-primary">
                       {invitation.meeting?.title}
                     </p>
-                    <div className="flex items-center space-x-4 mt-1 text-sm text-neutral-500">
+                    <div className="flex items-center space-x-4 mt-1 text-sm text-th-text-tertiary">
                       <span className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
                         <span>
@@ -156,21 +156,21 @@ export default function Meetings() {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => respondToInvitation(invitation.id, 'accepted')}
-                      className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                      className="p-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                       title="Accept"
                     >
                       <Check className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => respondToInvitation(invitation.id, 'tentative')}
-                      className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors"
+                      className="p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
                       title="Tentative"
                     >
                       <HelpCircle className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => respondToInvitation(invitation.id, 'declined')}
-                      className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                      className="p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                       title="Decline"
                     >
                       <X className="w-5 h-5" />
@@ -184,25 +184,25 @@ export default function Meetings() {
       )}
 
       {/* Upcoming meetings */}
-      <div className="bg-white rounded-xl border border-neutral-200">
-        <div className="p-5 border-b border-neutral-100">
-          <h2 className="font-semibold text-neutral-900">Upcoming Meetings</h2>
+      <div className="bg-surface-primary rounded-xl border border-th-border">
+        <div className="p-5 border-b border-th-border-subtle">
+          <h2 className="font-semibold text-th-text-primary">Upcoming Meetings</h2>
         </div>
-        <div className="divide-y divide-neutral-100">
+        <div className="divide-y divide-th-border-subtle">
           {upcomingMeetings.length > 0 ? (
             upcomingMeetings.map((meeting) => (
               <button
                 key={meeting.id}
                 onClick={() => navigate(`/meetings/${meeting.id}`)}
-                className="w-full flex items-center justify-between p-5 hover:bg-neutral-50 transition-colors text-left"
+                className="w-full flex items-center justify-between p-5 hover:bg-surface-tertiary transition-colors text-left"
               >
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Video className="w-6 h-6 text-purple-600" />
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                    <Video className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <p className="font-semibold text-neutral-900">{meeting.title}</p>
-                    <div className="flex items-center space-x-4 mt-1 text-sm text-neutral-500">
+                    <p className="font-semibold text-th-text-primary">{meeting.title}</p>
+                    <div className="flex items-center space-x-4 mt-1 text-sm text-th-text-tertiary">
                       <span className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
                         <span>{formatMeetingDate(meeting.scheduled_at)}</span>
@@ -223,10 +223,10 @@ export default function Meetings() {
                 <span
                   className={`px-3 py-1 text-sm rounded-full ${
                     meeting.meeting_type === 'training'
-                      ? 'bg-blue-100 text-blue-700'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                       : meeting.meeting_type === 'team'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-neutral-100 text-neutral-700'
+                      ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                      : 'bg-surface-tertiary text-th-text-secondary'
                   }`}
                 >
                   {meeting.meeting_type}
@@ -235,8 +235,8 @@ export default function Meetings() {
             ))
           ) : (
             <div className="p-12 text-center">
-              <Video className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-              <p className="text-neutral-500">No upcoming meetings</p>
+              <Video className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
+              <p className="text-th-text-tertiary">No upcoming meetings</p>
             </div>
           )}
         </div>

@@ -62,7 +62,7 @@ export function AddNoteModal({ open, onClose, leadId, onSuccess }: AddNoteModalP
         />
         <div className="flex items-center gap-3 pt-2">
           <SubmitButton loading={loading} label="Add Note" />
-          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
+          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary transition-colors">
             Cancel
           </button>
         </div>
@@ -148,7 +148,7 @@ export function LogCallModal({ open, onClose, leadId, onSuccess }: LogCallModalP
         />
         <div className="flex items-center gap-3 pt-2">
           <SubmitButton loading={loading} label="Log Call" />
-          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
+          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary transition-colors">
             Cancel
           </button>
         </div>
@@ -236,7 +236,7 @@ export function LogMeetingModal({ open, onClose, leadId, onSuccess }: LogMeeting
         />
         <div className="flex items-center gap-3 pt-2">
           <SubmitButton loading={loading} label="Log Meeting" />
-          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
+          <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary transition-colors">
             Cancel
           </button>
         </div>

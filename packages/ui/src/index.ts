@@ -35,5 +35,34 @@ export type { LoginLayoutProps } from './components/LoginLayout';
 export { LoginVisualPanel } from './components/LoginVisualPanel';
 export type { LoginVisualPanelProps } from './components/LoginVisualPanel';
 
+// Layout Components
+export { GlassCard } from './components/GlassCard';
+export type { GlassCardProps } from './components/GlassCard';
+
+export { GradientHeader } from './components/GradientHeader';
+export type { GradientHeaderProps } from './components/GradientHeader';
+
+export { MetricCard } from './components/MetricCard';
+export type { MetricCardProps } from './components/MetricCard';
+
+export { StatusDot } from './components/StatusDot';
+export type { StatusDotProps } from './components/StatusDot';
+
+export { AppLayout } from './components/AppLayout';
+export type { AppLayoutProps, NavItem, NavLinkRenderProps, ChildNavLinkRenderProps } from './components/AppLayout';
+
+export { PortalSwitcher } from './components/PortalSwitcher';
+export type { PortalSwitcherProps, PortalKey } from './components/PortalSwitcher';
+
+// Theme
+export { ThemeProvider, useTheme } from './theme';
+export type { Theme, ResolvedTheme, ThemeContextType, ThemeProviderProps } from './theme';
+
+export { ThemeToggle } from './theme';
+export type { ThemeToggleProps } from './theme';
+
+export { useChartTheme } from './theme';
+export type { ChartTheme } from './theme';
+
 // Utilities
 export { cn } from './utils';

@@ -72,7 +72,7 @@ export default function Tasks() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
       </div>
     );
   }
@@ -82,15 +82,15 @@ export default function Tasks() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Tasks</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Tasks</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
             {incompleteTasks} pending, {completedTasks} completed
           </p>
         </div>
         <PermissionGate permission="tasks.create">
           <button
             onClick={() => setShowAddTask(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 rounded-lg text-sm font-medium text-white hover:bg-primary-700"
+            className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
           >
             <Plus className="w-4 h-4" />
             <span>Add Task</span>
@@ -104,30 +104,30 @@ export default function Tasks() {
           onClick={() => setFilter('all')}
           className={`p-4 rounded-xl border text-left transition-colors ${
             filter === 'all'
-              ? 'border-primary-500 bg-primary-50'
-              : 'border-neutral-200 bg-white hover:bg-neutral-50'
+              ? 'border-th-accent-500 bg-th-accent-50'
+              : 'border-th-border bg-surface-primary hover:bg-surface-secondary'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm text-neutral-500">All Tasks</span>
-            <CheckCircle2 className="w-5 h-5 text-neutral-400" />
+            <span className="text-sm text-th-text-tertiary">All Tasks</span>
+            <CheckCircle2 className="w-5 h-5 text-th-text-tertiary" />
           </div>
-          <p className="text-2xl font-bold text-neutral-900 mt-2">{allTasks.length}</p>
+          <p className="text-2xl font-bold text-th-text-primary mt-2">{allTasks.length}</p>
         </button>
 
         <button
           onClick={() => setFilter('today')}
           className={`p-4 rounded-xl border text-left transition-colors ${
             filter === 'today'
-              ? 'border-primary-500 bg-primary-50'
-              : 'border-neutral-200 bg-white hover:bg-neutral-50'
+              ? 'border-th-accent-500 bg-th-accent-50'
+              : 'border-th-border bg-surface-primary hover:bg-surface-secondary'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm text-neutral-500">Due Today</span>
+            <span className="text-sm text-th-text-tertiary">Due Today</span>
             <Calendar className="w-5 h-5 text-orange-500" />
           </div>
-          <p className="text-2xl font-bold text-neutral-900 mt-2">
+          <p className="text-2xl font-bold text-th-text-primary mt-2">
             {tasksDueToday.length}
           </p>
         </button>
@@ -136,12 +136,12 @@ export default function Tasks() {
           onClick={() => setFilter('overdue')}
           className={`p-4 rounded-xl border text-left transition-colors ${
             filter === 'overdue'
-              ? 'border-primary-500 bg-primary-50'
-              : 'border-neutral-200 bg-white hover:bg-neutral-50'
+              ? 'border-th-accent-500 bg-th-accent-50'
+              : 'border-th-border bg-surface-primary hover:bg-surface-secondary'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm text-neutral-500">Overdue</span>
+            <span className="text-sm text-th-text-tertiary">Overdue</span>
             <AlertCircle className="w-5 h-5 text-red-500" />
           </div>
           <p className="text-2xl font-bold text-red-600 mt-2">
@@ -153,12 +153,12 @@ export default function Tasks() {
           onClick={() => setFilter('completed')}
           className={`p-4 rounded-xl border text-left transition-colors ${
             filter === 'completed'
-              ? 'border-primary-500 bg-primary-50'
-              : 'border-neutral-200 bg-white hover:bg-neutral-50'
+              ? 'border-th-accent-500 bg-th-accent-50'
+              : 'border-th-border bg-surface-primary hover:bg-surface-secondary'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm text-neutral-500">Completed</span>
+            <span className="text-sm text-th-text-tertiary">Completed</span>
             <CheckCircle2 className="w-5 h-5 text-green-500" />
           </div>
           <p className="text-2xl font-bold text-green-600 mt-2">{completedTasks}</p>
@@ -166,9 +166,9 @@ export default function Tasks() {
       </div>
 
       {/* Task list */}
-      <div className="bg-white rounded-xl border border-neutral-200 divide-y divide-neutral-200">
+      <div className="bg-surface-primary rounded-xl border border-th-border divide-y divide-th-border">
         {filteredTasks.length === 0 ? (
-          <div className="text-center py-12 text-neutral-500">
+          <div className="text-center py-12 text-th-text-tertiary">
             No tasks found
           </div>
         ) : (
@@ -179,8 +179,8 @@ export default function Tasks() {
             return (
               <div
                 key={task.id}
-                className={`flex items-center justify-between p-4 hover:bg-neutral-50 ${
-                  task.completed ? 'bg-neutral-50' : ''
+                className={`flex items-center justify-between p-4 hover:bg-surface-secondary ${
+                  task.completed ? 'bg-surface-secondary' : ''
                 }`}
               >
                 <div className="flex items-center space-x-4">
@@ -193,7 +193,7 @@ export default function Tasks() {
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                       task.completed
                         ? 'bg-green-500 border-green-500 text-white'
-                        : 'border-neutral-300 hover:border-primary-500'
+                        : 'border-th-border hover:border-th-accent-500'
                     }`}
                   >
                     {task.completed && (
@@ -216,14 +216,14 @@ export default function Tasks() {
                     <p
                       className={`font-medium ${
                         task.completed
-                          ? 'text-neutral-400 line-through'
-                          : 'text-neutral-900'
+                          ? 'text-th-text-tertiary line-through'
+                          : 'text-th-text-primary'
                       }`}
                     >
                       {task.title}
                     </p>
                     {task.description && (
-                      <p className="text-sm text-neutral-500 mt-1">
+                      <p className="text-sm text-th-text-tertiary mt-1">
                         {task.description}
                       </p>
                     )}
@@ -232,17 +232,17 @@ export default function Tasks() {
                 <div className="flex items-center space-x-4">
                   <Link
                     to={`/leads/${task.lead_id}`}
-                    className="text-sm text-primary-600 hover:underline"
+                    className="text-sm text-th-accent-600 hover:underline"
                   >
                     View Lead
                   </Link>
                   <div
                     className={`flex items-center space-x-1 px-2 py-1 rounded text-sm ${
                       task.completed
-                        ? 'bg-neutral-100 text-neutral-500'
+                        ? 'bg-surface-tertiary text-th-text-tertiary'
                         : isOverdue
                         ? 'bg-red-100 text-red-700'
-                        : 'bg-neutral-100 text-neutral-600'
+                        : 'bg-surface-tertiary text-th-text-secondary'
                     }`}
                   >
                     <Clock className="w-4 h-4" />

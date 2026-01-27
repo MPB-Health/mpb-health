@@ -13,6 +13,7 @@
   "dependencies": {
     "@mpbhealth/admin-core": "workspace:*",
     "@mpbhealth/auth": "workspace:*",
+    "@mpbhealth/config": "workspace:*",
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/utils": "workspace:*",

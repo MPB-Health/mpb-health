@@ -70,25 +70,25 @@ export function Modal({
     return createPortal(
       <div
         ref={overlayRef}
-        className="fixed inset-0 z-50 bg-black/50 transition-opacity"
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={handleBackdropClick}
       >
         <div
           ref={panelRef}
-          className={`fixed inset-y-0 right-0 w-full ${slideOverSizes[size]} bg-white shadow-xl flex flex-col animate-slide-in-right`}
+          className={`fixed inset-y-0 right-0 w-full ${slideOverSizes[size]} bg-surface-primary border border-th-border shadow-xl flex flex-col animate-slide-in-right`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-th-border">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
+              <h2 className="text-lg font-semibold text-th-text-primary">{title}</h2>
               {description && (
-                <p className="mt-1 text-sm text-neutral-500">{description}</p>
+                <p className="mt-1 text-sm text-th-text-tertiary">{description}</p>
               )}
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-neutral-400 hover:text-neutral-600 rounded-lg hover:bg-neutral-100 transition-colors"
+              className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -105,25 +105,25 @@ export function Modal({
   return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-opacity"
       onClick={handleBackdropClick}
     >
       <div
         ref={panelRef}
-        className={`w-full ${sizeClasses[size]} bg-white rounded-xl shadow-xl animate-scale-in`}
+        className={`w-full ${sizeClasses[size]} bg-surface-primary border border-th-border rounded-xl shadow-xl animate-scale-in`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-th-border">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
+            <h2 className="text-lg font-semibold text-th-text-primary">{title}</h2>
             {description && (
-              <p className="mt-1 text-sm text-neutral-500">{description}</p>
+              <p className="mt-1 text-sm text-th-text-tertiary">{description}</p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-neutral-600 rounded-lg hover:bg-neutral-100 transition-colors"
+            className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

@@ -142,16 +142,16 @@ export function AddTaskModal({ open, onClose, leadId, onSuccess }: AddTaskModalP
               error={errors.lead_id}
             />
             {showLeadDropdown && leadResults.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-1 bg-surface-primary border border-th-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
                 {leadResults.map((lead) => (
                   <button
                     key={lead.id}
                     type="button"
                     onClick={() => selectLead(lead)}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-neutral-50"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-surface-secondary"
                   >
                     <span className="font-medium">{lead.first_name} {lead.last_name}</span>
-                    <span className="text-neutral-500 ml-2">{lead.email}</span>
+                    <span className="text-th-text-tertiary ml-2">{lead.email}</span>
                   </button>
                 ))}
               </div>
@@ -219,7 +219,7 @@ export function AddTaskModal({ open, onClose, leadId, onSuccess }: AddTaskModalP
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary transition-colors"
           >
             Cancel
           </button>

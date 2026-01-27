@@ -51,7 +51,6 @@ export const supabase: SupabaseClient = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      lock: 'no-op' as any,
     },
     global: {
       headers: {

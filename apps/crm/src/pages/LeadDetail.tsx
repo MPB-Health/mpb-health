@@ -29,7 +29,7 @@ import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/cr
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { leadService, activityService, taskService, zohoService, pipelineStages } = useCRM();
+  const { leadService, activityService, taskService, zohoService, automationService, pipelineStages } = useCRM();
   const { activeOrgId } = useOrg();
 
   const [lead, setLead] = useState<Lead | null>(null);
@@ -77,6 +77,11 @@ export default function LeadDetail() {
         entityId: lead.id,
         before: { pipeline_stage: lead.pipeline_stage },
         after: { pipeline_stage: newStage },
+      }).catch(console.error);
+      automationService.evaluateEvent({
+        type: 'stage_change',
+        leadId: lead.id,
+        data: { from_stage: lead.pipeline_stage, to_stage: newStage },
       }).catch(console.error);
       toast.success('Stage updated');
       loadLead();

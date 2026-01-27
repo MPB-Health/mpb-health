@@ -16,6 +16,7 @@ import {
   Search,
   Shield,
   FileText,
+  Zap,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +32,7 @@ const navigation: (NavItem & { permission?: string })[] = [
   { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.view' },
   { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.view' },
   { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
+  { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
   { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
 ];
 

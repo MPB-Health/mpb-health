@@ -111,6 +111,18 @@ export type {
   EmailLogEntry,
 } from './email/types';
 
+// Automation
+export { AutomationService, createAutomationService } from './automation/automationService';
+export type {
+  AutomationRule,
+  AutomationRuleCreateInput,
+  AutomationRuleUpdateInput,
+  AutomationExecutionLog,
+  AutomationEvent,
+  AutomationTriggerType,
+  AutomationActionType,
+} from './automation/types';
+
 // Re-export all from submodules for convenience
 export * from './leads';
 export * from './activities';
@@ -122,3 +134,4 @@ export * from './calendar';
 export * from './insights';
 export * from './templates';
 export * from './email';
+export * from './automation';

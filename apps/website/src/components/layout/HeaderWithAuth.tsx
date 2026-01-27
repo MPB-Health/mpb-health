@@ -507,14 +507,6 @@ const HeaderWithAuth = () => {
         icon: 'MessageSquare',
         children: [
           {
-            id: 'advisor-directory',
-            label: 'Advisor Directory',
-            description: 'Find and connect with MPB Health advisors',
-            icon: 'Users',
-            href: '/advisor-directory',
-            external: false,
-          },
-          {
             id: 'member-feedback',
             label: 'Member Feedback',
             description: 'Share your experience with us',
@@ -832,6 +824,18 @@ const HeaderWithAuth = () => {
               Features
             </Link>
 
+            <Link
+              to="/advisor-directory"
+              className={cn(
+                "px-4 py-2 text-sm font-medium transition-colors rounded-lg whitespace-nowrap",
+                isActive('/advisor-directory')
+                  ? "text-primary bg-primary/5"
+                  : "text-neutral-700 hover:text-primary hover:bg-neutral-50"
+              )}
+            >
+              Advisor Directory
+            </Link>
+
             <div className="relative" ref={resourcesRef}>
               <button
                 onClick={() => setIsResourcesOpen(!isResourcesOpen)}
@@ -1041,6 +1045,17 @@ const HeaderWithAuth = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Features
+              </Link>
+
+              <Link
+                to="/advisor-directory"
+                className={cn(
+                  "block px-4 py-3 text-sm font-medium rounded-lg transition-colors",
+                  isActive('/advisor-directory') ? "text-primary bg-primary/5" : "text-neutral-700 hover:bg-neutral-50"
+                )}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Advisor Directory
               </Link>
 
               <div className="border-t border-neutral-100 my-2 pt-2">

@@ -8,3 +8,4 @@ export { ContentService, contentService } from './content/ContentService';
 export { SettingsService, settingsService } from './settings/SettingsService';
 export { AuditService, auditService } from './audit/AuditService';
 export { AnalyticsService, analyticsService } from './analytics/AnalyticsService';
+export { CRMBridgeService, crmBridgeService, type CRMSummary } from './analytics/CRMBridgeService';

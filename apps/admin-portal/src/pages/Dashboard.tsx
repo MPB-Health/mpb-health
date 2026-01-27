@@ -21,6 +21,7 @@ import {
 } from 'recharts';
 import { analyticsService, type ActivityMetric } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
+import CRMOverviewCard from '../components/CRMOverviewCard';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -237,6 +238,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* CRM Overview */}
+      <CRMOverviewCard />
 
       {/* Quick actions */}
       <div className="bg-white rounded-xl border border-neutral-200 p-6">

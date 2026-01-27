@@ -12,14 +12,15 @@ import {
   LogOut,
   Menu,
   X,
-  Bell,
   Search,
   Shield,
+  FileText,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { useCRM } from '../contexts/CRMContext';
+import { NotificationCenter } from '../components/NotificationCenter';
 
 interface NavItem {
   name: string;
@@ -35,6 +36,7 @@ const navigation: NavItem[] = [
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.view' },
   { name: 'Calendar', href: '/calendar', icon: Calendar, permission: 'tasks.view' },
   { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.view' },
+  { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
   { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
 ];
 
@@ -109,9 +111,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-neutral-200">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">MPB</span>
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="MPB Health" 
+                className="h-8 w-auto"
+              />
               <span className="font-semibold text-neutral-900">CRM</span>
             </Link>
             <button
@@ -267,12 +271,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               )}
 
               {/* Notifications */}
-              <button className="relative p-2 text-neutral-500 hover:text-neutral-700">
-                <Bell className="w-5 h-5" />
-                {overdueTasks.length > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-                )}
-              </button>
+              <NotificationCenter />
             </div>
           </div>
         </header>

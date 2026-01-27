@@ -285,7 +285,7 @@ export default function LeadDetail() {
           </div>
 
           {/* AI Insights */}
-          <AIInsightsPanel leadId={lead.id} />
+          <AIInsightsPanel leadId={lead.id} leadEmail={lead.email} />
         </div>
 
         {/* Right column - Activities and tasks */}

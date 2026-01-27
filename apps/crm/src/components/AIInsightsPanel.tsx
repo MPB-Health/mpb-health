@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, Sparkles, Copy, Check, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
+import { RefreshCw, Sparkles, Copy, Check, TrendingUp, AlertTriangle, Zap, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
+import { SendDraftModal } from './SendDraftModal';
 import type { AILeadInsight } from '@mpbhealth/crm-core';
 
 interface AIInsightsPanelProps {
   leadId: string;
+  leadEmail?: string;
 }
 
-export function AIInsightsPanel({ leadId }: AIInsightsPanelProps) {
+export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
   const { insightsService } = useCRM();
   const [insights, setInsights] = useState<AILeadInsight | null>(null);
   const [loading, setLoading] = useState(true);
@@ -16,6 +18,7 @@ export function AIInsightsPanel({ leadId }: AIInsightsPanelProps) {
   const [draftLoading, setDraftLoading] = useState<'email' | 'sms' | null>(null);
   const [draft, setDraft] = useState<{ type: string; subject?: string; body: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   useEffect(() => {
     loadInsights();
@@ -212,15 +215,39 @@ export function AIInsightsPanel({ leadId }: AIInsightsPanelProps) {
         <div className="bg-neutral-50 rounded-lg p-3 relative">
           <div className="flex items-center justify-between mb-1">
             <p className="text-xs font-medium text-neutral-500">{draft.type.toUpperCase()} Draft</p>
-            <button onClick={handleCopy} className="text-neutral-400 hover:text-neutral-600">
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-            </button>
+            <div className="flex items-center gap-1">
+              {leadEmail && (
+                <button
+                  onClick={() => setShowSendModal(true)}
+                  className="text-purple-500 hover:text-purple-700 p-0.5"
+                  title="Send"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              )}
+              <button onClick={handleCopy} className="text-neutral-400 hover:text-neutral-600 p-0.5">
+                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           {draft.subject && (
             <p className="text-xs text-neutral-500 mb-1">Subject: {draft.subject}</p>
           )}
           <p className="text-sm text-neutral-700 whitespace-pre-wrap">{draft.body}</p>
         </div>
+      )}
+
+      {/* Send draft modal */}
+      {draft && leadEmail && (
+        <SendDraftModal
+          open={showSendModal}
+          onClose={() => setShowSendModal(false)}
+          leadId={leadId}
+          leadEmail={leadEmail}
+          subject={draft.subject}
+          body={draft.body}
+          draftType={draft.type as 'email' | 'sms'}
+        />
       )}
     </div>
   );

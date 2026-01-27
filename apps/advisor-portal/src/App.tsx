@@ -11,6 +11,7 @@ import SOPLibrary from './pages/SOPLibrary';
 import SOPDocument from './pages/SOPDocument';
 import Bulletins from './pages/Bulletins';
 import Profile from './pages/Profile';
+import MyLeads from './pages/MyLeads';
 import Login from './pages/Login';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="sops" element={<SOPLibrary />} />
           <Route path="sops/:documentId" element={<SOPDocument />} />
           <Route path="bulletins" element={<Bulletins />} />
+          <Route path="leads" element={<MyLeads />} />
           <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

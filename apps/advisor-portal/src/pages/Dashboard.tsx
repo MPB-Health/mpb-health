@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -5,11 +6,13 @@ import {
   Video,
   FileText,
   Award,
+  Users,
   ArrowRight,
   Clock,
   Calendar,
   CheckCircle2,
 } from 'lucide-react';
+import { advisorLeadService } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 export default function Dashboard() {
@@ -21,6 +24,13 @@ export default function Dashboard() {
     trainingProgress,
     upcomingMeetings,
   } = useAdvisor();
+
+  const [assignedLeadCount, setAssignedLeadCount] = useState(0);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    advisorLeadService.getAssignedLeadCount(profile.id).then(setAssignedLeadCount);
+  }, [profile?.id]);
 
   // Get in-progress training modules
   const inProgressModules = trainingModules.filter((module) => {
@@ -90,19 +100,22 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
+        <button
+          onClick={() => navigate('/leads')}
+          className="bg-white rounded-xl border border-neutral-200 p-5 text-left hover:border-primary-300 transition-colors"
+        >
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Award className="w-5 h-5 text-yellow-600" />
+              <Users className="w-5 h-5 text-yellow-600" />
             </div>
             <div>
-              <p className="text-sm text-neutral-500">Status</p>
-              <p className="text-xl font-bold text-neutral-900 capitalize">
-                {profile?.status || 'Active'}
+              <p className="text-sm text-neutral-500">Assigned Leads</p>
+              <p className="text-xl font-bold text-neutral-900">
+                {assignedLeadCount}
               </p>
             </div>
           </div>
-        </div>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -218,6 +231,13 @@ export default function Dashboard() {
       <div className="bg-white rounded-xl border border-neutral-200 p-5">
         <h2 className="font-semibold text-neutral-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button
+            onClick={() => navigate('/leads')}
+            className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+          >
+            <Users className="w-8 h-8 text-primary-600 mb-2" />
+            <span className="text-sm font-medium text-neutral-700">My Leads</span>
+          </button>
           <button
             onClick={() => navigate('/training')}
             className="flex flex-col items-center p-4 rounded-lg border border-neutral-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"

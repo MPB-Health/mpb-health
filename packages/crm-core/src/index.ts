@@ -92,6 +92,25 @@ export type {
   AIGeneratedDraft,
 } from './insights/types';
 
+// Templates
+export { TemplateService, createTemplateService } from './templates/templateService';
+export type {
+  CRMTemplate,
+  TemplateType,
+  TemplateVariable,
+  TemplateCreateInput,
+  TemplateUpdateInput,
+  TemplateFilters,
+} from './templates/types';
+
+// Email
+export { EmailService, createEmailService } from './email/emailService';
+export type {
+  EmailSendInput,
+  EmailSendResult,
+  EmailLogEntry,
+} from './email/types';
+
 // Re-export all from submodules for convenience
 export * from './leads';
 export * from './activities';
@@ -101,3 +120,5 @@ export * from './priority';
 export * from './notifications';
 export * from './calendar';
 export * from './insights';
+export * from './templates';
+export * from './email';

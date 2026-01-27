@@ -9,6 +9,9 @@ import {
   createCalendarService,
   createInsightsService,
   createPreferencesService,
+  createTemplateService,
+  createEmailService,
+  createNotificationCenterService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
@@ -24,6 +27,9 @@ import {
   type CalendarService,
   type InsightsService,
   type PreferencesService,
+  type TemplateService,
+  type EmailService,
+  type NotificationCenterService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -39,6 +45,9 @@ interface CRMContextType {
   calendarService: CalendarService;
   insightsService: InsightsService;
   preferencesService: PreferencesService;
+  templateService: TemplateService;
+  emailService: EmailService;
+  notificationCenterService: NotificationCenterService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
@@ -76,6 +85,9 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     calendarService: createCalendarService(supabase),
     insightsService: createInsightsService(supabase, supabaseUrl),
     preferencesService: createPreferencesService(supabase),
+    templateService: createTemplateService(supabase),
+    emailService: createEmailService(supabase, supabaseUrl),
+    notificationCenterService: createNotificationCenterService(supabase),
   }));
 
   // State

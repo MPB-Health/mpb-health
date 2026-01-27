@@ -7,6 +7,7 @@ import {
   BookOpen,
   Bell,
   User,
+  Users,
   LogOut,
   Menu,
   X,
@@ -18,6 +19,7 @@ import LiveMeetingBanner from '../components/LiveMeetingBanner';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'My Leads', href: '/leads', icon: Users },
   { name: 'Training', href: '/training', icon: GraduationCap },
   { name: 'Meetings', href: '/meetings', icon: Video },
   { name: 'Forms', href: '/forms', icon: FileText },

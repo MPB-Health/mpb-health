@@ -12,6 +12,7 @@ import Tasks from './pages/Tasks';
 import Calendar from './pages/Calendar';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Templates from './pages/Templates';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -122,6 +123,14 @@ export default function App() {
                   element={
                     <Guarded permission="settings.manage">
                       <Settings />
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/templates"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Templates />
                     </Guarded>
                   }
                 />

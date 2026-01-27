@@ -13,6 +13,8 @@ import {
   createEmailService,
   createNotificationCenterService,
   createAutomationService,
+  createReportingService,
+  createScoringService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
@@ -32,6 +34,8 @@ import {
   type EmailService,
   type NotificationCenterService,
   type AutomationService,
+  type ReportingService,
+  type ScoringService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -51,6 +55,8 @@ interface CRMContextType {
   emailService: EmailService;
   notificationCenterService: NotificationCenterService;
   automationService: AutomationService;
+  reportingService: ReportingService;
+  scoringService: ScoringService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
@@ -92,6 +98,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     emailService: createEmailService(supabase, supabaseUrl),
     notificationCenterService: createNotificationCenterService(supabase),
     automationService: createAutomationService(supabase, supabaseUrl),
+    reportingService: createReportingService(supabase),
+    scoringService: createScoringService(supabase),
   }));
 
   // State

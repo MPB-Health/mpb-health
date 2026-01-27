@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw, Check, X, AlertCircle, Upload, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { RefreshCw, Check, X, AlertCircle, Upload, FileText, CheckCircle2, XCircle, BarChart3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
-import type { NotificationPreferences } from '@mpbhealth/crm-core';
+import type { NotificationPreferences, ScoringWeightConfig } from '@mpbhealth/crm-core';
 import { importContactsFromCSV, type ImportResult } from '../utils/csvImporter';
 
 export default function Settings() {
-  const { zohoService, pipelineStages, preferencesService, leadService, refreshLeads, refreshDashboard } = useCRM();
+  const { zohoService, pipelineStages, preferencesService, leadService, scoringService, refreshLeads, refreshDashboard } = useCRM();
   const [zohoStatus, setZohoStatus] = useState<{
     configured: boolean;
     error?: string;
@@ -26,6 +26,57 @@ export default function Settings() {
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Lead Scoring state
+  const [scoringWeights, setScoringWeights] = useState<ScoringWeightConfig[]>([]);
+  const [scoringLoading, setScoringLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
+  const scoringTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Load scoring weights
+  useEffect(() => {
+    scoringService.getWeights().then((w) => {
+      setScoringWeights(w);
+      setScoringLoading(false);
+    });
+  }, [scoringService]);
+
+  const handleWeightChange = (factorKey: string, weight: number) => {
+    setScoringWeights((prev) =>
+      prev.map((w) => (w.factor_key === factorKey ? { ...w, weight } : w)),
+    );
+    clearTimeout(scoringTimer.current);
+    scoringTimer.current = setTimeout(async () => {
+      const current = scoringWeights.find((w) => w.factor_key === factorKey);
+      if (!current) return;
+      const result = await scoringService.updateWeights([
+        { factor_key: factorKey, weight, is_enabled: current.is_enabled },
+      ]);
+      if (result.success) toast.success('Weight saved');
+      else toast.error('Failed to save weight');
+    }, 600);
+  };
+
+  const handleScoringToggle = async (factorKey: string, enabled: boolean) => {
+    setScoringWeights((prev) =>
+      prev.map((w) => (w.factor_key === factorKey ? { ...w, is_enabled: enabled } : w)),
+    );
+    const current = scoringWeights.find((w) => w.factor_key === factorKey);
+    if (!current) return;
+    const result = await scoringService.updateWeights([
+      { factor_key: factorKey, weight: current.weight, is_enabled: enabled },
+    ]);
+    if (result.success) toast.success(enabled ? 'Factor enabled' : 'Factor disabled');
+    else toast.error('Failed to update');
+  };
+
+  const handleRecalculate = async () => {
+    setRecalculating(true);
+    const result = await scoringService.recalculateAllScores();
+    setRecalculating(false);
+    if (result.success) toast.success('Scores recalculated');
+    else toast.error(result.error || 'Recalculation failed');
+  };
 
   // Load preferences
   useEffect(() => {
@@ -429,6 +480,70 @@ export default function Settings() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Lead Scoring */}
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-th-text-tertiary" />
+            <div>
+              <h2 className="text-lg font-semibold text-th-text-primary">Lead Scoring</h2>
+              <p className="text-sm text-th-text-tertiary mt-0.5">
+                Adjust factor weights to tune lead scoring
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleRecalculate}
+            disabled={recalculating}
+            className="flex items-center gap-2 px-4 py-2 border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${recalculating ? 'animate-spin' : ''}`} />
+            Recalculate All
+          </button>
+        </div>
+
+        {scoringLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-th-accent-600" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {scoringWeights.map((factor) => (
+              <div key={factor.factor_key} className="flex items-center gap-4 p-3 bg-surface-secondary rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={factor.is_enabled}
+                  onChange={(e) => handleScoringToggle(factor.factor_key, e.target.checked)}
+                  className="w-4 h-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className={`text-sm font-medium ${factor.is_enabled ? 'text-th-text-primary' : 'text-th-text-tertiary'}`}>
+                      {factor.factor_label}
+                    </p>
+                    <span className="text-xs font-medium text-th-accent-600 w-8 text-right">
+                      {factor.weight}
+                    </span>
+                  </div>
+                  {factor.description && (
+                    <p className="text-xs text-th-text-tertiary mb-2">{factor.description}</p>
+                  )}
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={factor.weight}
+                    onChange={(e) => handleWeightChange(factor.factor_key, Number(e.target.value))}
+                    disabled={!factor.is_enabled}
+                    className="w-full h-1.5 bg-surface-tertiary rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* General Settings */}

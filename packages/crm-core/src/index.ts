@@ -111,6 +111,25 @@ export type {
   EmailLogEntry,
 } from './email/types';
 
+// Scoring
+export { ScoringService, createScoringService } from './scoring/scoringService';
+export type {
+  ScoringWeightConfig,
+  ScoringWeightUpdateInput,
+  LeadScoreBreakdown,
+  ScoreFactorDetail,
+} from './scoring/types';
+
+// Reporting
+export { ReportingService, createReportingService } from './reporting/reportingService';
+export type {
+  ReportDateRange,
+  ConversionFunnelData,
+  LeadSourceBreakdown,
+  ResponseTimeMetrics,
+  TeamPerformanceRow,
+} from './reporting/types';
+
 // Automation
 export { AutomationService, createAutomationService } from './automation/automationService';
 export type {
@@ -135,3 +154,5 @@ export * from './insights';
 export * from './templates';
 export * from './email';
 export * from './automation';
+export * from './reporting';
+export * from './scoring';

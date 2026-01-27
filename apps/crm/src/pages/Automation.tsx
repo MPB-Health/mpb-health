@@ -85,18 +85,17 @@ export default function Automation() {
       <GradientHeader
         title="Automation Rules"
         subtitle="Automate repetitive tasks with trigger-based rules."
-        actions={
-          canManage ? (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-th-accent-700 rounded-lg font-medium text-sm hover:bg-white/90 transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Add Rule
-            </button>
-          ) : undefined
-        }
-      />
+      >
+        {canManage && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-th-accent-700 rounded-lg font-medium text-sm hover:bg-white/90 transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Rule
+          </button>
+        )}
+      </GradientHeader>
 
       {/* Rules list */}
       <div className="space-y-3">

@@ -21,6 +21,7 @@ import { EditLeadModal } from '../components/EditLeadModal';
 import { AddNoteModal, LogCallModal, LogMeetingModal } from '../components/QuickActionModals';
 import { AddTaskModal } from '../components/AddTaskModal';
 import { AIInsightsPanel } from '../components/AIInsightsPanel';
+import { ScoreBreakdownPanel } from '../components/ScoreBreakdownPanel';
 import { useOrg } from '../contexts/OrgContext';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type { Lead, LeadActivity, LeadTask } from '@mpbhealth/crm-core';
@@ -291,6 +292,9 @@ export default function LeadDetail() {
 
           {/* AI Insights */}
           <AIInsightsPanel leadId={lead.id} leadEmail={lead.email} />
+
+          {/* Score Breakdown */}
+          <ScoreBreakdownPanel leadId={lead.id} />
         </div>
 
         {/* Right column - Activities and tasks */}

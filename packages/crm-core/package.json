@@ -59,14 +59,22 @@
     "./automation": {
       "import": "./dist/automation/index.js",
       "types": "./dist/automation/index.d.ts"
+    },
+    "./reporting": {
+      "import": "./dist/reporting/index.js",
+      "types": "./dist/reporting/index.d.ts"
+    },
+    "./scoring": {
+      "import": "./dist/scoring/index.js",
+      "types": "./dist/scoring/index.d.ts"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts --format esm --dts --watch",
+    "build": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts --format esm --dts --watch",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },

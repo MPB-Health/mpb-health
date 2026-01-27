@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal } from '@mpbhealth/ui';
+import { Modal } from './Modal';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 

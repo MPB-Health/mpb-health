@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -13,6 +13,10 @@ import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddLeadModal } from '../components/AddLeadModal';
 import { AdvancedFiltersPanel } from '../components/AdvancedFiltersPanel';
+import { BulkActionsToolbar } from '../components/BulkActionsToolbar';
+import { BulkAssignModal } from '../components/BulkAssignModal';
+import { BulkStageModal } from '../components/BulkStageModal';
+import { BulkEmailModal } from '../components/BulkEmailModal';
 import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/crm-core';
 
@@ -27,6 +31,12 @@ export default function LeadsList() {
   const [showAddLead, setShowAddLead] = useState(false);
   const pageSize = 20;
 
+  // Bulk selection state
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [showBulkAssign, setShowBulkAssign] = useState(false);
+  const [showBulkStage, setShowBulkStage] = useState(false);
+  const [showBulkEmail, setShowBulkEmail] = useState(false);
+
   const loadLeads = async () => {
     setLoading(true);
     const { leads, total } = await leadService.getLeads(filters, pageSize, page * pageSize);
@@ -37,6 +47,11 @@ export default function LeadsList() {
 
   useEffect(() => {
     loadLeads();
+  }, [filters, page]);
+
+  // Clear selection when filters or page change
+  useEffect(() => {
+    setSelectedLeads(new Set());
   }, [filters, page]);
 
   const handleSearch = (search: string) => {
@@ -60,10 +75,58 @@ export default function LeadsList() {
     a.click();
   };
 
+  const handleExportSelected = async () => {
+    const ids = Array.from(selectedLeads);
+    const exportLeads = await leadService.getLeadsForExport(ids);
+    const csv = leadService.generateCSV(exportLeads);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-selected-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedLeads.size === leads.length) {
+      setSelectedLeads(new Set());
+    } else {
+      setSelectedLeads(new Set(leads.map((l) => l.id)));
+    }
+  }, [leads, selectedLeads.size]);
+
+  const toggleSelectLead = useCallback((leadId: string) => {
+    setSelectedLeads((prev) => {
+      const next = new Set(prev);
+      if (next.has(leadId)) {
+        next.delete(leadId);
+      } else {
+        next.add(leadId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleBulkSuccess = () => {
+    setSelectedLeads(new Set());
+    loadLeads();
+  };
+
+  const selectedIds = Array.from(selectedLeads);
   const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="space-y-6">
+      {/* Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        selectedCount={selectedLeads.size}
+        onAssign={() => setShowBulkAssign(true)}
+        onChangeStage={() => setShowBulkStage(true)}
+        onSendEmail={() => setShowBulkEmail(true)}
+        onExport={handleExportSelected}
+        onClear={() => setSelectedLeads(new Set())}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -166,6 +229,14 @@ export default function LeadsList() {
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-secondary border-b border-th-border">
+                  <th className="w-12 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedLeads.size === leads.length && leads.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-th-border"
+                    />
+                  </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                     Lead
                   </th>
@@ -187,9 +258,21 @@ export default function LeadsList() {
                 {leads.map((lead) => {
                   const stage = pipelineStages.find((s) => s.name === lead.pipeline_stage);
                   const priorityColors = getPriorityColor(lead.priority as any || 'normal');
+                  const isSelected = selectedLeads.has(lead.id);
 
                   return (
-                    <tr key={lead.id} className="hover:bg-surface-secondary">
+                    <tr
+                      key={lead.id}
+                      className={`hover:bg-surface-secondary ${isSelected ? 'bg-th-accent-50' : ''}`}
+                    >
+                      <td className="w-12 px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectLead(lead.id)}
+                          className="w-4 h-4 rounded border-th-border"
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <Link
                           to={`/leads/${lead.id}`}
@@ -288,10 +371,30 @@ export default function LeadsList() {
           </>
         )}
       </div>
+
+      {/* Modals */}
       <AddLeadModal
         open={showAddLead}
         onClose={() => setShowAddLead(false)}
         onSuccess={() => loadLeads()}
+      />
+      <BulkAssignModal
+        open={showBulkAssign}
+        onClose={() => setShowBulkAssign(false)}
+        leadIds={selectedIds}
+        onSuccess={handleBulkSuccess}
+      />
+      <BulkStageModal
+        open={showBulkStage}
+        onClose={() => setShowBulkStage(false)}
+        leadIds={selectedIds}
+        onSuccess={handleBulkSuccess}
+      />
+      <BulkEmailModal
+        open={showBulkEmail}
+        onClose={() => setShowBulkEmail(false)}
+        leadIds={selectedIds}
+        onSuccess={handleBulkSuccess}
       />
     </div>
   );

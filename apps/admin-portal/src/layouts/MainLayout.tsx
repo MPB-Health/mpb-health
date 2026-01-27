@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -40,8 +40,7 @@ export default function MainLayout() {
 
   // Redirect to login if not authenticated
   if (!loading && !user) {
-    navigate('/login');
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   if (loading) {

@@ -15,6 +15,7 @@ import {
   FileText,
   CreditCard,
   Clock,
+  Printer,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
@@ -855,6 +856,14 @@ export default function InvoiceDetail() {
               </button>
             </PermissionGate>
           )}
+          {/* Print */}
+          <button
+            onClick={() => window.open(`/invoices/${id}/print`, '_blank')}
+            className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Print</span>
+          </button>
           <PermissionGate permission="invoices.write">
             <button
               onClick={() => setShowEditInvoice(true)}

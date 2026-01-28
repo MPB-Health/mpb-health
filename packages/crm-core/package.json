@@ -67,14 +67,54 @@
     "./scoring": {
       "import": "./dist/scoring/index.js",
       "types": "./dist/scoring/index.d.ts"
+    },
+    "./accounts": {
+      "import": "./dist/accounts/index.js",
+      "types": "./dist/accounts/index.d.ts"
+    },
+    "./contacts": {
+      "import": "./dist/contacts/index.js",
+      "types": "./dist/contacts/index.d.ts"
+    },
+    "./deals": {
+      "import": "./dist/deals/index.js",
+      "types": "./dist/deals/index.d.ts"
+    },
+    "./products": {
+      "import": "./dist/products/index.js",
+      "types": "./dist/products/index.d.ts"
+    },
+    "./quotes": {
+      "import": "./dist/quotes/index.js",
+      "types": "./dist/quotes/index.d.ts"
+    },
+    "./invoices": {
+      "import": "./dist/invoices/index.js",
+      "types": "./dist/invoices/index.d.ts"
+    },
+    "./campaigns": {
+      "import": "./dist/campaigns/index.js",
+      "types": "./dist/campaigns/index.d.ts"
+    },
+    "./vendors": {
+      "import": "./dist/vendors/index.js",
+      "types": "./dist/vendors/index.d.ts"
+    },
+    "./purchase-orders": {
+      "import": "./dist/purchase-orders/index.js",
+      "types": "./dist/purchase-orders/index.d.ts"
+    },
+    "./sales-orders": {
+      "import": "./dist/sales-orders/index.js",
+      "types": "./dist/sales-orders/index.d.ts"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts --format esm --dts --watch",
+    "build": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts --format esm --dts --watch",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },

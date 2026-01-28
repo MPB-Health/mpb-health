@@ -6,92 +6,120 @@ import {
   Send,
   CheckCircle,
   XCircle,
-  Copy,
-  Receipt,
   Plus,
   Trash2,
   Building2,
-  User,
   Calendar,
-  DollarSign,
   FileText,
   Briefcase,
-  Printer,
+  Truck,
+  Package,
+  Clock,
+  CreditCard,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { Modal } from '../components/Modal';
-import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
+import { logAuditEvent } from '@mpbhealth/auth';
 import type {
-  QuoteWithRelations,
-  QuoteLineItem,
-  QuoteStatus,
-  QuoteLineItemCreateInput,
+  SalesOrderWithRelations,
+  SOLineItem,
+  SOStatus,
+  SOApprovalStatus,
+  SOLineItemCreateInput,
   Product,
+  AccountWithRelations,
 } from '@mpbhealth/crm-core';
 
-function getStatusColor(status: QuoteStatus): { bg: string; text: string } {
+function getStatusColor(status: SOStatus): { bg: string; text: string } {
   switch (status) {
     case 'draft':
       return { bg: 'bg-gray-100', text: 'text-gray-700' };
-    case 'pending':
+    case 'pending_approval':
       return { bg: 'bg-yellow-100', text: 'text-yellow-700' };
-    case 'sent':
+    case 'approved':
       return { bg: 'bg-blue-100', text: 'text-blue-700' };
-    case 'accepted':
-      return { bg: 'bg-green-100', text: 'text-green-700' };
-    case 'rejected':
-      return { bg: 'bg-red-100', text: 'text-red-700' };
-    case 'expired':
-      return { bg: 'bg-orange-100', text: 'text-orange-700' };
-    case 'revised':
+    case 'confirmed':
+      return { bg: 'bg-indigo-100', text: 'text-indigo-700' };
+    case 'processing':
       return { bg: 'bg-purple-100', text: 'text-purple-700' };
+    case 'shipped':
+      return { bg: 'bg-cyan-100', text: 'text-cyan-700' };
+    case 'partially_delivered':
+      return { bg: 'bg-orange-100', text: 'text-orange-700' };
+    case 'delivered':
+      return { bg: 'bg-green-100', text: 'text-green-700' };
+    case 'cancelled':
+      return { bg: 'bg-red-100', text: 'text-red-700' };
+    case 'closed':
+      return { bg: 'bg-slate-100', text: 'text-slate-700' };
     default:
       return { bg: 'bg-gray-100', text: 'text-gray-700' };
   }
 }
 
-export default function QuoteDetail() {
+function getApprovalStatusColor(status: SOApprovalStatus): { bg: string; text: string } {
+  switch (status) {
+    case 'not_required':
+      return { bg: 'bg-gray-100', text: 'text-gray-600' };
+    case 'pending':
+      return { bg: 'bg-yellow-100', text: 'text-yellow-700' };
+    case 'approved':
+      return { bg: 'bg-green-100', text: 'text-green-700' };
+    case 'rejected':
+      return { bg: 'bg-red-100', text: 'text-red-700' };
+    default:
+      return { bg: 'bg-gray-100', text: 'text-gray-700' };
+  }
+}
+
+function formatStatusLabel(status: string): string {
+  return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+export default function SalesOrderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { quoteService, invoiceService, productService } = useCRM();
-  const { activeOrgId } = useOrg();
+  const { salesOrderService, productService } = useCRM();
+  const { activeOrgId, can } = useOrg();
 
-  const [quote, setQuote] = useState<QuoteWithRelations | null>(null);
+  const [salesOrder, setSalesOrder] = useState<SalesOrderWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Modals
-  const [showEditQuote, setShowEditQuote] = useState(false);
+  const [showEditSO, setShowEditSO] = useState(false);
   const [showAddLineItem, setShowAddLineItem] = useState(false);
-  const [showEditLineItem, setShowEditLineItem] = useState<QuoteLineItem | null>(null);
-  const [showSendConfirm, setShowSendConfirm] = useState(false);
-  const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
+  const [showEditLineItem, setShowEditLineItem] = useState<SOLineItem | null>(null);
+  const [showSubmitForApproval, setShowSubmitForApproval] = useState(false);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [showCloneConfirm, setShowCloneConfirm] = useState(false);
-  const [showConvertConfirm, setShowConvertConfirm] = useState(false);
+  const [showConfirmOrder, setShowConfirmOrder] = useState(false);
+  const [showShipModal, setShowShipModal] = useState(false);
+  const [showDeliverConfirm, setShowDeliverConfirm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [trackingNumber, setTrackingNumber] = useState('');
 
-  const loadQuote = async () => {
+  const loadSalesOrder = async () => {
     if (!id) return;
 
     setLoading(true);
-    const quoteData = await quoteService.getQuote(id);
-    setQuote(quoteData);
+    const soData = await salesOrderService.getSalesOrder(id);
+    setSalesOrder(soData);
     setLoading(false);
   };
 
   useEffect(() => {
-    loadQuote();
+    loadSalesOrder();
   }, [id]);
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === null || amount === undefined) return '-';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: quote?.currency || 'USD',
+      currency: salesOrder?.currency || 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
@@ -106,129 +134,153 @@ export default function QuoteDetail() {
     });
   };
 
-  const handleSendQuote = async () => {
-    if (!quote) return;
+  const handleSubmitForApproval = async () => {
+    if (!salesOrder) return;
 
     setSaving(true);
-    const result = await quoteService.sendQuote(quote.id);
+    const result = await salesOrderService.submitForApproval(salesOrder.id);
     setSaving(false);
 
     if (result.success) {
-      toast.success('Quote sent successfully');
+      toast.success('Order submitted for approval');
       logAuditEvent({
         orgId: activeOrgId || '',
-        action: AUDIT_ACTIONS.QUOTE_SENT || 'quote.sent',
-        entityType: 'quote',
-        entityId: quote.id,
-        after: { status: 'sent' },
+        action: 'sales_order.submitted_for_approval',
+        entityType: 'sales_order',
+        entityId: salesOrder.id,
+        after: { status: 'pending_approval' },
       }).catch(console.error);
-      setShowSendConfirm(false);
-      loadQuote();
+      setShowSubmitForApproval(false);
+      loadSalesOrder();
     } else {
-      toast.error(result.error || 'Failed to send quote');
+      toast.error(result.error || 'Failed to submit for approval');
     }
   };
 
-  const handleAcceptQuote = async () => {
-    if (!quote) return;
+  const handleApprove = async () => {
+    if (!salesOrder) return;
 
     setSaving(true);
-    const result = await quoteService.markAccepted(quote.id);
+    const result = await salesOrderService.approve(salesOrder.id);
     setSaving(false);
 
     if (result.success) {
-      toast.success('Quote marked as accepted');
+      toast.success('Order approved');
       logAuditEvent({
         orgId: activeOrgId || '',
-        action: AUDIT_ACTIONS.QUOTE_ACCEPTED || 'quote.accepted',
-        entityType: 'quote',
-        entityId: quote.id,
-        after: { status: 'accepted' },
+        action: 'sales_order.approved',
+        entityType: 'sales_order',
+        entityId: salesOrder.id,
+        after: { status: 'approved', approval_status: 'approved' },
       }).catch(console.error);
-      setShowAcceptConfirm(false);
-      loadQuote();
+      setShowApproveConfirm(false);
+      loadSalesOrder();
     } else {
-      toast.error(result.error || 'Failed to accept quote');
+      toast.error(result.error || 'Failed to approve order');
     }
   };
 
-  const handleRejectQuote = async () => {
-    if (!quote) return;
+  const handleReject = async () => {
+    if (!salesOrder) return;
 
     setSaving(true);
-    const result = await quoteService.markRejected(quote.id, rejectReason);
+    const result = await salesOrderService.reject(salesOrder.id, rejectReason);
     setSaving(false);
 
     if (result.success) {
-      toast.success('Quote marked as rejected');
+      toast.success('Order rejected');
       logAuditEvent({
         orgId: activeOrgId || '',
-        action: AUDIT_ACTIONS.QUOTE_REJECTED || 'quote.rejected',
-        entityType: 'quote',
-        entityId: quote.id,
-        after: { status: 'rejected', rejection_reason: rejectReason },
+        action: 'sales_order.rejected',
+        entityType: 'sales_order',
+        entityId: salesOrder.id,
+        after: { approval_status: 'rejected', rejection_reason: rejectReason },
       }).catch(console.error);
       setShowRejectModal(false);
       setRejectReason('');
-      loadQuote();
+      loadSalesOrder();
     } else {
-      toast.error(result.error || 'Failed to reject quote');
+      toast.error(result.error || 'Failed to reject order');
     }
   };
 
-  const handleCloneQuote = async () => {
-    if (!quote) return;
+  const handleConfirm = async () => {
+    if (!salesOrder) return;
 
     setSaving(true);
-    const result = await quoteService.cloneQuote(quote.id);
+    const result = await salesOrderService.confirm(salesOrder.id);
     setSaving(false);
 
-    if (result.success && result.quoteId) {
-      toast.success('Quote cloned successfully');
+    if (result.success) {
+      toast.success('Order confirmed');
       logAuditEvent({
         orgId: activeOrgId || '',
-        action: AUDIT_ACTIONS.QUOTE_CLONED || 'quote.cloned',
-        entityType: 'quote',
-        entityId: result.quoteId,
-        before: { source_quote_id: quote.id },
+        action: 'sales_order.confirmed',
+        entityType: 'sales_order',
+        entityId: salesOrder.id,
+        after: { status: 'confirmed' },
       }).catch(console.error);
-      setShowCloneConfirm(false);
-      navigate(`/quotes/${result.quoteId}`);
+      setShowConfirmOrder(false);
+      loadSalesOrder();
     } else {
-      toast.error(result.error || 'Failed to clone quote');
+      toast.error(result.error || 'Failed to confirm order');
     }
   };
 
-  const handleConvertToInvoice = async () => {
-    if (!quote) return;
+  const handleShip = async () => {
+    if (!salesOrder) return;
 
     setSaving(true);
-    const result = await invoiceService.createFromQuote(quote.id);
+    const result = await salesOrderService.markShipped(salesOrder.id, trackingNumber || undefined);
     setSaving(false);
 
-    if (result.success && result.invoiceId) {
-      toast.success('Invoice created from quote');
+    if (result.success) {
+      toast.success('Order marked as shipped');
       logAuditEvent({
         orgId: activeOrgId || '',
-        action: AUDIT_ACTIONS.INVOICE_CREATED || 'invoice.created',
-        entityType: 'invoice',
-        entityId: result.invoiceId,
-        before: { source_quote_id: quote.id },
+        action: 'sales_order.shipped',
+        entityType: 'sales_order',
+        entityId: salesOrder.id,
+        after: { status: 'shipped', tracking_number: trackingNumber },
       }).catch(console.error);
-      setShowConvertConfirm(false);
-      navigate(`/invoices/${result.invoiceId}`);
+      setShowShipModal(false);
+      setTrackingNumber('');
+      loadSalesOrder();
     } else {
-      toast.error(result.error || 'Failed to create invoice');
+      toast.error(result.error || 'Failed to mark as shipped');
+    }
+  };
+
+  const handleDeliver = async () => {
+    if (!salesOrder) return;
+
+    setSaving(true);
+    const result = await salesOrderService.markDelivered(salesOrder.id);
+    setSaving(false);
+
+    if (result.success) {
+      toast.success('Order marked as delivered');
+      logAuditEvent({
+        orgId: activeOrgId || '',
+        action: 'sales_order.delivered',
+        entityType: 'sales_order',
+        entityId: salesOrder.id,
+        after: { status: 'delivered' },
+      }).catch(console.error);
+      setShowDeliverConfirm(false);
+      loadSalesOrder();
+    } else {
+      toast.error(result.error || 'Failed to mark as delivered');
     }
   };
 
   const handleDeleteLineItem = async (lineItemId: string) => {
     if (!confirm('Are you sure you want to delete this line item?')) return;
 
-    const result = await quoteService.removeLineItem(lineItemId);
+    const result = await salesOrderService.removeLineItem(lineItemId);
     if (result.success) {
       toast.success('Line item deleted');
-      loadQuote();
+      loadSalesOrder();
     } else {
       toast.error(result.error || 'Failed to delete line item');
     }
@@ -242,23 +294,28 @@ export default function QuoteDetail() {
     );
   }
 
-  if (!quote) {
+  if (!salesOrder) {
     return (
       <div className="text-center py-12">
-        <p className="text-th-text-tertiary">Quote not found</p>
-        <Link to="/quotes" className="text-th-accent-600 hover:underline mt-2 inline-block">
-          Back to quotes
+        <p className="text-th-text-tertiary">Sales order not found</p>
+        <Link to="/sales-orders" className="text-th-accent-600 hover:underline mt-2 inline-block">
+          Back to sales orders
         </Link>
       </div>
     );
   }
 
-  const statusColors = getStatusColor(quote.status);
-  const isEditable = quote.status === 'draft' || quote.status === 'revised';
-  const canSend = quote.status === 'draft' || quote.status === 'revised';
-  const canAcceptReject = quote.status === 'sent' || quote.status === 'pending';
-  const canConvert = quote.status === 'accepted';
-  const lineItems = quote.line_items || [];
+  const statusColors = getStatusColor(salesOrder.status);
+  const approvalColors = getApprovalStatusColor(salesOrder.approval_status);
+  const isEditable = salesOrder.status === 'draft';
+  const canSubmitForApproval =
+    salesOrder.status === 'draft' && (salesOrder.line_items?.length || 0) > 0;
+  const canApproveReject =
+    salesOrder.status === 'pending_approval' && can('sales_orders.approve');
+  const canConfirm = salesOrder.status === 'approved';
+  const canShip = ['confirmed', 'processing'].includes(salesOrder.status);
+  const canDeliver = ['shipped', 'partially_delivered'].includes(salesOrder.status);
+  const lineItems = salesOrder.line_items || [];
 
   return (
     <div className="space-y-6">
@@ -266,58 +323,45 @@ export default function QuoteDetail() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/quotes')}
+            onClick={() => navigate('/sales-orders')}
             className="p-2 hover:bg-surface-tertiary rounded-lg"
           >
             <ArrowLeft className="w-5 h-5 text-th-text-tertiary" />
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-th-text-primary">{quote.name}</h1>
+              <h1 className="text-2xl font-bold text-th-text-primary">{salesOrder.name}</h1>
               <span
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize ${statusColors.bg} ${statusColors.text}`}
+                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors.bg} ${statusColors.text}`}
               >
-                {quote.status}
+                {formatStatusLabel(salesOrder.status)}
+              </span>
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${approvalColors.bg} ${approvalColors.text}`}
+              >
+                {formatStatusLabel(salesOrder.approval_status)}
               </span>
             </div>
-            <p className="text-th-text-tertiary text-sm mt-1">{quote.quote_number}</p>
+            <p className="text-th-text-tertiary text-sm mt-1">{salesOrder.so_number}</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          {/* Clone */}
-          <button
-            onClick={() => setShowCloneConfirm(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
-          >
-            <Copy className="w-4 h-4" />
-            <span>Clone</span>
-          </button>
-
-          {/* Print */}
-          <button
-            onClick={() => window.open(`/quotes/${id}/print`, '_blank')}
-            className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print</span>
-          </button>
-
-          {/* Convert to Invoice */}
-          {canConvert && (
-            <PermissionGate permission="invoices.write">
+          {/* Submit for Approval */}
+          {canSubmitForApproval && (
+            <PermissionGate permission="sales_orders.write">
               <button
-                onClick={() => setShowConvertConfirm(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100"
+                onClick={() => setShowSubmitForApproval(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm font-medium text-yellow-700 hover:bg-yellow-100"
               >
-                <Receipt className="w-4 h-4" />
-                <span>Convert to Invoice</span>
+                <Send className="w-4 h-4" />
+                <span>Submit for Approval</span>
               </button>
             </PermissionGate>
           )}
 
-          {/* Accept/Reject */}
-          {canAcceptReject && (
-            <PermissionGate permission="quotes.write">
+          {/* Approve/Reject */}
+          {canApproveReject && (
+            <>
               <button
                 onClick={() => setShowRejectModal(true)}
                 className="flex items-center space-x-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-100"
@@ -326,33 +370,59 @@ export default function QuoteDetail() {
                 <span>Reject</span>
               </button>
               <button
-                onClick={() => setShowAcceptConfirm(true)}
+                onClick={() => setShowApproveConfirm(true)}
                 className="flex items-center space-x-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100"
               >
                 <CheckCircle className="w-4 h-4" />
-                <span>Accept</span>
+                <span>Approve</span>
+              </button>
+            </>
+          )}
+
+          {/* Confirm Order */}
+          {canConfirm && (
+            <PermissionGate permission="sales_orders.write">
+              <button
+                onClick={() => setShowConfirmOrder(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>Confirm Order</span>
               </button>
             </PermissionGate>
           )}
 
-          {/* Send */}
-          {canSend && (
-            <PermissionGate permission="quotes.write">
+          {/* Mark Shipped */}
+          {canShip && (
+            <PermissionGate permission="sales_orders.write">
               <button
-                onClick={() => setShowSendConfirm(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
+                onClick={() => setShowShipModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-cyan-50 border border-cyan-200 rounded-lg text-sm font-medium text-cyan-700 hover:bg-cyan-100"
               >
-                <Send className="w-4 h-4" />
-                <span>Send Quote</span>
+                <Truck className="w-4 h-4" />
+                <span>Mark Shipped</span>
+              </button>
+            </PermissionGate>
+          )}
+
+          {/* Mark Delivered */}
+          {canDeliver && (
+            <PermissionGate permission="sales_orders.write">
+              <button
+                onClick={() => setShowDeliverConfirm(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100"
+              >
+                <Package className="w-4 h-4" />
+                <span>Mark Delivered</span>
               </button>
             </PermissionGate>
           )}
 
           {/* Edit */}
           {isEditable && (
-            <PermissionGate permission="quotes.write">
+            <PermissionGate permission="sales_orders.write">
               <button
-                onClick={() => setShowEditQuote(true)}
+                onClick={() => setShowEditSO(true)}
                 className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
               >
                 <Edit2 className="w-4 h-4" />
@@ -363,27 +433,46 @@ export default function QuoteDetail() {
         </div>
       </div>
 
-      {/* Quote Total Banner */}
+      {/* Order Total Banner */}
       <div className="bg-gradient-to-r from-th-accent-600 to-th-accent-700 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-th-accent-100 text-sm">Quote Total</p>
-            <p className="text-4xl font-bold mt-1">{formatCurrency(quote.total)}</p>
+            <p className="text-th-accent-100 text-sm">Order Total</p>
+            <p className="text-4xl font-bold mt-1">{formatCurrency(salesOrder.total)}</p>
           </div>
           <div className="text-right">
-            <p className="text-th-accent-100 text-sm">Subtotal: {formatCurrency(quote.subtotal)}</p>
-            {quote.discount_percent && (
-              <p className="text-th-accent-100 text-sm">Discount: {quote.discount_percent}%</p>
+            <p className="text-th-accent-100 text-sm">
+              Subtotal: {formatCurrency(salesOrder.subtotal)}
+            </p>
+            {salesOrder.discount_percent && (
+              <p className="text-th-accent-100 text-sm">Discount: {salesOrder.discount_percent}%</p>
             )}
-            {quote.discount_amount && (
-              <p className="text-th-accent-100 text-sm">Discount: {formatCurrency(quote.discount_amount)}</p>
+            {salesOrder.discount_amount && (
+              <p className="text-th-accent-100 text-sm">
+                Discount: {formatCurrency(salesOrder.discount_amount)}
+              </p>
             )}
-            {quote.shipping_amount && (
-              <p className="text-th-accent-100 text-sm">Shipping: {formatCurrency(quote.shipping_amount)}</p>
+            {salesOrder.shipping_amount && (
+              <p className="text-th-accent-100 text-sm">
+                Shipping: {formatCurrency(salesOrder.shipping_amount)}
+              </p>
             )}
           </div>
         </div>
       </div>
+
+      {/* Rejection Reason Banner */}
+      {salesOrder.approval_status === 'rejected' && salesOrder.rejection_reason && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <XCircle className="w-5 h-5 text-red-500 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-red-700">Order Rejected</h3>
+              <p className="text-sm text-red-600 mt-1">{salesOrder.rejection_reason}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content - Line Items */}
@@ -393,7 +482,7 @@ export default function QuoteDetail() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-th-border">
               <h2 className="text-lg font-semibold text-th-text-primary">Line Items</h2>
               {isEditable && (
-                <PermissionGate permission="quotes.write">
+                <PermissionGate permission="sales_orders.write">
                   <button
                     onClick={() => setShowAddLineItem(true)}
                     className="flex items-center gap-1 text-sm text-th-accent-600 hover:text-th-accent-700"
@@ -430,13 +519,13 @@ export default function QuoteDetail() {
                         Qty
                       </th>
                       <th className="text-right px-4 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
+                        Shipped
+                      </th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
+                        Delivered
+                      </th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                         Unit Price
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                        Discount
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                        Tax
                       </th>
                       <th className="text-right px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                         Total
@@ -450,7 +539,12 @@ export default function QuoteDetail() {
                         <td className="px-6 py-4">
                           <p className="text-sm font-medium text-th-text-primary">{item.name}</p>
                           {item.description && (
-                            <p className="text-xs text-th-text-tertiary mt-0.5">{item.description}</p>
+                            <p className="text-xs text-th-text-tertiary mt-0.5">
+                              {item.description}
+                            </p>
+                          )}
+                          {item.sku && (
+                            <p className="text-xs text-th-text-tertiary mt-0.5">SKU: {item.sku}</p>
                           )}
                           {item.product && (
                             <p className="text-xs text-th-accent-600 mt-0.5">
@@ -459,20 +553,16 @@ export default function QuoteDetail() {
                           )}
                         </td>
                         <td className="px-4 py-4 text-right text-sm text-th-text-secondary">
-                          {item.quantity}
+                          {item.quantity} {item.unit}
+                        </td>
+                        <td className="px-4 py-4 text-right text-sm text-th-text-secondary">
+                          {item.quantity_shipped}
+                        </td>
+                        <td className="px-4 py-4 text-right text-sm text-th-text-secondary">
+                          {item.quantity_delivered}
                         </td>
                         <td className="px-4 py-4 text-right text-sm text-th-text-secondary">
                           {formatCurrency(item.unit_price)}
-                        </td>
-                        <td className="px-4 py-4 text-right text-sm text-th-text-secondary">
-                          {item.discount_percent
-                            ? `${item.discount_percent}%`
-                            : item.discount_amount
-                            ? formatCurrency(item.discount_amount)
-                            : '-'}
-                        </td>
-                        <td className="px-4 py-4 text-right text-sm text-th-text-secondary">
-                          {item.tax_rate ? `${item.tax_rate}%` : '-'}
                         </td>
                         <td className="px-6 py-4 text-right text-sm font-medium text-th-text-primary">
                           {formatCurrency(item.total)}
@@ -507,7 +597,7 @@ export default function QuoteDetail() {
                         Subtotal
                       </td>
                       <td className="px-6 py-3 text-right text-sm font-semibold text-th-text-primary">
-                        {formatCurrency(quote.subtotal)}
+                        {formatCurrency(salesOrder.subtotal)}
                       </td>
                       {isEditable && <td></td>}
                     </tr>
@@ -519,7 +609,7 @@ export default function QuoteDetail() {
                         Total
                       </td>
                       <td className="px-6 py-3 text-right text-lg font-bold text-th-accent-600">
-                        {formatCurrency(quote.total)}
+                        {formatCurrency(salesOrder.total)}
                       </td>
                       {isEditable && <td></td>}
                     </tr>
@@ -529,95 +619,141 @@ export default function QuoteDetail() {
             )}
           </div>
 
-          {/* Terms & Conditions */}
-          {quote.terms_and_conditions && (
+          {/* Shipping Info */}
+          {(salesOrder.tracking_number ||
+            salesOrder.carrier ||
+            salesOrder.shipping_method) && (
             <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-              <h2 className="text-lg font-semibold text-th-text-primary mb-4">Terms & Conditions</h2>
+              <h2 className="text-lg font-semibold text-th-text-primary mb-4 flex items-center gap-2">
+                <Truck className="w-5 h-5" />
+                Shipping Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {salesOrder.shipping_method && (
+                  <div>
+                    <p className="text-sm text-th-text-tertiary">Shipping Method</p>
+                    <p className="text-th-text-primary font-medium">
+                      {salesOrder.shipping_method}
+                    </p>
+                  </div>
+                )}
+                {salesOrder.carrier && (
+                  <div>
+                    <p className="text-sm text-th-text-tertiary">Carrier</p>
+                    <p className="text-th-text-primary font-medium">{salesOrder.carrier}</p>
+                  </div>
+                )}
+                {salesOrder.tracking_number && (
+                  <div>
+                    <p className="text-sm text-th-text-tertiary">Tracking Number</p>
+                    <p className="text-th-text-primary font-medium">
+                      {salesOrder.tracking_number}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Terms & Conditions */}
+          {salesOrder.terms_and_conditions && (
+            <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+              <h2 className="text-lg font-semibold text-th-text-primary mb-4">
+                Terms & Conditions
+              </h2>
               <p className="text-sm text-th-text-secondary whitespace-pre-wrap">
-                {quote.terms_and_conditions}
+                {salesOrder.terms_and_conditions}
               </p>
             </div>
           )}
 
           {/* Notes */}
-          {quote.notes && (
+          {salesOrder.notes && (
             <div className="bg-surface-primary rounded-xl border border-th-border p-6">
               <h2 className="text-lg font-semibold text-th-text-primary mb-4">Internal Notes</h2>
-              <p className="text-sm text-th-text-secondary whitespace-pre-wrap">{quote.notes}</p>
-            </div>
-          )}
-
-          {/* Rejection Reason */}
-          {quote.status === 'rejected' && quote.rejection_reason && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-red-700 mb-2">Rejection Reason</h2>
-              <p className="text-sm text-red-600">{quote.rejection_reason}</p>
+              <p className="text-sm text-th-text-secondary whitespace-pre-wrap">
+                {salesOrder.notes}
+              </p>
             </div>
           )}
         </div>
 
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Quote Details */}
+          {/* Order Details */}
           <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-            <h2 className="text-lg font-semibold text-th-text-primary mb-4">Quote Details</h2>
+            <h2 className="text-lg font-semibold text-th-text-primary mb-4">Order Details</h2>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Calendar className="w-4 h-4 text-th-text-tertiary" />
                 <div>
-                  <p className="text-sm text-th-text-tertiary">Valid Until</p>
-                  <p className="text-th-text-primary">{formatDate(quote.valid_until)}</p>
+                  <p className="text-sm text-th-text-tertiary">Order Date</p>
+                  <p className="text-th-text-primary">{formatDate(salesOrder.order_date)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="w-4 h-4 text-th-text-tertiary" />
+                <div>
+                  <p className="text-sm text-th-text-tertiary">Requested Date</p>
+                  <p className="text-th-text-primary">{formatDate(salesOrder.requested_date)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Calendar className="w-4 h-4 text-th-text-tertiary" />
                 <div>
-                  <p className="text-sm text-th-text-tertiary">Created</p>
-                  <p className="text-th-text-primary">{formatDate(quote.created_at)}</p>
+                  <p className="text-sm text-th-text-tertiary">Promised Date</p>
+                  <p className="text-th-text-primary">{formatDate(salesOrder.promised_date)}</p>
                 </div>
               </div>
-              {quote.sent_at && (
+              {salesOrder.shipped_date && (
                 <div className="flex items-center gap-3">
-                  <Send className="w-4 h-4 text-th-text-tertiary" />
+                  <Truck className="w-4 h-4 text-cyan-500" />
                   <div>
-                    <p className="text-sm text-th-text-tertiary">Sent</p>
-                    <p className="text-th-text-primary">{formatDate(quote.sent_at)}</p>
+                    <p className="text-sm text-th-text-tertiary">Shipped Date</p>
+                    <p className="text-th-text-primary">{formatDate(salesOrder.shipped_date)}</p>
                   </div>
                 </div>
               )}
-              {quote.accepted_at && (
+              {salesOrder.delivered_date && (
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <Package className="w-4 h-4 text-green-500" />
                   <div>
-                    <p className="text-sm text-th-text-tertiary">Accepted</p>
-                    <p className="text-th-text-primary">{formatDate(quote.accepted_at)}</p>
+                    <p className="text-sm text-th-text-tertiary">Delivered Date</p>
+                    <p className="text-th-text-primary">{formatDate(salesOrder.delivered_date)}</p>
                   </div>
                 </div>
               )}
-              {quote.rejected_at && (
+              {salesOrder.payment_terms && (
                 <div className="flex items-center gap-3">
-                  <XCircle className="w-4 h-4 text-red-500" />
+                  <CreditCard className="w-4 h-4 text-th-text-tertiary" />
                   <div>
-                    <p className="text-sm text-th-text-tertiary">Rejected</p>
-                    <p className="text-th-text-primary">{formatDate(quote.rejected_at)}</p>
+                    <p className="text-sm text-th-text-tertiary">Payment Terms</p>
+                    <p className="text-th-text-primary">{salesOrder.payment_terms}</p>
                   </div>
                 </div>
               )}
+              <div className="flex items-center gap-3">
+                <Calendar className="w-4 h-4 text-th-text-tertiary" />
+                <div>
+                  <p className="text-sm text-th-text-tertiary">Created</p>
+                  <p className="text-th-text-primary">{formatDate(salesOrder.created_at)}</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Account */}
           <div className="bg-surface-primary rounded-xl border border-th-border p-6">
             <h2 className="text-lg font-semibold text-th-text-primary mb-4">Account</h2>
-            {quote.account ? (
+            {salesOrder.account ? (
               <Link
-                to={`/accounts/${quote.account.id}`}
+                to={`/accounts/${salesOrder.account.id}`}
                 className="flex items-center gap-3 p-3 bg-surface-secondary rounded-lg hover:bg-surface-tertiary"
               >
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Building2 className="w-5 h-5 text-blue-600" />
                 </div>
-                <span className="font-medium text-th-text-primary">{quote.account.name}</span>
+                <span className="font-medium text-th-text-primary">{salesOrder.account.name}</span>
               </Link>
             ) : (
               <p className="text-th-text-tertiary">No account linked</p>
@@ -627,22 +763,22 @@ export default function QuoteDetail() {
           {/* Contact */}
           <div className="bg-surface-primary rounded-xl border border-th-border p-6">
             <h2 className="text-lg font-semibold text-th-text-primary mb-4">Contact</h2>
-            {quote.contact ? (
+            {salesOrder.contact ? (
               <Link
-                to={`/contacts/${quote.contact.id}`}
+                to={`/contacts/${salesOrder.contact.id}`}
                 className="flex items-center gap-3 p-3 bg-surface-secondary rounded-lg hover:bg-surface-tertiary"
               >
                 <div className="w-10 h-10 bg-th-accent-100 rounded-full flex items-center justify-center">
                   <span className="text-th-accent-700 font-medium">
-                    {quote.contact.first_name?.[0]}
-                    {quote.contact.last_name?.[0]}
+                    {salesOrder.contact.first_name?.[0]}
+                    {salesOrder.contact.last_name?.[0]}
                   </span>
                 </div>
                 <div>
                   <p className="font-medium text-th-text-primary">
-                    {quote.contact.first_name} {quote.contact.last_name}
+                    {salesOrder.contact.first_name} {salesOrder.contact.last_name}
                   </p>
-                  <p className="text-sm text-th-text-tertiary">{quote.contact.email}</p>
+                  <p className="text-sm text-th-text-tertiary">{salesOrder.contact.email}</p>
                 </div>
               </Link>
             ) : (
@@ -653,18 +789,39 @@ export default function QuoteDetail() {
           {/* Deal */}
           <div className="bg-surface-primary rounded-xl border border-th-border p-6">
             <h2 className="text-lg font-semibold text-th-text-primary mb-4">Related Deal</h2>
-            {quote.deal ? (
+            {salesOrder.deal ? (
               <Link
-                to={`/deals/${quote.deal.id}`}
+                to={`/deals/${salesOrder.deal.id}`}
                 className="flex items-center gap-3 p-3 bg-surface-secondary rounded-lg hover:bg-surface-tertiary"
               >
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                   <Briefcase className="w-5 h-5 text-purple-600" />
                 </div>
-                <span className="font-medium text-th-text-primary">{quote.deal.name}</span>
+                <span className="font-medium text-th-text-primary">{salesOrder.deal.name}</span>
               </Link>
             ) : (
               <p className="text-th-text-tertiary">No deal linked</p>
+            )}
+          </div>
+
+          {/* Source Quote */}
+          <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+            <h2 className="text-lg font-semibold text-th-text-primary mb-4">Source Quote</h2>
+            {salesOrder.quote ? (
+              <Link
+                to={`/quotes/${salesOrder.quote.id}`}
+                className="flex items-center gap-3 p-3 bg-surface-secondary rounded-lg hover:bg-surface-tertiary"
+              >
+                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <span className="font-medium text-th-text-primary">{salesOrder.quote.name}</span>
+                  <p className="text-sm text-th-text-tertiary">{salesOrder.quote.quote_number}</p>
+                </div>
+              </Link>
+            ) : (
+              <p className="text-th-text-tertiary">Not created from quote</p>
             )}
           </div>
         </div>
@@ -672,67 +829,72 @@ export default function QuoteDetail() {
 
       {/* Modals */}
 
-      {/* Send Confirmation */}
+      {/* Submit for Approval Confirmation */}
       <Modal
-        open={showSendConfirm}
-        onClose={() => setShowSendConfirm(false)}
-        title="Send Quote"
+        open={showSubmitForApproval}
+        onClose={() => setShowSubmitForApproval(false)}
+        title="Submit for Approval"
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-th-text-secondary">
-            Are you sure you want to send this quote to the customer?
+            Submit this sales order for approval? You will not be able to edit the order while it
+            is pending approval.
           </p>
           <div className="p-4 bg-surface-secondary rounded-lg">
-            <p className="font-medium text-th-text-primary">{quote.name}</p>
-            <p className="text-2xl font-bold text-th-accent-600">{formatCurrency(quote.total)}</p>
+            <p className="font-medium text-th-text-primary">{salesOrder.name}</p>
+            <p className="text-2xl font-bold text-th-accent-600">
+              {formatCurrency(salesOrder.total)}
+            </p>
           </div>
           <div className="flex justify-end gap-3">
             <button
-              onClick={() => setShowSendConfirm(false)}
+              onClick={() => setShowSubmitForApproval(false)}
               className="px-4 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-secondary rounded-lg"
             >
               Cancel
             </button>
             <button
-              onClick={handleSendQuote}
+              onClick={handleSubmitForApproval}
               disabled={saving}
-              className="px-4 py-2 text-sm font-medium text-white bg-th-accent-600 hover:bg-th-accent-700 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg disabled:opacity-50"
             >
-              {saving ? 'Sending...' : 'Send Quote'}
+              {saving ? 'Submitting...' : 'Submit for Approval'}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Accept Confirmation */}
+      {/* Approve Confirmation */}
       <Modal
-        open={showAcceptConfirm}
-        onClose={() => setShowAcceptConfirm(false)}
-        title="Accept Quote"
+        open={showApproveConfirm}
+        onClose={() => setShowApproveConfirm(false)}
+        title="Approve Order"
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-th-text-secondary">
-            Mark this quote as accepted by the customer?
+            Approve this sales order? The order will be ready for confirmation and fulfillment.
           </p>
           <div className="p-4 bg-green-50 rounded-lg">
-            <p className="font-medium text-green-700">{quote.name}</p>
-            <p className="text-2xl font-bold text-green-800">{formatCurrency(quote.total)}</p>
+            <p className="font-medium text-green-700">{salesOrder.name}</p>
+            <p className="text-2xl font-bold text-green-800">
+              {formatCurrency(salesOrder.total)}
+            </p>
           </div>
           <div className="flex justify-end gap-3">
             <button
-              onClick={() => setShowAcceptConfirm(false)}
+              onClick={() => setShowApproveConfirm(false)}
               className="px-4 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-secondary rounded-lg"
             >
               Cancel
             </button>
             <button
-              onClick={handleAcceptQuote}
+              onClick={handleApprove}
               disabled={saving}
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50"
             >
-              {saving ? 'Accepting...' : 'Accept Quote'}
+              {saving ? 'Approving...' : 'Approve Order'}
             </button>
           </div>
         </div>
@@ -745,12 +907,12 @@ export default function QuoteDetail() {
           setShowRejectModal(false);
           setRejectReason('');
         }}
-        title="Reject Quote"
+        title="Reject Order"
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-th-text-secondary">
-            Please provide a reason for rejecting this quote.
+            Please provide a reason for rejecting this order.
           </p>
           <div>
             <label className="block text-sm font-medium text-th-text-secondary mb-1">
@@ -759,7 +921,7 @@ export default function QuoteDetail() {
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="e.g., Price too high, Requirements changed..."
+              placeholder="e.g., Invalid pricing, Inventory not available..."
               rows={3}
               className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
@@ -775,73 +937,129 @@ export default function QuoteDetail() {
               Cancel
             </button>
             <button
-              onClick={handleRejectQuote}
+              onClick={handleReject}
               disabled={saving}
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50"
             >
-              {saving ? 'Rejecting...' : 'Reject Quote'}
+              {saving ? 'Rejecting...' : 'Reject Order'}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Clone Confirmation */}
+      {/* Confirm Order Modal */}
       <Modal
-        open={showCloneConfirm}
-        onClose={() => setShowCloneConfirm(false)}
-        title="Clone Quote"
+        open={showConfirmOrder}
+        onClose={() => setShowConfirmOrder(false)}
+        title="Confirm Order"
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-th-text-secondary">
-            This will create a copy of the quote with all line items. The new quote will be in draft status.
+            Confirm this order and begin fulfillment? This action indicates the order has been
+            accepted and is being processed.
           </p>
+          <div className="p-4 bg-indigo-50 rounded-lg">
+            <p className="font-medium text-indigo-700">{salesOrder.name}</p>
+            <p className="text-2xl font-bold text-indigo-800">
+              {formatCurrency(salesOrder.total)}
+            </p>
+          </div>
           <div className="flex justify-end gap-3">
             <button
-              onClick={() => setShowCloneConfirm(false)}
+              onClick={() => setShowConfirmOrder(false)}
               className="px-4 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-secondary rounded-lg"
             >
               Cancel
             </button>
             <button
-              onClick={handleCloneQuote}
+              onClick={handleConfirm}
               disabled={saving}
-              className="px-4 py-2 text-sm font-medium text-white bg-th-accent-600 hover:bg-th-accent-700 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50"
             >
-              {saving ? 'Cloning...' : 'Clone Quote'}
+              {saving ? 'Confirming...' : 'Confirm Order'}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Convert to Invoice Confirmation */}
+      {/* Ship Modal */}
       <Modal
-        open={showConvertConfirm}
-        onClose={() => setShowConvertConfirm(false)}
-        title="Convert to Invoice"
+        open={showShipModal}
+        onClose={() => {
+          setShowShipModal(false);
+          setTrackingNumber('');
+        }}
+        title="Mark as Shipped"
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-th-text-secondary">
-            This will create a new invoice from this quote with all line items copied over. The invoice will be in draft status.
+            Mark this order as shipped. Optionally add a tracking number.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+              Tracking Number (Optional)
+            </label>
+            <input
+              type="text"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="Enter tracking number"
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            />
+          </div>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => {
+                setShowShipModal(false);
+                setTrackingNumber('');
+              }}
+              className="px-4 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-secondary rounded-lg"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleShip}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg disabled:opacity-50"
+            >
+              {saving ? 'Updating...' : 'Mark Shipped'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Deliver Confirmation */}
+      <Modal
+        open={showDeliverConfirm}
+        onClose={() => setShowDeliverConfirm(false)}
+        title="Mark as Delivered"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-th-text-secondary">
+            Mark this order as delivered? This indicates the customer has received their items.
           </p>
           <div className="p-4 bg-green-50 rounded-lg">
-            <p className="font-medium text-green-700">{quote.name}</p>
-            <p className="text-2xl font-bold text-green-800">{formatCurrency(quote.total)}</p>
+            <p className="font-medium text-green-700">{salesOrder.name}</p>
+            <p className="text-2xl font-bold text-green-800">
+              {formatCurrency(salesOrder.total)}
+            </p>
           </div>
           <div className="flex justify-end gap-3">
             <button
-              onClick={() => setShowConvertConfirm(false)}
+              onClick={() => setShowDeliverConfirm(false)}
               className="px-4 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-secondary rounded-lg"
             >
               Cancel
             </button>
             <button
-              onClick={handleConvertToInvoice}
+              onClick={handleDeliver}
               disabled={saving}
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50"
             >
-              {saving ? 'Creating Invoice...' : 'Create Invoice'}
+              {saving ? 'Updating...' : 'Mark Delivered'}
             </button>
           </div>
         </div>
@@ -854,23 +1072,23 @@ export default function QuoteDetail() {
           setShowAddLineItem(false);
           setShowEditLineItem(null);
         }}
-        quoteId={quote.id}
+        salesOrderId={salesOrder.id}
         lineItem={showEditLineItem}
         onSuccess={() => {
           setShowAddLineItem(false);
           setShowEditLineItem(null);
-          loadQuote();
+          loadSalesOrder();
         }}
       />
 
-      {/* Edit Quote Modal */}
-      <EditQuoteModal
-        open={showEditQuote}
-        onClose={() => setShowEditQuote(false)}
-        quote={quote}
+      {/* Edit Sales Order Modal */}
+      <EditSalesOrderModal
+        open={showEditSO}
+        onClose={() => setShowEditSO(false)}
+        salesOrder={salesOrder}
         onSuccess={() => {
-          setShowEditQuote(false);
-          loadQuote();
+          setShowEditSO(false);
+          loadSalesOrder();
         }}
       />
     </div>
@@ -881,13 +1099,13 @@ export default function QuoteDetail() {
 interface LineItemModalProps {
   open: boolean;
   onClose: () => void;
-  quoteId: string;
-  lineItem: QuoteLineItem | null;
+  salesOrderId: string;
+  lineItem: SOLineItem | null;
   onSuccess: () => void;
 }
 
-function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItemModalProps) {
-  const { quoteService, productService } = useCRM();
+function LineItemModal({ open, onClose, salesOrderId, lineItem, onSuccess }: LineItemModalProps) {
+  const { salesOrderService, productService } = useCRM();
 
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -895,7 +1113,9 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
   const [productId, setProductId] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [sku, setSku] = useState('');
   const [quantity, setQuantity] = useState('1');
+  const [unit, setUnit] = useState('each');
   const [unitPrice, setUnitPrice] = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
   const [taxRate, setTaxRate] = useState('');
@@ -903,15 +1123,17 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
   useEffect(() => {
     if (!open) return;
 
-    productService.getProducts({}, 100, 0).then(({ products }) => {
-      setProducts(products);
+    productService.getProducts({}, 100, 0).then(({ products: prods }) => {
+      setProducts(prods);
     });
 
     if (lineItem) {
       setProductId(lineItem.product_id || '');
       setName(lineItem.name);
       setDescription(lineItem.description || '');
+      setSku(lineItem.sku || '');
       setQuantity(lineItem.quantity.toString());
+      setUnit(lineItem.unit || 'each');
       setUnitPrice(lineItem.unit_price.toString());
       setDiscountPercent(lineItem.discount_percent?.toString() || '');
       setTaxRate(lineItem.tax_rate?.toString() || '');
@@ -919,7 +1141,9 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
       setProductId('');
       setName('');
       setDescription('');
+      setSku('');
       setQuantity('1');
+      setUnit('each');
       setUnitPrice('');
       setDiscountPercent('');
       setTaxRate('');
@@ -932,6 +1156,7 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
     if (product) {
       setName(product.name);
       setDescription(product.description || '');
+      setSku(product.code || '');
       setUnitPrice(product.unit_price?.toString() || '');
     }
   };
@@ -954,11 +1179,13 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
 
     setLoading(true);
 
-    const input: QuoteLineItemCreateInput = {
+    const input: SOLineItemCreateInput = {
       product_id: productId || undefined,
       name: name.trim(),
       description: description || undefined,
+      sku: sku || undefined,
       quantity: parseFloat(quantity),
+      unit: unit || 'each',
       unit_price: parseFloat(unitPrice),
       discount_percent: discountPercent ? parseFloat(discountPercent) : undefined,
       tax_rate: taxRate ? parseFloat(taxRate) : undefined,
@@ -966,9 +1193,9 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
 
     let result;
     if (lineItem) {
-      result = await quoteService.updateLineItem(lineItem.id, input);
+      result = await salesOrderService.updateLineItem(lineItem.id, input);
     } else {
-      result = await quoteService.addLineItem(quoteId, input);
+      result = await salesOrderService.addLineItem(salesOrderId, input);
     }
 
     setLoading(false);
@@ -1049,7 +1276,19 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* SKU */}
+        <div>
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">SKU</label>
+          <input
+            type="text"
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            placeholder="Enter SKU"
+            className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
           {/* Quantity */}
           <div>
             <label className="block text-sm font-medium text-th-text-secondary mb-1">
@@ -1066,13 +1305,27 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
             />
           </div>
 
+          {/* Unit */}
+          <div>
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">Unit</label>
+            <input
+              type="text"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="each"
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            />
+          </div>
+
           {/* Unit Price */}
           <div>
             <label className="block text-sm font-medium text-th-text-secondary mb-1">
               Unit Price <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-th-text-tertiary">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-th-text-tertiary">
+                $
+              </span>
               <input
                 type="number"
                 value={unitPrice}
@@ -1104,7 +1357,9 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
                 placeholder="0"
                 className="w-full border border-th-border rounded-lg px-3 py-2 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-th-text-tertiary">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-th-text-tertiary">
+                %
+              </span>
             </div>
           </div>
 
@@ -1123,7 +1378,9 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
                 placeholder="0"
                 className="w-full border border-th-border rounded-lg px-3 py-2 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-th-text-tertiary">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-th-text-tertiary">
+                %
+              </span>
             </div>
           </div>
         </div>
@@ -1168,29 +1425,38 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
   );
 }
 
-// Edit Quote Modal
-interface EditQuoteModalProps {
+// Edit Sales Order Modal
+interface EditSalesOrderModalProps {
   open: boolean;
   onClose: () => void;
-  quote: QuoteWithRelations;
+  salesOrder: SalesOrderWithRelations;
   onSuccess: () => void;
 }
 
-function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps) {
-  const { quoteService, accountService, contactService, dealService } = useCRM();
+function EditSalesOrderModal({
+  open,
+  onClose,
+  salesOrder,
+  onSuccess,
+}: EditSalesOrderModalProps) {
+  const { salesOrderService, accountService, contactService, dealService } = useCRM();
   const { activeOrgId } = useOrg();
 
   const [loading, setLoading] = useState(false);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [deals, setDeals] = useState<any[]>([]);
-  const [contacts, setContacts] = useState<any[]>([]);
+  const [accountsList, setAccountsList] = useState<AccountWithRelations[]>([]);
+  const [deals, setDeals] = useState<{ id: string; name: string }[]>([]);
+  const [contacts, setContacts] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [accountId, setAccountId] = useState('');
   const [dealId, setDealId] = useState('');
   const [contactId, setContactId] = useState('');
-  const [validUntil, setValidUntil] = useState('');
+  const [orderDate, setOrderDate] = useState('');
+  const [requestedDate, setRequestedDate] = useState('');
+  const [promisedDate, setPromisedDate] = useState('');
+  const [shippingMethod, setShippingMethod] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
   const [discountAmount, setDiscountAmount] = useState('');
   const [shippingAmount, setShippingAmount] = useState('');
@@ -1204,22 +1470,26 @@ function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps
       accountService.getAccounts({}, 100, 0),
       dealService.getDeals({}, 100, 0),
     ]).then(([accountsResult, dealsResult]) => {
-      setAccounts(accountsResult.accounts);
+      setAccountsList(accountsResult.accounts);
       setDeals(dealsResult.deals);
     });
 
-    setName(quote.name);
-    setDescription(quote.description || '');
-    setAccountId(quote.account_id || '');
-    setDealId(quote.deal_id || '');
-    setContactId(quote.contact_id || '');
-    setValidUntil(quote.valid_until?.split('T')[0] || '');
-    setDiscountPercent(quote.discount_percent?.toString() || '');
-    setDiscountAmount(quote.discount_amount?.toString() || '');
-    setShippingAmount(quote.shipping_amount?.toString() || '');
-    setTerms(quote.terms_and_conditions || '');
-    setNotes(quote.notes || '');
-  }, [open, quote, accountService, dealService]);
+    setName(salesOrder.name);
+    setDescription(salesOrder.description || '');
+    setAccountId(salesOrder.account_id || '');
+    setDealId(salesOrder.deal_id || '');
+    setContactId(salesOrder.contact_id || '');
+    setOrderDate(salesOrder.order_date?.split('T')[0] || '');
+    setRequestedDate(salesOrder.requested_date?.split('T')[0] || '');
+    setPromisedDate(salesOrder.promised_date?.split('T')[0] || '');
+    setShippingMethod(salesOrder.shipping_method || '');
+    setPaymentTerms(salesOrder.payment_terms || '');
+    setDiscountPercent(salesOrder.discount_percent?.toString() || '');
+    setDiscountAmount(salesOrder.discount_amount?.toString() || '');
+    setShippingAmount(salesOrder.shipping_amount?.toString() || '');
+    setTerms(salesOrder.terms_and_conditions || '');
+    setNotes(salesOrder.notes || '');
+  }, [open, salesOrder, accountService, dealService]);
 
   useEffect(() => {
     if (!accountId) {
@@ -1227,8 +1497,8 @@ function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps
       return;
     }
 
-    contactService.getContacts({ account_id: accountId }, 100, 0).then(({ contacts }) => {
-      setContacts(contacts);
+    contactService.getContacts({ account_id: accountId }, 100, 0).then(({ contacts: contactsList }) => {
+      setContacts(contactsList);
     });
   }, [accountId, contactService]);
 
@@ -1236,19 +1506,23 @@ function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error('Quote name is required');
+      toast.error('Order name is required');
       return;
     }
 
     setLoading(true);
 
-    const result = await quoteService.updateQuote(quote.id, {
+    const result = await salesOrderService.updateSalesOrder(salesOrder.id, {
       name: name.trim(),
       description: description || undefined,
       account_id: accountId || undefined,
       deal_id: dealId || undefined,
       contact_id: contactId || undefined,
-      valid_until: validUntil || undefined,
+      order_date: orderDate || undefined,
+      requested_date: requestedDate || undefined,
+      promised_date: promisedDate || undefined,
+      shipping_method: shippingMethod || undefined,
+      payment_terms: paymentTerms || undefined,
       discount_percent: discountPercent ? parseFloat(discountPercent) : undefined,
       discount_amount: discountAmount ? parseFloat(discountAmount) : undefined,
       shipping_amount: shippingAmount ? parseFloat(shippingAmount) : undefined,
@@ -1259,34 +1533,28 @@ function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps
     setLoading(false);
 
     if (result.success) {
-      toast.success('Quote updated');
+      toast.success('Sales order updated');
       logAuditEvent({
         orgId: activeOrgId || '',
-        action: AUDIT_ACTIONS.QUOTE_UPDATED || 'quote.updated',
-        entityType: 'quote',
-        entityId: quote.id,
-        before: { name: quote.name },
+        action: 'sales_order.updated',
+        entityType: 'sales_order',
+        entityId: salesOrder.id,
+        before: { name: salesOrder.name },
         after: { name },
       }).catch(console.error);
       onSuccess();
     } else {
-      toast.error(result.error || 'Failed to update quote');
+      toast.error(result.error || 'Failed to update sales order');
     }
   };
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Edit Quote"
-      variant="slideOver"
-      size="lg"
-    >
+    <Modal open={open} onClose={onClose} title="Edit Sales Order" variant="slideOver" size="lg">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Quote Name */}
+        {/* Order Name */}
         <div>
           <label className="block text-sm font-medium text-th-text-secondary mb-1">
-            Quote Name <span className="text-red-500">*</span>
+            Order Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -1312,9 +1580,7 @@ function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps
 
         {/* Account */}
         <div>
-          <label className="block text-sm font-medium text-th-text-secondary mb-1">
-            Account
-          </label>
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">Account</label>
           <select
             value={accountId}
             onChange={(e) => {
@@ -1324,7 +1590,7 @@ function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps
             className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
           >
             <option value="">Select an account</option>
-            {accounts.map((account) => (
+            {accountsList.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name}
               </option>
@@ -1334,9 +1600,7 @@ function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps
 
         {/* Contact */}
         <div>
-          <label className="block text-sm font-medium text-th-text-secondary mb-1">
-            Contact
-          </label>
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">Contact</label>
           <select
             value={contactId}
             onChange={(e) => setContactId(e.target.value)}
@@ -1371,17 +1635,69 @@ function EditQuoteModal({ open, onClose, quote, onSuccess }: EditQuoteModalProps
           </select>
         </div>
 
-        {/* Valid Until */}
-        <div>
-          <label className="block text-sm font-medium text-th-text-secondary mb-1">
-            Valid Until
-          </label>
-          <input
-            type="date"
-            value={validUntil}
-            onChange={(e) => setValidUntil(e.target.value)}
-            className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
-          />
+        {/* Dates */}
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+              Order Date
+            </label>
+            <input
+              type="date"
+              value={orderDate}
+              onChange={(e) => setOrderDate(e.target.value)}
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+              Requested Date
+            </label>
+            <input
+              type="date"
+              value={requestedDate}
+              onChange={(e) => setRequestedDate(e.target.value)}
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+              Promised Date
+            </label>
+            <input
+              type="date"
+              value={promisedDate}
+              onChange={(e) => setPromisedDate(e.target.value)}
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            />
+          </div>
+        </div>
+
+        {/* Shipping & Payment */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+              Shipping Method
+            </label>
+            <input
+              type="text"
+              value={shippingMethod}
+              onChange={(e) => setShippingMethod(e.target.value)}
+              placeholder="e.g., Ground, Express"
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+              Payment Terms
+            </label>
+            <input
+              type="text"
+              value={paymentTerms}
+              onChange={(e) => setPaymentTerms(e.target.value)}
+              placeholder="e.g., Net 30, Due on Receipt"
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            />
+          </div>
         </div>
 
         {/* Discounts and Shipping */}

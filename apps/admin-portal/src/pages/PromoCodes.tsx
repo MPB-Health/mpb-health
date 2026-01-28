@@ -285,16 +285,16 @@ export default function PromoCodes() {
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
                         {code.discount_type === 'percentage' && <Percent className="w-3 h-3" />}
                         {code.discount_type === 'fixed' && <DollarSign className="w-3 h-3" />}
-                        {code.discount_type === 'free_trial' && <Calendar className="w-3 h-3" />}
+                        {code.discount_type === 'free_months' && <Calendar className="w-3 h-3" />}
                         {getDiscountLabel(code)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1 text-sm">
                         <Users className="w-4 h-4 text-th-text-tertiary" />
-                        <span className="text-th-text-primary">{code.times_used}</span>
-                        {code.max_uses && (
-                          <span className="text-th-text-tertiary">/ {code.max_uses}</span>
+                        <span className="text-th-text-primary">{code.usage_count}</span>
+                        {code.usage_limit && (
+                          <span className="text-th-text-tertiary">/ {code.usage_limit}</span>
                         )}
                       </div>
                     </td>
@@ -440,21 +440,21 @@ export default function PromoCodes() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Max Uses (0 = unlimited)</label>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Usage Limit (0 = unlimited)</label>
                   <input
                     type="number"
-                    value={form.max_uses}
-                    onChange={(e) => setForm({ ...form, max_uses: parseInt(e.target.value) || 0 })}
+                    value={form.usage_limit}
+                    onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })}
                     min={0}
                     className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Uses Per User</label>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Per User Limit</label>
                   <input
                     type="number"
-                    value={form.max_uses_per_user}
-                    onChange={(e) => setForm({ ...form, max_uses_per_user: parseInt(e.target.value) || 1 })}
+                    value={form.per_user_limit}
+                    onChange={(e) => setForm({ ...form, per_user_limit: parseInt(e.target.value) || 1 })}
                     min={1}
                     className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
                   />

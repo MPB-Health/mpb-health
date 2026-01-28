@@ -133,7 +133,7 @@ export default function App() {
                 <Route
                   path="/leads"
                   element={
-                    <Guarded permission="leads.view">
+                    <Guarded permission="leads.read">
                       <LeadsList />
                     </Guarded>
                   }
@@ -141,7 +141,7 @@ export default function App() {
                 <Route
                   path="/leads/:id"
                   element={
-                    <Guarded permission="leads.view">
+                    <Guarded permission="leads.read">
                       <LeadDetail />
                     </Guarded>
                   }
@@ -149,7 +149,7 @@ export default function App() {
                 <Route
                   path="/pipeline"
                   element={
-                    <Guarded permission="pipeline.view">
+                    <Guarded permission="pipeline.read">
                       <Pipeline />
                     </Guarded>
                   }
@@ -157,7 +157,7 @@ export default function App() {
                 <Route
                   path="/tasks"
                   element={
-                    <Guarded permission="tasks.view">
+                    <Guarded permission="tasks.read">
                       <Tasks />
                     </Guarded>
                   }
@@ -165,7 +165,7 @@ export default function App() {
                 <Route
                   path="/calendar"
                   element={
-                    <Guarded permission="tasks.view">
+                    <Guarded permission="tasks.read">
                       <Calendar />
                     </Guarded>
                   }
@@ -173,7 +173,7 @@ export default function App() {
                 <Route
                   path="/reports"
                   element={
-                    <Guarded permission="reports.view">
+                    <Guarded permission="reports.read">
                       <Reports />
                     </Guarded>
                   }

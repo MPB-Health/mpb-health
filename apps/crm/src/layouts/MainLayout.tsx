@@ -82,10 +82,10 @@ const navigation: ExtendedNavItem[] = [
     name: 'Email',
     href: '#',
     icon: Mail,
-    permission: 'leads.read',
+    permission: 'email.read',
     children: [
-      { name: 'Sent Emails', href: '/email/sent', permission: 'leads.read' },
-      { name: 'Schedules', href: '/email/schedules', permission: 'settings.manage' },
+      { name: 'Sent Emails', href: '/email/sent', permission: 'email.read' },
+      { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
     ],
   },
   // Admin

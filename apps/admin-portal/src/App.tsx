@@ -12,6 +12,12 @@ import Resources from './pages/Resources';
 import Settings from './pages/Settings';
 import AuditLogs from './pages/AuditLogs';
 import Login from './pages/Login';
+import PaymentProcessors from './pages/PaymentProcessors';
+import SmsAccounts from './pages/SmsAccounts';
+import PromoCodes from './pages/PromoCodes';
+import CodeInventory from './pages/CodeInventory';
+import AdminResources from './pages/AdminResources';
+import ESignature from './pages/ESignature';
 
 export default function App() {
   return (
@@ -29,6 +35,12 @@ export default function App() {
           <Route path="content/blog/:postId" element={<BlogEditor />} />
           <Route path="content/resources" element={<Resources />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="settings/payments" element={<PaymentProcessors />} />
+          <Route path="settings/sms" element={<SmsAccounts />} />
+          <Route path="settings/promo-codes" element={<PromoCodes />} />
+          <Route path="settings/code-inventory" element={<CodeInventory />} />
+          <Route path="settings/resources" element={<AdminResources />} />
+          <Route path="settings/esignature" element={<ESignature />} />
           <Route path="audit-logs" element={<AuditLogs />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

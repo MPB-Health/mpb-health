@@ -32,7 +32,20 @@ const navigation: NavItem[] = [
     ],
   },
   { name: 'Audit Logs', href: '/audit-logs', icon: ClipboardList },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  {
+    name: 'Settings',
+    href: '#',
+    icon: Settings,
+    children: [
+      { name: 'General', href: '/settings' },
+      { name: 'Payment Processors', href: '/settings/payments' },
+      { name: 'SMS Accounts', href: '/settings/sms' },
+      { name: 'Promo Codes', href: '/settings/promo-codes' },
+      { name: 'Code Inventory', href: '/settings/code-inventory' },
+      { name: 'Resources', href: '/settings/resources' },
+      { name: 'E-Signature', href: '/settings/esignature' },
+    ],
+  },
 ];
 
 export default function MainLayout() {

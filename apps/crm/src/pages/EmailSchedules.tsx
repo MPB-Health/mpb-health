@@ -9,20 +9,82 @@ import {
   Mail,
   Users,
   Edit2,
-  MoreVertical,
+  X,
 } from 'lucide-react';
 import { GradientHeader } from '@mpbhealth/ui';
 import { useCRM } from '../contexts/CRMContext';
 import toast from 'react-hot-toast';
-import type { EmailSchedule, ScheduleStatus } from '@mpbhealth/crm-core';
+import type {
+  EmailSchedule,
+  ScheduleStatus,
+  ScheduleType,
+  RecipientType,
+  ScheduleConfig,
+  CRMTemplate,
+} from '@mpbhealth/crm-core';
+
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sun' },
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+];
+
+const SCHEDULE_TYPES: { value: ScheduleType; label: string; description: string }[] = [
+  { value: 'once', label: 'One Time', description: 'Send once on a specific date' },
+  { value: 'daily', label: 'Daily', description: 'Send every day at the same time' },
+  { value: 'weekly', label: 'Weekly', description: 'Send on specific days each week' },
+  { value: 'monthly', label: 'Monthly', description: 'Send on a specific day each month' },
+];
+
+const RECIPIENT_TYPES: { value: RecipientType; label: string }[] = [
+  { value: 'leads', label: 'All Leads' },
+  { value: 'members', label: 'All Members' },
+  { value: 'agents', label: 'All Agents' },
+  { value: 'custom', label: 'Custom Filter' },
+];
+
+interface FormData {
+  name: string;
+  description: string;
+  template_id: string;
+  recipient_type: RecipientType;
+  recipient_filter: Record<string, unknown>;
+  schedule_type: ScheduleType;
+  time: string;
+  timezone: string;
+  days_of_week: number[];
+  day_of_month: number;
+  run_date: string;
+}
+
+const DEFAULT_FORM: FormData = {
+  name: '',
+  description: '',
+  template_id: '',
+  recipient_type: 'leads',
+  recipient_filter: {},
+  schedule_type: 'daily',
+  time: '09:00',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  days_of_week: [1, 2, 3, 4, 5], // Mon-Fri
+  day_of_month: 1,
+  run_date: new Date().toISOString().split('T')[0],
+};
 
 export default function EmailSchedules() {
-  const { supabase, orgId, user } = useCRM();
+  const { supabase, orgId, user, templateService } = useCRM();
 
   const [schedules, setSchedules] = useState<EmailSchedule[]>([]);
+  const [templates, setTemplates] = useState<CRMTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<EmailSchedule | null>(null);
+  const [form, setForm] = useState<FormData>(DEFAULT_FORM);
 
   const loadSchedules = useCallback(async () => {
     if (!orgId) return;
@@ -56,9 +118,124 @@ export default function EmailSchedules() {
     }
   }, [supabase, orgId]);
 
+  const loadTemplates = useCallback(async () => {
+    try {
+      const data = await templateService.listTemplates({ template_type: 'email', is_active: true });
+      setTemplates(data);
+    } catch (err) {
+      console.error('Failed to load templates:', err);
+    }
+  }, [templateService]);
+
   useEffect(() => {
     loadSchedules();
-  }, [loadSchedules]);
+    loadTemplates();
+  }, [loadSchedules, loadTemplates]);
+
+  const openModal = (schedule?: EmailSchedule) => {
+    if (schedule) {
+      setEditingSchedule(schedule);
+      setForm({
+        name: schedule.name,
+        description: schedule.description || '',
+        template_id: schedule.template_id || '',
+        recipient_type: schedule.recipient_type,
+        recipient_filter: schedule.recipient_filter,
+        schedule_type: schedule.schedule_type,
+        time: schedule.schedule_config.time || '09:00',
+        timezone: schedule.schedule_config.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        days_of_week: schedule.schedule_config.days_of_week || [1, 2, 3, 4, 5],
+        day_of_month: schedule.schedule_config.day_of_month || 1,
+        run_date: schedule.schedule_config.run_date || new Date().toISOString().split('T')[0],
+      });
+    } else {
+      setEditingSchedule(null);
+      setForm(DEFAULT_FORM);
+    }
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingSchedule(null);
+    setForm(DEFAULT_FORM);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orgId || !user) return;
+
+    if (!form.name.trim()) {
+      toast.error('Schedule name is required');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const scheduleConfig: ScheduleConfig = {
+        time: form.time,
+        timezone: form.timezone,
+      };
+
+      if (form.schedule_type === 'weekly') {
+        scheduleConfig.days_of_week = form.days_of_week;
+      } else if (form.schedule_type === 'monthly') {
+        scheduleConfig.day_of_month = form.day_of_month;
+      } else if (form.schedule_type === 'once') {
+        scheduleConfig.run_date = form.run_date;
+      }
+
+      // Calculate next run time
+      const [hours, minutes] = form.time.split(':').map(Number);
+      const nextRun = new Date();
+      nextRun.setHours(hours, minutes, 0, 0);
+      if (nextRun <= new Date()) {
+        nextRun.setDate(nextRun.getDate() + 1);
+      }
+
+      const payload = {
+        org_id: orgId,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        template_id: form.template_id || null,
+        recipient_type: form.recipient_type,
+        recipient_filter: form.recipient_filter,
+        recipient_list: [],
+        schedule_type: form.schedule_type,
+        schedule_config: scheduleConfig,
+        next_run_at: nextRun.toISOString(),
+        status: 'active' as ScheduleStatus,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (editingSchedule) {
+        const { error } = await supabase
+          .from('email_schedules')
+          .update(payload)
+          .eq('id', editingSchedule.id);
+
+        if (error) throw error;
+        toast.success('Schedule updated');
+      } else {
+        const { error } = await supabase.from('email_schedules').insert({
+          ...payload,
+          created_by: user.id,
+        });
+
+        if (error) throw error;
+        toast.success('Schedule created');
+      }
+
+      closeModal();
+      loadSchedules();
+    } catch (err) {
+      console.error('Failed to save schedule:', err);
+      toast.error('Failed to save schedule');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handlePauseResume = async (schedule: EmailSchedule) => {
     try {
@@ -69,7 +246,6 @@ export default function EmailSchedules() {
       };
 
       if (newStatus === 'active') {
-        // Calculate next run time
         const config = schedule.schedule_config;
         const [hours, minutes] = (config.time || '09:00').split(':').map(Number);
         const nextRun = new Date();
@@ -147,15 +323,21 @@ export default function EmailSchedules() {
     }
   };
 
+  const toggleDayOfWeek = (day: number) => {
+    setForm((prev) => ({
+      ...prev,
+      days_of_week: prev.days_of_week.includes(day)
+        ? prev.days_of_week.filter((d) => d !== day)
+        : [...prev.days_of_week, day].sort((a, b) => a - b),
+    }));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <GradientHeader title="Email Schedules" subtitle="Manage automated email campaigns" />
         <button
-          onClick={() => {
-            setEditingSchedule(null);
-            setShowModal(true);
-          }}
+          onClick={() => openModal()}
           className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -277,10 +459,7 @@ export default function EmailSchedules() {
                       )}
                     </button>
                     <button
-                      onClick={() => {
-                        setEditingSchedule(schedule);
-                        setShowModal(true);
-                      }}
+                      onClick={() => openModal(schedule)}
                       className="p-2 border border-th-border rounded-lg hover:bg-surface-secondary"
                       title="Edit"
                     >
@@ -301,31 +480,243 @@ export default function EmailSchedules() {
         )}
       </div>
 
-      {/* TODO: Add Schedule Modal */}
+      {/* Schedule Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface-primary rounded-xl border border-th-border p-6 max-w-lg w-full mx-4">
-            <h2 className="text-lg font-semibold text-th-text-primary mb-4">
-              {editingSchedule ? 'Edit Schedule' : 'Create Schedule'}
-            </h2>
-            <p className="text-sm text-th-text-tertiary mb-4">
-              Schedule creation form coming soon. This modal will include:
-              <br />• Name and description
-              <br />• Template selection
-              <br />• Recipient type and filters
-              <br />• Schedule frequency configuration
-            </p>
-            <div className="flex justify-end gap-3">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-surface-primary border-b border-th-border px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-th-text-primary">
+                {editingSchedule ? 'Edit Schedule' : 'Create Schedule'}
+              </h2>
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingSchedule(null);
-                }}
-                className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary"
+                onClick={closeModal}
+                className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary"
               >
-                Close
+                <X className="w-5 h-5" />
               </button>
             </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {/* Basic Info */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-th-text-primary">Basic Information</h3>
+                <div>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                    Schedule Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="e.g., Weekly Newsletter"
+                    className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Optional description..."
+                    rows={2}
+                    className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Template Selection */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-th-text-primary">Email Template</h3>
+                <div>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                    Select Template
+                  </label>
+                  <select
+                    value={form.template_id}
+                    onChange={(e) => setForm({ ...form, template_id: e.target.value })}
+                    className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+                  >
+                    <option value="">No template (custom email)</option>
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-th-text-tertiary mt-1">
+                    Select an email template or leave blank to compose a custom email
+                  </p>
+                </div>
+              </div>
+
+              {/* Recipients */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-th-text-primary">Recipients</h3>
+                <div>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-2">
+                    Recipient Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {RECIPIENT_TYPES.map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, recipient_type: type.value })}
+                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                          form.recipient_type === type.value
+                            ? 'border-th-accent-500 bg-th-accent-50 text-th-accent-700 dark:bg-th-accent-900/20 dark:text-th-accent-300'
+                            : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
+                        }`}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Schedule Type */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-th-text-primary">Schedule</h3>
+                <div>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-2">
+                    Frequency
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SCHEDULE_TYPES.map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, schedule_type: type.value })}
+                        className={`px-4 py-3 rounded-lg border text-left transition-colors ${
+                          form.schedule_type === type.value
+                            ? 'border-th-accent-500 bg-th-accent-50 dark:bg-th-accent-900/20'
+                            : 'border-th-border hover:bg-surface-secondary'
+                        }`}
+                      >
+                        <p className={`text-sm font-medium ${
+                          form.schedule_type === type.value
+                            ? 'text-th-accent-700 dark:text-th-accent-300'
+                            : 'text-th-text-primary'
+                        }`}>
+                          {type.label}
+                        </p>
+                        <p className="text-xs text-th-text-tertiary">{type.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                      Time
+                    </label>
+                    <input
+                      type="time"
+                      value={form.time}
+                      onChange={(e) => setForm({ ...form, time: e.target.value })}
+                      className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                      Timezone
+                    </label>
+                    <input
+                      type="text"
+                      value={form.timezone}
+                      onChange={(e) => setForm({ ...form, timezone: e.target.value })}
+                      className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+                      placeholder="America/New_York"
+                    />
+                  </div>
+                </div>
+
+                {/* Weekly Days */}
+                {form.schedule_type === 'weekly' && (
+                  <div>
+                    <label className="block text-sm font-medium text-th-text-secondary mb-2">
+                      Days of Week
+                    </label>
+                    <div className="flex gap-2">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleDayOfWeek(day.value)}
+                          className={`w-10 h-10 rounded-lg border text-sm font-medium transition-colors ${
+                            form.days_of_week.includes(day.value)
+                              ? 'border-th-accent-500 bg-th-accent-600 text-white'
+                              : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
+                          }`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Monthly Day */}
+                {form.schedule_type === 'monthly' && (
+                  <div>
+                    <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                      Day of Month
+                    </label>
+                    <select
+                      value={form.day_of_month}
+                      onChange={(e) => setForm({ ...form, day_of_month: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+                    >
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                        <option key={day} value={day}>
+                          {day}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* One-time Date */}
+                {form.schedule_type === 'once' && (
+                  <div>
+                    <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                      Run Date
+                    </label>
+                    <input
+                      type="date"
+                      value={form.run_date}
+                      onChange={(e) => setForm({ ...form, run_date: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-th-border">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : editingSchedule ? 'Update Schedule' : 'Create Schedule'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

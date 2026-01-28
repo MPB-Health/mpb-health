@@ -15,9 +15,12 @@ import {
   Clock,
   AlertCircle,
   Paperclip,
+  Sparkles,
 } from 'lucide-react';
 import { useConversation, useTemplates, useInboxActions } from '../hooks/useInbox';
+import { useAuth } from '../hooks/useAuth';
 import { templateService, type Message, type MessageTemplate } from '@mpbhealth/champion-core';
+import { AIMessageAssistant } from '../components/ai';
 
 export default function ConversationThread() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -27,12 +30,14 @@ export default function ConversationThread() {
   const { conversation, messages, loading, refresh } = useConversation(conversationId || null);
   const { templates } = useTemplates();
   const { sendMessage } = useInboxActions();
+  const { user } = useAuth();
 
   const [channel, setChannel] = useState<'sms' | 'email'>('sms');
   const [content, setContent] = useState('');
   const [subject, setSubject] = useState('');
   const [sending, setSending] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showAIAssist, setShowAIAssist] = useState(false);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -278,6 +283,19 @@ export default function ConversationThread() {
           </button>
 
           <div className="flex-1" />
+
+          {/* AI Assist button */}
+          <button
+            onClick={() => setShowAIAssist(!showAIAssist)}
+            className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              showAIAssist
+                ? 'bg-purple-100 text-purple-700'
+                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>AI Assist</span>
+          </button>
 
           {/* Templates button */}
           <div className="relative">

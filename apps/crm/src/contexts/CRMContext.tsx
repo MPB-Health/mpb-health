@@ -30,6 +30,8 @@ import {
   createViewService,
   createValidationService,
   createDynamicRecordService,
+  // Import service
+  createImportService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
@@ -66,6 +68,8 @@ import {
   type ViewService,
   type ValidationService,
   type DynamicRecordService,
+  // Import types
+  type ImportService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -107,6 +111,8 @@ interface CRMContextType {
   viewService: ViewService;
   validationService: ValidationService;
   dynamicRecordService: DynamicRecordService;
+  // Import service
+  importService: ImportService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
@@ -166,6 +172,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     viewService: createViewService(supabase),
     validationService: createValidationService(supabase),
     dynamicRecordService: createDynamicRecordService(supabase),
+    importService: createImportService(supabase),
   }));
 
   // State

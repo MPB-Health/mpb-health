@@ -16,11 +16,15 @@ import {
   Shield,
   CreditCard,
   Settings,
+  BarChart3,
+  Trophy,
+  Activity,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import LiveMeetingBanner from '../components/LiveMeetingBanner';
+import { NotificationCenter } from '../components/notifications';
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -29,6 +33,9 @@ const navigation: NavItem[] = [
   { name: 'Sequences', href: '/sequences', icon: Workflow },
   { name: 'My Leads', href: '/leads', icon: Users },
   { name: 'Compliance', href: '/compliance', icon: Shield },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+  { name: 'Activity', href: '/activity', icon: Activity },
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Training', href: '/training', icon: GraduationCap },
   { name: 'Meetings', href: '/meetings', icon: Video },
@@ -126,16 +133,8 @@ export default function MainLayout() {
         </button>
       )}
 
-      {/* Notification bell */}
-      <button
-        onClick={() => navigate('/bulletins')}
-        className="relative p-2 text-th-text-secondary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary transition-colors"
-      >
-        <Bell className="w-5 h-5" />
-        {unreadBulletinCount > 0 && (
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        )}
-      </button>
+      {/* Notification Center */}
+      <NotificationCenter />
     </>
   );
 

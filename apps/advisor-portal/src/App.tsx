@@ -35,6 +35,10 @@ import {
   ApiKeys,
   Integrations,
 } from './pages/settings';
+import Analytics from './pages/Analytics';
+import Reports from './pages/Reports';
+import Leaderboard from './pages/Leaderboard';
+import Activity from './pages/Activity';
 
 export default function App() {
   return (
@@ -75,6 +79,12 @@ export default function App() {
           <Route path="settings/preferences" element={<UserPreferences />} />
           <Route path="settings/api-keys" element={<ApiKeys />} />
           <Route path="settings/integrations" element={<Integrations />} />
+          {/* Analytics Routes */}
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          {/* Activity Routes */}
+          <Route path="activity" element={<Activity />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

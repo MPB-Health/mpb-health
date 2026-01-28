@@ -88,8 +88,8 @@ export default function PromoCodes() {
         description: code.description || '',
         discount_type: code.discount_type,
         discount_value: code.discount_value,
-        max_uses: code.max_uses || 0,
-        max_uses_per_user: code.max_uses_per_user,
+        usage_limit: code.usage_limit || 0,
+        per_user_limit: code.per_user_limit,
         min_purchase_amount: code.min_purchase_amount || 0,
         valid_from: code.valid_from?.split('T')[0] || '',
         valid_until: code.valid_until?.split('T')[0] || '',
@@ -109,7 +109,7 @@ export default function PromoCodes() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.org_id) return;
 
     setSaving(true);
     try {
@@ -119,8 +119,8 @@ export default function PromoCodes() {
         description: form.description || undefined,
         discount_type: form.discount_type,
         discount_value: form.discount_value,
-        max_uses: form.max_uses || undefined,
-        max_uses_per_user: form.max_uses_per_user,
+        usage_limit: form.usage_limit || undefined,
+        per_user_limit: form.per_user_limit,
         min_purchase_amount: form.min_purchase_amount || undefined,
         valid_from: form.valid_from || undefined,
         valid_until: form.valid_until || undefined,
@@ -130,7 +130,7 @@ export default function PromoCodes() {
         await promoCodeService.update(editing.id, payload, user.id);
         toast.success('Promo code updated');
       } else {
-        await promoCodeService.create(payload, user.id);
+        await promoCodeService.create(payload, user.org_id, user.id);
         toast.success('Promo code created');
       }
       closeModal();
@@ -187,14 +187,14 @@ export default function PromoCodes() {
         return `${code.discount_value}% off`;
       case 'fixed':
         return `$${code.discount_value} off`;
-      case 'free_trial':
-        return `${code.discount_value} days free`;
+      case 'free_months':
+        return `${code.discount_value} months free`;
       default:
         return `${code.discount_value}`;
     }
   };
 
-  const totalRedemptions = codes.reduce((sum, c) => sum + c.times_used, 0);
+  const totalRedemptions = codes.reduce((sum, c) => sum + c.usage_count, 0);
   const activeCodes = codes.filter((c) => c.is_active).length;
 
   return (

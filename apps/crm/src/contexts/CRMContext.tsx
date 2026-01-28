@@ -126,6 +126,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     dealService: createDealService(supabase),
     accountService: createAccountService(supabase),
     contactService: createContactService(supabase),
+    productService: createProductService(supabase),
+    quoteService: createQuoteService(supabase),
+    invoiceService: createInvoiceService(supabase),
+    campaignService: createCampaignService(supabase),
   }));
 
   // State

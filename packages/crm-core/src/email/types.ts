@@ -26,4 +26,110 @@ export interface EmailLogEntry {
   sent_by: string | null;
   sent_at: string;
   created_at: string;
+  // Tracking fields
+  tracking_id?: string;
+  open_count?: number;
+  click_count?: number;
+  first_opened_at?: string;
+  last_opened_at?: string;
+}
+
+// =====================================================
+// EMAIL SCHEDULES
+// =====================================================
+
+export type ScheduleType = 'once' | 'daily' | 'weekly' | 'monthly' | 'custom';
+export type RecipientType = 'leads' | 'members' | 'agents' | 'custom';
+export type ScheduleStatus = 'active' | 'paused' | 'completed' | 'failed';
+
+export interface ScheduleConfig {
+  time: string; // HH:mm format
+  timezone: string; // e.g., 'America/New_York'
+  days_of_week?: number[]; // 0-6 for weekly
+  day_of_month?: number; // 1-31 for monthly
+  run_date?: string; // ISO date for 'once' type
+}
+
+export interface EmailSchedule {
+  id: string;
+  org_id: string;
+  name: string;
+  description?: string;
+  template_id?: string;
+  recipient_type: RecipientType;
+  recipient_filter: Record<string, unknown>;
+  recipient_list: string[];
+  schedule_type: ScheduleType;
+  schedule_config: ScheduleConfig;
+  next_run_at?: string;
+  last_run_at?: string;
+  status: ScheduleStatus;
+  total_sent: number;
+  total_opened: number;
+  total_clicked: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  template_name?: string;
+}
+
+export interface EmailScheduleCreateInput {
+  name: string;
+  description?: string;
+  template_id?: string;
+  recipient_type: RecipientType;
+  recipient_filter?: Record<string, unknown>;
+  recipient_list?: string[];
+  schedule_type: ScheduleType;
+  schedule_config: ScheduleConfig;
+}
+
+export interface EmailScheduleUpdateInput extends Partial<EmailScheduleCreateInput> {
+  status?: ScheduleStatus;
+}
+
+// =====================================================
+// EMAIL TRACKING
+// =====================================================
+
+export type TrackingType = 'open' | 'click';
+export type DeviceType = 'desktop' | 'mobile' | 'tablet';
+
+export interface EmailTracking {
+  id: string;
+  email_log_id: string;
+  tracking_type: TrackingType;
+  link_url?: string;
+  ip_address?: string;
+  user_agent?: string;
+  device_type?: DeviceType;
+  location_country?: string;
+  location_city?: string;
+  tracked_at: string;
+}
+
+export interface EmailTrackingStats {
+  total_sent: number;
+  total_opened: number;
+  total_clicked: number;
+  open_rate: number;
+  click_rate: number;
+  click_to_open_rate: number;
+  opens_by_device: Record<DeviceType, number>;
+  opens_by_country: Record<string, number>;
+  opens_over_time: { date: string; count: number }[];
+  top_clicked_links: { url: string; count: number }[];
+}
+
+export interface EmailLogFilters {
+  status?: 'sent' | 'failed' | 'bounced';
+  template_id?: string;
+  lead_id?: string;
+  sent_by?: string;
+  date_from?: string;
+  date_to?: string;
+  search?: string;
+  has_opened?: boolean;
+  has_clicked?: boolean;
 }

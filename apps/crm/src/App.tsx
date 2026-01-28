@@ -14,6 +14,8 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Templates from './pages/Templates';
 import Automation from './pages/Automation';
+import SentEmails from './pages/SentEmails';
+import EmailSchedules from './pages/EmailSchedules';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -140,6 +142,22 @@ export default function App() {
                   element={
                     <Guarded permission="settings.manage">
                       <Automation />
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/sent"
+                  element={
+                    <Guarded permission="email.read">
+                      <SentEmails />
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/schedules"
+                  element={
+                    <Guarded permission="email.templates">
+                      <EmailSchedules />
                     </Guarded>
                   }
                 />

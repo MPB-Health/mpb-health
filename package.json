@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "turbo run dev",
     "dev:website": "turbo run dev --filter=website",
-    "dev:crm": "turbo run dev --filter=crm",
-    "dev:advisor": "turbo run dev --filter=advisor-portal",
+    "dev:crm": "turbo run dev --filter=@mpbhealth/crm",
+    "dev:advisor": "turbo run dev --filter=@mpbhealth/advisor-portal",
     "dev:admin": "turbo run dev --filter=admin-portal",
     "build": "turbo run build",
     "build:website": "turbo run build --filter=website",

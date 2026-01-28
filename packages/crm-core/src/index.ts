@@ -105,10 +105,26 @@ export type {
 
 // Email
 export { EmailService, createEmailService } from './email/emailService';
+export { EmailScheduleService, createEmailScheduleService } from './email/emailScheduleService';
+export { EmailTrackingService, createEmailTrackingService } from './email/emailTrackingService';
 export type {
   EmailSendInput,
   EmailSendResult,
   EmailLogEntry,
+  EmailLogFilters,
+  // Schedules
+  EmailSchedule,
+  EmailScheduleCreateInput,
+  EmailScheduleUpdateInput,
+  ScheduleType,
+  ScheduleStatus,
+  ScheduleConfig,
+  RecipientType,
+  // Tracking
+  EmailTracking,
+  EmailTrackingStats,
+  TrackingType,
+  DeviceType,
 } from './email/types';
 
 // Scoring
@@ -122,12 +138,40 @@ export type {
 
 // Reporting
 export { ReportingService, createReportingService } from './reporting/reportingService';
+export { SavedReportsService, createSavedReportsService } from './reporting/savedReportsService';
+export { ExportArchiveService, createExportArchiveService } from './reporting/exportArchiveService';
+export { UserPresenceService, createUserPresenceService } from './reporting/userPresenceService';
+export { InteractionLogsService, createInteractionLogsService } from './reporting/interactionLogsService';
 export type {
   ReportDateRange,
   ConversionFunnelData,
   LeadSourceBreakdown,
   ResponseTimeMetrics,
   TeamPerformanceRow,
+  // Saved Reports
+  ReportType,
+  SavedReport,
+  SavedReportCreateInput,
+  SavedReportUpdateInput,
+  SavedReportSchedule,
+  // Export Archive
+  ReportExport,
+  ReportExportCreateInput,
+  ExportFormat,
+  ExportStatus,
+  // User Presence
+  UserPresence,
+  UserPresenceStatus,
+  UserPresenceUpdateInput,
+  // Interaction Logs
+  InteractionLog,
+  InteractionLogCreateInput,
+  InteractionFilters,
+  InteractionStats,
+  InteractionType,
+  InteractionDirection,
+  InteractionOutcome,
+  InteractionSentiment,
 } from './reporting/types';
 
 // Automation

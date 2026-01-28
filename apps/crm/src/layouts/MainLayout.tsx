@@ -17,6 +17,9 @@ import {
   Shield,
   FileText,
   Zap,
+  Mail,
+  Send,
+  Clock,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,13 +27,23 @@ import { useOrg } from '../contexts/OrgContext';
 import { useCRM } from '../contexts/CRMContext';
 import { NotificationCenter } from '../components/NotificationCenter';
 
-const navigation: (NavItem & { permission?: string })[] = [
+const navigation: (NavItem & { permission?: string; children?: { name: string; href: string; permission?: string }[] })[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.view' },
   { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.view' },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.view' },
   { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.view' },
   { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.view' },
+  {
+    name: 'Email',
+    href: '#',
+    icon: Mail,
+    permission: 'email.read',
+    children: [
+      { name: 'Sent Emails', href: '/email/sent', permission: 'email.read' },
+      { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
+    ],
+  },
   { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
   { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
   { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
@@ -90,6 +103,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       name: item.name,
       href: item.href,
       icon: item.icon,
+      children: item.children
+        ?.filter((child) => !child.permission || can(child.permission))
+        .map((child) => ({ name: child.name, href: child.href })),
       badge:
         item.name === 'Tasks' && totalPendingTasks > 0 ? (
           <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">
@@ -99,7 +115,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }));
 
   const renderNavLink = (item: NavItem, props: NavLinkRenderProps) => {
-    const isActive = location.pathname === item.href;
+    const isActive = location.pathname === item.href ||
+      (item.children && item.children.some(c => location.pathname === c.href));
     return (
       <NavLink
         to={item.href}
@@ -109,6 +126,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
         }`}
         onClick={props.onClick}
+      >
+        {props.children}
+      </NavLink>
+    );
+  };
+
+  const renderChildNavLink = (child: { name: string; href: string }, props: NavLinkRenderProps) => {
+    const isActive = location.pathname === child.href;
+    return (
+      <NavLink
+        key={child.name}
+        to={child.href}
+        onClick={props.onClick}
+        className={`${props.className} ${
+          isActive
+            ? 'bg-white/15 text-white'
+            : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+        }`}
       >
         {props.children}
       </NavLink>
@@ -241,6 +276,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       userSection={userSection}
       topBarActions={topBarActions}
       renderNavLink={renderNavLink}
+      renderChildNavLink={renderChildNavLink}
     >
       {children}
     </AppLayout>

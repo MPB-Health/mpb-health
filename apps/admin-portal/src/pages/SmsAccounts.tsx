@@ -194,7 +194,7 @@ export default function SmsAccounts() {
     }
   };
 
-  const totalSent = accounts.reduce((sum, a) => sum + a.messages_sent_this_month, 0);
+  const totalSent = accounts.reduce((sum, a) => sum + a.current_month_sent, 0);
 
   return (
     <div className="space-y-6">
@@ -276,7 +276,7 @@ export default function SmsAccounts() {
                         )}
                       </div>
                       <p className="text-sm text-th-text-tertiary capitalize">
-                        {account.provider} - {account.phone_number}
+                        {account.provider} - {account.phone_numbers.join(', ')}
                       </p>
                       <div className="flex items-center gap-4 mt-1 text-xs text-th-text-tertiary">
                         {account.is_active ? (
@@ -289,7 +289,7 @@ export default function SmsAccounts() {
                           </span>
                         )}
                         <span>
-                          {account.messages_sent_this_month} / {account.monthly_limit} this month
+                          {account.current_month_sent} / {account.monthly_limit || 'unlimited'} this month
                         </span>
                       </div>
                     </div>
@@ -373,15 +373,16 @@ export default function SmsAccounts() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Phone Number *</label>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1">Phone Numbers *</label>
                 <input
-                  type="tel"
-                  value={form.phone_number}
-                  onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
-                  placeholder="+1234567890"
+                  type="text"
+                  value={form.phone_numbers}
+                  onChange={(e) => setForm({ ...form, phone_numbers: e.target.value })}
+                  placeholder="+1234567890, +0987654321"
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
                   required
                 />
+                <p className="text-xs text-th-text-tertiary mt-1">Separate multiple numbers with commas</p>
               </div>
 
               <div>
@@ -479,8 +480,8 @@ export default function SmsAccounts() {
                   <tbody className="divide-y divide-th-border-subtle">
                     {logs.map((log) => (
                       <tr key={log.id} className="hover:bg-surface-secondary/50">
-                        <td className="px-4 py-3 text-sm text-th-text-primary">{log.to_phone}</td>
-                        <td className="px-4 py-3 text-sm text-th-text-secondary max-w-xs truncate">{log.message}</td>
+                        <td className="px-4 py-3 text-sm text-th-text-primary">{log.to_number}</td>
+                        <td className="px-4 py-3 text-sm text-th-text-secondary max-w-xs truncate">{log.body}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
                             log.status === 'delivered' ? 'bg-green-100 text-green-700' :

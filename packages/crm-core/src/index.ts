@@ -236,3 +236,66 @@ export type {
   DealStageHistory,
 } from './deals/dealTypes';
 export * from './deals';
+
+// Products
+export { ProductService, createProductService } from './products/productService';
+export { PriceBookService, createPriceBookService } from './products/priceBookService';
+export type {
+  Product,
+  ProductWithRelations,
+  ProductFilters,
+  ProductCreateInput,
+  ProductUpdateInput,
+  PriceBook,
+  PriceBookItem,
+  PriceBookCreateInput,
+  PriceBookUpdateInput,
+} from './products/productTypes';
+export * from './products';
+
+// Quotes
+export { QuoteService, createQuoteService } from './quotes/quoteService';
+export type {
+  Quote,
+  QuoteWithRelations,
+  QuoteLineItem,
+  QuoteFilters,
+  QuoteCreateInput,
+  QuoteUpdateInput,
+  QuoteLineItemCreateInput,
+  QuoteLineItemUpdateInput,
+} from './quotes/quoteTypes';
+export * from './quotes';
+
+// Invoices
+export { InvoiceService, createInvoiceService } from './invoices/invoiceService';
+export type {
+  Invoice,
+  InvoiceWithRelations,
+  InvoiceLineItem,
+  InvoicePayment,
+  InvoiceFilters,
+  InvoiceCreateInput,
+  InvoiceUpdateInput,
+  InvoiceLineItemCreateInput,
+  InvoiceLineItemUpdateInput,
+  PaymentCreateInput,
+} from './invoices/invoiceTypes';
+export * from './invoices';
+
+// Campaigns
+export { CampaignService, createCampaignService } from './campaigns/campaignService';
+export type {
+  Campaign,
+  CampaignWithRelations,
+  CampaignMember,
+  CampaignFilters,
+  CampaignCreateInput,
+  CampaignUpdateInput,
+  CampaignMemberCreateInput,
+  CampaignStats,
+  CampaignStatus,
+  CampaignType,
+  MemberStatus,
+} from './campaigns/campaignTypes';
+export * from './campaigns';

@@ -108,17 +108,21 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
               );
 
               return (
-                <div key={category} className="col-span-full grid gap-4" style={{ gridTemplateColumns: `300px repeat(${plans.length}, 1fr)` }}>
-                  <div className="col-span-full border-t-2 border-primary-100 pt-8 pb-3">
+                <div key={category} className="contents">
+                  {/* Category Header - spans full width */}
+                  <div
+                    className="border-t-2 border-primary-100 pt-8 pb-3 bg-white"
+                    style={{ gridColumn: `1 / -1` }}
+                  >
                     <h4 className="text-2xl font-bold bg-gradient-to-r from-primary-700 via-primary-600 to-success-600 bg-clip-text text-transparent">
                       {getCategoryLabel(category)}
                     </h4>
                   </div>
 
                   {allFeatureNames.map((featureName) => (
-                    <div key={featureName} className="col-span-full grid gap-4 group" style={{ gridTemplateColumns: `300px repeat(${plans.length}, 1fr)` }}>
-                      <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 backdrop-blur-sm py-4 border-b border-neutral-100 group-hover:border-primary-200 transition-colors duration-300">
-                        <p className="text-sm font-semibold text-neutral-800 group-hover:text-primary-700 transition-colors duration-300">{featureName}</p>
+                    <div key={featureName} className="contents group">
+                      <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
+                        <p className="text-sm font-semibold text-neutral-800">{featureName}</p>
                       </div>
 
                       {plans.map(plan => {
@@ -127,7 +131,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                         return (
                           <div
                             key={plan.id}
-                            className="py-4 border-b border-neutral-100 group-hover:border-primary-200 group-hover:bg-gradient-to-r group-hover:from-primary-50/30 group-hover:to-transparent transition-all duration-300"
+                            className="py-4 border-b border-neutral-100 bg-white"
                           >
                             {feature ? (
                               <div className="space-y-2 px-3">
@@ -157,7 +161,6 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                                 <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center">
                                   <X className="h-4 w-4 text-neutral-400" />
                                 </div>
-                                <span className="text-sm text-neutral-400">Not included</span>
                               </div>
                             )}
                           </div>
@@ -170,18 +173,23 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
             })}
 
             {plans.some(p => p.sharing_details) && (
-              <div className="col-span-full grid gap-4 mt-8" style={{ gridTemplateColumns: `300px repeat(${plans.length}, 1fr)` }}>
-                <div className="col-span-full border-t-2 border-primary-100 pt-8 pb-3">
+              <>
+                {/* Section Header */}
+                <div
+                  className="border-t-2 border-primary-100 pt-8 pb-3 mt-8 bg-white"
+                  style={{ gridColumn: `1 / -1` }}
+                >
                   <h4 className="text-2xl font-bold bg-gradient-to-r from-primary-700 via-primary-600 to-success-600 bg-clip-text text-transparent">
                     Medical Cost Sharing Details
                   </h4>
                 </div>
 
-                <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 backdrop-blur-sm py-4">
+                {/* Lifetime Cap Row */}
+                <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
                   <p className="text-sm font-semibold text-neutral-800">Lifetime Cap</p>
                 </div>
                 {plans.map(plan => (
-                  <div key={plan.id} className="py-4 px-3">
+                  <div key={`lifetime-${plan.id}`} className="py-4 px-3 border-b border-neutral-100 bg-white">
                     {plan.sharing_details ? (
                       plan.sharing_details.has_lifetime_cap ? (
                         <span className="text-sm text-neutral-700 font-medium">Has cap</span>
@@ -199,11 +207,12 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                   </div>
                 ))}
 
-                <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 backdrop-blur-sm py-4">
+                {/* Annual Cap Row */}
+                <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
                   <p className="text-sm font-semibold text-neutral-800">Annual Cap</p>
                 </div>
                 {plans.map(plan => (
-                  <div key={plan.id} className="py-4 px-3">
+                  <div key={`annual-${plan.id}`} className="py-4 px-3 border-b border-neutral-100 bg-white">
                     {plan.sharing_details ? (
                       plan.sharing_details.has_annual_cap ? (
                         <span className="text-sm text-neutral-700 font-medium">Has cap</span>
@@ -221,11 +230,12 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                   </div>
                 ))}
 
-                <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 backdrop-blur-sm py-4">
+                {/* Pre-membership Lookback Row */}
+                <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
                   <p className="text-sm font-semibold text-neutral-800">Pre-membership Lookback</p>
                 </div>
                 {plans.map(plan => (
-                  <div key={plan.id} className="py-4 px-3">
+                  <div key={`lookback-${plan.id}`} className="py-4 px-3 border-b border-neutral-100 bg-white">
                     {plan.sharing_details?.preexisting_lookback_months ? (
                       <span className="text-sm font-medium text-neutral-700">
                         {Math.floor(plan.sharing_details.preexisting_lookback_months / 12)} years
@@ -236,11 +246,12 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                   </div>
                 ))}
 
-                <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 backdrop-blur-sm py-4">
+                {/* Maternity Waiting Period Row */}
+                <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
                   <p className="text-sm font-semibold text-neutral-800">Maternity Waiting Period</p>
                 </div>
                 {plans.map(plan => (
-                  <div key={plan.id} className="py-4 px-3">
+                  <div key={`maternity-${plan.id}`} className="py-4 px-3 border-b border-neutral-100 bg-white">
                     {plan.sharing_details?.maternity_waiting_months ? (
                       <span className="text-sm font-medium text-neutral-700">
                         {plan.sharing_details.maternity_waiting_months} months
@@ -250,7 +261,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                     )}
                   </div>
                 ))}
-              </div>
+              </>
             )}
           </div>
         </div>

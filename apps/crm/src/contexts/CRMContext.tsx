@@ -23,9 +23,6 @@ import {
   createQuoteService,
   createInvoiceService,
   createCampaignService,
-  createVendorService,
-  createPurchaseOrderService,
-  createSalesOrderService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
@@ -55,9 +52,6 @@ import {
   type QuoteService,
   type InvoiceService,
   type CampaignService,
-  type VendorService,
-  type PurchaseOrderService,
-  type SalesOrderService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -92,9 +86,6 @@ interface CRMContextType {
   quoteService: QuoteService;
   invoiceService: InvoiceService;
   campaignService: CampaignService;
-  vendorService: VendorService;
-  purchaseOrderService: PurchaseOrderService;
-  salesOrderService: SalesOrderService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
@@ -147,9 +138,6 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     quoteService: createQuoteService(supabase),
     invoiceService: createInvoiceService(supabase),
     campaignService: createCampaignService(supabase),
-    vendorService: createVendorService(supabase),
-    purchaseOrderService: createPurchaseOrderService(supabase),
-    salesOrderService: createSalesOrderService(supabase),
   }));
 
   // State

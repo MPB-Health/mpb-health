@@ -37,9 +37,6 @@ import {
   FileCheck,
   Receipt,
   Megaphone,
-  Truck,
-  ShoppingCart,
-  ClipboardList,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -72,10 +69,6 @@ const navigation: ExtendedNavItem[] = [
   { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
   { name: 'Quotes', href: '/quotes', icon: FileCheck, permission: 'quotes.read' },
   { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
-  { name: 'Sales Orders', href: '/sales-orders', icon: ShoppingCart, permission: 'sales_orders.read' },
-  // Procurement
-  { name: 'Vendors', href: '/vendors', icon: Truck, permission: 'vendors.read' },
-  { name: 'Purchase Orders', href: '/purchase-orders', icon: ClipboardList, permission: 'purchase_orders.read' },
   // Marketing
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
   // Tasks & Calendar
@@ -112,9 +105,6 @@ function getEntityPath(entityType: string, entityId: string): string {
     invoice: `/invoices/${entityId}`,
     campaign: `/campaigns/${entityId}`,
     task: `/tasks`,
-    vendor: `/vendors/${entityId}`,
-    purchase_order: `/purchase-orders/${entityId}`,
-    sales_order: `/sales-orders/${entityId}`,
   };
   return pathMap[entityType] || '/';
 }
@@ -131,9 +121,6 @@ function getEntityIcon(entityType: string) {
     invoice: Receipt,
     campaign: Megaphone,
     task: CheckSquare,
-    vendor: Truck,
-    purchase_order: ClipboardList,
-    sales_order: ShoppingCart,
   };
   return iconMap[entityType] || FileText;
 }

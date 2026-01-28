@@ -34,12 +34,6 @@ const Invoices = lazy(() => import('./pages/Invoices'));
 const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'));
 const Campaigns = lazy(() => import('./pages/Campaigns'));
 const CampaignDetail = lazy(() => import('./pages/CampaignDetail'));
-const SalesOrders = lazy(() => import('./pages/SalesOrders'));
-const SalesOrderDetail = lazy(() => import('./pages/SalesOrderDetail'));
-const Vendors = lazy(() => import('./pages/Vendors'));
-const VendorDetail = lazy(() => import('./pages/VendorDetail'));
-const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
-const PurchaseOrderDetail = lazy(() => import('./pages/PurchaseOrderDetail'));
 // Print views (standalone, without MainLayout)
 const QuotePrintView = lazy(() => import('./pages/QuotePrintView'));
 const InvoicePrintView = lazy(() => import('./pages/InvoicePrintView'));
@@ -372,69 +366,6 @@ export default function App() {
                     <Guarded permission="campaigns.read">
                       <Suspense fallback={<PageLoader />}>
                         <CampaignDetail />
-                      </Suspense>
-                    </Guarded>
-                  }
-                />
-                {/* Sales Orders */}
-                <Route
-                  path="/sales-orders"
-                  element={
-                    <Guarded permission="sales_orders.read">
-                      <Suspense fallback={<PageLoader />}>
-                        <SalesOrders />
-                      </Suspense>
-                    </Guarded>
-                  }
-                />
-                <Route
-                  path="/sales-orders/:id"
-                  element={
-                    <Guarded permission="sales_orders.read">
-                      <Suspense fallback={<PageLoader />}>
-                        <SalesOrderDetail />
-                      </Suspense>
-                    </Guarded>
-                  }
-                />
-                {/* Vendors */}
-                <Route
-                  path="/vendors"
-                  element={
-                    <Guarded permission="vendors.read">
-                      <Suspense fallback={<PageLoader />}>
-                        <Vendors />
-                      </Suspense>
-                    </Guarded>
-                  }
-                />
-                <Route
-                  path="/vendors/:id"
-                  element={
-                    <Guarded permission="vendors.read">
-                      <Suspense fallback={<PageLoader />}>
-                        <VendorDetail />
-                      </Suspense>
-                    </Guarded>
-                  }
-                />
-                {/* Purchase Orders */}
-                <Route
-                  path="/purchase-orders"
-                  element={
-                    <Guarded permission="purchase_orders.read">
-                      <Suspense fallback={<PageLoader />}>
-                        <PurchaseOrders />
-                      </Suspense>
-                    </Guarded>
-                  }
-                />
-                <Route
-                  path="/purchase-orders/:id"
-                  element={
-                    <Guarded permission="purchase_orders.read">
-                      <Suspense fallback={<PageLoader />}>
-                        <PurchaseOrderDetail />
                       </Suspense>
                     </Guarded>
                   }

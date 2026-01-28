@@ -59,8 +59,9 @@ export default function SmsAccounts() {
   const [logSearch, setLogSearch] = useState('');
 
   const loadAccounts = async () => {
+    if (!user?.org_id) return;
     try {
-      const data = await smsAccountService.list();
+      const data = await smsAccountService.list(user.org_id);
       setAccounts(data);
     } catch (err) {
       console.error('Failed to load accounts:', err);
@@ -71,17 +72,18 @@ export default function SmsAccounts() {
   };
 
   const loadLogs = async () => {
+    if (!user?.org_id) return;
     try {
-      const data = await smsAccountService.getSmsLog({ search: logSearch || undefined }, 50);
-      setLogs(data);
+      const result = await smsAccountService.getSmsLog(user.org_id, { search: logSearch || undefined });
+      setLogs(result.data);
     } catch (err) {
       console.error('Failed to load logs:', err);
     }
   };
 
   useEffect(() => {
-    loadAccounts();
-  }, []);
+    if (user?.org_id) loadAccounts();
+  }, [user?.org_id]);
 
   useEffect(() => {
     if (showLogs) loadLogs();
@@ -93,10 +95,10 @@ export default function SmsAccounts() {
       setForm({
         name: account.name,
         provider: account.provider,
-        phone_number: account.phone_number,
+        phone_numbers: account.phone_numbers.join(', '),
         account_sid: '',
         auth_token: '',
-        monthly_limit: account.monthly_limit,
+        monthly_limit: account.monthly_limit || 1000,
       });
     } else {
       setEditing(null);
@@ -113,19 +115,20 @@ export default function SmsAccounts() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.org_id) return;
 
     setSaving(true);
     try {
       const config: Record<string, unknown> = {};
       if (form.account_sid) config.account_sid = form.account_sid;
       if (form.auth_token) config.auth_token = form.auth_token;
+      const phoneNumbers = form.phone_numbers.split(',').map((p) => p.trim()).filter(Boolean);
 
       if (editing) {
         await smsAccountService.update(editing.id, {
           name: form.name,
           provider: form.provider,
-          phone_number: form.phone_number,
+          phone_numbers: phoneNumbers,
           config: Object.keys(config).length > 0 ? config : undefined,
           monthly_limit: form.monthly_limit,
         }, user.id);
@@ -134,10 +137,10 @@ export default function SmsAccounts() {
         await smsAccountService.create({
           name: form.name,
           provider: form.provider,
-          phone_number: form.phone_number,
+          phone_numbers: phoneNumbers,
           config,
           monthly_limit: form.monthly_limit,
-        }, user.id);
+        }, user.org_id, user.id);
         toast.success('Account created');
       }
       closeModal();
@@ -163,10 +166,10 @@ export default function SmsAccounts() {
   };
 
   const handleSetDefault = async (id: string) => {
-    if (!user) return;
+    if (!user?.org_id) return;
 
     try {
-      await smsAccountService.setDefault(id, user.id);
+      await smsAccountService.setDefault(id, user.org_id, user.id);
       toast.success('Default account updated');
       loadAccounts();
     } catch (err) {

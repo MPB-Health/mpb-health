@@ -1,10 +1,14 @@
+export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'cancelled';
+export type CampaignType = 'email' | 'social' | 'event' | 'webinar' | 'advertisement' | 'referral' | 'other';
+export type MemberStatus = 'pending' | 'sent' | 'opened' | 'clicked' | 'responded' | 'converted' | 'unsubscribed' | 'bounced';
+
 export interface Campaign {
   id: string;
   org_id: string;
   name: string;
   description: string | null;
-  type: 'email' | 'webinar' | 'conference' | 'advertisement' | 'referral' | 'social' | 'other';
-  status: 'planning' | 'active' | 'paused' | 'completed' | 'cancelled';
+  campaign_type: CampaignType;
+  status: CampaignStatus;
   start_date: string | null;
   end_date: string | null;
   budget: number | null;
@@ -12,7 +16,9 @@ export interface Campaign {
   expected_revenue: number | null;
   actual_revenue: number | null;
   expected_response: number | null;
-  target_audience: string | null;
+  num_sent: number;
+  num_responses: number;
+  num_converted: number;
   parent_campaign_id: string | null;
   owner_id: string | null;
   tags: string[];
@@ -32,43 +38,52 @@ export interface CampaignWithRelations extends Campaign {
     id: string;
     name: string;
   } | null;
-  member_count?: number;
+  members_count?: number;
+  leads_count?: number;
+  contacts_count?: number;
 }
 
 export interface CampaignMember {
   id: string;
   campaign_id: string;
-  contact_id: string | null;
   lead_id: string | null;
-  status: 'sent' | 'opened' | 'clicked' | 'responded' | 'converted' | 'opted_out';
+  contact_id: string | null;
+  status: MemberStatus;
+  sent_at: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
   responded_at: string | null;
+  converted_at: string | null;
+  unsubscribed_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
+  lead?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    company: string | null;
+  } | null;
   contact?: {
     id: string;
     first_name: string;
     last_name: string;
     email: string | null;
-  } | null;
-  lead?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string | null;
+    account_id: string | null;
   } | null;
 }
 
 export interface CampaignFilters {
   search?: string;
-  type?: string;
-  status?: string;
+  status?: CampaignStatus;
+  campaign_type?: CampaignType;
   owner_id?: string;
   parent_campaign_id?: string;
-  startFrom?: string;
-  startTo?: string;
-  endFrom?: string;
-  endTo?: string;
+  startDateFrom?: string;
+  startDateTo?: string;
+  endDateFrom?: string;
+  endDateTo?: string;
   minBudget?: number;
   maxBudget?: number;
   tags?: string[];
@@ -79,14 +94,13 @@ export interface CampaignFilters {
 export interface CampaignCreateInput {
   name: string;
   description?: string;
-  type: 'email' | 'webinar' | 'conference' | 'advertisement' | 'referral' | 'social' | 'other';
-  status?: 'planning' | 'active' | 'paused' | 'completed' | 'cancelled';
+  campaign_type?: CampaignType;
+  status?: CampaignStatus;
   start_date?: string;
   end_date?: string;
   budget?: number;
   expected_revenue?: number;
   expected_response?: number;
-  target_audience?: string;
   parent_campaign_id?: string;
   owner_id?: string;
   tags?: string[];
@@ -99,9 +113,9 @@ export interface CampaignUpdateInput extends Partial<CampaignCreateInput> {
 }
 
 export interface CampaignMemberCreateInput {
-  contact_id?: string;
   lead_id?: string;
-  status?: 'sent' | 'opened' | 'clicked' | 'responded' | 'converted' | 'opted_out';
+  contact_id?: string;
+  status?: MemberStatus;
   notes?: string;
 }
 
@@ -112,9 +126,11 @@ export interface CampaignStats {
   clickedCount: number;
   respondedCount: number;
   convertedCount: number;
-  optedOutCount: number;
+  unsubscribedCount: number;
+  bouncedCount: number;
   openRate: number;
   clickRate: number;
+  responseRate: number;
   conversionRate: number;
   roi: number | null;
 }

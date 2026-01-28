@@ -324,13 +324,12 @@ export type {
   POLineItem,
   POStatus,
   ApprovalStatus as POApprovalStatus,
-  PurchaseOrderFilters,
-  PurchaseOrderCreateInput,
-  PurchaseOrderUpdateInput,
+  POFilters,
+  POCreateInput,
+  POUpdateInput,
   POLineItemCreateInput,
   POLineItemUpdateInput,
 } from './purchase-orders/purchaseOrderTypes';
-export * from './purchase-orders';
 
 // Sales Orders
 export { SalesOrderService, createSalesOrderService } from './sales-orders/salesOrderService';
@@ -340,13 +339,12 @@ export type {
   SOLineItem,
   SOStatus,
   ApprovalStatus as SOApprovalStatus,
-  SalesOrderFilters,
-  SalesOrderCreateInput,
-  SalesOrderUpdateInput,
+  SOFilters,
+  SOCreateInput,
+  SOUpdateInput,
   SOLineItemCreateInput,
   SOLineItemUpdateInput,
 } from './sales-orders/salesOrderTypes';
-export * from './sales-orders';
 
 // CRM Studio (Custom Modules, Fields, Layouts, Views, Validation)
 export {

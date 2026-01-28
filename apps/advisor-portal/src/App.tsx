@@ -18,6 +18,8 @@ import Inbox from './pages/Inbox';
 import ConversationThread from './pages/ConversationThread';
 import Sequences from './pages/Sequences';
 import SequenceEditor from './pages/SequenceEditor';
+import Compliance from './pages/Compliance';
+import AuditLog from './pages/AuditLog';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -47,6 +49,8 @@ export default function App() {
           <Route path="inbox/:conversationId" element={<ConversationThread />} />
           <Route path="sequences" element={<Sequences />} />
           <Route path="sequences/:sequenceId" element={<SequenceEditor />} />
+          <Route path="compliance" element={<Compliance />} />
+          <Route path="audit-log" element={<AuditLog />} />
           <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

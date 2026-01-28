@@ -113,7 +113,7 @@ export {
 export {
   permissionService,
   loadUserPermissions,
-  hasPermission,
+  hasPermission as checkPermission,
   hasAnyPermission,
   hasAllPermissions,
   getAllPermissions,

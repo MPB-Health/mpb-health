@@ -267,7 +267,7 @@ export class ExportArchiveService {
         total_exports: 0,
         exports_this_month: 0,
         by_format: { csv: 0, xlsx: 0, pdf: 0 },
-        by_type: {},
+        by_type: { conversion_funnel: 0, lead_sources: 0, team_performance: 0, interaction: 0, custom: 0 },
       };
     }
   }

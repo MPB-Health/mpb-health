@@ -18,6 +18,10 @@ import {
   createDealService,
   createAccountService,
   createContactService,
+  createProductService,
+  createQuoteService,
+  createInvoiceService,
+  createCampaignService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
@@ -43,6 +47,10 @@ import {
   type DealStage,
   type AccountService,
   type ContactService,
+  type ProductService,
+  type QuoteService,
+  type InvoiceService,
+  type CampaignService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -67,6 +75,10 @@ interface CRMContextType {
   dealService: DealService;
   accountService: AccountService;
   contactService: ContactService;
+  productService: ProductService;
+  quoteService: QuoteService;
+  invoiceService: InvoiceService;
+  campaignService: CampaignService;
 
   // State
   dashboardStats: CRMDashboardStats | null;

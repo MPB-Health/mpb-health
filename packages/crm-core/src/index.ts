@@ -247,9 +247,12 @@ export type {
   ProductCreateInput,
   ProductUpdateInput,
   PriceBook,
+  PriceBookWithRelations,
   PriceBookItem,
+  PriceBookFilters,
   PriceBookCreateInput,
   PriceBookUpdateInput,
+  PriceBookItemCreateInput,
 } from './products/productTypes';
 export * from './products';
 
@@ -259,6 +262,7 @@ export type {
   Quote,
   QuoteWithRelations,
   QuoteLineItem,
+  QuoteStatus,
   QuoteFilters,
   QuoteCreateInput,
   QuoteUpdateInput,

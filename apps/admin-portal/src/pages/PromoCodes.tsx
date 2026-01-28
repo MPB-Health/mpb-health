@@ -24,7 +24,7 @@ import { useAdmin } from '../contexts/AdminContext';
 const DISCOUNT_TYPES: { value: DiscountType; label: string }[] = [
   { value: 'percentage', label: 'Percentage Off' },
   { value: 'fixed', label: 'Fixed Amount' },
-  { value: 'free_trial', label: 'Free Trial Days' },
+  { value: 'free_months', label: 'Free Months' },
 ];
 
 interface FormData {
@@ -33,8 +33,8 @@ interface FormData {
   description: string;
   discount_type: DiscountType;
   discount_value: number;
-  max_uses: number;
-  max_uses_per_user: number;
+  usage_limit: number;
+  per_user_limit: number;
   min_purchase_amount: number;
   valid_from: string;
   valid_until: string;
@@ -46,8 +46,8 @@ const DEFAULT_FORM: FormData = {
   description: '',
   discount_type: 'percentage',
   discount_value: 10,
-  max_uses: 0,
-  max_uses_per_user: 1,
+  usage_limit: 0,
+  per_user_limit: 1,
   min_purchase_amount: 0,
   valid_from: new Date().toISOString().split('T')[0],
   valid_until: '',
@@ -63,8 +63,9 @@ export default function PromoCodes() {
   const [saving, setSaving] = useState(false);
 
   const loadCodes = async () => {
+    if (!user?.org_id) return;
     try {
-      const data = await promoCodeService.list();
+      const data = await promoCodeService.list(user.org_id);
       setCodes(data);
     } catch (err) {
       console.error('Failed to load codes:', err);
@@ -75,8 +76,8 @@ export default function PromoCodes() {
   };
 
   useEffect(() => {
-    loadCodes();
-  }, []);
+    if (user?.org_id) loadCodes();
+  }, [user?.org_id]);
 
   const openModal = (code?: PromoCode) => {
     if (code) {

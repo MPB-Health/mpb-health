@@ -240,7 +240,7 @@ export default function SmsAccounts() {
         <div className="bg-surface-primary rounded-xl border border-th-border p-4">
           <p className="text-sm text-th-text-tertiary">Total Limit</p>
           <p className="text-2xl font-bold text-th-text-primary mt-1">
-            {accounts.reduce((sum, a) => sum + a.monthly_limit, 0)}
+            {accounts.reduce((sum, a) => sum + (a.monthly_limit || 0), 0) || 'N/A'}
           </p>
         </div>
       </div>

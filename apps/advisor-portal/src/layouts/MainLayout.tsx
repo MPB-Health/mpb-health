@@ -14,6 +14,8 @@ import {
   Inbox,
   Workflow,
   Shield,
+  CreditCard,
+  Settings,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -27,11 +29,13 @@ const navigation: NavItem[] = [
   { name: 'Sequences', href: '/sequences', icon: Workflow },
   { name: 'My Leads', href: '/leads', icon: Users },
   { name: 'Compliance', href: '/compliance', icon: Shield },
+  { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Training', href: '/training', icon: GraduationCap },
   { name: 'Meetings', href: '/meetings', icon: Video },
   { name: 'Forms', href: '/forms', icon: FileText },
   { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function MainLayout() {

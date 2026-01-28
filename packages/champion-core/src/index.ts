@@ -80,3 +80,64 @@ export type {
   MessageAssistRequest,
   MessageAssistResponse,
 } from './compliance';
+
+// Billing & Subscriptions
+export {
+  BillingService,
+  billingService,
+  UsageService,
+  usageService,
+} from './billing';
+export type {
+  PlanTier,
+  BillingCycle,
+  SubscriptionStatus,
+  InvoiceStatus,
+  PaymentMethodType,
+  SubscriptionPlan,
+  OrganizationSubscription,
+  SubscriptionWithPlan,
+  UsageRecord,
+  UsageWithLimit,
+  Invoice,
+  InvoiceLineItem,
+  PaymentMethod,
+  BillingAddress,
+  BillingEvent,
+  BillingSummary,
+  UsageSummary,
+  CreateSubscriptionInput,
+  UpdateSubscriptionInput,
+  AddPaymentMethodInput,
+  UsageMetric,
+} from './billing';
+
+// Settings & Admin
+export {
+  SettingsService,
+  settingsService,
+  IntegrationService,
+  integrationService,
+  AVAILABLE_INTEGRATIONS,
+} from './settings';
+export type {
+  OrganizationSettings,
+  BusinessHours,
+  BusinessAddress,
+  UpdateOrgSettingsInput,
+  UserPreferences,
+  UpdateUserPreferencesInput,
+  NotificationSettings,
+  UpdateNotificationSettingsInput,
+  IntegrationConfig,
+  IntegrationType,
+  SyncDirection,
+  ApiKey,
+  CreateApiKeyInput,
+  OrgMember,
+  OrganizationInvitation,
+  InvitationStatus,
+  CreateInvitationInput,
+  CreateIntegrationInput,
+  UpdateIntegrationInput,
+} from './settings';

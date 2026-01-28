@@ -15,11 +15,14 @@ import {
   User,
   Mail,
   Phone,
+  Shield,
+  AlertTriangle,
 } from 'lucide-react';
 import { advisorLeadService } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { usePowerList, usePriorityStats } from '../hooks/usePriority';
+import { useUserComplianceStatus, usePendingAcknowledgments } from '../hooks/useCompliance';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -34,6 +37,8 @@ export default function Dashboard() {
   const [assignedLeadCount, setAssignedLeadCount] = useState(0);
   const { items: powerListItems, loading: powerListLoading } = usePowerList();
   const { stats: priorityStats } = usePriorityStats();
+  const { status: complianceStatus } = useUserComplianceStatus(profile?.id);
+  const { pending: pendingAcknowledgments } = usePendingAcknowledgments(profile?.id);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -302,6 +307,78 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Compliance Status */}
+      {(pendingAcknowledgments.length > 0 || (complianceStatus && complianceStatus.compliance_score < 100)) && (
+        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+          <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
+            <div className="flex items-center space-x-2">
+              <Shield className={`w-5 h-5 ${
+                (complianceStatus?.compliance_score || 0) >= 90 ? 'text-green-500' :
+                (complianceStatus?.compliance_score || 0) >= 70 ? 'text-yellow-500' : 'text-red-500'
+              }`} />
+              <h2 className="font-semibold text-th-text-primary">Compliance Status</h2>
+              {pendingAcknowledgments.length > 0 && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
+                  {pendingAcknowledgments.length} pending
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => navigate('/compliance')}
+              className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center space-x-1"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm text-th-text-tertiary">Compliance Score</p>
+                <p className={`text-2xl font-bold ${
+                  (complianceStatus?.compliance_score || 0) >= 90 ? 'text-green-600' :
+                  (complianceStatus?.compliance_score || 0) >= 70 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {complianceStatus?.compliance_score || 0}%
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-th-text-tertiary">Tasks</p>
+                <p className="text-lg font-semibold text-th-text-primary">
+                  {complianceStatus?.total_completed || 0} / {complianceStatus?.total_required || 0}
+                </p>
+              </div>
+            </div>
+            {pendingAcknowledgments.length > 0 && (
+              <div className="space-y-2">
+                {pendingAcknowledgments.slice(0, 3).map((ack) => (
+                  <button
+                    key={ack.id}
+                    onClick={() => navigate(`/compliance/acknowledge/${ack.id}`)}
+                    className="w-full flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors text-left"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-800">
+                          {ack.document?.title || 'Pending Acknowledgment'}
+                        </p>
+                        {ack.due_date && (
+                          <p className="text-xs text-yellow-600">
+                            Due {format(new Date(ack.due_date), 'MMM d')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-yellow-500" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Quick Links */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-5">
         <h2 className="font-semibold text-th-text-primary mb-4">Quick Actions</h2>
@@ -340,6 +417,13 @@ export default function Dashboard() {
           >
             <FileText className="w-8 h-8 text-th-accent-600 mb-2" />
             <span className="text-sm font-medium text-th-text-secondary">SOPs</span>
+          </button>
+          <button
+            onClick={() => navigate('/compliance')}
+            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 transition-colors"
+          >
+            <Shield className="w-8 h-8 text-th-accent-600 mb-2" />
+            <span className="text-sm font-medium text-th-text-secondary">Compliance</span>
           </button>
           <button
             onClick={() => navigate('/profile')}

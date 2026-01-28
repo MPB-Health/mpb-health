@@ -20,9 +20,21 @@ import Sequences from './pages/Sequences';
 import SequenceEditor from './pages/SequenceEditor';
 import Compliance from './pages/Compliance';
 import AuditLog from './pages/AuditLog';
+import Billing from './pages/Billing';
+import PlanSelection from './pages/PlanSelection';
+import UsageAnalytics from './pages/UsageAnalytics';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import {
+  SettingsHub,
+  OrganizationSettings,
+  TeamManagement,
+  NotificationPreferences,
+  UserPreferences,
+  ApiKeys,
+  Integrations,
+} from './pages/settings';
 
 export default function App() {
   return (
@@ -51,7 +63,18 @@ export default function App() {
           <Route path="sequences/:sequenceId" element={<SequenceEditor />} />
           <Route path="compliance" element={<Compliance />} />
           <Route path="audit-log" element={<AuditLog />} />
+          <Route path="billing" element={<Billing />} />
+          <Route path="billing/plans" element={<PlanSelection />} />
+          <Route path="billing/usage" element={<UsageAnalytics />} />
           <Route path="profile" element={<Profile />} />
+          {/* Settings Routes */}
+          <Route path="settings" element={<SettingsHub />} />
+          <Route path="settings/organization" element={<OrganizationSettings />} />
+          <Route path="settings/team" element={<TeamManagement />} />
+          <Route path="settings/notifications" element={<NotificationPreferences />} />
+          <Route path="settings/preferences" element={<UserPreferences />} />
+          <Route path="settings/api-keys" element={<ApiKeys />} />
+          <Route path="settings/integrations" element={<Integrations />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

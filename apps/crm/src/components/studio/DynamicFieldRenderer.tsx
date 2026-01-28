@@ -636,7 +636,7 @@ export function DynamicFieldDisplay({ field, value }: DynamicFieldDisplayProps) 
       );
 
     case 'percent':
-      return <span>{value}%</span>;
+      return <span>{String(value)}%</span>;
 
     case 'date':
       return <span>{new Date(value as string).toLocaleDateString()}</span>;
@@ -656,7 +656,7 @@ export function DynamicFieldDisplay({ field, value }: DynamicFieldDisplayProps) 
           </span>
         );
       }
-      return <span>{opt?.label || value}</span>;
+      return <span>{opt?.label || String(value)}</span>;
 
     case 'multi_picklist':
       const values = value as string[];

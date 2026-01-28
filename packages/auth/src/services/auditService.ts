@@ -32,7 +32,8 @@ export interface AuditEvent {
 export interface AuditLogInput {
   orgId: string;
   action: string;
-  objectType: string;
+  objectType?: string;
+  entityType?: string; // Alias for objectType (backward compatibility)
   objectId?: string;
   objectName?: string;
   oldValues?: Record<string, unknown> | null;
@@ -78,19 +79,75 @@ export const AUDIT_ACTIONS = {
 
   // Leads
   LEAD_CREATE: 'lead.create',
+  LEAD_CREATED: 'lead.create', // Alias
   LEAD_UPDATE: 'lead.update',
+  LEAD_UPDATED: 'lead.update', // Alias
   LEAD_DELETE: 'lead.delete',
   LEAD_ASSIGN: 'lead.assign',
   LEAD_STAGE_CHANGE: 'lead.stage_change',
+  LEAD_STAGE_CHANGED: 'lead.stage_change', // Alias
   LEAD_CONVERT: 'lead.convert',
+  LEAD_CONVERTED: 'lead.convert', // Alias
   LEAD_EXPORT: 'lead.export',
   LEAD_IMPORT: 'lead.import',
 
   // Contacts
   CONTACT_CREATE: 'contact.create',
+  CONTACT_CREATED: 'contact.create', // Alias
   CONTACT_UPDATE: 'contact.update',
+  CONTACT_UPDATED: 'contact.update', // Alias
   CONTACT_DELETE: 'contact.delete',
   CONTACT_MERGE: 'contact.merge',
+
+  // Accounts
+  ACCOUNT_CREATE: 'account.create',
+  ACCOUNT_CREATED: 'account.create', // Alias
+  ACCOUNT_UPDATE: 'account.update',
+  ACCOUNT_DELETE: 'account.delete',
+
+  // Deals
+  DEAL_CREATE: 'deal.create',
+  DEAL_CREATED: 'deal.create', // Alias
+  DEAL_UPDATE: 'deal.update',
+  DEAL_UPDATED: 'deal.update', // Alias
+  DEAL_DELETE: 'deal.delete',
+  DEAL_STAGE_CHANGE: 'deal.stage_change',
+  DEAL_STAGE_CHANGED: 'deal.stage_change', // Alias
+  DEAL_WON: 'deal.won',
+  DEAL_LOST: 'deal.lost',
+
+  // Quotes
+  QUOTE_CREATE: 'quote.create',
+  QUOTE_CREATED: 'quote.create', // Alias
+  QUOTE_UPDATE: 'quote.update',
+  QUOTE_UPDATED: 'quote.update', // Alias
+  QUOTE_DELETE: 'quote.delete',
+  QUOTE_SEND: 'quote.send',
+  QUOTE_SENT: 'quote.send', // Alias
+  QUOTE_ACCEPT: 'quote.accept',
+  QUOTE_ACCEPTED: 'quote.accept', // Alias
+  QUOTE_REJECT: 'quote.reject',
+  QUOTE_REJECTED: 'quote.reject', // Alias
+  QUOTE_CLONE: 'quote.clone',
+  QUOTE_CLONED: 'quote.clone', // Alias
+
+  // Invoices
+  INVOICE_CREATE: 'invoice.create',
+  INVOICE_CREATED: 'invoice.create', // Alias
+  INVOICE_UPDATE: 'invoice.update',
+  INVOICE_DELETE: 'invoice.delete',
+  INVOICE_SEND: 'invoice.send',
+  INVOICE_PAYMENT: 'invoice.payment',
+
+  // Products
+  PRODUCT_CREATE: 'product.create',
+  PRODUCT_UPDATE: 'product.update',
+  PRODUCT_DELETE: 'product.delete',
+
+  // Campaigns
+  CAMPAIGN_CREATE: 'campaign.create',
+  CAMPAIGN_UPDATE: 'campaign.update',
+  CAMPAIGN_DELETE: 'campaign.delete',
 
   // Messages & Engagement
   MESSAGE_SEND: 'message.send',
@@ -150,8 +207,10 @@ export const AUDIT_ACTIONS = {
 
   // Tasks
   TASK_CREATE: 'task.create',
+  TASK_CREATED: 'task.create', // Alias
   TASK_UPDATE: 'task.update',
   TASK_COMPLETE: 'task.complete',
+  TASK_COMPLETED: 'task.complete', // Alias
   TASK_DELETE: 'task.delete',
 
   // Meetings
@@ -169,12 +228,15 @@ export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
 
 /** Log an audit event using the database function */
 export async function logAuditEvent(input: AuditLogInput): Promise<{ success: boolean; error?: string; auditId?: string }> {
+  // Support entityType as alias for objectType
+  const objectType = input.objectType || input.entityType || 'unknown';
+
   try {
     // Try using the database function first (preferred)
     const { data, error } = await supabase.rpc('log_audit_event', {
       p_org_id: input.orgId,
       p_action: input.action,
-      p_object_type: input.objectType,
+      p_object_type: objectType,
       p_object_id: input.objectId ?? null,
       p_object_name: input.objectName ?? null,
       p_old_values: input.oldValues ?? null,
@@ -202,7 +264,7 @@ export async function logAuditEvent(input: AuditLogInput): Promise<{ success: bo
         actor_user_id: user?.id ?? null,
         action: input.action,
         action_category: input.action.split('.')[0],
-        object_type: input.objectType,
+        object_type: objectType,
         object_id: input.objectId ?? null,
         object_name: input.objectName ?? null,
         old_values: input.oldValues ?? null,

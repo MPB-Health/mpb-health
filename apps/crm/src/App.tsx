@@ -38,6 +38,11 @@ const CampaignDetail = lazy(() => import('./pages/CampaignDetail'));
 const QuotePrintView = lazy(() => import('./pages/QuotePrintView'));
 const InvoicePrintView = lazy(() => import('./pages/InvoicePrintView'));
 
+// CRM Studio pages
+const StudioHome = lazy(() => import('./pages/studio/StudioHome'));
+const CustomModuleList = lazy(() => import('./pages/studio/CustomModuleList'));
+const CustomModuleDetail = lazy(() => import('./pages/studio/CustomModuleDetail'));
+
 // Loading component for Suspense
 function PageLoader() {
   return (
@@ -368,6 +373,54 @@ export default function App() {
                         <CampaignDetail />
                       </Suspense>
                     </Guarded>
+                  }
+                />
+                {/* CRM Studio */}
+                <Route
+                  path="/studio"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <StudioHome />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/studio/modules/new"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <StudioHome />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/studio/modules/:id/*"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <StudioHome />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Custom Modules (dynamic routes) */}
+                <Route
+                  path="/custom/:moduleApiName"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CustomModuleList />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/custom/:moduleApiName/:id"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CustomModuleDetail />
+                    </Suspense>
                   }
                 />
               </Routes>

@@ -37,6 +37,7 @@ import {
   FileCheck,
   Receipt,
   Megaphone,
+  Settings2,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -90,6 +91,7 @@ const navigation: ExtendedNavItem[] = [
   // Admin
   { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
   { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
+  { name: 'Studio', href: '/studio', icon: Settings2, permission: 'settings.manage' },
   { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
 ];
 

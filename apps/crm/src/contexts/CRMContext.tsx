@@ -23,6 +23,13 @@ import {
   createQuoteService,
   createInvoiceService,
   createCampaignService,
+  // Studio services
+  createModuleService,
+  createFieldService,
+  createLayoutService,
+  createViewService,
+  createValidationService,
+  createDynamicRecordService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
@@ -52,6 +59,13 @@ import {
   type QuoteService,
   type InvoiceService,
   type CampaignService,
+  // Studio types
+  type ModuleService,
+  type FieldService,
+  type LayoutService,
+  type ViewService,
+  type ValidationService,
+  type DynamicRecordService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -86,6 +100,13 @@ interface CRMContextType {
   quoteService: QuoteService;
   invoiceService: InvoiceService;
   campaignService: CampaignService;
+  // Studio services
+  moduleService: ModuleService;
+  fieldService: FieldService;
+  layoutService: LayoutService;
+  viewService: ViewService;
+  validationService: ValidationService;
+  dynamicRecordService: DynamicRecordService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
@@ -138,6 +159,13 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     quoteService: createQuoteService(supabase),
     invoiceService: createInvoiceService(supabase),
     campaignService: createCampaignService(supabase),
+    // Studio services
+    moduleService: createModuleService(supabase),
+    fieldService: createFieldService(supabase),
+    layoutService: createLayoutService(supabase),
+    viewService: createViewService(supabase),
+    validationService: createValidationService(supabase),
+    dynamicRecordService: createDynamicRecordService(supabase),
   }));
 
   // State

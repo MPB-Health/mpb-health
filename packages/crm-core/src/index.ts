@@ -303,3 +303,111 @@ export type {
   MemberStatus,
 } from './campaigns/campaignTypes';
 export * from './campaigns';
+
+// Vendors
+export { VendorService, createVendorService } from './vendors/vendorService';
+export type {
+  Vendor,
+  VendorWithRelations,
+  VendorFilters,
+  VendorCreateInput,
+  VendorUpdateInput,
+  VendorType,
+} from './vendors/vendorTypes';
+export * from './vendors';
+
+// Purchase Orders
+export { PurchaseOrderService, createPurchaseOrderService } from './purchase-orders/purchaseOrderService';
+export type {
+  PurchaseOrder,
+  PurchaseOrderWithRelations,
+  POLineItem,
+  POStatus,
+  ApprovalStatus as POApprovalStatus,
+  PurchaseOrderFilters,
+  PurchaseOrderCreateInput,
+  PurchaseOrderUpdateInput,
+  POLineItemCreateInput,
+  POLineItemUpdateInput,
+} from './purchase-orders/purchaseOrderTypes';
+export * from './purchase-orders';
+
+// Sales Orders
+export { SalesOrderService, createSalesOrderService } from './sales-orders/salesOrderService';
+export type {
+  SalesOrder,
+  SalesOrderWithRelations,
+  SOLineItem,
+  SOStatus,
+  ApprovalStatus as SOApprovalStatus,
+  SalesOrderFilters,
+  SalesOrderCreateInput,
+  SalesOrderUpdateInput,
+  SOLineItemCreateInput,
+  SOLineItemUpdateInput,
+} from './sales-orders/salesOrderTypes';
+export * from './sales-orders';
+
+// CRM Studio (Custom Modules, Fields, Layouts, Views, Validation)
+export {
+  // Services
+  ModuleService,
+  createModuleService,
+  FieldService,
+  createFieldService,
+  LayoutService,
+  createLayoutService,
+  ViewService,
+  createViewService,
+  ValidationService,
+  createValidationService,
+  DynamicRecordService,
+  createDynamicRecordService,
+} from './studio';
+export type {
+  // Field types
+  FieldType,
+  LayoutType,
+  ViewVisibility,
+  SortDirection,
+  FilterOperator,
+  // Module types
+  StudioModule,
+  StudioModuleWithRelations,
+  ModuleCreateInput,
+  ModuleUpdateInput,
+  ModuleFilters,
+  // Field types
+  PicklistOption,
+  LookupConfig,
+  FormulaConfig,
+  NumberConfig,
+  AutoNumberConfig,
+  FieldConfig,
+  StudioField,
+  FieldCreateInput,
+  FieldUpdateInput,
+  // Layout types
+  LayoutFieldRef,
+  LayoutSection,
+  StudioLayout,
+  LayoutCreateInput,
+  LayoutUpdateInput,
+  // View types
+  ViewColumn,
+  ViewFilter,
+  StudioView,
+  ViewCreateInput,
+  ViewUpdateInput,
+  // Validation types
+  ValidationCondition,
+  ValidationRule,
+  ValidationRuleCreateInput,
+  ValidationRuleUpdateInput,
+  // Dynamic record types
+  DynamicRecord,
+  DynamicFilters,
+  ValidationError,
+  ValidationResult,
+} from './studio';
+export * from './studio';

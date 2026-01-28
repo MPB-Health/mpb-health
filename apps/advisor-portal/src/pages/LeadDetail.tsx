@@ -33,6 +33,8 @@ import {
 import { useOrg } from '@mpbhealth/auth';
 import { usePriorityActions } from '../hooks/usePriority';
 import { useInboxActions, useSequences } from '../hooks/useInbox';
+import { useAuth } from '../hooks/useAuth';
+import { AIScoringFactors, AISuggestionsPanel, AIMessageAssistant } from '../components/ai';
 
 type Tab = 'info' | 'messages' | 'sequences';
 
@@ -40,6 +42,7 @@ export default function LeadDetail() {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
   const { activeOrg } = useOrg();
+  const { user } = useAuth();
   const { snoozeItem, completeItem, addToLane } = usePriorityActions();
   const { sendMessage, getOrCreateConversation, enrollInSequence } = useInboxActions();
   const { sequences } = useSequences('active');
@@ -443,6 +446,21 @@ export default function LeadDetail() {
                 </div>
               </div>
             )}
+
+            {/* AI Scoring Factors */}
+            {leadId && <AIScoringFactors leadId={leadId} />}
+
+            {/* AI Suggestions */}
+            {user?.id && leadId && (
+              <AISuggestionsPanel
+                userId={user.id}
+                leadId={leadId}
+                onApplyMessage={(message) => {
+                  setMessageContent(message);
+                  setActiveTab('messages');
+                }}
+              />
+            )}
           </div>
         </div>
       )}
@@ -450,7 +468,8 @@ export default function LeadDetail() {
       {activeTab === 'messages' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent messages */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-neutral-200">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white rounded-xl border border-neutral-200">
             <div className="flex items-center justify-between p-4 border-b border-neutral-100">
               <h2 className="font-semibold text-neutral-900">Recent Messages</h2>
               {conversationId && (
@@ -492,6 +511,17 @@ export default function LeadDetail() {
                 ))
               )}
             </div>
+          </div>
+
+            {/* AI Message Assistant */}
+            {user?.id && messageContent.trim() && (
+              <AIMessageAssistant
+                userId={user.id}
+                leadName={`${lead.first_name} ${lead.last_name}`}
+                originalMessage={messageContent}
+                onApply={(message) => setMessageContent(message)}
+              />
+            )}
           </div>
 
           {/* Quick compose */}

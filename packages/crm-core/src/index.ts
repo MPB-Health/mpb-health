@@ -411,3 +411,21 @@ export type {
   ValidationResult,
 } from './studio';
 export * from './studio';
+
+// Import (CSV/Excel import for leads, contacts)
+export { ImportService, createImportService } from './import/importService';
+export type {
+  ImportEntityType,
+  ImportStatus,
+  ImportFieldMapping,
+  ImportJob,
+  ImportOptions,
+  ImportError,
+  ImportPreview,
+  ImportResult,
+  LeadImportRow,
+  ContactImportRow,
+  QuoteSubmission,
+  QuoteSubmissionFilters,
+} from './import/importTypes';
+export * from './import';

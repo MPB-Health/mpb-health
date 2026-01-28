@@ -200,3 +200,39 @@ export * from './email';
 export * from './automation';
 export * from './reporting';
 export * from './scoring';
+
+// Accounts
+export { AccountService, createAccountService } from './accounts/accountService';
+export type {
+  Account,
+  AccountWithRelations,
+  AccountFilters,
+  AccountCreateInput,
+  AccountUpdateInput,
+} from './accounts/accountTypes';
+export * from './accounts';
+
+// Contacts
+export { ContactService, createContactService } from './contacts/contactService';
+export type {
+  Contact,
+  ContactWithRelations,
+  ContactFilters,
+  ContactCreateInput,
+  ContactUpdateInput,
+  ConvertLeadInput,
+} from './contacts/contactTypes';
+export * from './contacts';
+
+// Deals
+export { DealService, createDealService } from './deals/dealService';
+export type {
+  Deal,
+  DealWithRelations,
+  DealStage,
+  DealFilters,
+  DealCreateInput,
+  DealUpdateInput,
+  DealStageHistory,
+} from './deals/dealTypes';
+export * from './deals';

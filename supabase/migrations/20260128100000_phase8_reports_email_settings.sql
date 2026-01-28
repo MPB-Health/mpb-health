@@ -9,7 +9,7 @@
 -- Saved report configurations (filters/templates)
 CREATE TABLE IF NOT EXISTS saved_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     report_type VARCHAR(50) NOT NULL, -- 'conversion_funnel', 'lead_sources', 'team_performance', 'interaction', 'custom'
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS saved_reports (
 -- Report export archive
 CREATE TABLE IF NOT EXISTS report_exports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     saved_report_id UUID REFERENCES saved_reports(id) ON DELETE SET NULL,
     report_name VARCHAR(255) NOT NULL,
     report_type VARCHAR(50) NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS report_exports (
 CREATE TABLE IF NOT EXISTS user_presence (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     status VARCHAR(20) DEFAULT 'online', -- 'online', 'away', 'busy', 'offline'
     current_page TEXT,
     last_activity_at TIMESTAMPTZ DEFAULT now(),
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS user_presence (
 -- Member/Agent interaction tracking
 CREATE TABLE IF NOT EXISTS interaction_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     member_id UUID,
     agent_id UUID REFERENCES auth.users(id),
     interaction_type VARCHAR(50) NOT NULL, -- 'call', 'email', 'chat', 'meeting', 'note'
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS interaction_logs (
 -- Email schedules
 CREATE TABLE IF NOT EXISTS email_schedules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     template_id UUID REFERENCES crm_templates(id) ON DELETE SET NULL,
@@ -148,7 +148,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS payment_processors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     provider VARCHAR(50) NOT NULL, -- 'stripe', 'square', 'paypal', 'authorize_net', 'braintree'
     is_active BOOLEAN DEFAULT false,
@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS payment_processors (
 
 CREATE TABLE IF NOT EXISTS sms_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     provider VARCHAR(50) NOT NULL, -- 'twilio', 'vonage', 'plivo', 'messagebird'
     is_active BOOLEAN DEFAULT false,
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS sms_accounts (
 -- SMS message log
 CREATE TABLE IF NOT EXISTS sms_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     sms_account_id UUID REFERENCES sms_accounts(id) ON DELETE SET NULL,
     template_id UUID REFERENCES crm_templates(id) ON DELETE SET NULL,
     direction VARCHAR(20) NOT NULL, -- 'outbound', 'inbound'
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS sms_log (
 
 CREATE TABLE IF NOT EXISTS promo_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     code VARCHAR(50) NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -255,7 +255,7 @@ CREATE TABLE IF NOT EXISTS promo_code_usage (
 
 CREATE TABLE IF NOT EXISTS code_inventory (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     code_type VARCHAR(50) NOT NULL, -- 'enrollment', 'referral', 'activation', 'voucher'
     code VARCHAR(100) NOT NULL,
     batch_id UUID, -- For batch-generated codes
@@ -275,7 +275,7 @@ CREATE TABLE IF NOT EXISTS code_inventory (
 -- Code batches for bulk generation
 CREATE TABLE IF NOT EXISTS code_batches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     code_type VARCHAR(50) NOT NULL,
     prefix VARCHAR(20),
@@ -293,7 +293,7 @@ CREATE TABLE IF NOT EXISTS code_batches (
 
 CREATE TABLE IF NOT EXISTS admin_resources (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     category VARCHAR(50) NOT NULL, -- 'document', 'template', 'guide', 'video', 'link'
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -319,7 +319,7 @@ CREATE TABLE IF NOT EXISTS admin_resources (
 
 CREATE TABLE IF NOT EXISTS esignature_providers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     provider VARCHAR(50) NOT NULL, -- 'docusign', 'hellosign', 'adobe_sign', 'pandadoc'
     is_active BOOLEAN DEFAULT false,
@@ -336,7 +336,7 @@ CREATE TABLE IF NOT EXISTS esignature_providers (
 -- E-signature documents
 CREATE TABLE IF NOT EXISTS esignature_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES orgs(id) ON DELETE CASCADE,
     provider_id UUID REFERENCES esignature_providers(id) ON DELETE SET NULL,
     external_document_id TEXT,
     name VARCHAR(255) NOT NULL,
@@ -388,7 +388,7 @@ ON CONFLICT (key) DO NOTHING;
 -- Assign permissions to roles
 INSERT INTO role_permissions (org_id, role, permission_id)
 SELECT o.id, r.role, p.id
-FROM organizations o
+FROM orgs o
 CROSS JOIN (VALUES ('owner'), ('admin')) AS r(role)
 CROSS JOIN permissions p
 WHERE p.module IN ('reports', 'email', 'sms', 'settings')
@@ -397,7 +397,7 @@ ON CONFLICT DO NOTHING;
 -- Manager gets read + limited permissions
 INSERT INTO role_permissions (org_id, role, permission_id)
 SELECT o.id, 'manager', p.id
-FROM organizations o
+FROM orgs o
 CROSS JOIN permissions p
 WHERE p.key IN ('reports.read', 'reports.export', 'email.read', 'email.send', 'email.templates', 'sms.read', 'sms.send', 'settings.view')
 ON CONFLICT DO NOTHING;
@@ -405,7 +405,7 @@ ON CONFLICT DO NOTHING;
 -- Agent gets minimal permissions
 INSERT INTO role_permissions (org_id, role, permission_id)
 SELECT o.id, 'agent', p.id
-FROM organizations o
+FROM orgs o
 CROSS JOIN permissions p
 WHERE p.key IN ('reports.read', 'email.read', 'email.send', 'sms.read', 'sms.send')
 ON CONFLICT DO NOTHING;

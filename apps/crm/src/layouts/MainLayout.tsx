@@ -20,6 +20,14 @@ import {
   Mail,
   Send,
   Clock,
+  Building2,
+  UserCircle,
+  DollarSign,
+  GitBranch,
+  Package,
+  FileCheck,
+  Receipt,
+  Megaphone,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,21 +37,37 @@ import { NotificationCenter } from '../components/NotificationCenter';
 
 const navigation: (NavItem & { permission?: string; children?: { name: string; href: string; permission?: string }[] })[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.view' },
-  { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.view' },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.view' },
-  { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.view' },
-  { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.view' },
+  // Lead Management
+  { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
+  { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
+  // CRM Modules
+  { name: 'Accounts', href: '/accounts', icon: Building2, permission: 'accounts.read' },
+  { name: 'Contacts', href: '/contacts', icon: UserCircle, permission: 'contacts.read' },
+  { name: 'Deals', href: '/deals', icon: DollarSign, permission: 'deals.read' },
+  { name: 'Deal Pipeline', href: '/deal-pipeline', icon: GitBranch, permission: 'deals.read' },
+  // Products & Quotes
+  { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
+  { name: 'Quotes', href: '/quotes', icon: FileCheck, permission: 'quotes.read' },
+  { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
+  // Marketing
+  { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
+  // Tasks & Calendar
+  { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
+  { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
+  // Reporting
+  { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.read' },
+  // Email
   {
     name: 'Email',
     href: '#',
     icon: Mail,
-    permission: 'email.read',
+    permission: 'leads.read',
     children: [
-      { name: 'Sent Emails', href: '/email/sent', permission: 'email.read' },
-      { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
+      { name: 'Sent Emails', href: '/email/sent', permission: 'leads.read' },
+      { name: 'Schedules', href: '/email/schedules', permission: 'settings.manage' },
     ],
   },
+  // Admin
   { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
   { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
   { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },

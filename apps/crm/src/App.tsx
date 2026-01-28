@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useOrg } from './contexts/OrgContext';
@@ -16,6 +17,32 @@ import Templates from './pages/Templates';
 import Automation from './pages/Automation';
 import SentEmails from './pages/SentEmails';
 import EmailSchedules from './pages/EmailSchedules';
+
+// Lazy-loaded CRM module pages
+const Accounts = lazy(() => import('./pages/Accounts'));
+const AccountDetail = lazy(() => import('./pages/AccountDetail'));
+const Contacts = lazy(() => import('./pages/Contacts'));
+const ContactDetail = lazy(() => import('./pages/ContactDetail'));
+const Deals = lazy(() => import('./pages/Deals'));
+const DealDetail = lazy(() => import('./pages/DealDetail'));
+const DealPipeline = lazy(() => import('./pages/DealPipeline'));
+const Products = lazy(() => import('./pages/Products'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const Quotes = lazy(() => import('./pages/Quotes'));
+const QuoteDetail = lazy(() => import('./pages/QuoteDetail'));
+const Invoices = lazy(() => import('./pages/Invoices'));
+const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'));
+const Campaigns = lazy(() => import('./pages/Campaigns'));
+const CampaignDetail = lazy(() => import('./pages/CampaignDetail'));
+
+// Loading component for Suspense
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -158,6 +185,163 @@ export default function App() {
                   element={
                     <Guarded permission="email.templates">
                       <EmailSchedules />
+                    </Guarded>
+                  }
+                />
+                {/* Accounts */}
+                <Route
+                  path="/accounts"
+                  element={
+                    <Guarded permission="accounts.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Accounts />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/accounts/:id"
+                  element={
+                    <Guarded permission="accounts.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <AccountDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Contacts */}
+                <Route
+                  path="/contacts"
+                  element={
+                    <Guarded permission="contacts.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Contacts />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/contacts/:id"
+                  element={
+                    <Guarded permission="contacts.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <ContactDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Deals */}
+                <Route
+                  path="/deals"
+                  element={
+                    <Guarded permission="deals.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Deals />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/deals/:id"
+                  element={
+                    <Guarded permission="deals.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <DealDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/deal-pipeline"
+                  element={
+                    <Guarded permission="deals.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <DealPipeline />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Products */}
+                <Route
+                  path="/products"
+                  element={
+                    <Guarded permission="products.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Products />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/products/:id"
+                  element={
+                    <Guarded permission="products.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <ProductDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Quotes */}
+                <Route
+                  path="/quotes"
+                  element={
+                    <Guarded permission="quotes.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Quotes />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/quotes/:id"
+                  element={
+                    <Guarded permission="quotes.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <QuoteDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Invoices */}
+                <Route
+                  path="/invoices"
+                  element={
+                    <Guarded permission="invoices.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Invoices />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/invoices/:id"
+                  element={
+                    <Guarded permission="invoices.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <InvoiceDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Campaigns */}
+                <Route
+                  path="/campaigns"
+                  element={
+                    <Guarded permission="campaigns.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Campaigns />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/campaigns/:id"
+                  element={
+                    <Guarded permission="campaigns.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <CampaignDetail />
+                      </Suspense>
                     </Guarded>
                   }
                 />

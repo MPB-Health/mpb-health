@@ -30,7 +30,7 @@ const PROVIDERS: { value: SmsProvider; label: string }[] = [
 interface FormData {
   name: string;
   provider: SmsProvider;
-  phone_number: string;
+  phone_numbers: string;
   account_sid: string;
   auth_token: string;
   monthly_limit: number;
@@ -39,7 +39,7 @@ interface FormData {
 const DEFAULT_FORM: FormData = {
   name: '',
   provider: 'twilio',
-  phone_number: '',
+  phone_numbers: '',
   account_sid: '',
   auth_token: '',
   monthly_limit: 1000,

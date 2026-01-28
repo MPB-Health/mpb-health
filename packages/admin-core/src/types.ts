@@ -9,6 +9,7 @@ export interface AdminUser {
   permissions: string[];
   avatar_url: string | null;
   last_login_at: string | null;
+  org_id: string;
   created_at: string;
   updated_at: string;
 }

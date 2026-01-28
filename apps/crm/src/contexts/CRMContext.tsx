@@ -15,6 +15,9 @@ import {
   createAutomationService,
   createReportingService,
   createScoringService,
+  createDealService,
+  createAccountService,
+  createContactService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
@@ -36,6 +39,10 @@ import {
   type AutomationService,
   type ReportingService,
   type ScoringService,
+  type DealService,
+  type DealStage,
+  type AccountService,
+  type ContactService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -57,10 +64,14 @@ interface CRMContextType {
   automationService: AutomationService;
   reportingService: ReportingService;
   scoringService: ScoringService;
+  dealService: DealService;
+  accountService: AccountService;
+  contactService: ContactService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
   pipelineStages: PipelineStage[];
+  dealStages: DealStage[];
   recentLeads: Lead[];
   tasksDueToday: LeadTask[];
   overdueTasks: LeadTask[];
@@ -100,11 +111,15 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     automationService: createAutomationService(supabase, supabaseUrl),
     reportingService: createReportingService(supabase),
     scoringService: createScoringService(supabase),
+    dealService: createDealService(supabase),
+    accountService: createAccountService(supabase),
+    contactService: createContactService(supabase),
   }));
 
   // State
   const [dashboardStats, setDashboardStats] = useState<CRMDashboardStats | null>(null);
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
+  const [dealStages, setDealStages] = useState<DealStage[]>([]);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [tasksDueToday, setTasksDueToday] = useState<LeadTask[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<LeadTask[]>([]);
@@ -117,14 +132,16 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const refreshDashboard = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [stats, stages, activities] = await Promise.all([
+      const [stats, stages, dStages, activities] = await Promise.all([
         services.pipelineService.getDashboardStats(),
         services.pipelineService.getPipelineStages(),
+        services.dealService.getStages(),
         services.activityService.getRecentActivities(10),
       ]);
 
       setDashboardStats(stats);
       setPipelineStages(stages);
+      setDealStages(dStages);
       setRecentActivities(activities);
     } catch (error) {
       console.error('Error refreshing dashboard:', error);
@@ -202,6 +219,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         ...services,
         dashboardStats,
         pipelineStages,
+        dealStages,
         recentLeads,
         tasksDueToday,
         overdueTasks,

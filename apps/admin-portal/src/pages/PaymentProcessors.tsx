@@ -29,7 +29,8 @@ const PROVIDERS: { value: PaymentProvider; label: string }[] = [
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'card', label: 'Credit/Debit Card' },
   { value: 'ach', label: 'ACH Bank Transfer' },
-  { value: 'check', label: 'Check' },
+  { value: 'apple_pay', label: 'Apple Pay' },
+  { value: 'google_pay', label: 'Google Pay' },
 ];
 
 interface FormData {
@@ -39,7 +40,6 @@ interface FormData {
   api_key: string;
   api_secret: string;
   webhook_secret: string;
-  is_test_mode: boolean;
 }
 
 const DEFAULT_FORM: FormData = {
@@ -49,7 +49,6 @@ const DEFAULT_FORM: FormData = {
   api_key: '',
   api_secret: '',
   webhook_secret: '',
-  is_test_mode: true,
 };
 
 export default function PaymentProcessors() {
@@ -63,8 +62,9 @@ export default function PaymentProcessors() {
   const [testing, setTesting] = useState<string | null>(null);
 
   const loadProcessors = async () => {
+    if (!user?.org_id) return;
     try {
-      const data = await paymentProcessorService.list();
+      const data = await paymentProcessorService.list(user.org_id);
       setProcessors(data);
     } catch (err) {
       console.error('Failed to load processors:', err);
@@ -75,8 +75,8 @@ export default function PaymentProcessors() {
   };
 
   useEffect(() => {
-    loadProcessors();
-  }, []);
+    if (user?.org_id) loadProcessors();
+  }, [user?.org_id]);
 
   const openModal = (processor?: PaymentProcessor) => {
     if (processor) {
@@ -88,7 +88,6 @@ export default function PaymentProcessors() {
         api_key: '',
         api_secret: '',
         webhook_secret: '',
-        is_test_mode: processor.is_test_mode,
       });
     } else {
       setEditing(null);
@@ -105,7 +104,7 @@ export default function PaymentProcessors() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.org_id) return;
 
     setSaving(true);
     try {
@@ -120,7 +119,6 @@ export default function PaymentProcessors() {
           provider: form.provider,
           supported_methods: form.supported_methods,
           config: Object.keys(config).length > 0 ? config : undefined,
-          is_test_mode: form.is_test_mode,
         }, user.id);
         toast.success('Processor updated');
       } else {
@@ -129,8 +127,7 @@ export default function PaymentProcessors() {
           provider: form.provider,
           supported_methods: form.supported_methods,
           config,
-          is_test_mode: form.is_test_mode,
-        }, user.id);
+        }, user.org_id, user.id);
         toast.success('Processor created');
       }
       closeModal();
@@ -156,10 +153,10 @@ export default function PaymentProcessors() {
   };
 
   const handleSetDefault = async (id: string) => {
-    if (!user) return;
+    if (!user?.org_id) return;
 
     try {
-      await paymentProcessorService.setDefault(id, user.id);
+      await paymentProcessorService.setDefault(id, user.org_id, user.id);
       toast.success('Default processor updated');
       loadProcessors();
     } catch (err) {
@@ -222,9 +219,9 @@ export default function PaymentProcessors() {
           </p>
         </div>
         <div className="bg-surface-primary rounded-xl border border-th-border p-4">
-          <p className="text-sm text-th-text-tertiary">Test Mode</p>
-          <p className="text-2xl font-bold text-yellow-600 mt-1">
-            {processors.filter((p) => p.is_test_mode).length}
+          <p className="text-sm text-th-text-tertiary">Default Set</p>
+          <p className="text-2xl font-bold text-blue-600 mt-1">
+            {processors.filter((p) => p.is_default).length}
           </p>
         </div>
       </div>
@@ -256,11 +253,6 @@ export default function PaymentProcessors() {
                         {processor.is_default && (
                           <span className="flex items-center gap-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
                             <Star className="w-3 h-3" /> Default
-                          </span>
-                        )}
-                        {processor.is_test_mode && (
-                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                            Test Mode
                           </span>
                         )}
                       </div>
@@ -402,19 +394,6 @@ export default function PaymentProcessors() {
                   placeholder={editing ? '(unchanged)' : ''}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
                 />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="test_mode"
-                  checked={form.is_test_mode}
-                  onChange={(e) => setForm({ ...form, is_test_mode: e.target.checked })}
-                  className="w-4 h-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
-                />
-                <label htmlFor="test_mode" className="text-sm text-th-text-secondary">
-                  Test Mode (sandbox environment)
-                </label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-th-border">

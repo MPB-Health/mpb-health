@@ -79,6 +79,7 @@ export { RouteGuard } from './components/RouteGuard';
 // Hooks
 export { useSession } from './hooks/useSession';
 export { useOrg, type UseOrgReturn } from './hooks/useOrg';
+export { useOrgRole, useRequireRole } from './hooks/useOrgRole';
 export { usePermission, type UsePermissionReturn } from './hooks/usePermission';
 
 // Org & Permission Services
@@ -89,12 +90,19 @@ export {
   getUserOrgRole,
   getOrgMembers,
   inviteMember,
+  addMember,
   updateMemberRole,
   removeMember,
+  suspendMember,
+  acceptInvite,
+  createOrg,
+  hasRoleOrHigher,
+  hasPermission,
   invalidateCache,
   DEFAULT_ORG_ID,
   ORG_ROLE_LABELS,
   ORG_ROLE_HIERARCHY,
+  ORG_ROLE_PERMISSIONS,
   type Org,
   type OrgMembership,
   type OrgWithMembership,
@@ -117,12 +125,16 @@ export {
 export {
   auditService,
   logAuditEvent,
+  logAuditEventAsync,
   queryAuditEvents,
   getEntityAuditTrail,
+  getUserActivityLog,
+  getActivityByCategory,
   AUDIT_ACTIONS,
   type AuditEvent,
   type AuditLogInput,
   type AuditQueryOptions,
+  type AuditAction,
 } from './services/auditService';
 
 // Org Switcher Component

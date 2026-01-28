@@ -161,7 +161,7 @@ const TestimonialShowcase: React.FC = () => {
       memberSince: "2024",
       rating: 5,
       quote: "My experience with MPB has been consistently positive. They have been responsive, kind, and genuinely compassionate in all of my interactions. In a healthcare landscape where it's easy to feel like just a number, MPB stands out by making me feel heard, respected, and human.",
-      story: "In today's healthcare system, it's so easy to feel like just another number. MPB Health has been completely different. Every interaction I've had has been marked by responsiveness, kindness, and genuine compassion. They make me feel heard, respected, and human. While I haven't yet submitted a claim, the quality of communication and care I've experienced gives me complete confidence in this community. MPB has been a refreshing and reassuring presence in an otherwise complex and often impersonal healthcare landscape.",
+      story: "In today's healthcare system, it's so easy to feel like just another number. MPB Health has been completely different. Every interaction I've had has been marked by responsiveness, kindness, and genuine compassion. They make me feel heard, respected, and human. While I haven't yet submitted a sharing request, the quality of communication and care I've experienced gives me complete confidence in this community. MPB has been a refreshing and reassuring presence in an otherwise complex and often impersonal healthcare landscape.",
       savings: "$3,200",
       condition: "Compassionate Care",
       imageUrl: "https://images.pexels.com/photos/3771045/pexels-photo-3771045.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"

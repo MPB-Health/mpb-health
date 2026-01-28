@@ -8,17 +8,29 @@ import { supabase } from '@mpbhealth/database';
 // Types
 // ---------------------------------------------------------------------------
 
-export type OrgRole = 'owner' | 'admin' | 'manager' | 'agent' | 'member';
-export type OrgMembershipStatus = 'active' | 'invited' | 'suspended' | 'removed';
+export type OrgRole = 'owner' | 'admin' | 'manager' | 'advisor';
+export type OrgMembershipStatus = 'active' | 'invited' | 'suspended' | 'left';
 
 export interface Org {
   id: string;
   name: string;
   slug: string;
-  domain?: string | null;
   logo_url?: string | null;
-  settings: Record<string, unknown>;
-  status: 'active' | 'suspended' | 'archived';
+  brand_config: {
+    primaryColor?: string;
+    accentColor?: string;
+    logoUrl?: string;
+  };
+  settings: {
+    timezone?: string;
+    dateFormat?: string;
+    features?: Record<string, boolean>;
+  };
+  subscription_tier: 'free' | 'starter' | 'professional' | 'enterprise';
+  subscription_status: 'active' | 'trialing' | 'past_due' | 'cancelled' | 'suspended';
+  max_users: number;
+  max_contacts: number;
+  max_sequences: number;
   created_at: string;
   updated_at: string;
 }
@@ -29,9 +41,10 @@ export interface OrgMembership {
   org_id: string;
   role: OrgRole;
   status: OrgMembershipStatus;
-  invited_by?: string | null;
-  invited_at?: string | null;
+  permissions_override?: Record<string, boolean> | null;
   joined_at: string;
+  suspended_at?: string | null;
+  suspended_reason?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,22 +57,29 @@ export interface OrgWithMembership extends Org {
 // Constants
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_ORG_ID = '00000000-0000-4000-a000-000000000001';
+// Default MPB Health org ID (created in migration)
+export const DEFAULT_ORG_ID = 'a0000000-0000-0000-0000-000000000001';
 
 export const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   owner: 'Owner',
   admin: 'Admin',
   manager: 'Manager',
-  agent: 'Agent',
-  member: 'Member',
+  advisor: 'Advisor',
 };
 
 export const ORG_ROLE_HIERARCHY: Record<OrgRole, number> = {
-  owner: 5,
-  admin: 4,
-  manager: 3,
-  agent: 2,
-  member: 1,
+  owner: 4,
+  admin: 3,
+  manager: 2,
+  advisor: 1,
+};
+
+// Permission helpers based on role
+export const ORG_ROLE_PERMISSIONS: Record<OrgRole, string[]> = {
+  owner: ['manage_org', 'manage_billing', 'manage_users', 'manage_settings', 'manage_templates', 'manage_sequences', 'view_reports', 'manage_compliance'],
+  admin: ['manage_users', 'manage_settings', 'manage_templates', 'manage_sequences', 'view_reports', 'manage_compliance'],
+  manager: ['manage_templates', 'manage_sequences', 'view_reports', 'assign_leads'],
+  advisor: ['view_own_data', 'send_messages'],
 };
 
 // ---------------------------------------------------------------------------
@@ -102,8 +122,13 @@ export async function getUserOrgs(): Promise<OrgWithMembership[]> {
   const { data, error } = await supabase
     .from('org_memberships')
     .select(`
-      id, user_id, org_id, role, status, invited_by, invited_at, joined_at, created_at, updated_at,
-      org:orgs!org_id (id, name, slug, domain, logo_url, settings, status, created_at, updated_at)
+      id, user_id, org_id, role, status, permissions_override, joined_at, suspended_at, suspended_reason, created_at, updated_at,
+      organization:organizations!org_id (
+        id, name, slug, logo_url, brand_config, settings,
+        subscription_tier, subscription_status,
+        max_users, max_contacts, max_sequences,
+        created_at, updated_at
+      )
     `)
     .eq('user_id', user.id)
     .eq('status', 'active');
@@ -114,16 +139,17 @@ export async function getUserOrgs(): Promise<OrgWithMembership[]> {
   }
 
   const results: OrgWithMembership[] = (data || []).map((row: any) => ({
-    ...row.org,
+    ...row.organization,
     membership: {
       id: row.id,
       user_id: row.user_id,
       org_id: row.org_id,
       role: row.role,
       status: row.status,
-      invited_by: row.invited_by,
-      invited_at: row.invited_at,
+      permissions_override: row.permissions_override,
       joined_at: row.joined_at,
+      suspended_at: row.suspended_at,
+      suspended_reason: row.suspended_reason,
       created_at: row.created_at,
       updated_at: row.updated_at,
     },
@@ -139,7 +165,7 @@ export async function getOrg(orgId: string): Promise<Org | null> {
   if (cached) return cached;
 
   const { data, error } = await supabase
-    .from('orgs')
+    .from('organizations')
     .select('*')
     .eq('id', orgId)
     .single();
@@ -177,31 +203,56 @@ export async function getOrgMembers(orgId: string): Promise<OrgMembership[]> {
   return data || [];
 }
 
-/** Invite a user to an org */
+/** Invite a user to an org by email */
 export async function inviteMember(
+  orgId: string,
+  email: string,
+  role: OrgRole
+): Promise<{ success: boolean; error?: string; inviteToken?: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Not authenticated' };
+
+  // Create invite record
+  const { data, error } = await supabase
+    .from('org_invites')
+    .insert({
+      org_id: orgId,
+      email: email.toLowerCase(),
+      role,
+      invited_by: user.id,
+      status: 'pending',
+    })
+    .select('token')
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, inviteToken: data?.token };
+}
+
+/** Add a user directly to an org (for existing users) */
+export async function addMember(
   orgId: string,
   userId: string,
   role: OrgRole
 ): Promise<{ success: boolean; error?: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Not authenticated' };
-
   const { error } = await supabase
     .from('org_memberships')
     .insert({
       user_id: userId,
       org_id: orgId,
       role,
-      status: 'invited',
-      invited_by: user.id,
-      invited_at: new Date().toISOString(),
+      status: 'active',
+      joined_at: new Date().toISOString(),
     });
 
   if (error) {
     return { success: false, error: error.message };
   }
 
-  invalidateCache(user.id);
+  invalidateCache(userId);
   return { success: true };
 }
 
@@ -232,7 +283,7 @@ export async function removeMember(
 ): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase
     .from('org_memberships')
-    .update({ status: 'removed' })
+    .update({ status: 'left' })
     .eq('org_id', orgId)
     .eq('user_id', userId);
 
@@ -242,6 +293,80 @@ export async function removeMember(
 
   invalidateCache(userId);
   return { success: true };
+}
+
+/** Suspend a member */
+export async function suspendMember(
+  orgId: string,
+  userId: string,
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('org_memberships')
+    .update({
+      status: 'suspended',
+      suspended_at: new Date().toISOString(),
+      suspended_reason: reason,
+    })
+    .eq('org_id', orgId)
+    .eq('user_id', userId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  invalidateCache(userId);
+  return { success: true };
+}
+
+/** Accept an org invite */
+export async function acceptInvite(token: string): Promise<{ success: boolean; error?: string; orgId?: string }> {
+  const { data, error } = await supabase.rpc('accept_org_invite', { invite_token: token });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  if (!data?.success) {
+    return { success: false, error: data?.error || 'Failed to accept invite' };
+  }
+
+  invalidateCache();
+  return { success: true, orgId: data.org_id };
+}
+
+/** Create a new organization */
+export async function createOrg(
+  name: string,
+  slug: string
+): Promise<{ success: boolean; error?: string; orgId?: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Not authenticated' };
+
+  const { data, error } = await supabase.rpc('create_organization_with_owner', {
+    org_name: name,
+    org_slug: slug,
+    owner_user_id: user.id,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  invalidateCache(user.id);
+  return { success: true, orgId: data };
+}
+
+/** Check if user has a specific role or higher */
+export function hasRoleOrHigher(userRole: OrgRole | null, requiredRole: OrgRole): boolean {
+  if (!userRole) return false;
+  return ORG_ROLE_HIERARCHY[userRole] >= ORG_ROLE_HIERARCHY[requiredRole];
+}
+
+/** Check if user has a permission based on their role */
+export function hasPermission(userRole: OrgRole | null, permission: string): boolean {
+  if (!userRole) return false;
+  return ORG_ROLE_PERMISSIONS[userRole]?.includes(permission) ?? false;
 }
 
 /** Invalidate cache for a user */
@@ -261,8 +386,17 @@ export const orgService = {
   getUserOrgRole,
   getOrgMembers,
   inviteMember,
+  addMember,
   updateMemberRole,
   removeMember,
+  suspendMember,
+  acceptInvite,
+  createOrg,
+  hasRoleOrHigher,
+  hasPermission,
   invalidateCache,
   DEFAULT_ORG_ID,
+  ORG_ROLE_LABELS,
+  ORG_ROLE_HIERARCHY,
+  ORG_ROLE_PERMISSIONS,
 };

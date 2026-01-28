@@ -30,7 +30,7 @@ const badges: TrustBadge[] = [
   },
   {
     icon: Award,
-    label: 'Claims Processed',
+    label: 'Medical Needs Shared',
     value: '$100M+',
     color: 'from-orange-600 to-red-600',
   },

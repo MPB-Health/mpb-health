@@ -1,12 +1,10 @@
 import React from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, CheckCircle2, Phone, ArrowRight, Sparkles, Play } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Phone, ArrowRight, Sparkles } from 'lucide-react';
 import { healthcareFeatures } from '../data/healthcareFeaturesData';
 import { Button } from '../components/ui/Button';
 import { FlowShell } from '../components/onboarding/FlowShell';
-import { MEDIA_URLS } from '../config/media';
-import { Badge } from '../components/ui/Badge';
 
 export const FeatureDetail: React.FC = () => {
   const { featureId } = useParams<{ featureId: string }>();
@@ -97,40 +95,6 @@ export const FeatureDetail: React.FC = () => {
           </div>
         </section>
 
-        {/* Virtual Urgent Care - Watch How It Works Video */}
-        {feature.id === 'urgent-care' && (
-          <section className="py-16 bg-white">
-            <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-8">
-                <Badge className="mb-4 bg-orange-100 text-orange-700 border-0">
-                  <Play className="w-3 h-3 mr-1" />
-                  See It In Action
-                </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
-                  Watch How It Works
-                </h2>
-                <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                  See how easy it is to connect with a licensed provider 24/7 for urgent care needs
-                </p>
-              </div>
-
-              <div className="relative bg-white rounded-2xl shadow-2xl p-2">
-                <div className="aspect-video bg-neutral-900 rounded-xl overflow-hidden">
-                  <iframe
-                    title="Virtual Urgent Care Demo"
-                    src={MEDIA_URLS.heroVideoUrl}
-                    className="w-full h-full"
-                    frameBorder="0"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-                    allowFullScreen
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
         <section className="py-16 bg-neutral-50">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-12 text-center">
@@ -182,7 +146,12 @@ export const FeatureDetail: React.FC = () => {
                 <h2 className="text-3xl font-bold text-neutral-900 mb-2">
                   What's Included
                 </h2>
-                <p className="text-sm text-neutral-500 italic mb-6">*After IUA is met</p>
+                {feature.id !== 'urgent-care' && feature.id !== 'mental-health' && (
+                  <p className="text-sm text-neutral-500 italic mb-6">*After IUA is met</p>
+                )}
+                {(feature.id === 'urgent-care' || feature.id === 'mental-health') && (
+                  <div className="mb-6" />
+                )}
                 <ul className="space-y-3">
                   {feature.membership.map((item, index) => (
                     <li key={index} className="flex items-start gap-3">

@@ -12,32 +12,40 @@ export interface AuditEvent {
   id: string;
   org_id: string | null;
   actor_user_id: string | null;
+  actor_email: string | null;
+  actor_role: string | null;
   action: string;
-  entity_type: string | null;
-  entity_id: string | null;
-  before_json: Record<string, unknown> | null;
-  after_json: Record<string, unknown> | null;
-  meta_json: Record<string, unknown>;
+  action_category: string | null;
+  object_type: string;
+  object_id: string | null;
+  object_name: string | null;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  changes_summary: string | null;
   ip_address: string | null;
   user_agent: string | null;
+  request_id: string | null;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 
 export interface AuditLogInput {
   orgId: string;
   action: string;
-  entityType?: string;
-  entityId?: string;
-  before?: Record<string, unknown> | null;
-  after?: Record<string, unknown> | null;
-  meta?: Record<string, unknown>;
+  objectType: string;
+  objectId?: string;
+  objectName?: string;
+  oldValues?: Record<string, unknown> | null;
+  newValues?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AuditQueryOptions {
   orgId: string;
   action?: string;
-  entityType?: string;
-  entityId?: string;
+  actionCategory?: string;
+  objectType?: string;
+  objectId?: string;
   actorUserId?: string;
   from?: string;
   to?: string;
@@ -46,115 +54,182 @@ export interface AuditQueryOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Pre-defined Actions
+// Pre-defined Actions (format: {category}.{action})
 // ---------------------------------------------------------------------------
 
 export const AUDIT_ACTIONS = {
+  // Auth
+  AUTH_LOGIN: 'auth.login',
+  AUTH_LOGOUT: 'auth.logout',
+  AUTH_PASSWORD_RESET_REQUEST: 'auth.password_reset_request',
+  AUTH_PASSWORD_RESET: 'auth.password_reset',
+  AUTH_MFA_ENABLED: 'auth.mfa_enabled',
+  AUTH_MFA_DISABLED: 'auth.mfa_disabled',
+
+  // User Management
+  USER_CREATE: 'user.create',
+  USER_UPDATE: 'user.update',
+  USER_DELETE: 'user.delete',
+  USER_INVITE: 'user.invite',
+  USER_INVITE_ACCEPT: 'user.invite_accept',
+  USER_ROLE_CHANGE: 'user.role_change',
+  USER_SUSPEND: 'user.suspend',
+  USER_REACTIVATE: 'user.reactivate',
+
   // Leads
-  LEAD_CREATED: 'lead.created',
-  LEAD_UPDATED: 'lead.updated',
-  LEAD_STAGE_CHANGED: 'lead.stage_changed',
-  LEAD_DELETED: 'lead.deleted',
-  LEAD_EXPORTED: 'lead.exported',
-  LEAD_ASSIGNED: 'lead.assigned',
-  LEAD_CONVERTED: 'lead.converted',
+  LEAD_CREATE: 'lead.create',
+  LEAD_UPDATE: 'lead.update',
+  LEAD_DELETE: 'lead.delete',
+  LEAD_ASSIGN: 'lead.assign',
+  LEAD_STAGE_CHANGE: 'lead.stage_change',
+  LEAD_CONVERT: 'lead.convert',
+  LEAD_EXPORT: 'lead.export',
+  LEAD_IMPORT: 'lead.import',
 
   // Contacts
-  CONTACT_CREATED: 'contact.created',
-  CONTACT_UPDATED: 'contact.updated',
-  CONTACT_DELETED: 'contact.deleted',
+  CONTACT_CREATE: 'contact.create',
+  CONTACT_UPDATE: 'contact.update',
+  CONTACT_DELETE: 'contact.delete',
+  CONTACT_MERGE: 'contact.merge',
 
-  // Accounts
-  ACCOUNT_CREATED: 'account.created',
-  ACCOUNT_UPDATED: 'account.updated',
-  ACCOUNT_DELETED: 'account.deleted',
+  // Messages & Engagement
+  MESSAGE_SEND: 'message.send',
+  MESSAGE_RECEIVE: 'message.receive',
+  MESSAGE_TEMPLATE_USE: 'message.template_use',
+  MESSAGE_DRAFT_CREATE: 'message.draft_create',
+  MESSAGE_DRAFT_APPROVE: 'message.draft_approve',
+  MESSAGE_DRAFT_REJECT: 'message.draft_reject',
 
-  // Deals
-  DEAL_CREATED: 'deal.created',
-  DEAL_UPDATED: 'deal.updated',
-  DEAL_STAGE_CHANGED: 'deal.stage_changed',
-  DEAL_WON: 'deal.won',
-  DEAL_LOST: 'deal.lost',
-  DEAL_DELETED: 'deal.deleted',
+  // Sequences
+  SEQUENCE_CREATE: 'sequence.create',
+  SEQUENCE_UPDATE: 'sequence.update',
+  SEQUENCE_DELETE: 'sequence.delete',
+  SEQUENCE_ACTIVATE: 'sequence.activate',
+  SEQUENCE_PAUSE: 'sequence.pause',
+  SEQUENCE_ENROLL: 'sequence.enroll',
+  SEQUENCE_UNENROLL: 'sequence.unenroll',
+  SEQUENCE_STEP_EXECUTE: 'sequence.step_execute',
 
-  // Quotes
-  QUOTE_CREATED: 'quote.created',
-  QUOTE_UPDATED: 'quote.updated',
-  QUOTE_SENT: 'quote.sent',
-  QUOTE_ACCEPTED: 'quote.accepted',
-  QUOTE_REJECTED: 'quote.rejected',
-  QUOTE_CLONED: 'quote.cloned',
-  QUOTE_DELETED: 'quote.deleted',
+  // Templates
+  TEMPLATE_CREATE: 'template.create',
+  TEMPLATE_UPDATE: 'template.update',
+  TEMPLATE_DELETE: 'template.delete',
+  TEMPLATE_LOCK: 'template.lock',
+  TEMPLATE_UNLOCK: 'template.unlock',
 
-  // Invoices
-  INVOICE_CREATED: 'invoice.created',
-  INVOICE_UPDATED: 'invoice.updated',
-  INVOICE_SENT: 'invoice.sent',
-  INVOICE_PAID: 'invoice.paid',
-  INVOICE_DELETED: 'invoice.deleted',
+  // Compliance
+  COMPLIANCE_APPROVAL_REQUEST: 'compliance.approval_request',
+  COMPLIANCE_APPROVE: 'compliance.approve',
+  COMPLIANCE_REJECT: 'compliance.reject',
+  COMPLIANCE_RULE_CREATE: 'compliance.rule_create',
+  COMPLIANCE_RULE_UPDATE: 'compliance.rule_update',
+  COMPLIANCE_RULE_DELETE: 'compliance.rule_delete',
 
-  // Tasks
-  TASK_CREATED: 'task.created',
-  TASK_COMPLETED: 'task.completed',
-  TASK_DELETED: 'task.deleted',
-
-  // Pipeline
-  PIPELINE_STAGE_CREATED: 'pipeline.stage_created',
-  PIPELINE_STAGE_UPDATED: 'pipeline.stage_updated',
-  PIPELINE_STAGE_DELETED: 'pipeline.stage_deleted',
-
-  // Members & Roles
-  MEMBER_INVITED: 'member.invited',
-  MEMBER_REMOVED: 'member.removed',
-  ROLE_CHANGED: 'role.changed',
-  PERMISSION_GRANTED: 'permission.granted',
-  PERMISSION_REVOKED: 'permission.revoked',
-
-  // Integration
-  INTEGRATION_UPDATED: 'integration.updated',
-  ZOHO_SYNC_TRIGGERED: 'integration.zoho_sync',
+  // AI
+  AI_DRAFT_GENERATE: 'ai.draft_generate',
+  AI_DRAFT_APPROVE: 'ai.draft_approve',
+  AI_DOCUMENT_UPLOAD: 'ai.document_upload',
+  AI_DOCUMENT_PROCESS: 'ai.document_process',
 
   // Settings
-  SETTINGS_CHANGED: 'settings.changed',
-  ORG_UPDATED: 'org.updated',
+  SETTINGS_UPDATE: 'settings.update',
+  ORG_UPDATE: 'org.update',
+  ORG_CREATE: 'org.create',
 
-  // Auth
-  LOGIN_SUCCESS: 'auth.login_success',
-  LOGIN_FAILURE: 'auth.login_failure',
-  LOGOUT: 'auth.logout',
+  // Billing
+  BILLING_SUBSCRIPTION_CREATE: 'billing.subscription_create',
+  BILLING_SUBSCRIPTION_UPDATE: 'billing.subscription_update',
+  BILLING_SUBSCRIPTION_CANCEL: 'billing.subscription_cancel',
+  BILLING_PAYMENT_SUCCESS: 'billing.payment_success',
+  BILLING_PAYMENT_FAILED: 'billing.payment_failed',
+
+  // Training
+  TRAINING_MODULE_START: 'training.module_start',
+  TRAINING_MODULE_COMPLETE: 'training.module_complete',
+  TRAINING_CERTIFICATION_EARN: 'training.certification_earn',
+
+  // Tasks
+  TASK_CREATE: 'task.create',
+  TASK_UPDATE: 'task.update',
+  TASK_COMPLETE: 'task.complete',
+  TASK_DELETE: 'task.delete',
+
+  // Meetings
+  MEETING_CREATE: 'meeting.create',
+  MEETING_JOIN: 'meeting.join',
+  MEETING_LEAVE: 'meeting.leave',
+  MEETING_CANCEL: 'meeting.cancel',
 } as const;
+
+export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
 
 // ---------------------------------------------------------------------------
 // Service Functions
 // ---------------------------------------------------------------------------
 
-/** Log an audit event */
-export async function logAuditEvent(input: AuditLogInput): Promise<{ success: boolean; error?: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { error } = await supabase
-    .from('audit_events')
-    .insert({
-      org_id: input.orgId,
-      actor_user_id: user?.id ?? null,
-      action: input.action,
-      entity_type: input.entityType ?? null,
-      entity_id: input.entityId ?? null,
-      before_json: input.before ?? null,
-      after_json: input.after ?? null,
-      meta_json: {
-        ...input.meta,
+/** Log an audit event using the database function */
+export async function logAuditEvent(input: AuditLogInput): Promise<{ success: boolean; error?: string; auditId?: string }> {
+  try {
+    // Try using the database function first (preferred)
+    const { data, error } = await supabase.rpc('log_audit_event', {
+      p_org_id: input.orgId,
+      p_action: input.action,
+      p_object_type: input.objectType,
+      p_object_id: input.objectId ?? null,
+      p_object_name: input.objectName ?? null,
+      p_old_values: input.oldValues ?? null,
+      p_new_values: input.newValues ?? null,
+      p_metadata: {
+        ...input.metadata,
         user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
         page_url: typeof window !== 'undefined' ? window.location.href : null,
       },
     });
 
-  if (error) {
-    console.error('[AuditService] Failed to log event:', error);
-    return { success: false, error: error.message };
-  }
+    if (error) throw error;
 
-  return { success: true };
+    return { success: true, auditId: data };
+  } catch (rpcError) {
+    // Fallback to direct insert if function doesn't exist
+    console.warn('[AuditService] RPC failed, using direct insert:', rpcError);
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .insert({
+        org_id: input.orgId,
+        actor_user_id: user?.id ?? null,
+        action: input.action,
+        action_category: input.action.split('.')[0],
+        object_type: input.objectType,
+        object_id: input.objectId ?? null,
+        object_name: input.objectName ?? null,
+        old_values: input.oldValues ?? null,
+        new_values: input.newValues ?? null,
+        metadata: {
+          ...input.metadata,
+          user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+          page_url: typeof window !== 'undefined' ? window.location.href : null,
+        },
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('[AuditService] Failed to log event:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, auditId: data?.id };
+  }
+}
+
+/** Log an audit event without waiting (fire and forget) */
+export function logAuditEventAsync(input: AuditLogInput): void {
+  logAuditEvent(input).catch((err) => {
+    console.error('[AuditService] Async log failed:', err);
+  });
 }
 
 /** Query audit events with filters */
@@ -162,7 +237,7 @@ export async function queryAuditEvents(
   options: AuditQueryOptions
 ): Promise<{ events: AuditEvent[]; total: number }> {
   let query = supabase
-    .from('audit_events')
+    .from('audit_logs')
     .select('*', { count: 'exact' })
     .eq('org_id', options.orgId)
     .order('created_at', { ascending: false });
@@ -170,11 +245,14 @@ export async function queryAuditEvents(
   if (options.action) {
     query = query.eq('action', options.action);
   }
-  if (options.entityType) {
-    query = query.eq('entity_type', options.entityType);
+  if (options.actionCategory) {
+    query = query.eq('action_category', options.actionCategory);
   }
-  if (options.entityId) {
-    query = query.eq('entity_id', options.entityId);
+  if (options.objectType) {
+    query = query.eq('object_type', options.objectType);
+  }
+  if (options.objectId) {
+    query = query.eq('object_id', options.objectId);
   }
   if (options.actorUserId) {
     query = query.eq('actor_user_id', options.actorUserId);
@@ -203,14 +281,43 @@ export async function queryAuditEvents(
 /** Get audit trail for a specific entity */
 export async function getEntityAuditTrail(
   orgId: string,
-  entityType: string,
-  entityId: string
+  objectType: string,
+  objectId: string,
+  limit = 100
 ): Promise<AuditEvent[]> {
   const { events } = await queryAuditEvents({
     orgId,
-    entityType,
-    entityId,
-    limit: 100,
+    objectType,
+    objectId,
+    limit,
+  });
+  return events;
+}
+
+/** Get recent activity for a user */
+export async function getUserActivityLog(
+  orgId: string,
+  userId: string,
+  limit = 50
+): Promise<AuditEvent[]> {
+  const { events } = await queryAuditEvents({
+    orgId,
+    actorUserId: userId,
+    limit,
+  });
+  return events;
+}
+
+/** Get activity by category */
+export async function getActivityByCategory(
+  orgId: string,
+  category: string,
+  limit = 50
+): Promise<AuditEvent[]> {
+  const { events } = await queryAuditEvents({
+    orgId,
+    actionCategory: category,
+    limit,
   });
   return events;
 }
@@ -218,7 +325,10 @@ export async function getEntityAuditTrail(
 // Bundled export
 export const auditService = {
   logAuditEvent,
+  logAuditEventAsync,
   queryAuditEvents,
   getEntityAuditTrail,
+  getUserActivityLog,
+  getActivityByCategory,
   AUDIT_ACTIONS,
 };

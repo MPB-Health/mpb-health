@@ -12,13 +12,24 @@ import SOPDocument from './pages/SOPDocument';
 import Bulletins from './pages/Bulletins';
 import Profile from './pages/Profile';
 import MyLeads from './pages/MyLeads';
+import PowerList from './pages/PowerList';
+import LeadDetail from './pages/LeadDetail';
+import Inbox from './pages/Inbox';
+import ConversationThread from './pages/ConversationThread';
+import Sequences from './pages/Sequences';
+import SequenceEditor from './pages/SequenceEditor';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 export default function App() {
   return (
     <AdvisorProvider>
       <Routes>
+        {/* Auth routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="training" element={<Training />} />
@@ -30,6 +41,12 @@ export default function App() {
           <Route path="sops/:documentId" element={<SOPDocument />} />
           <Route path="bulletins" element={<Bulletins />} />
           <Route path="leads" element={<MyLeads />} />
+          <Route path="leads/:leadId" element={<LeadDetail />} />
+          <Route path="power-list" element={<PowerList />} />
+          <Route path="inbox" element={<Inbox />} />
+          <Route path="inbox/:conversationId" element={<ConversationThread />} />
+          <Route path="sequences" element={<Sequences />} />
+          <Route path="sequences/:sequenceId" element={<SequenceEditor />} />
           <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

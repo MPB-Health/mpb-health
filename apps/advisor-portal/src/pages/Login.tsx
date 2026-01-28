@@ -13,11 +13,16 @@ export default function Login() {
     navigate('/');
   };
 
+  const handleForgotPassword = () => {
+    navigate('/forgot-password');
+  };
+
   return (
     <LoginLayout
       appName="Advisor Portal"
       appDescription="Sign in to access your dashboard"
       onSubmit={handleSubmit}
+      onForgotPassword={handleForgotPassword}
       accentVariant="teal"
       showForgotPassword={true}
       showRememberMe={true}

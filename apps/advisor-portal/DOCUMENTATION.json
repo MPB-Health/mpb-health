@@ -1,0 +1,513 @@
+{
+  "application": {
+    "name": "Advisor Portal",
+    "package": "@mpbhealth/advisor-portal",
+    "version": "0.1.0",
+    "description": "Web application for health benefit advisors to manage training, meetings, leads, and resources",
+    "status": "production-ready"
+  },
+  "techStack": {
+    "framework": "React 18.2",
+    "language": "TypeScript 5.3",
+    "buildTool": "Vite 5.0",
+    "styling": "Tailwind CSS 3.4",
+    "stateManagement": "React Context",
+    "database": "Supabase (PostgreSQL)",
+    "authentication": "Supabase Auth",
+    "realtime": "Supabase Realtime",
+    "videoConferencing": "Jitsi Meet",
+    "deployment": "Vercel",
+    "uiLibrary": "@mpbhealth/ui (internal)",
+    "icons": "lucide-react 0.312",
+    "notifications": "react-hot-toast 2.4",
+    "markdown": "react-markdown 9.0",
+    "dateUtils": "date-fns 3.3",
+    "routing": "react-router-dom 6.21"
+  },
+  "routes": [
+    {
+      "path": "/login",
+      "component": "Login.tsx",
+      "protected": false,
+      "status": "complete"
+    },
+    {
+      "path": "/",
+      "component": "Dashboard.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/training",
+      "component": "Training.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/training/:moduleId",
+      "component": "TrainingModule.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/meetings",
+      "component": "Meetings.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/meetings/:meetingId",
+      "component": "MeetingRoom.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/forms",
+      "component": "Forms.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/sops",
+      "component": "SOPLibrary.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/sops/:documentId",
+      "component": "SOPDocument.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/bulletins",
+      "component": "Bulletins.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/leads",
+      "component": "MyLeads.tsx",
+      "protected": true,
+      "status": "complete"
+    },
+    {
+      "path": "/profile",
+      "component": "Profile.tsx",
+      "protected": true,
+      "status": "complete"
+    }
+  ],
+  "features": {
+    "authentication": {
+      "status": "complete",
+      "capabilities": [
+        "Email/password login",
+        "Session persistence",
+        "Auto token refresh",
+        "Logout functionality",
+        "Protected route guards",
+        "Auth state listeners"
+      ]
+    },
+    "dashboard": {
+      "status": "complete",
+      "capabilities": [
+        "Welcome greeting with user name",
+        "Training progress stats",
+        "Modules completed count",
+        "Upcoming meetings count",
+        "Assigned leads count (clickable)",
+        "Continue training section (in-progress modules)",
+        "Upcoming meetings preview",
+        "Quick actions grid (5 buttons)"
+      ]
+    },
+    "training": {
+      "status": "complete",
+      "capabilities": [
+        "Circular progress visualization",
+        "Search by title/description",
+        "Category filter",
+        "Module grid with status badges",
+        "Required module indicators",
+        "Duration display",
+        "Progress tracking (time spent)"
+      ]
+    },
+    "trainingModule": {
+      "status": "complete",
+      "capabilities": [
+        "Module header with status",
+        "Required badge",
+        "Category label",
+        "Progress bar",
+        "Video content (iframe)",
+        "External link content",
+        "Document content (placeholder)",
+        "Interactive content (placeholder)",
+        "Start module action",
+        "Complete module action",
+        "Toast notifications"
+      ],
+      "contentTypes": ["video", "external_link", "document", "interactive", "quiz"]
+    },
+    "meetings": {
+      "status": "complete",
+      "capabilities": [
+        "Live meetings section with join button",
+        "Pending invitations with RSVP (Accept/Tentative/Decline)",
+        "Upcoming meetings list",
+        "Meeting type badges (training/team/other)",
+        "Smart date formatting (Today/Tomorrow/date)",
+        "Time and duration display"
+      ]
+    },
+    "meetingRoom": {
+      "status": "complete",
+      "capabilities": [
+        "Meeting info card with status",
+        "Live indicator with animation",
+        "Jitsi Meet video conferencing",
+        "Join button for scheduled meetings",
+        "Real-time meeting status updates",
+        "Meeting resources list",
+        "Recording playback (completed meetings)",
+        "Attendance tracking"
+      ]
+    },
+    "forms": {
+      "status": "complete",
+      "capabilities": [
+        "Search by name/description",
+        "Category filter",
+        "Forms grid with status",
+        "Embedded form iframe modal",
+        "Submission status tracking (completed/rejected/pending)",
+        "Required form indicators",
+        "Recent submissions list"
+      ]
+    },
+    "sopLibrary": {
+      "status": "complete",
+      "capabilities": [
+        "Full-text search (title/description/tags)",
+        "Category filter",
+        "Document cards with metadata",
+        "Tags display",
+        "View count tracking",
+        "Last updated date",
+        "Categories sidebar with counts",
+        "Popular documents sidebar"
+      ]
+    },
+    "sopDocument": {
+      "status": "complete",
+      "capabilities": [
+        "Document header with icon",
+        "Download button (PDFs)",
+        "Meta info (date/views/version/tags)",
+        "Markdown content rendering",
+        "HTML content rendering",
+        "PDF iframe rendering",
+        "Plain text rendering",
+        "View tracking"
+      ],
+      "contentTypes": ["markdown", "html", "pdf", "text"]
+    },
+    "bulletins": {
+      "status": "complete",
+      "capabilities": [
+        "Category filter buttons",
+        "Priority-based styling",
+        "Pinned bulletin indicator",
+        "Unread badge",
+        "Mark as read on click",
+        "Author and date display",
+        "Category icons"
+      ],
+      "categories": ["all", "announcement", "update", "alert", "news"],
+      "priorities": ["urgent", "high", "normal", "low"]
+    },
+    "myLeads": {
+      "status": "complete",
+      "capabilities": [
+        "Search by name/email",
+        "Leads table with columns",
+        "Priority badges with colors",
+        "Pipeline stage badges",
+        "Date formatting",
+        "Empty states"
+      ],
+      "tableColumns": ["Name", "Email", "Phone", "Stage", "Priority", "Created Date"]
+    },
+    "profile": {
+      "status": "complete",
+      "capabilities": [
+        "Avatar display and upload",
+        "Edit mode for profile fields",
+        "First/last name editing",
+        "Phone editing",
+        "Bio editing",
+        "Specialization display",
+        "Stats cards (modules/meetings/forms/certs)",
+        "Certifications section with badges",
+        "Account status indicator",
+        "Onboarding completion badge"
+      ]
+    },
+    "realtime": {
+      "status": "complete",
+      "capabilities": [
+        "Live meeting status updates",
+        "New bulletin notifications",
+        "Meeting room status changes",
+        "Auth state changes",
+        "Unread bulletin count badge"
+      ]
+    },
+    "navigation": {
+      "status": "complete",
+      "capabilities": [
+        "Sidebar navigation",
+        "Active route highlighting",
+        "Badge counts on nav items",
+        "User menu with avatar",
+        "Portal switcher (UI only)",
+        "Live meeting banner",
+        "Sign out button"
+      ]
+    }
+  },
+  "services": {
+    "profileService": {
+      "methods": [
+        "getProfile(advisorId)",
+        "getProfileByEmail(email)",
+        "updateProfile(advisorId, updates)",
+        "uploadAvatar(advisorId, file)",
+        "getAllAdvisors(filters)",
+        "getActiveAdvisors()",
+        "getSpecializations()",
+        "getOnboardingSteps()",
+        "getOnboardingProgress(advisorId)",
+        "getOnboardingStatus(advisorId)",
+        "startOnboardingStep(advisorId, stepId)",
+        "completeOnboardingStep(advisorId, stepId, notes)",
+        "skipOnboardingStep(advisorId, stepId)",
+        "getAdvisorStats(advisorId)"
+      ]
+    },
+    "trainingService": {
+      "methods": [
+        "getModules()",
+        "getModule(moduleId)",
+        "getCategories()",
+        "getModuleProgress(advisorId, moduleId)",
+        "getAdvisorProgress(advisorId)",
+        "startModule(advisorId, moduleId)",
+        "updateProgress(advisorId, moduleId, updates)",
+        "completeModule(advisorId, moduleId, quizScore)",
+        "getTrainingStats(advisorId)",
+        "getCertifications(advisorId)"
+      ]
+    },
+    "meetingService": {
+      "methods": [
+        "getMeeting(meetingId)",
+        "getUpcomingMeetings(advisorId)",
+        "getLiveMeetings()",
+        "getInvitations(advisorId)",
+        "respondToInvitation(invitationId, response)",
+        "subscribeMeetingUpdates(meetingId, callback)",
+        "subscribeLiveMeetings(callback)",
+        "recordAttendance(meetingId, advisorId)",
+        "recordLeave(meetingId, advisorId)"
+      ]
+    },
+    "contentService": {
+      "methods": [
+        "getSOPDocuments(filters)",
+        "getSOPDocument(documentId)",
+        "getSOPCategories()",
+        "getPopularSOPs(limit)",
+        "trackSOPView(documentId)",
+        "getBulletins(options)",
+        "markBulletinRead(bulletinId, advisorId)",
+        "getUnreadBulletinCount(advisorId)",
+        "subscribeToBulletins(callback)"
+      ]
+    },
+    "formsService": {
+      "methods": [
+        "getForms()",
+        "getFormCategories()",
+        "getSubmissions(advisorId)"
+      ]
+    },
+    "advisorLeadService": {
+      "methods": [
+        "getAssignedLeads(advisorId)",
+        "getAssignedLeadCount(advisorId)"
+      ]
+    }
+  },
+  "dataModels": {
+    "AdvisorProfile": {
+      "fields": ["id", "first_name", "last_name", "email", "phone", "specialization", "status", "onboarding_completed", "onboarding_completed_at", "avatar_url", "bio", "metadata", "created_at", "updated_at"]
+    },
+    "TrainingModule": {
+      "fields": ["id", "title", "description", "category", "content_type", "content_url", "duration_minutes", "order_index", "is_required", "prerequisites", "is_active", "created_at", "updated_at"]
+    },
+    "TrainingProgress": {
+      "fields": ["id", "advisor_id", "module_id", "status", "started_at", "completed_at", "time_spent_minutes", "quiz_score", "attempts", "notes", "created_at", "updated_at"]
+    },
+    "AdvisorMeeting": {
+      "fields": ["id", "title", "description", "scheduled_at", "duration_minutes", "meeting_type", "status", "room_name", "room_password", "resources", "recording_url", "created_at", "updated_at"]
+    },
+    "MeetingInvitation": {
+      "fields": ["id", "meeting_id", "advisor_id", "status", "responded_at", "created_at"]
+    },
+    "SOPDocument": {
+      "fields": ["id", "title", "description", "category", "tags", "content", "content_type", "file_url", "version", "view_count", "is_active", "created_by", "created_at", "updated_at"]
+    },
+    "AdvisorForm": {
+      "fields": ["id", "name", "description", "category", "embed_url", "is_required", "is_active", "created_at", "updated_at"]
+    },
+    "FormSubmission": {
+      "fields": ["id", "advisor_id", "form_id", "status", "submitted_at", "reviewed_at", "created_at"]
+    },
+    "Bulletin": {
+      "fields": ["id", "title", "content", "category", "priority", "is_pinned", "published_at", "expires_at", "author_name", "created_at", "updated_at"]
+    },
+    "Certification": {
+      "fields": ["id", "advisor_id", "certification_type", "name", "description", "badge_url", "issued_at", "expires_at", "created_at"]
+    },
+    "AssignedLeadView": {
+      "fields": ["id", "advisor_id", "first_name", "last_name", "email", "phone", "pipeline_stage", "pipeline_stage_color", "priority", "created_at"]
+    }
+  },
+  "supabaseTables": [
+    "advisor_profiles",
+    "training_modules",
+    "training_progress",
+    "advisor_meetings",
+    "meeting_invitations",
+    "meeting_attendees",
+    "sop_documents",
+    "advisor_forms",
+    "form_submissions",
+    "bulletins",
+    "bulletin_reads",
+    "certifications",
+    "onboarding_steps",
+    "onboarding_progress",
+    "profiles"
+  ],
+  "components": {
+    "pages": [
+      "Login.tsx",
+      "Dashboard.tsx",
+      "Training.tsx",
+      "TrainingModule.tsx",
+      "Meetings.tsx",
+      "MeetingRoom.tsx",
+      "Forms.tsx",
+      "SOPLibrary.tsx",
+      "SOPDocument.tsx",
+      "Bulletins.tsx",
+      "MyLeads.tsx",
+      "Profile.tsx"
+    ],
+    "layouts": [
+      "MainLayout.tsx"
+    ],
+    "components": [
+      "JitsiMeetRoom.tsx",
+      "LiveMeetingBanner.tsx"
+    ],
+    "contexts": [
+      "AdvisorContext.tsx"
+    ]
+  },
+  "sharedPackages": [
+    "@mpbhealth/advisor-core",
+    "@mpbhealth/auth",
+    "@mpbhealth/database",
+    "@mpbhealth/config",
+    "@mpbhealth/ui",
+    "@mpbhealth/utils"
+  ],
+  "uiComponentsUsed": [
+    "LoginLayout",
+    "AppLayout",
+    "PortalSwitcher",
+    "GradientHeader",
+    "MetricCard",
+    "ThemeProvider",
+    "NavItem",
+    "NavLink"
+  ],
+  "fileStructure": {
+    "src": {
+      "App.tsx": "Router configuration",
+      "main.tsx": "Entry point with ErrorBoundary",
+      "index.css": "Global styles",
+      "pages/": "Page components (12 files)",
+      "components/": "Reusable components (2 files)",
+      "layouts/": "Layout components (1 file)",
+      "contexts/": "React contexts (1 file)"
+    },
+    "config": {
+      ".env.local": "Supabase credentials",
+      ".env.example": "Environment template",
+      "package.json": "Dependencies",
+      "tsconfig.json": "TypeScript config",
+      "vite.config.ts": "Vite build config",
+      "vercel.json": "Deployment config",
+      "tailwind.config.js": "Tailwind config",
+      "postcss.config.js": "PostCSS config"
+    }
+  },
+  "expansionOpportunities": {
+    "notImplemented": [
+      "Password reset flow",
+      "User registration/signup",
+      "Email notifications",
+      "Push notifications",
+      "Calendar integration",
+      "Document upload by advisors",
+      "Lead detail page",
+      "Lead notes/activity tracking",
+      "Reporting/analytics dashboard",
+      "Gamification/leaderboards",
+      "Chat/messaging system",
+      "Mobile app (React Native)",
+      "Offline support (PWA)",
+      "Multi-language support",
+      "Accessibility improvements"
+    ],
+    "partiallyImplemented": [
+      "Portal switching (UI only, hardcoded)",
+      "Document content types (video/link work, others placeholder)",
+      "Quiz system (data model exists, no UI)"
+    ],
+    "enhancementIdeas": [
+      "AI-powered lead scoring",
+      "Automated training recommendations",
+      "Smart meeting scheduling",
+      "Document search with AI",
+      "Performance analytics",
+      "Goal tracking",
+      "Commission/earnings tracker",
+      "Client portal integration",
+      "CRM deep integration",
+      "Calendar sync (Google/Outlook)",
+      "Video recording/playback for training",
+      "Interactive quizzes",
+      "Certification exams",
+      "Team collaboration features",
+      "Manager dashboard view"
+    ]
+  }
+}

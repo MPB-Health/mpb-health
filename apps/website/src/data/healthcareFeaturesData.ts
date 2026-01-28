@@ -94,7 +94,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         question: 'What if I need care for a pre-membership condition?',
-        answer: 'Pre-membership conditions have a 12-month waiting period before they become eligible for sharing. Accidents are eligible immediately regardless of pre-membership conditions.'
+        answer: 'Pre-membership conditions have a 12-month waiting period before they become eligible for sharing.'
       }
     ],
     color: 'text-rose-600',
@@ -102,8 +102,6 @@ export const healthcareFeatures: HealthcareFeature[] = [
     gradientFrom: 'from-rose-500',
     gradientTo: 'to-pink-600',
     examples: [
-      'Hospital stay for pneumonia totaling $18,000 - shared after your IUA',
-      'Emergency appendectomy with $22,000 in surgical costs',
       'Cancer treatment including surgery, chemotherapy, and radiation',
       'Knee replacement surgery with physical therapy and rehabilitation',
       'Heart attack with emergency care, cardiac catheterization, and follow-up'
@@ -132,7 +130,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         title: 'Direct Provider Payment',
-        description: 'Submit claims for reimbursement after receiving emergency treatment'
+        description: 'Submit expenses for reimbursement after receiving emergency treatment'
       }
     ],
     howItWorks: [
@@ -140,10 +138,10 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'If you experience an acute illness or medical emergency, seek care at the nearest appropriate facility',
       'Pay for medical services directly at the time of treatment',
       'Keep all receipts, medical records, and documentation of your emergency treatment',
-      'Submit your worldwide protection claim through your member portal upon returning home',
+      'Submit your medical expenses through your member portal upon returning home',
       'Eligible emergency expenses are reviewed and shared according to your plan benefits'
     ],
-    eligiblePlans: ['MEC+Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
+    eligiblePlans: ['Care Plus', 'Direct', 'Secure HSA'],
     membership: [
       'Emergency room visits for sudden serious illness or injury abroad',
       'Hospital admission for acute medical conditions while traveling',
@@ -154,7 +152,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Emergency diagnostic testing (X-rays, CT scans, lab work)',
       'Emergency medications and treatments prescribed during travel',
       'Ambulance or emergency transport services internationally',
-      'Emergency dental care for acute dental trauma or pain'
+      'Emergency dental care for acute dental trauma'
     ],
     faqs: [
       {
@@ -170,8 +168,8 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'Medically necessary evaluations related to a new injury or illness may be eligible for sharing when they meet the membership guidelines. This can include office visits, diagnostic testing, or specialist consultations associated with an eligible need. Always refer to the Member Guidelines for details, limitations, and exclusions.'
       },
       {
-        question: 'What documentation do I need for claims?',
-        answer: 'Keep all medical records, itemized bills, receipts, proof of payment, and a written description of the emergency. Translation of foreign language documents to English may be required for claim processing.'
+        question: 'What documentation do I need?',
+        answer: 'Keep all medical records, itemized bills, receipts, proof of payment, and a written description of the emergency. Translation of foreign language documents to English may be required for processing.'
       }
     ],
     color: 'text-blue-600',
@@ -179,7 +177,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     gradientFrom: 'from-blue-500',
     gradientTo: 'to-cyan-600',
     examples: [
-      'Emergency appendectomy while on vacation in Europe totaling $12,000',
+      'Emergency appendectomy while on vacation in Europe',
       'Broken leg requiring surgery and hospital stay during ski trip in Canada',
       'Severe food poisoning in Mexico requiring ER visit and IV fluids',
       'Heart attack symptoms while on business trip in Asia requiring hospitalization',
@@ -291,18 +289,15 @@ export const healthcareFeatures: HealthcareFeature[] = [
       }
     ],
     howItWorks: [
-      'Contact our virtual behavioral health team or use your member portal to request services',
+      'Login to your MPB Health app or member portal and select telehealth',
       'You\'ll be matched with licensed providers based on your needs',
       'Schedule virtual appointments directly with your chosen provider',
       'Attend sessions by phone or via secure video platform',
-      'Submit session costs according to your plan\'s behavioral health benefit structure',
       'Continue therapy as needed with ongoing virtual sessions and support'
     ],
     eligiblePlans: ['Essentials', 'MEC+Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
     membership: [
       'Individual counseling and therapy sessions',
-      'Family therapy and couples counseling',
-      'Group therapy sessions for specific conditions',
       'Psychiatric evaluation and medication management',
       'Crisis intervention and emergency behavioral health care',
       'Treatment for anxiety disorders',
@@ -318,7 +313,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         question: 'Are virtual behavioral health services confidential?',
-        answer: 'Yes, all virtual behavioral health services follow strict HIPAA privacy rules. Your therapy sessions and records are confidential. Only essential billing information is shared for processing, never session content or personal details.'
+        answer: 'Yes, all virtual behavioral health services follow strict HIPAA privacy rules. Your therapy sessions and records are confidential.'
       },
       {
         question: 'How are virtual behavioral health sessions delivered?',
@@ -387,7 +382,6 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Physician and midwife services',
       'Postpartum care for mother (typically 6-8 weeks)',
       'Newborn hospital care and initial checkups',
-      'Lactation consultation and breastfeeding support',
       'Complications during pregnancy (eligible immediately without waiting period)'
     ],
     faqs: [
@@ -600,7 +594,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Confirm with your provider that services are preventative (not diagnostic or treatment)',
       'Receive your preventative care services with no cost-sharing',
       'Provider bills according to preventative care codes for covered services',
-      'No need to submit claims - services are covered directly',
+      'No need to submit expenses - services are covered directly',
       'Repeat annually or per recommended schedules for ongoing preventative care'
     ],
     eligiblePlans: ['MEC+Essentials', 'Direct', 'Secure HSA'],
@@ -672,7 +666,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
         description: 'Help finding doctors, specialists, and healthcare facilities'
       },
       {
-        title: 'Claims Support',
+        title: 'Sharing Support',
         description: 'Assistance submitting and tracking your sharing requests'
       }
     ],
@@ -691,7 +685,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Help understanding medical bills and EOBs',
       'Provider search assistance and recommendations',
       'Sharing request submission guidance',
-      'Claims status tracking and follow-up',
+      'Sharing request status tracking and follow-up',
       'Coordination with healthcare providers',
       'Navigation support for complex medical situations',
       'Wellness program information and enrollment',

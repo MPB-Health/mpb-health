@@ -9,6 +9,10 @@ import {
   User,
   LogOut,
   Radio,
+  Zap,
+  Users,
+  Inbox,
+  Workflow,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -17,6 +21,10 @@ import LiveMeetingBanner from '../components/LiveMeetingBanner';
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Power List', href: '/power-list', icon: Zap },
+  { name: 'Inbox', href: '/inbox', icon: Inbox },
+  { name: 'Sequences', href: '/sequences', icon: Workflow },
+  { name: 'My Leads', href: '/leads', icon: Users },
   { name: 'Training', href: '/training', icon: GraduationCap },
   { name: 'Meetings', href: '/meetings', icon: Video },
   { name: 'Forms', href: '/forms', icon: FileText },

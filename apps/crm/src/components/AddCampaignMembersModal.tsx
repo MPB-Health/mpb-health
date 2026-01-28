@@ -207,7 +207,7 @@ export function AddCampaignMembersModal({
                       id={lead.id}
                       name={`${lead.first_name} ${lead.last_name}`}
                       email={lead.email}
-                      subtitle={lead.company || undefined}
+                      subtitle={lead.current_insurance || lead.zip_code || undefined}
                       selected={selectedIds.has(lead.id)}
                       onToggle={() => toggleSelection(lead.id)}
                     />

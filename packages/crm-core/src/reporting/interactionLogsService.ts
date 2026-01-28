@@ -265,8 +265,10 @@ export class InteractionLogsService {
 
       for (const i of data || []) {
         if (!agentMap[i.agent_id]) {
+          const agentData = i.agent as unknown as { email: string } | { email: string }[] | null;
+          const agentEmail = Array.isArray(agentData) ? agentData[0]?.email : agentData?.email;
           agentMap[i.agent_id] = {
-            agent_email: i.agent?.email,
+            agent_email: agentEmail,
             interactions: [],
           };
         }

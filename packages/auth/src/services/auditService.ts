@@ -57,6 +57,41 @@ export const AUDIT_ACTIONS = {
   LEAD_DELETED: 'lead.deleted',
   LEAD_EXPORTED: 'lead.exported',
   LEAD_ASSIGNED: 'lead.assigned',
+  LEAD_CONVERTED: 'lead.converted',
+
+  // Contacts
+  CONTACT_CREATED: 'contact.created',
+  CONTACT_UPDATED: 'contact.updated',
+  CONTACT_DELETED: 'contact.deleted',
+
+  // Accounts
+  ACCOUNT_CREATED: 'account.created',
+  ACCOUNT_UPDATED: 'account.updated',
+  ACCOUNT_DELETED: 'account.deleted',
+
+  // Deals
+  DEAL_CREATED: 'deal.created',
+  DEAL_UPDATED: 'deal.updated',
+  DEAL_STAGE_CHANGED: 'deal.stage_changed',
+  DEAL_WON: 'deal.won',
+  DEAL_LOST: 'deal.lost',
+  DEAL_DELETED: 'deal.deleted',
+
+  // Quotes
+  QUOTE_CREATED: 'quote.created',
+  QUOTE_UPDATED: 'quote.updated',
+  QUOTE_SENT: 'quote.sent',
+  QUOTE_ACCEPTED: 'quote.accepted',
+  QUOTE_REJECTED: 'quote.rejected',
+  QUOTE_CLONED: 'quote.cloned',
+  QUOTE_DELETED: 'quote.deleted',
+
+  // Invoices
+  INVOICE_CREATED: 'invoice.created',
+  INVOICE_UPDATED: 'invoice.updated',
+  INVOICE_SENT: 'invoice.sent',
+  INVOICE_PAID: 'invoice.paid',
+  INVOICE_DELETED: 'invoice.deleted',
 
   // Tasks
   TASK_CREATED: 'task.created',

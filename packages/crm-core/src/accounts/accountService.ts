@@ -63,7 +63,7 @@ export class AccountService {
         return { accounts: [], total: 0 };
       }
 
-      return { accounts: data as AccountWithRelations[], total: count || 0 };
+      return { accounts: (data as unknown) as AccountWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get accounts error:', error);
       return { accounts: [], total: 0 };

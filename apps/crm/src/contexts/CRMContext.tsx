@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
 import {
   createLeadService,
   createPipelineService,
@@ -22,6 +23,9 @@ import {
   createQuoteService,
   createInvoiceService,
   createCampaignService,
+  createVendorService,
+  createPurchaseOrderService,
+  createSalesOrderService,
   type Lead,
   type PipelineStage,
   type CRMDashboardStats,
@@ -51,11 +55,20 @@ import {
   type QuoteService,
   type InvoiceService,
   type CampaignService,
+  type VendorService,
+  type PurchaseOrderService,
+  type SalesOrderService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
+import { useAuth } from './AuthContext';
 
 interface CRMContextType {
+  // Core dependencies
+  supabase: SupabaseClient;
+  orgId: string | null;
+  user: User | null;
+
   // Services
   leadService: LeadService;
   pipelineService: PipelineService;
@@ -79,6 +92,9 @@ interface CRMContextType {
   quoteService: QuoteService;
   invoiceService: InvoiceService;
   campaignService: CampaignService;
+  vendorService: VendorService;
+  purchaseOrderService: PurchaseOrderService;
+  salesOrderService: SalesOrderService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
@@ -105,6 +121,7 @@ const CRMContext = createContext<CRMContextType | null>(null);
 
 export function CRMProvider({ children }: { children: ReactNode }) {
   const { activeOrgId, orgLoading } = useOrg();
+  const { user } = useAuth();
 
   // Initialize services
   const [services] = useState(() => ({
@@ -130,6 +147,9 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     quoteService: createQuoteService(supabase),
     invoiceService: createInvoiceService(supabase),
     campaignService: createCampaignService(supabase),
+    vendorService: createVendorService(supabase),
+    purchaseOrderService: createPurchaseOrderService(supabase),
+    salesOrderService: createSalesOrderService(supabase),
   }));
 
   // State
@@ -232,6 +252,9 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   return (
     <CRMContext.Provider
       value={{
+        supabase,
+        orgId: activeOrgId,
+        user,
         ...services,
         dashboardStats,
         pipelineStages,

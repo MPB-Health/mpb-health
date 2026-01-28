@@ -499,7 +499,8 @@ export class DealService {
       for (const deal of deals) {
         const amount = deal.amount || 0;
         const prob = (deal.probability || 0) / 100;
-        const stageName = deal.stage?.name || 'unknown';
+        const stageData = deal.stage as unknown as { name: string; display_name: string } | { name: string; display_name: string }[] | null;
+        const stageName = Array.isArray(stageData) ? stageData[0]?.name : stageData?.name || 'unknown';
 
         totalValue += amount;
         weightedValue += amount * prob;

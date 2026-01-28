@@ -86,11 +86,12 @@ export default function ESignature() {
   });
 
   const loadData = async () => {
+    if (!user?.org_id) return;
     try {
       const [providersData, docsResult, statsData] = await Promise.all([
-        eSignatureService.listProviders(),
-        eSignatureService.listDocuments(),
-        eSignatureService.getStats(),
+        eSignatureService.listProviders(user.org_id),
+        eSignatureService.listDocuments(user.org_id),
+        eSignatureService.getStats(user.org_id),
       ]);
       setProviders(providersData);
       setDocuments(docsResult.data);
@@ -104,8 +105,8 @@ export default function ESignature() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?.org_id) loadData();
+  }, [user?.org_id]);
 
   // Provider handlers
   const openProviderModal = (provider?: ESignatureProviderConfig) => {
@@ -133,7 +134,7 @@ export default function ESignature() {
 
   const handleProviderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.org_id) return;
 
     setSaving(true);
     try {
@@ -155,7 +156,7 @@ export default function ESignature() {
           provider: providerForm.provider,
           webhook_url: providerForm.webhook_url || undefined,
           config,
-        }, user.id);
+        }, user.org_id, user.id);
         toast.success('Provider created');
       }
       setShowProviderModal(false);
@@ -181,10 +182,10 @@ export default function ESignature() {
   };
 
   const handleSetDefault = async (id: string) => {
-    if (!user) return;
+    if (!user?.org_id) return;
 
     try {
-      await eSignatureService.setDefaultProvider(id, user.id);
+      await eSignatureService.setDefaultProvider(id, user.org_id, user.id);
       toast.success('Default provider updated');
       loadData();
     } catch (err) {
@@ -221,7 +222,7 @@ export default function ESignature() {
 
   const handleDocSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.org_id) return;
 
     const validSigners = docForm.signers.filter((s) => s.email && s.name);
     if (validSigners.length === 0) {
@@ -236,7 +237,7 @@ export default function ESignature() {
         document_type: docForm.document_type,
         provider_id: docForm.provider_id || undefined,
         signers: validSigners,
-      }, user.id);
+      }, user.org_id, user.id);
       toast.success('Document created');
       setShowDocModal(false);
       loadData();

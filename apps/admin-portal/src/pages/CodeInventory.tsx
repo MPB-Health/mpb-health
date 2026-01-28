@@ -26,7 +26,7 @@ const CODE_TYPES: { value: CodeType; label: string }[] = [
   { value: 'enrollment', label: 'Enrollment' },
   { value: 'referral', label: 'Referral' },
   { value: 'activation', label: 'Activation' },
-  { value: 'promotional', label: 'Promotional' },
+  { value: 'voucher', label: 'Voucher' },
 ];
 
 const STATUS_COLORS: Record<CodeStatus, string> = {
@@ -48,20 +48,21 @@ export default function CodeInventory() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [batchForm, setBatchForm] = useState({
+    name: '',
     code_type: 'enrollment' as CodeType,
     prefix: '',
-    quantity: 10,
+    count: 10,
     valid_days: 365,
-    metadata: {} as Record<string, unknown>,
   });
 
   const loadData = async () => {
+    if (!user?.org_id) return;
     try {
-      const [codesData, batchesData] = await Promise.all([
-        codeInventoryService.listCodes(filters),
-        codeInventoryService.listBatches(),
+      const [codesResult, batchesData] = await Promise.all([
+        codeInventoryService.listCodes(user.org_id, filters),
+        codeInventoryService.listBatches(user.org_id),
       ]);
-      setCodes(codesData);
+      setCodes(codesResult.data);
       setBatches(batchesData);
     } catch (err) {
       console.error('Failed to load data:', err);
@@ -72,30 +73,34 @@ export default function CodeInventory() {
   };
 
   useEffect(() => {
-    loadData();
-  }, [filters]);
+    if (user?.org_id) loadData();
+  }, [user?.org_id, filters]);
 
   const handleCreateBatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.org_id) return;
 
     setSaving(true);
     try {
+      const expiresAt = batchForm.valid_days
+        ? new Date(Date.now() + batchForm.valid_days * 24 * 60 * 60 * 1000).toISOString()
+        : undefined;
+
       await codeInventoryService.createBatch({
+        name: batchForm.name || `Batch ${new Date().toLocaleDateString()}`,
         code_type: batchForm.code_type,
         prefix: batchForm.prefix || undefined,
-        quantity: batchForm.quantity,
-        valid_days: batchForm.valid_days,
-        metadata: batchForm.metadata,
-      }, user.id);
-      toast.success(`Created batch of ${batchForm.quantity} codes`);
+        count: batchForm.count,
+        expires_at: expiresAt,
+      }, user.org_id, user.id);
+      toast.success(`Created batch of ${batchForm.count} codes`);
       setShowBatchModal(false);
       setBatchForm({
+        name: '',
         code_type: 'enrollment',
         prefix: '',
-        quantity: 10,
+        count: 10,
         valid_days: 365,
-        metadata: {},
       });
       loadData();
     } catch (err) {
@@ -314,7 +319,7 @@ export default function CodeInventory() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-th-text-secondary">
-                      {code.assigned_to || '-'}
+                      {code.assigned_to_user || code.assigned_to_member || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-th-text-tertiary">
                       {code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never'}
@@ -386,8 +391,8 @@ export default function CodeInventory() {
                 <label className="block text-sm font-medium text-th-text-secondary mb-1">Quantity</label>
                 <input
                   type="number"
-                  value={batchForm.quantity}
-                  onChange={(e) => setBatchForm({ ...batchForm, quantity: parseInt(e.target.value) || 1 })}
+                  value={batchForm.count}
+                  onChange={(e) => setBatchForm({ ...batchForm, count: parseInt(e.target.value) || 1 })}
                   min={1}
                   max={1000}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -410,7 +415,7 @@ export default function CodeInventory() {
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className="px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50">
-                  {saving ? 'Generating...' : `Generate ${batchForm.quantity} Codes`}
+                  {saving ? 'Generating...' : `Generate ${batchForm.count} Codes`}
                 </button>
               </div>
             </form>

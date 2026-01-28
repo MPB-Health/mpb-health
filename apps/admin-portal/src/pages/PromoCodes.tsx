@@ -424,7 +424,7 @@ export default function PromoCodes() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                    Value {form.discount_type === 'percentage' ? '(%)' : form.discount_type === 'fixed' ? '($)' : '(days)'}
+                    Value {form.discount_type === 'percentage' ? '(%)' : form.discount_type === 'fixed' ? '($)' : '(months)'}
                   </label>
                   <input
                     type="number"

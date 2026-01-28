@@ -63,10 +63,11 @@ export default function AdminResources() {
   const [newTag, setNewTag] = useState('');
 
   const loadData = async () => {
+    if (!user?.org_id) return;
     try {
       const [resourcesData, tagsData] = await Promise.all([
-        resourcesService.list(filters),
-        resourcesService.getAllTags(),
+        resourcesService.list(user.org_id, filters),
+        resourcesService.getAllTags(user.org_id),
       ]);
       setResources(resourcesData);
       setAllTags(tagsData);
@@ -79,8 +80,8 @@ export default function AdminResources() {
   };
 
   useEffect(() => {
-    loadData();
-  }, [filters]);
+    if (user?.org_id) loadData();
+  }, [user?.org_id, filters]);
 
   const openModal = (resource?: AdminResource) => {
     if (resource) {
@@ -109,7 +110,7 @@ export default function AdminResources() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.org_id) return;
 
     setSaving(true);
     try {
@@ -131,7 +132,7 @@ export default function AdminResources() {
           external_url: form.external_url || undefined,
           is_public: form.is_public,
           tags: form.tags,
-        }, user.id);
+        }, user.org_id, user.id);
         toast.success('Resource created');
       }
       closeModal();
@@ -170,7 +171,7 @@ export default function AdminResources() {
   };
 
   const handleToggleActive = async (resource: AdminResource) => {
-    if (!user) return;
+    if (!user?.org_id) return;
 
     try {
       await resourcesService.update(resource.id, { is_active: !resource.is_active }, user.id);

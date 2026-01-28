@@ -340,6 +340,28 @@ export default function ConversationThread() {
           </div>
         </div>
 
+        {/* AI Assistant Panel */}
+        {showAIAssist && user?.id && content.trim() && (
+          <div className="mb-3">
+            <AIMessageAssistant
+              userId={user.id}
+              leadName={conversation.participant_name?.split(' ')[0]}
+              originalMessage={content}
+              onApply={(message) => {
+                setContent(message);
+                setShowAIAssist(false);
+              }}
+              onClose={() => setShowAIAssist(false)}
+            />
+          </div>
+        )}
+
+        {showAIAssist && !content.trim() && (
+          <div className="mb-3 p-4 bg-purple-50 border border-purple-200 rounded-xl text-center text-sm text-purple-600">
+            Start typing your message to get AI assistance
+          </div>
+        )}
+
         {/* Subject line for email */}
         {channel === 'email' && (
           <input

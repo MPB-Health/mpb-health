@@ -43,6 +43,9 @@ const StudioHome = lazy(() => import('./pages/studio/StudioHome'));
 const CustomModuleList = lazy(() => import('./pages/studio/CustomModuleList'));
 const CustomModuleDetail = lazy(() => import('./pages/studio/CustomModuleDetail'));
 
+// Quick Rate Estimate Leads (from website quote system)
+const QuickRateEstimateLeads = lazy(() => import('./pages/QuickRateEstimateLeads'));
+
 // Loading component for Suspense
 function PageLoader() {
   return (
@@ -143,6 +146,16 @@ export default function App() {
                   element={
                     <Guarded permission="leads.read">
                       <LeadDetail />
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/leads/quick-rate-estimate"
+                  element={
+                    <Guarded permission="leads.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <QuickRateEstimateLeads />
+                      </Suspense>
                     </Guarded>
                   }
                 />

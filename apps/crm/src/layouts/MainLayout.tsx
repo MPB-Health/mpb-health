@@ -38,6 +38,7 @@ import {
   Receipt,
   Megaphone,
   Settings2,
+  Calculator,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -60,6 +61,7 @@ const navigation: ExtendedNavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   // Lead Management
   { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
+  { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
   { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
   // CRM Modules
   { name: 'Accounts', href: '/accounts', icon: Building2, permission: 'accounts.read' },

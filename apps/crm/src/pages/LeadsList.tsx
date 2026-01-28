@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Mail,
   Phone,
+  Upload,
 } from 'lucide-react';
 import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
@@ -17,6 +18,7 @@ import { BulkActionsToolbar } from '../components/BulkActionsToolbar';
 import { BulkAssignModal } from '../components/BulkAssignModal';
 import { BulkStageModal } from '../components/BulkStageModal';
 import { BulkEmailModal } from '../components/BulkEmailModal';
+import { ImportModal } from '../components/ImportModal';
 import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/crm-core';
 
@@ -36,6 +38,7 @@ export default function LeadsList() {
   const [showBulkAssign, setShowBulkAssign] = useState(false);
   const [showBulkStage, setShowBulkStage] = useState(false);
   const [showBulkEmail, setShowBulkEmail] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const loadLeads = async () => {
     setLoading(true);
@@ -143,6 +146,15 @@ export default function LeadsList() {
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
+          <PermissionGate permission="leads.write">
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Import</span>
+            </button>
+          </PermissionGate>
           <PermissionGate permission="leads.create">
             <button
               onClick={() => setShowAddLead(true)}
@@ -395,6 +407,12 @@ export default function LeadsList() {
         onClose={() => setShowBulkEmail(false)}
         leadIds={selectedIds}
         onSuccess={handleBulkSuccess}
+      />
+      <ImportModal
+        isOpen={showImport}
+        onClose={() => setShowImport(false)}
+        entityType="leads"
+        onSuccess={() => loadLeads()}
       />
     </div>
   );

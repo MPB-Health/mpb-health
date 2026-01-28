@@ -10,10 +10,12 @@ import {
   Phone,
   Users,
   Building2,
+  Upload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddContactModal } from '../components/AddContactModal';
+import { ImportModal } from '../components/ImportModal';
 import { supabase } from '../lib/supabase';
 import {
   createContactService,
@@ -37,6 +39,7 @@ export default function Contacts() {
   const [page, setPage] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const pageSize = 20;
 
   // Bulk selection state
@@ -227,6 +230,15 @@ export default function Contacts() {
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
+          <PermissionGate permission="contacts.write">
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Import</span>
+            </button>
+          </PermissionGate>
           <PermissionGate permission="contacts.write">
             <button
               onClick={() => setShowAddContact(true)}
@@ -546,6 +558,12 @@ export default function Contacts() {
       <AddContactModal
         open={showAddContact}
         onClose={() => setShowAddContact(false)}
+        onSuccess={() => loadContacts()}
+      />
+      <ImportModal
+        isOpen={showImport}
+        onClose={() => setShowImport(false)}
+        entityType="contacts"
         onSuccess={() => loadContacts()}
       />
     </div>

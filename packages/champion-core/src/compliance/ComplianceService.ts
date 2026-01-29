@@ -170,7 +170,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return (data || []) as ComplianceAcknowledgmentWithDocument[];
+    return (data || []) as unknown as ComplianceAcknowledgmentWithDocument[];
   }
 
   /**

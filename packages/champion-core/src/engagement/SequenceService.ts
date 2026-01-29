@@ -42,7 +42,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as unknown as Sequence[] | SequenceWithSteps[];
   }
 
   /**

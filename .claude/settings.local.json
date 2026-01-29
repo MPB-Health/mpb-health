@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(pnpm --filter advisor-portal typecheck:*)",
+      "Bash(pnpm --filter advisor-portal build:*)",
+      "Bash(pnpm --filter @mpbhealth/ui build:*)",
+      "Bash(pnpm --filter @mpbhealth/advisor-core build:*)",
+      "Bash(pnpm:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

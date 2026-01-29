@@ -2,7 +2,7 @@
 // Search Service — Global search and command palette functionality
 // ============================================================================
 
-import { supabase } from '../supabase';
+import { supabase } from '@mpbhealth/database';
 import type {
   SearchResult,
   SearchResponse,

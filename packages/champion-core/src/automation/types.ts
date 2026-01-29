@@ -348,7 +348,7 @@ export interface TriggerConfig {
 export interface TriggerField {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'select' | 'multiselect' | 'boolean' | 'date';
+  type: 'text' | 'number' | 'select' | 'multiselect' | 'boolean' | 'date' | 'user' | 'sequence';
   options?: { value: string; label: string }[];
   required?: boolean;
   placeholder?: string;

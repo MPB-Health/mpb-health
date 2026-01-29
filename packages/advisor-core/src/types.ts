@@ -1,6 +1,8 @@
 // Advisor Profile Types
 export interface AdvisorProfile {
   id: string;
+  user_id: string;
+  org_id: string;
   first_name: string;
   last_name: string;
   email: string;

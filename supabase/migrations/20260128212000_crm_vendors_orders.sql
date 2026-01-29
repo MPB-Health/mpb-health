@@ -7,7 +7,7 @@
 -- Vendors Table
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.crm_vendors (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
 
     -- Basic Info
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS public.crm_vendors (
 -- Purchase Orders Table
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.crm_purchase_orders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
 
     -- Order Info
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS public.crm_purchase_orders (
 -- Purchase Order Line Items
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.crm_purchase_order_line_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     purchase_order_id UUID NOT NULL REFERENCES public.crm_purchase_orders(id) ON DELETE CASCADE,
 
     -- Product
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS public.crm_purchase_order_line_items (
 -- Sales Orders Table
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.crm_sales_orders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
 
     -- Order Info
@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS public.crm_sales_orders (
 -- Sales Order Line Items
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.crm_sales_order_line_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sales_order_id UUID NOT NULL REFERENCES public.crm_sales_orders(id) ON DELETE CASCADE,
 
     -- Product
@@ -437,20 +437,22 @@ INSERT INTO public.permissions (key, module, description) VALUES
     ('sales_orders.approve', 'sales_orders', 'Approve sales orders')
 ON CONFLICT (key) DO NOTHING;
 
--- Map permissions to roles
-INSERT INTO public.role_permissions (role, permission_key)
-SELECT r.role, p.key
+-- Map permissions to roles (DISABLED - requires org_id for multi-tenant)
+/*
+INSERT INTO public.role_permissions (org_id, role, permission_id)
+SELECT NULL, r.role, p.id
 FROM (VALUES ('owner'), ('admin'), ('manager')) AS r(role)
 CROSS JOIN public.permissions p
 WHERE p.module IN ('vendors', 'purchase_orders', 'sales_orders')
-ON CONFLICT (role, permission_key) DO NOTHING;
+ON CONFLICT (org_id, role, permission_id) DO NOTHING;
 
 -- Agent role gets read + write (not delete/approve)
-INSERT INTO public.role_permissions (role, permission_key)
-SELECT 'agent', key FROM public.permissions
+INSERT INTO public.role_permissions (org_id, role, permission_id)
+SELECT NULL, 'agent', id FROM public.permissions
 WHERE module IN ('vendors', 'purchase_orders', 'sales_orders')
   AND key NOT LIKE '%.delete' AND key NOT LIKE '%.approve'
-ON CONFLICT (role, permission_key) DO NOTHING;
+ON CONFLICT (org_id, role, permission_id) DO NOTHING;
+*/
 
 -- -----------------------------------------------------
 -- Add approval fields to existing tables
@@ -473,10 +475,12 @@ INSERT INTO public.permissions (key, module, description) VALUES
     ('invoices.approve', 'invoices', 'Approve invoices')
 ON CONFLICT (key) DO NOTHING;
 
--- Map approval permissions to owner/admin/manager
-INSERT INTO public.role_permissions (role, permission_key)
-SELECT r.role, p.key
+-- Map approval permissions to owner/admin/manager (DISABLED - requires org_id for multi-tenant)
+/*
+INSERT INTO public.role_permissions (org_id, role, permission_id)
+SELECT NULL, r.role, p.id
 FROM (VALUES ('owner'), ('admin'), ('manager')) AS r(role)
 CROSS JOIN public.permissions p
 WHERE p.key IN ('quotes.approve', 'invoices.approve')
-ON CONFLICT (role, permission_key) DO NOTHING;
+ON CONFLICT (org_id, role, permission_id) DO NOTHING;
+*/

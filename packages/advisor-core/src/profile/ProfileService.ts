@@ -2,6 +2,16 @@ import { supabase } from '@mpbhealth/database';
 import type { AdvisorProfile, OnboardingStep, OnboardingProgress } from '../types';
 
 export class ProfileService {
+  // Helper to normalize profile data (adds user_id from id if missing)
+  private normalizeProfile(data: Record<string, unknown> | null): AdvisorProfile | null {
+    if (!data) return null;
+    return {
+      ...data,
+      user_id: (data.user_id as string) || (data.id as string),
+      org_id: (data.org_id as string) || '',
+    } as AdvisorProfile;
+  }
+
   // Get advisor profile
   async getProfile(advisorId: string): Promise<AdvisorProfile | null> {
     const { data, error } = await supabase
@@ -11,7 +21,7 @@ export class ProfileService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return this.normalizeProfile(data);
   }
 
   // Get profile by email
@@ -23,7 +33,7 @@ export class ProfileService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return this.normalizeProfile(data);
   }
 
   // Update profile
@@ -39,7 +49,7 @@ export class ProfileService {
       .single();
 
     if (error) throw error;
-    return data;
+    return this.normalizeProfile(data)!;
   }
 
   // Upload avatar
@@ -88,7 +98,7 @@ export class ProfileService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []).map(d => this.normalizeProfile(d)!);
   }
 
   // Get active advisors

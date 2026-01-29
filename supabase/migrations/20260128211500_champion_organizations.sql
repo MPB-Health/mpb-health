@@ -1,3 +1,6 @@
+-- Enable required extension
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 /*
   # Champion Phase 0: Organizations & Multi-Tenancy Foundation
 
@@ -120,7 +123,7 @@ CREATE TABLE IF NOT EXISTS org_invites (
   role text NOT NULL CHECK (role IN ('owner', 'admin', 'manager', 'advisor')),
 
   -- Token for accepting invite
-  token text UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex'),
+  token text UNIQUE NOT NULL DEFAULT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
 
   -- Tracking
   invited_by uuid REFERENCES auth.users(id),

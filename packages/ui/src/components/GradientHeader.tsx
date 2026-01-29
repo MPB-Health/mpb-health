@@ -4,6 +4,7 @@ import { cn } from '../utils';
 export interface GradientHeaderProps {
   title: string;
   subtitle?: string;
+  icon?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -24,6 +25,7 @@ const titleSizes = {
 export function GradientHeader({
   title,
   subtitle,
+  icon,
   children,
   className,
   size = 'md',
@@ -47,9 +49,12 @@ export function GradientHeader({
       <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-white/10 blur-3xl" />
 
       <div className="relative z-10">
-        <h1 className={cn('font-bold tracking-tight', titleSizes[size])}>
-          {title}
-        </h1>
+        <div className="flex items-center gap-3">
+          {icon && <div className="flex-shrink-0">{icon}</div>}
+          <h1 className={cn('font-bold tracking-tight', titleSizes[size])}>
+            {title}
+          </h1>
+        </div>
         {subtitle && (
           <p className="mt-1 text-white/75 text-sm md:text-base max-w-2xl">
             {subtitle}

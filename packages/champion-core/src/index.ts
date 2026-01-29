@@ -254,7 +254,7 @@ export type {
   UpdateRuleInput,
   CreateConditionInput,
   CreateActionInput,
-  CreateTemplateInput,
+  CreateTemplateInput as CreateAutomationTemplateInput,
   GetRulesParams,
   GetExecutionHistoryParams,
   GetTemplatesParams,

@@ -234,20 +234,20 @@ ALTER TABLE crm_studio_validation_rules ENABLE ROW LEVEL SECURITY;
 
 -- Org-scoped access for modules
 CREATE POLICY "studio_modules_org_access" ON crm_studio_modules
-    FOR ALL USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
+    FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
 
 -- Org-scoped access for fields
 CREATE POLICY "studio_fields_org_access" ON crm_studio_fields
-    FOR ALL USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
+    FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
 
 -- Org-scoped access for layouts
 CREATE POLICY "studio_layouts_org_access" ON crm_studio_layouts
-    FOR ALL USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
+    FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
 
 -- Views: org-scoped with visibility filtering
 CREATE POLICY "studio_views_org_access" ON crm_studio_views
     FOR ALL USING (
-        org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid())
+        org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
         AND (
             visibility = 'org'
             OR visibility = 'team'
@@ -258,7 +258,7 @@ CREATE POLICY "studio_views_org_access" ON crm_studio_views
 
 -- Org-scoped access for validation rules
 CREATE POLICY "studio_validation_org_access" ON crm_studio_validation_rules
-    FOR ALL USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
+    FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
 
 -- ============================================================================
 -- HELPER FUNCTIONS
@@ -356,7 +356,7 @@ BEGIN
     -- Create RLS policy for org access
     EXECUTE format(
         'CREATE POLICY %I ON public.%I
-         FOR ALL USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()))',
+         FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()))',
         table_name || '_org_access', table_name
     );
 

@@ -268,14 +268,14 @@ export class ConversationService {
     return supabase
       .channel('conversations')
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: '*',
           schema: 'public',
           table: 'conversations',
           filter: `org_id=eq.${orgId}`,
         },
-        callback
+        callback as any
       )
       .subscribe();
   }

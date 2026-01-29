@@ -111,17 +111,17 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                 <div key={category} className="contents">
                   {/* Category Header - spans full width */}
                   <div
-                    className="border-t-2 border-primary-100 pt-8 pb-3 bg-white"
+                    className="mt-6 mb-2 py-4 px-6 bg-gradient-to-r from-primary-50 to-primary-100/50 border-l-4 border-primary-500 rounded-r-xl shadow-sm"
                     style={{ gridColumn: `1 / -1` }}
                   >
-                    <h4 className="text-2xl font-bold bg-gradient-to-r from-primary-700 via-primary-600 to-success-600 bg-clip-text text-transparent">
+                    <h4 className="text-xl font-bold text-primary-700">
                       {getCategoryLabel(category)}
                     </h4>
                   </div>
 
                   {allFeatureNames.map((featureName) => (
                     <div key={featureName} className="contents group">
-                      <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
+                      <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 py-4 px-4 border-b border-neutral-100 z-10 backdrop-blur-sm rounded-lg">
                         <p className="text-sm font-semibold text-neutral-800">{featureName}</p>
                       </div>
 
@@ -131,19 +131,17 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                         return (
                           <div
                             key={plan.id}
-                            className="py-4 border-b border-neutral-100 bg-white"
+                            className="py-4 px-4 border-b border-neutral-100 bg-gradient-to-br from-white to-neutral-50/50 rounded-lg mx-1"
                           >
                             {feature ? (
-                              <div className="space-y-2 px-3">
+                              <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm">
-                                    <Check className="h-4 w-4 text-white flex-shrink-0" />
+                                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0">
+                                    <Check className="h-4 w-4 text-white" />
                                   </div>
-                                  {feature.cost && (
-                                    <span className="text-sm font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
-                                      {feature.cost}
-                                    </span>
-                                  )}
+                                  <span className="text-sm font-bold text-success-600">
+                                    {feature.cost || 'Included'}
+                                  </span>
                                 </div>
                                 {feature.feature_value && (
                                   <p className="text-sm text-neutral-700 ml-8 leading-relaxed">
@@ -157,10 +155,11 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                                 )}
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 px-3">
-                                <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
                                   <X className="h-4 w-4 text-neutral-400" />
                                 </div>
+                                <span className="text-sm text-neutral-400">Not Included</span>
                               </div>
                             )}
                           </div>
@@ -176,88 +175,132 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
               <>
                 {/* Section Header */}
                 <div
-                  className="border-t-2 border-primary-100 pt-8 pb-3 mt-8 bg-white"
+                  className="mt-6 mb-2 py-4 px-6 bg-gradient-to-r from-primary-50 to-primary-100/50 border-l-4 border-primary-500 rounded-r-xl shadow-sm"
                   style={{ gridColumn: `1 / -1` }}
                 >
-                  <h4 className="text-2xl font-bold bg-gradient-to-r from-primary-700 via-primary-600 to-success-600 bg-clip-text text-transparent">
+                  <h4 className="text-xl font-bold text-primary-700">
                     Medical Cost Sharing Details
                   </h4>
                 </div>
 
                 {/* Lifetime Cap Row */}
-                <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
+                <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 py-4 px-4 border-b border-neutral-100 z-10 backdrop-blur-sm rounded-lg">
                   <p className="text-sm font-semibold text-neutral-800">Lifetime Cap</p>
                 </div>
                 {plans.map(plan => (
-                  <div key={`lifetime-${plan.id}`} className="py-4 px-3 border-b border-neutral-100 bg-white">
+                  <div key={`lifetime-${plan.id}`} className="py-4 px-4 border-b border-neutral-100 bg-gradient-to-br from-white to-neutral-50/50 rounded-lg mx-1">
                     {plan.sharing_details ? (
                       plan.sharing_details.has_lifetime_cap ? (
-                        <span className="text-sm text-neutral-700 font-medium">Has cap</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                            <X className="h-4 w-4 text-amber-600" />
+                          </div>
+                          <span className="text-sm text-amber-700 font-medium">Has cap</span>
+                        </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0">
                             <Check className="h-4 w-4 text-white" />
                           </div>
-                          <span className="text-sm font-semibold bg-gradient-to-r from-success-600 to-success-700 bg-clip-text text-transparent">No cap</span>
+                          <span className="text-sm font-bold text-success-600">No cap</span>
                         </div>
                       )
                     ) : (
-                      <span className="text-sm text-neutral-400">N/A</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
+                          <X className="h-4 w-4 text-neutral-400" />
+                        </div>
+                        <span className="text-sm text-neutral-400">N/A</span>
+                      </div>
                     )}
                   </div>
                 ))}
 
                 {/* Annual Cap Row */}
-                <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
+                <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 py-4 px-4 border-b border-neutral-100 z-10 backdrop-blur-sm rounded-lg">
                   <p className="text-sm font-semibold text-neutral-800">Annual Cap</p>
                 </div>
                 {plans.map(plan => (
-                  <div key={`annual-${plan.id}`} className="py-4 px-3 border-b border-neutral-100 bg-white">
+                  <div key={`annual-${plan.id}`} className="py-4 px-4 border-b border-neutral-100 bg-gradient-to-br from-white to-neutral-50/50 rounded-lg mx-1">
                     {plan.sharing_details ? (
                       plan.sharing_details.has_annual_cap ? (
-                        <span className="text-sm text-neutral-700 font-medium">Has cap</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                            <X className="h-4 w-4 text-amber-600" />
+                          </div>
+                          <span className="text-sm text-amber-700 font-medium">Has cap</span>
+                        </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0">
                             <Check className="h-4 w-4 text-white" />
                           </div>
-                          <span className="text-sm font-semibold bg-gradient-to-r from-success-600 to-success-700 bg-clip-text text-transparent">No cap</span>
+                          <span className="text-sm font-bold text-success-600">No cap</span>
                         </div>
                       )
                     ) : (
-                      <span className="text-sm text-neutral-400">N/A</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
+                          <X className="h-4 w-4 text-neutral-400" />
+                        </div>
+                        <span className="text-sm text-neutral-400">N/A</span>
+                      </div>
                     )}
                   </div>
                 ))}
 
                 {/* Pre-membership Lookback Row */}
-                <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
+                <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 py-4 px-4 border-b border-neutral-100 z-10 backdrop-blur-sm rounded-lg">
                   <p className="text-sm font-semibold text-neutral-800">Pre-membership Lookback</p>
                 </div>
                 {plans.map(plan => (
-                  <div key={`lookback-${plan.id}`} className="py-4 px-3 border-b border-neutral-100 bg-white">
+                  <div key={`lookback-${plan.id}`} className="py-4 px-4 border-b border-neutral-100 bg-gradient-to-br from-white to-neutral-50/50 rounded-lg mx-1">
                     {plan.sharing_details?.preexisting_lookback_months ? (
-                      <span className="text-sm font-medium text-neutral-700">
-                        {Math.floor(plan.sharing_details.preexisting_lookback_months / 12)} years
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-bold text-primary-600">
+                            {Math.floor(plan.sharing_details.preexisting_lookback_months / 12)}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium text-neutral-700">
+                          {Math.floor(plan.sharing_details.preexisting_lookback_months / 12)} years
+                        </span>
+                      </div>
                     ) : (
-                      <span className="text-sm text-neutral-400">N/A</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
+                          <X className="h-4 w-4 text-neutral-400" />
+                        </div>
+                        <span className="text-sm text-neutral-400">N/A</span>
+                      </div>
                     )}
                   </div>
                 ))}
 
                 {/* Maternity Waiting Period Row */}
-                <div className="sticky left-0 bg-white py-4 border-b border-neutral-100 z-10">
+                <div className="sticky left-0 bg-gradient-to-r from-white to-neutral-50/80 py-4 px-4 border-b border-neutral-100 z-10 backdrop-blur-sm rounded-lg">
                   <p className="text-sm font-semibold text-neutral-800">Maternity Waiting Period</p>
                 </div>
                 {plans.map(plan => (
-                  <div key={`maternity-${plan.id}`} className="py-4 px-3 border-b border-neutral-100 bg-white">
+                  <div key={`maternity-${plan.id}`} className="py-4 px-4 border-b border-neutral-100 bg-gradient-to-br from-white to-neutral-50/50 rounded-lg mx-1">
                     {plan.sharing_details?.maternity_waiting_months ? (
-                      <span className="text-sm font-medium text-neutral-700">
-                        {plan.sharing_details.maternity_waiting_months} months
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-bold text-primary-600">
+                            {plan.sharing_details.maternity_waiting_months}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium text-neutral-700">
+                          {plan.sharing_details.maternity_waiting_months} months
+                        </span>
+                      </div>
                     ) : (
-                      <span className="text-sm text-neutral-400">N/A</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
+                          <X className="h-4 w-4 text-neutral-400" />
+                        </div>
+                        <span className="text-sm text-neutral-400">N/A</span>
+                      </div>
                     )}
                   </div>
                 ))}

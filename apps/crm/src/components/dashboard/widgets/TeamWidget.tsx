@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Users, Circle, Clock, MessageSquare, Phone, FileText, CheckSquare } from 'lucide-react';
 import { useOrg } from '../../../contexts/OrgContext';
-import { supabase } from '@mpbhealth/database';
+import { supabase } from '../../../lib/supabase';
 import type { BaseWidgetProps } from '../types';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>

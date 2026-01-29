@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Target, TrendingUp, TrendingDown, Plus, Trophy, Flag } from 'lucide-react';
 import { useOrg } from '../../../contexts/OrgContext';
-import { supabase } from '@mpbhealth/database';
+import { supabase } from '../../../lib/supabase';
 import { createUserGoalsService, type UserGoal } from '@mpbhealth/crm-core/dashboard';
 import { useCRM } from '../../../contexts/CRMContext';
 import type { BaseWidgetProps } from '../types';

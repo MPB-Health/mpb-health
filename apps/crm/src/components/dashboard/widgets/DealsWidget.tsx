@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Briefcase, DollarSign, TrendingUp } from 'lucide-react';
 import { useOrg } from '../../../contexts/OrgContext';
-import { supabase } from '@mpbhealth/database';
+import { supabase } from '../../../lib/supabase';
 import { createDealService, type DealWithRelations } from '@mpbhealth/crm-core/deals';
 import type { BaseWidgetProps } from '../types';
 

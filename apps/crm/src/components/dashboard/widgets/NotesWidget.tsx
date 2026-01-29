@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Pin, Trash2, StickyNote } from 'lucide-react';
 import { useOrg } from '../../../contexts/OrgContext';
-import { supabase } from '@mpbhealth/database';
+import { supabase } from '../../../lib/supabase';
 import { createDashboardNotesService, type DashboardNote } from '@mpbhealth/crm-core/dashboard';
 import type { BaseWidgetProps } from '../types';
 

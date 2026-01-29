@@ -7,7 +7,7 @@ import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useOrg } from './OrgContext';
-import { supabase } from '@mpbhealth/database';
+import { supabase } from '../lib/supabase';
 import {
   createDashboardLayoutService,
   type WidgetInstance,
@@ -108,11 +108,21 @@ export const useDashboardStore = create<DashboardStore>()(
       // Layout Management
       // -----------------------------------------------------------------------
       loadLayout: async (orgId: string) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:loadLayout:start',message:'loadLayout called',data:{orgId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3,H5'})}).catch(()=>{});
+        // #endregion
         set({ isLoading: true, error: null });
 
         try {
+          // #region agent log
+          const dbClientUser = await supabase.auth.getUser();
+          fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:loadLayout:dbClientCheck',message:'@mpbhealth/database supabase getUser',data:{hasUser:!!dbClientUser.data.user,userId:dbClientUser.data.user?.id,error:dbClientUser.error?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H4'})}).catch(()=>{});
+          // #endregion
           const layout = await layoutService.getLayout(orgId);
 
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:loadLayout:layoutResult',message:'layoutService.getLayout returned',data:{hasLayout:!!layout,widgetCount:layout?.widgets?.length,layoutId:layout?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H4,H5'})}).catch(()=>{});
+          // #endregion
           if (layout && layout.widgets && layout.widgets.length > 0) {
             set({
               widgets: layout.widgets as WidgetInstance[],
@@ -132,6 +142,9 @@ export const useDashboardStore = create<DashboardStore>()(
             });
           }
         } catch (error) {
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:loadLayout:error',message:'layoutService.getLayout threw error',data:{error:String(error),errorMessage:(error as any)?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H4,H5'})}).catch(()=>{});
+          // #endregion
           console.error('Failed to load dashboard layout:', error);
           // On error, use hardcoded defaults instead of showing an error
           const defaultWidgets = await layoutService.getDefaultWidgets(orgId);
@@ -147,10 +160,16 @@ export const useDashboardStore = create<DashboardStore>()(
 
       saveLayout: async (orgId: string) => {
         const { widgets, layoutName } = get();
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:saveLayout:start',message:'saveLayout called',data:{orgId,widgetCount:widgets.length,layoutName},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H4'})}).catch(()=>{});
+        // #endregion
         set({ isSaving: true, error: null });
 
         try {
           const result = await layoutService.saveLayout(orgId, widgets, layoutName);
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:saveLayout:result',message:'layoutService.saveLayout returned',data:{success:result.success,error:result.error,hasData:!!result.data},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H4'})}).catch(()=>{});
+          // #endregion
 
           if (result.success && result.data) {
             set({
@@ -348,6 +367,9 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
 
   // Load layout when org changes
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:DashboardProvider:useEffect',message:'DashboardProvider useEffect triggered',data:{activeOrgId,willLoadLayout:!!activeOrgId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3,H5'})}).catch(()=>{});
+    // #endregion
     if (activeOrgId) {
       loadLayout(activeOrgId);
     }

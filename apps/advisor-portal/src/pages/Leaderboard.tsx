@@ -18,10 +18,12 @@ import {
   Crown,
   Star,
   Flame,
+  Lock,
+  Zap,
 } from 'lucide-react';
-import { useLeaderboard } from '../hooks/useAnalytics';
+import { useLeaderboard, useAchievements } from '../hooks/useAnalytics';
 import { useAdvisor } from '../contexts/AdvisorContext';
-import type { TimeGranularity } from '@mpbhealth/champion-core';
+import type { TimeGranularity, AchievementProgress, AchievementTier } from '@mpbhealth/champion-core';
 
 const METRICS = [
   { value: 'overall', label: 'Overall', icon: Trophy },
@@ -70,15 +72,72 @@ function formatMetricValue(value: number, metric: string): string {
   return value.toLocaleString();
 }
 
+// Achievement icon mapping
+const ACHIEVEMENT_ICONS: Record<string, typeof Trophy> = {
+  trophy: Trophy,
+  medal: Medal,
+  award: Award,
+  star: Star,
+  flame: Flame,
+  shield: Shield,
+  'shield-check': Shield,
+  'trending-up': TrendingUp,
+  'message-square': MessageSquare,
+  'check-circle': CheckCircle,
+  clock: Clock,
+  moon: Star,
+  zap: Zap,
+};
+
+// Tier colors
+function getTierBgColor(tier: AchievementTier): string {
+  switch (tier) {
+    case 'bronze':
+      return 'bg-amber-100';
+    case 'silver':
+      return 'bg-gray-100';
+    case 'gold':
+      return 'bg-yellow-100';
+    case 'platinum':
+      return 'bg-purple-100';
+    default:
+      return 'bg-gray-100';
+  }
+}
+
+function getTierIconColor(tier: AchievementTier): string {
+  switch (tier) {
+    case 'bronze':
+      return 'text-amber-600';
+    case 'silver':
+      return 'text-gray-500';
+    case 'gold':
+      return 'text-yellow-600';
+    case 'platinum':
+      return 'text-purple-600';
+    default:
+      return 'text-gray-500';
+  }
+}
+
 export default function Leaderboard() {
   const { profile } = useAdvisor();
   const [selectedMetric, setSelectedMetric] = useState('overall');
   const [selectedPeriod, setSelectedPeriod] = useState<TimeGranularity>('monthly');
+  const [showAllAchievements, setShowAllAchievements] = useState(false);
 
   const { leaderboard, userRank, loading, error, refresh } = useLeaderboard(
     selectedMetric,
     selectedPeriod
   );
+
+  const {
+    earnedAchievements,
+    inProgressAchievements,
+    lockedAchievements,
+    totalPoints,
+    loading: achievementsLoading,
+  } = useAchievements();
 
   const currentMetric = METRICS.find((m) => m.value === selectedMetric);
   const MetricIcon = currentMetric?.icon || Trophy;
@@ -272,40 +331,125 @@ export default function Leaderboard() {
 
         {/* Achievements Section */}
         <div className="mt-12">
-          <h2 className="text-lg font-semibold text-th-text-primary mb-4">Achievements</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-surface-primary rounded-xl border border-th-border-primary text-center opacity-50">
-              <div className="w-12 h-12 bg-yellow-100 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-yellow-600" />
-              </div>
-              <p className="font-medium text-th-text-primary text-sm">First Place</p>
-              <p className="text-xs text-th-text-muted">Rank #1 for a month</p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-th-text-primary">Achievements</h2>
+              {totalPoints > 0 && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                  {totalPoints} pts
+                </span>
+              )}
             </div>
-            <div className="p-4 bg-surface-primary rounded-xl border border-th-border-primary text-center opacity-50">
-              <div className="w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <Flame className="w-6 h-6 text-blue-600" />
-              </div>
-              <p className="font-medium text-th-text-primary text-sm">On Fire</p>
-              <p className="text-xs text-th-text-muted">7-day streak</p>
-            </div>
-            <div className="p-4 bg-surface-primary rounded-xl border border-th-border-primary text-center opacity-50">
-              <div className="w-12 h-12 bg-green-100 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-green-600" />
-              </div>
-              <p className="font-medium text-th-text-primary text-sm">Compliant</p>
-              <p className="text-xs text-th-text-muted">100% compliance</p>
-            </div>
-            <div className="p-4 bg-surface-primary rounded-xl border border-th-border-primary text-center opacity-50">
-              <div className="w-12 h-12 bg-purple-100 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <Star className="w-6 h-6 text-purple-600" />
-              </div>
-              <p className="font-medium text-th-text-primary text-sm">Rising Star</p>
-              <p className="text-xs text-th-text-muted">Most improved</p>
-            </div>
+            <button
+              onClick={() => setShowAllAchievements(!showAllAchievements)}
+              className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium"
+            >
+              {showAllAchievements ? 'Show Less' : 'View All'}
+            </button>
           </div>
-          <p className="text-xs text-th-text-muted text-center mt-4">
-            Achievements coming soon!
-          </p>
+
+          {achievementsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-th-accent-600" />
+            </div>
+          ) : (
+            <>
+              {/* Earned Achievements */}
+              {earnedAchievements.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-sm font-medium text-th-text-secondary mb-3">Earned ({earnedAchievements.length})</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {earnedAchievements.slice(0, showAllAchievements ? undefined : 4).map((achievement) => {
+                      const Icon = ACHIEVEMENT_ICONS[achievement.achievement.icon] || Trophy;
+                      return (
+                        <div
+                          key={achievement.achievement.id}
+                          className="p-4 bg-surface-primary rounded-xl border border-th-border-primary text-center hover:shadow-md transition-shadow"
+                        >
+                          <div className={`w-12 h-12 ${getTierBgColor(achievement.achievement.tier)} rounded-full mx-auto mb-2 flex items-center justify-center`}>
+                            <Icon className={`w-6 h-6 ${getTierIconColor(achievement.achievement.tier)}`} />
+                          </div>
+                          <p className="font-medium text-th-text-primary text-sm">{achievement.achievement.name}</p>
+                          <p className="text-xs text-th-text-muted">{achievement.achievement.description}</p>
+                          <p className="text-xs text-th-accent-600 mt-1">+{achievement.achievement.points} pts</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* In Progress Achievements */}
+              {inProgressAchievements.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-sm font-medium text-th-text-secondary mb-3">In Progress ({inProgressAchievements.length})</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {inProgressAchievements.slice(0, showAllAchievements ? undefined : 4).map((achievement) => {
+                      const Icon = ACHIEVEMENT_ICONS[achievement.achievement.icon] || Trophy;
+                      return (
+                        <div
+                          key={achievement.achievement.id}
+                          className="p-4 bg-surface-primary rounded-xl border border-th-border-primary text-center relative overflow-hidden"
+                        >
+                          <div className={`w-12 h-12 ${getTierBgColor(achievement.achievement.tier)} rounded-full mx-auto mb-2 flex items-center justify-center opacity-70`}>
+                            <Icon className={`w-6 h-6 ${getTierIconColor(achievement.achievement.tier)}`} />
+                          </div>
+                          <p className="font-medium text-th-text-primary text-sm">{achievement.achievement.name}</p>
+                          <p className="text-xs text-th-text-muted">{achievement.achievement.description}</p>
+                          {/* Progress bar */}
+                          <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-th-accent-500 rounded-full transition-all"
+                              style={{ width: `${achievement.percentage}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-th-text-muted mt-1">
+                            {achievement.progress} / {achievement.target} ({achievement.percentage}%)
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Locked Achievements */}
+              {showAllAchievements && lockedAchievements.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-th-text-secondary mb-3">Locked ({lockedAchievements.length})</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {lockedAchievements.map((achievement) => {
+                      const Icon = ACHIEVEMENT_ICONS[achievement.achievement.icon] || Trophy;
+                      return (
+                        <div
+                          key={achievement.achievement.id}
+                          className="p-4 bg-surface-primary rounded-xl border border-th-border-primary text-center opacity-50"
+                        >
+                          <div className="w-12 h-12 bg-gray-100 rounded-full mx-auto mb-2 flex items-center justify-center relative">
+                            <Icon className="w-6 h-6 text-gray-400" />
+                            <Lock className="w-3 h-3 text-gray-500 absolute -bottom-0.5 -right-0.5" />
+                          </div>
+                          <p className="font-medium text-th-text-primary text-sm">{achievement.achievement.name}</p>
+                          <p className="text-xs text-th-text-muted">{achievement.achievement.description}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {earnedAchievements.length === 0 && inProgressAchievements.length === 0 && (
+                <div className="text-center py-8 bg-surface-primary rounded-xl border border-th-border-primary">
+                  <Trophy className="w-12 h-12 text-th-text-muted mx-auto mb-4" />
+                  <p className="text-th-text-secondary">Start earning achievements!</p>
+                  <p className="text-sm text-th-text-muted mt-1">
+                    Complete tasks and hit milestones to unlock badges
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

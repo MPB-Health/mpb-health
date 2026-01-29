@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AdvisorProvider } from './contexts/AdvisorContext';
+import { TourProvider } from './contexts/TourContext';
 import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Training from './pages/Training';
@@ -39,10 +40,13 @@ import Analytics from './pages/Analytics';
 import Reports from './pages/Reports';
 import Leaderboard from './pages/Leaderboard';
 import Activity from './pages/Activity';
+import Automations from './pages/Automations';
+import AutomationEditor from './pages/AutomationEditor';
 
 export default function App() {
   return (
     <AdvisorProvider>
+      <TourProvider>
       <Routes>
         {/* Auth routes */}
         <Route path="/login" element={<Login />} />
@@ -85,9 +89,13 @@ export default function App() {
           <Route path="leaderboard" element={<Leaderboard />} />
           {/* Activity Routes */}
           <Route path="activity" element={<Activity />} />
+          {/* Automation Routes */}
+          <Route path="automations" element={<Automations />} />
+          <Route path="automations/:automationId" element={<AutomationEditor />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </TourProvider>
     </AdvisorProvider>
   );
 }

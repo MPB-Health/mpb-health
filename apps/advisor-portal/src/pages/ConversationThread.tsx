@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useConversation, useTemplates, useInboxActions } from '../hooks/useInbox';
 import { useAuth } from '../hooks/useAuth';
+import { useAdvisor } from '../contexts/AdvisorContext';
 import { templateService, type Message, type MessageTemplate } from '@mpbhealth/champion-core';
 import { AIMessageAssistant } from '../components/ai';
 
@@ -31,6 +32,7 @@ export default function ConversationThread() {
   const { templates } = useTemplates();
   const { sendMessage } = useInboxActions();
   const { user } = useAuth();
+  const { profile } = useAdvisor();
 
   const [channel, setChannel] = useState<'sms' | 'email'>('sms');
   const [content, setContent] = useState('');
@@ -74,9 +76,12 @@ export default function ConversationThread() {
 
   const handleTemplateSelect = (template: MessageTemplate) => {
     // Render template with basic variables
+    const advisorName = profile
+      ? `${profile.first_name}${profile.last_name ? ` ${profile.last_name}` : ''}`
+      : 'Your Advisor';
     const variables: Record<string, string> = {
       first_name: conversation?.participant_name?.split(' ')[0] || 'there',
-      advisor_name: 'Your Advisor', // TODO: Get from profile
+      advisor_name: advisorName,
     };
     const rendered = templateService.renderTemplate(template, variables);
     setContent(rendered.body);

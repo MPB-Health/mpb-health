@@ -98,16 +98,30 @@ export function useLogActivity() {
   const { profile } = useAdvisor();
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
+  const [error, setError] = useState<string | null>(null);
 
   const logActivity = useCallback(
     async (input: LogActivityInput) => {
-      if (!orgId || !userId) return null;
-      return activityService.logActivity(orgId, userId, input);
+      if (!orgId || !userId) {
+        // User not authenticated - silently skip logging
+        return null;
+      }
+      try {
+        setError(null);
+        return await activityService.logActivity(orgId, userId, input);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to log activity';
+        setError(message);
+        console.error('[useLogActivity] Failed:', err);
+        return null;
+      }
     },
     [orgId, userId]
   );
 
-  return { logActivity };
+  const isReady = Boolean(orgId && userId);
+
+  return { logActivity, error, isReady };
 }
 
 // ============================================================================
@@ -257,16 +271,19 @@ export function useNotificationSummary() {
 
   const [summary, setSummary] = useState<NotificationSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSummary = useCallback(async () => {
     if (!userId) return;
 
     try {
       setLoading(true);
+      setError(null);
       const data = await notificationService.getNotificationSummary(userId);
       setSummary(data);
     } catch (err) {
       console.error('[useNotificationSummary] Failed to fetch:', err);
+      setError('Failed to load notification summary');
     } finally {
       setLoading(false);
     }
@@ -279,6 +296,7 @@ export function useNotificationSummary() {
   return {
     summary,
     loading,
+    error,
     refresh: fetchSummary,
   };
 }

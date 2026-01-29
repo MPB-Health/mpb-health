@@ -204,3 +204,82 @@ export type {
   UpdatePreferencesOverrideInput,
   ActivitySubscription,
 } from './activity';
+
+// Search & Command Palette
+export {
+  searchService,
+  SEARCH_ENTITY_CONFIG,
+} from './search';
+export type {
+  SearchEntityType,
+  QuickActionType,
+  QuickActionCategory,
+  SearchResult,
+  SearchResponse,
+  RecentSearch,
+  SavedSearch,
+  SavedSearchInput,
+  QuickAction,
+  GlobalSearchParams,
+  SearchAnalyticsInput,
+  CommandPaletteState,
+  KeyboardShortcut,
+  ShortcutGroup,
+} from './search';
+
+// Automation Rules Engine
+export {
+  AutomationService,
+  automationService,
+  TRIGGER_CONFIGS,
+  ACTION_CONFIGS,
+} from './automation';
+export type {
+  AutomationTriggerType,
+  AutomationActionType,
+  ConditionOperator,
+  GroupOperator,
+  ExecutionStatus,
+  RunStatus,
+  AutomationRule,
+  AutomationRuleWithDetails,
+  AutomationCondition,
+  AutomationAction,
+  AutomationTemplate,
+  ExecutionLog,
+  ExecutionLogWithLead,
+  AutomationRun,
+  AutomationStats,
+  CreateRuleInput,
+  UpdateRuleInput,
+  CreateConditionInput,
+  CreateActionInput,
+  CreateTemplateInput,
+  GetRulesParams,
+  GetExecutionHistoryParams,
+  GetTemplatesParams,
+  TriggerConfig,
+  TriggerField,
+  ActionConfig,
+  ActionField,
+} from './automation';
+
+// Achievements & Gamification
+export {
+  AchievementService,
+  achievementService,
+  ACHIEVEMENT_DEFINITIONS,
+  getAchievementById,
+  getAchievementsByCategory,
+  getAchievementsByTier,
+  getTierColor,
+} from './achievements';
+export type {
+  AchievementCategory,
+  AchievementTier,
+  AchievementDefinition,
+  AchievementRequirement,
+  UserAchievement,
+  UserAchievementWithDetails,
+  AchievementProgress,
+} from './achievements';

@@ -19,18 +19,28 @@ import {
   BarChart3,
   Trophy,
   Activity,
+  Search,
+  Bot,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import LiveMeetingBanner from '../components/LiveMeetingBanner';
 import { NotificationCenter } from '../components/notifications';
+import { CommandPalette } from '../components/command-palette';
+import { MobileBottomNav } from '../components/mobile';
+import { PWAInstallPrompt } from '../components/pwa';
+import { OnboardingWizard } from '../components/onboarding';
+import { KeyboardShortcutsModal } from '../components/command-palette';
+import { useCommandPalette } from '../hooks/useSearch';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Power List', href: '/power-list', icon: Zap },
   { name: 'Inbox', href: '/inbox', icon: Inbox },
   { name: 'Sequences', href: '/sequences', icon: Workflow },
+  { name: 'Automations', href: '/automations', icon: Bot },
   { name: 'My Leads', href: '/leads', icon: Users },
   { name: 'Compliance', href: '/compliance', icon: Shield },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
@@ -48,6 +58,8 @@ const navigation: NavItem[] = [
 export default function MainLayout() {
   const navigate = useNavigate();
   const { profile, liveMeetings, unreadBulletinCount, logout, loading } = useAdvisor();
+  const { open: openCommandPalette } = useCommandPalette();
+  const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
 
   // Redirect to login if not authenticated
   if (!loading && !profile) {
@@ -133,6 +145,18 @@ export default function MainLayout() {
         </button>
       )}
 
+      {/* Global Search Button */}
+      <button
+        onClick={() => openCommandPalette('search')}
+        className="flex items-center gap-2 px-3 py-1.5 text-th-text-secondary hover:text-th-text-primary bg-surface-secondary hover:bg-surface-tertiary rounded-lg transition-colors"
+      >
+        <Search className="w-4 h-4" />
+        <span className="text-sm hidden md:inline">Search</span>
+        <kbd className="hidden md:inline text-xs text-th-text-muted bg-surface-tertiary px-1.5 py-0.5 rounded font-mono">
+          ⌘K
+        </kbd>
+      </button>
+
       {/* Notification Center */}
       <NotificationCenter />
     </>
@@ -140,10 +164,30 @@ export default function MainLayout() {
 
   return (
     <>
+      {/* Command Palette (Cmd+K) */}
+      <CommandPalette />
+
+      {/* Onboarding Wizard for new users */}
+      <OnboardingWizard />
+
+      {/* Keyboard Shortcuts Modal (press ?) */}
+      <KeyboardShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+      />
+
       {/* Live Meeting Banner */}
       {liveMeetings.length > 0 && <LiveMeetingBanner meetings={liveMeetings} />}
 
-      <AppLayout
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
+
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
+
+      {/* Add padding for mobile bottom nav */}
+      <div className="pb-16 lg:pb-0">
+        <AppLayout
         appName="Advisor Portal"
         logoSrc="/logo.png"
         navigation={navWithBadges}
@@ -177,6 +221,7 @@ export default function MainLayout() {
       >
         <Outlet />
       </AppLayout>
+      </div>
     </>
   );
 }

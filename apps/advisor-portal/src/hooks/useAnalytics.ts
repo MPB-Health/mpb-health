@@ -2,10 +2,11 @@
 // Analytics Hooks — React hooks for analytics and reporting
 // ============================================================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   analyticsService,
   reportService,
+  achievementService,
   AnalyticsSummary,
   KPIMetric,
   MetricDataPoint,
@@ -21,6 +22,11 @@ import {
   CreateWidgetInput,
   UpdateWidgetInput,
   REPORT_TEMPLATES,
+  AchievementProgress,
+  UserAchievementWithDetails,
+  ACHIEVEMENT_DEFINITIONS,
+  getAchievementsByCategory,
+  getTierColor,
 } from '@mpbhealth/champion-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
@@ -329,17 +335,29 @@ export function useSavedReports() {
   const createReport = useCallback(
     async (input: CreateReportInput) => {
       if (!orgId || !userId) return null;
-      const report = await reportService.createReport(orgId, userId, input);
-      await fetchReports();
-      return report;
+      try {
+        const report = await reportService.createReport(orgId, userId, input);
+        await fetchReports();
+        return report;
+      } catch (err) {
+        console.error('[useSavedReports] Failed to create report:', err);
+        setError('Failed to create report');
+        throw err;
+      }
     },
     [orgId, userId, fetchReports]
   );
 
   const deleteReport = useCallback(
     async (reportId: string) => {
-      await reportService.deleteReport(reportId);
-      await fetchReports();
+      try {
+        await reportService.deleteReport(reportId);
+        await fetchReports();
+      } catch (err) {
+        console.error('[useSavedReports] Failed to delete report:', err);
+        setError('Failed to delete report');
+        throw err;
+      }
     },
     [fetchReports]
   );
@@ -347,13 +365,19 @@ export function useSavedReports() {
   const runReport = useCallback(
     async (reportId: string, dateRange?: { start: string; end: string }) => {
       if (!orgId || !userId) return null;
-      return reportService.runReport(
-        orgId,
-        reportId,
-        userId,
-        dateRange?.start,
-        dateRange?.end
-      );
+      try {
+        return await reportService.runReport(
+          orgId,
+          reportId,
+          userId,
+          dateRange?.start,
+          dateRange?.end
+        );
+      } catch (err) {
+        console.error('[useSavedReports] Failed to run report:', err);
+        setError('Failed to run report');
+        throw err;
+      }
     },
     [orgId, userId]
   );
@@ -361,11 +385,15 @@ export function useSavedReports() {
   // Get templates
   const templates = REPORT_TEMPLATES;
 
+  // Flag to indicate if the hook is ready to perform actions
+  const isReady = Boolean(orgId && userId);
+
   return {
     reports,
     templates,
     loading,
     error,
+    isReady,
     createReport,
     deleteReport,
     runReport,
@@ -449,34 +477,55 @@ export function useDashboardWidgets() {
   const createWidget = useCallback(
     async (input: CreateWidgetInput) => {
       if (!orgId || !userId) return null;
-      const widget = await reportService.createWidget(orgId, userId, input);
-      await fetchWidgets();
-      return widget;
+      try {
+        const widget = await reportService.createWidget(orgId, userId, input);
+        await fetchWidgets();
+        return widget;
+      } catch (err) {
+        console.error('[useDashboardWidgets] Failed to create widget:', err);
+        setError('Failed to create widget');
+        throw err;
+      }
     },
     [orgId, userId, fetchWidgets]
   );
 
   const updateWidget = useCallback(
     async (widgetId: string, input: UpdateWidgetInput) => {
-      const widget = await reportService.updateWidget(widgetId, input);
-      await fetchWidgets();
-      return widget;
+      try {
+        const widget = await reportService.updateWidget(widgetId, input);
+        await fetchWidgets();
+        return widget;
+      } catch (err) {
+        console.error('[useDashboardWidgets] Failed to update widget:', err);
+        setError('Failed to update widget');
+        throw err;
+      }
     },
     [fetchWidgets]
   );
 
   const deleteWidget = useCallback(
     async (widgetId: string) => {
-      await reportService.deleteWidget(widgetId);
-      await fetchWidgets();
+      try {
+        await reportService.deleteWidget(widgetId);
+        await fetchWidgets();
+      } catch (err) {
+        console.error('[useDashboardWidgets] Failed to delete widget:', err);
+        setError('Failed to delete widget');
+        throw err;
+      }
     },
     [fetchWidgets]
   );
+
+  const isReady = Boolean(orgId && userId);
 
   return {
     widgets,
     loading,
     error,
+    isReady,
     createWidget,
     updateWidget,
     deleteWidget,
@@ -511,3 +560,96 @@ export function useDateRange(initialPreset: string = 'last_30_days') {
     setCustomDateRange,
   };
 }
+
+// ============================================================================
+// Achievements Hook
+// ============================================================================
+
+export function useAchievements() {
+  const { profile } = useAdvisor();
+  const userId = profile?.user_id;
+  const orgId = profile?.org_id;
+
+  const [achievements, setAchievements] = useState<UserAchievementWithDetails[]>([]);
+  const [progress, setProgress] = useState<AchievementProgress[]>([]);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAchievements = useCallback(async () => {
+    if (!userId || !orgId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [earned, progressData, points] = await Promise.all([
+        achievementService.getUserAchievements(userId),
+        achievementService.getAchievementProgress(userId, orgId),
+        achievementService.getTotalPoints(userId),
+      ]);
+
+      setAchievements(earned);
+      setProgress(progressData);
+      setTotalPoints(points);
+    } catch (err) {
+      console.error('[useAchievements] Failed to fetch:', err);
+      setError('Failed to load achievements');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, orgId]);
+
+  useEffect(() => {
+    fetchAchievements();
+  }, [fetchAchievements]);
+
+  // Group achievements by category
+  const achievementsByCategory = useMemo(() => {
+    const grouped: Record<string, AchievementProgress[]> = {};
+    for (const p of progress) {
+      const cat = p.achievement.category;
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    }
+    return grouped;
+  }, [progress]);
+
+  // Get earned achievements
+  const earnedAchievements = useMemo(
+    () => progress.filter((p) => p.earned),
+    [progress]
+  );
+
+  // Get in-progress achievements
+  const inProgressAchievements = useMemo(
+    () => progress.filter((p) => !p.earned && p.percentage > 0).sort((a, b) => b.percentage - a.percentage),
+    [progress]
+  );
+
+  // Get locked achievements
+  const lockedAchievements = useMemo(
+    () => progress.filter((p) => !p.earned && p.percentage === 0),
+    [progress]
+  );
+
+  return {
+    achievements,
+    progress,
+    totalPoints,
+    achievementsByCategory,
+    earnedAchievements,
+    inProgressAchievements,
+    lockedAchievements,
+    loading,
+    error,
+    refresh: fetchAchievements,
+    // Helper exports
+    getAchievementsByCategory,
+    getTierColor,
+    allDefinitions: ACHIEVEMENT_DEFINITIONS,
+  };
+}
+
+// Re-export for convenience
+export { ACHIEVEMENT_DEFINITIONS, getAchievementsByCategory, getTierColor };

@@ -180,8 +180,14 @@ export function WidgetGrid() {
 // ============================================================================
 
 function getGridColSpan(size: 'sm' | 'md' | 'lg' | 'full'): string {
-  const span = SIZE_TO_SPAN[size];
-  return `col-span-12 md:col-span-${span}`;
+  // Tailwind requires full class names at build time - can't use dynamic interpolation
+  const spanClasses: Record<string, string> = {
+    sm: 'col-span-12 md:col-span-3',    // 25% width
+    md: 'col-span-12 md:col-span-6',    // 50% width
+    lg: 'col-span-12 md:col-span-9',    // 75% width
+    full: 'col-span-12',                 // 100% width
+  };
+  return spanClasses[size] || 'col-span-12 md:col-span-6';
 }
 
 function getOverlayWidth(size: 'sm' | 'md' | 'lg' | 'full'): string {

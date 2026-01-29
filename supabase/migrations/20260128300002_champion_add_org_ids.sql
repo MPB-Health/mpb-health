@@ -163,25 +163,27 @@ BEGIN
 END $$;
 
 -- ============================================
--- ADD ORG_ID TO TRAINING_PROGRESS
+-- ADD ORG_ID TO TRAINING_PROGRESS (if exists)
 -- ============================================
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'training_progress' AND column_name = 'org_id'
-  ) THEN
-    ALTER TABLE training_progress
-    ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'training_progress') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'training_progress' AND column_name = 'org_id'
+    ) THEN
+      ALTER TABLE training_progress
+      ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
 
-    UPDATE training_progress
-    SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
-    WHERE org_id IS NULL;
+      UPDATE training_progress
+      SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
+      WHERE org_id IS NULL;
 
-    CREATE INDEX IF NOT EXISTS idx_training_progress_org_id
-    ON training_progress(org_id);
+      CREATE INDEX IF NOT EXISTS idx_training_progress_org_id
+      ON training_progress(org_id);
 
-    RAISE NOTICE 'Added org_id to training_progress';
+      RAISE NOTICE 'Added org_id to training_progress';
+    END IF;
   END IF;
 END $$;
 

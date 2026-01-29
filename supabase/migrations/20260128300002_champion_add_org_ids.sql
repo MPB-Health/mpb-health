@@ -465,10 +465,23 @@ END $$;
 -- ============================================
 -- CREATE MEMBERSHIPS FOR EXISTING USERS
 -- Add all existing advisor_profiles users to MPB org
+-- Only if org_memberships references organizations table
 -- ============================================
 DO $$
+DECLARE
+  v_ref_table text;
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'advisor_profiles') THEN
+  -- Check if org_memberships exists and references 'organizations'
+  SELECT ccu.table_name INTO v_ref_table
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+  WHERE tc.table_name = 'org_memberships'
+    AND tc.constraint_type = 'FOREIGN KEY'
+    AND ccu.column_name = 'id'
+  LIMIT 1;
+
+  -- Only proceed if the FK references 'organizations' (not 'orgs')
+  IF v_ref_table = 'organizations' AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'advisor_profiles') THEN
     INSERT INTO org_memberships (org_id, user_id, role, status, joined_at)
     SELECT
       'a0000000-0000-0000-0000-000000000001'::uuid,
@@ -476,7 +489,7 @@ BEGIN
       CASE
         WHEN p.role = 'super_admin' THEN 'owner'
         WHEN p.role = 'admin' THEN 'admin'
-        ELSE 'advisor'
+        ELSE 'manager'
       END,
       'active',
       COALESCE(ap.created_at, now())
@@ -488,7 +501,13 @@ BEGIN
       AND om.user_id = ap.id
     )
     ON CONFLICT (org_id, user_id) DO NOTHING;
+
+    RAISE NOTICE 'Created memberships for existing users';
+  ELSE
+    RAISE NOTICE 'Skipping membership creation - schema mismatch or missing tables';
   END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not create memberships: %', SQLERRM;
 END $$;
 
 -- ============================================

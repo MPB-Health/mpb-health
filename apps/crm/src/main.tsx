@@ -7,19 +7,21 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrgProvider } from './contexts/OrgContext';
 import { CRMProvider } from './contexts/CRMContext';
+import { AppErrorBoundary } from './components/ErrorBoundary';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <OrgProvider>
-            <CRMProvider>
-              <App />
-              <Toaster
+    <AppErrorBoundary>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <OrgProvider>
+              <CRMProvider>
+                <App />
+                <Toaster
                 position="top-right"
                 toastOptions={{
                   duration: 4000,
@@ -41,10 +43,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                   },
                 }}
               />
-            </CRMProvider>
-          </OrgProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </ThemeProvider>
+              </CRMProvider>
+            </OrgProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </AppErrorBoundary>
   </React.StrictMode>
 );

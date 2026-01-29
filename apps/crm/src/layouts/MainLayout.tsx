@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
 import type { NavItem, NavLinkRenderProps } from '@mpbhealth/ui';
@@ -39,12 +39,15 @@ import {
   Megaphone,
   Settings2,
   Calculator,
+  Command,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { useCRM } from '../contexts/CRMContext';
 import { NotificationCenter } from '../components/NotificationCenter';
+import CommandPalette from '../components/CommandPalette';
+import { RouteErrorBoundary } from '../components/ErrorBoundary';
 
 interface ExtendedNavChild {
   name: string;
@@ -57,45 +60,103 @@ interface ExtendedNavItem extends Omit<NavItem, 'children'> {
   children?: ExtendedNavChild[];
 }
 
-const navigation: ExtendedNavItem[] = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  // Lead Management
-  { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
-  { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
-  { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
-  // CRM Modules
-  { name: 'Accounts', href: '/accounts', icon: Building2, permission: 'accounts.read' },
-  { name: 'Contacts', href: '/contacts', icon: UserCircle, permission: 'contacts.read' },
-  { name: 'Deals', href: '/deals', icon: DollarSign, permission: 'deals.read' },
-  { name: 'Deal Pipeline', href: '/deal-pipeline', icon: GitBranch, permission: 'deals.read' },
-  // Products & Quotes
-  { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
-  { name: 'Quotes', href: '/quotes', icon: FileCheck, permission: 'quotes.read' },
-  { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
-  // Marketing
-  { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
-  // Tasks & Calendar
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
-  { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
-  // Reporting
-  { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.read' },
-  // Email
+// ============================================================================
+// Navigation Configuration with Grouped Sections
+// ============================================================================
+
+interface NavSection {
+  id: string;
+  label?: string; // Optional section label
+  items: ExtendedNavItem[];
+}
+
+const navigationSections: NavSection[] = [
   {
-    name: 'Email',
-    href: '#',
-    icon: Mail,
-    permission: 'email.read',
-    children: [
-      { name: 'Sent Emails', href: '/email/sent', permission: 'email.read' },
-      { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
+    id: 'main',
+    items: [
+      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     ],
   },
-  // Admin
-  { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
-  { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
-  { name: 'Studio', href: '/studio', icon: Settings2, permission: 'settings.manage' },
-  { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
+  {
+    id: 'leads',
+    label: 'Lead Management',
+    items: [
+      { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
+      { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
+      { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
+    ],
+  },
+  {
+    id: 'crm',
+    label: 'CRM',
+    items: [
+      { name: 'Accounts', href: '/accounts', icon: Building2, permission: 'accounts.read' },
+      { name: 'Contacts', href: '/contacts', icon: UserCircle, permission: 'contacts.read' },
+      { name: 'Deals', href: '/deals', icon: DollarSign, permission: 'deals.read' },
+      { name: 'Deal Pipeline', href: '/deal-pipeline', icon: GitBranch, permission: 'deals.read' },
+    ],
+  },
+  {
+    id: 'sales',
+    label: 'Sales & Billing',
+    items: [
+      { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
+      { name: 'Quotes', href: '/quotes', icon: FileCheck, permission: 'quotes.read' },
+      { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
+    ],
+  },
+  {
+    id: 'marketing',
+    label: 'Marketing',
+    items: [
+      { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
+    ],
+  },
+  {
+    id: 'productivity',
+    label: 'Productivity',
+    items: [
+      { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
+      { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
+    ],
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    items: [
+      { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.read' },
+    ],
+  },
+  {
+    id: 'email',
+    label: 'Email',
+    items: [
+      {
+        name: 'Email',
+        href: '#',
+        icon: Mail,
+        permission: 'email.read',
+        children: [
+          { name: 'Sent Emails', href: '/email/sent', permission: 'email.read' },
+          { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'Administration',
+    items: [
+      { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
+      { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
+      { name: 'Studio', href: '/studio', icon: Settings2, permission: 'settings.manage' },
+      { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
+    ],
+  },
 ];
+
+// Flatten for backward compatibility
+const navigation: ExtendedNavItem[] = navigationSections.flatMap(section => section.items);
 
 // Helper function to get the path for an entity
 function getEntityPath(entityType: string, entityId: string): string {
@@ -287,8 +348,27 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const topBarActions = (
     <div className="flex items-center space-x-4">
+      {/* Command Palette Trigger (visible on md+) */}
+      <button
+        onClick={() => {
+          // Trigger command palette via keyboard event
+          const event = new KeyboardEvent('keydown', {
+            key: 'k',
+            metaKey: true,
+            bubbles: true,
+          });
+          document.dispatchEvent(event);
+        }}
+        className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-surface-tertiary hover:bg-surface-secondary rounded-lg text-sm text-th-text-tertiary transition-colors"
+        title="Command Palette (⌘K)"
+      >
+        <Command className="w-4 h-4" />
+        <span>Command</span>
+        <kbd className="text-xs bg-white/10 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+      </button>
+
       {/* Global Search */}
-      <div ref={searchRef} className="hidden sm:block relative w-72">
+      <div ref={searchRef} className="hidden sm:block md:hidden relative w-72">
         <div className="flex items-center bg-surface-tertiary rounded-lg px-3 py-2">
           <Search className="w-4 h-4 text-th-text-tertiary mr-2" />
           <input
@@ -367,25 +447,33 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   );
 
   return (
-    <AppLayout
-      appName="CRM"
-      logoSrc="/logo.png"
-      navigation={visibleNav}
-      portalSwitcher={
-        <PortalSwitcher
-          currentPortal="crm"
-          canAccessAdmin={true}
-          canAccessCRM={true}
-          canAccessAdvisor={true}
-          getPortalUrl={getPortalUrl}
-        />
-      }
-      userSection={userSection}
-      topBarActions={topBarActions}
-      renderNavLink={renderNavLink}
-      renderChildNavLink={renderChildNavLink}
-    >
-      {children}
-    </AppLayout>
+    <>
+      {/* Command Palette - always rendered */}
+      <CommandPalette />
+
+      <AppLayout
+        appName="CRM"
+        logoSrc="/logo.png"
+        navigation={visibleNav}
+        portalSwitcher={
+          <PortalSwitcher
+            currentPortal="crm"
+            canAccessAdmin={true}
+            canAccessCRM={true}
+            canAccessAdvisor={true}
+            getPortalUrl={getPortalUrl}
+          />
+        }
+        userSection={userSection}
+        topBarActions={topBarActions}
+        renderNavLink={renderNavLink}
+        renderChildNavLink={renderChildNavLink}
+      >
+        {/* Route Error Boundary - shell stays intact on page errors */}
+        <RouteErrorBoundary>
+          {children}
+        </RouteErrorBoundary>
+      </AppLayout>
+    </>
   );
 }

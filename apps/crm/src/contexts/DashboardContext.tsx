@@ -179,6 +179,9 @@ export const useDashboardStore = create<DashboardStore>()(
             });
             return true;
           } else {
+            // #region agent log
+            fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:saveLayout:setError',message:'Setting error state from saveLayout failure',data:{error:result.error || 'Failed to save layout'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H6'})}).catch(()=>{});
+            // #endregion
             set({
               isSaving: false,
               error: result.error || 'Failed to save layout',
@@ -186,6 +189,9 @@ export const useDashboardStore = create<DashboardStore>()(
             return false;
           }
         } catch (error) {
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:saveLayout:catchError',message:'Setting error state from saveLayout catch',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H6'})}).catch(()=>{});
+          // #endregion
           console.error('Failed to save dashboard layout:', error);
           set({
             isSaving: false,
@@ -377,9 +383,15 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
 
   // Auto-save when widgets change (debounced)
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:autoSave:useEffect',message:'Auto-save useEffect triggered',data:{activeOrgId,editMode,willSave:!!(activeOrgId && !editMode),widgetCount:widgets.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H6'})}).catch(()=>{});
+    // #endregion
     if (!activeOrgId || editMode) return;
 
     const timer = setTimeout(() => {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContext.tsx:autoSave:timeout',message:'Auto-save timeout fired, calling saveLayout',data:{activeOrgId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H6'})}).catch(()=>{});
+      // #endregion
       saveLayout(activeOrgId);
     }, 2000); // 2 second debounce
 

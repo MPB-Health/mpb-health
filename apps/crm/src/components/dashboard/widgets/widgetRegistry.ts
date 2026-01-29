@@ -19,6 +19,8 @@ import {
   Target,
   UsersRound,
   Sparkles,
+  ListTodo,
+  Gauge,
 } from 'lucide-react';
 import type { WidgetConfig, WidgetRegistry } from '../types';
 
@@ -37,6 +39,8 @@ const AlertsWidget = lazy(() => import('./AlertsWidget'));
 const GoalsWidget = lazy(() => import('./GoalsWidget'));
 const TeamWidget = lazy(() => import('./TeamWidget'));
 const AIInsightsWidget = lazy(() => import('./AIInsightsWidget'));
+const ActionQueueWidget = lazy(() => import('./ActionQueueWidget'));
+const KPIStripWidget = lazy(() => import('./KPIStripWidget'));
 
 // ============================================================================
 // Widget Registry
@@ -487,6 +491,72 @@ export const widgetRegistry: WidgetRegistry = {
           label: 'Max Recommendations',
           type: 'number',
           defaultValue: 3,
+        },
+      ],
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Command Center Category (New)
+  // ---------------------------------------------------------------------------
+  'action-queue': {
+    id: 'action-queue',
+    title: 'Action Queue',
+    description: 'What needs attention right now',
+    icon: ListTodo,
+    category: 'productivity',
+    defaultSize: 'md',
+    allowedSizes: ['sm', 'md', 'lg'],
+    component: ActionQueueWidget,
+    dataRefreshInterval: 30000,
+    configSchema: {
+      fields: [
+        {
+          key: 'filter',
+          label: 'Default Filter',
+          type: 'select',
+          options: [
+            { value: 'all', label: 'All Items' },
+            { value: 'urgent', label: 'Urgent Only' },
+            { value: 'tasks', label: 'Tasks Only' },
+            { value: 'deals', label: 'Deals Only' },
+          ],
+          defaultValue: 'all',
+        },
+        {
+          key: 'maxItems',
+          label: 'Max Items',
+          type: 'number',
+          defaultValue: 5,
+        },
+      ],
+    },
+  },
+
+  'kpi-strip': {
+    id: 'kpi-strip',
+    title: 'KPI Strip',
+    description: 'Key performance indicators at a glance',
+    icon: Gauge,
+    category: 'metrics',
+    defaultSize: 'full',
+    allowedSizes: ['md', 'lg', 'full'],
+    minWidth: 6,
+    component: KPIStripWidget,
+    dataRefreshInterval: 60000,
+    configSchema: {
+      fields: [
+        {
+          key: 'showTrends',
+          label: 'Show Trends',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+        {
+          key: 'compactMode',
+          label: 'Compact Mode',
+          type: 'checkbox',
+          defaultValue: false,
         },
       ],
     },

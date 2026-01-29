@@ -463,3 +463,42 @@ export type {
   ServiceResult,
 } from './dashboard';
 export * from './dashboard';
+
+// Plan Interests (Health Plan tracking for leads)
+export {
+  PlanInterestService,
+  createPlanInterestService,
+  HealthQuoteService,
+  createHealthQuoteService,
+} from './plan-interests';
+export type {
+  // Types
+  FamilySize,
+  InterestLevel,
+  InterestSource,
+  HouseholdType,
+  HealthQuoteStatus,
+  HealthQuoteSource,
+  WebsiteSyncStatus,
+  // Interfaces
+  LeadPlanInterest,
+  LeadPlanInterestWithPlan,
+  QuoteLine,
+  LeadHealthQuote,
+  LeadHealthQuoteWithLead,
+  ExtractedQuoteData,
+  WebsiteQuoteSync,
+  // Input types
+  LeadPlanInterestCreateInput,
+  LeadPlanInterestUpdateInput,
+  HealthQuoteCreateInput,
+  HealthQuoteUpdateInput,
+  // Filter types
+  PlanInterestFilters,
+  HealthQuoteFilters,
+  WebsiteSyncFilters,
+  // Other
+  AvailableHealthPlan,
+} from './plan-interests';
+export { FAMILY_SIZE_LABELS, INTEREST_LEVEL_LABELS, HOUSEHOLD_TYPE_LABELS } from './plan-interests';
+export * from './plan-interests';

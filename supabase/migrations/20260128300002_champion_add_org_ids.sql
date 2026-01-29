@@ -188,25 +188,27 @@ BEGIN
 END $$;
 
 -- ============================================
--- ADD ORG_ID TO SOP_DOCUMENTS
+-- ADD ORG_ID TO SOP_DOCUMENTS (if exists)
 -- ============================================
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'sop_documents' AND column_name = 'org_id'
-  ) THEN
-    ALTER TABLE sop_documents
-    ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sop_documents') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'sop_documents' AND column_name = 'org_id'
+    ) THEN
+      ALTER TABLE sop_documents
+      ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
 
-    UPDATE sop_documents
-    SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
-    WHERE org_id IS NULL;
+      UPDATE sop_documents
+      SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
+      WHERE org_id IS NULL;
 
-    CREATE INDEX IF NOT EXISTS idx_sop_documents_org_id
-    ON sop_documents(org_id);
+      CREATE INDEX IF NOT EXISTS idx_sop_documents_org_id
+      ON sop_documents(org_id);
 
-    RAISE NOTICE 'Added org_id to sop_documents';
+      RAISE NOTICE 'Added org_id to sop_documents';
+    END IF;
   END IF;
 END $$;
 

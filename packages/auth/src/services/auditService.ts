@@ -35,9 +35,12 @@ export interface AuditLogInput {
   objectType?: string;
   entityType?: string; // Alias for objectType (backward compatibility)
   objectId?: string;
+  entityId?: string; // Alias for objectId (backward compatibility)
   objectName?: string;
   oldValues?: Record<string, unknown> | null;
+  before?: Record<string, unknown> | null; // Alias for oldValues (backward compatibility)
   newValues?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null; // Alias for newValues (backward compatibility)
   metadata?: Record<string, unknown>;
 }
 
@@ -228,8 +231,11 @@ export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
 
 /** Log an audit event using the database function */
 export async function logAuditEvent(input: AuditLogInput): Promise<{ success: boolean; error?: string; auditId?: string }> {
-  // Support entityType as alias for objectType
+  // Support aliases for backward compatibility
   const objectType = input.objectType || input.entityType || 'unknown';
+  const objectId = input.objectId || input.entityId;
+  const oldValues = input.oldValues || input.before;
+  const newValues = input.newValues || input.after;
 
   try {
     // Try using the database function first (preferred)
@@ -237,10 +243,10 @@ export async function logAuditEvent(input: AuditLogInput): Promise<{ success: bo
       p_org_id: input.orgId,
       p_action: input.action,
       p_object_type: objectType,
-      p_object_id: input.objectId ?? null,
+      p_object_id: objectId ?? null,
       p_object_name: input.objectName ?? null,
-      p_old_values: input.oldValues ?? null,
-      p_new_values: input.newValues ?? null,
+      p_old_values: oldValues ?? null,
+      p_new_values: newValues ?? null,
       p_metadata: {
         ...input.metadata,
         user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
@@ -265,10 +271,10 @@ export async function logAuditEvent(input: AuditLogInput): Promise<{ success: bo
         action: input.action,
         action_category: input.action.split('.')[0],
         object_type: objectType,
-        object_id: input.objectId ?? null,
+        object_id: objectId ?? null,
         object_name: input.objectName ?? null,
-        old_values: input.oldValues ?? null,
-        new_values: input.newValues ?? null,
+        old_values: oldValues ?? null,
+        new_values: newValues ?? null,
         metadata: {
           ...input.metadata,
           user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,

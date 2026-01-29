@@ -134,8 +134,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [loadPermissions]);
 
   // --- Permission checks ---
-  // Fallback: owners, admins, and managers get all permissions if role_permissions table is empty
-  const hasFullAccess = orgRole === 'owner' || orgRole === 'admin' || orgRole === 'manager';
+  // Fallback: grant full access if user has ANY role in the org
+  // This is a temporary measure while role_permissions table is being set up
+  // TODO: Remove this fallback once role_permissions are properly seeded
+  const hasFullAccess = !!orgRole;
 
   const can = useCallback(
     (permissionKey: string): boolean => {

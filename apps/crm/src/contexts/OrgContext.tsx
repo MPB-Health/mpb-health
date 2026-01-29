@@ -102,7 +102,15 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       setOrgRole(null);
       return;
     }
-    getUserOrgRole(activeOrgId).then(setOrgRole).catch(() => setOrgRole(null));
+    getUserOrgRole(activeOrgId)
+      .then((role) => {
+        console.log('[OrgContext] User role loaded:', role);
+        setOrgRole(role);
+      })
+      .catch((err) => {
+        console.error('[OrgContext] Failed to load role:', err);
+        setOrgRole(null);
+      });
   }, [activeOrgId, user]);
 
   // --- Load permissions when org changes ---
@@ -134,10 +142,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [loadPermissions]);
 
   // --- Permission checks ---
-  // Fallback: grant full access if user has ANY role in the org
+  // Fallback: grant full access if user has an active org selected
   // This is a temporary measure while role_permissions table is being set up
   // TODO: Remove this fallback once role_permissions are properly seeded
-  const hasFullAccess = !!orgRole;
+  const hasFullAccess = !!activeOrgId && !!user;
 
   const can = useCallback(
     (permissionKey: string): boolean => {

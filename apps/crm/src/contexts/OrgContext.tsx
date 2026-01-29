@@ -142,37 +142,36 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [loadPermissions]);
 
   // --- Permission checks ---
-  // Fallback: grant full access if user has an active org selected
-  // This is a temporary measure while role_permissions table is being set up
-  // TODO: Remove this fallback once role_permissions are properly seeded
-  const hasFullAccess = !!activeOrgId && !!user;
+  // Only owners and admins get full access - other roles use permission set
+  const isOrgOwnerOrAdmin = orgRole === 'owner' || orgRole === 'admin';
 
   const can = useCallback(
     (permissionKey: string): boolean => {
-      // Admins and owners always have all permissions (fallback for empty role_permissions)
-      if (hasFullAccess) return true;
+      // Owners and admins have all permissions
+      if (isOrgOwnerOrAdmin) return true;
+      // Otherwise check against actual permission set
       if (!permissionSet) return false;
       return permissionSet.permissions.includes(permissionKey);
     },
-    [permissionSet, hasFullAccess]
+    [permissionSet, isOrgOwnerOrAdmin]
   );
 
   const canAny = useCallback(
     (permissionKeys: string[]): boolean => {
-      if (hasFullAccess) return true;
+      if (isOrgOwnerOrAdmin) return true;
       if (!permissionSet) return false;
       return permissionKeys.some((k) => permissionSet.permissions.includes(k));
     },
-    [permissionSet, hasFullAccess]
+    [permissionSet, isOrgOwnerOrAdmin]
   );
 
   const canAll = useCallback(
     (permissionKeys: string[]): boolean => {
-      if (hasFullAccess) return true;
+      if (isOrgOwnerOrAdmin) return true;
       if (!permissionSet) return false;
       return permissionKeys.every((k) => permissionSet.permissions.includes(k));
     },
-    [permissionSet, hasFullAccess]
+    [permissionSet, isOrgOwnerOrAdmin]
   );
 
   // --- Actions ---

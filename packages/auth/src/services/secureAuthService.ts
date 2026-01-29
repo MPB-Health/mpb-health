@@ -223,11 +223,13 @@ class SecureAuthService {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
+        // Revoke all active sessions for this user on logout
+        // Note: session_token is a UUID generated at login, not Supabase's access_token
         await supabase
           .from('user_sessions')
           .update({ revoked: true })
           .eq('user_id', userId)
-          .eq('session_token', session.access_token);
+          .eq('revoked', false);
       }
 
       await supabase.auth.signOut();
@@ -334,11 +336,14 @@ class SecureAuthService {
         return true;
       }
 
+      // Get the most recent active session for this user
       const { data: userSession } = await supabase
         .from('user_sessions')
         .select('last_activity')
         .eq('user_id', userId)
-        .eq('session_token', session.access_token)
+        .eq('revoked', false)
+        .order('last_activity', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (!userSession) {
@@ -415,13 +420,17 @@ class SecureAuthService {
     }
   }
 
-  private async verifyCaptcha(_token: string): Promise<boolean> {
-    try {
-      return true;
-    } catch (error) {
-      console.error('CAPTCHA verification failed:', error);
+  private async verifyCaptcha(token: string): Promise<boolean> {
+    // CAPTCHA verification requires server-side implementation
+    // For now, log a warning if CAPTCHA is being checked without proper setup
+    if (!token) {
+      console.warn('[SECURITY] CAPTCHA verification called without token');
       return false;
     }
+    // TODO: Implement server-side CAPTCHA verification (reCAPTCHA/hCaptcha)
+    // This should call a backend endpoint that verifies the token
+    console.warn('[SECURITY] CAPTCHA verification not implemented - skipping check');
+    return true;
   }
 
   async requireReauthentication(userId: string, operation: string): Promise<boolean> {

@@ -123,7 +123,7 @@ export default function Compliance() {
             <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
                 className={`h-full ${getComplianceScoreBg(userStatus?.compliance_score || 0)} transition-all duration-500`}
-                style={{ width: `${userStatus?.compliance_score || 0}%` }}
+                style={{ '--progress-width': `${userStatus?.compliance_score || 0}%`, width: 'var(--progress-width)' } as React.CSSProperties}
               />
             </div>
           </div>
@@ -266,6 +266,7 @@ export default function Compliance() {
             <select
               value={violationFilter}
               onChange={(e) => setViolationFilter(e.target.value)}
+              aria-label="Filter violations by status"
               className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All</option>
@@ -359,7 +360,7 @@ export default function Compliance() {
                   <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
                     <div
                       className={`h-full ${getComplianceScoreBg(completionRate)} transition-all duration-500`}
-                      style={{ width: `${completionRate}%` }}
+                      style={{ '--progress-width': `${completionRate}%`, width: 'var(--progress-width)' } as React.CSSProperties}
                     />
                   </div>
                   <p className="text-sm text-gray-500">

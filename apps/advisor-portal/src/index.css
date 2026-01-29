@@ -73,3 +73,13 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--text-tertiary));
 }
+
+/* Lane color indicator - uses CSS custom property for dynamic colors */
+.lane-color-indicator {
+  background-color: var(--lane-color);
+}
+
+/* Lane button - uses CSS custom property for dynamic background when selected */
+.lane-button-selected {
+  background-color: var(--lane-color);
+}

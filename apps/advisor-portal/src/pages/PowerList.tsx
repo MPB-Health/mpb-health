@@ -124,24 +124,24 @@ export default function PowerList() {
         >
           All Lanes
         </button>
-        {lanes.map((lane) => (
-          <button
-            key={lane.id}
-            onClick={() => setSelectedLane(lane.id)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center space-x-2 ${
-              selectedLane === lane.id
-                ? 'text-white'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-            }`}
-            style={selectedLane === lane.id ? { backgroundColor: lane.color } : undefined}
-          >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: lane.color }}
-            />
-            <span>{lane.name}</span>
-          </button>
-        ))}
+        {lanes.map((lane) => {
+          const laneStyle = { '--lane-color': lane.color } as React.CSSProperties;
+          return (
+            <button
+              key={lane.id}
+              onClick={() => setSelectedLane(lane.id)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center space-x-2 ${
+                selectedLane === lane.id
+                  ? 'text-white lane-button-selected'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+              }`}
+              style={laneStyle}
+            >
+              <span className="w-2 h-2 rounded-full lane-color-indicator" />
+              <span>{lane.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Items list */}
@@ -226,19 +226,20 @@ export default function PowerList() {
               Select the lane to move this item to:
             </p>
             <div className="space-y-2">
-              {lanes.map((lane) => (
-                <button
-                  key={lane.id}
-                  onClick={() => confirmMove(lane.id)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 rounded-lg flex items-center space-x-3"
-                >
-                  <span
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: lane.color }}
-                  />
-                  <span>{lane.name}</span>
-                </button>
-              ))}
+              {lanes.map((lane) => {
+                const laneStyle = { '--lane-color': lane.color } as React.CSSProperties;
+                return (
+                  <button
+                    key={lane.id}
+                    onClick={() => confirmMove(lane.id)}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 rounded-lg flex items-center space-x-3"
+                    style={laneStyle}
+                  >
+                    <span className="w-3 h-3 rounded-full lane-color-indicator" />
+                    <span>{lane.name}</span>
+                  </button>
+                );
+              })}
             </div>
             <button
               onClick={() => setShowMoveModal(null)}

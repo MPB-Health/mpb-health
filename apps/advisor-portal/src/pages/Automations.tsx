@@ -225,6 +225,7 @@ export default function Automations() {
             <select
               value={triggerFilter}
               onChange={(e) => setTriggerFilter(e.target.value)}
+              aria-label="Filter by trigger type"
               className="bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-sm text-neutral-700"
             >
               <option value="all">All Triggers</option>
@@ -352,6 +353,7 @@ export default function Automations() {
                     <div className="relative group">
                       <button
                         onClick={(e) => e.stopPropagation()}
+                        aria-label="More actions"
                         className="p-2 hover:bg-neutral-100 rounded-lg"
                       >
                         <MoreVertical className="w-4 h-4 text-neutral-400" />
@@ -409,6 +411,7 @@ export default function Automations() {
                 </div>
                 <button
                   onClick={() => setShowTemplates(false)}
+                  aria-label="Close templates modal"
                   className="p-2 hover:bg-neutral-100 rounded-lg"
                 >
                   <XCircle className="w-5 h-5 text-neutral-400" />

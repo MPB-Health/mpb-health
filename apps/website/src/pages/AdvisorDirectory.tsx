@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Search, Users, MapPin, X, ChevronDown } from 'lucide-react';
 import { AdvisorCard } from '../components/advisor/AdvisorCard';
 import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import {
   getAdvisors,
   getUniqueStates,

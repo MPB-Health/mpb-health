@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import * as Icons from 'lucide-react';
 import { Clock, Share2, ArrowRight } from 'lucide-react';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { getEmployerForms } from '../config/forms.config';
 
 export default function EmployerFormsIndex() {

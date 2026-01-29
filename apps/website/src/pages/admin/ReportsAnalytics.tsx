@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 
 interface ReportMetric {

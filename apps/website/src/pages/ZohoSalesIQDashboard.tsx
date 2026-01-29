@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useZohoSalesIQ } from '../lib/zohoSalesIQ';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 
 interface ErrorLog {
   id: string;

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { ShieldOff } from "lucide-react";
 
 export default function Forbidden() {

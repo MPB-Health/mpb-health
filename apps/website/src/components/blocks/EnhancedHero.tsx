@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Play, Star } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { typography } from '../../lib/typography';
 import HeroCalculator from '../HeroCalculator';
 import { AffiliateProvider } from '../AffiliateProvider';

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/Accordion';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { Phone } from 'lucide-react';
 
 const FAQ: React.FC = () => {

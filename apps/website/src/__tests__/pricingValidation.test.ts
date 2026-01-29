@@ -7,7 +7,7 @@ describe('CSV Pricing Validation', () => {
     it('should return correct price for Member Only', () => {
       const result = lookupPrice({
         planId: 'essentials',
-        householdType: 'individual',
+        householdType: 'member-only',
         primaryAge: 35,
         primaryTobacco: false,
       });
@@ -33,7 +33,7 @@ describe('CSV Pricing Validation', () => {
     it('should return correct price for $1250 IUA, age 25', () => {
       const result = lookupPrice({
         planId: 'care-plus',
-        householdType: 'individual',
+        householdType: 'member-only',
         primaryAge: 25,
         benefitTier: '3281',
         primaryTobacco: false,
@@ -47,7 +47,7 @@ describe('CSV Pricing Validation', () => {
     it('should return correct price for $2500 IUA, age 35', () => {
       const result = lookupPrice({
         planId: 'care-plus',
-        householdType: 'individual',
+        householdType: 'member-only',
         primaryAge: 35,
         benefitTier: '3279',
         primaryTobacco: false,
@@ -61,7 +61,7 @@ describe('CSV Pricing Validation', () => {
     it('should apply tobacco surcharge correctly', () => {
       const result = lookupPrice({
         planId: 'care-plus',
-        householdType: 'individual',
+        householdType: 'member-only',
         primaryAge: 25,
         benefitTier: '3281',
         primaryTobacco: true,
@@ -75,7 +75,7 @@ describe('CSV Pricing Validation', () => {
     it('should return correct price for couple with $5000 IUA', () => {
       const result = lookupPrice({
         planId: 'care-plus',
-        householdType: 'couple',
+        householdType: 'member-spouse',
         primaryAge: 35,
         spouseAge: 32,
         benefitTier: '3286',
@@ -92,7 +92,7 @@ describe('CSV Pricing Validation', () => {
     it('should return correct price for $1250 IUA, age 55', () => {
       const result = lookupPrice({
         planId: 'direct',
-        householdType: 'individual',
+        householdType: 'member-only',
         primaryAge: 55,
         benefitTier: '3281',
         primaryTobacco: false,
@@ -105,7 +105,7 @@ describe('CSV Pricing Validation', () => {
     it('should apply enrollment fee correctly', () => {
       const result = lookupPrice({
         planId: 'direct',
-        householdType: 'individual',
+        householdType: 'member-only',
         primaryAge: 25,
         benefitTier: '3278',
         primaryTobacco: false,
@@ -121,7 +121,7 @@ describe('CSV Pricing Validation', () => {
     it('should return correct price for $2500 IUA, age 45', () => {
       const result = lookupPrice({
         planId: 'secure-hsa',
-        householdType: 'individual',
+        householdType: 'member-only',
         primaryAge: 45,
         benefitTier: '3279',
         primaryTobacco: false,
@@ -154,7 +154,7 @@ describe('CSV Pricing Validation', () => {
     it('should calculate rate through rate engine', () => {
       const result = estimateMonthly({
         state: 'FL',
-        householdType: 'individual',
+        householdType: 'member-only',
         primaryAge: 35,
         dependentsCount: 0,
         primaryTobacco: false,
@@ -170,7 +170,7 @@ describe('CSV Pricing Validation', () => {
     it('should calculate family rate with tobacco', () => {
       const result = estimateMonthly({
         state: 'TX',
-        householdType: 'couple',
+        householdType: 'member-spouse',
         primaryAge: 40,
         spouseAge: 38,
         dependentsCount: 0,

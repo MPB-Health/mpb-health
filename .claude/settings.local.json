@@ -8,7 +8,9 @@
       "Bash(pnpm --filter @mpbhealth/advisor-core build:*)",
       "Bash(pnpm:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx supabase db push:*)",
+      "Bash(npx supabase:*)"
     ]
   }
 }

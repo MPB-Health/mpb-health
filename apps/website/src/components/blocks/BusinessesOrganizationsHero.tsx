@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Play, Shield, TrendingDown, CheckCircle, Star, Phone, X, BadgeCheck, Building2, UserCheck, Clock, LucideIcon, ChevronRight } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { siteMediaService } from '../../lib/siteMediaService';
 
 // Extract benefit item into its own component to properly use hooks

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Plus, Edit2, Trash2, Eye, EyeOff, Save, X, MoveUp, MoveDown, HelpCircle } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
 import { supabase } from '../../lib/supabase';

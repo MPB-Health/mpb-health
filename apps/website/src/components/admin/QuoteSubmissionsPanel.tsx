@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { RefreshCw, CheckCircle, XCircle, Clock, AlertCircle, ExternalLink, ChevronDown, ChevronUp, User, Shield, DollarSign, Globe } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 
 interface FormDataFields {

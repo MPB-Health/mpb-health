@@ -73,6 +73,11 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       const advisorProfile = await profileService.getProfile(session.user.id);
       setProfile(advisorProfile);
     } catch (err) {
+      // Ignore AbortError from Web Locks API - these are benign and occur during navigation
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.debug('[AdvisorContext] Session check aborted (likely due to navigation)');
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Failed to load profile');
     } finally {
       setLoading(false);

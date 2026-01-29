@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Calendar, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { supabase } from '../../lib/supabase';
 
 interface AnalyticsEntry {

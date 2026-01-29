@@ -16,7 +16,7 @@ interface AdvisorCardProps {
 export const AdvisorCard: React.FC<AdvisorCardProps> = ({ advisor }) => {
   const displayName = getAdvisorDisplayName(advisor);
   const fullAddress = getAdvisorFullAddress(advisor);
-  const primaryPhone = formatPhoneNumber(advisor.phone_1 || advisor.phone);
+  const primaryPhone = formatPhoneNumber(advisor.phone_1);
   const secondaryPhone = formatPhoneNumber(advisor.phone_2);
 
   // Get initials for avatar

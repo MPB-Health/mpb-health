@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { FileText, Download, ExternalLink } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 import { Card, CardContent } from './ui/Card';
 
 interface HandbookViewerProps {

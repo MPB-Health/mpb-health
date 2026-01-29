@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, Phone, MessageCircle, Shield } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 const FinalCTA: React.FC = () => {
   const benefits = [

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, X, Calendar } from 'lucide-react';
 import type { LeadFilters as LeadFiltersType, PipelineStage } from '../../../lib/crmService';
 import { crmService } from '../../../lib/crmService';
-import { Button } from '../../ui/Button';
+import { Button } from '../../ui/button';
 import { cn } from '../../../lib/utils';
 
 interface LeadFiltersProps {

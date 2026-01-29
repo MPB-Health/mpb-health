@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Check, Info, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import type { PlanWithFeatures } from '../../lib/plansService';
 import { lookupPrice } from '../../lib/pricingService';
 

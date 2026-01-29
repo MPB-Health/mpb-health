@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, CheckCircle2, AlertCircle, ArrowRight, Calculator, Phone } from 'lucide-react';
 import { HealthcarePlanCategoryWithDetails } from '../lib/supabase';
 import { getPlanCategoryBySlug } from '../lib/planCategoryService';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/Card';
 
 const PlanCategoryDetail: React.FC = () => {

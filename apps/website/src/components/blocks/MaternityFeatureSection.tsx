@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, Check, Clock } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Card } from '../ui/Card';
 import { maternityDetails } from '../../data/benefitsData';
 import { trackEvent } from '../../lib/analytics';

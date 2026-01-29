@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, PiggyBank, CheckCircle2, ArrowRight, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface PathData {
   id: string;

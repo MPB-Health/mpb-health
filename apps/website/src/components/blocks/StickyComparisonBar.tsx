@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUp, GitCompare, X } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface StickyComparisonBarProps {
   selectedPlans: string[];

@@ -18,7 +18,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
 import { cn } from '../../lib/utils';
 import { AdvisorMeeting, MeetingResource } from '../../lib/advisorMeetingService';

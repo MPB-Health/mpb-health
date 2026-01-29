@@ -7,7 +7,7 @@ import { useResources } from '../hooks/useResources';
 import { ResourceFilters as IResourceFilters } from '../lib/supabase';
 import { ResourceFilters } from '../components/resources/ResourceFilters';
 import { ResourceCard } from '../components/resources/ResourceCard';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 
 export const ResourceLibrary: React.FC = () => {
   const [filters, setFilters] = useState<IResourceFilters>({

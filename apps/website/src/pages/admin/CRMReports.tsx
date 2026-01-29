@@ -15,7 +15,7 @@ import {
 import { SEOHead } from '../../components/SEOHead';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { crmService } from '../../lib/crmService';
 import { aiTaskClusterService } from '../../lib/aiTaskClusterService';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Input } from '../ui/Input';
 import { ProgressDots } from './ProgressDots';
 import { TypingIndicator } from './TypingIndicator';

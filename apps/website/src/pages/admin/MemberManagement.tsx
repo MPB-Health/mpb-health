@@ -5,7 +5,7 @@ import { Search, Filter, Download, Eye, Edit, MoreVertical, CheckCircle, XCircle
 import { supabase } from '../../lib/supabase';
 import type { MemberProfile } from '../../types/memberPortal';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 

@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { memberPortalService } from '../../lib/memberPortalService';
 import type { Claim } from '../../types/memberPortal';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 
 const Claims: React.FC = () => {
   const { user } = useAuth();

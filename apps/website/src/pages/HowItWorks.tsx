@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { HowItWorks as HowItWorksAnimation } from '../components/blocks/HowItWorks';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/Accordion';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import {
   UserPlus,
   DollarSign,

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Save, Code, AlertCircle, Trash2 } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { analyticsTrackingService, TrackingPlatform, TrackingSnippet } from '../../lib/analyticsTrackingService';
 
 interface EditTrackingSnippetModalProps {

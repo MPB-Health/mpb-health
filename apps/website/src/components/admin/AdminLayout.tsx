@@ -109,12 +109,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
       // Helper to safely query tables that might not exist
       const safeQuery = async <T,>(
-        query: Promise<{ data: T[] | null; error: any; count: number | null }>
+        query: PromiseLike<{ data: T[] | null; error: any; count: number | null }>
       ): Promise<{ data: T[] | null; count: number | null }> => {
         try {
           const result = await query;
           // If table doesn't exist in schema cache, return empty result silently
-          if (result.error?.message?.includes('schema cache') || 
+          if (result.error?.message?.includes('schema cache') ||
               result.error?.code === 'PGRST204' ||
               result.error?.code === 'PGRST205') {
             return { data: [], count: 0 };

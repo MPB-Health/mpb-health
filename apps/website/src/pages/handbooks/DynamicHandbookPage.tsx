@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { Loader2, BookOpen, ArrowLeft } from 'lucide-react';
 import HandbookViewer from '../../components/HandbookViewer';
 import { handbooksService, type HandbookRecord } from '../../lib/handbooksService';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 
 const DynamicHandbookPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();

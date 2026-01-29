@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Clock, Phone, CheckCircle } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 
 const GetAQuote: React.FC = () => {
   const formContainerRef = useRef<HTMLDivElement>(null);

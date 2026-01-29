@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Download, Calendar, TrendingUp, Users, Eye, MousePointerClick, DollarSign, Plus } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { adminAnalyticsService, SiteAnalytics } from '../../lib/adminAnalyticsService';
 import { AnalyticsDataEntryPanel } from './AnalyticsDataEntryPanel';
 

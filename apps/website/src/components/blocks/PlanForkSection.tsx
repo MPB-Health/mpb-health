@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Check, Users, Stethoscope, PiggyBank } from 'lucide-react';

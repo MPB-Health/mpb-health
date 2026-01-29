@@ -10,7 +10,7 @@ import { CalculatorCTA } from '../components/blocks/CalculatorCTA';
 import { EnrollmentFAQ } from '../components/blocks/EnrollmentFAQ';
 import { EnrollmentTrust } from '../components/blocks/EnrollmentTrust';
 import { AlertCircle, ArrowRight } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 
 export default function Enrollment() {
   const navigate = useNavigate();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Plus, Code, AlertCircle } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { analyticsTrackingService, TrackingPlatform } from '../../lib/analyticsTrackingService';
 import { useAuth } from '../../contexts/AuthContext';
 

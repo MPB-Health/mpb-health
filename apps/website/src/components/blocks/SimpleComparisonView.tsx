@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Check, Minus } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import type { PlanWithFeatures } from '../../lib/plansService';
 
 interface SimpleComparisonViewProps {

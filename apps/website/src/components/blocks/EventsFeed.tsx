@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, Users, MapPin, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
 
 const EventsFeed = () => {

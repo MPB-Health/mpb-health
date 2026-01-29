@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { PlusIcon, TrashIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { advisorContentService, AdvisorContent, AdvisorContentCategory } from '../../lib/advisorContentService';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';

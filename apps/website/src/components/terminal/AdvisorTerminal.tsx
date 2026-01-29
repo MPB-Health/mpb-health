@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { Terminal, Send, Loader2, X, Minimize2, HelpCircle } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { useTerminal } from '../../contexts/TerminalContext';
 
 interface TerminalLine {

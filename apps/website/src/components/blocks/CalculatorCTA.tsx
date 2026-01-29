@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Calculator, Info } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { supabase } from '../../lib/supabase';

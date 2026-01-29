@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import type { HowItWorksStep } from '../../lib/onboarding/howItWorksSteps.tsx';
 
 interface MobileJourneyProps {

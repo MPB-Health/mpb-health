@@ -4,7 +4,7 @@ import { ArrowRight, UserPlus, LogIn } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { LoginLayout } from '@mpbhealth/ui';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface UnifiedLoginPageProps {
   portalType: 'member' | 'advisor' | 'admin';

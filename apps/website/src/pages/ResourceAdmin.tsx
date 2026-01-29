@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Plus, Edit2, Trash2, Eye, EyeOff, Star, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase, Resource, ResourceType, TargetAudience, ResourceTopic } from '../lib/supabase';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { Select } from '../components/ui/Select';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { RichTextEditor } from '../components/admin/RichTextEditor';

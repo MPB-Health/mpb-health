@@ -3,7 +3,7 @@ import { CheckCircle2, Info, Users, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Tooltip } from '../ui/Tooltip';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { lookupPrice } from '../../lib/pricingService';
 
 interface PlanFeature {

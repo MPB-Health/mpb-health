@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import type { LeadActivity } from '../../../lib/crmService';
 import { crmService } from '../../../lib/crmService';
-import { Button } from '../../ui/Button';
+import { Button } from '../../ui/button';
 import { cn } from '../../../lib/utils';
 
 interface LeadActivityTimelineProps {

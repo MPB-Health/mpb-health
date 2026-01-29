@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, CheckCircle2, Phone } from 'lucide-react';
 import { voluntaryBenefits } from '../data/voluntaryBenefitsData';
 import { BenefitInterestCTA } from '../components/blocks/BenefitInterestCTA';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 
 export const BenefitDetail: React.FC = () => {
   const { benefitId } = useParams<{ benefitId: string }>();

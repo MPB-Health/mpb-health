@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'primary' | 'success' | 'accent';
+  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'accent' | 'outline';
   children: React.ReactNode;
 }
 
@@ -16,8 +16,10 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
           {
             'bg-slate-100 text-slate-800': variant === 'default',
             'bg-primary text-primary-foreground': variant === 'primary',
+            'bg-secondary text-secondary-foreground': variant === 'secondary',
             'bg-success text-success-foreground': variant === 'success',
             'bg-accent text-accent-foreground': variant === 'accent',
+            'border border-current bg-transparent': variant === 'outline',
           },
           className
         )}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, CheckCircle2, MinusCircle } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface ComparisonFeature {
   category: string;

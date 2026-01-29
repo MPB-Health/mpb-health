@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check, Star, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
 import { formatCurrency } from '../../lib/utils';
 

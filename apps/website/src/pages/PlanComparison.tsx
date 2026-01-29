@@ -4,7 +4,7 @@ import { PlanComparisonTable } from '@/components/blocks/PlanComparisonTable';
 import { PlanComparisonGuide } from '@/components/blocks/PlanComparisonGuide';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/Label';
 import { Shield, HeartPulse, Building2, Briefcase, Heart, Printer, FileText } from 'lucide-react';
 

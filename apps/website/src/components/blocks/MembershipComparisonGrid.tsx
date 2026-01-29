@@ -13,7 +13,7 @@ import {
   Building2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
 import { Select } from '../ui/Select';
 import { PlanEstimate, AllMembershipsEstimate } from '../../lib/newRateEngine';

@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Shield, AlertTriangle, CheckCircle2, Clock, Eye, EyeOff } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Label } from '../ui/Label';
 import { secureAuthService } from '../../lib/secureAuthService';
 import { mfaService } from '../../lib/mfaService';

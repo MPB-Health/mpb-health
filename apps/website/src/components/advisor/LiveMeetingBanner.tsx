@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Video, Users, Play, X } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
 import { AdvisorMeeting, getActiveMeeting } from '../../lib/advisorMeetingService';
 import { cn } from '../../lib/utils';

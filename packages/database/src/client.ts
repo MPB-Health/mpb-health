@@ -43,6 +43,19 @@ if (!hasValidConfig) {
   });
 }
 
+// No-op lock function to bypass Web Locks API issues
+// The Web Locks API can cause deadlocks on some devices (especially Chrome Android)
+// when locks are not properly released, causing "signal is aborted without reason" errors.
+// This workaround skips the locking mechanism entirely.
+// See: https://github.com/supabase/supabase-js/issues/1594
+const noOpLock = async <R>(
+  _name: string,
+  _acquireTimeout: number,
+  fn: () => Promise<R>
+): Promise<R> => {
+  return await fn();
+};
+
 export const supabase: SupabaseClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
@@ -52,6 +65,9 @@ export const supabase: SupabaseClient = createClient(
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'mpb-auth-token',
+      // Use no-op lock to prevent Web Locks API deadlocks
+      // This is safe for single-tab usage; multi-tab scenarios may have race conditions
+      lock: noOpLock,
     },
     global: {
       headers: {

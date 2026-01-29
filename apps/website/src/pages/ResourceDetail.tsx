@@ -16,7 +16,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useResourceDetail, incrementDownloadCount } from '../hooks/useResources';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/Badge';
 import { ResourceCard } from '../components/resources/ResourceCard';
 import { useResources } from '../hooks/useResources';

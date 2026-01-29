@@ -9,7 +9,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { analyticsTrackingService } from '../../lib/analyticsTrackingService';
 
 export const IntegrationHealthMonitor: React.FC = () => {

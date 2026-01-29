@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, ArrowRight, Clock, BookOpen, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { advisorAuthService, OnboardingStep, OnboardingProgress, TrainingModule, TrainingProgress, AdvisorProfile } from '../../lib/advisorAuthService';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';

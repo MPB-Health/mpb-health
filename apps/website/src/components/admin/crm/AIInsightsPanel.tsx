@@ -19,7 +19,7 @@ import {
   AlertCircle,
   Zap,
 } from 'lucide-react';
-import { Button } from '../../ui/Button';
+import { Button } from '../../ui/button';
 import { aiTaskClusterService, type AILeadInsights, type FollowUpSuggestion } from '../../../lib/aiTaskClusterService';
 import type { Lead } from '../../../lib/crmService';
 import { cn } from '../../../lib/utils';

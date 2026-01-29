@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Save, Globe, Plus } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { adminAnalyticsService, SEOMetadata } from '../../lib/adminAnalyticsService';
 import { useAuth } from '../../contexts/AuthContext';
 

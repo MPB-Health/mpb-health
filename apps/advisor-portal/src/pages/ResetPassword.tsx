@@ -17,9 +17,18 @@ export default function ResetPassword() {
   // Check if we have a valid session from the reset link
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Invalid or expired reset link');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast.error('Invalid or expired reset link');
+          navigate('/forgot-password');
+        }
+      } catch (err) {
+        // Ignore AbortError from Web Locks API - these are benign
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        toast.error('Failed to verify session');
         navigate('/forgot-password');
       }
     };

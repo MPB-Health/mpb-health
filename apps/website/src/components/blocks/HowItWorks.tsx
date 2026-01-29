@@ -3,7 +3,7 @@ import { TimelineRail } from './TimelineRail';
 import { StepPanel } from './StepPanel';
 import { MobileJourney } from './MobileJourney';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 export function HowItWorks() {
   const {

@@ -4,7 +4,7 @@ import { ArrowLeftIcon, BookmarkIcon, CalendarIcon, EyeIcon } from 'lucide-react
 import { advisorContentService, AdvisorContent } from '../../lib/advisorContentService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/Badge';
 
 export default function AdvisorContentDetail() {

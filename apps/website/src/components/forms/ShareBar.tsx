@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link2, Mail, Share2, Check } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface ShareBarProps {
   url: string;

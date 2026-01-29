@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Phone } from 'lucide-react';
 import { voluntaryBenefits, voluntaryBenefitsOverview } from '../data/voluntaryBenefitsData';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 
 export const Benefits: React.FC = () => {
   return (

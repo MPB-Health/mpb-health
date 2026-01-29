@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { CleanPricingSection } from '../components/blocks/CleanPricingSection';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { getSEOForPage } from '../lib/seoService';
 import { generateAllPlansSchema, generateOrganizationSchema } from '../lib/schemaMarkup';
 

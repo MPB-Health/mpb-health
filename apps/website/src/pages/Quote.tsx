@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LeadForm } from '../components/forms/LeadForm';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 
 const Quote: React.FC = () => {
   const handleFormSubmit = (formData: any) => {

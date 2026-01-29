@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { supabase, BlogArticle } from '../../lib/supabase';
 import { adminAnalyticsService } from '../../lib/adminAnalyticsService';
 

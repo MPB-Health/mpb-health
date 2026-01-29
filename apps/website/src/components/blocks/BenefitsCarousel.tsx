@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { useBenefits } from '../../hooks/useBenefits';
 import { trackEvent } from '../../lib/analytics';
 

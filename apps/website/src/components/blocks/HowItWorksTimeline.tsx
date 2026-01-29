@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { ChevronLeft, ChevronRight, Pause, Play, UserPlus, DollarSign, CreditCard, Stethoscope, FileText, Upload, Users, HeartHandshake } from 'lucide-react';
 import { GlossaryTooltip } from './GlossaryTooltip';
 

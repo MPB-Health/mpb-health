@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Download, Search, TrendingUp, Users, UserX, AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { getAllSubscribers, NewsletterSubscription } from '../../lib/newsletterService';
 import { bulkSyncToMailchimp } from '../../lib/mailchimpService';
 import { SEOHead } from '../../components/SEOHead';

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 export interface LearningPath {
   id: string;

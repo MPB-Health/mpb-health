@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 
   -- Participant info
   lead_id UUID REFERENCES zoho_lead_submissions(id) ON DELETE SET NULL,
-  contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+  contact_id UUID, -- Placeholder for future contacts table
 
   -- Contact details (denormalized for quick access)
   participant_name TEXT NOT NULL,
@@ -39,11 +39,11 @@ CREATE TABLE IF NOT EXISTS conversations (
 );
 
 -- Indexes for conversations
-CREATE INDEX idx_conversations_org_id ON conversations(org_id);
-CREATE INDEX idx_conversations_lead_id ON conversations(lead_id);
-CREATE INDEX idx_conversations_assigned_to ON conversations(assigned_to);
-CREATE INDEX idx_conversations_last_message_at ON conversations(last_message_at DESC);
-CREATE INDEX idx_conversations_unread ON conversations(org_id, unread_count) WHERE unread_count > 0;
+CREATE INDEX IF NOT EXISTS idx_conversations_org_id ON conversations(org_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_lead_id ON conversations(lead_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_assigned_to ON conversations(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_conversations_last_message_at ON conversations(last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_conversations_unread ON conversations(org_id, unread_count) WHERE unread_count > 0;
 
 -- RLS for conversations
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
@@ -116,11 +116,11 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 -- Indexes for messages
-CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
-CREATE INDEX idx_messages_org_id ON messages(org_id);
-CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
-CREATE INDEX idx_messages_external_id ON messages(external_id) WHERE external_id IS NOT NULL;
-CREATE INDEX idx_messages_status ON messages(status) WHERE status IN ('pending', 'queued');
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_org_id ON messages(org_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_external_id ON messages(external_id) WHERE external_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status) WHERE status IN ('pending', 'queued');
 
 -- RLS for messages
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -176,9 +176,9 @@ CREATE TABLE IF NOT EXISTS message_templates (
 );
 
 -- Indexes for templates
-CREATE INDEX idx_message_templates_org_id ON message_templates(org_id);
-CREATE INDEX idx_message_templates_channel ON message_templates(org_id, channel);
-CREATE INDEX idx_message_templates_category ON message_templates(org_id, category);
+CREATE INDEX IF NOT EXISTS idx_message_templates_org_id ON message_templates(org_id);
+CREATE INDEX IF NOT EXISTS idx_message_templates_channel ON message_templates(org_id, channel);
+CREATE INDEX IF NOT EXISTS idx_message_templates_category ON message_templates(org_id, category);
 
 -- RLS for templates
 ALTER TABLE message_templates ENABLE ROW LEVEL SECURITY;
@@ -255,9 +255,9 @@ CREATE TABLE IF NOT EXISTS sequences (
 );
 
 -- Indexes for sequences
-CREATE INDEX idx_sequences_org_id ON sequences(org_id);
-CREATE INDEX idx_sequences_status ON sequences(org_id, status);
-CREATE INDEX idx_sequences_trigger_type ON sequences(trigger_type) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_sequences_org_id ON sequences(org_id);
+CREATE INDEX IF NOT EXISTS idx_sequences_status ON sequences(org_id, status);
+CREATE INDEX IF NOT EXISTS idx_sequences_trigger_type ON sequences(trigger_type) WHERE status = 'active';
 
 -- RLS for sequences
 ALTER TABLE sequences ENABLE ROW LEVEL SECURITY;
@@ -338,7 +338,7 @@ CREATE TABLE IF NOT EXISTS sequence_steps (
 );
 
 -- Indexes for sequence_steps
-CREATE INDEX idx_sequence_steps_sequence_id ON sequence_steps(sequence_id);
+CREATE INDEX IF NOT EXISTS idx_sequence_steps_sequence_id ON sequence_steps(sequence_id);
 
 -- RLS for sequence_steps (inherits from sequence)
 ALTER TABLE sequence_steps ENABLE ROW LEVEL SECURITY;
@@ -406,10 +406,10 @@ CREATE TABLE IF NOT EXISTS sequence_enrollments (
 );
 
 -- Indexes for enrollments
-CREATE INDEX idx_sequence_enrollments_sequence_id ON sequence_enrollments(sequence_id);
-CREATE INDEX idx_sequence_enrollments_lead_id ON sequence_enrollments(lead_id);
-CREATE INDEX idx_sequence_enrollments_status ON sequence_enrollments(status) WHERE status = 'active';
-CREATE INDEX idx_sequence_enrollments_next_step ON sequence_enrollments(next_step_at)
+CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_sequence_id ON sequence_enrollments(sequence_id);
+CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_lead_id ON sequence_enrollments(lead_id);
+CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_status ON sequence_enrollments(status) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_next_step ON sequence_enrollments(next_step_at)
   WHERE status = 'active' AND next_step_at IS NOT NULL;
 
 -- RLS for enrollments

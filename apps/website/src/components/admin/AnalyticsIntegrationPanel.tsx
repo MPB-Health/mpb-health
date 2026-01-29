@@ -12,7 +12,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { analyticsTrackingService, TrackingSnippet, TrackingPlatform } from '../../lib/analyticsTrackingService';
 import { AddTrackingSnippetModal } from './AddTrackingSnippetModal';
 import { EditTrackingSnippetModal } from './EditTrackingSnippetModal';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, Shield, Heart, Users } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
 import { trackAndNavigateToQuote } from '../../lib/leadRoutingTracker';
 

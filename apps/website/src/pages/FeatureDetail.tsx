@@ -3,7 +3,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, CheckCircle2, Phone, ArrowRight, Sparkles } from 'lucide-react';
 import { healthcareFeatures } from '../data/healthcareFeaturesData';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { FlowShell } from '../components/onboarding/FlowShell';
 
 export const FeatureDetail: React.FC = () => {

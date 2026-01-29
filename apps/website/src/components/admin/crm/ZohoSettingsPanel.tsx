@@ -9,7 +9,7 @@ import {
   Link2,
   Unlink
 } from 'lucide-react';
-import { Button } from '../../ui/Button';
+import { Button } from '../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
 import { crmService } from '../../../lib/crmService';
 import { cn } from '../../../lib/utils';

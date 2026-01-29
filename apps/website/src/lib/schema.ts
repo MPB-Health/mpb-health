@@ -80,7 +80,22 @@ export const rateCalculatorSchema = z.object({
   }
 );
 
-export type RateCalculatorInput = z.infer<typeof rateCalculatorSchema>;
+// Inferred type from zod (used for form validation)
+export type RateCalculatorFormData = z.infer<typeof rateCalculatorSchema>;
+
+// Explicit input type for rate engine functions (makes currentMonthly truly optional)
+export interface RateCalculatorInput {
+  state: string;
+  householdType: MembershipType;
+  primaryAge: number;
+  spouseAge?: number | null;
+  dependentsCount: number;
+  primaryTobacco: boolean;
+  spouseTobacco: boolean;
+  selectedPlan: 'essentials' | 'mec-essentials' | 'care-plus' | 'direct' | 'secure-hsa';
+  benefitTier?: string;
+  currentMonthly?: number;
+}
 
 // Schema for comparison calculator (no plan/tier selection required)
 // Uses the same MEMBERSHIP_TYPES as the rate calculator for consistency

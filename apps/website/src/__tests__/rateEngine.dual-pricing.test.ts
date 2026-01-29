@@ -5,7 +5,7 @@ import { RateCalculatorInput } from '../lib/schema';
 describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', () => {
   const baseInput: RateCalculatorInput = {
     state: 'FL',
-    householdType: 'individual',
+    householdType: 'member-only',
     primaryAge: 35,
     dependentsCount: 0,
     primaryTobacco: false,
@@ -56,7 +56,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...carePlusInput,
           primaryAge: 35,
-          householdType: 'couple',
+          householdType: 'member-spouse',
           spouseAge: 32,
           benefitTier: '1250'
         }, opts);
@@ -67,7 +67,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...carePlusInput,
           primaryAge: 55,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 52,
           dependentsCount: 2,
           benefitTier: '1250'
@@ -86,7 +86,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...carePlusInput,
           primaryAge: 40,
-          householdType: 'couple',
+          householdType: 'member-spouse',
           spouseAge: 38,
           benefitTier: '2500'
         }, opts);
@@ -97,7 +97,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...carePlusInput,
           primaryAge: 60,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 58,
           dependentsCount: 1,
           benefitTier: '2500'
@@ -116,7 +116,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...carePlusInput,
           primaryAge: 35,
-          householdType: 'family',
+          householdType: 'member-family',
           dependentsCount: 1,
           benefitTier: '5000'
         }, opts);
@@ -127,7 +127,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...carePlusInput,
           primaryAge: 62,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 60,
           dependentsCount: 1,
           benefitTier: '5000'
@@ -151,7 +151,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...directInput,
           primaryAge: 35,
-          householdType: 'couple',
+          householdType: 'member-spouse',
           spouseAge: 32,
           benefitTier: '1250'
         }, opts);
@@ -162,7 +162,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...directInput,
           primaryAge: 55,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 52,
           dependentsCount: 2,
           benefitTier: '1250'
@@ -181,7 +181,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...directInput,
           primaryAge: 40,
-          householdType: 'couple',
+          householdType: 'member-spouse',
           spouseAge: 38,
           benefitTier: '2500'
         }, opts);
@@ -192,7 +192,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...directInput,
           primaryAge: 60,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 58,
           dependentsCount: 1,
           benefitTier: '2500'
@@ -211,7 +211,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...directInput,
           primaryAge: 35,
-          householdType: 'family',
+          householdType: 'member-family',
           dependentsCount: 1,
           benefitTier: '5000'
         }, opts);
@@ -222,7 +222,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...directInput,
           primaryAge: 62,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 60,
           dependentsCount: 1,
           benefitTier: '5000'
@@ -245,7 +245,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...baseInput,
           primaryAge: 35,
-          householdType: 'couple',
+          householdType: 'member-spouse',
           spouseAge: 32,
           benefitTier: '1250'
         }, opts);
@@ -256,7 +256,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...baseInput,
           primaryAge: 55,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 52,
           dependentsCount: 2,
           benefitTier: '1250'
@@ -275,7 +275,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...baseInput,
           primaryAge: 40,
-          householdType: 'couple',
+          householdType: 'member-spouse',
           spouseAge: 38,
           benefitTier: '2500'
         }, opts);
@@ -286,7 +286,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...baseInput,
           primaryAge: 60,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 58,
           dependentsCount: 1,
           benefitTier: '2500'
@@ -305,7 +305,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...baseInput,
           primaryAge: 35,
-          householdType: 'family',
+          householdType: 'member-family',
           dependentsCount: 1,
           benefitTier: '5000'
         }, opts);
@@ -316,7 +316,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...baseInput,
           primaryAge: 62,
-          householdType: 'family',
+          householdType: 'member-family',
           spouseAge: 60,
           dependentsCount: 1,
           benefitTier: '5000'
@@ -344,7 +344,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
     it('should apply $50 surcharge once for spouse tobacco user', () => {
       const input = {
         ...baseInput,
-        householdType: 'couple' as const,
+        householdType: 'member-spouse' as const,
         spouseAge: 32,
         spouseTobacco: true
       };
@@ -361,7 +361,7 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
     it('should apply $50 surcharge once even when both members use tobacco', () => {
       const input = {
         ...baseInput,
-        householdType: 'couple' as const,
+        householdType: 'member-spouse' as const,
         spouseAge: 32,
         primaryTobacco: true,
         spouseTobacco: true
@@ -446,12 +446,12 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
       const individual = estimateMonthly(baseInput);
       const couple = estimateMonthly({
         ...baseInput,
-        householdType: 'couple',
+        householdType: 'member-spouse',
         spouseAge: 32
       });
       const family = estimateMonthly({
         ...baseInput,
-        householdType: 'family',
+        householdType: 'member-family',
         spouseAge: 32,
         dependentsCount: 2
       });

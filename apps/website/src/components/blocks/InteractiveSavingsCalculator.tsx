@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingDown, Check, X, Award, Users, Calendar, Calculator } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface InteractiveSavingsCalculatorProps {
   defaultTraditional?: number;

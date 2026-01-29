@@ -3,7 +3,7 @@ import { Download, FileText, FileSpreadsheet, X, Check } from 'lucide-react';
 import type { Lead, CRMDashboardStats, PipelineStage } from '../../../lib/crmService';
 import { crmService } from '../../../lib/crmService';
 import { pdfExportService } from '../../../lib/pdfExportService';
-import { Button } from '../../ui/Button';
+import { Button } from '../../ui/button';
 import { cn } from '../../../lib/utils';
 
 interface ExportModalProps {

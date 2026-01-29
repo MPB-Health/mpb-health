@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 

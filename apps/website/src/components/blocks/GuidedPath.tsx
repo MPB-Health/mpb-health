@@ -1,6 +1,6 @@
 import React, { RefObject } from 'react';
 import { Video, Shield, PiggyBank } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface PathOption {
   id: string;

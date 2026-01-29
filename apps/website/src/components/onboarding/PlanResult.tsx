@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
 import { Sparkles, Calculator, Phone, CheckCircle2, ArrowRight } from 'lucide-react';
 import { PlanRecommendation } from '../../lib/onboarding/types';

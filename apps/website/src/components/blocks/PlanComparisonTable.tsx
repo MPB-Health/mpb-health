@@ -1,7 +1,7 @@
 import { usePlanComparison } from '@/hooks/usePlans';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import {
   getAllUniqueCategories,
   getCategoryLabel,

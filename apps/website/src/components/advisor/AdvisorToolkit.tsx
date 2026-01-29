@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import { ChevronDown, ExternalLink, Briefcase, Info } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
 import {
   advisorCMSService,
@@ -14,7 +14,8 @@ import {
 
 // Helper to dynamically render Lucide icons by name
 const DynamicIcon = ({ name, className }: { name: string; className?: string }) => {
-  const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ className?: string }>>)[name] || LucideIcons.Link;
+  const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+  const IconComponent = icons[name] || LucideIcons.Link;
   return <IconComponent className={className} />;
 };
 

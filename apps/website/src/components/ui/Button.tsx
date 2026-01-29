@@ -3,11 +3,12 @@ import { cn } from '../../lib/utils';
 import { trackCTAClick } from '../../lib/analytics';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
+  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   children: React.ReactNode;
   trackingName?: string;
   trackingLocation?: string;
+  asChild?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -40,7 +41,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           'inline-flex items-center justify-center font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-lg',
           {
-            'bg-primary text-white hover:bg-primary/90 active:bg-primary/95 shadow-lg hover:shadow-xl': variant === 'primary',
+            'bg-primary text-white hover:bg-primary/90 active:bg-primary/95 shadow-lg hover:shadow-xl': variant === 'primary' || variant === 'default',
             'bg-accent text-white hover:bg-accent/90 active:bg-accent/95 shadow-lg hover:shadow-xl': variant === 'secondary',
             'hover:bg-neutral-100 hover:text-neutral-900 active:bg-neutral-200': variant === 'ghost',
             'border border-neutral-300 bg-white hover:bg-neutral-50 active:bg-neutral-100 shadow-sm hover:shadow-md': variant === 'outline',

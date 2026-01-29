@@ -26,7 +26,7 @@ import {
 import { SEOHead } from '../../components/SEOHead';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { LeadActivityTimeline } from '../../components/admin/crm/LeadActivityTimeline';
 import { LeadQuickActions } from '../../components/admin/crm/LeadQuickActions';

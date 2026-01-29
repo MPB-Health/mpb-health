@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, Compass, Users, Target, CheckCircle2, Clock, Shield, Heart, Sparkles } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Card } from '../ui/Card';
 
 const TailoredJourney: React.FC = () => {

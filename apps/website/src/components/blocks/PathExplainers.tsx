@@ -2,7 +2,7 @@ import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/Accordion';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface PathExplainerData {
   id: string;

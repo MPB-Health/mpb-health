@@ -113,7 +113,7 @@ export const useDashboardStore = create<DashboardStore>()(
         try {
           const layout = await layoutService.getLayout(orgId);
 
-          if (layout) {
+          if (layout && layout.widgets && layout.widgets.length > 0) {
             set({
               widgets: layout.widgets as WidgetInstance[],
               layoutId: layout.id,
@@ -122,7 +122,7 @@ export const useDashboardStore = create<DashboardStore>()(
               lastSaved: layout.updated_at ? new Date(layout.updated_at) : null,
             });
           } else {
-            // Use default widgets if no layout found
+            // Use default widgets if no layout found or layout is empty
             const defaultWidgets = await layoutService.getDefaultWidgets(orgId);
             set({
               widgets: defaultWidgets,
@@ -133,9 +133,14 @@ export const useDashboardStore = create<DashboardStore>()(
           }
         } catch (error) {
           console.error('Failed to load dashboard layout:', error);
+          // On error, use hardcoded defaults instead of showing an error
+          const defaultWidgets = await layoutService.getDefaultWidgets(orgId);
           set({
+            widgets: defaultWidgets,
+            layoutId: null,
+            layoutName: 'Default',
             isLoading: false,
-            error: 'Failed to load dashboard layout',
+            // Don't set error - just gracefully degrade
           });
         }
       },

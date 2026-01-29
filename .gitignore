@@ -54,3 +54,4 @@ vite.config.js
 vite.config.d.ts
 
 nul
+.vercel

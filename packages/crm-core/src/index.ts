@@ -427,3 +427,39 @@ export type {
   QuoteSubmissionFilters,
 } from './import/importTypes';
 export * from './import';
+
+// Dashboard (Championship Command Center)
+export {
+  DashboardLayoutService,
+  createDashboardLayoutService,
+  DashboardNotesService,
+  createDashboardNotesService,
+  UserGoalsService,
+  createUserGoalsService,
+} from './dashboard';
+export type {
+  // Widget types
+  WidgetSize,
+  WidgetType,
+  WidgetPosition,
+  WidgetInstance,
+  // Layout types
+  DashboardLayout,
+  DashboardLayoutInput,
+  DefaultLayoutTemplate,
+  // Note types
+  NoteColor,
+  DashboardNote,
+  NoteCreateInput,
+  NoteUpdateInput,
+  // Goal types
+  GoalMetricType,
+  GoalPeriod,
+  GoalStatus,
+  UserGoal,
+  GoalCreateInput,
+  GoalUpdateInput,
+  // Service result
+  ServiceResult,
+} from './dashboard';
+export * from './dashboard';

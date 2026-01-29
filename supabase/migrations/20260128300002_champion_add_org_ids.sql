@@ -466,25 +466,30 @@ END $$;
 -- CREATE MEMBERSHIPS FOR EXISTING USERS
 -- Add all existing advisor_profiles users to MPB org
 -- ============================================
-INSERT INTO org_memberships (org_id, user_id, role, status, joined_at)
-SELECT
-  'a0000000-0000-0000-0000-000000000001'::uuid,
-  ap.id,
-  CASE
-    WHEN p.role = 'super_admin' THEN 'owner'
-    WHEN p.role = 'admin' THEN 'admin'
-    ELSE 'advisor'
-  END,
-  'active',
-  COALESCE(ap.created_at, now())
-FROM advisor_profiles ap
-LEFT JOIN profiles p ON p.id = ap.id
-WHERE NOT EXISTS (
-  SELECT 1 FROM org_memberships om
-  WHERE om.org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
-  AND om.user_id = ap.id
-)
-ON CONFLICT (org_id, user_id) DO NOTHING;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'advisor_profiles') THEN
+    INSERT INTO org_memberships (org_id, user_id, role, status, joined_at)
+    SELECT
+      'a0000000-0000-0000-0000-000000000001'::uuid,
+      ap.id,
+      CASE
+        WHEN p.role = 'super_admin' THEN 'owner'
+        WHEN p.role = 'admin' THEN 'admin'
+        ELSE 'advisor'
+      END,
+      'active',
+      COALESCE(ap.created_at, now())
+    FROM advisor_profiles ap
+    LEFT JOIN profiles p ON p.id = ap.id
+    WHERE NOT EXISTS (
+      SELECT 1 FROM org_memberships om
+      WHERE om.org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
+      AND om.user_id = ap.id
+    )
+    ON CONFLICT (org_id, user_id) DO NOTHING;
+  END IF;
+END $$;
 
 -- ============================================
 -- VERIFY MIGRATION

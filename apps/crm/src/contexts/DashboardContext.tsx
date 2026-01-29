@@ -140,7 +140,7 @@ export const useDashboardStore = create<DashboardStore>()(
             layoutId: null,
             layoutName: 'Default',
             isLoading: false,
-            // Don't set error - just gracefully degrade
+            error: null, // Clear any previous error - gracefully degrade
           });
         }
       },

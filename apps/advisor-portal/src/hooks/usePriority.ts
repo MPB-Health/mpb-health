@@ -1,20 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { priorityService, type PowerListItem, type PriorityLane, type PriorityItemWithDetails } from '@mpbhealth/champion-core';
-import { useOrg } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 export function usePowerList() {
-  const { activeOrg } = useOrg();
   const { profile } = useAdvisor();
+  const orgId = profile?.org_id;
   const [items, setItems] = useState<PowerListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!activeOrg?.id) return;
+    if (!orgId) return;
     try {
       setLoading(true);
-      const data = await priorityService.getPowerList(activeOrg.id, profile?.user_id);
+      const data = await priorityService.getPowerList(orgId, profile?.user_id);
       setItems(data);
       setError(null);
     } catch (err) {
@@ -22,7 +21,7 @@ export function usePowerList() {
     } finally {
       setLoading(false);
     }
-  }, [activeOrg?.id, profile?.user_id]);
+  }, [orgId, profile?.user_id]);
 
   useEffect(() => {
     refresh();
@@ -32,16 +31,17 @@ export function usePowerList() {
 }
 
 export function usePriorityLanes() {
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
+  const orgId = profile?.org_id;
   const [lanes, setLanes] = useState<PriorityLane[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!activeOrg?.id) return;
+    if (!orgId) return;
     try {
       setLoading(true);
-      const data = await priorityService.getLanes(activeOrg.id);
+      const data = await priorityService.getLanes(orgId);
       setLanes(data);
       setError(null);
     } catch (err) {
@@ -49,7 +49,7 @@ export function usePriorityLanes() {
     } finally {
       setLoading(false);
     }
-  }, [activeOrg?.id]);
+  }, [orgId]);
 
   useEffect(() => {
     refresh();
@@ -85,8 +85,8 @@ export function useLaneItems(laneId: string | null) {
 }
 
 export function usePriorityStats() {
-  const { activeOrg } = useOrg();
   const { profile } = useAdvisor();
+  const orgId = profile?.org_id;
   const [stats, setStats] = useState<{
     totalItems: number;
     byLane: { laneId: string; laneName: string; count: number }[];
@@ -96,17 +96,17 @@ export function usePriorityStats() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!activeOrg?.id) return;
+    if (!orgId) return;
     try {
       setLoading(true);
-      const data = await priorityService.getStats(activeOrg.id, profile?.user_id);
+      const data = await priorityService.getStats(orgId, profile?.user_id);
       setStats(data);
     } catch (err) {
       console.error('Failed to load priority stats:', err);
     } finally {
       setLoading(false);
     }
-  }, [activeOrg?.id, profile?.user_id]);
+  }, [orgId, profile?.user_id]);
 
   useEffect(() => {
     refresh();
@@ -116,7 +116,8 @@ export function usePriorityStats() {
 }
 
 export function usePriorityActions() {
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
+  const orgId = profile?.org_id;
 
   const snoozeItem = useCallback(async (itemId: string, until: Date, reason?: string) => {
     await priorityService.snoozeItem({ item_id: itemId, until, reason });
@@ -135,14 +136,14 @@ export function usePriorityActions() {
   }, []);
 
   const addToLane = useCallback(async (laneId: string, leadId?: string, contactId?: string, reason?: string) => {
-    if (!activeOrg?.id) throw new Error('No active organization');
-    return priorityService.addToLane(activeOrg.id, {
+    if (!orgId) throw new Error('No active organization');
+    return priorityService.addToLane(orgId, {
       lane_id: laneId,
       lead_id: leadId,
       contact_id: contactId,
       reason,
     });
-  }, [activeOrg?.id]);
+  }, [orgId]);
 
   const recordAction = useCallback(async (itemId: string, nextActionAt?: Date) => {
     await priorityService.recordAction(itemId, nextActionAt);

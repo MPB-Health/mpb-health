@@ -9,7 +9,7 @@ import {
   type Sequence,
   type InboxSummary,
 } from '@mpbhealth/champion-core';
-import { useOrg } from '@mpbhealth/auth';
+import { useAdvisor } from '../contexts/AdvisorContext';
 
 export function useConversations(options: {
   status?: 'active' | 'archived' | 'spam';
@@ -17,16 +17,16 @@ export function useConversations(options: {
   unreadOnly?: boolean;
   search?: string;
 } = {}) {
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
   const [conversations, setConversations] = useState<ConversationWithLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!activeOrg?.id) return;
+    if (!profile?.org_id) return;
     try {
       setLoading(true);
-      const data = await conversationService.getConversations(activeOrg.id, options);
+      const data = await conversationService.getConversations(profile!.org_id, options);
       setConversations(data);
       setError(null);
     } catch (err) {
@@ -34,7 +34,7 @@ export function useConversations(options: {
     } finally {
       setLoading(false);
     }
-  }, [activeOrg?.id, options.status, options.channel, options.unreadOnly, options.search]);
+  }, [profile?.org_id, options.status, options.channel, options.unreadOnly, options.search]);
 
   useEffect(() => {
     refresh();
@@ -42,10 +42,10 @@ export function useConversations(options: {
 
   // Subscribe to realtime updates
   useEffect(() => {
-    if (!activeOrg?.id) return;
+    if (!profile?.org_id) return;
 
     const subscription = conversationService.subscribeToConversations(
-      activeOrg.id,
+      profile!.org_id,
       () => {
         refresh();
       }
@@ -54,7 +54,7 @@ export function useConversations(options: {
     return () => {
       subscription.unsubscribe();
     };
-  }, [activeOrg?.id, refresh]);
+  }, [profile?.org_id, refresh]);
 
   return { conversations, loading, error, refresh };
 }
@@ -112,21 +112,21 @@ export function useConversation(conversationId: string | null) {
 }
 
 export function useInboxSummary() {
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
   const [summary, setSummary] = useState<InboxSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!activeOrg?.id) return;
+    if (!profile?.org_id) return;
     try {
-      const data = await conversationService.getInboxSummary(activeOrg.id);
+      const data = await conversationService.getInboxSummary(profile!.org_id);
       setSummary(data);
     } catch (err) {
       console.error('Failed to load inbox summary:', err);
     } finally {
       setLoading(false);
     }
-  }, [activeOrg?.id]);
+  }, [profile?.org_id]);
 
   useEffect(() => {
     refresh();
@@ -136,22 +136,22 @@ export function useInboxSummary() {
 }
 
 export function useTemplates(channel?: 'sms' | 'email' | 'both') {
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!activeOrg?.id) return;
+    if (!profile?.org_id) return;
     try {
       setLoading(true);
-      const data = await templateService.getTemplates(activeOrg.id, { channel });
+      const data = await templateService.getTemplates(profile!.org_id, { channel });
       setTemplates(data);
     } catch (err) {
       console.error('Failed to load templates:', err);
     } finally {
       setLoading(false);
     }
-  }, [activeOrg?.id, channel]);
+  }, [profile?.org_id, channel]);
 
   useEffect(() => {
     refresh();
@@ -161,22 +161,22 @@ export function useTemplates(channel?: 'sms' | 'email' | 'both') {
 }
 
 export function useSequences(status?: 'draft' | 'active' | 'paused' | 'archived') {
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!activeOrg?.id) return;
+    if (!profile?.org_id) return;
     try {
       setLoading(true);
-      const data = await sequenceService.getSequences(activeOrg.id, { status });
+      const data = await sequenceService.getSequences(profile!.org_id, { status });
       setSequences(data as Sequence[]);
     } catch (err) {
       console.error('Failed to load sequences:', err);
     } finally {
       setLoading(false);
     }
-  }, [activeOrg?.id, status]);
+  }, [profile?.org_id, status]);
 
   useEffect(() => {
     refresh();
@@ -186,7 +186,7 @@ export function useSequences(status?: 'draft' | 'active' | 'paused' | 'archived'
 }
 
 export function useInboxActions() {
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
 
   const sendMessage = useCallback(
     async (
@@ -195,8 +195,8 @@ export function useInboxActions() {
       content: string,
       options?: { subject?: string; bodyHtml?: string }
     ) => {
-      if (!activeOrg?.id) throw new Error('No active organization');
-      return conversationService.sendMessage(activeOrg.id, {
+      if (!profile?.org_id) throw new Error('No active organization');
+      return conversationService.sendMessage(profile!.org_id, {
         conversation_id: conversationId,
         channel,
         content,
@@ -204,7 +204,7 @@ export function useInboxActions() {
         body_html: options?.bodyHtml,
       });
     },
-    [activeOrg?.id]
+    [profile?.org_id]
   );
 
   const archiveConversation = useCallback(async (conversationId: string) => {
@@ -213,18 +213,18 @@ export function useInboxActions() {
 
   const getOrCreateConversation = useCallback(
     async (leadId: string, channel: 'sms' | 'email' | 'both' = 'both') => {
-      if (!activeOrg?.id) throw new Error('No active organization');
-      return conversationService.getOrCreateForLead(activeOrg.id, leadId, channel);
+      if (!profile?.org_id) throw new Error('No active organization');
+      return conversationService.getOrCreateForLead(profile!.org_id, leadId, channel);
     },
-    [activeOrg?.id]
+    [profile?.org_id]
   );
 
   const enrollInSequence = useCallback(
     async (sequenceId: string, leadId: string) => {
-      if (!activeOrg?.id) throw new Error('No active organization');
-      return sequenceService.enrollLead(activeOrg.id, sequenceId, leadId);
+      if (!profile?.org_id) throw new Error('No active organization');
+      return sequenceService.enrollLead(profile!.org_id, sequenceId, leadId);
     },
-    [activeOrg?.id]
+    [profile?.org_id]
   );
 
   return {

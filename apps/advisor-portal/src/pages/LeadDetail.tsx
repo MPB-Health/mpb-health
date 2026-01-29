@@ -30,8 +30,8 @@ import {
   type Sequence,
   type SequenceEnrollment,
 } from '@mpbhealth/champion-core';
-import { useOrg } from '@mpbhealth/auth';
 import { usePriorityActions } from '../hooks/usePriority';
+import { useAdvisor } from '../contexts/AdvisorContext';
 import { useInboxActions, useSequences } from '../hooks/useInbox';
 import { useAuth } from '../hooks/useAuth';
 import { AIScoringFactors, AISuggestionsPanel, AIMessageAssistant } from '../components/ai';
@@ -41,7 +41,7 @@ type Tab = 'info' | 'messages' | 'sequences';
 export default function LeadDetail() {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
   const { user } = useAuth();
   const { snoozeItem, completeItem, addToLane } = usePriorityActions();
   const { sendMessage, getOrCreateConversation, enrollInSequence } = useInboxActions();
@@ -71,7 +71,7 @@ export default function LeadDetail() {
   const [sending, setSending] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!leadId || !activeOrg?.id) return;
+    if (!leadId || !profile?.org_id) return;
 
     try {
       setLoading(true);
@@ -79,12 +79,12 @@ export default function LeadDetail() {
       setLead(leadData);
 
       // Load lanes
-      const lanesData = await priorityService.getLanes(activeOrg.id);
+      const lanesData = await priorityService.getLanes(profile!.org_id);
       setLanes(lanesData.map((l) => ({ id: l.id, name: l.name, color: l.color })));
 
       // Get or create conversation and load messages
       try {
-        const convId = await conversationService.getOrCreateForLead(activeOrg.id, leadId, 'both');
+        const convId = await conversationService.getOrCreateForLead(profile!.org_id, leadId, 'both');
         setConversationId(convId);
         const messages = await conversationService.getMessages(convId, { limit: 10 });
         setRecentMessages(messages);
@@ -104,7 +104,7 @@ export default function LeadDetail() {
     } finally {
       setLoading(false);
     }
-  }, [leadId, activeOrg?.id]);
+  }, [leadId, profile?.org_id]);
 
   useEffect(() => {
     loadData();
@@ -213,6 +213,7 @@ export default function LeadDetail() {
           <button
             onClick={() => navigate(-1)}
             className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+            aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5 text-neutral-600" />
           </button>

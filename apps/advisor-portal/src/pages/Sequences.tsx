@@ -19,11 +19,11 @@ import {
 import { GradientHeader } from '@mpbhealth/ui';
 import { useSequences } from '../hooks/useInbox';
 import { sequenceService, type Sequence, type SequenceStatus } from '@mpbhealth/champion-core';
-import { useOrg } from '@mpbhealth/auth';
+import { useAdvisor } from '../contexts/AdvisorContext';
 
 export default function Sequences() {
   const navigate = useNavigate();
-  const { activeOrg } = useOrg();
+  const { profile } = useAdvisor();
   const [statusFilter, setStatusFilter] = useState<SequenceStatus | 'all'>('all');
   const [search, setSearch] = useState('');
 
@@ -38,9 +38,9 @@ export default function Sequences() {
     : sequences;
 
   const handleCreateSequence = async () => {
-    if (!activeOrg?.id) return;
+    if (!profile?.org_id) return;
     try {
-      const newSequence = await sequenceService.createSequence(activeOrg.id, {
+      const newSequence = await sequenceService.createSequence(profile!.org_id, {
         name: 'New Sequence',
         description: '',
       });

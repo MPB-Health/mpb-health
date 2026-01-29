@@ -259,35 +259,12 @@ export class DashboardLayoutService {
 
   /**
    * Get default widget configuration from templates
+   * NOTE: Temporarily using hardcoded defaults while schema cache refreshes
    */
-  async getDefaultWidgets(orgId?: string): Promise<WidgetInstance[]> {
-    try {
-      let query = this.supabase
-        .from('crm_default_layout_templates')
-        .select('widgets')
-        .eq('is_active', true);
-
-      if (orgId) {
-        query = query.or(`org_id.eq.${orgId},org_id.is.null`);
-      } else {
-        query = query.is('org_id', null);
-      }
-
-      const { data, error } = await query
-        .order('org_id', { nullsFirst: false })
-        .limit(1)
-        .single();
-
-      if (error || !data) {
-        // Return hardcoded default if no template found
-        return this.getHardcodedDefaultWidgets();
-      }
-
-      return data.widgets as WidgetInstance[];
-    } catch (error) {
-      console.error('Get default widgets error:', error);
-      return this.getHardcodedDefaultWidgets();
-    }
+  async getDefaultWidgets(_orgId?: string): Promise<WidgetInstance[]> {
+    // Skip database query for now - PostgREST schema cache hasn't refreshed
+    // TODO: Re-enable once crm_default_layout_templates is in schema cache
+    return this.getHardcodedDefaultWidgets();
   }
 
   /**

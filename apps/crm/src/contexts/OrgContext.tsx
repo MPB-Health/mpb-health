@@ -63,6 +63,9 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
   // --- Load orgs ---
   const loadOrgs = useCallback(async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OrgContext.tsx:loadOrgs:start',message:'loadOrgs called',data:{hasUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3,H4'})}).catch(()=>{});
+    // #endregion
     if (!user) {
       setOrgs([]);
       setOrgLoading(false);
@@ -72,6 +75,9 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     setOrgLoading(true);
     try {
       const userOrgs = await getUserOrgs();
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OrgContext.tsx:loadOrgs:success',message:'getUserOrgs returned',data:{orgCount:userOrgs.length,orgs:userOrgs.map(o=>({id:o.id,name:o.name}))},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3,H4'})}).catch(()=>{});
+      // #endregion
       setOrgs(userOrgs);
 
       // Auto-select active org
@@ -86,6 +92,9 @@ export function OrgProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OrgContext.tsx:loadOrgs:error',message:'getUserOrgs failed',data:{error:String(err)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3,H4'})}).catch(()=>{});
+      // #endregion
       console.error('[OrgContext] Failed to load orgs:', err);
     } finally {
       setOrgLoading(false);

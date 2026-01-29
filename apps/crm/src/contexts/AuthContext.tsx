@@ -21,6 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session with error handling
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:getSession',message:'Initial session retrieved',data:{hasSession:!!session,userId:session?.user?.id,error:error?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2'})}).catch(()=>{});
+        // #endregion
         if (error) {
           console.error('Failed to get session:', error);
         }
@@ -39,6 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:onAuthStateChange',message:'Auth state changed',data:{event:_event,hasSession:!!session,userId:session?.user?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2'})}).catch(()=>{});
+      // #endregion
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -48,10 +54,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:signIn:before',message:'Sign in attempt',data:{email},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2'})}).catch(()=>{});
+    // #endregion
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:signIn:after',message:'Sign in result',data:{success:!error,error:error?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2'})}).catch(()=>{});
+    // #endregion
     return { error };
   };
 

@@ -7,10 +7,16 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    toast.success('Welcome back!');
-    navigate('/');
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        throw new Error(error.message || 'Invalid email or password');
+      }
+      toast.success('Welcome back!');
+      navigate('/');
+    } catch (err) {
+      throw err instanceof Error ? err : new Error('Login failed. Please try again.');
+    }
   };
 
   return (

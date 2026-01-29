@@ -86,73 +86,79 @@ BEGIN
 END $$;
 
 -- ============================================
--- ADD ORG_ID TO ZOHO_LEAD_SUBMISSIONS
+-- ADD ORG_ID TO ZOHO_LEAD_SUBMISSIONS (if exists)
 -- ============================================
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'zoho_lead_submissions' AND column_name = 'org_id'
-  ) THEN
-    ALTER TABLE zoho_lead_submissions
-    ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'zoho_lead_submissions') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'zoho_lead_submissions' AND column_name = 'org_id'
+    ) THEN
+      ALTER TABLE zoho_lead_submissions
+      ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
 
-    -- Backfill with default org
-    UPDATE zoho_lead_submissions
-    SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
-    WHERE org_id IS NULL;
+      -- Backfill with default org
+      UPDATE zoho_lead_submissions
+      SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
+      WHERE org_id IS NULL;
 
-    -- Create index
-    CREATE INDEX IF NOT EXISTS idx_zoho_lead_submissions_org_id
-    ON zoho_lead_submissions(org_id);
+      -- Create index
+      CREATE INDEX IF NOT EXISTS idx_zoho_lead_submissions_org_id
+      ON zoho_lead_submissions(org_id);
 
-    RAISE NOTICE 'Added org_id to zoho_lead_submissions';
+      RAISE NOTICE 'Added org_id to zoho_lead_submissions';
+    END IF;
   END IF;
 END $$;
 
 -- ============================================
--- ADD ORG_ID TO ADVISOR_PROFILES
+-- ADD ORG_ID TO ADVISOR_PROFILES (if exists)
 -- ============================================
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'advisor_profiles' AND column_name = 'org_id'
-  ) THEN
-    ALTER TABLE advisor_profiles
-    ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'advisor_profiles') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'advisor_profiles' AND column_name = 'org_id'
+    ) THEN
+      ALTER TABLE advisor_profiles
+      ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
 
-    UPDATE advisor_profiles
-    SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
-    WHERE org_id IS NULL;
+      UPDATE advisor_profiles
+      SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
+      WHERE org_id IS NULL;
 
-    CREATE INDEX IF NOT EXISTS idx_advisor_profiles_org_id
-    ON advisor_profiles(org_id);
+      CREATE INDEX IF NOT EXISTS idx_advisor_profiles_org_id
+      ON advisor_profiles(org_id);
 
-    RAISE NOTICE 'Added org_id to advisor_profiles';
+      RAISE NOTICE 'Added org_id to advisor_profiles';
+    END IF;
   END IF;
 END $$;
 
 -- ============================================
--- ADD ORG_ID TO TRAINING_MODULES
+-- ADD ORG_ID TO TRAINING_MODULES (if exists)
 -- ============================================
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'training_modules' AND column_name = 'org_id'
-  ) THEN
-    ALTER TABLE training_modules
-    ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'training_modules') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'training_modules' AND column_name = 'org_id'
+    ) THEN
+      ALTER TABLE training_modules
+      ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
 
-    UPDATE training_modules
-    SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
-    WHERE org_id IS NULL;
+      UPDATE training_modules
+      SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
+      WHERE org_id IS NULL;
 
-    CREATE INDEX IF NOT EXISTS idx_training_modules_org_id
-    ON training_modules(org_id);
+      CREATE INDEX IF NOT EXISTS idx_training_modules_org_id
+      ON training_modules(org_id);
 
-    RAISE NOTICE 'Added org_id to training_modules';
+      RAISE NOTICE 'Added org_id to training_modules';
+    END IF;
   END IF;
 END $$;
 
@@ -203,25 +209,27 @@ BEGIN
 END $$;
 
 -- ============================================
--- ADD ORG_ID TO BULLETINS
+-- ADD ORG_ID TO BULLETINS (if exists)
 -- ============================================
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bulletins' AND column_name = 'org_id'
-  ) THEN
-    ALTER TABLE bulletins
-    ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'bulletins') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'bulletins' AND column_name = 'org_id'
+    ) THEN
+      ALTER TABLE bulletins
+      ADD COLUMN org_id uuid REFERENCES organizations(id) ON DELETE SET NULL;
 
-    UPDATE bulletins
-    SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
-    WHERE org_id IS NULL;
+      UPDATE bulletins
+      SET org_id = 'a0000000-0000-0000-0000-000000000001'::uuid
+      WHERE org_id IS NULL;
 
-    CREATE INDEX IF NOT EXISTS idx_bulletins_org_id
-    ON bulletins(org_id);
+      CREATE INDEX IF NOT EXISTS idx_bulletins_org_id
+      ON bulletins(org_id);
 
-    RAISE NOTICE 'Added org_id to bulletins';
+      RAISE NOTICE 'Added org_id to bulletins';
+    END IF;
   END IF;
 END $$;
 

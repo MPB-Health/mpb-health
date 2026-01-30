@@ -188,16 +188,20 @@ export const AdminNotificationTicker: React.FC = () => {
   const [items, setItems] = useState<TickerItem[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [newItemIds, setNewItemIds] = useState<Set<string>>(new Set());
 
   // Load initial items
   useEffect(() => {
     const loadItems = async () => {
+      setIsLoading(true);
       try {
         const recentItems = await tickerService.getRecentItems({ limit: 30 });
         setItems(recentItems);
       } catch (error) {
         console.error('[AdminNotificationTicker] Error loading items:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -269,7 +273,7 @@ export const AdminNotificationTicker: React.FC = () => {
     }
   }, []);
 
-  if (!isVisible || items.length === 0) return null;
+  if (!isVisible) return null;
 
   return (
     <div
@@ -301,15 +305,27 @@ export const AdminNotificationTicker: React.FC = () => {
         className="flex items-center gap-3 px-20 py-2 overflow-x-hidden"
         style={{ scrollBehavior: 'auto' }}
       >
-        {/* Duplicate items for seamless loop */}
-        {[...items, ...items].map((item, index) => (
-          <TickerItemCard
-            key={`${item.id}-${index}`}
-            item={item}
-            onClick={() => handleItemClick(item)}
-            isNew={newItemIds.has(item.id) && index < items.length}
-          />
-        ))}
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-400" />
+            <span>Loading activity feed...</span>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <Activity className="w-4 h-4" />
+            <span>No recent activity - new events will appear here in real-time</span>
+          </div>
+        ) : (
+          /* Duplicate items for seamless loop */
+          [...items, ...items].map((item, index) => (
+            <TickerItemCard
+              key={`${item.id}-${index}`}
+              item={item}
+              onClick={() => handleItemClick(item)}
+              isNew={newItemIds.has(item.id) && index < items.length}
+            />
+          ))
+        )}
       </div>
 
       {/* Controls */}

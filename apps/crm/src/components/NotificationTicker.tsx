@@ -192,6 +192,7 @@ export function NotificationTicker() {
   const [items, setItems] = useState<TickerItem[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [newItemIds, setNewItemIds] = useState<Set<string>>(new Set());
 
   // Load initial items
@@ -199,11 +200,14 @@ export function NotificationTicker() {
     if (!tickerService) return;
 
     const loadItems = async () => {
+      setIsLoading(true);
       try {
         const recentItems = await tickerService.getRecentItems({ limit: 30 });
         setItems(recentItems);
       } catch (error) {
         console.error('[NotificationTicker] Error loading items:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -282,7 +286,7 @@ export function NotificationTicker() {
     }
   }, [navigate]);
 
-  if (!isVisible || items.length === 0) return null;
+  if (!isVisible) return null;
 
   return (
     <div
@@ -315,15 +319,27 @@ export function NotificationTicker() {
         className="flex items-center gap-3 px-20 py-2 overflow-x-hidden"
         style={{ scrollBehavior: 'auto' }}
       >
-        {/* Duplicate items for seamless loop */}
-        {[...items, ...items].map((item, index) => (
-          <TickerItemCard
-            key={`${item.id}-${index}`}
-            item={item}
-            onClick={() => handleItemClick(item)}
-            isNew={newItemIds.has(item.id) && index < items.length}
-          />
-        ))}
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-th-text-tertiary text-sm">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-th-accent-600" />
+            <span>Loading activity feed...</span>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex items-center gap-2 text-th-text-tertiary text-sm">
+            <Activity className="w-4 h-4" />
+            <span>No recent activity - new events will appear here in real-time</span>
+          </div>
+        ) : (
+          /* Duplicate items for seamless loop */
+          [...items, ...items].map((item, index) => (
+            <TickerItemCard
+              key={`${item.id}-${index}`}
+              item={item}
+              onClick={() => handleItemClick(item)}
+              isNew={newItemIds.has(item.id) && index < items.length}
+            />
+          ))
+        )}
       </div>
 
       {/* Controls */}

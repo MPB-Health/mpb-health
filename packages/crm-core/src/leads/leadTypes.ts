@@ -63,6 +63,8 @@ export interface PipelineStage {
   is_active: boolean;
   is_won_stage: boolean;
   is_lost_stage: boolean;
+  /** Computed field (not persisted). Used by dashboard views to show lead counts per stage. */
+  count?: number;
 }
 
 // Default pipeline stages

@@ -239,9 +239,18 @@ export class DraftService {
     }
 
     // Get signed URL (valid for 1 hour)
-    const { data: { signedUrl } } = await this.supabase.storage
+    const { data: signedUrlData, error: signedUrlError } = await this.supabase.storage
       .from('email-attachments')
       .createSignedUrl(path, 3600);
+
+    if (signedUrlError || !signedUrlData) {
+      // Clean up uploaded file
+      await this.supabase.storage.from('email-attachments').remove([path]);
+      console.error('[DraftService] Failed to create signed URL:', signedUrlError);
+      throw new Error(`Failed to create signed URL: ${signedUrlError?.message || 'Unknown error'}`);
+    }
+
+    const signedUrl = signedUrlData.signedUrl;
 
     // Create attachment record
     const { data, error } = await this.supabase

@@ -45,11 +45,33 @@ import {
 import { useCRM } from '../../contexts/CRMContext';
 import { useOrg } from '../../contexts/OrgContext';
 import toast from 'react-hot-toast';
-import type {
-  EmailSignature,
-  CRMTemplate,
-  EnhancedEmailSendInput,
-} from '@mpbhealth/crm-core';
+import type { CRMTemplate } from '@mpbhealth/crm-core';
+
+// Types for email system
+interface EmailSignature {
+  id: string;
+  name: string;
+  content: string;
+  is_default: boolean;
+}
+
+interface EnhancedEmailSendInput {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body_html: string;
+  body_plain?: string;
+  lead_id?: string;
+  contact_id?: string;
+  account_id?: string;
+  thread_id?: string;
+  signature_id?: string;
+  track_opens?: boolean;
+  track_clicks?: boolean;
+  from_name?: string;
+  reply_to?: string;
+}
 
 // ============================================================================
 // Types
@@ -507,7 +529,7 @@ export function EmailComposer({
   onClose,
 }: EmailComposerProps) {
   const { templateService, emailService } = useCRM();
-  const { orgId } = useOrg();
+  const { activeOrgId } = useOrg();
 
   // Form state
   const [to, setTo] = useState<string[]>(initialTo);
@@ -532,7 +554,7 @@ export function EmailComposer({
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   // Auto-save timer
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   // Initialize Tiptap editor
@@ -600,14 +622,14 @@ export function EmailComposer({
 
   // Auto-save handler
   const handleAutoSave = useCallback(async () => {
-    if (!editor || !orgId) return;
+    if (!editor || !activeOrgId) return;
     // TODO: Implement draft auto-save with DraftService
     setLastSavedAt(new Date());
-  }, [editor, orgId]);
+  }, [editor, activeOrgId]);
 
   // Send email
   const handleSend = async () => {
-    if (!editor || !orgId) return;
+    if (!editor || !activeOrgId) return;
 
     if (to.length === 0) {
       toast.error('Please add at least one recipient');
@@ -638,20 +660,19 @@ export function EmailComposer({
       };
 
       // TODO: Use ComposerService when fully integrated
-      // const result = await composerService.sendEmail(orgId, input);
+      // const result = await composerService.sendEmail(activeOrgId, input);
 
-      // For now, use the basic emailService
-      const result = await emailService.sendEmail({
-        leadId: leadId || '',
-        templateId: '',
+      // For now, use the basic emailService.sendDirect
+      const result = await emailService.sendDirect(
+        to[0], // Primary recipient
         subject,
-        body: html,
-        to: to[0],
-      });
+        html,
+        leadId
+      );
 
       if (result.success) {
         toast.success('Email sent successfully');
-        onSent?.(result.emailId || '');
+        onSent?.(result.email_id || '');
         onClose?.();
       } else {
         toast.error(result.error || 'Failed to send email');
@@ -666,7 +687,7 @@ export function EmailComposer({
 
   // Save as draft
   const handleSaveDraft = async () => {
-    if (!editor || !orgId) return;
+    if (!editor || !activeOrgId) return;
 
     setSaving(true);
     try {
@@ -700,7 +721,7 @@ export function EmailComposer({
 
   // Apply template
   const applyTemplate = (template: CRMTemplate) => {
-    setSubject(template.subject);
+    setSubject(template.subject || '');
     editor?.commands.setContent(template.body);
     setShowTemplateDropdown(false);
     toast.success(`Template "${template.name}" applied`);

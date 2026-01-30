@@ -408,7 +408,8 @@ export const analyticsComparisonService = {
 // ============================================================================
 
 /**
- * Format a number with appropriate suffix (K, M, B)
+ * Format a number with commas for readability
+ * Only uses K/M/B suffix for very large numbers (100K+)
  */
 export const formatNumber = (num: number): string => {
   if (num >= 1000000000) {
@@ -417,10 +418,11 @@ export const formatNumber = (num: number): string => {
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + 'M';
   }
-  if (num >= 1000) {
+  if (num >= 100000) {
     return (num / 1000).toFixed(1) + 'K';
   }
-  return num.toFixed(0);
+  // Show exact numbers with comma formatting for values under 100K
+  return Math.round(num).toLocaleString();
 };
 
 /**

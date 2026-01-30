@@ -42,7 +42,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     detailedDescription: 'Our health sharing program provides robust financial support for significant medical needs. When you face major expenses like hospitalizations, surgeries, or serious illnesses, your healthcare costs are shared by our caring community of members. This is the foundation of health sharing—standing together when it matters most.',
     keyPoints: [
       {
-        title: 'Protection From Major Medical Membership',
+        title: 'Protection From Major Medical Expenses',
         description: 'Hospitalizations, surgeries, emergency care, and serious illnesses are eligible for sharing'
       },
       {
@@ -90,7 +90,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         question: 'Are there sharing limits?',
-        answer: 'No. There are no sharing limits.'
+        answer: 'There are no lifetime limits or annual caps.'
       },
       {
         question: 'What if I need care for a pre-membership condition?',

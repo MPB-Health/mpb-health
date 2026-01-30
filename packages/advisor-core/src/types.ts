@@ -168,33 +168,56 @@ export interface Handbook {
   updated_at: string;
 }
 
+// Bulletin from advisor_content table (CMS-managed)
 export interface Bulletin {
   id: string;
   title: string;
+  slug: string;
+  excerpt: string | null;
   content: string;
-  category: 'announcement' | 'update' | 'alert' | 'news';
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  is_pinned: boolean;
-  published_at: string;
-  expires_at: string | null;
-  author_id: string | null;
-  author_name: string | null;
-  read_by: string[];
-  created_at: string;
-}
-
-// Form Types
-export interface AdvisorForm {
-  id: string;
-  cognito_form_id: string;
-  name: string;
-  description: string | null;
-  category: string;
-  embed_url: string;
-  is_active: boolean;
-  submission_count: number;
+  content_type: string;
+  category_id: string | null;
+  category?: BulletinCategory;
+  published_date: string;
+  featured_image_url: string | null;
+  is_published: boolean;
+  view_count: number;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  // Computed fields
+  is_read?: boolean;
+}
+
+export interface BulletinCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  display_order: number;
+}
+
+// Form Types (from cognito_forms table - CMS managed)
+export interface AdvisorForm {
+  id: string;
+  slug: string;
+  label: string;
+  category: 'employer' | 'member';
+  description: string | null;
+  icon: string;
+  estimated_minutes: number;
+  cognito_embed: string | null;
+  is_active: boolean;
+  requires_auth: boolean;
+  sort_order: number;
+  show_in_menu: boolean;
+  menu_section: string;
+  menu_order: number;
+  created_at: string;
+  updated_at: string;
+  // Computed/mapped fields for backward compatibility
+  name?: string;
+  embed_url?: string;
 }
 
 export interface FormSubmission {

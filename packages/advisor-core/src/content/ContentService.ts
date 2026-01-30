@@ -1,5 +1,5 @@
 import { supabase } from '@mpbhealth/database';
-import type { SOPDocument, SOPCategory, Handbook, Bulletin } from '../types';
+import type { SOPDocument, SOPCategory, Handbook, Bulletin, BulletinCategory } from '../types';
 
 export class ContentService {
   // ========== SOP Documents ==========
@@ -118,82 +118,203 @@ export class ContentService {
     return data;
   }
 
-  // ========== Bulletins ==========
+  // ========== Bulletins (from advisor_content table - CMS managed) ==========
 
-  // Get all bulletins
-  async getBulletins(filters?: {
-    category?: string;
-    includePast?: boolean;
-  }): Promise<Bulletin[]> {
-    const now = new Date().toISOString();
-
-    let query = supabase
-      .from('bulletins')
+  // Get bulletin categories
+  async getBulletinCategories(): Promise<BulletinCategory[]> {
+    const { data, error } = await supabase
+      .from('advisor_content_categories')
       .select('*')
-      .lte('published_at', now)
-      .order('is_pinned', { ascending: false })
-      .order('published_at', { ascending: false });
+      .order('display_order', { ascending: true });
 
-    if (filters?.category) {
-      query = query.eq('category', filters.category);
-    }
-
-    if (!filters?.includePast) {
-      query = query.or(`expires_at.is.null,expires_at.gt.${now}`);
-    }
-
-    const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
 
-  // Get active bulletins (not expired)
-  async getActiveBulletins(): Promise<Bulletin[]> {
-    return this.getBulletins({ includePast: false });
+  // Get all bulletins from advisor_content table
+  async getBulletins(filters?: {
+    category_id?: string;
+    search?: string;
+  }, advisorId?: string): Promise<Bulletin[]> {
+    const now = new Date().toISOString();
+
+    let query = supabase
+      .from('advisor_content')
+      .select(`
+        *,
+        category:advisor_content_categories(id, name, slug, description, display_order)
+      `)
+      .eq('content_type', 'bulletin')
+      .eq('is_published', true)
+      .lte('published_date', now)
+      .order('published_date', { ascending: false });
+
+    if (filters?.category_id) {
+      query = query.eq('category_id', filters.category_id);
+    }
+
+    if (filters?.search) {
+      query = query.or(
+        `title.ilike.%${filters.search}%,content.ilike.%${filters.search}%,excerpt.ilike.%${filters.search}%`
+      );
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // If advisorId provided, fetch read status
+    let readContentIds: string[] = [];
+    if (advisorId && data && data.length > 0) {
+      const { data: views } = await supabase
+        .from('advisor_content_views')
+        .select('content_id')
+        .eq('advisor_id', advisorId)
+        .in('content_id', data.map(b => b.id));
+      
+      readContentIds = views?.map(v => v.content_id) || [];
+    }
+
+    return (data || []).map(bulletin => ({
+      ...bulletin,
+      is_read: readContentIds.includes(bulletin.id),
+    }));
   }
 
-  // Get urgent bulletins
-  async getUrgentBulletins(): Promise<Bulletin[]> {
+  // Get active bulletins (published and current)
+  async getActiveBulletins(advisorId?: string): Promise<Bulletin[]> {
+    return this.getBulletins({}, advisorId);
+  }
+
+  // Get featured/urgent bulletins (using metadata or view_count as priority)
+  async getFeaturedBulletins(limit = 5): Promise<Bulletin[]> {
     const bulletins = await this.getActiveBulletins();
-    return bulletins.filter(b => b.priority === 'urgent' || b.priority === 'high');
+    // Return most viewed or most recent as "featured"
+    return bulletins.slice(0, limit);
   }
 
   // Get a single bulletin
   async getBulletin(bulletinId: string): Promise<Bulletin | null> {
     const { data, error } = await supabase
-      .from('bulletins')
-      .select('*')
+      .from('advisor_content')
+      .select(`
+        *,
+        category:advisor_content_categories(id, name, slug, description, display_order)
+      `)
       .eq('id', bulletinId)
+      .eq('content_type', 'bulletin')
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
     return data;
   }
 
-  // Mark bulletin as read
-  async markBulletinRead(bulletinId: string, advisorId: string): Promise<void> {
-    const { data: bulletin } = await supabase
-      .from('bulletins')
-      .select('read_by')
-      .eq('id', bulletinId)
+  // Get bulletin by slug
+  async getBulletinBySlug(slug: string): Promise<Bulletin | null> {
+    const { data, error } = await supabase
+      .from('advisor_content')
+      .select(`
+        *,
+        category:advisor_content_categories(id, name, slug, description, display_order)
+      `)
+      .eq('slug', slug)
+      .eq('content_type', 'bulletin')
       .single();
 
-    if (!bulletin) return;
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
 
-    const readBy = bulletin.read_by || [];
-    if (!readBy.includes(advisorId)) {
-      readBy.push(advisorId);
+  // Mark bulletin as read (using advisor_content_views table)
+  async markBulletinRead(bulletinId: string, advisorId: string): Promise<void> {
+    // Check if already viewed
+    const { data: existing } = await supabase
+      .from('advisor_content_views')
+      .select('id')
+      .eq('content_id', bulletinId)
+      .eq('advisor_id', advisorId)
+      .single();
+
+    if (!existing) {
+      // Create view record
       await supabase
-        .from('bulletins')
-        .update({ read_by: readBy })
-        .eq('id', bulletinId);
+        .from('advisor_content_views')
+        .insert({
+          content_id: bulletinId,
+          advisor_id: advisorId,
+        });
+
+      // Increment view count
+      await supabase.rpc('increment_advisor_content_view_count', { content_id: bulletinId });
     }
   }
 
   // Get unread bulletin count
   async getUnreadBulletinCount(advisorId: string): Promise<number> {
-    const bulletins = await this.getActiveBulletins();
-    return bulletins.filter(b => !b.read_by?.includes(advisorId)).length;
+    // Get all active bulletins
+    const { data: bulletins } = await supabase
+      .from('advisor_content')
+      .select('id')
+      .eq('content_type', 'bulletin')
+      .eq('is_published', true)
+      .lte('published_date', new Date().toISOString());
+
+    if (!bulletins || bulletins.length === 0) return 0;
+
+    // Get viewed bulletins for this advisor
+    const { data: views } = await supabase
+      .from('advisor_content_views')
+      .select('content_id')
+      .eq('advisor_id', advisorId)
+      .in('content_id', bulletins.map(b => b.id));
+
+    const viewedIds = views?.map(v => v.content_id) || [];
+    return bulletins.filter(b => !viewedIds.includes(b.id)).length;
+  }
+
+  // Toggle bookmark on a bulletin
+  async toggleBulletinBookmark(bulletinId: string, advisorId: string): Promise<boolean> {
+    const { data: existing } = await supabase
+      .from('advisor_content_bookmarks')
+      .select('id')
+      .eq('content_id', bulletinId)
+      .eq('advisor_id', advisorId)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from('advisor_content_bookmarks')
+        .delete()
+        .eq('id', existing.id);
+      return false;
+    } else {
+      await supabase
+        .from('advisor_content_bookmarks')
+        .insert({
+          content_id: bulletinId,
+          advisor_id: advisorId,
+        });
+      return true;
+    }
+  }
+
+  // Get bookmarked bulletins
+  async getBookmarkedBulletins(advisorId: string): Promise<Bulletin[]> {
+    const { data, error } = await supabase
+      .from('advisor_content_bookmarks')
+      .select(`
+        content:advisor_content(
+          *,
+          category:advisor_content_categories(id, name, slug, description, display_order)
+        )
+      `)
+      .eq('advisor_id', advisorId);
+
+    if (error) throw error;
+    
+    // Extract content from each bookmark, filtering out nulls
+    return (data || [])
+      .map(b => b.content as unknown as Bulletin)
+      .filter((content): content is Bulletin => content !== null);
   }
 
   // ========== Search ==========
@@ -212,11 +333,7 @@ export class ContentService {
         .eq('is_published', true)
         .or(`title.ilike.%${query}%,description.ilike.%${query}%,content.ilike.%${query}%`)
         .then(r => r.data || []),
-      supabase
-        .from('bulletins')
-        .select('*')
-        .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
-        .then(r => r.data || []),
+      this.getBulletins({ search: query }),
     ]);
 
     return { sops, handbooks, bulletins };
@@ -224,16 +341,17 @@ export class ContentService {
 
   // ========== Subscriptions ==========
 
-  // Subscribe to new bulletins
+  // Subscribe to new bulletins (from advisor_content)
   subscribeToBulletins(callback: (bulletin: Bulletin) => void) {
     return supabase
-      .channel('bulletins')
+      .channel('advisor-content-bulletins')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'bulletins',
+          table: 'advisor_content',
+          filter: 'content_type=eq.bulletin',
         },
         (payload) => {
           callback(payload.new as Bulletin);

@@ -532,17 +532,39 @@ export class ImportService {
   }
 
   /**
-   * Get all Quick Rate Estimate Leads (already labeled)
+   * Get all Quick Rate Estimate Leads (from hero calculator and manually labeled)
    */
   async getQuickRateEstimateLeads(
+    filters: QuoteSubmissionFilters = {},
     limit: number = 50,
     offset: number = 0
   ): Promise<{ leads: QuoteSubmission[]; total: number }> {
     try {
-      const { data, error, count } = await this.supabase
+      let query = this.supabase
         .from('zoho_lead_submissions')
         .select('*', { count: 'exact' })
-        .or('source_cta.eq.Quick Rate Estimate,form_data->>lead_type.eq.Quick Rate Estimate Leads')
+        .or('source_cta.eq.Quick Rate Estimate,source_cta.ilike.%hero-calculator%,form_data->>lead_type.eq.Quick Rate Estimate Leads');
+
+      // Apply optional filters
+      if (filters.search) {
+        query = query.or(
+          `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
+        );
+      }
+
+      if (filters.syncStatus) {
+        query = query.eq('zoho_sync_status', filters.syncStatus);
+      }
+
+      if (filters.dateFrom) {
+        query = query.gte('created_at', filters.dateFrom);
+      }
+
+      if (filters.dateTo) {
+        query = query.lte('created_at', filters.dateTo);
+      }
+
+      const { data, error, count } = await query
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 

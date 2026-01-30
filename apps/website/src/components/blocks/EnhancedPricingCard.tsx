@@ -113,11 +113,12 @@ export const EnhancedPricingCard: React.FC<PricingCardProps> = ({
     const householdType = familySize === 1 ? 'individual' : familySize === 2 ? 'couple' : 'family';
     const dependentsCount = familySize > 2 ? familySize - 2 : 0;
 
+    // Use age 25 (18-29 band) for "Starting at" pricing to show the minimum rate
     const pricingResult = lookupPrice({
       planId: planId,
       householdType: householdType,
-      primaryAge: 35,
-      spouseAge: familySize >= 2 ? 35 : undefined,
+      primaryAge: 25,
+      spouseAge: familySize >= 2 ? 25 : undefined,
       dependentsCount: dependentsCount,
       primaryTobacco: false,
       spouseTobacco: false,

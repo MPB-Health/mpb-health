@@ -44,7 +44,7 @@ export default function QuickRateEstimateLeads() {
   const loadSubmissions = useCallback(async () => {
     setLoading(true);
     try {
-      const { submissions: data, total: count } = await importService.getQuoteSubmissions(
+      const { leads: data, total: count } = await importService.getQuickRateEstimateLeads(
         {
           search: searchTerm || undefined,
           syncStatus: syncFilter || undefined,
@@ -55,7 +55,7 @@ export default function QuickRateEstimateLeads() {
       setSubmissions(data);
       setTotal(count);
     } catch (error) {
-      console.error('Failed to load quote submissions:', error);
+      console.error('Failed to load quick rate estimate leads:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -155,7 +155,7 @@ export default function QuickRateEstimateLeads() {
           <div>
             <h1 className="text-2xl font-bold text-th-text-primary">Quick Rate Estimate Leads</h1>
             <p className="text-sm text-th-text-secondary">
-              Website quote form submissions ready to be converted to CRM leads
+              Leads from the hero calculator and Quick Rate Estimate forms
             </p>
           </div>
         </div>

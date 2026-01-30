@@ -162,7 +162,7 @@ const BusinessesOrganizations = () => {
                 height={500}
                 loading="lazy"
                 decoding="async"
-                className="relative rounded-2xl shadow-2xl w-full h-[500px] object-cover"
+                className="relative rounded-2xl shadow-2xl w-full h-auto object-contain"
               />
             </div>
 

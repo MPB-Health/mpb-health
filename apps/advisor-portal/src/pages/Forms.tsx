@@ -54,9 +54,10 @@ export default function Forms() {
 
   const filteredForms = forms.filter((form) => {
     const matchesCategory = !selectedCategory || form.category === selectedCategory;
+    const formName = form.name || form.label || '';
     const matchesSearch =
       !searchQuery ||
-      form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      formName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       form.description?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -132,14 +133,14 @@ export default function Forms() {
                     <FileText className="w-6 h-6 text-th-text-tertiary" />
                   )}
                 </div>
-                {form.category === 'onboarding' && !isSubmitted && (
+                {form.menu_section === 'onboarding' && !isSubmitted && (
                   <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
                     Required
                   </span>
                 )}
               </div>
 
-              <h3 className="font-semibold text-th-text-primary mt-4">{form.name}</h3>
+              <h3 className="font-semibold text-th-text-primary mt-4">{form.name || form.label}</h3>
               {form.description && (
                 <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
                   {form.description}
@@ -194,7 +195,7 @@ export default function Forms() {
               <div className="flex items-center justify-between p-4 border-b border-th-border">
                 <div>
                   <h2 className="text-lg font-semibold text-th-text-primary">
-                    {selectedForm.name}
+                    {selectedForm.name || selectedForm.label}
                   </h2>
                   {selectedForm.description && (
                     <p className="text-sm text-th-text-tertiary">
@@ -213,11 +214,24 @@ export default function Forms() {
                 </button>
               </div>
               <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
-                <iframe
-                  src={selectedForm.embed_url}
-                  className="w-full min-h-[600px] border-0"
-                  title={selectedForm.name}
-                />
+                {/* Display form embed - cognito_embed contains full iframe/script */}
+                {selectedForm.cognito_embed ? (
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: selectedForm.cognito_embed }}
+                    className="w-full min-h-[600px]"
+                  />
+                ) : selectedForm.embed_url ? (
+                  <iframe
+                    src={selectedForm.embed_url}
+                    className="w-full min-h-[600px] border-0"
+                    title={selectedForm.name || selectedForm.label}
+                  />
+                ) : (
+                  <div className="text-center py-12 text-th-text-tertiary">
+                    <FileText className="w-12 h-12 mx-auto mb-4" />
+                    <p>No form embed available</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -248,7 +262,7 @@ export default function Forms() {
                     )}
                     <div>
                       <p className="font-medium text-th-text-primary">
-                        {form?.name || 'Unknown Form'}
+                        {form?.name || form?.label || 'Unknown Form'}
                       </p>
                       <p className="text-sm text-th-text-tertiary">
                         {new Date(submission.submitted_at).toLocaleDateString()}

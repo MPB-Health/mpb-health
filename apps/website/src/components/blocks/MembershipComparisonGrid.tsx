@@ -301,8 +301,8 @@ export default function MembershipComparisonGrid({
           className="border-blue-600 text-blue-600 hover:bg-blue-50"
           asChild
         >
-          <a href="/advisor-directory">
-            <Users className="w-4 h-4 mr-2" />
+          <a href="/advisor-directory" className="inline-flex items-center gap-2">
+            <Users className="w-4 h-4" />
             Speak with an Advisor
           </a>
         </Button>

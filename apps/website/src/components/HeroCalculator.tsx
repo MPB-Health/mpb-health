@@ -197,6 +197,7 @@ export default function HeroCalculator() {
         sourcePage: window.location.pathname,
         sourceCTA: 'hero-calculator-all-plans-comparison',
         formData: {
+          lead_type: 'Quick Rate Estimate Leads',
           household_type: data.householdType,
           state: data.state,
           primary_age: data.primaryAge,

@@ -1,14 +1,24 @@
 import { supabase } from '@mpbhealth/database';
 import type { AdvisorForm, FormSubmission } from '../types';
 
+// Helper to map cognito_forms to AdvisorForm with backward compatible fields
+function mapCognitoFormToAdvisorForm(data: Record<string, unknown>): AdvisorForm {
+  return {
+    ...data,
+    // Backward compatibility mappings
+    name: data.label as string,
+    embed_url: data.cognito_embed as string || '',
+  } as AdvisorForm;
+}
+
 export class FormsService {
-  // Get all available forms
+  // Get all available forms (from cognito_forms table - CMS managed)
   async getForms(category?: string): Promise<AdvisorForm[]> {
     let query = supabase
-      .from('advisor_forms')
+      .from('cognito_forms')
       .select('*')
       .eq('is_active', true)
-      .order('name', { ascending: true });
+      .order('sort_order', { ascending: true });
 
     if (category) {
       query = query.eq('category', category);
@@ -16,37 +26,37 @@ export class FormsService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []).map(mapCognitoFormToAdvisorForm);
   }
 
   // Get a single form
   async getForm(formId: string): Promise<AdvisorForm | null> {
     const { data, error } = await supabase
-      .from('advisor_forms')
+      .from('cognito_forms')
       .select('*')
       .eq('id', formId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data ? mapCognitoFormToAdvisorForm(data) : null;
   }
 
-  // Get form by Cognito form ID
-  async getFormByCognitoId(cognitoFormId: string): Promise<AdvisorForm | null> {
+  // Get form by slug
+  async getFormBySlug(slug: string): Promise<AdvisorForm | null> {
     const { data, error } = await supabase
-      .from('advisor_forms')
+      .from('cognito_forms')
       .select('*')
-      .eq('cognito_form_id', cognitoFormId)
+      .eq('slug', slug)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data ? mapCognitoFormToAdvisorForm(data) : null;
   }
 
   // Get form categories
   async getFormCategories(): Promise<string[]> {
     const { data, error } = await supabase
-      .from('advisor_forms')
+      .from('cognito_forms')
       .select('category')
       .eq('is_active', true);
 
@@ -54,6 +64,33 @@ export class FormsService {
 
     const categories = [...new Set(data?.map(f => f.category) || [])];
     return categories.filter(Boolean).sort();
+  }
+
+  // Get menu sections for forms
+  async getMenuSections(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('cognito_forms')
+      .select('menu_section')
+      .eq('is_active', true)
+      .eq('show_in_menu', true);
+
+    if (error) throw error;
+
+    const sections = [...new Set(data?.map(f => f.menu_section) || [])];
+    return sections.filter(Boolean).sort();
+  }
+
+  // Get forms for menu display
+  async getMenuForms(): Promise<AdvisorForm[]> {
+    const { data, error } = await supabase
+      .from('cognito_forms')
+      .select('*')
+      .eq('is_active', true)
+      .eq('show_in_menu', true)
+      .order('menu_order', { ascending: true });
+
+    if (error) throw error;
+    return (data || []).map(mapCognitoFormToAdvisorForm);
   }
 
   // Get advisor's form submissions
@@ -149,17 +186,17 @@ export class FormsService {
     return count || 0;
   }
 
-  // Get required forms for onboarding
+  // Get required forms for onboarding (forms in 'onboarding' menu section)
   async getRequiredForms(): Promise<AdvisorForm[]> {
     const { data, error } = await supabase
-      .from('advisor_forms')
+      .from('cognito_forms')
       .select('*')
       .eq('is_active', true)
-      .eq('category', 'onboarding')
-      .order('name', { ascending: true });
+      .eq('menu_section', 'onboarding')
+      .order('sort_order', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(mapCognitoFormToAdvisorForm);
   }
 
   // Check if advisor has submitted required forms
@@ -185,7 +222,8 @@ export class FormsService {
 
   // Generate Cognito form embed URL
   getEmbedUrl(form: AdvisorForm, prefillData?: Record<string, string>): string {
-    let url = form.embed_url;
+    // Use embed_url (mapped) or cognito_embed directly
+    let url = form.embed_url || form.cognito_embed || '';
 
     if (prefillData && Object.keys(prefillData).length > 0) {
       const params = new URLSearchParams();
@@ -196,6 +234,11 @@ export class FormsService {
     }
 
     return url;
+  }
+
+  // Get embed HTML (cognito_embed contains full iframe/script tag)
+  getEmbedHtml(form: AdvisorForm): string {
+    return form.cognito_embed || '';
   }
 
   // Subscribe to submission updates

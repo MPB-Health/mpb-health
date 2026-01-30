@@ -323,6 +323,9 @@ importers:
       '@mpbhealth/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@mpbhealth/crm-core':
+        specifier: workspace:*
+        version: link:../../packages/crm-core
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../../packages/database

@@ -15,6 +15,7 @@
   "dependencies": {
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/auth": "workspace:*",
+    "@mpbhealth/crm-core": "workspace:*",
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
     "@mpbhealth/config": "workspace:*",

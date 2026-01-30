@@ -46,6 +46,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { useCRM } from '../contexts/CRMContext';
 import { NotificationCenter } from '../components/NotificationCenter';
+import { NotificationTicker } from '../components/NotificationTicker';
 import CommandPalette from '../components/CommandPalette';
 import { RouteErrorBoundary } from '../components/ErrorBoundary';
 
@@ -469,6 +470,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         renderNavLink={renderNavLink}
         renderChildNavLink={renderChildNavLink}
       >
+        {/* Notification Ticker - real-time activity feed */}
+        <NotificationTicker />
+
         {/* Route Error Boundary - shell stays intact on page errors */}
         <RouteErrorBoundary>
           {children}

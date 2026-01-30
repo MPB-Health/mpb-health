@@ -13,6 +13,7 @@ import {
   createTemplateService,
   createEmailService,
   createNotificationCenterService,
+  createTickerService,
   createAutomationService,
   createReportingService,
   createScoringService,
@@ -50,6 +51,7 @@ import {
   type TemplateService,
   type EmailService,
   type NotificationCenterService,
+  type TickerService,
   type AutomationService,
   type ReportingService,
   type ScoringService,
@@ -94,6 +96,7 @@ interface CRMContextType {
   templateService: TemplateService;
   emailService: EmailService;
   notificationCenterService: NotificationCenterService;
+  tickerService: TickerService;
   automationService: AutomationService;
   reportingService: ReportingService;
   scoringService: ScoringService;
@@ -155,6 +158,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     templateService: createTemplateService(supabase),
     emailService: createEmailService(supabase, supabaseUrl),
     notificationCenterService: createNotificationCenterService(supabase),
+    tickerService: createTickerService(supabase),
     automationService: createAutomationService(supabase, supabaseUrl),
     reportingService: createReportingService(supabase),
     scoringService: createScoringService(supabase),

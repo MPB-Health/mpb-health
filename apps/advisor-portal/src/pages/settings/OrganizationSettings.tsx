@@ -2,7 +2,7 @@
 // Organization Settings Page — Configure organization-wide settings
 // ============================================================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Building2,
   Palette,
@@ -72,10 +72,11 @@ export default function OrganizationSettings() {
     }
   };
 
-  // Reset form when tab changes or settings load
-  useState(() => {
+  // Reset form when settings load
+  useEffect(() => {
     initializeForm();
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
 
   if (loading) {
     return (

@@ -13,6 +13,7 @@ import {
   User,
   ChevronRight,
 } from 'lucide-react';
+import { useTeamManagement, useApiKeys, useIntegrations } from '../../hooks/useSettings';
 
 const settingsCategories = [
   {
@@ -85,6 +86,16 @@ const settingsCategories = [
 ];
 
 export default function SettingsHub() {
+  // Fetch real stats from hooks
+  const { members, loading: teamLoading } = useTeamManagement();
+  const { apiKeys, loading: keysLoading } = useApiKeys();
+  const { integrations, loading: integrationsLoading } = useIntegrations();
+
+  // Calculate stats
+  const teamMemberCount = members?.length ?? 0;
+  const activeApiKeyCount = apiKeys?.filter(k => k.is_active).length ?? 0;
+  const connectedIntegrationCount = integrations?.filter(i => i.is_enabled).length ?? 0;
+
   return (
     <div className="p-8">
       <div className="max-w-4xl mx-auto">
@@ -134,15 +145,21 @@ export default function SettingsHub() {
           <h3 className="text-sm font-medium text-th-text-secondary mb-4">Account Overview</h3>
           <div className="grid grid-cols-3 gap-6">
             <div>
-              <p className="text-2xl font-bold text-th-text-primary">--</p>
+              <p className="text-2xl font-bold text-th-text-primary">
+                {teamLoading ? '...' : teamMemberCount}
+              </p>
               <p className="text-sm text-th-text-muted">Team Members</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-th-text-primary">--</p>
+              <p className="text-2xl font-bold text-th-text-primary">
+                {keysLoading ? '...' : activeApiKeyCount}
+              </p>
               <p className="text-sm text-th-text-muted">API Keys</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-th-text-primary">--</p>
+              <p className="text-2xl font-bold text-th-text-primary">
+                {integrationsLoading ? '...' : connectedIntegrationCount}
+              </p>
               <p className="text-sm text-th-text-muted">Integrations</p>
             </div>
           </div>

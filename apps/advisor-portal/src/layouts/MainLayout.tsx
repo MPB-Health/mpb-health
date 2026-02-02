@@ -1,6 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
-import * as LucideIcons from 'lucide-react';
 import {
   LayoutDashboard,
   GraduationCap,
@@ -23,11 +21,9 @@ import {
   Activity,
   Search,
   Bot,
-  Link,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import LiveMeetingBanner from '../components/LiveMeetingBanner';
 import { NotificationCenter } from '../components/notifications';
@@ -60,112 +56,15 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-// Map icon name strings to Lucide icon components
-function getIconComponent(iconName: string): LucideIcons.LucideIcon {
-  // Handle common icon name mappings
-  const iconMap: Record<string, LucideIcons.LucideIcon> = {
-    LayoutDashboard,
-    GraduationCap,
-    Video,
-    FileText,
-    BookOpen,
-    Bell,
-    User,
-    Zap,
-    Users,
-    Inbox,
-    Workflow,
-    Shield,
-    CreditCard,
-    Settings,
-    BarChart3,
-    Trophy,
-    Activity,
-    Bot,
-    Link,
-  };
-
-  // Try direct mapping first
-  if (iconMap[iconName]) {
-    return iconMap[iconName];
-  }
-
-  // Try to get from LucideIcons dynamically
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const lucideModule = LucideIcons as any;
-  if (lucideModule[iconName] && typeof lucideModule[iconName] === 'function') {
-    return lucideModule[iconName] as LucideIcons.LucideIcon;
-  }
-
-  // Fallback to Link icon
-  return Link;
-}
-
-// Convert CMS nav items to AppLayout NavItem format
-function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
-  return items.map(item => ({
-    name: item.label,
-    href: item.url || '/',
-    icon: getIconComponent(item.icon),
-    badge: item.badge_text ? (
-      <span 
-        className={`ml-auto text-white text-xs rounded-full px-2 py-0.5 ${
-          item.badge_color === 'red' ? 'bg-red-500' :
-          item.badge_color === 'green' ? 'bg-green-500' :
-          item.badge_color === 'yellow' ? 'bg-yellow-500' :
-          'bg-blue-500'
-        }`}
-      >
-        {item.badge_text}
-      </span>
-    ) : undefined,
-  }));
-}
-
 export default function MainLayout() {
   const navigate = useNavigate();
   const { profile, liveMeetings, unreadBulletinCount, logout, loading } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
 
-  // Dynamic navigation from CMS
-  const [cmsNavItems, setCmsNavItems] = useState<NavMenuItem[]>([]);
-  const [navLoading, setNavLoading] = useState(true);
-
-  // Fetch navigation items from CMS on mount
-  useEffect(() => {
-    const loadNavigation = async () => {
-      try {
-        const items = await navigationService.getNavMenuItemsFlat();
-        setCmsNavItems(items);
-      } catch (error) {
-        console.error('Failed to load navigation from CMS:', error);
-        // Will use fallback navigation
-      } finally {
-        setNavLoading(false);
-      }
-    };
-
-    loadNavigation();
-
-    // Subscribe to navigation changes
-    const channel = navigationService.subscribeToNavMenuChanges((items) => {
-      // Filter to only top-level items (no parent_id)
-      setCmsNavItems(items.filter(item => !item.parent_id));
-    });
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
-
-  // Convert CMS nav items to AppLayout format, or use fallback
-  const navigation = useMemo(() => {
-    if (cmsNavItems.length > 0) {
-      return mapMenuItemsToNavItems(cmsNavItems);
-    }
-    return fallbackNavigation;
-  }, [cmsNavItems]);
+  // Use the fallback navigation directly - CMS navigation can be enabled once database is cleaned up
+  // The navigation is defined statically to ensure proper ordering and icons
+  const navigation = fallbackNavigation;
 
   // Redirect to login if not authenticated
   if (!loading && !profile) {

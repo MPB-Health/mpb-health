@@ -34,5 +34,8 @@ Allow: /businesses-organizations
 Allow: /advisor-directory
 Allow: /resource-library
 
-# Sitemap location
-Sitemap: https://mpbhealth.com/sitemap.xml
+# Sitemap locations
+Sitemap: https://mpb.health/sitemap.xml
+Sitemap: https://mpb.health/sitemap-pages.xml
+Sitemap: https://mpb.health/sitemap-geo.xml
+Sitemap: https://mpb.health/sitemap-blog.xml

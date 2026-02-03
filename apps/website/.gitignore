@@ -1,2 +1,6 @@
 .vercel
 .env*.local
+
+# Build artifacts
+website-deployment.zip
+*.zip

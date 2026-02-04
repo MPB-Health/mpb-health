@@ -1,186 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml"
-        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-
-  <!-- Homepage - Highest Priority -->
-  <url>
-    <loc>https://mpbhealth.com/</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-
-  <!-- Main Pages - High Priority -->
-  <url>
-    <loc>https://mpbhealth.com/enrollment</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/plans</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/quote</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/get-started</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- Solutions Pages -->
-  <url>
-    <loc>https://mpbhealth.com/individuals-families</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/businesses-organizations</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/advisors-brokers</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Information Pages -->
-  <url>
-    <loc>https://mpbhealth.com/about-us</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/how-it-works</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/benefits</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/features</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/faq</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- Resources -->
-  <url>
-    <loc>https://mpbhealth.com/blog</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/resource-library</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/events</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/member-stories</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <!-- Advisor Directory -->
-  <url>
-    <loc>https://mpbhealth.com/advisor-directory</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- Contact & Support -->
-  <url>
-    <loc>https://mpbhealth.com/contact</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/support</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <!-- Legal Pages -->
-  <url>
-    <loc>https://mpbhealth.com/privacy-policy</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/terms-and-conditions</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <url>
-    <loc>https://mpbhealth.com/state-notices</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <!-- Additional Pages -->
-  <url>
-    <loc>https://mpbhealth.com/join-our-team</loc>
-    <lastmod>2025-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-
-</urlset>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Main SEO Sitemap -->
+  <sitemap>
+    <loc>https://mpb.health/sitemap-pages.xml</loc>
+    <lastmod>2026-02-03</lastmod>
+  </sitemap>
+  
+  <!-- GEO/Location Sitemap -->
+  <sitemap>
+    <loc>https://mpb.health/sitemap-geo.xml</loc>
+    <lastmod>2026-02-03</lastmod>
+  </sitemap>
+  
+  <!-- Blog Sitemap -->
+  <sitemap>
+    <loc>https://mpb.health/sitemap-blog.xml</loc>
+    <lastmod>2026-02-03</lastmod>
+  </sitemap>
+</sitemapindex>

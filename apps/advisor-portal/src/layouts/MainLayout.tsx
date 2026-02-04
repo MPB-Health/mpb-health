@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import {
@@ -30,6 +30,35 @@ import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
+// Icon mapping for dynamic icons from CMS
+const iconMap: Record<string, LucideIcons.LucideIcon> = {
+  LayoutDashboard,
+  GraduationCap,
+  Video,
+  FileText,
+  BookOpen,
+  Bell,
+  User,
+  Inbox,
+  Settings,
+  Link,
+};
+
+// Get icon component from string name
+function getIconComponent(iconName: string): LucideIcons.LucideIcon {
+  // Try direct mapping first
+  if (iconMap[iconName]) {
+    return iconMap[iconName];
+  }
+  // Try to get from LucideIcons dynamically
+  const lucideModule = LucideIcons as Record<string, unknown>;
+  if (lucideModule[iconName] && typeof lucideModule[iconName] === 'function') {
+    return lucideModule[iconName] as LucideIcons.LucideIcon;
+  }
+  // Fallback to Link icon
+  return Link;
+}
+
 // Fallback navigation for when CMS data isn't available
 const fallbackNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -42,58 +71,34 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-// Map icon name strings to Lucide icon components
-function getIconComponent(iconName: string): LucideIcons.LucideIcon {
-  // Handle common icon name mappings
-  const iconMap: Record<string, LucideIcons.LucideIcon> = {
-    LayoutDashboard,
-    GraduationCap,
-    Video,
-    FileText,
-    BookOpen,
-    Bell,
-    User,
-    Inbox,
-    Settings,
-    Link,
-  };
-
-  // Try direct mapping first
-  if (iconMap[iconName]) {
-    return iconMap[iconName];
-  }
-
-  // Try to get from LucideIcons dynamically
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const lucideModule = LucideIcons as any;
-  if (lucideModule[iconName] && typeof lucideModule[iconName] === 'function') {
-    return lucideModule[iconName] as LucideIcons.LucideIcon;
-  }
-
-  // Fallback to Link icon
-  return Link;
-}
-
 // Convert CMS nav items to AppLayout NavItem format
 function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
-  return items.map(item => ({
-    name: item.label,
-    href: item.url || '/',
-    icon: getIconComponent(item.icon),
-    badge: item.badge_text ? (
-      <span 
-        className={`ml-auto text-white text-xs rounded-full px-2 py-0.5 ${
-          item.badge_color === 'red' ? 'bg-red-500' :
-          item.badge_color === 'green' ? 'bg-green-500' :
-          item.badge_color === 'yellow' ? 'bg-yellow-500' :
-          'bg-blue-500'
-        }`}
-      >
-        {item.badge_text}
-      </span>
-    ) : undefined,
-  }));
+  return items
+    .filter(item => item.is_active)
+    .sort((a, b) => a.order_index - b.order_index)
+    .map(item => ({
+      name: item.label,
+      href: item.url || '/',
+      icon: getIconComponent(item.icon),
+      badge: item.badge_text ? (
+        <span 
+          className={`ml-auto text-white text-xs rounded-full px-2 py-0.5 ${
+            item.badge_color === 'red' ? 'bg-red-500' :
+            item.badge_color === 'green' ? 'bg-green-500' :
+            item.badge_color === 'yellow' ? 'bg-yellow-500' :
+            'bg-blue-500'
+          }`}
+        >
+          {item.badge_text}
+        </span>
+      ) : undefined,
+    }));
 }
+
+// Cache for CMS navigation
+let cachedNavItems: NavItem[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export default function MainLayout() {
   const navigate = useNavigate();
@@ -101,41 +106,56 @@ export default function MainLayout() {
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
 
-  // Dynamic navigation from CMS
-  const [cmsNavItems, setCmsNavItems] = useState<NavMenuItem[]>([]);
-  const [navLoading, setNavLoading] = useState(true);
+  // Dynamic navigation from CMS with caching
+  const [cmsNavItems, setCmsNavItems] = useState<NavItem[]>(cachedNavItems || []);
+  const [navLoading, setNavLoading] = useState(!cachedNavItems);
 
-  // Fetch navigation items from CMS on mount
-  useEffect(() => {
-    const loadNavigation = async () => {
-      try {
-        const items = await navigationService.getNavMenuItemsFlat();
-        setCmsNavItems(items);
-      } catch (error) {
-        console.error('Failed to load navigation from CMS:', error);
-        // Will use fallback navigation
-      } finally {
-        setNavLoading(false);
+  // Load navigation from CMS
+  const loadNavigation = useCallback(async () => {
+    // Check cache first
+    if (cachedNavItems && Date.now() - cacheTimestamp < CACHE_DURATION) {
+      setCmsNavItems(cachedNavItems);
+      setNavLoading(false);
+      return;
+    }
+
+    try {
+      const items = await navigationService.getNavMenuItemsFlat();
+      if (items && items.length > 0) {
+        const mappedItems = mapMenuItemsToNavItems(items);
+        cachedNavItems = mappedItems;
+        cacheTimestamp = Date.now();
+        setCmsNavItems(mappedItems);
       }
-    };
+    } catch (error) {
+      console.error('Failed to load navigation from CMS:', error);
+      // Will use fallback navigation
+    } finally {
+      setNavLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
     loadNavigation();
 
-    // Subscribe to navigation changes
+    // Subscribe to real-time navigation changes
     const channel = navigationService.subscribeToNavMenuChanges((items) => {
-      // Filter to only top-level items (no parent_id)
-      setCmsNavItems(items.filter(item => !item.parent_id));
+      const activeItems = items.filter(item => !item.parent_id);
+      const mappedItems = mapMenuItemsToNavItems(activeItems);
+      cachedNavItems = mappedItems;
+      cacheTimestamp = Date.now();
+      setCmsNavItems(mappedItems);
     });
 
     return () => {
       channel.unsubscribe();
     };
-  }, []);
+  }, [loadNavigation]);
 
-  // Convert CMS nav items to AppLayout format, or use fallback
+  // Use CMS navigation if available, otherwise fallback
   const navigation = useMemo(() => {
     if (cmsNavItems.length > 0) {
-      return mapMenuItemsToNavItems(cmsNavItems);
+      return cmsNavItems;
     }
     return fallbackNavigation;
   }, [cmsNavItems]);

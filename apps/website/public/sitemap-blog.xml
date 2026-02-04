@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- Blog Index -->
+  <url>
+    <loc>https://mpb.health/blog</loc>
+    <lastmod>2026-02-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Events -->
+  <url>
+    <loc>https://mpb.health/events</loc>
+    <lastmod>2026-02-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Member Stories -->
+  <url>
+    <loc>https://mpb.health/member-stories</loc>
+    <lastmod>2026-02-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Podcast -->
+  <url>
+    <loc>https://mpb.health/podcast</loc>
+    <lastmod>2026-02-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Resources Library -->
+  <url>
+    <loc>https://mpb.health/resources</loc>
+    <lastmod>2026-02-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Note: Individual blog articles are dynamically generated -->
+  <!-- Use Google Search Console to submit dynamic blog URLs -->
+
+</urlset>

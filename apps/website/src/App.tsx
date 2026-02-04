@@ -171,8 +171,16 @@ const CRMTemplates = lazyAuto(() => import('./pages/admin/CRMTemplates'));
 const CRMCalendar = lazyAuto(() => import('./pages/admin/CRMCalendar'));
 const CRMReports = lazyAuto(() => import('./pages/admin/CRMReports'));
 
-// Advisor Portal CMS
-const AdvisorPortalCMS = lazyAuto(() => import('./pages/admin/AdvisorPortalCMS'));
+// Advisor Portal CMS - Legacy
+const AdvisorPortalCMSLegacy = lazyAuto(() => import('./pages/admin/AdvisorPortalCMS'));
+
+// Advisor Portal CMS - New Command Center
+const AdvisorCMSHub = lazyAuto(() => import('./pages/admin/advisor-cms/AdvisorCMSHub'));
+const AdvisorCMSNavigation = lazyAuto(() => import('./pages/admin/advisor-cms/NavigationManager'));
+const AdvisorCMSBulletins = lazyAuto(() => import('./pages/admin/advisor-cms/BulletinsManager'));
+const AdvisorCMSForms = lazyAuto(() => import('./pages/admin/advisor-cms/FormsManager'));
+const AdvisorCMSTraining = lazyAuto(() => import('./pages/admin/advisor-cms/TrainingManager'));
+const AdvisorCMSQuickActions = lazyAuto(() => import('./pages/admin/advisor-cms/QuickActionsManager'));
 
 // Forms Manager
 const FormsManager = lazyAuto(() => import('./pages/admin/FormsManager'));
@@ -621,12 +629,61 @@ const App = () => {
                     }
                   />
 
-                  {/* Advisor Portal CMS */}
+                  {/* Advisor Portal CMS - Command Center */}
                   <Route
                     path="/admin/advisor-cms"
                     element={
                       <ProtectedRoute>
-                        <AdvisorPortalCMS />
+                        <AdvisorCMSHub />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/navigation"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorCMSNavigation />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/bulletins"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorCMSBulletins />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/forms"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorCMSForms />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/training"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorCMSTraining />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/quick-actions"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorCMSQuickActions />
+                      </ProtectedRoute>
+                    }
+                  />
+                  {/* Legacy CMS (keeping for reference) */}
+                  <Route
+                    path="/admin/advisor-portal-cms-legacy"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorPortalCMSLegacy />
                       </ProtectedRoute>
                     }
                   />

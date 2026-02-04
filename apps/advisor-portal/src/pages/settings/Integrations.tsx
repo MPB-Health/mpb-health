@@ -79,12 +79,16 @@ export default function Integrations() {
   const [activeTab, setActiveTab] = useState<'connected' | 'available'>('connected');
   const [selectedIntegration, setSelectedIntegration] = useState<IntegrationConfig | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsIntegration, setSettingsIntegration] = useState<IntegrationConfig | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // Add form state
   const [addForm, setAddForm] = useState<Partial<CreateIntegrationInput>>({});
   const [addError, setAddError] = useState<string | null>(null);
+  const [settingsForm, setSettingsForm] = useState<Record<string, unknown>>({});
 
   if (loading) {
     return (
@@ -152,6 +156,39 @@ export default function Integrations() {
       setSelectedIntegration(null);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleOpenSettings = (integration: IntegrationConfig) => {
+    setSettingsIntegration(integration);
+    setSettingsForm(integration.config || {});
+    setShowSettingsModal(true);
+  };
+
+  const handleSaveSettings = async () => {
+    if (!settingsIntegration) return;
+
+    try {
+      setActionLoading(settingsIntegration.id);
+      await updateIntegration(settingsIntegration.id, {
+        config: settingsForm,
+      });
+      setShowSettingsModal(false);
+      setSettingsIntegration(null);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSync = async (integration: IntegrationConfig) => {
+    try {
+      setSyncingId(integration.id);
+      // Simulate sync - in a real app this would call a sync endpoint
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Sync completed - the integration service would update last_sync_at internally
+      // Just re-fetch to reflect any changes
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -290,7 +327,7 @@ export default function Integrations() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Would open config modal
+                          handleOpenSettings(integration);
                         }}
                         className="p-2 text-th-text-muted hover:text-th-text-primary hover:bg-surface-tertiary rounded-lg transition-colors"
                         title="Settings"
@@ -301,12 +338,13 @@ export default function Integrations() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Would trigger sync
+                          handleSync(integration);
                         }}
-                        className="p-2 text-th-text-muted hover:text-th-text-primary hover:bg-surface-tertiary rounded-lg transition-colors"
+                        disabled={syncingId === integration.id}
+                        className="p-2 text-th-text-muted hover:text-th-text-primary hover:bg-surface-tertiary rounded-lg transition-colors disabled:opacity-50"
                         title="Sync now"
                       >
-                        <RefreshCw className="w-4 h-4" />
+                        <RefreshCw className={`w-4 h-4 ${syncingId === integration.id ? 'animate-spin' : ''}`} />
                       </button>
                     </div>
 
@@ -511,6 +549,106 @@ export default function Integrations() {
                   <>
                     <Plug className="w-4 h-4" />
                     Add Integration
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && settingsIntegration && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface-primary rounded-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-th-border-primary">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">{PROVIDER_ICONS[settingsIntegration.provider] || '🔌'}</div>
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  {settingsIntegration.name} Settings
+                </h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  setSettingsIntegration(null);
+                  setSettingsForm({});
+                }}
+                className="p-1 text-th-text-muted hover:text-th-text-primary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                  API Key
+                </label>
+                <input
+                  type="password"
+                  value={(settingsForm.api_key as string) || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, api_key: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-th-border-primary bg-surface-secondary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
+                  placeholder="Enter API key..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                  Webhook URL (optional)
+                </label>
+                <input
+                  type="url"
+                  value={(settingsForm.webhook_url as string) || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, webhook_url: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-th-border-primary bg-surface-secondary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
+                <span className="text-sm text-th-text-secondary">Enable Integration</span>
+                <button
+                  onClick={() => setSettingsForm({ ...settingsForm, enabled: !settingsForm.enabled })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settingsForm.enabled !== false ? 'bg-th-accent-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settingsForm.enabled !== false ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 p-4 border-t border-th-border-primary">
+              <button
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  setSettingsIntegration(null);
+                  setSettingsForm({});
+                }}
+                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveSettings}
+                disabled={actionLoading === settingsIntegration.id}
+                className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
+              >
+                {actionLoading === settingsIntegration.id ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Save Settings
                   </>
                 )}
               </button>

@@ -46,6 +46,9 @@ const CustomModuleDetail = lazy(() => import('./pages/studio/CustomModuleDetail'
 // Quick Rate Estimate Leads (from website quote system)
 const QuickRateEstimateLeads = lazy(() => import('./pages/QuickRateEstimateLeads'));
 
+// Zoho Import
+const ZohoImport = lazy(() => import('./pages/ZohoImport'));
+
 // Loading component for Suspense
 function PageLoader() {
   return (
@@ -434,6 +437,17 @@ export default function App() {
                     <Suspense fallback={<PageLoader />}>
                       <CustomModuleDetail />
                     </Suspense>
+                  }
+                />
+                {/* Zoho Import */}
+                <Route
+                  path="/import/zoho"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <ZohoImport />
+                      </Suspense>
+                    </Guarded>
                   }
                 />
               </Routes>

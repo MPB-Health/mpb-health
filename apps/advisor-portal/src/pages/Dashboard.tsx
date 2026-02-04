@@ -109,6 +109,7 @@ export default function Dashboard() {
         <button onClick={() => navigate('/inbox')} className="text-left">
           <MetricCard
             label="Inbox"
+            value="View"
             icon={<FileText className="w-5 h-5" />}
             className="hover:border-th-accent-300 cursor-pointer"
           />

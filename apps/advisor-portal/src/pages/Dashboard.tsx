@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
@@ -7,24 +7,14 @@ import {
   Video,
   FileText,
   Award,
-  Users,
   ArrowRight,
   Clock,
   Calendar,
-  CheckCircle2,
-  Zap,
-  User,
-  Mail,
-  Phone,
-  Shield,
-  AlertTriangle,
   Link,
 } from 'lucide-react';
-import { advisorLeadService, navigationService, type QuickLink } from '@mpbhealth/advisor-core';
+import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
-import { usePowerList, usePriorityStats } from '../hooks/usePriority';
-import { useUserComplianceStatus, usePendingAcknowledgments } from '../hooks/useCompliance';
 
 // Map icon name strings to Lucide icon components
 function getIconComponent(iconName: string): LucideIcons.LucideIcon {
@@ -50,12 +40,11 @@ interface QuickActionItem {
 
 // Fallback quick actions (used when CMS data isn't available)
 const fallbackQuickActions: QuickActionItem[] = [
-  { label: 'Power List', url: '/power-list', icon: 'Zap', highlight: true },
-  { label: 'My Leads', url: '/leads', icon: 'Users' },
+  { label: 'Inbox', url: '/inbox', icon: 'Inbox', highlight: true },
   { label: 'Training', url: '/training', icon: 'GraduationCap' },
   { label: 'Forms', url: '/forms', icon: 'FileText' },
   { label: 'SOPs', url: '/sops', icon: 'FileText' },
-  { label: 'Compliance', url: '/compliance', icon: 'Shield' },
+  { label: 'Meetings', url: '/meetings', icon: 'Video' },
   { label: 'Profile', url: '/profile', icon: 'Award' },
 ];
 
@@ -69,17 +58,7 @@ export default function Dashboard() {
     upcomingMeetings,
   } = useAdvisor();
 
-  const [assignedLeadCount, setAssignedLeadCount] = useState(0);
   const [cmsQuickActions, setCmsQuickActions] = useState<QuickLink[]>([]);
-  const { items: powerListItems, loading: powerListLoading } = usePowerList();
-  const { stats: priorityStats } = usePriorityStats();
-  const { status: complianceStatus } = useUserComplianceStatus(profile?.id);
-  const { pending: pendingAcknowledgments } = usePendingAcknowledgments(profile?.id);
-
-  useEffect(() => {
-    if (!profile?.id) return;
-    advisorLeadService.getAssignedLeadCount(profile.id).then(setAssignedLeadCount);
-  }, [profile?.id]);
 
   // Fetch quick actions from CMS
   useEffect(() => {
@@ -126,27 +105,11 @@ export default function Dashboard() {
       />
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <button onClick={() => navigate('/power-list')} className="text-left">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <button onClick={() => navigate('/inbox')} className="text-left">
           <MetricCard
-            label="Priority Items"
-            value={priorityStats?.totalItems ?? '-'}
-            icon={<Zap className="w-5 h-5" />}
-            className="hover:border-th-accent-300 cursor-pointer"
-          />
-        </button>
-
-        <MetricCard
-          label="Completed Today"
-          value={priorityStats?.completedToday ?? 0}
-          icon={<CheckCircle2 className="w-5 h-5" />}
-        />
-
-        <button onClick={() => navigate('/leads')} className="text-left">
-          <MetricCard
-            label="Assigned Leads"
-            value={assignedLeadCount}
-            icon={<Users className="w-5 h-5" />}
+            label="Inbox"
+            icon={<FileText className="w-5 h-5" />}
             className="hover:border-th-accent-300 cursor-pointer"
           />
         </button>
@@ -162,106 +125,6 @@ export default function Dashboard() {
           value={`${trainingStats.completionPercentage.toFixed(0)}%`}
           icon={<GraduationCap className="w-5 h-5" />}
         />
-      </div>
-
-      {/* Today's Focus - Power List Preview */}
-      <div className="bg-surface-primary rounded-xl border border-th-border">
-        <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
-          <div className="flex items-center space-x-2">
-            <Zap className="w-5 h-5 text-yellow-500" />
-            <h2 className="font-semibold text-th-text-primary">Today's Focus</h2>
-          </div>
-          <button
-            onClick={() => navigate('/power-list')}
-            className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center space-x-1"
-          >
-            <span>View Power List</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="p-5">
-          {powerListLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
-            </div>
-          ) : powerListItems.length > 0 ? (
-            <div className="space-y-3">
-              {powerListItems.slice(0, 5).map((item, index) => {
-                const scoreColor =
-                  item.score >= 80
-                    ? 'bg-red-500'
-                    : item.score >= 60
-                      ? 'bg-orange-500'
-                      : item.score >= 40
-                        ? 'bg-yellow-500'
-                        : 'bg-green-500';
-
-                return (
-                  <button
-                    key={item.item_id}
-                    onClick={() => item.lead_id && navigate(`/leads/${item.lead_id}`)}
-                    className="w-full flex items-center space-x-4 p-3 rounded-lg hover:bg-surface-tertiary transition-colors text-left"
-                  >
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-neutral-100 text-neutral-500 text-xs font-bold">
-                      {index + 1}
-                    </div>
-                    <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-neutral-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <p className="font-medium text-th-text-primary truncate">
-                          {item.person_name}
-                        </p>
-                        <span
-                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                          style={{ backgroundColor: item.lane_color }}
-                        >
-                          {item.lane_name}
-                        </span>
-                      </div>
-                      {item.reason && (
-                        <p className="text-sm text-th-text-tertiary truncate mt-0.5">
-                          {item.reason}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-3 flex-shrink-0">
-                      <div className="flex items-center space-x-1">
-                        <div className={`w-2 h-2 rounded-full ${scoreColor}`} />
-                        <span className="text-xs font-medium text-neutral-600">{item.score}</span>
-                      </div>
-                      {item.person_email && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.location.href = `mailto:${item.person_email}`;
-                          }}
-                          className="p-1.5 hover:bg-neutral-200 rounded"
-                          title="Send email"
-                        >
-                          <Mail className="w-4 h-4 text-neutral-400" />
-                        </button>
-                      )}
-                      <ArrowRight className="w-5 h-5 text-th-text-tertiary" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-th-text-tertiary">
-              <Zap className="w-12 h-12 mx-auto mb-3 text-th-text-tertiary" />
-              <p>No priority items yet</p>
-              <button
-                onClick={() => navigate('/leads')}
-                className="mt-3 text-th-accent-600 hover:text-th-accent-700 font-medium"
-              >
-                Add leads to Power List
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -372,78 +235,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      {/* Compliance Status */}
-      {(pendingAcknowledgments.length > 0 || (complianceStatus && complianceStatus.compliance_score < 100)) && (
-        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
-          <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
-            <div className="flex items-center space-x-2">
-              <Shield className={`w-5 h-5 ${
-                (complianceStatus?.compliance_score || 0) >= 90 ? 'text-green-500' :
-                (complianceStatus?.compliance_score || 0) >= 70 ? 'text-yellow-500' : 'text-red-500'
-              }`} />
-              <h2 className="font-semibold text-th-text-primary">Compliance Status</h2>
-              {pendingAcknowledgments.length > 0 && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
-                  {pendingAcknowledgments.length} pending
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => navigate('/compliance')}
-              className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center space-x-1"
-            >
-              <span>View All</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-th-text-tertiary">Compliance Score</p>
-                <p className={`text-2xl font-bold ${
-                  (complianceStatus?.compliance_score || 0) >= 90 ? 'text-green-600' :
-                  (complianceStatus?.compliance_score || 0) >= 70 ? 'text-yellow-600' : 'text-red-600'
-                }`}>
-                  {complianceStatus?.compliance_score || 0}%
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-th-text-tertiary">Tasks</p>
-                <p className="text-lg font-semibold text-th-text-primary">
-                  {complianceStatus?.total_completed || 0} / {complianceStatus?.total_required || 0}
-                </p>
-              </div>
-            </div>
-            {pendingAcknowledgments.length > 0 && (
-              <div className="space-y-2">
-                {pendingAcknowledgments.slice(0, 3).map((ack) => (
-                  <button
-                    key={ack.id}
-                    onClick={() => navigate(`/compliance/acknowledge/${ack.id}`)}
-                    className="w-full flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors text-left"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                      <div>
-                        <p className="text-sm font-medium text-yellow-800">
-                          {ack.document?.title || 'Pending Acknowledgment'}
-                        </p>
-                        {ack.due_date && (
-                          <p className="text-xs text-yellow-600">
-                            Due {format(new Date(ack.due_date), 'MMM d')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-yellow-500" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Quick Links - Dynamic from CMS */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-5">

@@ -297,14 +297,7 @@ export default function NotificationCenter() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-th-border-primary">
-              <Link
-                to="/activity"
-                className="text-sm text-th-accent-600 hover:text-th-accent-700"
-                onClick={() => setIsOpen(false)}
-              >
-                View all activity
-              </Link>
+            <div className="flex items-center justify-end px-4 py-3 border-t border-th-border-primary">
               <button
                 onClick={handleDismissAll}
                 className="text-xs text-th-text-muted hover:text-red-600 flex items-center gap-1"

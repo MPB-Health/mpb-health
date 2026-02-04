@@ -40,6 +40,7 @@ import {
   Settings2,
   Calculator,
   Command,
+  Download,
 } from 'lucide-react';
 import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -85,6 +86,7 @@ const navigationSections: NavSection[] = [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
       { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
+      { name: 'Import from Zoho', href: '/import/zoho', icon: Download, permission: 'settings.manage' },
     ],
   },
   {

@@ -939,3 +939,133 @@ export async function sendWeeklySummaryEmail(data: WeeklySummaryData): Promise<E
     text: `Weekly Performance Report - ${data.weekRange}\n\nHi ${data.recipientName},\n\nTotal Leads: ${data.stats.totalLeads} (${data.stats.leadsChange >= 0 ? '+' : ''}${data.stats.leadsChange}%)\nConversions: ${data.stats.conversions}\nConversion Rate: ${data.stats.conversionRate}%\nAvg Response Time: ${data.stats.avgResponseTime}\nTop Source: ${data.stats.topSource}\n\nView full report: https://mpb.health/admin/crm/reports`
   });
 }
+
+// ============================================================================
+// User Invitation Emails
+// ============================================================================
+
+export interface UserInvitationData {
+  email: string;
+  inviterName: string;
+  orgName: string;
+  role: string;
+  inviteToken: string;
+}
+
+export async function sendUserInvitationEmail(data: UserInvitationData): Promise<EmailResponse> {
+  const acceptUrl = `https://admin.mpb.health/accept-invite?token=${data.inviteToken}`;
+
+  const roleLabels: Record<string, string> = {
+    owner: 'Owner',
+    admin: 'Admin',
+    manager: 'Manager',
+    advisor: 'Advisor',
+    staff: 'Staff',
+    member: 'Member',
+  };
+
+  const roleLabel = roleLabels[data.role] || data.role;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>You've Been Invited to Join ${data.orgName}</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 0;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px 40px; border-radius: 12px 12px 0 0; text-align: center;">
+                    <img src="https://mpb.health/assets/MPB-Health-No-background.png" alt="MPB Health" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+                    <h1 style="color: #ffffff; font-size: 24px; margin: 0;">You're Invited!</h1>
+                  </td>
+                </tr>
+
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding: 40px;">
+                    <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 20px 0;">
+                      Hello,
+                    </p>
+
+                    <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 20px 0;">
+                      <strong>${data.inviterName}</strong> has invited you to join <strong>${data.orgName}</strong> on MPB Health as a <strong>${roleLabel}</strong>.
+                    </p>
+
+                    <!-- Role Info Box -->
+                    <div style="background: linear-gradient(to right, #eff6ff, #ecfeff); border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                      <p style="color: #1e40af; font-size: 14px; margin: 0;">
+                        <strong>Your Role:</strong> ${roleLabel}<br>
+                        <strong>Organization:</strong> ${data.orgName}
+                      </p>
+                    </div>
+
+                    <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
+                      Click the button below to accept this invitation and set up your account:
+                    </p>
+
+                    <!-- Accept Button -->
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="${acceptUrl}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                        Accept Invitation
+                      </a>
+                    </div>
+
+                    <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 25px 0 0 0;">
+                      This invitation will expire in 7 days. If you didn't expect this invitation, you can safely ignore this email.
+                    </p>
+
+                    <p style="color: #999; font-size: 12px; line-height: 1.6; margin: 20px 0 0 0;">
+                      If the button above doesn't work, copy and paste this link into your browser:<br>
+                      <a href="${acceptUrl}" style="color: #2563eb; word-break: break-all;">${acceptUrl}</a>
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center; border-radius: 0 0 12px 12px;">
+                    <p style="color: #999; font-size: 12px; margin: 0 0 10px 0;">
+                      This invitation was sent by MPB Health on behalf of ${data.inviterName}.
+                    </p>
+                    <p style="color: #999; font-size: 12px; margin: 0;">
+                      <a href="https://mpb.health/privacy-policy" style="color: #666; text-decoration: underline;">Privacy Policy</a> |
+                      <a href="https://mpb.health" style="color: #666; text-decoration: underline;">Visit Our Website</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const textContent = `You've Been Invited to Join ${data.orgName}
+
+Hello,
+
+${data.inviterName} has invited you to join ${data.orgName} on MPB Health as a ${roleLabel}.
+
+Your Role: ${roleLabel}
+Organization: ${data.orgName}
+
+Click the link below to accept this invitation and set up your account:
+${acceptUrl}
+
+This invitation will expire in 7 days. If you didn't expect this invitation, you can safely ignore this email.`;
+
+  return sendEmail({
+    to: data.email,
+    subject: `You've been invited to join ${data.orgName} on MPB Health`,
+    html,
+    text: textContent,
+  });
+}

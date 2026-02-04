@@ -147,7 +147,7 @@ class ZohoCRMService {
    * Check if Zoho CRM edge function is properly configured
    * Returns false if the edge function is not deployed or not configured
    */
-  async checkConfiguration(): Promise<{ configured: boolean; error?: string }> {
+  async checkConfiguration(): Promise<{ configured: boolean; connected?: boolean; error?: string }> {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -168,14 +168,98 @@ class ZohoCRMService {
         return { configured: false, error: 'Edge function not deployed' };
       }
 
-      if (response.status === 500) {
-        const data = await response.json();
-        return { configured: false, error: data.error || 'Zoho CRM not configured' };
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { configured: data.configured || false, connected: false, error: data.error || 'Zoho CRM not configured' };
       }
 
-      return { configured: true };
+      return { configured: data.configured, connected: data.connected };
     } catch (_error) {
       return { configured: false, error: 'Unable to reach edge function' };
+    }
+  }
+
+  /**
+   * List leads from Zoho CRM with pagination
+   */
+  async listLeads(options?: {
+    page?: number;
+    per_page?: number;
+    modified_since?: string;
+    sort_by?: string;
+    sort_order?: string;
+  }): Promise<{ success: boolean; data?: any[]; info?: any; error?: string }> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      };
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const params = new URLSearchParams({ action: 'list' });
+      if (options?.page) params.set('page', options.page.toString());
+      if (options?.per_page) params.set('per_page', options.per_page.toString());
+      if (options?.modified_since) params.set('modified_since', options.modified_since);
+      if (options?.sort_by) params.set('sort_by', options.sort_by);
+      if (options?.sort_order) params.set('sort_order', options.sort_order);
+
+      const response = await fetch(`${this.edgeFunctionUrl}?${params}`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to list leads');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('List leads error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to list leads from Zoho CRM',
+      };
+    }
+  }
+
+  /**
+   * Get a single lead by ID from Zoho CRM
+   */
+  async getLead(leadId: string): Promise<{ success: boolean; lead?: any; error?: string }> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      };
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch(`${this.edgeFunctionUrl}?action=get&id=${encodeURIComponent(leadId)}`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to get lead');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Get lead error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get lead from Zoho CRM',
+      };
     }
   }
 }

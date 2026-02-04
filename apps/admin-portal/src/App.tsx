@@ -12,6 +12,7 @@ import Resources from './pages/Resources';
 import Settings from './pages/Settings';
 import AuditLogs from './pages/AuditLogs';
 import Login from './pages/Login';
+import AcceptInvite from './pages/AcceptInvite';
 import PaymentProcessors from './pages/PaymentProcessors';
 import SmsAccounts from './pages/SmsAccounts';
 import PromoCodes from './pages/PromoCodes';
@@ -24,6 +25,7 @@ export default function App() {
     <AdminProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/accept-invite" element={<AcceptInvite />} />
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="users" element={<Users />} />

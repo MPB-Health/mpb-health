@@ -219,6 +219,134 @@ async function searchLeadByEmail(email: string): Promise<{ found: boolean; leadI
   }
 }
 
+// List all leads with pagination
+async function listLeads(params: {
+  page?: number;
+  per_page?: number;
+  modified_since?: string;
+  sort_by?: string;
+  sort_order?: string;
+}): Promise<{ success: boolean; data?: any[]; info?: any; error?: string }> {
+  try {
+    const token = await getAccessToken();
+
+    const url = new URL(`${ZOHO_API_DOMAIN}/crm/v3/Leads`);
+    if (params.page) url.searchParams.set("page", params.page.toString());
+    if (params.per_page) url.searchParams.set("per_page", params.per_page.toString());
+    if (params.modified_since) url.searchParams.set("modified_since", params.modified_since);
+    if (params.sort_by) url.searchParams.set("sort_by", params.sort_by);
+    if (params.sort_order) url.searchParams.set("sort_order", params.sort_order);
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "Authorization": `Zoho-oauthtoken ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 204) {
+        return { success: true, data: [], info: { count: 0 } };
+      }
+      const errorText = await response.text();
+      throw new Error(`Zoho API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      data: result.data || [],
+      info: result.info || { count: result.data?.length || 0 },
+    };
+  } catch (error) {
+    console.error("List leads error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to list leads from Zoho CRM",
+    };
+  }
+}
+
+// Get a single lead by ID
+async function getLead(leadId: string): Promise<{ success: boolean; lead?: any; error?: string }> {
+  try {
+    const token = await getAccessToken();
+
+    const response = await fetch(`${ZOHO_API_DOMAIN}/crm/v3/Leads/${leadId}`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Zoho-oauthtoken ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Zoho API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+
+    if (result.data && result.data.length > 0) {
+      return { success: true, lead: result.data[0] };
+    }
+
+    return { success: false, error: "Lead not found" };
+  } catch (error) {
+    console.error("Get lead error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to get lead from Zoho CRM",
+    };
+  }
+}
+
+// Health check - verify Zoho connection
+async function healthCheck(): Promise<{ success: boolean; configured: boolean; connected: boolean; error?: string }> {
+  // Check if configured
+  if (!ZOHO_CLIENT_ID || !ZOHO_CLIENT_SECRET || !ZOHO_REFRESH_TOKEN) {
+    return {
+      success: false,
+      configured: false,
+      connected: false,
+      error: "Zoho CRM credentials not configured",
+    };
+  }
+
+  try {
+    // Try to get access token
+    await getAccessToken();
+
+    // Try a simple API call
+    const url = new URL(`${ZOHO_API_DOMAIN}/crm/v3/Leads`);
+    url.searchParams.set("per_page", "1");
+
+    const token = await getAccessToken();
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "Authorization": `Zoho-oauthtoken ${token}`,
+      },
+    });
+
+    if (!response.ok && response.status !== 204) {
+      throw new Error(`API test failed: ${response.status}`);
+    }
+
+    return {
+      success: true,
+      configured: true,
+      connected: true,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      configured: true,
+      connected: false,
+      error: error instanceof Error ? error.message : "Connection test failed",
+    };
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -273,29 +401,95 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    if (req.method === "GET" && action === "search") {
-      const email = url.searchParams.get("email");
-      if (!email) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Email is required" }),
-          {
-            status: 400,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+    if (req.method === "GET") {
+      // Health check
+      if (action === "health") {
+        const result = await healthCheck();
+        return new Response(JSON.stringify(result), {
+          status: result.success ? 200 : 503,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        });
       }
 
-      const result = await searchLeadByEmail(email);
-      return new Response(JSON.stringify(result), {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      });
+      // Search by email
+      if (action === "search") {
+        const email = url.searchParams.get("email");
+        if (!email) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Email is required" }),
+            {
+              status: 400,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+        }
+
+        const result = await searchLeadByEmail(email);
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        });
+      }
+
+      // List leads (for import)
+      if (action === "list") {
+        const page = url.searchParams.get("page");
+        const per_page = url.searchParams.get("per_page");
+        const modified_since = url.searchParams.get("modified_since");
+        const sort_by = url.searchParams.get("sort_by");
+        const sort_order = url.searchParams.get("sort_order");
+
+        const result = await listLeads({
+          page: page ? parseInt(page) : undefined,
+          per_page: per_page ? parseInt(per_page) : undefined,
+          modified_since: modified_since || undefined,
+          sort_by: sort_by || undefined,
+          sort_order: sort_order || undefined,
+        });
+
+        return new Response(JSON.stringify(result), {
+          status: result.success ? 200 : 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        });
+      }
+
+      // Get single lead
+      if (action === "get") {
+        const leadId = url.searchParams.get("id");
+        if (!leadId) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Lead ID is required" }),
+            {
+              status: 400,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+        }
+
+        const result = await getLead(leadId);
+        return new Response(JSON.stringify(result), {
+          status: result.success ? 200 : 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        });
+      }
     }
 
     return new Response(

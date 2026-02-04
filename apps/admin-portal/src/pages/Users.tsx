@@ -11,6 +11,8 @@ import {
   UserX,
 } from 'lucide-react';
 import { userService, type AdminUser } from '@mpbhealth/admin-core';
+import AddUserModal from '../components/AddUserModal';
+import InviteUserModal from '../components/InviteUserModal';
 
 export default function Users() {
   const navigate = useNavigate();
@@ -19,6 +21,8 @@ export default function Users() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -73,10 +77,22 @@ export default function Users() {
             Manage admin users and their permissions
           </p>
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors">
-          <Plus className="w-5 h-5" />
-          <span>Add User</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 border border-th-border text-th-text-secondary rounded-lg font-medium hover:bg-surface-secondary transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Invite</span>
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add User</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -220,6 +236,36 @@ export default function Users() {
           </div>
         )}
       </div>
+
+      {/* Add User Modal */}
+      <AddUserModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          // Refresh the users list
+          setLoading(true);
+          userService.getUsers({
+            role: roleFilter || undefined,
+            status: statusFilter || undefined,
+            search: searchQuery || undefined,
+          }).then(data => {
+            setUsers(data);
+            setLoading(false);
+          }).catch(err => {
+            console.error('Failed to load users:', err);
+            setLoading(false);
+          });
+        }}
+      />
+
+      {/* Invite User Modal */}
+      <InviteUserModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        onSuccess={() => {
+          // No need to refresh since invites don't show in this list
+        }}
+      />
     </div>
   );
 }

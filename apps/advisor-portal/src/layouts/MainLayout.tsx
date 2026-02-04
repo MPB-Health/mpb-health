@@ -29,6 +29,7 @@ import { OnboardingWizard } from '../components/onboarding';
 import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useUserPreferences } from '../hooks/useSettings';
 
 // Icon mapping for dynamic icons from CMS
 const iconMap: Record<string, LucideIcons.LucideIcon> = {
@@ -105,6 +106,7 @@ export default function MainLayout() {
   const { profile, liveMeetings, unreadBulletinCount, logout, loading } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
+  const { preferences: userPreferences } = useUserPreferences();
 
   // Dynamic navigation from CMS with caching
   const [cmsNavItems, setCmsNavItems] = useState<NavItem[]>(cachedNavItems || []);
@@ -290,6 +292,7 @@ export default function MainLayout() {
         appName="Advisor Portal"
         logoSrc="/logo.png"
         navigation={navWithBadges}
+        initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
         portalSwitcher={
           <PortalSwitcher
             currentPortal="advisors"

@@ -24,6 +24,8 @@ export interface AppLayoutProps {
   topBarActions?: React.ReactNode;
   /** Optional portal switcher dropdown to enable navigation between portals */
   portalSwitcher?: React.ReactNode;
+  /** Initial collapsed state for the sidebar */
+  initialCollapsed?: boolean;
   renderNavLink: (item: NavItem, props: NavLinkRenderProps) => React.ReactNode;
   renderChildNavLink?: (child: { name: string; href: string }, props: ChildNavLinkRenderProps) => React.ReactNode;
 }
@@ -52,11 +54,12 @@ export function AppLayout({
   userSection,
   topBarActions,
   portalSwitcher,
+  initialCollapsed = false,
   renderNavLink,
   renderChildNavLink,
 }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
 
@@ -65,6 +68,13 @@ export function AppLayout({
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Listen for mobile sidebar open event (from MobileBottomNav "More" button)
+  useEffect(() => {
+    const handleOpenMobileSidebar = () => setSidebarOpen(true);
+    window.addEventListener('open-mobile-sidebar', handleOpenMobileSidebar);
+    return () => window.removeEventListener('open-mobile-sidebar', handleOpenMobileSidebar);
   }, []);
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);

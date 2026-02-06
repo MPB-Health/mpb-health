@@ -116,9 +116,15 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
     // Apply section filter if specified
     if (section) {
       const sectionName = currentSection?.title || section;
+      const categoryLower = doc.category?.toLowerCase() || '';
+      const sectionLower = section.toLowerCase().replace('-', ' ');
+      const sectionNameLower = sectionName.toLowerCase();
+      
       const matchesSection = 
-        doc.category?.toLowerCase() === sectionName.toLowerCase() ||
-        doc.tags?.some(tag => tag.toLowerCase().includes(section.replace('-', ' ')));
+        categoryLower === sectionNameLower ||
+        categoryLower === sectionLower ||
+        categoryLower.includes(sectionLower) ||
+        doc.tags?.some(tag => tag.toLowerCase().includes(sectionLower));
       if (!matchesSection) return false;
     }
     const matchesSearch =

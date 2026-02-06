@@ -222,11 +222,11 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
               >
                 {/* Image thumbnail or icon header */}
                 {hasImage ? (
-                  <div className="w-full h-40 bg-surface-tertiary">
+                  <div className="w-full aspect-video bg-surface-tertiary flex items-center justify-center">
                     <img
                       src={doc.image_url!}
                       alt={doc.title}
-                      className="w-full h-full object-cover"
+                      className="max-w-full max-h-full object-contain"
                     />
                   </div>
                 ) : (
@@ -247,7 +247,7 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
 
                 {/* Card content */}
                 <div className={hasImage ? 'p-5' : 'p-5 pt-4'}>
-                  <h3 className="font-semibold text-th-text-primary">
+                  <h3 className="font-semibold text-th-text-primary leading-snug">
                     {doc.title}
                   </h3>
                   {doc.description && (

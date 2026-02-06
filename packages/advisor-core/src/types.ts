@@ -138,6 +138,7 @@ export interface SOPDocument {
   content: string;
   content_type: 'markdown' | 'html' | 'pdf';
   file_url: string | null;
+  image_url: string | null;
   version: string;
   is_published: boolean;
   tags: string[];

@@ -5,8 +5,7 @@ import {
   Search,
   FileText,
   Eye,
-  Calendar,
-  TrendingUp,
+  ExternalLink,
   Presentation,
   BarChart2,
   FileSearch,
@@ -177,39 +176,76 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       {/* Cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredDocuments.length > 0 ? (
-          filteredDocuments.map((doc) => (
-            <button
-              key={doc.id}
-              onClick={() => navigate(`/sops/${doc.id}`)}
-              className="bg-surface-primary rounded-xl border border-th-border p-5 text-left hover:border-th-accent-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start justify-between">
-                <div className="w-12 h-12 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-6 h-6 text-th-accent-600 dark:text-th-accent-400" />
-                </div>
-                <div className="text-right text-sm text-th-text-tertiary">
-                  <div className="flex items-center space-x-1">
-                    <Eye className="w-4 h-4" />
-                    <span>{doc.view_count}</span>
+          filteredDocuments.map((doc) => {
+            // Check if this is an external document (has file_url)
+            const isExternalLink = !!doc.file_url;
+            const hasImage = !!doc.image_url;
+
+            const handleClick = () => {
+              if (isExternalLink && doc.file_url) {
+                window.open(doc.file_url, '_blank', 'noopener,noreferrer');
+              } else {
+                navigate(`/sops/${doc.id}`);
+              }
+            };
+
+            return (
+              <button
+                key={doc.id}
+                onClick={handleClick}
+                className="bg-surface-primary rounded-xl border border-th-border overflow-hidden text-left hover:border-th-accent-300 hover:shadow-md transition-all"
+              >
+                {/* Image thumbnail or icon header */}
+                {hasImage ? (
+                  <div className="w-full h-40 bg-surface-tertiary">
+                    <img
+                      src={doc.image_url!}
+                      alt={doc.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-5 pb-0">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-6 h-6 text-th-accent-600 dark:text-th-accent-400" />
+                      </div>
+                      <div className="text-right text-sm text-th-text-tertiary">
+                        <div className="flex items-center space-x-1">
+                          <Eye className="w-4 h-4" />
+                          <span>{doc.view_count}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Card content */}
+                <div className={hasImage ? 'p-5' : 'p-5 pt-4'}>
+                  <h3 className="font-semibold text-th-text-primary">
+                    {doc.title}
+                  </h3>
+                  {doc.description && (
+                    <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
+                      {doc.description}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">
+                    <span className="text-sm text-th-text-tertiary">{doc.category}</span>
+                    <span className="text-sm text-th-accent-600 font-medium flex items-center gap-1">
+                      {isExternalLink ? (
+                        <>
+                          Open <ExternalLink className="w-3.5 h-3.5" />
+                        </>
+                      ) : (
+                        'View →'
+                      )}
+                    </span>
                   </div>
                 </div>
-              </div>
-              <h3 className="font-semibold text-th-text-primary mt-4">
-                {doc.title}
-              </h3>
-              {doc.description && (
-                <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
-                  {doc.description}
-                </p>
-              )}
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">
-                <span className="text-sm text-th-text-tertiary">{doc.category}</span>
-                <span className="text-sm text-th-accent-600 font-medium">
-                  View →
-                </span>
-              </div>
-            </button>
-          ))
+              </button>
+            );
+          })
         ) : (
           <div className="col-span-full bg-surface-primary rounded-xl border border-th-border p-12 text-center">
             <BookOpen className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />

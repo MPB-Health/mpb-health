@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { X, ExternalLink, Loader2 } from 'lucide-react';
 
 interface DocumentPreviewModalProps {
@@ -9,8 +9,8 @@ interface DocumentPreviewModalProps {
 }
 
 /**
- * Modal component for previewing PPTX documents using Microsoft Office Online Viewer.
- * Displays an embedded interactive preview with navigation controls.
+ * Modal component for previewing documents (PPTX, PDF, etc.).
+ * Uses Microsoft Office Online Viewer for Office files and Google Docs Viewer for PDFs.
  */
 export default function DocumentPreviewModal({
   isOpen,
@@ -18,8 +18,25 @@ export default function DocumentPreviewModal({
   title,
   fileUrl,
 }: DocumentPreviewModalProps) {
-  // Generate the Microsoft Office Online viewer URL
-  const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+  // Detect file type and generate appropriate viewer URL
+  const { viewerUrl, isPDF } = useMemo(() => {
+    const lowerUrl = fileUrl.toLowerCase();
+    const isPDFFile = lowerUrl.endsWith('.pdf');
+    
+    if (isPDFFile) {
+      // Use Google Docs Viewer for PDFs (works with public URLs)
+      return {
+        viewerUrl: `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`,
+        isPDF: true,
+      };
+    } else {
+      // Use Microsoft Office Online viewer for Office files (PPTX, DOCX, XLSX)
+      return {
+        viewerUrl: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`,
+        isPDF: false,
+      };
+    }
+  }, [fileUrl]);
 
   // Handle escape key to close modal
   const handleKeyDown = useCallback(

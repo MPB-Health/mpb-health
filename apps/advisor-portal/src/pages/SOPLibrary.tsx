@@ -15,6 +15,7 @@ import {
   Mountain,
   Shield,
   Pill,
+  FileType,
 } from 'lucide-react';
 import {
   contentService,
@@ -200,12 +201,14 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
             // Check if this is an external document (has file_url)
             const isExternalLink = !!doc.file_url;
             const hasImage = !!doc.image_url;
-            // Check if this is a PPTX file that can be previewed
+            // Check if this is a file that can be previewed (PPTX or PDF)
             const isPPTX = doc.file_url?.toLowerCase().match(/\.pptx?$/) !== null;
+            const isPDF = doc.file_url?.toLowerCase().endsWith('.pdf') === true;
+            const canPreview = isPPTX || isPDF;
 
             const handleClick = () => {
-              if (isPPTX && doc.file_url) {
-                // Open preview modal for PPTX files
+              if (canPreview && doc.file_url) {
+                // Open preview modal for PPTX and PDF files
                 setPreviewDoc(doc);
               } else if (isExternalLink && doc.file_url) {
                 window.open(doc.file_url, '_blank', 'noopener,noreferrer');
@@ -261,6 +264,10 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
                       {isPPTX ? (
                         <>
                           Preview <Presentation className="w-3.5 h-3.5" />
+                        </>
+                      ) : isPDF ? (
+                        <>
+                          Preview <FileType className="w-3.5 h-3.5" />
                         </>
                       ) : isExternalLink ? (
                         <>

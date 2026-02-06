@@ -7,6 +7,9 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  UserCheck,
+  Building2,
+  Users,
 } from 'lucide-react';
 import {
   formsService,
@@ -15,7 +18,39 @@ import {
 } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
-export default function Forms() {
+interface FormsProps {
+  section?: 'advisor' | 'employer' | 'member';
+}
+
+// Section configuration for filtering and display
+const sectionConfig = {
+  advisor: {
+    title: 'Advisor Forms',
+    description: 'Forms for advisor onboarding and compliance',
+    icon: UserCheck,
+    filter: (form: AdvisorForm) => 
+      form.menu_section === 'advisor' || 
+      form.category?.toLowerCase().includes('advisor'),
+  },
+  employer: {
+    title: 'Employer Forms',
+    description: 'Forms for employer enrollment and administration',
+    icon: Building2,
+    filter: (form: AdvisorForm) => 
+      form.menu_section === 'employer' || 
+      form.category?.toLowerCase().includes('employer'),
+  },
+  member: {
+    title: 'Member Forms',
+    description: 'Forms for member enrollment and benefits',
+    icon: Users,
+    filter: (form: AdvisorForm) => 
+      form.menu_section === 'member' || 
+      form.category?.toLowerCase().includes('member'),
+  },
+};
+
+export default function Forms({ section }: FormsProps) {
   const { profile } = useAdvisor();
   const [forms, setForms] = useState<AdvisorForm[]>([]);
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
@@ -52,7 +87,14 @@ export default function Forms() {
     return submissions.find((s) => s.form_id === formId);
   };
 
+  // Get section config if section is specified
+  const currentSection = section ? sectionConfig[section] : null;
+
   const filteredForms = forms.filter((form) => {
+    // Apply section filter first if specified
+    if (currentSection && !currentSection.filter(form)) {
+      return false;
+    }
     const matchesCategory = !selectedCategory || form.category === selectedCategory;
     const formName = form.name || form.label || '';
     const matchesSearch =
@@ -70,14 +112,28 @@ export default function Forms() {
     );
   }
 
+  // Dynamic title and description based on section
+  const pageTitle = currentSection?.title || 'Forms';
+  const pageDescription = currentSection?.description || 'Complete and submit required forms';
+  const PageIcon = currentSection?.icon || FileText;
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-th-text-primary">Forms</h1>
-        <p className="text-th-text-tertiary text-sm mt-1">
-          Complete and submit required forms
-        </p>
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+          section ? 'bg-th-accent-100 dark:bg-th-accent-900/30' : 'bg-surface-tertiary'
+        }`}>
+          <PageIcon className={`w-6 h-6 ${
+            section ? 'text-th-accent-600 dark:text-th-accent-400' : 'text-th-text-tertiary'
+          }`} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-th-text-primary">{pageTitle}</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
+            {pageDescription}
+          </p>
+        </div>
       </div>
 
       {/* Filters */}

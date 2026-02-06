@@ -44,6 +44,9 @@ export default function App() {
           <Route path="meetings" element={<Meetings />} />
           <Route path="meetings/:meetingId" element={<MeetingRoom />} />
           <Route path="forms" element={<Forms />} />
+          <Route path="forms/advisor" element={<Forms section="advisor" />} />
+          <Route path="forms/employer" element={<Forms section="employer" />} />
+          <Route path="forms/member" element={<Forms section="member" />} />
           <Route path="sops" element={<SOPLibrary />} />
           <Route path="sops/:documentId" element={<SOPDocument />} />
           <Route path="bulletins" element={<Bulletins />} />

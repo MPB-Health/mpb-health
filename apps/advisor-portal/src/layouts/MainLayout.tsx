@@ -66,13 +66,22 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Inbox', href: '/inbox', icon: Inbox },
   { name: 'Training', href: '/training', icon: GraduationCap },
   { name: 'Meetings', href: '/meetings', icon: Video },
-  { name: 'Forms', href: '/forms', icon: FileText },
+  { 
+    name: 'Forms', 
+    href: '/forms', 
+    icon: FileText,
+    children: [
+      { name: 'Advisor', href: '/forms/advisor' },
+      { name: 'Employer', href: '/forms/employer' },
+      { name: 'Member', href: '/forms/member' },
+    ],
+  },
   { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-// Convert CMS nav items to AppLayout NavItem format
+// Convert CMS nav items to AppLayout NavItem format (supports hierarchy)
 function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
   return items
     .filter(item => item.is_active)
@@ -93,6 +102,16 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
           {item.badge_text}
         </span>
       ) : undefined,
+      // Map children if they exist (for accordion submenus)
+      children: item.children && item.children.length > 0
+        ? item.children
+            .filter(child => child.is_active)
+            .sort((a, b) => a.order_index - b.order_index)
+            .map(child => ({
+              name: child.label,
+              href: child.url || '/',
+            }))
+        : undefined,
     }));
 }
 
@@ -112,7 +131,7 @@ export default function MainLayout() {
   const [cmsNavItems, setCmsNavItems] = useState<NavItem[]>(cachedNavItems || []);
   const [navLoading, setNavLoading] = useState(!cachedNavItems);
 
-  // Load navigation from CMS
+  // Load navigation from CMS (with hierarchy for submenus)
   const loadNavigation = useCallback(async () => {
     // Check cache first
     if (cachedNavItems && Date.now() - cacheTimestamp < CACHE_DURATION) {
@@ -122,7 +141,8 @@ export default function MainLayout() {
     }
 
     try {
-      const items = await navigationService.getNavMenuItemsFlat();
+      // Use getNavMenuItems() to get hierarchical data with children
+      const items = await navigationService.getNavMenuItems();
       if (items && items.length > 0) {
         const mappedItems = mapMenuItemsToNavItems(items);
         cachedNavItems = mappedItems;
@@ -142,8 +162,8 @@ export default function MainLayout() {
 
     // Subscribe to real-time navigation changes
     const channel = navigationService.subscribeToNavMenuChanges((items) => {
-      const activeItems = items.filter(item => !item.parent_id);
-      const mappedItems = mapMenuItemsToNavItems(activeItems);
+      // Items already come as a tree structure from subscribeToNavMenuChanges
+      const mappedItems = mapMenuItemsToNavItems(items);
       cachedNavItems = mappedItems;
       cacheTimestamp = Date.now();
       setCmsNavItems(mappedItems);
@@ -313,6 +333,22 @@ export default function MainLayout() {
                 isActive
                   ? 'bg-white/15 text-white'
                   : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+              }`
+            }
+            onClick={props.onClick}
+          >
+            {props.children}
+          </NavLink>
+        )}
+        renderChildNavLink={(child, props) => (
+          <NavLink
+            key={child.name}
+            to={child.href}
+            className={({ isActive }) =>
+              `${props.className} ${
+                isActive
+                  ? 'text-white font-medium'
+                  : 'text-white/50 hover:text-white'
               }`
             }
             onClick={props.onClick}

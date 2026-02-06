@@ -21,6 +21,7 @@ import {
   type SOPDocument,
   type SOPCategory,
 } from '@mpbhealth/advisor-core';
+import DocumentPreviewModal from '../components/DocumentPreviewModal';
 
 interface SOPLibraryProps {
   section?: string;
@@ -87,6 +88,7 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
   const [popularDocs, setPopularDocs] = useState<SOPDocument[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [previewDoc, setPreviewDoc] = useState<SOPDocument | null>(null);
 
   // Get section config if section is specified
   const currentSection = section ? sectionConfig[section] : null;
@@ -198,9 +200,14 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
             // Check if this is an external document (has file_url)
             const isExternalLink = !!doc.file_url;
             const hasImage = !!doc.image_url;
+            // Check if this is a PPTX file that can be previewed
+            const isPPTX = doc.file_url?.toLowerCase().match(/\.pptx?$/) !== null;
 
             const handleClick = () => {
-              if (isExternalLink && doc.file_url) {
+              if (isPPTX && doc.file_url) {
+                // Open preview modal for PPTX files
+                setPreviewDoc(doc);
+              } else if (isExternalLink && doc.file_url) {
                 window.open(doc.file_url, '_blank', 'noopener,noreferrer');
               } else {
                 navigate(`/sops/${doc.id}`);
@@ -251,7 +258,11 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">
                     <span className="text-sm text-th-text-tertiary">{doc.category}</span>
                     <span className="text-sm text-th-accent-600 font-medium flex items-center gap-1">
-                      {isExternalLink ? (
+                      {isPPTX ? (
+                        <>
+                          Preview <Presentation className="w-3.5 h-3.5" />
+                        </>
+                      ) : isExternalLink ? (
                         <>
                           Open <ExternalLink className="w-3.5 h-3.5" />
                         </>
@@ -271,6 +282,14 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
           </div>
         )}
       </div>
+
+      {/* PPTX Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        title={previewDoc?.title || ''}
+        fileUrl={previewDoc?.file_url || ''}
+      />
     </div>
   );
 }

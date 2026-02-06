@@ -110,8 +110,6 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
           return [];
         });
         
-        console.log('[SOPLibrary] Loaded documents:', docs.length, 'Section:', section);
-        
         setDocuments(docs);
         setCategories(cats);
         setPopularDocs(popular);
@@ -139,14 +137,6 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
         categoryLower.includes(sectionLower) ||
         doc.tags?.some(tag => tag.toLowerCase().includes(sectionLower));
       
-      console.log('[SOPLibrary] Filter check:', { 
-        docTitle: doc.title, 
-        category: categoryLower, 
-        section: sectionLower, 
-        sectionName: sectionNameLower,
-        matches: matchesSection 
-      });
-      
       if (!matchesSection) return false;
     }
     const matchesSearch =
@@ -156,8 +146,6 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       doc.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
-  
-  console.log('[SOPLibrary] Filtered results:', filteredDocuments.length);
 
   if (loading) {
     return (

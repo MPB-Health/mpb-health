@@ -94,11 +94,24 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [docs, cats, popular] = await Promise.all([
-          contentService.getSOPDocuments(),
-          contentService.getSOPCategories(),
-          contentService.getPopularSOPs(5),
-        ]);
+        // Fetch documents independently to avoid one failure blocking all
+        const docs = await contentService.getSOPDocuments().catch(err => {
+          console.error('Failed to load SOP documents:', err);
+          return [];
+        });
+        
+        const cats = await contentService.getSOPCategories().catch(err => {
+          console.error('Failed to load SOP categories:', err);
+          return [];
+        });
+        
+        const popular = await contentService.getPopularSOPs(5).catch(err => {
+          console.error('Failed to load popular SOPs:', err);
+          return [];
+        });
+        
+        console.log('[SOPLibrary] Loaded documents:', docs.length, 'Section:', section);
+        
         setDocuments(docs);
         setCategories(cats);
         setPopularDocs(popular);
@@ -110,7 +123,7 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
     };
 
     loadData();
-  }, []);
+  }, [section]);
 
   const filteredDocuments = documents.filter((doc) => {
     // Apply section filter if specified
@@ -125,6 +138,15 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
         categoryLower === sectionLower ||
         categoryLower.includes(sectionLower) ||
         doc.tags?.some(tag => tag.toLowerCase().includes(sectionLower));
+      
+      console.log('[SOPLibrary] Filter check:', { 
+        docTitle: doc.title, 
+        category: categoryLower, 
+        section: sectionLower, 
+        sectionName: sectionNameLower,
+        matches: matchesSection 
+      });
+      
       if (!matchesSection) return false;
     }
     const matchesSearch =
@@ -134,6 +156,8 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       doc.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
+  
+  console.log('[SOPLibrary] Filtered results:', filteredDocuments.length);
 
   if (loading) {
     return (

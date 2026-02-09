@@ -93,6 +93,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden;
+  height: 100%; /* Stretch to fill grid cell */
 }
 
 .document-card__thumbnail {
@@ -119,10 +120,16 @@ body {
 }
 
 .document-card__content {
-  display: block !important;
+  display: flex !important;
+  flex-direction: column;
+  flex: 1; /* Grow to fill available space */
   font-size: 1rem;
   line-height: 1.5;
   vertical-align: top;
+}
+
+.document-card__footer {
+  margin-top: auto; /* Push to bottom of card */
 }
 
 /* Also fix for button elements if they're still being used */

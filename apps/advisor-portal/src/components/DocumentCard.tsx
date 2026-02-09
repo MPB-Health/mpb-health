@@ -50,7 +50,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
             {doc.description}
           </p>
         )}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">
+        <div className="document-card__footer flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">
           <span className="text-sm text-th-text-tertiary">{doc.category}</span>
           <span className="text-sm text-th-accent-600 font-medium flex items-center gap-1">
             {isPPTX ? (

@@ -48,7 +48,7 @@ const sectionConfig: Record<string, { title: string; description: string; icon: 
     icon: FileSearch,
   },
   'flyers-sedera': {
-    title: 'Flyers, Sedera',
+    title: 'Sedera',
     description: 'Sedera product flyers and materials',
     icon: FileImage,
   },

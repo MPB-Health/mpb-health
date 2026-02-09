@@ -83,3 +83,58 @@ body {
 .lane-button-selected {
   background-color: var(--lane-color);
 }
+
+/* ============================================================================
+   Document Card - Fix for thumbnail gap caused by text content
+   The text (H3, P) was affecting thumbnail placement due to baseline alignment.
+   Solution: Make each section a proper block with display:block and vertical-align:top
+   ============================================================================ */
+.document-card {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden;
+}
+
+.document-card__thumbnail {
+  display: block !important;
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  overflow: hidden;
+  flex-shrink: 0;
+  font-size: 0;
+  line-height: 0;
+  vertical-align: top; /* Prevents baseline alignment issues */
+}
+
+.document-card__thumbnail img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block !important;
+  vertical-align: top;
+}
+
+.document-card__content {
+  display: block !important;
+  font-size: 1rem;
+  line-height: 1.5;
+  vertical-align: top;
+}
+
+/* Also fix for button elements if they're still being used */
+button.document-card,
+button[class*="document-card"] {
+  display: flex !important;
+  flex-direction: column !important;
+  text-align: left;
+}
+
+button.document-card > *,
+button[class*="document-card"] > * {
+  display: block !important;
+  vertical-align: top;
+}

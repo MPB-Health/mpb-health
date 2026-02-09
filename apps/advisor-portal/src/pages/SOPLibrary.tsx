@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   Search,
-  FileText,
-  Eye,
-  ExternalLink,
   Presentation,
   BarChart2,
   FileSearch,
@@ -15,7 +12,6 @@ import {
   Mountain,
   Shield,
   Pill,
-  FileType,
 } from 'lucide-react';
 import {
   contentService,
@@ -23,6 +19,7 @@ import {
   type SOPCategory,
 } from '@mpbhealth/advisor-core';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
+import DocumentCard from '../components/DocumentCard';
 
 interface SOPLibraryProps {
   section?: string;
@@ -194,21 +191,25 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
         />
       </div>
 
-      {/* Cards grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Cards grid - using CSS Grid with auto-fill for responsive layout */}
+      <div 
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: '1rem',
+          fontSize: 0,      // Reset to prevent text-based spacing affecting grid items
+          lineHeight: 0,
+        }}
+      >
         {filteredDocuments.length > 0 ? (
           filteredDocuments.map((doc) => {
-            // Check if this is an external document (has file_url)
-            const isExternalLink = !!doc.file_url;
-            const hasImage = !!doc.image_url;
-            // Check if this is a file that can be previewed (PPTX or PDF)
             const isPPTX = doc.file_url?.toLowerCase().match(/\.pptx?$/) !== null;
             const isPDF = doc.file_url?.toLowerCase().endsWith('.pdf') === true;
             const canPreview = isPPTX || isPDF;
+            const isExternalLink = !!doc.file_url;
 
             const handleClick = () => {
               if (canPreview && doc.file_url) {
-                // Open preview modal for PPTX and PDF files
                 setPreviewDoc(doc);
               } else if (isExternalLink && doc.file_url) {
                 window.open(doc.file_url, '_blank', 'noopener,noreferrer');
@@ -218,72 +219,15 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
             };
 
             return (
-              <button
+              <DocumentCard
                 key={doc.id}
+                doc={doc}
                 onClick={handleClick}
-                className="bg-surface-primary rounded-xl border border-th-border overflow-hidden text-left hover:border-th-accent-300 hover:shadow-md transition-all"
-              >
-                {/* Image thumbnail or icon header */}
-                {hasImage ? (
-                  <div className="w-full aspect-video bg-surface-tertiary flex items-center justify-center">
-                    <img
-                      src={doc.image_url!}
-                      alt={doc.title}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="p-5 pb-0">
-                    <div className="flex items-start justify-between">
-                      <div className="w-12 h-12 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-6 h-6 text-th-accent-600 dark:text-th-accent-400" />
-                      </div>
-                      <div className="text-right text-sm text-th-text-tertiary">
-                        <div className="flex items-center space-x-1">
-                          <Eye className="w-4 h-4" />
-                          <span>{doc.view_count}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Card content */}
-                <div className={hasImage ? 'p-5' : 'p-5 pt-4'}>
-                  <h3 className="font-semibold text-th-text-primary leading-snug">
-                    {doc.title}
-                  </h3>
-                  {doc.description && (
-                    <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
-                      {doc.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">
-                    <span className="text-sm text-th-text-tertiary">{doc.category}</span>
-                    <span className="text-sm text-th-accent-600 font-medium flex items-center gap-1">
-                      {isPPTX ? (
-                        <>
-                          Preview <Presentation className="w-3.5 h-3.5" />
-                        </>
-                      ) : isPDF ? (
-                        <>
-                          Preview <FileType className="w-3.5 h-3.5" />
-                        </>
-                      ) : isExternalLink ? (
-                        <>
-                          Open <ExternalLink className="w-3.5 h-3.5" />
-                        </>
-                      ) : (
-                        'View →'
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </button>
+              />
             );
           })
         ) : (
-          <div className="col-span-full bg-surface-primary rounded-xl border border-th-border p-12 text-center">
+          <div style={{ gridColumn: '1 / -1' }} className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
             <BookOpen className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
             <p className="text-th-text-tertiary">No documents found</p>
           </div>

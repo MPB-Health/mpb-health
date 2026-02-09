@@ -22,7 +22,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
       role="button"
       tabIndex={0}
-      className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer"
+      className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col"
     >{/* No whitespace between elements */}{hasImage ? (
         <div className="document-card__thumbnail bg-surface-tertiary">
           <img src={doc.image_url!} alt={doc.title} />
@@ -41,7 +41,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
             </div>
           </div>
         </div>
-      )}{/* No whitespace */}<div className={`document-card__content ${hasImage ? 'p-5' : 'p-5 pt-4'}`}>
+      )}{/* No whitespace */}<div className={`document-card__content flex-1 flex flex-col ${hasImage ? 'p-5' : 'p-5 pt-4'}`}>
         <h3 className="font-semibold text-th-text-primary leading-snug">
           {doc.title}
         </h3>
@@ -50,7 +50,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
             {doc.description}
           </p>
         )}
-        <div className="document-card__footer flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">
+        <div className="document-card__footer flex items-center justify-between mt-auto pt-4 border-t border-th-border-subtle">
           <span className="text-sm text-th-text-tertiary">{doc.category}</span>
           <span className="text-sm text-th-accent-600 font-medium flex items-center gap-1">
             {isPPTX ? (

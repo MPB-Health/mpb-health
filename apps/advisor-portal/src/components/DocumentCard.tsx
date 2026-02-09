@@ -25,7 +25,11 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
       className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col"
     >{/* No whitespace between elements */}{hasImage ? (
         <div className="document-card__thumbnail bg-surface-tertiary">
-          <img src={doc.image_url!} alt={doc.title} />
+          <img
+            src={doc.image_url!}
+            alt={doc.title}
+            style={doc.metadata?.image_position ? { objectPosition: doc.metadata.image_position as string } : undefined}
+          />
         </div>
       ) : (
         <div className="document-card__content p-5 pb-0">

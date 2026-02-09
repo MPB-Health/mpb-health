@@ -143,6 +143,7 @@ export interface SOPDocument {
   is_published: boolean;
   tags: string[];
   view_count: number;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }

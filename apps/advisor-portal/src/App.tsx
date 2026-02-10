@@ -54,6 +54,7 @@ export default function App() {
           <Route path="sops/quick-reference" element={<SOPLibrary section="quick-reference" />} />
           <Route path="sops/flyers-sedera" element={<SOPLibrary section="flyers-sedera" />} />
           <Route path="sops/flyers" element={<SOPLibrary section="flyers" />} />
+          <Route path="sops/sharing-guidelines" element={<SOPLibrary section="sharing-guidelines" />} />
           <Route path="sops/healthsharing-zion" element={<SOPLibrary section="healthsharing-zion" />} />
           <Route path="sops/zion" element={<SOPLibrary section="zion" />} />
           <Route path="sops/arm" element={<SOPLibrary section="arm" />} />

@@ -52,6 +52,11 @@ const sectionConfig: Record<string, { title: string; description: string; icon: 
     description: 'Sedera product flyers and materials',
     icon: FileImage,
   },
+  'sharing-guidelines': {
+    title: 'Sharing Guidelines',
+    description: 'Health sharing guidelines and documentation',
+    icon: BookOpen,
+  },
   'flyers': {
     title: 'Flyers',
     description: 'General marketing flyers',

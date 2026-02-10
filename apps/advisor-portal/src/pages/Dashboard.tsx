@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
@@ -12,6 +12,8 @@ import {
   Calendar,
   Link,
   ExternalLink,
+  Share2,
+  X,
 } from 'lucide-react';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
@@ -49,6 +51,14 @@ const fallbackQuickActions: QuickActionItem[] = [
   { label: 'Profile', url: '/profile', icon: 'Award' },
 ];
 
+// Enroll page options for My Advisor Page card
+const ENROLL_OPTIONS = [
+  { label: 'Essentials', url: 'https://essentials.enrollmpb.com/?id=768413' },
+  { label: 'Care+', url: 'https://careplus.enrollmpb.com/?id=768413' },
+  { label: 'Secure HSA', url: 'https://securehsa.enrollmpb.com/?id=768413' },
+  { label: 'MEC + Essentials', url: 'https://mec.enrollmpb.com/?id=768413' },
+] as const;
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const {
@@ -60,6 +70,10 @@ export default function Dashboard() {
   } = useAdvisor();
 
   const [cmsQuickActions, setCmsQuickActions] = useState<QuickLink[]>([]);
+  const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
+  const [shareModal, setShareModal] = useState<{ label: string; url: string } | null>(null);
+  const [shareForm, setShareForm] = useState({ name: '', email: '' });
+  const enrollDropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch quick actions from CMS
   useEffect(() => {
@@ -75,6 +89,19 @@ export default function Dashboard() {
 
     loadQuickActions();
   }, []);
+
+  // Close enroll dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (enrollDropdownRef.current && !enrollDropdownRef.current.contains(event.target as Node)) {
+        setEnrollDropdownOpen(false);
+      }
+    };
+    if (enrollDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [enrollDropdownOpen]);
 
   // Use CMS quick actions or fallback
   const quickActions = useMemo((): QuickActionItem[] => {
@@ -146,29 +173,58 @@ export default function Dashboard() {
                   Link
                 </a>
               </div>
-              <div className="mt-3">
-                <label htmlFor="enroll-pages-select" className="block text-xs font-medium text-th-text-tertiary mb-1.5">
+              <div className="mt-3" ref={enrollDropdownRef}>
+                <label className="block text-xs font-medium text-th-text-tertiary mb-1.5">
                   Enrollments
                 </label>
-                <select
-                  id="enroll-pages-select"
-                  className="w-full rounded-lg border border-th-border bg-surface-primary px-3 py-2 text-sm text-th-text-primary focus:border-th-accent-500 focus:outline-none focus:ring-1 focus:ring-th-accent-500"
-                  defaultValue=""
-                  onChange={(e) => {
-                    const url = e.target.value;
-                    if (url) {
-                      window.open(url, '_blank', 'noopener,noreferrer');
-                      e.target.value = '';
-                    }
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEnrollDropdownOpen((open) => !open);
                   }}
-                  onClick={(e) => e.stopPropagation()}
+                  className="w-full rounded-lg border border-th-border bg-surface-primary px-3 py-2 text-sm text-th-text-primary text-left focus:border-th-accent-500 focus:outline-none focus:ring-1 focus:ring-th-accent-500 flex items-center justify-between"
                 >
-                  <option value="">Select a page</option>
-                  <option value="https://essentials.enrollmpb.com/?id=768413">Essentials</option>
-                  <option value="https://careplus.enrollmpb.com/?id=768413">Care+</option>
-                  <option value="https://securehsa.enrollmpb.com/?id=768413">Secure HSA</option>
-                  <option value="https://mec.enrollmpb.com/?id=768413">MEC + Essentials</option>
-                </select>
+                  <span className="text-th-text-secondary">Select a page</span>
+                  <ArrowRight
+                    className={`w-4 h-4 text-th-text-tertiary transition-transform ${enrollDropdownOpen ? 'rotate-90' : ''}`}
+                  />
+                </button>
+                {enrollDropdownOpen && (
+                  <div className="mt-1 rounded-lg border border-th-border bg-surface-primary shadow-lg overflow-hidden z-10">
+                    {ENROLL_OPTIONS.map((option) => (
+                      <div
+                        key={option.url}
+                        className="group flex items-center justify-between gap-2 px-3 py-2 hover:bg-surface-tertiary border-b border-th-border-subtle last:border-b-0"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(option.url, '_blank', 'noopener,noreferrer');
+                            setEnrollDropdownOpen(false);
+                          }}
+                          className="flex-1 text-left text-sm text-th-text-primary font-medium"
+                        >
+                          {option.label}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShareModal({ label: option.label, url: option.url });
+                            setShareForm({ name: '', email: '' });
+                            setEnrollDropdownOpen(false);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs text-th-accent-600 hover:text-th-accent-700 font-medium transition-opacity"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          Share
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-th-accent-50 dark:bg-th-accent-900/20 text-th-accent-600 dark:text-th-accent-400">
@@ -331,6 +387,90 @@ export default function Dashboard() {
           })}
         </div>
       </div>
+
+      {/* Share enrollment link modal */}
+      {shareModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface-primary rounded-xl w-full max-w-md mx-4 shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-th-border">
+              <h2 className="text-lg font-semibold text-th-text-primary">
+                Share {shareModal.label}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShareModal(null);
+                  setShareForm({ name: '', email: '' });
+                }}
+                className="p-1 text-th-text-muted hover:text-th-text-primary rounded"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={shareForm.name}
+                  onChange={(e) => setShareForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
+                  placeholder="Recipient name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  value={shareForm.email}
+                  onChange={(e) => setShareForm((f) => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
+                  placeholder="email@example.com"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-th-border">
+              <button
+                type="button"
+                onClick={() => {
+                  setShareModal(null);
+                  setShareForm({ name: '', email: '' });
+                }}
+                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareModal.url);
+                  setShareModal(null);
+                  setShareForm({ name: '', email: '' });
+                }}
+                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary border border-th-border rounded-lg"
+              >
+                Copy link
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // Placeholder: could send email via API later
+                  setShareModal(null);
+                  setShareForm({ name: '', email: '' });
+                }}
+                className="px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

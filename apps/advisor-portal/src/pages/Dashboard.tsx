@@ -134,7 +134,7 @@ export default function Dashboard() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-medium text-th-text-secondary">
-                  Advisor Landing Page
+                  My Advisor Page
                 </p>
                 <a
                   href="https://advisorlandingpage.mpb.health/"
@@ -148,7 +148,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-3">
                 <label htmlFor="enroll-pages-select" className="block text-xs font-medium text-th-text-tertiary mb-1.5">
-                  My enroll pages
+                  My enrollment
                 </label>
                 <select
                   id="enroll-pages-select"

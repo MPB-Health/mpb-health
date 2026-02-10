@@ -11,6 +11,7 @@ import {
   Clock,
   Calendar,
   Link,
+  ExternalLink,
 } from 'lucide-react';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
@@ -105,7 +106,7 @@ export default function Dashboard() {
       />
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <button onClick={() => navigate('/inbox')} className="text-left">
           <MetricCard
             label="Inbox"
@@ -126,6 +127,24 @@ export default function Dashboard() {
           value={`${trainingStats.completionPercentage.toFixed(0)}%`}
           icon={<GraduationCap className="w-5 h-5" />}
         />
+
+        <a
+          href="https://advisorlandingpage.mpb.health/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-left block"
+        >
+          <MetricCard
+            label="Advisor Landing Page"
+            value={
+              <span className="text-sm font-normal text-th-text-secondary break-all">
+                https://advisorlandingpage.mpb.health/
+              </span>
+            }
+            icon={<ExternalLink className="w-5 h-5" />}
+            className="hover:border-th-accent-300 cursor-pointer"
+          />
+        </a>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

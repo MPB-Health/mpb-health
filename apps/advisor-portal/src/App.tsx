@@ -8,6 +8,7 @@ import TrainingModule from './pages/TrainingModule';
 import Meetings from './pages/Meetings';
 import MeetingRoom from './pages/MeetingRoom';
 import Forms from './pages/Forms';
+import QuickLinks from './pages/QuickLinks';
 import SOPLibrary from './pages/SOPLibrary';
 import SOPDocument from './pages/SOPDocument';
 import Bulletins from './pages/Bulletins';
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="forms/advisor" element={<Forms section="advisor" />} />
           <Route path="forms/employer" element={<Forms section="employer" />} />
           <Route path="forms/member" element={<Forms section="member" />} />
+          <Route path="quick-links" element={<QuickLinks />} />
           <Route path="sops" element={<SOPLibrary />} />
           <Route path="sops/presentations" element={<SOPLibrary section="presentations" />} />
           <Route path="sops/pricing-charts" element={<SOPLibrary section="pricing-charts" />} />

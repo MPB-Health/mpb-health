@@ -76,6 +76,7 @@ const fallbackNavigation: NavItem[] = [
       { name: 'Member', href: '/forms/member' },
     ],
   },
+  { name: 'Quick Links', href: '/quick-links', icon: Link },
   { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Settings', href: '/settings', icon: Settings },
@@ -174,12 +175,23 @@ export default function MainLayout() {
     };
   }, [loadNavigation]);
 
-  // Use CMS navigation if available, otherwise fallback
+  // Use CMS navigation if available, otherwise fallback. Inject Quick Links after Forms if not already present.
   const navigation = useMemo(() => {
-    if (cmsNavItems.length > 0) {
-      return cmsNavItems;
+    const base = cmsNavItems.length > 0 ? cmsNavItems : fallbackNavigation;
+    const hasQuickLinks = base.some((item) => item.href === '/quick-links' || item.name === 'Quick Links');
+    if (hasQuickLinks) return base;
+    const quickLinksItem: NavItem = { name: 'Quick Links', href: '/quick-links', icon: Link };
+    const formsIndex = base.findIndex(
+      (item) => item.name === 'Forms' || item.href === '/forms'
+    );
+    if (formsIndex === -1) {
+      return [...base, quickLinksItem];
     }
-    return fallbackNavigation;
+    return [
+      ...base.slice(0, formsIndex + 1),
+      quickLinksItem,
+      ...base.slice(formsIndex + 1),
+    ];
   }, [cmsNavItems]);
 
   // Redirect to login if not authenticated

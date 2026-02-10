@@ -148,7 +148,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-3">
                 <label htmlFor="enroll-pages-select" className="block text-xs font-medium text-th-text-tertiary mb-1.5">
-                  My enrollment
+                  Enrollments
                 </label>
                 <select
                   id="enroll-pages-select"

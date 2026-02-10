@@ -27,6 +27,7 @@ export {
   passwordSecurityService,
   type PasswordStrength,
   type PasswordPolicy,
+  type PasswordRequirement,
 } from './services/passwordSecurityService';
 
 export {
@@ -35,7 +36,15 @@ export {
   type SecurityAlert,
   type SecurityEventType,
   type SecurityEventSeverity,
+  type SecurityAlertWebhook,
 } from './services/securityEventService';
+
+export {
+  sessionTimeoutService,
+  SessionTimeoutService,
+  type SessionTimeoutConfig,
+  type SessionTimeoutState,
+} from './services/sessionTimeoutService';
 
 export {
   userRolesService,
@@ -75,12 +84,45 @@ export {
 // Components
 export { ProtectedRoute } from './components/ProtectedRoute';
 export { RouteGuard } from './components/RouteGuard';
+export {
+  SessionTimeoutWarning,
+  type SessionTimeoutWarningProps,
+} from './components/SessionTimeoutWarning';
+export {
+  MFAEnrollmentFlow,
+  type MFAEnrollmentFlowProps,
+  type MFAEnrollmentStep,
+} from './components/MFAEnrollmentFlow';
+export {
+  MFAVerificationDialog,
+  type MFAVerificationDialogProps,
+} from './components/MFAVerificationDialog';
+export {
+  MFARequiredGuard,
+  type MFARequiredGuardProps,
+} from './components/MFARequiredGuard';
+export {
+  PasswordStrengthIndicator,
+  type PasswordStrengthIndicatorProps,
+} from './components/PasswordStrengthIndicator';
 
 // Hooks
 export { useSession } from './hooks/useSession';
 export { useOrg, type UseOrgReturn } from './hooks/useOrg';
 export { useOrgRole, useRequireRole } from './hooks/useOrgRole';
 export { usePermission, type UsePermissionReturn } from './hooks/usePermission';
+export {
+  useSessionTimeout,
+  type UseSessionTimeoutOptions,
+  type UseSessionTimeoutReturn,
+} from './hooks/useSessionTimeout';
+export {
+  useClientRateLimit,
+  createRateLimitConfig,
+  RATE_LIMIT_PRESETS,
+  type RateLimitConfig,
+  type UseClientRateLimitReturn,
+} from './hooks/useClientRateLimit';
 
 // Org & Permission Services
 export {

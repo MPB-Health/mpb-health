@@ -5,10 +5,19 @@ export interface PasswordStrength {
   label: 'Weak' | 'Fair' | 'Good' | 'Strong' | 'Very Strong';
   feedback: string[];
   passed: boolean;
+  requirements: PasswordRequirement[];
+}
+
+export interface PasswordRequirement {
+  id: string;
+  label: string;
+  met: boolean;
 }
 
 export interface PasswordPolicy {
   minLength: number;
+  maxLength: number;
+  minUniqueChars: number;
   requireUppercase: boolean;
   requireLowercase: boolean;
   requireNumbers: boolean;
@@ -17,9 +26,32 @@ export interface PasswordPolicy {
   maxAge: number;
 }
 
+// Keyboard patterns to detect (qwerty, numeric sequences, etc.)
+const KEYBOARD_PATTERNS = [
+  'qwerty', 'qwertz', 'azerty', 'asdfgh', 'zxcvbn',
+  '123456', '234567', '345678', '456789', '567890',
+  '987654', '876543', '765432', '654321', '543210',
+  'abcdef', 'bcdefg', 'cdefgh', 'defghi',
+  '!@#$%^', '@#$%^&',
+  'qazwsx', 'wsxedc', 'edcrfv',
+];
+
+// Common words that shouldn't be in passwords
+const COMMON_WORDS = [
+  'password', 'letmein', 'welcome', 'admin', 'login',
+  'hello', 'dragon', 'master', 'monkey', 'shadow',
+  'sunshine', 'princess', 'football', 'baseball', 'soccer',
+  'hockey', 'batman', 'trustno1', 'superman', 'iloveyou',
+  'starwars', 'whatever', 'passw0rd', 'access', 'secret',
+  'michael', 'jennifer', 'jessica', 'ashley', 'daniel',
+  'computer', 'internet', 'network', 'security', 'system',
+];
+
 class PasswordSecurityService {
   private readonly DEFAULT_POLICY: PasswordPolicy = {
     minLength: 12,
+    maxLength: 128,
+    minUniqueChars: 8,
     requireUppercase: true,
     requireLowercase: true,
     requireNumbers: true,
@@ -28,16 +60,96 @@ class PasswordSecurityService {
     maxAge: 90,
   };
 
-  validatePassword(password: string, policy: PasswordPolicy = this.DEFAULT_POLICY): {
+  /**
+   * Get the default password policy
+   */
+  getDefaultPolicy(): PasswordPolicy {
+    return { ...this.DEFAULT_POLICY };
+  }
+
+  /**
+   * Count unique characters in a string
+   */
+  private countUniqueChars(str: string): number {
+    return new Set(str).size;
+  }
+
+  /**
+   * Check for keyboard patterns
+   */
+  private hasKeyboardPattern(password: string): boolean {
+    const lower = password.toLowerCase();
+    return KEYBOARD_PATTERNS.some(pattern =>
+      lower.includes(pattern) || lower.includes(pattern.split('').reverse().join(''))
+    );
+  }
+
+  /**
+   * Check for common words
+   */
+  private hasCommonWord(password: string): boolean {
+    const lower = password.toLowerCase();
+    return COMMON_WORDS.some(word => lower.includes(word));
+  }
+
+  /**
+   * Check if password contains user info (email, name parts)
+   */
+  containsUserInfo(password: string, userInfo: { email?: string; firstName?: string; lastName?: string }): boolean {
+    const lower = password.toLowerCase();
+    const checks: string[] = [];
+
+    if (userInfo.email) {
+      // Extract username from email
+      const emailParts = userInfo.email.toLowerCase().split('@');
+      if (emailParts[0] && emailParts[0].length >= 3) {
+        checks.push(emailParts[0]);
+      }
+      // Check domain name too
+      if (emailParts[1]) {
+        const domain = emailParts[1].split('.')[0];
+        if (domain && domain.length >= 3) {
+          checks.push(domain);
+        }
+      }
+    }
+
+    if (userInfo.firstName && userInfo.firstName.length >= 3) {
+      checks.push(userInfo.firstName.toLowerCase());
+    }
+
+    if (userInfo.lastName && userInfo.lastName.length >= 3) {
+      checks.push(userInfo.lastName.toLowerCase());
+    }
+
+    return checks.some(check => lower.includes(check));
+  }
+
+  validatePassword(
+    password: string,
+    policy: PasswordPolicy = this.DEFAULT_POLICY,
+    userInfo?: { email?: string; firstName?: string; lastName?: string }
+  ): {
     valid: boolean;
     errors: string[];
   } {
     const errors: string[] = [];
 
+    // Length checks
     if (password.length < policy.minLength) {
       errors.push(`Password must be at least ${policy.minLength} characters long`);
     }
 
+    if (password.length > policy.maxLength) {
+      errors.push(`Password must be ${policy.maxLength} characters or less`);
+    }
+
+    // Unique characters check
+    if (this.countUniqueChars(password) < policy.minUniqueChars) {
+      errors.push(`Password must contain at least ${policy.minUniqueChars} unique characters`);
+    }
+
+    // Character class requirements
     if (policy.requireUppercase && !/[A-Z]/.test(password)) {
       errors.push('Password must contain at least one uppercase letter');
     }
@@ -54,61 +166,119 @@ class PasswordSecurityService {
       errors.push('Password must contain at least one special character');
     }
 
+    // Keyboard pattern check
+    if (this.hasKeyboardPattern(password)) {
+      errors.push('Password cannot contain keyboard patterns (e.g., qwerty, 123456)');
+    }
+
+    // Common word check
+    if (this.hasCommonWord(password)) {
+      errors.push('Password cannot contain common words');
+    }
+
+    // User info check
+    if (userInfo && this.containsUserInfo(password, userInfo)) {
+      errors.push('Password cannot contain your email or name');
+    }
+
     return {
       valid: errors.length === 0,
       errors,
     };
   }
 
-  calculatePasswordStrength(password: string): PasswordStrength {
+  calculatePasswordStrength(
+    password: string,
+    userInfo?: { email?: string; firstName?: string; lastName?: string }
+  ): PasswordStrength {
     const feedback: string[] = [];
+    const requirements: PasswordRequirement[] = [];
     let score = 0;
 
+    // Length scoring
+    const lengthMet = password.length >= 12;
+    requirements.push({ id: 'length', label: 'At least 12 characters', met: lengthMet });
     if (password.length >= 8) score += 1;
     if (password.length >= 12) score += 1;
     if (password.length >= 16) score += 1;
+    if (password.length >= 20) score += 0.5;
 
-    if (/[a-z]/.test(password)) score += 1;
-    if (/[A-Z]/.test(password)) score += 1;
-    if (/\d/.test(password)) score += 1;
-    if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) score += 1;
+    // Character class scoring
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
 
-    if (!/(.)\1{2,}/.test(password)) {
+    requirements.push({ id: 'lowercase', label: 'Lowercase letter', met: hasLower });
+    requirements.push({ id: 'uppercase', label: 'Uppercase letter', met: hasUpper });
+    requirements.push({ id: 'number', label: 'Number', met: hasDigit });
+    requirements.push({ id: 'special', label: 'Special character', met: hasSpecial });
+
+    if (hasLower) score += 1;
+    if (hasUpper) score += 1;
+    if (hasDigit) score += 1;
+    if (hasSpecial) score += 1;
+
+    // Unique characters
+    const uniqueChars = this.countUniqueChars(password);
+    const uniqueMet = uniqueChars >= 8;
+    requirements.push({ id: 'unique', label: 'At least 8 unique characters', met: uniqueMet });
+    if (uniqueChars >= 8) score += 1;
+    if (uniqueChars >= 12) score += 0.5;
+
+    // Repetition penalty
+    const noRepetition = !/(.)\1{2,}/.test(password);
+    requirements.push({ id: 'no-repeat', label: 'No repeating characters', met: noRepetition });
+    if (noRepetition) {
       score += 1;
     } else {
       feedback.push('Avoid repeating characters');
     }
 
-    if (!/^(?:123|abc|qwe|asd|zxc)/i.test(password)) {
+    // Keyboard pattern penalty
+    const noKeyboardPattern = !this.hasKeyboardPattern(password);
+    requirements.push({ id: 'no-pattern', label: 'No keyboard patterns', met: noKeyboardPattern });
+    if (noKeyboardPattern) {
       score += 1;
     } else {
-      feedback.push('Avoid common patterns');
+      feedback.push('Avoid keyboard patterns like qwerty or 123456');
     }
 
-    const commonPasswords = [
-      'password', 'password123', '12345678', 'qwerty', 'abc123',
-      'monkey', 'letmein', 'welcome', 'admin', 'user'
-    ];
-
-    if (!commonPasswords.some(common => password.toLowerCase().includes(common))) {
+    // Common word penalty
+    const noCommonWord = !this.hasCommonWord(password);
+    requirements.push({ id: 'no-common', label: 'No common words', met: noCommonWord });
+    if (noCommonWord) {
       score += 1;
     } else {
-      feedback.push('Avoid common passwords');
+      feedback.push('Avoid common words');
     }
+
+    // User info penalty
+    if (userInfo) {
+      const noUserInfo = !this.containsUserInfo(password, userInfo);
+      requirements.push({ id: 'no-user-info', label: 'No personal info', met: noUserInfo });
+      if (!noUserInfo) {
+        score -= 2;
+        feedback.push('Password should not contain your email or name');
+      }
+    }
+
+    // Normalize score to 0-100
+    const normalizedScore = Math.max(0, Math.min(100, Math.round((score / 12) * 100)));
 
     let label: PasswordStrength['label'];
     let passed = false;
 
-    if (score <= 3) {
+    if (normalizedScore <= 25) {
       label = 'Weak';
       feedback.push('Use a longer password with mixed characters');
-    } else if (score <= 5) {
+    } else if (normalizedScore <= 45) {
       label = 'Fair';
       feedback.push('Add more character variety for better security');
-    } else if (score <= 7) {
+    } else if (normalizedScore <= 65) {
       label = 'Good';
       passed = true;
-    } else if (score <= 9) {
+    } else if (normalizedScore <= 85) {
       label = 'Strong';
       passed = true;
     } else {
@@ -117,10 +287,11 @@ class PasswordSecurityService {
     }
 
     return {
-      score: Math.min(10, score),
+      score: normalizedScore,
       label,
       feedback,
       passed,
+      requirements,
     };
   }
 

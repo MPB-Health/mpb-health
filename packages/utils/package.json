@@ -10,19 +10,28 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./validation": {
+      "import": "./dist/validation/index.js",
+      "types": "./dist/validation/index.d.ts"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "build": "tsup src/index.ts src/validation/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts src/validation/index.ts --format esm --dts --watch",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "dompurify": "^3.0.0",
+    "zod": "^3.22.0"
+  },
   "devDependencies": {
     "@mpbhealth/typescript-config": "workspace:*",
+    "@types/dompurify": "^3.0.0",
     "tsup": "^8.3.5",
     "typescript": "^5.5.0"
   }

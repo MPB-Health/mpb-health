@@ -134,12 +134,12 @@ export default function Dashboard() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <button onClick={() => navigate('/inbox')} className="text-left">
+        <button onClick={() => navigate('/inbox')} className="text-left h-full w-full">
           <MetricCard
             label="Inbox"
             value="View"
             icon={<FileText className="w-5 h-5" />}
-            className="hover:border-th-accent-300 cursor-pointer"
+            className="hover:border-th-accent-300 cursor-pointer h-full"
           />
         </button>
 
@@ -147,15 +147,17 @@ export default function Dashboard() {
           label="Upcoming Meetings"
           value={upcomingMeetings.length}
           icon={<Video className="w-5 h-5" />}
+          className="h-full"
         />
 
         <MetricCard
           label="Training Progress"
           value={`${trainingStats.completionPercentage.toFixed(0)}%`}
           icon={<GraduationCap className="w-5 h-5" />}
+          className="h-full"
         />
 
-        <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300">
+        <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
           <div className="absolute top-0 left-0 right-0 h-0.5 gradient-accent opacity-60 group-hover:opacity-100 transition-opacity" />
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">

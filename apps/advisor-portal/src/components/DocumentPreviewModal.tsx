@@ -10,7 +10,7 @@ interface DocumentPreviewModalProps {
 
 /**
  * Modal component for previewing documents (PPTX, PDF, etc.).
- * Uses Microsoft Office Online Viewer for Office files and Google Docs Viewer for PDFs.
+ * PDFs are embedded directly; Office files use Microsoft Office Online Viewer.
  */
 export default function DocumentPreviewModal({
   isOpen,
@@ -18,15 +18,14 @@ export default function DocumentPreviewModal({
   title,
   fileUrl,
 }: DocumentPreviewModalProps) {
-  // Detect file type and generate appropriate viewer URL
+  // Detect file type. PDFs: embed directly (Google Docs Viewer often blocks third-party URLs).
   const { viewerUrl, isPDF } = useMemo(() => {
     const lowerUrl = fileUrl.toLowerCase();
     const isPDFFile = lowerUrl.endsWith('.pdf');
 
     if (isPDFFile) {
-      // Use Google Docs Viewer for PDFs (works with public URLs)
       return {
-        viewerUrl: `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`,
+        viewerUrl: fileUrl,
         isPDF: true,
       };
     } else {

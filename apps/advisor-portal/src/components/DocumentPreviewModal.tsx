@@ -22,7 +22,7 @@ export default function DocumentPreviewModal({
   const { viewerUrl, isPDF } = useMemo(() => {
     const lowerUrl = fileUrl.toLowerCase();
     const isPDFFile = lowerUrl.endsWith('.pdf');
-    
+
     if (isPDFFile) {
       // Use Google Docs Viewer for PDFs (works with public URLs)
       return {

@@ -128,23 +128,54 @@ export default function Dashboard() {
           icon={<GraduationCap className="w-5 h-5" />}
         />
 
-        <a
-          href="https://advisorlandingpage.mpb.health/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-left block"
-        >
-          <MetricCard
-            label="Advisor Landing Page"
-            value={
-              <span className="text-sm font-normal text-th-text-secondary break-all">
-                https://advisorlandingpage.mpb.health/
-              </span>
-            }
-            icon={<ExternalLink className="w-5 h-5" />}
-            className="hover:border-th-accent-300 cursor-pointer"
-          />
-        </a>
+        <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300">
+          <div className="absolute top-0 left-0 right-0 h-0.5 gradient-accent opacity-60 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-medium text-th-text-secondary">
+                  Advisor Landing Page
+                </p>
+                <a
+                  href="https://advisorlandingpage.mpb.health/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Link
+                </a>
+              </div>
+              <div className="mt-3">
+                <label htmlFor="enroll-pages-select" className="block text-xs font-medium text-th-text-tertiary mb-1.5">
+                  My enroll pages
+                </label>
+                <select
+                  id="enroll-pages-select"
+                  className="w-full rounded-lg border border-th-border bg-surface-primary px-3 py-2 text-sm text-th-text-primary focus:border-th-accent-500 focus:outline-none focus:ring-1 focus:ring-th-accent-500"
+                  defaultValue=""
+                  onChange={(e) => {
+                    const url = e.target.value;
+                    if (url) {
+                      window.open(url, '_blank', 'noopener,noreferrer');
+                      e.target.value = '';
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <option value="">Select a page</option>
+                  <option value="https://essentials.enrollmpb.com/?id=768413">Essentials</option>
+                  <option value="https://careplus.enrollmpb.com/?id=768413">Care+</option>
+                  <option value="https://securehsa.enrollmpb.com/?id=768413">Secure HSA</option>
+                  <option value="https://mec.enrollmpb.com/?id=768413">MEC + Essentials</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-th-accent-50 dark:bg-th-accent-900/20 text-th-accent-600 dark:text-th-accent-400">
+              <ExternalLink className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

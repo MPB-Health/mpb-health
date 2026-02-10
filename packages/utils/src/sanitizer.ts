@@ -1,4 +1,4 @@
-import DOMPurify from 'dompurify';
+import DOMPurify, { type Config } from 'dompurify';
 
 /**
  * HTML entities map for escaping
@@ -115,7 +115,7 @@ export function sanitizeSlug(text: string): string {
  * Rich text sanitization config for TipTap/email content
  * Allows safe HTML tags while removing dangerous elements
  */
-const RICH_TEXT_CONFIG: DOMPurify.Config = {
+const RICH_TEXT_CONFIG: Config = {
   ALLOWED_TAGS: [
     // Text formatting
     'p', 'br', 'span', 'div',
@@ -168,7 +168,7 @@ const RICH_TEXT_CONFIG: DOMPurify.Config = {
  */
 export function sanitizeRichText(
   html: string,
-  options: Partial<DOMPurify.Config> = {}
+  options: Partial<Config> = {}
 ): string {
   if (!html || typeof html !== 'string') {
     return '';

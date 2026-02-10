@@ -31,7 +31,6 @@
   },
   "devDependencies": {
     "@mpbhealth/typescript-config": "workspace:*",
-    "@types/dompurify": "^3.0.0",
     "tsup": "^8.3.5",
     "typescript": "^5.5.0"
   }

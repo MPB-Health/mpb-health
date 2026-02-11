@@ -9,6 +9,7 @@ import {
   Building2,
   Users,
 } from 'lucide-react';
+import { Tooltip } from '../components/Tooltip';
 import {
   formsService,
   type AdvisorForm,
@@ -174,9 +175,11 @@ export default function Forms({ section }: FormsProps) {
 
               <h3 className="font-semibold text-th-text-primary mt-4">{form.name || form.label}</h3>
               {form.description && (
-                <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
-                  {form.description}
-                </p>
+                <Tooltip content={form.description} placement="bottom">
+                  <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2 cursor-default">
+                    {form.description}
+                  </p>
+                </Tooltip>
               )}
 
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">

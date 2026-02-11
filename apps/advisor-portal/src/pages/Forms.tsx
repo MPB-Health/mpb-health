@@ -245,17 +245,20 @@ export default function Forms({ section }: FormsProps) {
                   </svg>
                 </button>
               </div>
-              <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+              <div
+                className="overflow-hidden flex flex-col"
+                style={{ height: 'calc(90vh - 80px)' }}
+              >
                 {/* Display form embed - cognito_embed contains full iframe/script */}
                 {selectedForm.cognito_embed ? (
                   <div 
                     dangerouslySetInnerHTML={{ __html: selectedForm.cognito_embed }}
-                    className="w-full min-h-[600px]"
+                    className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
                   />
                 ) : selectedForm.embed_url ? (
                   <iframe
                     src={selectedForm.embed_url}
-                    className="w-full min-h-[600px] border-0"
+                    className="w-full h-full border-0"
                     title={selectedForm.name || selectedForm.label}
                   />
                 ) : (

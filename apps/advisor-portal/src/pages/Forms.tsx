@@ -223,18 +223,11 @@ export default function Forms({ section }: FormsProps) {
             onClick={() => setSelectedForm(null)}
           />
           <div className="relative min-h-screen flex items-center justify-center p-4">
-            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-th-border">
-                <div>
-                  <h2 className="text-lg font-semibold text-th-text-primary">
-                    {selectedForm.name || selectedForm.label}
-                  </h2>
-                  {selectedForm.description && (
-                    <p className="text-sm text-th-text-tertiary">
-                      {selectedForm.description}
-                    </p>
-                  )}
-                </div>
+            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  {selectedForm.name || selectedForm.label}
+                </h2>
                 <button
                   onClick={() => setSelectedForm(null)}
                   className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
@@ -245,10 +238,7 @@ export default function Forms({ section }: FormsProps) {
                   </svg>
                 </button>
               </div>
-              <div
-                className="overflow-hidden flex flex-col"
-                style={{ height: 'calc(90vh - 80px)' }}
-              >
+              <div className="flex-1 overflow-hidden flex flex-col">
                 {/* Display form embed - cognito_embed contains full iframe/script */}
                 {selectedForm.cognito_embed ? (
                   <div 

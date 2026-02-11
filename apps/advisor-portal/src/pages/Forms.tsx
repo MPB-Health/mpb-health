@@ -166,11 +166,6 @@ export default function Forms({ section }: FormsProps) {
                     <FileText className="w-6 h-6 text-th-text-tertiary" />
                   )}
                 </div>
-                {form.menu_section === 'onboarding' && !isSubmitted && (
-                  <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
-                    Required
-                  </span>
-                )}
               </div>
 
               <h3 className="font-semibold text-th-text-primary mt-4">{form.name || form.label}</h3>

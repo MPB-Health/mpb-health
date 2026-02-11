@@ -119,41 +119,55 @@ export async function getUserOrgs(): Promise<OrgWithMembership[]> {
   const cached = getCached(membershipCache, user.id);
   if (cached) return cached;
 
-  const { data, error } = await supabase
+  // Step 1: Fetch the user's active memberships
+  const { data: memberships, error: membershipError } = await supabase
     .from('org_memberships')
-    .select(`
-      id, user_id, org_id, role, status, permissions_override, joined_at, suspended_at, suspended_reason, created_at, updated_at,
-      organization:organizations!org_id (
-        id, name, slug, logo_url, brand_config, settings,
-        subscription_tier, subscription_status,
-        max_users, max_contacts, max_sequences,
-        created_at, updated_at
-      )
-    `)
+    .select('id, user_id, org_id, role, status, permissions_override, joined_at, suspended_at, suspended_reason, created_at, updated_at')
     .eq('user_id', user.id)
     .eq('status', 'active');
 
-  if (error) {
-    console.error('[OrgService] Failed to get user orgs:', error);
+  if (membershipError) {
+    console.error('[OrgService] Failed to get user memberships:', membershipError);
     return [];
   }
 
-  const results: OrgWithMembership[] = (data || []).map((row: any) => ({
-    ...row.organization,
-    membership: {
-      id: row.id,
-      user_id: row.user_id,
-      org_id: row.org_id,
-      role: row.role,
-      status: row.status,
-      permissions_override: row.permissions_override,
-      joined_at: row.joined_at,
-      suspended_at: row.suspended_at,
-      suspended_reason: row.suspended_reason,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-    },
-  }));
+  if (!memberships || memberships.length === 0) return [];
+
+  // Step 2: Fetch the organizations for those memberships
+  const orgIds = memberships.map((m) => m.org_id);
+  const { data: orgs, error: orgError } = await supabase
+    .from('organizations')
+    .select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at')
+    .in('id', orgIds);
+
+  if (orgError) {
+    console.error('[OrgService] Failed to get organizations:', orgError);
+    return [];
+  }
+
+  // Step 3: Join them together
+  const orgMap = new Map((orgs || []).map((o: any) => [o.id, o]));
+  const results: OrgWithMembership[] = [];
+  for (const row of memberships) {
+    const org = orgMap.get(row.org_id);
+    if (!org) continue;
+    results.push({
+      ...(org as Omit<Org, 'membership'>),
+      membership: {
+        id: row.id,
+        user_id: row.user_id,
+        org_id: row.org_id,
+        role: row.role as OrgRole,
+        status: row.status as OrgMembershipStatus,
+        permissions_override: row.permissions_override ?? null,
+        joined_at: row.joined_at,
+        suspended_at: row.suspended_at ?? null,
+        suspended_reason: row.suspended_reason ?? null,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      },
+    });
+  }
 
   setCache(membershipCache, user.id, results);
   return results;

@@ -57,8 +57,10 @@ export interface OrgWithMembership extends Org {
 // Constants
 // ---------------------------------------------------------------------------
 
-// Default MPB Health org ID (created in migration)
-export const DEFAULT_ORG_ID = 'a0000000-0000-0000-0000-000000000001';
+// Default MPB Health org IDs (two tables exist due to migration history)
+// The `orgs` table (phase0 migration) uses one ID, `organizations` table (champion) uses another
+export const DEFAULT_ORG_ID = '00000000-0000-4000-a000-000000000001';
+export const DEFAULT_ORG_ID_ALT = 'a0000000-0000-0000-0000-000000000001';
 
 export const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   owner: 'Owner',
@@ -134,19 +136,42 @@ export async function getUserOrgs(): Promise<OrgWithMembership[]> {
   if (!memberships || memberships.length === 0) return [];
 
   // Step 2: Fetch the organizations for those memberships
+  // Note: org_memberships may reference either the `organizations` table or the
+  // legacy `orgs` table depending on which migration created the FK. We query
+  // both tables and merge to handle either case.
   const orgIds = memberships.map((m) => m.org_id);
-  const { data: orgs, error: orgError } = await supabase
-    .from('organizations')
-    .select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at')
-    .in('id', orgIds);
 
-  if (orgError) {
-    console.error('[OrgService] Failed to get organizations:', orgError);
-    return [];
+  const [orgResult, legacyOrgResult] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at')
+      .in('id', orgIds),
+    supabase
+      .from('orgs')
+      .select('id, name, slug, logo_url, settings, created_at, updated_at')
+      .in('id', orgIds),
+  ]);
+
+  // Build a unified map — prefer `organizations` data when available
+  const orgMap = new Map<string, any>();
+
+  // Add legacy orgs first (with defaults for missing fields)
+  for (const o of (legacyOrgResult.data || [])) {
+    orgMap.set(o.id, {
+      ...o,
+      brand_config: { primaryColor: '#0D9488', accentColor: '#14B8A6' },
+      subscription_tier: 'enterprise',
+      subscription_status: 'active',
+      max_users: 1000,
+      max_contacts: 100000,
+      max_sequences: 1000,
+    });
   }
 
-  // Step 3: Join them together
-  const orgMap = new Map((orgs || []).map((o: any) => [o.id, o]));
+  // Override with organizations data (richer schema)
+  for (const o of (orgResult.data || [])) {
+    orgMap.set(o.id, o);
+  }
   const results: OrgWithMembership[] = [];
   for (const row of memberships) {
     const org = orgMap.get(row.org_id);

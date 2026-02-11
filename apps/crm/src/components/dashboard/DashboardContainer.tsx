@@ -31,12 +31,6 @@ export function DashboardContainer() {
 function DashboardContent() {
   const { isLoading, error, widgets, editMode, clearError } = useDashboardStore();
 
-  // #region agent log
-  if (error) {
-    fetch('http://127.0.0.1:7244/ingest/5799e330-79bc-423e-b572-07a1a7221841',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardContainer.tsx:DashboardContent:errorDisplay',message:'Error state detected in DashboardContent',data:{error,isLoading,widgetCount:widgets.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H6'})}).catch(()=>{});
-  }
-  // #endregion
-
   // Enable keyboard shortcuts
   useKeyboardShortcuts();
 

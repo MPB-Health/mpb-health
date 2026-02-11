@@ -65,7 +65,6 @@ CREATE POLICY "Super admins can manage webhooks"
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid()
       AND role IN ('super_admin', 'admin')
-      AND is_active = true
     )
   )
   WITH CHECK (
@@ -73,7 +72,6 @@ CREATE POLICY "Super admins can manage webhooks"
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid()
       AND role IN ('super_admin', 'admin')
-      AND is_active = true
     )
   );
 
@@ -96,7 +94,6 @@ CREATE POLICY "Super admins can view alert logs"
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid()
       AND role IN ('super_admin', 'admin')
-      AND is_active = true
     )
   );
 

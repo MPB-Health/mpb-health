@@ -90,30 +90,40 @@ export default function Training({ section }: TrainingProps) {
               onClick={() => navigate(`/training/${module.id}`)}
               className="bg-surface-primary rounded-xl border border-th-border p-5 text-left hover:border-th-accent-300 hover:shadow-md transition-all"
             >
-              <div className="flex items-start justify-between">
-                <div
-                  className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    status === 'completed'
-                      ? 'bg-green-100 dark:bg-green-900/30'
-                      : status === 'in_progress'
-                      ? 'bg-blue-100 dark:bg-blue-900/30'
-                      : 'bg-surface-tertiary'
-                  }`}
-                >
-                  {status === 'completed' ? (
-                    <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
-                  ) : status === 'in_progress' ? (
-                    <Play className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  ) : (
-                    <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
+              {module.thumbnail_url ? (
+                <div className="flex items-start justify-between">
+                  <img
+                    src={module.thumbnail_url}
+                    alt={module.title}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-start justify-between">
+                  <div
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      status === 'completed'
+                        ? 'bg-green-100 dark:bg-green-900/30'
+                        : status === 'in_progress'
+                        ? 'bg-blue-100 dark:bg-blue-900/30'
+                        : 'bg-surface-tertiary'
+                    }`}
+                  >
+                    {status === 'completed' ? (
+                      <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    ) : status === 'in_progress' ? (
+                      <Play className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    ) : (
+                      <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
+                    )}
+                  </div>
+                  {module.is_required && (
+                    <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
+                      Required
+                    </span>
                   )}
                 </div>
-                {module.is_required && (
-                  <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
-                    Required
-                  </span>
-                )}
-              </div>
+              )}
 
               <h3 className="font-semibold text-th-text-primary mt-4 line-clamp-1">
                 {module.title}

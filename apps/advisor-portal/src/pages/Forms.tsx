@@ -8,6 +8,7 @@ import {
   UserCheck,
   Building2,
   Users,
+  CalendarDays,
 } from 'lucide-react';
 import { Tooltip } from '../components/Tooltip';
 import {
@@ -162,6 +163,8 @@ export default function Forms({ section }: FormsProps) {
                 >
                   {isSubmitted ? (
                     <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  ) : (form.name || form.label || '').toLowerCase().includes('schedule') ? (
+                    <CalendarDays className="w-6 h-6 text-th-text-tertiary" />
                   ) : (
                     <FileText className="w-6 h-6 text-th-text-tertiary" />
                   )}
@@ -197,7 +200,7 @@ export default function Forms({ section }: FormsProps) {
                   </span>
                 ) : (
                   <span className="text-sm text-th-accent-600 font-medium">
-                    Fill out →
+                    {(form.name || form.label || '').toLowerCase().includes('schedule') ? 'Schedule →' : 'Fill out →'}
                   </span>
                 )}
               </div>

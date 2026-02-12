@@ -4,11 +4,13 @@ import {
   LayoutDashboard,
   Users,
   Briefcase,
+  Building2,
   ChevronDown,
   ChevronUp,
   ExternalLink,
   Eye,
 } from 'lucide-react';
+import { getPortalUrl } from '@mpbhealth/config';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
 
@@ -51,16 +53,29 @@ const DashboardToggle: React.FC = () => {
       canAccess: isSuperAdmin || isAdmin,
       color: 'bg-blue-600 hover:bg-blue-700',
       activeColor: 'bg-blue-700',
+      external: false,
     },
     {
       id: 'advisor',
       label: 'Advisor Dashboard',
       shortLabel: 'Advisor',
       icon: Briefcase,
-      path: '/advisor/dashboard',
+      path: getPortalUrl('advisors'),
       canAccess: isSuperAdmin || isAdvisor,
       color: 'bg-green-600 hover:bg-green-700',
       activeColor: 'bg-green-700',
+      external: true,
+    },
+    {
+      id: 'crm',
+      label: 'CRM Dashboard',
+      shortLabel: 'CRM',
+      icon: Building2,
+      path: getPortalUrl('crm'),
+      canAccess: isSuperAdmin || isAdmin,
+      color: 'bg-indigo-600 hover:bg-indigo-700',
+      activeColor: 'bg-indigo-700',
+      external: true,
     },
     {
       id: 'member',
@@ -71,6 +86,7 @@ const DashboardToggle: React.FC = () => {
       canAccess: true, // All authenticated users
       color: 'bg-purple-600 hover:bg-purple-700',
       activeColor: 'bg-purple-700',
+      external: false,
     },
   ];
 
@@ -79,7 +95,11 @@ const DashboardToggle: React.FC = () => {
   // Don't show if only one portal accessible
   if (accessiblePortals.length <= 1) return null;
 
-  const handleNavigate = (path: string) => {
+  const handleNavigate = (path: string, external?: boolean) => {
+    if (external) {
+      window.location.href = path;
+      return;
+    }
     navigate(path);
     setIsExpanded(false);
   };
@@ -102,7 +122,7 @@ const DashboardToggle: React.FC = () => {
               return (
                 <button
                   key={portal.id}
-                  onClick={() => handleNavigate(portal.path)}
+                  onClick={() => handleNavigate(portal.path, portal.external)}
                   className={cn(
                     'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left',
                     isActive

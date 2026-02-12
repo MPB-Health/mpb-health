@@ -328,8 +328,8 @@ export default function MainLayout() {
         portalSwitcher={
           <PortalSwitcher
             currentPortal="advisors"
-            canAccessAdmin={false}
-            canAccessCRM={false}
+            canAccessAdmin={true}
+            canAccessCRM={true}
             canAccessAdvisor={true}
             getPortalUrl={getPortalUrl}
           />

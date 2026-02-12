@@ -12,6 +12,7 @@ import QuickLinks from './pages/QuickLinks';
 import SOPLibrary from './pages/SOPLibrary';
 import SOPDocument from './pages/SOPDocument';
 import Bulletins from './pages/Bulletins';
+import SubmitGroup from './pages/SubmitGroup';
 import Profile from './pages/Profile';
 import Inbox from './pages/Inbox';
 import ConversationThread from './pages/ConversationThread';
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="sops/rx" element={<SOPLibrary section="rx" />} />
           <Route path="sops/:documentId" element={<SOPDocument />} />
           <Route path="bulletins" element={<Bulletins />} />
+          <Route path="submit-group" element={<SubmitGroup />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="inbox/:conversationId" element={<ConversationThread />} />
           <Route path="audit-log" element={<AuditLog />} />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap,
@@ -6,26 +6,13 @@ import {
   CheckCircle2,
   Clock,
   Search,
-  Filter,
-  ChevronRight,
 } from 'lucide-react';
-import { trainingService, type TrainingCategory } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 export default function Training() {
   const navigate = useNavigate();
-  const { trainingModules, trainingProgress, trainingStats } = useAdvisor();
-  const [categories, setCategories] = useState<TrainingCategory[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { trainingModules, trainingProgress } = useAdvisor();
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    const loadCategories = async () => {
-      const cats = await trainingService.getCategories();
-      setCategories(cats);
-    };
-    loadCategories();
-  }, []);
 
   const getModuleStatus = (moduleId: string) => {
     const progress = trainingProgress.find((p) => p.module_id === moduleId);
@@ -33,18 +20,20 @@ export default function Training() {
   };
 
   const filteredModules = trainingModules.filter((module) => {
-    const matchesCategory = !selectedCategory || module.category === selectedCategory;
     const matchesSearch =
       !searchQuery ||
       module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       module.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesSearch;
   });
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-surface-tertiary">
+          <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
+        </div>
         <div>
           <h1 className="text-2xl font-bold text-th-text-primary">Training</h1>
           <p className="text-th-text-tertiary text-sm mt-1">
@@ -53,74 +42,16 @@ export default function Training() {
         </div>
       </div>
 
-      {/* Progress overview */}
-      <div className="gradient-accent rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-white/75">Overall Progress</p>
-            <p className="text-3xl font-bold mt-1">
-              {trainingStats.completionPercentage.toFixed(0)}%
-            </p>
-            <p className="text-white/60 text-sm mt-2">
-              {trainingStats.completedModules} of {trainingStats.totalModules} modules
-              completed
-            </p>
-          </div>
-          <div className="w-24 h-24 relative">
-            <svg className="w-full h-full transform -rotate-90">
-              <circle
-                cx="48"
-                cy="48"
-                r="40"
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="8"
-                fill="none"
-              />
-              <circle
-                cx="48"
-                cy="48"
-                r="40"
-                stroke="white"
-                strokeWidth="8"
-                fill="none"
-                strokeDasharray={`${trainingStats.completionPercentage * 2.51} 251`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <GraduationCap className="w-8 h-8" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-tertiary" />
-          <input
-            type="text"
-            placeholder="Search modules..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
-          />
-        </div>
-        <div className="flex items-center space-x-2">
-          <Filter className="w-5 h-5 text-th-text-tertiary" />
-          <select
-            value={selectedCategory || ''}
-            onChange={(e) => setSelectedCategory(e.target.value || null)}
-            className="px-4 py-2.5 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
-          >
-            <option value="">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.name}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Search */}
+      <div className="relative w-full">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-tertiary" />
+        <input
+          type="text"
+          placeholder="Search modules..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
+        />
       </div>
 
       {/* Modules grid */}

@@ -113,16 +113,6 @@ export const FORMS: FormEntry[] = [
     cognitoEmbed: '<script src="https://www.cognitoforms.com/f/seamless.js" data-key="K4Fk3PtQHE-6M-fMiX2fVA" data-form="395"></script>',
   },
   {
-    slug: '/healthcare-advisor-review-change/',
-    label: 'Review or Change Health Advisor',
-    category: 'member',
-    description: 'Update your health advisor preferences',
-    icon: 'UserCheck',
-    estimatedMinutes: 5,
-    requiresAuth: false,
-    cognitoEmbed: '',
-  },
-  {
     slug: '/request-rx-quote/',
     label: 'Request RX Quote',
     category: 'member',
@@ -260,7 +250,6 @@ export const MEMBER_FORM_CATEGORIES = [
       '/request-rx-quote/',
       '/request-to-schedule-an-appointment/',
       '/schedule-a-call/',
-      '/healthcare-advisor-review-change/',
     ],
   },
   {

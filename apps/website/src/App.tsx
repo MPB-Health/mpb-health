@@ -100,7 +100,6 @@ const MemberFeedbackForm = lazyAuto(() => import('./pages/forms/MemberFeedbackFo
 const MembershipChangesForm = lazyAuto(() => import('./pages/forms/MembershipChangesForm'));
 const ReferAFriendForm = lazyAuto(() => import('./pages/forms/ReferAFriendForm'));
 const ReviewUs = lazyAuto(() => import('./pages/ReviewUs'));
-const HealthcareAdvisorReviewChangeForm = lazyAuto(() => import('./pages/forms/HealthcareAdvisorReviewChangeForm'));
 const RequestRxQuoteForm = lazyAuto(() => import('./pages/forms/RequestRxQuoteForm'));
 const RequestToScheduleAppointmentForm = lazyAuto(() => import('./pages/forms/RequestToScheduleAppointmentForm'));
 const ScheduleWelcomeCall = lazyAuto(() => import('./pages/ScheduleWelcomeCall'));
@@ -310,7 +309,6 @@ const App = () => {
                   <Route path="/membership-changes" element={<MembershipChangesForm />} />
                   <Route path="/refer-a-friend" element={<ReferAFriendForm />} />
                   <Route path="/review-us" element={<ReviewUs />} />
-                  <Route path="/healthcare-advisor-review-change" element={<HealthcareAdvisorReviewChangeForm />} />
                   <Route path="/request-rx-quote" element={<RequestRxQuoteForm />} />
                   <Route path="/request-to-schedule-an-appointment" element={<RequestToScheduleAppointmentForm />} />
                   <Route path="/schedule-a-call" element={<ScheduleWelcomeCall />} />

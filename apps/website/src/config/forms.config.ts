@@ -100,7 +100,7 @@ export const FORMS: FormEntry[] = [
     icon: 'Edit3',
     estimatedMinutes: 7,
     requiresAuth: false,
-    cognitoEmbed: '<script src="https://www.cognitoforms.com/f/seamless.js" data-key="K4Fk3PtQHE-6M-fMiX2fVA" data-form="411"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/411" allow="payment" style="border:0;width:100%;" height="2484"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
   },
   {
     slug: '/refer-a-friend/',

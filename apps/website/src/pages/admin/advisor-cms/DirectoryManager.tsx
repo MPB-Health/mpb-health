@@ -455,10 +455,7 @@ export default function DirectoryManager() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <AdminBreadcrumb
-              currentPage="Advisor Directory"
-              parentPages={[{ label: 'Advisor Portal CMS', href: '/admin/advisor-cms' }]}
-            />
+            <AdminBreadcrumb currentPage="Advisor Directory" />
             <h1 className="text-2xl font-bold text-gray-900 mt-2">
               Advisor Directory Manager
             </h1>
@@ -825,9 +822,10 @@ export default function DirectoryManager() {
                   Cancel
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="primary"
                   onClick={() => handleDelete(deleteConfirm)}
                   disabled={deleting}
+                  className="bg-red-600 hover:bg-red-700 text-white"
                 >
                   {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
                   Delete Permanently

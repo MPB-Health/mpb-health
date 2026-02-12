@@ -86,15 +86,6 @@ export default function Training({ section }: TrainingProps) {
 
           const hasThumbnail = !!module.thumbnail_url;
 
-          // Parse image_position from content_html JSON metadata if available
-          let imagePosition = 'center top';
-          if (module.content_html) {
-            try {
-              const meta = JSON.parse(module.content_html);
-              if (meta.image_position) imagePosition = meta.image_position;
-            } catch { /* not JSON, ignore */ }
-          }
-
           return (
             <div
               key={module.id}
@@ -109,7 +100,7 @@ export default function Training({ section }: TrainingProps) {
                   style={{
                     backgroundImage: `url(${module.thumbnail_url})`,
                     backgroundSize: 'cover',
-                    backgroundPosition: imagePosition,
+                    backgroundPosition: module.id === '35c6f48f-3686-4fda-9c60-0839ed544161' ? 'center -56px' : 'center top',
                     backgroundRepeat: 'no-repeat',
                   }}
                   role="img"

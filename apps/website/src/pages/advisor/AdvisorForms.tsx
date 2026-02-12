@@ -59,7 +59,6 @@ const DEFAULT_MEMBER_FORMS: FormItem[] = [
   { label: 'Request to Schedule an Appointment', url: 'https://mpb.health/request-to-schedule-an-appointment/' },
   { label: 'Schedule a Welcome Call', url: 'https://mpb.health/schedule-a-call/' },
   { label: 'Welcome Call Survey', url: 'https://www.mpb.health/forms/welcome-call-survey/' },
-  { label: 'Review/Change Healthcare Advisor', url: 'https://mpb.health/healthcare-advisor-review-change/' },
   { label: 'Update Form of Payment', url: 'https://mpb.health/update-form-of-payment' },
   { label: 'Cancel Membership', url: 'https://mpb.health/cancel-membership/' },
 ];

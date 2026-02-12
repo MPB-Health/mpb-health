@@ -84,78 +84,88 @@ export default function Training({ section }: TrainingProps) {
           const status = getModuleStatus(module.id);
           const progress = trainingProgress.find((p) => p.module_id === module.id);
 
+          const hasThumbnail = !!module.thumbnail_url;
+
           return (
-            <button
+            <div
               key={module.id}
               onClick={() => navigate(`/training/${module.id}`)}
-              className="bg-surface-primary rounded-xl border border-th-border p-5 text-left hover:border-th-accent-300 hover:shadow-md transition-all"
-            >
-              {module.thumbnail_url ? (
-                <div className="flex items-start justify-between">
-                  <img
-                    src={module.thumbnail_url}
-                    alt={module.title}
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                </div>
+              onKeyDown={(e) => e.key === 'Enter' && navigate(`/training/${module.id}`)}
+              role="button"
+              tabIndex={0}
+              className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col"
+            >{hasThumbnail ? (
+                <div
+                  className="document-card__thumbnail bg-surface-tertiary"
+                  style={{
+                    backgroundImage: `url(${module.thumbnail_url})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center top',
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                  role="img"
+                  aria-label={module.title}
+                />
               ) : (
-                <div className="flex items-start justify-between">
-                  <div
-                    className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      status === 'completed'
-                        ? 'bg-green-100 dark:bg-green-900/30'
-                        : status === 'in_progress'
-                        ? 'bg-blue-100 dark:bg-blue-900/30'
-                        : 'bg-surface-tertiary'
-                    }`}
-                  >
-                    {status === 'completed' ? (
-                      <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
-                    ) : status === 'in_progress' ? (
-                      <Play className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    ) : (
-                      <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
+                <div className="document-card__content p-5 pb-0">
+                  <div className="flex items-start justify-between">
+                    <div
+                      className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                        status === 'completed'
+                          ? 'bg-green-100 dark:bg-green-900/30'
+                          : status === 'in_progress'
+                          ? 'bg-blue-100 dark:bg-blue-900/30'
+                          : 'bg-surface-tertiary'
+                      }`}
+                    >
+                      {status === 'completed' ? (
+                        <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+                      ) : status === 'in_progress' ? (
+                        <Play className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
+                      )}
+                    </div>
+                    {module.is_required && (
+                      <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
+                        Required
+                      </span>
                     )}
                   </div>
-                  {module.is_required && (
-                    <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
-                      Required
-                    </span>
-                  )}
                 </div>
-              )}
-
-              <h3 className="font-semibold text-th-text-primary mt-4 line-clamp-1">
-                {module.title}
-              </h3>
-              {module.description && (
-                <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
-                  {module.description}
-                </p>
-              )}
-
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-th-border-subtle">
-                <div className="flex items-center space-x-1 text-sm text-th-text-tertiary">
-                  <Clock className="w-4 h-4" />
-                  <span>{module.duration_minutes} min</span>
-                </div>
-                <span
-                  className={`text-sm font-medium ${
-                    status === 'completed'
-                      ? 'text-green-600 dark:text-green-400'
+              )}<div className={`document-card__content flex-1 flex flex-col ${hasThumbnail ? 'p-5' : 'p-5 pt-4'}`}>
+                <h3 className="font-semibold text-th-text-primary leading-snug">
+                  {module.title}
+                </h3>
+                {module.description && (
+                  <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
+                    {module.description}
+                  </p>
+                )}
+                <div className="mt-auto" aria-hidden="true"></div>
+                <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
+                  <div className="flex items-center space-x-1 text-sm text-th-text-tertiary">
+                    <Clock className="w-4 h-4" />
+                    <span>{module.duration_minutes} min</span>
+                  </div>
+                  <span
+                    className={`text-sm font-medium ${
+                      status === 'completed'
+                        ? 'text-green-600 dark:text-green-400'
+                        : status === 'in_progress'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-th-text-tertiary'
+                    }`}
+                  >
+                    {status === 'completed'
+                      ? 'Completed'
                       : status === 'in_progress'
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-th-text-tertiary'
-                  }`}
-                >
-                  {status === 'completed'
-                    ? 'Completed'
-                    : status === 'in_progress'
-                    ? `${progress?.time_spent_minutes || 0} min spent`
-                    : 'Not started'}
-                </span>
+                      ? `${progress?.time_spent_minutes || 0} min spent`
+                      : 'Not started'}
+                  </span>
+                </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

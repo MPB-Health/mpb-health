@@ -56,7 +56,7 @@ export default function Training() {
 
       {/* Modules grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredModules.map((module) => {
+        {filteredModules.slice(0, 1).map((module) => {
           const status = getModuleStatus(module.id);
           const progress = trainingProgress.find((p) => p.module_id === module.id);
 

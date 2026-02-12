@@ -101,7 +101,6 @@ export default function Training({ section }: TrainingProps) {
                     backgroundImage: `url(${module.thumbnail_url})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center top',
-                    ...(module.id === '35c6f48f-3686-4fda-9c60-0839ed544161' && { backgroundPositionY: '-56px' }),
                     backgroundRepeat: 'no-repeat',
                   }}
                   role="img"

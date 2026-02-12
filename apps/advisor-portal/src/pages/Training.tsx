@@ -37,7 +37,7 @@ export default function Training() {
         <div>
           <h1 className="text-2xl font-bold text-th-text-primary">Training</h1>
           <p className="text-th-text-tertiary text-sm mt-1">
-            Complete your training modules to become certified
+            Your advisor training modules
           </p>
         </div>
       </div>

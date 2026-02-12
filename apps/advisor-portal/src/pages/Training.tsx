@@ -9,10 +9,33 @@ import {
 } from 'lucide-react';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
-export default function Training() {
+interface TrainingProps {
+  section?: 'mpb' | 'sedera' | 'zion';
+}
+
+const sectionConfig = {
+  mpb: {
+    title: 'MPB Training',
+    description: 'MPB Health training modules',
+  },
+  sedera: {
+    title: 'Sedera Training',
+    description: 'Sedera training modules',
+  },
+  zion: {
+    title: 'Zion Training',
+    description: 'Zion training modules',
+  },
+};
+
+export default function Training({ section }: TrainingProps) {
   const navigate = useNavigate();
   const { trainingModules, trainingProgress } = useAdvisor();
   const [searchQuery, setSearchQuery] = useState('');
+
+  const currentSection = section ? sectionConfig[section] : null;
+  const pageTitle = currentSection?.title || 'Training';
+  const pageDescription = currentSection?.description || 'Your advisor training modules';
 
   const getModuleStatus = (moduleId: string) => {
     const progress = trainingProgress.find((p) => p.module_id === moduleId);
@@ -20,11 +43,12 @@ export default function Training() {
   };
 
   const filteredModules = trainingModules.filter((module) => {
+    const matchesCategory = !section || module.category?.toLowerCase().includes(section);
     const matchesSearch =
       !searchQuery ||
       module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       module.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    return matchesCategory && matchesSearch;
   });
 
   return (
@@ -35,9 +59,9 @@ export default function Training() {
           <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Training</h1>
+          <h1 className="text-2xl font-bold text-th-text-primary">{pageTitle}</h1>
           <p className="text-th-text-tertiary text-sm mt-1">
-            Your advisor training modules
+            {pageDescription}
           </p>
         </div>
       </div>

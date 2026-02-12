@@ -41,6 +41,9 @@ export default function App() {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="training" element={<Training />} />
+          <Route path="training/mpb" element={<Training section="mpb" />} />
+          <Route path="training/sedera" element={<Training section="sedera" />} />
+          <Route path="training/zion" element={<Training section="zion" />} />
           <Route path="training/:moduleId" element={<TrainingModule />} />
           <Route path="meetings" element={<Meetings />} />
           <Route path="meetings/:meetingId" element={<MeetingRoom />} />

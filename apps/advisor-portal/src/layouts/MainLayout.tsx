@@ -64,7 +64,16 @@ function getIconComponent(iconName: string): LucideIcons.LucideIcon {
 const fallbackNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Inbox', href: '/inbox', icon: Inbox },
-  { name: 'Training', href: '/training', icon: GraduationCap },
+  { 
+    name: 'Training', 
+    href: '/training', 
+    icon: GraduationCap,
+    children: [
+      { name: 'MPB Training', href: '/training/mpb' },
+      { name: 'Sedera Training', href: '/training/sedera' },
+      { name: 'Zion Training', href: '/training/zion' },
+    ],
+  },
   { name: 'Meetings', href: '/meetings', icon: Video },
   { 
     name: 'Forms', 

@@ -46,6 +46,8 @@ interface CMSStats {
   activeAnnouncements: number;
   meetings: number;
   upcomingMeetings: number;
+  totalAdvisors: number;
+  activeAdvisors: number;
   lastUpdated: string | null;
 }
 
@@ -76,6 +78,8 @@ export default function AdvisorCMSHub() {
     activeAnnouncements: 0,
     meetings: 0,
     upcomingMeetings: 0,
+    totalAdvisors: 0,
+    activeAdvisors: 0,
     lastUpdated: null,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -98,6 +102,8 @@ export default function AdvisorCMSHub() {
         quickLinksResult,
         announcementsResult,
         meetingsResult,
+        advisorsAllResult,
+        advisorsActiveResult,
       ] = await Promise.all([
         supabase.from('advisor_nav_menu').select('id', { count: 'exact' }),
         supabase.from('advisor_content').select('id, is_published', { count: 'exact' }).eq('content_type', 'bulletin'),
@@ -107,6 +113,8 @@ export default function AdvisorCMSHub() {
         supabase.from('advisor_quick_links').select('id', { count: 'exact' }),
         supabase.from('advisor_announcements').select('id, is_active', { count: 'exact' }),
         supabase.from('advisor_meetings').select('id, scheduled_at, status', { count: 'exact' }),
+        supabase.from('advisors').select('id', { count: 'exact', head: true }),
+        supabase.from('advisors').select('id', { count: 'exact', head: true }).eq('is_active', true),
       ]);
 
       // Calculate stats
@@ -130,6 +138,8 @@ export default function AdvisorCMSHub() {
         activeAnnouncements,
         meetings: meetingsResult.count || 0,
         upcomingMeetings,
+        totalAdvisors: advisorsAllResult.count || 0,
+        activeAdvisors: advisorsActiveResult.count || 0,
         lastUpdated: new Date().toISOString(),
       });
 
@@ -210,6 +220,15 @@ export default function AdvisorCMSHub() {
       color: 'yellow',
       stats: `${stats.quickActions} actions`,
       badge: null,
+    },
+    {
+      title: 'Advisor Directory',
+      description: 'Manage the public advisor directory listing',
+      icon: Users,
+      href: '/admin/advisor-cms/directory',
+      color: 'cyan',
+      stats: `${stats.activeAdvisors} active of ${stats.totalAdvisors}`,
+      badge: stats.totalAdvisors - stats.activeAdvisors > 0 ? `${stats.totalAdvisors - stats.activeAdvisors} inactive` : null,
     },
     {
       title: 'Meetings & Events',

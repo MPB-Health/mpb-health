@@ -181,3 +181,207 @@ export function getAdvisorFullAddress(advisor: Advisor): string {
 
   return parts.join(', ');
 }
+
+// ============================================================================
+// Admin CRUD Functions
+// ============================================================================
+
+export interface AdminAdvisorFilters {
+  search?: string;
+  state?: string;
+  agentType?: string;
+  activeStatus?: 'all' | 'active' | 'inactive';
+}
+
+export interface AdvisorStats {
+  total: number;
+  active: number;
+  inactive: number;
+  statesCount: number;
+}
+
+export type AdvisorFormData = Omit<Advisor, 'id' | 'created_at' | 'updated_at'>;
+
+export async function getAllAdvisors(filters?: AdminAdvisorFilters): Promise<Advisor[]> {
+  try {
+    let query = supabase
+      .from('advisors')
+      .select('*')
+      .order('last_name', { ascending: true });
+
+    if (filters?.activeStatus === 'active') {
+      query = query.eq('is_active', true);
+    } else if (filters?.activeStatus === 'inactive') {
+      query = query.eq('is_active', false);
+    }
+
+    if (filters?.state && filters.state !== 'all') {
+      query = query.eq('state', filters.state);
+    }
+
+    if (filters?.agentType && filters.agentType !== 'all') {
+      query = query.eq('agent_type', filters.agentType);
+    }
+
+    if (filters?.search) {
+      const searchTerm = filters.search.toLowerCase();
+      query = query.or(
+        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,company.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,agent_id.ilike.%${searchTerm}%`
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[advisorDirectoryService] Error fetching all advisors:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('[advisorDirectoryService] Error in getAllAdvisors:', error);
+    throw error;
+  }
+}
+
+export async function createAdvisor(data: Partial<AdvisorFormData>): Promise<Advisor> {
+  try {
+    const { data: advisor, error } = await supabase
+      .from('advisors')
+      .insert({
+        ...data,
+        is_active: data.is_active ?? true,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[advisorDirectoryService] Error creating advisor:', error);
+      throw error;
+    }
+
+    return advisor;
+  } catch (error) {
+    console.error('[advisorDirectoryService] Error in createAdvisor:', error);
+    throw error;
+  }
+}
+
+export async function updateAdvisor(id: string, data: Partial<AdvisorFormData>): Promise<Advisor> {
+  try {
+    const { data: advisor, error } = await supabase
+      .from('advisors')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[advisorDirectoryService] Error updating advisor:', error);
+      throw error;
+    }
+
+    return advisor;
+  } catch (error) {
+    console.error('[advisorDirectoryService] Error in updateAdvisor:', error);
+    throw error;
+  }
+}
+
+export async function toggleAdvisorActive(id: string, isActive: boolean): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('advisors')
+      .update({ is_active: isActive })
+      .eq('id', id);
+
+    if (error) {
+      console.error('[advisorDirectoryService] Error toggling advisor active:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('[advisorDirectoryService] Error in toggleAdvisorActive:', error);
+    throw error;
+  }
+}
+
+export async function deleteAdvisor(id: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('advisors')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('[advisorDirectoryService] Error deleting advisor:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('[advisorDirectoryService] Error in deleteAdvisor:', error);
+    throw error;
+  }
+}
+
+export async function getAdvisorStats(): Promise<AdvisorStats> {
+  try {
+    const [allResult, activeResult, statesResult] = await Promise.all([
+      supabase.from('advisors').select('id', { count: 'exact', head: true }),
+      supabase.from('advisors').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      supabase.from('advisors').select('state').eq('is_active', true).not('state', 'is', null),
+    ]);
+
+    const total = allResult.count || 0;
+    const active = activeResult.count || 0;
+    const statesCount = new Set(statesResult.data?.map(s => s.state).filter(Boolean) || []).size;
+
+    return {
+      total,
+      active,
+      inactive: total - active,
+      statesCount,
+    };
+  } catch (error) {
+    console.error('[advisorDirectoryService] Error in getAdvisorStats:', error);
+    return { total: 0, active: 0, inactive: 0, statesCount: 0 };
+  }
+}
+
+export async function getAllStates(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('advisors')
+      .select('state')
+      .not('state', 'is', null)
+      .order('state');
+
+    if (error) {
+      console.error('[advisorDirectoryService] Error fetching all states:', error);
+      return [];
+    }
+
+    return [...new Set(data?.map(item => item.state).filter(Boolean) || [])].sort();
+  } catch (error) {
+    console.error('[advisorDirectoryService] Error in getAllStates:', error);
+    return [];
+  }
+}
+
+export async function getAllAgentTypes(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('advisors')
+      .select('agent_type')
+      .not('agent_type', 'is', null)
+      .order('agent_type');
+
+    if (error) {
+      console.error('[advisorDirectoryService] Error fetching all agent types:', error);
+      return [];
+    }
+
+    return [...new Set(data?.map(item => item.agent_type).filter(Boolean) || [])].sort();
+  } catch (error) {
+    console.error('[advisorDirectoryService] Error in getAllAgentTypes:', error);
+    return [];
+  }
+}

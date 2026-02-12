@@ -122,9 +122,12 @@ export async function getUserOrgs(): Promise<OrgWithMembership[]> {
   if (cached) return cached;
 
   // Step 1: Fetch the user's active memberships
+  // Note: Only select columns that exist in the actual table (phase0 schema).
+  // The champion migration's extra columns (permissions_override, suspended_at,
+  // suspended_reason) were never applied because the table already existed.
   const { data: memberships, error: membershipError } = await supabase
     .from('org_memberships')
-    .select('id, user_id, org_id, role, status, permissions_override, joined_at, suspended_at, suspended_reason, created_at, updated_at')
+    .select('id, user_id, org_id, role, status, joined_at, created_at, updated_at')
     .eq('user_id', user.id)
     .eq('status', 'active');
 
@@ -184,10 +187,10 @@ export async function getUserOrgs(): Promise<OrgWithMembership[]> {
         org_id: row.org_id,
         role: row.role as OrgRole,
         status: row.status as OrgMembershipStatus,
-        permissions_override: row.permissions_override ?? null,
+        permissions_override: (row as any).permissions_override ?? null,
         joined_at: row.joined_at,
-        suspended_at: row.suspended_at ?? null,
-        suspended_reason: row.suspended_reason ?? null,
+        suspended_at: (row as any).suspended_at ?? null,
+        suspended_reason: (row as any).suspended_reason ?? null,
         created_at: row.created_at,
         updated_at: row.updated_at,
       },

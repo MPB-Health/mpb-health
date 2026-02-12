@@ -25,7 +25,7 @@ class CognitoFormsService {
 
   constructor() {
     this.formId = import.meta.env.VITE_COGNITO_QUOTE_FORM_ID || '217';
-    this.apiKey = import.meta.env.VITE_COGNITO_FORMS_API_KEY || 'K4Fk3PtQHE-6M-fMiX2fVA';
+    this.apiKey = import.meta.env.VITE_COGNITO_FORMS_API_KEY || '';
   }
 
   initialize(): void {

@@ -88,6 +88,7 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Quick Links', href: '/quick-links', icon: Link },
   { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
+  { name: 'Submit Group', href: '/submit-group', icon: Bell },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

@@ -163,7 +163,7 @@ export default function Forms({ section }: FormsProps) {
                 >
                   {isSubmitted ? (
                     <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
-                  ) : (form.name || form.label || '').toLowerCase().includes('schedule') ? (
+                  ) : form.slug === '/webinar-questionnaire/' ? (
                     <CalendarDays className="w-6 h-6 text-th-text-tertiary" />
                   ) : (
                     <FileText className="w-6 h-6 text-th-text-tertiary" />
@@ -200,7 +200,7 @@ export default function Forms({ section }: FormsProps) {
                   </span>
                 ) : (
                   <span className="text-sm text-th-accent-600 font-medium">
-                    {(form.name || form.label || '').toLowerCase().includes('schedule') ? 'Schedule →' : 'Fill out →'}
+                    {form.slug === '/webinar-questionnaire/' ? 'Schedule →' : 'Fill out →'}
                   </span>
                 )}
               </div>

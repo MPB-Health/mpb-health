@@ -420,6 +420,7 @@ export default function ZohoImport() {
                       e.stopPropagation();
                       toggleSelect(lead.id);
                     }}
+                    aria-label={`Select ${lead.First_Name} ${lead.Last_Name}`}
                     className="rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                   />
                   <div className="flex-1 min-w-0">

@@ -352,8 +352,8 @@ const HeaderWithAuth = () => {
               label: 'Update Payment',
               description: 'Update your payment method',
               icon: 'CreditCard',
-              href: 'https://app.mpb.health/',
-              external: true,
+              href: '/update-form-of-payment',
+              external: false,
             },
             {
               id: 'dependent-over-18-public',
@@ -1174,10 +1174,8 @@ const HeaderWithAuth = () => {
                         <span>Member Updates</span>
                       </div>
                     </Link>
-                    <a
-                      href="https://app.mpb.health/"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Link
+                      to="/update-form-of-payment"
                       className="block px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -1185,7 +1183,7 @@ const HeaderWithAuth = () => {
                         <CreditCard className="h-4 w-4 text-primary" />
                         <span>Update Payment</span>
                       </div>
-                    </a>
+                    </Link>
                     <Link
                       to="/dependent-over-18-information"
                       className="block px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"

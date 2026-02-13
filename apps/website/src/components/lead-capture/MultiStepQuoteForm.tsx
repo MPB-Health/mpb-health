@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, ArrowLeft, Check, User, Users, DollarSign, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { trackFormInteraction, trackQuoteRequest } from '../../lib/conversionTracking';
+import { leadSubmissionService } from '../../lib/leadSubmissionService';
 
 interface FormData {
   // Step 1: Household
@@ -70,15 +71,57 @@ export const MultiStepQuoteForm: React.FC = () => {
     }
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await trackFormInteraction(FORM_ID, 'submit', formData);
-    await trackQuoteRequest(
-      'quote',
-      formData.householdType,
-      undefined
-    );
-    console.log('Form submitted:', formData);
+    setIsSubmitting(true);
+
+    try {
+      await trackFormInteraction(FORM_ID, 'submit', formData);
+      await trackQuoteRequest(
+        'quote',
+        formData.householdType,
+        undefined
+      );
+
+      const result = await leadSubmissionService.submitLead({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        householdSize: formData.householdType === 'family'
+          ? (formData.dependentsCount + 1)
+          : (formData.householdType === 'couple' ? 2 : 1),
+        zipCode: formData.zipCode,
+        sourcePage: window.location.pathname,
+        sourceCTA: 'multi-step-quote-form',
+        formData: {
+          household_type: formData.householdType,
+          dependents_count: formData.dependentsCount,
+          primary_age: formData.primaryAge,
+          spouse_age: formData.spouseAge,
+          state: formData.state,
+          primary_tobacco: formData.primaryTobacco,
+          spouse_tobacco: formData.spouseTobacco,
+          preexisting_conditions: formData.preexistingConditions,
+          referral_source: formData.referralSource,
+          form_type: 'multi_step_quote',
+        },
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Submission failed');
+      }
+
+      setSubmitSuccess(true);
+    } catch (error) {
+      console.error('Form submission error:', error);
+      alert('There was an issue submitting your form. Please try again or call us at (855) 816-4650.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isStepValid = (): boolean => {
@@ -401,6 +444,31 @@ export const MultiStepQuoteForm: React.FC = () => {
     </div>
   );
 
+  if (submitSuccess) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-neutral-200 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="h-8 w-8 text-green-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-neutral-900 mb-4">Thank You!</h3>
+          <p className="text-neutral-600 mb-6">
+            We've received your information and a member specialist will contact you within 24 hours to discuss your personalized health sharing options.
+          </p>
+          <div className="bg-neutral-50 rounded-lg p-6 text-left">
+            <h4 className="font-semibold text-neutral-900 mb-3">What happens next:</h4>
+            <ul className="space-y-2 text-sm text-neutral-600">
+              <li>A specialist will call you at {formData.phone}</li>
+              <li>We'll discuss your specific needs and answer questions</li>
+              <li>You'll receive a personalized quote within 24 hours</li>
+              <li>No obligation - take time to decide what's right for you</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       {/* Progress Bar */}
@@ -458,16 +526,16 @@ export const MultiStepQuoteForm: React.FC = () => {
           ) : (
             <button
               type="submit"
-              disabled={!isStepValid()}
+              disabled={!isStepValid() || isSubmitting}
               className={cn(
                 'flex-1 flex items-center justify-center gap-2 px-6 py-4 font-bold rounded-xl transition-all duration-300',
-                isStepValid()
+                isStepValid() && !isSubmitting
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl'
                   : 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
               )}
             >
-              Get My Quote
-              <Check className="h-5 w-5" />
+              {isSubmitting ? 'Submitting...' : 'Get My Quote'}
+              {!isSubmitting && <Check className="h-5 w-5" />}
             </button>
           )}
         </div>

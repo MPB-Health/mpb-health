@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { leadSubmissionService } from '../../lib/leadSubmissionService';
 import { Button } from '../ui/button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
@@ -49,6 +50,27 @@ export const BenefitInterestCTA: React.FC<BenefitInterestCTAProps> = ({
         });
 
       if (insertError) throw insertError;
+
+      // Also submit to CRM for unified lead tracking
+      const [firstName, ...lastParts] = formData.name.split(' ');
+      try {
+        await leadSubmissionService.submitLead({
+          firstName: firstName || formData.name,
+          lastName: lastParts.join(' ') || '',
+          email: formData.email,
+          phone: formData.phone || '',
+          sourcePage: window.location.pathname,
+          sourceCTA: `benefit-interest-${benefitType}`,
+          formData: {
+            benefit_type: benefitType,
+            benefit_name: benefitName,
+            form_type: 'benefit_interest',
+          },
+        });
+      } catch (crmError) {
+        // Don't fail the whole submission if CRM sync fails
+        console.error('CRM submission error:', crmError);
+      }
 
       setIsSuccess(true);
       setFormData({ name: '', email: '', phone: '' });

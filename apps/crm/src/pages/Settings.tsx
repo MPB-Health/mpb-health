@@ -510,6 +510,7 @@ export default function Settings() {
                   type="checkbox"
                   checked={factor.is_enabled}
                   onChange={(e) => handleScoringToggle(factor.factor_key, e.target.checked)}
+                  aria-label={`Enable ${factor.factor_label}`}
                   className="w-4 h-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                 />
                 <div className="flex-1 min-w-0">
@@ -531,6 +532,7 @@ export default function Settings() {
                     value={factor.weight}
                     onChange={(e) => handleWeightChange(factor.factor_key, Number(e.target.value))}
                     disabled={!factor.is_enabled}
+                    aria-label={`${factor.factor_label} weight`}
                     className="w-full h-1.5 bg-surface-tertiary rounded-lg appearance-none cursor-pointer disabled:opacity-40"
                   />
                 </div>
@@ -615,22 +617,26 @@ export default function Settings() {
             {prefs.quiet_hours_enabled && (
               <div className="grid grid-cols-2 gap-4 pl-4">
                 <div>
-                  <label className="block text-sm text-th-text-tertiary mb-1">Start</label>
-                  <input
-                    type="time"
-                    value={prefs.quiet_hours_start}
-                    onChange={(e) => updatePref('quiet_hours_start', e.target.value)}
-                    className="w-full border border-th-border rounded-lg px-3 py-2 text-sm"
-                  />
+                  <label className="block text-sm text-th-text-tertiary mb-1">
+                    Start
+                    <input
+                      type="time"
+                      value={prefs.quiet_hours_start}
+                      onChange={(e) => updatePref('quiet_hours_start', e.target.value)}
+                      className="mt-1 w-full border border-th-border rounded-lg px-3 py-2 text-sm"
+                    />
+                  </label>
                 </div>
                 <div>
-                  <label className="block text-sm text-th-text-tertiary mb-1">End</label>
-                  <input
-                    type="time"
-                    value={prefs.quiet_hours_end}
-                    onChange={(e) => updatePref('quiet_hours_end', e.target.value)}
-                    className="w-full border border-th-border rounded-lg px-3 py-2 text-sm"
-                  />
+                  <label className="block text-sm text-th-text-tertiary mb-1">
+                    End
+                    <input
+                      type="time"
+                      value={prefs.quiet_hours_end}
+                      onChange={(e) => updatePref('quiet_hours_end', e.target.value)}
+                      className="mt-1 w-full border border-th-border rounded-lg px-3 py-2 text-sm"
+                    />
+                  </label>
                 </div>
               </div>
             )}
@@ -640,6 +646,7 @@ export default function Settings() {
               <select
                 value={prefs.timezone}
                 onChange={(e) => updatePref('timezone', e.target.value)}
+                aria-label="Timezone"
                 className="w-full border border-th-border rounded-lg px-3 py-2 text-sm"
               >
                 {Intl.supportedValuesOf?.('timeZone')?.slice(0, 50).map((tz) => (

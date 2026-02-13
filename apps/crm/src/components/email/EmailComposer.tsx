@@ -149,6 +149,7 @@ function RecipientField({
                 e.stopPropagation();
                 removeEmail(email);
               }}
+              aria-label={`Remove ${email}`}
               className="hover:bg-th-accent-200 rounded-full p-0.5"
             >
               <X className="w-3 h-3" />
@@ -254,6 +255,7 @@ function ColorPicker({ editor }: { editor: Editor }) {
                   editor.chain().focus().setColor(color).run();
                   setIsOpen(false);
                 }}
+                aria-label={`Set text color to ${color}`}
                 className="w-6 h-6 rounded border border-th-border hover:scale-110 transition-transform"
                 style={{ backgroundColor: color }}
               />
@@ -822,6 +824,7 @@ export function EmailComposer({
           <button
             type="button"
             onClick={handleDiscard}
+            aria-label="Close composer"
             className="p-1.5 text-th-text-tertiary hover:text-th-text-secondary hover:bg-surface-tertiary rounded-lg"
           >
             <X className="w-4 h-4" />
@@ -898,6 +901,7 @@ export function EmailComposer({
                 <button
                   type="button"
                   onClick={() => removeAttachment(index)}
+                  aria-label={`Remove attachment ${att.file.name}`}
                   className="p-0.5 hover:bg-surface-secondary rounded"
                 >
                   <X className="w-3 h-3 text-th-text-tertiary" />
@@ -917,6 +921,7 @@ export function EmailComposer({
             type="file"
             multiple
             onChange={handleFileSelect}
+            aria-label="Attach files"
             className="hidden"
           />
           <button
@@ -973,6 +978,7 @@ export function EmailComposer({
             <select
               value={selectedSignatureId || ''}
               onChange={(e) => setSelectedSignatureId(e.target.value || null)}
+              aria-label="Email signature"
               className="px-3 py-1.5 text-sm text-th-text-secondary bg-transparent border border-th-border rounded-lg hover:bg-surface-secondary"
             >
               <option value="">No signature</option>

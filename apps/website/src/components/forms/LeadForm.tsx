@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { trackFormStep } from '../../lib/analytics';
 import { typography } from '../../lib/typography';
-import { sendLeadNotification } from '../../lib/emailService';
+import { leadSubmissionService } from '../../lib/leadSubmissionService';
 
 interface FormData {
   // Step 1: Contact Info
@@ -110,44 +110,29 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, className }) => {
     setIsSubmitting(true);
 
     try {
-      const { supabase } = await import('../../lib/supabase');
-
-      const { error } = await supabase
-        .from('lead_submissions')
-        .insert({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          household_size: parseInt(formData.householdSize || '1'),
-          current_insurance: formData.currentInsurance,
-          monthly_premium: formData.monthlyPremium,
-          coverage_preference: formData.membershipLevel,
-          zip_code: formData.zipCode,
-          primary_concern: formData.primaryConcern,
-          contact_preference: formData.contactPreference,
-          referral_source: formData.referralSource || null,
-          source: 'website_lead_form',
-          submitted_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Supabase submission error:', error);
-        throw error;
-      }
-
-      const emailResult = await sendLeadNotification({
-        name: `${formData.firstName} ${formData.lastName}`,
+      const result = await leadSubmissionService.submitLead({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
-        householdType: formData.householdSize ? `${formData.householdSize} ${parseInt(formData.householdSize) === 1 ? 'person' : 'people'}` : undefined,
-        source: 'Website Lead Form'
+        householdSize: parseInt(formData.householdSize || '1'),
+        currentInsurance: formData.currentInsurance,
+        monthlyPremium: formData.monthlyPremium,
+        coveragePreference: formData.membershipLevel,
+        zipCode: formData.zipCode,
+        primaryConcern: formData.primaryConcern,
+        contactPreference: formData.contactPreference,
+        sourcePage: window.location.pathname,
+        sourceCTA: 'lead-form',
+        formData: {
+          referral_source: formData.referralSource,
+          form_type: 'lead_form',
+        },
       });
 
-      if (!emailResult.success) {
-        console.warn('Lead notification email failed:', emailResult.error);
+      if (!result.success) {
+        console.error('Lead submission error:', result.error);
+        throw new Error(result.error || 'Submission failed');
       }
 
       trackFormStep('lead_form', 'completed', totalSteps);

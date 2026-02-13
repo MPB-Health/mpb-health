@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Activity,
@@ -39,6 +39,8 @@ import {
   Video,
   GraduationCap,
   Crown,
+  ArrowRight,
+  Clock,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -152,6 +154,18 @@ const navGroups: { title: string; items: NavItem[] }[] = [
   },
 ];
 
+// Build searchable items from nav groups
+const searchableNavItems = navGroups.flatMap(group =>
+  group.items.map(item => ({
+    id: item.id,
+    label: item.label,
+    group: group.title,
+    href: item.href,
+    viewId: item.viewId,
+    icon: item.icon,
+  }))
+);
+
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   activeView,
   onViewChange,
@@ -160,8 +174,96 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onCollapsedChange
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Analytics', 'Marketing', 'CRM', 'Content']);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<typeof searchableNavItems>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('adminRecentSearches');
+    if (stored) {
+      try { setRecentSearches(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+
+  // Keyboard shortcut: Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+        setTimeout(() => searchInputRef.current?.focus(), 50);
+      }
+      if (e.key === 'Escape' && searchOpen) {
+        setSearchOpen(false);
+        setSearchQuery('');
+        setSelectedIndex(0);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [searchOpen]);
+
+  // Filter results when query changes
+  const performSearch = useCallback((query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setSelectedIndex(0);
+      return;
+    }
+    const lower = query.toLowerCase();
+    const filtered = searchableNavItems.filter(
+      item =>
+        item.label.toLowerCase().includes(lower) ||
+        item.group.toLowerCase().includes(lower)
+    );
+    setSearchResults(filtered);
+    setSelectedIndex(0);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => performSearch(searchQuery), 100);
+    return () => clearTimeout(timer);
+  }, [searchQuery, performSearch]);
+
+  const saveRecentSearch = (label: string) => {
+    const updated = [label, ...recentSearches.filter(s => s !== label)].slice(0, 5);
+    setRecentSearches(updated);
+    localStorage.setItem('adminRecentSearches', JSON.stringify(updated));
+  };
+
+  const handleSearchSelect = (item: typeof searchableNavItems[0]) => {
+    saveRecentSearch(item.label);
+    setSearchOpen(false);
+    setSearchQuery('');
+    if (item.href) {
+      navigate(item.href);
+    } else if (item.viewId) {
+      onViewChange(item.viewId);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    const items = searchQuery ? searchResults : [];
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => Math.min(prev + 1, items.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' && items[selectedIndex]) {
+      e.preventDefault();
+      handleSearchSelect(items[selectedIndex]);
+    }
+  };
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -288,13 +390,33 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         )}
       </div>
 
-      {/* Quick Search Hint */}
+      {/* Quick Search Button */}
       {!collapsed && (
         <div className="px-4 py-3">
-          <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 text-sm hover:bg-slate-800 hover:border-slate-600 transition-colors">
+          <button
+            onClick={() => {
+              setSearchOpen(true);
+              setTimeout(() => searchInputRef.current?.focus(), 50);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 text-sm hover:bg-slate-800 hover:border-slate-600 transition-colors"
+          >
             <Search className="h-4 w-4" />
             <span>Quick search...</span>
             <kbd className="ml-auto px-1.5 py-0.5 text-xs bg-slate-700 rounded">⌘K</kbd>
+          </button>
+        </div>
+      )}
+      {collapsed && (
+        <div className="px-2 py-3 flex justify-center">
+          <button
+            onClick={() => {
+              setSearchOpen(true);
+              setTimeout(() => searchInputRef.current?.focus(), 50);
+            }}
+            aria-label="Open search"
+            className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:border-slate-600 transition-colors"
+          >
+            <Search className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -402,6 +524,154 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       >
         <ChevronRight className={cn("h-4 w-4 transition-transform", !collapsed && "rotate-180")} />
       </button>
+
+      {/* Search Modal */}
+      {searchOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            onClick={() => { setSearchOpen(false); setSearchQuery(''); setSelectedIndex(0); }}
+          />
+          <div className="fixed inset-x-4 top-20 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-lg z-[101] bg-white rounded-xl shadow-2xl border border-neutral-200 max-h-[70vh] flex flex-col">
+            {/* Search Input */}
+            <div className="p-4 border-b border-neutral-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search pages, settings, tools..."
+                  className="w-full pl-10 pr-10 py-3 text-base border-2 border-neutral-200 rounded-lg focus:border-blue-600 focus:outline-none transition-colors"
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+                    aria-label="Clear search"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-3">
+              {searchQuery && searchResults.length > 0 && (
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 mb-2">
+                    Results
+                  </p>
+                  {searchResults.map((item, index) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleSearchSelect(item)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-left group",
+                          index === selectedIndex ? "bg-blue-50" : "hover:bg-neutral-100"
+                        )}
+                      >
+                        <div className="flex-shrink-0 w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Icon className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-neutral-900 group-hover:text-blue-600 transition-colors">
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-neutral-500">{item.group}</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {searchQuery && searchResults.length === 0 && (
+                <div className="text-center py-10">
+                  <div className="w-14 h-14 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Search className="h-7 w-7 text-neutral-400" />
+                  </div>
+                  <p className="text-neutral-600 font-medium mb-1">No results found</p>
+                  <p className="text-sm text-neutral-500">Try a different search term</p>
+                </div>
+              )}
+
+              {!searchQuery && (
+                <>
+                  {recentSearches.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 mb-2 flex items-center gap-1.5">
+                        <Clock className="h-3 w-3" />
+                        Recent
+                      </p>
+                      <div className="space-y-0.5">
+                        {recentSearches.map((label, i) => (
+                          <button
+                            key={i}
+                            onClick={() => { setSearchQuery(label); performSearch(label); }}
+                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-neutral-100 rounded-lg transition-colors text-left"
+                          >
+                            <Clock className="h-4 w-4 text-neutral-400" />
+                            <span className="text-sm text-neutral-700">{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 mb-2">
+                      Quick Links
+                    </p>
+                    <div className="space-y-0.5">
+                      {searchableNavItems.slice(0, 6).map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => handleSearchSelect(item)}
+                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-neutral-100 rounded-lg transition-colors text-left group"
+                          >
+                            <Icon className="h-4 w-4 text-neutral-400 group-hover:text-blue-600" />
+                            <span className="text-sm text-neutral-700 group-hover:text-blue-600">{item.label}</span>
+                            <span className="ml-auto text-xs text-neutral-400">{item.group}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer hints */}
+            <div className="p-3 border-t border-neutral-200 bg-neutral-50 rounded-b-xl">
+              <div className="flex items-center justify-between text-xs text-neutral-500">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1.5 py-0.5 bg-white border border-neutral-300 rounded text-xs font-mono">↑↓</kbd>
+                    navigate
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1.5 py-0.5 bg-white border border-neutral-300 rounded text-xs font-mono">↵</kbd>
+                    select
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1.5 py-0.5 bg-white border border-neutral-300 rounded text-xs font-mono">esc</kbd>
+                    close
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };

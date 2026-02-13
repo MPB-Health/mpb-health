@@ -819,10 +819,8 @@ const Header = () => {
                         <span>Member Updates</span>
                       </div>
                     </Link>
-                    <a
-                      href="https://app.mpb.health/"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Link
+                      to="/update-form-of-payment"
                       className="block px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -830,7 +828,7 @@ const Header = () => {
                         <CreditCard className="h-4 w-4 text-primary" />
                         <span>Update Payment</span>
                       </div>
-                    </a>
+                    </Link>
                     <Link
                       to="/dependent-over-18-information"
                       className="block px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"

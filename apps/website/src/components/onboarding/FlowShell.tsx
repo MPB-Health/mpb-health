@@ -9,6 +9,7 @@ import { PlanResult } from './PlanResult';
 import { recommendPlans } from '../../lib/onboarding/rules';
 import { OnboardingAnswers, Audience, Priority, Usage, IUAComfort, Extra } from '../../lib/onboarding/types';
 import { supabase } from '../../lib/supabase';
+import { leadSubmissionService } from '../../lib/leadSubmissionService';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const TOTAL_STEPS = 8;
@@ -75,6 +76,35 @@ export function FlowShell() {
         altPlan: reco[1]?.planId,
         score: reco[0]?.score,
       });
+
+      // Submit to CRM if user opted in for contact
+      if (answers.contactOptIn && (answers.contactEmail || answers.contactPhone)) {
+        try {
+          await leadSubmissionService.submitLead({
+            firstName: answers.contactEmail?.split('@')[0] || 'Quick Start',
+            lastName: 'Lead',
+            email: answers.contactEmail || '',
+            phone: answers.contactPhone || '',
+            zipCode: answers.zipCode,
+            sourcePage: window.location.pathname,
+            sourceCTA: 'quick-start-plan-finder',
+            formData: {
+              audience: answers.audience,
+              ages: answers.ages,
+              priority: answers.priority,
+              usage: answers.usage,
+              iua_comfort: answers.iuaComfort,
+              extras: answers.extras,
+              pre_existing_awareness: answers.preExistingAwareness,
+              recommended_plan_primary: reco[0]?.planId,
+              recommended_plan_alternate: reco[1]?.planId,
+              form_type: 'quick_start_plan_finder',
+            },
+          });
+        } catch (crmError) {
+          console.error('Error submitting to CRM:', crmError);
+        }
+      }
     } catch (error) {
       console.error('Error saving onboarding response:', error);
     }

@@ -435,8 +435,8 @@ export class ImportService {
         .from('zoho_lead_submissions')
         .select('*', { count: 'exact' });
 
-      // Only get submissions from website quote forms
-      query = query.or('source_page.ilike.%quote%,source_cta.ilike.%quote%,source_cta.ilike.%estimate%');
+      // Get submissions from all website forms
+      query = query.or('source_page.ilike.%quote%,source_cta.ilike.%quote%,source_cta.ilike.%estimate%,source_cta.eq.hero-calculator,source_cta.eq.quick-start-plan-finder,source_cta.eq.lead-form,source_cta.eq.multi-step-quote-form,source_cta.ilike.benefit-interest-%');
 
       if (filters.search) {
         query = query.or(
@@ -543,7 +543,7 @@ export class ImportService {
       let query = this.supabase
         .from('zoho_lead_submissions')
         .select('*', { count: 'exact' })
-        .or('source_cta.eq.Quick Rate Estimate,source_cta.ilike.%hero-calculator%,form_data->>lead_type.eq.Quick Rate Estimate Leads');
+        .or('source_cta.eq.Quick Rate Estimate,source_cta.ilike.%hero-calculator%,form_data->>lead_type.eq.Quick Rate Estimate Leads,source_cta.eq.quick-start-plan-finder,source_cta.eq.lead-form,source_cta.eq.multi-step-quote-form,source_cta.ilike.benefit-interest-%');
 
       // Apply optional filters
       if (filters.search) {

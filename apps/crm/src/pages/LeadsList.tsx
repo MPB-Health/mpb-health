@@ -187,6 +187,7 @@ export default function LeadsList() {
             <select
               value={filters.stage || ''}
               onChange={(e) => handleStageFilter(e.target.value)}
+              aria-label="Filter by pipeline stage"
               className="appearance-none bg-surface-primary border border-th-border rounded-lg px-4 py-2 pr-10 text-sm text-th-text-secondary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
             >
               <option value="">All Stages</option>
@@ -247,6 +248,7 @@ export default function LeadsList() {
                       type="checkbox"
                       checked={selectedLeads.size === leads.length && leads.length > 0}
                       onChange={toggleSelectAll}
+                      aria-label="Select all leads"
                       className="w-4 h-4 rounded border-th-border"
                     />
                   </th>
@@ -283,6 +285,7 @@ export default function LeadsList() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectLead(lead.id)}
+                          aria-label={`Select ${lead.first_name} ${lead.last_name}`}
                           className="w-4 h-4 rounded border-th-border"
                         />
                       </td>

@@ -132,6 +132,7 @@ export default function MainLayout() {
         pendingEnrollments > 0 ? (
           <button
             onClick={() => navigate('/enrollments')}
+            aria-label="View pending enrollments"
             className="relative p-2 text-th-text-secondary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary transition-colors"
           >
             <Bell className="w-5 h-5" />

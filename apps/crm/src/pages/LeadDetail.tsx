@@ -152,6 +152,7 @@ export default function LeadDetail() {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate('/leads')}
+            aria-label="Back to leads"
             className="p-2 hover:bg-surface-tertiary rounded-lg"
           >
             <ArrowLeft className="w-5 h-5 text-th-text-tertiary" />
@@ -231,6 +232,7 @@ export default function LeadDetail() {
                 <select
                   value={lead.pipeline_stage}
                   onChange={(e) => handleStageChange(e.target.value)}
+                  aria-label="Pipeline stage"
                   className="w-full border border-th-border rounded-lg px-3 py-2 text-sm"
                 >
                   {pipelineStages.map((s) => (
@@ -340,6 +342,7 @@ export default function LeadDetail() {
               {activeTab === 'tasks' && (
                 <button
                   onClick={() => setShowAddTask(true)}
+                  aria-label="Add task"
                   className="px-3 py-2 mr-2 text-sm text-th-accent-600 hover:bg-th-accent-50 rounded-lg self-center"
                 >
                   <Plus className="w-4 h-4" />
@@ -390,6 +393,7 @@ export default function LeadDetail() {
                           type="checkbox"
                           checked={task.completed}
                           onChange={() => !task.completed && handleCompleteTask(task.id)}
+                          aria-label={`Mark "${task.title}" as complete`}
                           className="w-5 h-5 rounded border-th-border"
                         />
                         <div>

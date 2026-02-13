@@ -659,22 +659,25 @@ function SignatureEditorModal({
                   Automatically applied to new emails
                 </p>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={form.is_default ? 'true' : 'false'}
-                aria-label="Set as default signature"
-                onClick={() => setForm((f) => ({ ...f, is_default: !f.is_default }))}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                  form.is_default ? 'bg-th-accent-600' : 'bg-gray-300'
-                }`}
-              >
+              <label className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.is_default}
+                  onChange={() => setForm((f) => ({ ...f, is_default: !f.is_default }))}
+                  aria-label="Set as default signature"
+                  className="sr-only peer"
+                />
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  className={`absolute inset-0 rounded-full border-2 border-transparent transition-colors ${
+                    form.is_default ? 'bg-th-accent-600' : 'bg-gray-300'
+                  }`}
+                />
+                <span
+                  className={`pointer-events-none absolute top-0.5 left-0.5 inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
                     form.is_default ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
-              </button>
+              </label>
             </div>
 
             {/* Variables */}

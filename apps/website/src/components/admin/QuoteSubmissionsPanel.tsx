@@ -53,6 +53,7 @@ export const QuoteSubmissionsPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const toggleRowExpansion = (id: string) => {
@@ -69,7 +70,7 @@ export const QuoteSubmissionsPanel: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [statusFilter]);
+  }, [statusFilter, sourceFilter]);
 
   const loadData = async () => {
     setLoading(true);
@@ -82,6 +83,14 @@ export const QuoteSubmissionsPanel: React.FC = () => {
 
       if (statusFilter !== 'all') {
         query = query.eq('zoho_sync_status', statusFilter);
+      }
+
+      if (sourceFilter !== 'all') {
+        if (sourceFilter === 'benefit-interest') {
+          query = query.ilike('source_cta', 'benefit-interest-%');
+        } else {
+          query = query.eq('source_cta', sourceFilter);
+        }
       }
 
       const { data, error } = await query;
@@ -186,9 +195,24 @@ export const QuoteSubmissionsPanel: React.FC = () => {
             <CardTitle>Quote Submissions</CardTitle>
             <div className="flex items-center gap-2">
               <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                className="px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                aria-label="Filter by source"
+              >
+                <option value="all">All Sources</option>
+                <option value="hero-calculator">Hero Calculator</option>
+                <option value="quick-start-plan-finder">Quick Start Plan Finder</option>
+                <option value="lead-form">Lead Form</option>
+                <option value="multi-step-quote-form">Multi-Step Quote</option>
+                <option value="benefit-interest">Benefit Interest</option>
+                <option value="Quick Rate Estimate">Quick Rate Estimate</option>
+              </select>
+              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                aria-label="Filter by sync status"
               >
                 <option value="all">All Status</option>
                 <option value="success">Synced</option>

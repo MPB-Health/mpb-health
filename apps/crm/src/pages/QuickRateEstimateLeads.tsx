@@ -181,6 +181,7 @@ export default function QuickRateEstimateLeads() {
           <select
             value={syncFilter}
             onChange={(e) => setSyncFilter(e.target.value)}
+            aria-label="Filter by sync status"
             className="border border-th-border rounded-lg px-3 py-2 text-sm"
           >
             <option value="">All Status</option>
@@ -194,6 +195,7 @@ export default function QuickRateEstimateLeads() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
+            aria-label="Refresh submissions"
             className="p-2 border border-th-border rounded-lg hover:bg-surface-secondary transition-colors"
           >
             <RefreshCw className={`w-4 h-4 text-th-text-tertiary ${refreshing ? 'animate-spin' : ''}`} />
@@ -223,6 +225,7 @@ export default function QuickRateEstimateLeads() {
                     type="checkbox"
                     checked={selectedIds.size === submissions.length && submissions.length > 0}
                     onChange={handleSelectAll}
+                    aria-label="Select all submissions"
                     className="h-4 w-4 rounded border-th-border text-th-accent-600"
                   />
                 </th>
@@ -278,6 +281,7 @@ export default function QuickRateEstimateLeads() {
                         type="checkbox"
                         checked={selectedIds.has(sub.id)}
                         onChange={() => handleSelectRow(sub.id)}
+                        aria-label={`Select ${sub.first_name} ${sub.last_name}`}
                         className="h-4 w-4 rounded border-th-border text-th-accent-600"
                       />
                     </td>
@@ -319,6 +323,7 @@ export default function QuickRateEstimateLeads() {
                           e.stopPropagation();
                           setSelectedSubmission(sub);
                         }}
+                        aria-label={`View details for ${sub.first_name} ${sub.last_name}`}
                         className="p-1 rounded hover:bg-gray-200"
                       >
                         <Eye className="w-4 h-4 text-th-text-tertiary" />
@@ -341,6 +346,7 @@ export default function QuickRateEstimateLeads() {
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page === 1}
+                aria-label="Previous page"
                 className="p-1.5 border border-th-border rounded-lg hover:bg-surface-secondary disabled:opacity-50"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -351,6 +357,7 @@ export default function QuickRateEstimateLeads() {
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page === totalPages}
+                aria-label="Next page"
                 className="p-1.5 border border-th-border rounded-lg hover:bg-surface-secondary disabled:opacity-50"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -375,6 +382,7 @@ export default function QuickRateEstimateLeads() {
                 </h3>
                 <button
                   onClick={() => setSelectedSubmission(null)}
+                  aria-label="Close details panel"
                   className="p-1 rounded hover:bg-surface-secondary"
                 >
                   <ChevronRight className="w-5 h-5 text-th-text-tertiary" />

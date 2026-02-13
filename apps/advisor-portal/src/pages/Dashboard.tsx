@@ -146,7 +146,7 @@ export default function Dashboard() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-th-text-secondary">Affiliates</p>
                 <p className="text-base font-semibold text-th-text-primary mt-1.5 leading-snug">
-                  Know someone who would be a perfect fit?
+                  Know someone who would be a perfect fit for MPB Health?
                 </p>
               </div>
               <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">

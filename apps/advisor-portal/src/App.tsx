@@ -56,6 +56,7 @@ export default function App() {
           <Route path="quick-links" element={<QuickLinks />} />
           <Route path="sops" element={<SOPLibrary />} />
           <Route path="sops/presentations" element={<SOPLibrary section="presentations" />} />
+          <Route path="sops/advisor-handbook" element={<SOPLibrary section="advisor-handbook" />} />
           <Route path="sops/pricing-charts" element={<SOPLibrary section="pricing-charts" />} />
           <Route path="sops/commission-structure" element={<SOPLibrary section="commission-structure" />} />
           <Route path="sops/reference-materials" element={<SOPLibrary section="reference-materials" />} />

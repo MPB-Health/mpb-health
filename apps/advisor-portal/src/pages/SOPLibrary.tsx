@@ -33,6 +33,11 @@ const sectionConfig: Record<string, { title: string; description: string; icon: 
     description: 'Sales and training presentations',
     icon: Presentation,
   },
+  'advisor-handbook': {
+    title: 'Advisor Handbook',
+    description: 'Advisor handbooks and e-books',
+    icon: BookOpen,
+  },
   'pricing-charts': {
     title: 'Pricing Charts',
     description: 'Product pricing and comparison charts',

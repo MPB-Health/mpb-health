@@ -20,6 +20,7 @@ import {
   Sparkles,
   Phone,
   FileText as FileTextIcon,
+  Bell,
 } from 'lucide-react';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
@@ -194,14 +195,20 @@ export default function Dashboard() {
           </div>
         </button>
 
-        <button onClick={() => navigate('/meetings')} className="text-left h-full w-full">
-          <MetricCard
-            label="Upcoming Meetings"
-            value="View"
-            icon={<Video className="w-5 h-5" />}
-            className="hover:border-th-accent-300 cursor-pointer h-full"
-          />
-        </button>
+        <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-th-text-secondary">Notifications</p>
+              <p className="text-base font-semibold text-th-text-primary mt-1.5 leading-snug">
+                Stay up to date with the latest updates
+              </p>
+            </div>
+            <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20">
+              <Bell className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+          </div>
+        </div>
 
         <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
           <div className="absolute top-0 left-0 right-0 h-0.5 gradient-accent opacity-60 group-hover:opacity-100 transition-opacity" />

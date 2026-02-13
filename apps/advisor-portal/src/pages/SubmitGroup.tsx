@@ -2,11 +2,11 @@ import { useState } from 'react';
 import {
   UsersRound,
   Search,
-  ExternalLink,
 } from 'lucide-react';
 
 export default function SubmitGroup() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<{ id: string; title: string; url: string } | null>(null);
 
   const groups = [
     {
@@ -66,12 +66,10 @@ export default function SubmitGroup() {
           const hasThumbnail = !!group.thumbnail_url;
 
           return (
-            <a
+            <button
               key={group.id}
-              href={group.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col no-underline"
+              onClick={() => setSelectedGroup(group)}
+              className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col text-left"
             >
               {hasThumbnail ? (
                 <div
@@ -105,11 +103,11 @@ export default function SubmitGroup() {
                 )}
                 <div className="mt-auto" aria-hidden="true"></div>
                 <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
-                  <span className="text-sm text-th-text-tertiary">External Form</span>
-                  <ExternalLink className="w-4 h-4 text-th-text-tertiary" />
+                  <span className="text-sm text-th-text-tertiary">Form</span>
+                  <span className="text-sm text-th-accent-600 font-medium">Fill out →</span>
                 </div>
               </div>
-            </a>
+            </button>
           );
         })}
       </div>
@@ -118,6 +116,41 @@ export default function SubmitGroup() {
         <div className="text-center py-12">
           <UsersRound className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
           <p className="text-th-text-tertiary">No groups found</p>
+        </div>
+      )}
+
+      {/* Form modal */}
+      {selectedGroup && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setSelectedGroup(null)}
+          />
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  {selectedGroup.title}
+                </h2>
+                <button
+                  onClick={() => setSelectedGroup(null)}
+                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <iframe
+                  src={selectedGroup.url}
+                  className="w-full h-full border-0"
+                  title={selectedGroup.title}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

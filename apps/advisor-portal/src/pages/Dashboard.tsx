@@ -14,6 +14,10 @@ import {
   ExternalLink,
   Share2,
   X,
+  Users,
+  Heart,
+  Send,
+  Sparkles,
 } from 'lucide-react';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
@@ -71,6 +75,7 @@ export default function Dashboard() {
 
   const [cmsQuickActions, setCmsQuickActions] = useState<QuickLink[]>([]);
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
+  const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [shareModal, setShareModal] = useState<{ label: string; url: string } | null>(null);
   const [shareForm, setShareForm] = useState({ name: '', email: '' });
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
@@ -134,13 +139,21 @@ export default function Dashboard() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <button onClick={() => navigate('/inbox')} className="text-left h-full w-full">
-          <MetricCard
-            label="Inbox"
-            value="View"
-            icon={<FileText className="w-5 h-5" />}
-            className="hover:border-th-accent-300 cursor-pointer h-full"
-          />
+        <button onClick={() => setAffiliateModalOpen(true)} className="text-left h-full w-full">
+          <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-th-text-secondary">Affiliates</p>
+                <p className="text-base font-semibold text-th-text-primary mt-1.5 leading-snug">
+                  Know someone who would be a perfect fit?
+                </p>
+              </div>
+              <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
+                <Users className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
         </button>
 
         <MetricCard
@@ -382,6 +395,74 @@ export default function Dashboard() {
           })}
         </div>
       </div>
+
+      {/* Affiliate modal */}
+      {affiliateModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface-primary rounded-2xl w-full max-w-lg mx-4 shadow-xl overflow-hidden">
+            {/* Header gradient */}
+            <div className="relative bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 px-6 py-8 text-white">
+              <button
+                type="button"
+                onClick={() => setAffiliateModalOpen(false)}
+                className="absolute top-4 right-4 p-1 text-white/70 hover:text-white rounded-lg hover:bg-white/10"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 rounded-xl bg-white/15">
+                  <Users className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold">Affiliates</h2>
+              </div>
+              <p className="text-white/90 text-sm leading-relaxed">
+                Know someone who would be a perfect fit for MPB Health?
+              </p>
+            </div>
+            {/* Body */}
+            <div className="px-6 py-6 space-y-5">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex-shrink-0 mt-0.5">
+                  <Heart className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <p className="text-sm text-th-text-secondary leading-relaxed">
+                  If you know someone who thrives in a dynamic environment and is dedicated to making a real impact in healthcare, we'd love to meet them!
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex-shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <p className="text-sm text-th-text-secondary leading-relaxed">
+                  Refer a friend or colleague and help us grow the MPB Health advisor community. Together, we can make healthcare more accessible and affordable.
+                </p>
+              </div>
+            </div>
+            {/* Footer */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setAffiliateModalOpen(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // TODO: Wire up referral action
+                  setAffiliateModalOpen(false);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Send className="w-4 h-4" />
+                Refer Someone
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share enrollment link modal */}
       {shareModal && (

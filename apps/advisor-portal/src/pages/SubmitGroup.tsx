@@ -2,21 +2,28 @@ import { useState } from 'react';
 import {
   UsersRound,
   Search,
-  Clock,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function SubmitGroup() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Placeholder data – replace with real data source later
-  const groups: {
-    id: string;
-    title: string;
-    description?: string;
-    thumbnail_url?: string | null;
-    duration_minutes?: number;
-    status?: string;
-  }[] = [];
+  const groups = [
+    {
+      id: 'employer-group-census',
+      title: 'Employer Group Census',
+      description: 'Submit your employer group census form',
+      thumbnail_url: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/employer-group-census.jpg',
+      url: 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/169',
+    },
+    {
+      id: 'employer-group-listbill',
+      title: 'Employer Group List-Bill Setup',
+      description: 'Set up list billing for your employer group',
+      thumbnail_url: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/employer-group-listbill.jpg',
+      url: 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/343',
+    },
+  ];
 
   const filteredGroups = groups.filter((group) => {
     const matchesSearch =
@@ -59,11 +66,12 @@ export default function SubmitGroup() {
           const hasThumbnail = !!group.thumbnail_url;
 
           return (
-            <div
+            <a
               key={group.id}
-              role="button"
-              tabIndex={0}
-              className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col"
+              href={group.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col no-underline"
             >
               {hasThumbnail ? (
                 <div
@@ -97,16 +105,11 @@ export default function SubmitGroup() {
                 )}
                 <div className="mt-auto" aria-hidden="true"></div>
                 <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
-                  <div className="flex items-center space-x-1 text-sm text-th-text-tertiary">
-                    <Clock className="w-4 h-4" />
-                    <span>{group.duration_minutes || 0} min</span>
-                  </div>
-                  <span className="text-sm font-medium text-th-text-tertiary">
-                    {group.status || 'Pending'}
-                  </span>
+                  <span className="text-sm text-th-text-tertiary">External Form</span>
+                  <ExternalLink className="w-4 h-4 text-th-text-tertiary" />
                 </div>
               </div>
-            </div>
+            </a>
           );
         })}
       </div>

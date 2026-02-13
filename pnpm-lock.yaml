@@ -32,6 +32,9 @@ importers:
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@mpbhealth/plans-core':
+        specifier: workspace:*
+        version: link:../../packages/plans-core
       '@mpbhealth/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -196,6 +199,9 @@ importers:
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@mpbhealth/plans-core':
+        specifier: workspace:*
+        version: link:../../packages/plans-core
       '@mpbhealth/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -329,6 +335,9 @@ importers:
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@mpbhealth/plans-core':
+        specifier: workspace:*
+        version: link:../../packages/plans-core
       '@mpbhealth/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -672,6 +681,25 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.30
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
+  packages/plans-core:
+    dependencies:
+      '@mpbhealth/database':
+        specifier: workspace:*
+        version: link:../database
+      '@supabase/supabase-js':
+        specifier: ^2.x
+        version: 2.93.1
+    devDependencies:
+      '@mpbhealth/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.3)

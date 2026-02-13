@@ -79,6 +79,7 @@ export default function Dashboard() {
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
+  const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
   const [shareModal, setShareModal] = useState<{ label: string; url: string } | null>(null);
   const [shareForm, setShareForm] = useState({ name: '', email: '' });
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
@@ -445,15 +446,17 @@ export default function Dashboard() {
             {/* Footer actions */}
             <div className="px-6 pb-6 flex flex-col gap-3">
               <div className="flex gap-3">
-                <a
-                  href="https://calendly.com/rebalarney-mympb/time-with-reba"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAffiliateModalOpen(false);
+                    setScheduleCallOpen(true);
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
                 >
                   <Calendar className="w-4 h-4" />
                   Schedule a Call
-                </a>
+                </button>
                 <a
                   href="tel:8558164650"
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-th-text-primary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
@@ -507,6 +510,41 @@ export default function Dashboard() {
                   className="w-full h-full border-0"
                   title="Application Form"
                   allow="payment"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule a Call modal */}
+      {scheduleCallOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setScheduleCallOpen(false)}
+          />
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  Schedule a Call
+                </h2>
+                <button
+                  onClick={() => setScheduleCallOpen(false)}
+                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <iframe
+                  src="https://calendly.com/rebalarney-mympb/time-with-reba"
+                  className="w-full h-full border-0"
+                  title="Schedule a Call"
                 />
               </div>
             </div>

@@ -67,7 +67,7 @@ function getIconComponent(iconName: string): LucideIcons.LucideIcon {
 // Fallback navigation for when CMS data isn't available
 const fallbackNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Inbox', href: '/inbox', icon: Inbox },
+  { name: 'Quick Links', href: '/quick-links', icon: Link },
   { 
     name: 'Training', 
     href: '/training', 
@@ -89,7 +89,6 @@ const fallbackNavigation: NavItem[] = [
       { name: 'Member', href: '/forms/member' },
     ],
   },
-  { name: 'Quick Links', href: '/quick-links', icon: Link },
   { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },

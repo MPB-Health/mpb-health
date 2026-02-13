@@ -431,43 +431,50 @@ export default function Dashboard() {
           </div>
 
           {/* Thumbnail Strip */}
-          <div className="relative border-t border-th-border-subtle">
+          <div className="border-t border-th-border-subtle">
             <div
               ref={thumbnailScrollRef}
-              className="flex gap-2 p-3 overflow-x-auto scrollbar-thin"
+              className="flex gap-3 p-4 overflow-x-auto"
               style={{ scrollbarWidth: 'thin' }}
             >
-              {ADVISOR_VIDEOS.map((video, index) => (
-                <button
-                  key={video.id}
-                  onClick={() => {
-                    setActiveVideoIndex(index);
-                    setVideoPlaying(false);
-                  }}
-                  className={`relative flex-shrink-0 w-40 rounded-lg overflow-hidden transition-all ${
-                    index === activeVideoIndex
-                      ? 'ring-2 ring-th-accent-500 opacity-100'
-                      : 'opacity-50 hover:opacity-90'
-                  }`}
-                >
-                  <div className="relative w-full h-24">
-                    <img
-                      src={video.thumbnail}
-                      alt={video.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/30" />
-                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                      <p className="text-white text-xs font-semibold leading-tight line-clamp-2">
-                        {video.title}
-                      </p>
+              {ADVISOR_VIDEOS.map((video, index) => {
+                const isActive = index === activeVideoIndex;
+                return (
+                  <button
+                    key={video.id}
+                    onClick={() => {
+                      setActiveVideoIndex(index);
+                      setVideoPlaying(false);
+                    }}
+                    className={`relative flex-shrink-0 w-52 rounded-xl overflow-hidden transition-all duration-200 ${
+                      isActive
+                        ? 'ring-2 ring-th-accent-500 shadow-md scale-[1.02]'
+                        : 'opacity-60 hover:opacity-100 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="relative w-full aspect-video">
+                      <img
+                        src={video.thumbnail}
+                        alt={video.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className={`absolute inset-0 ${isActive ? 'bg-black/20' : 'bg-black/40'}`} />
+                      {!isActive && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center">
+                            <Play className="w-4 h-4 text-gray-900 ml-0.5" fill="currentColor" />
+                          </div>
+                        </div>
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+                        <p className="text-white text-sm font-semibold leading-snug line-clamp-2">
+                          {video.title}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  {index === activeVideoIndex && (
-                    <div className="absolute inset-0 border-2 border-th-accent-500 rounded-lg" />
-                  )}
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

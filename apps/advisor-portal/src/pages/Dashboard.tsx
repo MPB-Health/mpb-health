@@ -434,7 +434,7 @@ export default function Dashboard() {
           <div className="relative border-t border-th-border-subtle">
             <div
               ref={thumbnailScrollRef}
-              className="flex gap-1 p-2 overflow-x-auto scrollbar-thin"
+              className="flex gap-2 p-3 overflow-x-auto scrollbar-thin"
               style={{ scrollbarWidth: 'thin' }}
             >
               {ADVISOR_VIDEOS.map((video, index) => (
@@ -444,19 +444,27 @@ export default function Dashboard() {
                     setActiveVideoIndex(index);
                     setVideoPlaying(false);
                   }}
-                  className={`relative flex-shrink-0 w-24 h-14 rounded-md overflow-hidden transition-all ${
+                  className={`relative flex-shrink-0 w-40 rounded-lg overflow-hidden transition-all ${
                     index === activeVideoIndex
                       ? 'ring-2 ring-th-accent-500 opacity-100'
-                      : 'opacity-60 hover:opacity-90'
+                      : 'opacity-50 hover:opacity-90'
                   }`}
                 >
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="relative w-full h-24">
+                    <img
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30" />
+                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                      <p className="text-white text-xs font-semibold leading-tight line-clamp-2">
+                        {video.title}
+                      </p>
+                    </div>
+                  </div>
                   {index === activeVideoIndex && (
-                    <div className="absolute inset-0 border-2 border-th-accent-500 rounded-md" />
+                    <div className="absolute inset-0 border-2 border-th-accent-500 rounded-lg" />
                   )}
                 </button>
               ))}

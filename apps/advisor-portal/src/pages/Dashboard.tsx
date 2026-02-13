@@ -18,6 +18,8 @@ import {
   Heart,
   Send,
   Sparkles,
+  Phone,
+  FileText as FileTextIcon,
 } from 'lucide-react';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
@@ -76,6 +78,7 @@ export default function Dashboard() {
   const [cmsQuickActions, setCmsQuickActions] = useState<QuickLink[]>([]);
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
+  const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [shareModal, setShareModal] = useState<{ label: string; url: string } | null>(null);
   const [shareForm, setShareForm] = useState({ name: '', email: '' });
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
@@ -439,26 +442,73 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            {/* Footer */}
-            <div className="px-6 pb-6 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setAffiliateModalOpen(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-th-text-secondary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
-              >
-                Close
-              </button>
+            {/* Footer actions */}
+            <div className="px-6 pb-6 flex flex-col gap-3">
+              <div className="flex gap-3">
+                <a
+                  href="https://calendly.com/rebalarney-mympb/time-with-reba"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Schedule a Call
+                </a>
+                <a
+                  href="tel:8558164650"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-th-text-primary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
+                >
+                  <Phone className="w-4 h-4" />
+                  (855) 816-4650
+                </a>
+              </div>
               <button
                 type="button"
                 onClick={() => {
-                  // TODO: Wire up referral action
                   setAffiliateModalOpen(false);
+                  setApplicationFormOpen(true);
                 }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors dark:text-purple-300 dark:bg-purple-900/20 dark:border-purple-800 dark:hover:bg-purple-900/30"
               >
-                <Send className="w-4 h-4" />
-                Refer Someone
+                <FileTextIcon className="w-4 h-4" />
+                Application Form
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Application Form modal */}
+      {applicationFormOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setApplicationFormOpen(false)}
+          />
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  Application Form
+                </h2>
+                <button
+                  onClick={() => setApplicationFormOpen(false)}
+                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <iframe
+                  src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/448"
+                  className="w-full h-full border-0"
+                  title="Application Form"
+                  allow="payment"
+                />
+              </div>
             </div>
           </div>
         </div>

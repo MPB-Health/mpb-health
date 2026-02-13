@@ -184,6 +184,17 @@ export default function Dashboard() {
                 >
                   Link
                 </a>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareModal({ label: 'My Advisor Page', url: 'https://advisorlandingpage.mpb.health/' });
+                    setShareForm({ name: '', email: '' });
+                  }}
+                  className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 hover:underline"
+                >
+                  Share
+                </button>
               </div>
               <div className="mt-3" ref={enrollDropdownRef}>
                 <label className="block text-xs font-medium text-th-text-tertiary mb-1.5">

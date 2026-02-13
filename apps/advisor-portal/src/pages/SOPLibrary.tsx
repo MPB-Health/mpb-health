@@ -12,6 +12,7 @@ import {
   Mountain,
   Shield,
   Pill,
+  DollarSign,
 } from 'lucide-react';
 import {
   contentService,
@@ -36,6 +37,11 @@ const sectionConfig: Record<string, { title: string; description: string; icon: 
     title: 'Pricing Charts',
     description: 'Product pricing and comparison charts',
     icon: BarChart2,
+  },
+  'commission-structure': {
+    title: 'Commission Structure',
+    description: 'Commission structure and payout details',
+    icon: DollarSign,
   },
   'reference-materials': {
     title: 'Reference Materials',

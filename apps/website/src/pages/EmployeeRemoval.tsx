@@ -27,7 +27,6 @@ const EmployeeRemoval = () => {
       <Helmet>
         <title>Employee Removal | MPB Health</title>
         <meta name="description" content="Submit employee removal information with MPB Health." />
-        <script src="https://www.cognitoforms.com/f/iframe.js" async></script>
       </Helmet>
 
       <div className="min-h-screen bg-white">

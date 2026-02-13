@@ -1,30 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Clock, Phone, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
 const GetAQuote: React.FC = () => {
-  const formContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://www.cognitoforms.com/f/seamless.js';
-    script.setAttribute('data-key', 'K4Fk3PtQHE-6M-fMiX2fVA');
-    script.setAttribute('data-form', '418');
-    script.async = true;
-
-    if (formContainerRef.current) {
-      formContainerRef.current.appendChild(script);
-    }
-
-    return () => {
-      if (formContainerRef.current && formContainerRef.current.contains(script)) {
-        formContainerRef.current.removeChild(script);
-      }
-    };
-  }, []);
-
   return (
     <>
       <Helmet>
@@ -80,8 +60,13 @@ const GetAQuote: React.FC = () => {
             {/* Form Column */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden p-6">
-                {/* Cognito Form JavaScript Embed */}
-                <div ref={formContainerRef} className="cognito-form-container" />
+                <iframe
+                  src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/418"
+                  title="Get a Quote"
+                  allow="payment"
+                  style={{ border: 0, width: '100%', display: 'block', minHeight: '1400px' }}
+                  loading="lazy"
+                />
               </div>
             </div>
 

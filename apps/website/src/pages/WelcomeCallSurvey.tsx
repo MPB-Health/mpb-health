@@ -27,7 +27,6 @@ const WelcomeCallSurvey = () => {
       <Helmet>
         <title>Welcome Call Survey | MPB Health</title>
         <meta name="description" content="Share your feedback about your MPB Health welcome call experience." />
-        <script src="https://www.cognitoforms.com/f/iframe.js" async></script>
       </Helmet>
 
       <div className="min-h-screen bg-white">

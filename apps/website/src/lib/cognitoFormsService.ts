@@ -39,27 +39,8 @@ class CognitoFormsService {
   }
 
   private loadScript(): void {
-    if (document.getElementById('cognito-forms-script')) {
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = 'cognito-forms-script';
-    script.src = 'https://www.cognitoforms.com/f/seamless.js';
-    script.setAttribute('data-key', this.apiKey);
-    script.setAttribute('data-form', this.formId);
-    script.async = true;
-
-    script.onload = () => {
-      console.log('[Cognito Forms] Script loaded successfully');
-      this.setupEventListeners();
-    };
-
-    script.onerror = () => {
-      console.error('[Cognito Forms] Failed to load script');
-    };
-
-    document.body.appendChild(script);
+    // Deprecated path: keep no-op to avoid injecting third-party script tags.
+    console.warn('[Cognito Forms] Script-based embeds are disabled; use iframe embeds instead.');
   }
 
   private setupEventListeners(): void {
@@ -191,9 +172,7 @@ class CognitoFormsService {
   }
 
   getEmbedCode(): string {
-    return `<div class="cognito">
-  <script src="https://www.cognitoforms.com/f/seamless.js" data-key="${this.apiKey}" data-form="${this.formId}"></script>
-</div>`;
+    return `<iframe src="https://www.cognitoforms.com/f/${this.apiKey}/${this.formId}" allow="payment" style="border:0;width:100%" height="1400"></iframe>`;
   }
 
   destroy(): void {

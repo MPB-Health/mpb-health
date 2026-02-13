@@ -27,7 +27,6 @@ const ReviewOrChangeAdvisor = () => {
       <Helmet>
         <title>Review or Change Health Advisor | MPB Health</title>
         <meta name="description" content="Review or update your Health Advisor assignment for your MPB Health membership." />
-        <script src="https://www.cognitoforms.com/f/iframe.js" async></script>
       </Helmet>
 
       <div className="min-h-screen bg-white">

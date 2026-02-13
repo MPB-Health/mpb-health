@@ -11,7 +11,6 @@ export function FormEmbed({ cognitoEmbed, formTitle }: FormEmbedProps) {
   const [formUrl, setFormUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const scriptsRef = useRef<HTMLScriptElement[]>([]);
 
   const loadForm = useCallback(() => {
     if (!cognitoEmbed || !containerRef.current) return;
@@ -21,103 +20,61 @@ export function FormEmbed({ cognitoEmbed, formTitle }: FormEmbedProps) {
 
     const container = containerRef.current;
     
-    // Clean up previous scripts
-    scriptsRef.current.forEach(script => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-    });
-    scriptsRef.current = [];
-    
     container.innerHTML = '';
     container.style.width = '100%';
     container.style.minHeight = '680px';
 
-    // Check if this is a seamless embed (script tag) or iframe embed
-    const isSeamlessEmbed = cognitoEmbed.includes('seamless.js');
-    const isIframeEmbed = cognitoEmbed.includes('<iframe');
+    const scriptMatch = cognitoEmbed.match(
+      /data-key=["']([^"']+)["'][^>]*data-form=["']([^"']+)["']|data-form=["']([^"']+)["'][^>]*data-key=["']([^"']+)["']/i
+    );
+    const iframeMatch = cognitoEmbed.match(/<iframe[^>]*src=["']([^"']+)["'][^>]*>/i);
+    const heightMatch = cognitoEmbed.match(/height=["']?(\d+)["']?/i);
 
-    if (isSeamlessEmbed) {
-      // For seamless embeds, inject script directly into container
-      const scriptMatch = cognitoEmbed.match(/<script[^>]*src=["']([^"']+)["'][^>]*data-key=["']([^"']+)["'][^>]*data-form=["']([^"']+)["'][^>]*>/);
-      if (scriptMatch) {
-        const [, src, dataKey, dataForm] = scriptMatch;
-
-        // Create script element
-        const newScript = document.createElement('script');
-        newScript.src = src;
-        newScript.setAttribute('data-key', dataKey);
-        newScript.setAttribute('data-form', dataForm);
-        newScript.async = false; // Load synchronously for proper initialization
-
-        // Add load handlers
-        newScript.onload = () => {
-          console.log('Cognito Forms seamless script loaded successfully');
-          setIsLoading(false);
-        };
-        newScript.onerror = () => {
-          console.error('Failed to load Cognito Forms seamless script');
-          setHasError(true);
-          setIsLoading(false);
-        };
-
-        container.appendChild(newScript);
-        scriptsRef.current.push(newScript);
-
-        // Set a fallback URL for "open in new window"
-        setFormUrl(`https://www.cognitoforms.com/f/${dataKey}/${dataForm}`);
-        
-        // Fallback timeout in case onload doesn't fire
-        setTimeout(() => setIsLoading(false), 3000);
+    let url = '';
+    if (iframeMatch?.[1]) {
+      url = iframeMatch[1];
+    } else if (scriptMatch) {
+      const dataKey = scriptMatch[1] || scriptMatch[4];
+      const dataForm = scriptMatch[2] || scriptMatch[3];
+      if (dataKey && dataForm) {
+        url = `https://www.cognitoforms.com/f/${dataKey}/${dataForm}`;
       }
-    } else if (isIframeEmbed) {
-      // For iframe embeds, inject the HTML directly
-      container.innerHTML = cognitoEmbed;
-
-      // Extract the form URL from iframe
-      const iframeMatch = cognitoEmbed.match(/src=["']([^"']+)["']/);
-      if (iframeMatch && iframeMatch[1]) {
-        setFormUrl(iframeMatch[1]);
-      }
-
-      // Force injected iframe to respect container width
-      const iframe = container.querySelector('iframe');
-      if (iframe) {
-        iframe.style.width = '100%';
-        iframe.style.minWidth = '100%';
-        iframe.style.maxWidth = '100%';
-        iframe.style.display = 'block';
-        iframe.style.border = '0';
-        
-        // Add load handler to iframe
-        iframe.onload = () => {
-          setIsLoading(false);
-        };
-        iframe.onerror = () => {
-          setHasError(true);
-          setIsLoading(false);
-        };
-      }
-
-      // Re-execute any scripts - collect them first to avoid live collection issues
-      const scriptElements = Array.from(container.getElementsByTagName('script'));
-      scriptElements.forEach((script) => {
-        const newScript = document.createElement('script');
-
-        if (script.src) {
-          newScript.src = script.src;
-          newScript.async = true;
-        } else {
-          newScript.textContent = script.textContent;
-        }
-
-        script.parentNode?.replaceChild(newScript, script);
-        scriptsRef.current.push(newScript);
-      });
-      
-      // Fallback timeout
-      setTimeout(() => setIsLoading(false), 3000);
     }
+
+    if (!url) {
+      setHasError(true);
+      setIsLoading(false);
+      return;
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.src = url;
+    iframe.title = formTitle;
+    iframe.allow = 'payment';
+    iframe.loading = 'lazy';
+    iframe.style.width = '100%';
+    iframe.style.minWidth = '100%';
+    iframe.style.maxWidth = '100%';
+    iframe.style.display = 'block';
+    iframe.style.border = '0';
+
+    const initialHeight = heightMatch?.[1] ? parseInt(heightMatch[1], 10) : 1200;
+    iframe.style.minHeight = `${initialHeight}px`;
+    iframe.height = `${initialHeight}`;
+
+    iframe.onload = () => {
+      setIsLoading(false);
+    };
+    iframe.onerror = () => {
+      setHasError(true);
+      setIsLoading(false);
+    };
+
+    container.appendChild(iframe);
+    setFormUrl(url);
+
+    // Fallback timeout in case onload does not fire
+    setTimeout(() => setIsLoading(false), 3000);
   }, [cognitoEmbed]);
 
   useEffect(() => {
@@ -139,13 +96,6 @@ export function FormEmbed({ cognitoEmbed, formTitle }: FormEmbedProps) {
 
     return () => {
       window.removeEventListener('message', handleResize);
-      // Clean up scripts on unmount
-      scriptsRef.current.forEach(script => {
-        if (script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
-      });
-      scriptsRef.current = [];
     };
   }, [loadForm]);
 

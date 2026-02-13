@@ -27,7 +27,6 @@ const ListBillConversion = () => {
       <Helmet>
         <title>List-Bill Conversion | MPB Health</title>
         <meta name="description" content="Convert your billing arrangement to list-billing with MPB Health." />
-        <script src="https://www.cognitoforms.com/f/iframe.js" async></script>
       </Helmet>
 
       <div className="min-h-screen bg-white">

@@ -20,7 +20,7 @@ export const FORMS: FormEntry[] = [
     icon: 'Briefcase',
     estimatedMinutes: 10,
     requiresAuth: false,
-    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/343" allow="payment" style="border:0;width:100%" height="1540"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/343" allow="payment" style="border:0;width:100%" height="1540"></iframe>',
   },
   {
     slug: '/list-bill-conversion/',
@@ -70,7 +70,7 @@ export const FORMS: FormEntry[] = [
     icon: 'Shield',
     estimatedMinutes: 3,
     requiresAuth: false,
-    cognitoEmbed: '<script src="https://www.cognitoforms.com/f/seamless.js" data-key="K4Fk3PtQHE-6M-fMiX2fVA" data-form="405"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/405" allow="payment" style="border:0;width:100%" height="1400"></iframe>',
   },
   {
     slug: '/cancel-membership/',
@@ -80,7 +80,7 @@ export const FORMS: FormEntry[] = [
     icon: 'XCircle',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/20" allow="payment" style="border:0;width:100%;" height="1979"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/20" allow="payment" style="border:0;width:100%;" height="1979"></iframe>',
   },
   {
     slug: '/member-feedback/',
@@ -90,7 +90,7 @@ export const FORMS: FormEntry[] = [
     icon: 'MessageSquare',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/425" allow="payment" style="border:0;width:100%" height="685"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/425" allow="payment" style="border:0;width:100%" height="685"></iframe>',
   },
   {
     slug: '/membership-changes/',
@@ -100,7 +100,7 @@ export const FORMS: FormEntry[] = [
     icon: 'Edit3',
     estimatedMinutes: 7,
     requiresAuth: false,
-    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/411" allow="payment" style="border:0;width:100%;" height="2484"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/411" allow="payment" style="border:0;width:100%;" height="2484"></iframe>',
   },
   {
     slug: '/refer-a-friend/',
@@ -110,7 +110,7 @@ export const FORMS: FormEntry[] = [
     icon: 'UserPlus',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '<script src="https://www.cognitoforms.com/f/seamless.js" data-key="K4Fk3PtQHE-6M-fMiX2fVA" data-form="395"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/395" allow="payment" style="border:0;width:100%" height="1400"></iframe>',
   },
   {
     slug: '/request-rx-quote/',
@@ -120,7 +120,7 @@ export const FORMS: FormEntry[] = [
     icon: 'Pill',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '<script src="https://www.cognitoforms.com/f/seamless.js" data-key="K4Fk3PtQHE-6M-fMiX2fVA" data-form="421"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/421" allow="payment" style="border:0;width:100%" height="1400"></iframe>',
   },
   {
     slug: '/request-to-schedule-an-appointment/',
@@ -130,17 +130,16 @@ export const FORMS: FormEntry[] = [
     icon: 'Calendar',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '<script src="https://www.cognitoforms.com/f/seamless.js" data-key="K4Fk3PtQHE-6M-fMiX2fVA" data-form="420"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/420" allow="payment" style="border:0;width:100%" height="1400"></iframe>',
   },
   {
     slug: '/update-form-of-payment/',
-    label: 'Update Form of Payment',
+    label: 'Update Payment Information',
     category: 'member',
-    description: 'Update your payment method',
+    description: 'Securely update your payment method through our payment portal',
     icon: 'CreditCard',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '<script src="https://www.cognitoforms.com/f/seamless.js" data-key="K4Fk3PtQHE-6M-fMiX2fVA" data-form="347"></script>',
   },
   {
     slug: '/dependent-over-18-information/',
@@ -150,7 +149,7 @@ export const FORMS: FormEntry[] = [
     icon: 'UserPlus',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/MPoweringBenefits1/DependentOver18Information" style="border:0;width:100%" height="800"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/MPoweringBenefits1/DependentOver18Information" style="border:0;width:100%" height="800"></iframe>',
   },
 ];
 

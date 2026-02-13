@@ -27,7 +27,6 @@ const MemberFeedback = () => {
       <Helmet>
         <title>Member Feedback | MPB Health</title>
         <meta name="description" content="Share your feedback and help us improve your MPB Health experience." />
-        <script src="https://www.cognitoforms.com/f/iframe.js" async></script>
       </Helmet>
 
       <div className="min-h-screen bg-white">

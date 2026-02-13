@@ -620,12 +620,8 @@ const FormsManager: React.FC = () => {
                     <Textarea
                       value={formData.cognito_embed || ''}
                       onChange={(e) => setFormData({ ...formData, cognito_embed: e.target.value })}
-                      placeholder='Paste the Cognito Forms embed code here, e.g.:
-<script src="https://www.cognitoforms.com/f/seamless.js" data-key="YOUR_KEY" data-form="123"></script>
-
-or
-
-<iframe src="https://www.cognitoforms.com/f/YOUR_KEY/123" ...></iframe>'
+                      placeholder='Paste an iframe embed code here, e.g.:
+<iframe src="https://www.cognitoforms.com/f/YOUR_KEY/123" style="border:0;width:100%" height="1400"></iframe>'
                       rows={6}
                       className="font-mono text-sm"
                     />

@@ -82,7 +82,7 @@ const MemberPortalDashboard: React.FC = () => {
       title: 'Payments',
       icon: CreditCard,
       description: 'Manage billing and payments',
-      href: '/member/portal/payments',
+      href: '/update-form-of-payment',
       color: 'teal'
     },
     {

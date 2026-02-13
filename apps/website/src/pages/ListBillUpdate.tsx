@@ -27,7 +27,6 @@ const ListBillUpdate = () => {
       <Helmet>
         <title>List-Bill Update | MPB Health</title>
         <meta name="description" content="Update your list-billing information with MPB Health." />
-        <script src="https://www.cognitoforms.com/f/iframe.js" async></script>
       </Helmet>
 
       <div className="min-h-screen bg-white">

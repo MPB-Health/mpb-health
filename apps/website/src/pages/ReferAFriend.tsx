@@ -27,7 +27,6 @@ const ReferAFriend = () => {
       <Helmet>
         <title>Refer a Friend | MPB Health</title>
         <meta name="description" content="Share the benefits of MPB Health with friends and family. Refer someone today and help them discover quality healthcare sharing." />
-        <script src="https://www.cognitoforms.com/f/iframe.js" async></script>
       </Helmet>
 
       <div className="min-h-screen bg-white">

@@ -27,7 +27,6 @@ const ListBillSetup = () => {
       <Helmet>
         <title>List-Bill Setup | MPB Health</title>
         <meta name="description" content="Set up list-billing for your organization with MPB Health." />
-        <script src="https://www.cognitoforms.com/f/iframe.js" async></script>
       </Helmet>
 
       <div className="min-h-screen bg-white">

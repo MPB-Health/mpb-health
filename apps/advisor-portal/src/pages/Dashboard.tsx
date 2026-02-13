@@ -65,6 +65,40 @@ const ENROLL_OPTIONS = [
   { label: 'MEC + Essentials', url: 'https://mec.enrollmpb.com/?id=768413' },
 ] as const;
 
+// Teams meeting link for recurring advisor meetings
+const TEAMS_MEETING_URL = ''; // TODO: Add Teams meeting link
+
+// Get the next N upcoming 2nd and 4th Tuesdays
+function getUpcomingRecurringMeetings(count = 4): Date[] {
+  const meetings: Date[] = [];
+  const now = new Date();
+  let month = now.getMonth();
+  let year = now.getFullYear();
+
+  while (meetings.length < count) {
+    // Find all Tuesdays in the month
+    const firstDay = new Date(year, month, 1);
+    const tuesdays: Date[] = [];
+    for (let d = 1; d <= 31; d++) {
+      const date = new Date(year, month, d);
+      if (date.getMonth() !== month) break;
+      if (date.getDay() === 2) tuesdays.push(date); // Tuesday = 2
+    }
+    // 2nd Tuesday (index 1) and 4th Tuesday (index 3)
+    const targets = [tuesdays[1], tuesdays[3]].filter(Boolean);
+    for (const t of targets) {
+      if (t && t >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && meetings.length < count) {
+        // Set meeting time to 12:00 PM ET
+        t.setHours(12, 0, 0, 0);
+        meetings.push(t);
+      }
+    }
+    month++;
+    if (month > 11) { month = 0; year++; }
+  }
+  return meetings;
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const {
@@ -160,12 +194,14 @@ export default function Dashboard() {
           </div>
         </button>
 
-        <MetricCard
-          label="Upcoming Meetings"
-          value={upcomingMeetings.length}
-          icon={<Video className="w-5 h-5" />}
-          className="h-full"
-        />
+        <button onClick={() => navigate('/meetings')} className="text-left h-full w-full">
+          <MetricCard
+            label="Upcoming Meetings"
+            value="View"
+            icon={<Video className="w-5 h-5" />}
+            className="hover:border-th-accent-300 cursor-pointer h-full"
+          />
+        </button>
 
         <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
           <div className="absolute top-0 left-0 right-0 h-0.5 gradient-accent opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -317,51 +353,55 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Upcoming Meetings */}
+        {/* Upcoming Meetings - Recurring 2nd & 4th Tuesday */}
         <div className="bg-surface-primary rounded-xl border border-th-border">
           <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
             <h2 className="font-semibold text-th-text-primary">Upcoming Meetings</h2>
-            <button
-              onClick={() => navigate('/meetings')}
-              className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center space-x-1"
-            >
-              <span>View All</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <span className="text-xs text-th-text-tertiary font-medium">
+              Every 2nd & 4th Tuesday
+            </span>
           </div>
           <div className="p-5">
-            {upcomingMeetings.length > 0 ? (
-              <div className="space-y-4">
-                {upcomingMeetings.slice(0, 3).map((meeting) => (
-                  <button
-                    key={meeting.id}
-                    onClick={() => navigate(`/meetings/${meeting.id}`)}
-                    className="w-full flex items-center space-x-4 p-3 rounded-lg hover:bg-surface-tertiary transition-colors text-left"
+            <div className="space-y-4">
+              {getUpcomingRecurringMeetings(4).map((date, index) => {
+                const isNext = index === 0;
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800' : ''}`}
                   >
-                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Video className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-purple-600' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
+                      <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-th-text-primary truncate">
-                        {meeting.title}
+                      <p className="font-medium text-th-text-primary">
+                        Advisor Meeting
+                        {isNext && <span className="ml-2 text-xs font-semibold text-purple-600 dark:text-purple-400">Next</span>}
                       </p>
                       <div className="flex items-center space-x-2 mt-1">
                         <Calendar className="w-4 h-4 text-th-text-tertiary" />
                         <span className="text-sm text-th-text-tertiary">
-                          {format(new Date(meeting.scheduled_at), 'MMM d, h:mm a')}
+                          {format(date, 'EEEE, MMM d · h:mm a')}
                         </span>
                       </div>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-th-text-tertiary" />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-th-text-tertiary">
-                <Video className="w-12 h-12 mx-auto mb-3 text-th-text-tertiary" />
-                <p>No upcoming meetings</p>
-              </div>
-            )}
+                    {TEAMS_MEETING_URL ? (
+                      <a
+                        href={TEAMS_MEETING_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Join
+                      </a>
+                    ) : (
+                      <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

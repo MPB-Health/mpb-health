@@ -17,6 +17,7 @@ import {
   Link,
   Send,
   UsersRound,
+  Mail,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -47,6 +48,7 @@ const iconMap: Record<string, LucideIcons.LucideIcon> = {
   Link,
   Send,
   UsersRound,
+  Mail,
 };
 
 // Get icon component from string name
@@ -92,6 +94,7 @@ const fallbackNavigation: NavItem[] = [
   { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
+  { name: 'Contact', href: '/contact', icon: Mail },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

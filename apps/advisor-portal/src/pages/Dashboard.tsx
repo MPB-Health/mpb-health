@@ -359,9 +359,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Video Slider - 3/4 width */}
-        <div className="lg:col-span-3 bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Video Slider - 2/3 width matching first 2 top cards */}
+        <div className="lg:col-span-2 bg-surface-primary rounded-xl border border-th-border overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
             <h2 className="font-semibold text-th-text-primary flex items-center gap-2">
               <Video className="w-5 h-5 text-th-text-tertiary" />
@@ -400,8 +400,8 @@ export default function Dashboard() {
                       <Play className="w-7 h-7 text-gray-900 ml-1" fill="currentColor" />
                     </div>
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/80 to-transparent">
-                    <p className="text-white font-semibold text-lg">
+                  <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+                    <p className="text-white font-bold text-xl md:text-2xl">
                       {ADVISOR_VIDEOS[activeVideoIndex].title}
                     </p>
                   </div>
@@ -464,7 +464,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Upcoming Meetings - Recurring 2nd & 4th Tuesday */}
+        {/* Upcoming Meetings - matching 3rd top card width */}
         <div className="lg:col-span-1 bg-surface-primary rounded-xl border border-th-border">
           <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
             <h2 className="font-semibold text-th-text-primary">Upcoming Meetings</h2>

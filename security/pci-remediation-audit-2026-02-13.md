@@ -60,6 +60,64 @@
   - single `.htaccess` in archive root
 
 ## Remaining Non-Code Actions
-1. Close or remediate TLS service on `:3343` with host-valid certificate.
-2. Apply firewall controls for UDP source-port finding.
-3. Open vendor ticket with Cognito Forms referencing scanner evidence for comment leakage in third-party asset.
+
+### Finding 1 & 2: TLS Certificate Mismatch on :3343 (HIGH) + SSL CN Mismatch (MEDIUM)
+
+**Root cause:** PCI scanner resolved `mpb.health` to old QUIC Cloud CDN edge IP `45.63.67.181`.
+That edge node serves a `*.quic.cloud` wildcard certificate on ports 3343 and 3443, which does
+not match `mpb.health`. Current DNS points to A2 VPS IP `209.208.26.218` where port 3343 is
+already closed.
+
+**Remediation options (pick one):**
+
+| Option | Action | Where |
+| --- | --- | --- |
+| A (recommended) | Disable QUIC Cloud CDN in A2 cPanel / LiteSpeed admin | A2 Hosting cPanel > LiteSpeed Cache > CDN |
+| B | Contact QUIC Cloud support to issue proper cert or close 3343/3443 | QUIC Cloud support ticket |
+| C | Ensure DNS stays on current A2 IP (or Vercel after migration) and request PCI re-scan | DNS provider + Sysnet re-scan |
+
+**Verification after fix:**
+```
+curl -kIv --resolve "mpb.health:3343:45.63.67.181" "https://mpb.health:3343/"
+# Should get "Connection refused" or timeout
+```
+
+### Finding 3: UDP Source Port Pass Firewall (MEDIUM)
+
+**Root cause:** Scanner detected UDP packets passing through firewall on QUIC Cloud edge IP
+`45.63.67.181`. This is a CDN/hosting-level firewall issue.
+
+**Remediation:**
+- Disabling QUIC Cloud (Option A above) eliminates this finding.
+- If keeping QUIC Cloud: open A2 Hosting support ticket requesting edge firewall hardening.
+- After Vercel migration: finding disappears as old IP leaves scope.
+
+### Finding 4: Information Leakage via Cognito JS Comments (MEDIUM)
+
+**Root cause:** Scanner crawled `https://static.cognitoforms.com/form/modern/159.bfdfdfe1779a5668c6d7.js`
+(loaded from Cognito Forms embed) and found debug comments from a Microsoft Ajax compatibility shim.
+This is third-party hosted code outside our control.
+
+**What was already done:**
+- All Cognito embeds converted from script-based (`seamless.js`/`iframe.js`) to pure iframe embeds.
+- CSP no longer allows Cognito script domains in `script-src`.
+- Pages no longer directly load Cognito JS into page context.
+
+**Remediation after deploy:**
+1. Deploy the updated ZIP to A2 VPS and request PCI re-scan.
+2. If scanner still flags (by crawling inside iframe):
+   - File PCI dispute/exception with Sysnet noting:
+     - JS file is on third-party domain (`static.cognitoforms.com`), outside our control.
+     - Loaded only via sandboxed iframe, not as first-party script.
+     - "debug" comment is in Microsoft Ajax compatibility shim, contains no sensitive data.
+   - Open ticket with Cognito Forms requesting they strip source comments from production JS.
+
+### Summary Action Checklist
+
+- [ ] Log into A2 cPanel and disable QUIC Cloud CDN
+- [ ] Verify port 3343 no longer responds on old IP
+- [ ] Deploy `security/deploy-packages/mpbhealth-website-a2-20260213-141039.zip` to A2 web root
+- [ ] Verify new headers with `curl -I https://mpb.health/`
+- [ ] Request PCI re-scan from Sysnet
+- [ ] If Cognito comment finding persists: file dispute with Sysnet + ticket with Cognito Forms
+- [ ] Next week: migrate DNS to Vercel, all QUIC Cloud findings become moot

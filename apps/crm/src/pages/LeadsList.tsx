@@ -23,7 +23,7 @@ import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/crm-core';
 
 export default function LeadsList() {
-  const { leadService, pipelineStages } = useCRM();
+  const { leadService, pipelineStages, zohoConfigured } = useCRM();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -222,6 +222,7 @@ export default function LeadsList() {
             setFilters((prev) => ({ ...prev, ...newFilters }));
             setPage(0);
           }}
+          zohoConfigured={zohoConfigured}
         />
       )}
 

@@ -19,6 +19,8 @@ import PromoCodes from './pages/PromoCodes';
 import CodeInventory from './pages/CodeInventory';
 import AdminResources from './pages/AdminResources';
 import ESignature from './pages/ESignature';
+import PlansList from './pages/PlansList';
+import PlanEditor from './pages/PlanEditor';
 
 export default function App() {
   return (
@@ -32,6 +34,9 @@ export default function App() {
           <Route path="users/:userId" element={<UserDetail />} />
           <Route path="enrollments" element={<Enrollments />} />
           <Route path="enrollments/:enrollmentId" element={<EnrollmentDetail />} />
+          <Route path="plans" element={<PlansList />} />
+          <Route path="plans/new" element={<PlanEditor />} />
+          <Route path="plans/:id" element={<PlanEditor />} />
           <Route path="content/blog" element={<BlogPosts />} />
           <Route path="content/blog/new" element={<BlogEditor />} />
           <Route path="content/blog/:postId" element={<BlogEditor />} />

@@ -45,33 +45,7 @@ import {
 import { useCRM } from '../../contexts/CRMContext';
 import { useOrg } from '../../contexts/OrgContext';
 import toast from 'react-hot-toast';
-import type { CRMTemplate } from '@mpbhealth/crm-core';
-
-// Types for email system
-interface EmailSignature {
-  id: string;
-  name: string;
-  content: string;
-  is_default: boolean;
-}
-
-interface EnhancedEmailSendInput {
-  to: string[];
-  cc?: string[];
-  bcc?: string[];
-  subject: string;
-  body_html: string;
-  body_plain?: string;
-  lead_id?: string;
-  contact_id?: string;
-  account_id?: string;
-  thread_id?: string;
-  signature_id?: string;
-  track_opens?: boolean;
-  track_clicks?: boolean;
-  from_name?: string;
-  reply_to?: string;
-}
+import type { CRMTemplate, EmailSignature, EnhancedEmailSendInput } from '@mpbhealth/crm-core';
 
 // ============================================================================
 // Types
@@ -528,7 +502,7 @@ export function EmailComposer({
   onDiscard,
   onClose,
 }: EmailComposerProps) {
-  const { templateService, emailService } = useCRM();
+  const { templateService, composerService, signatureService, draftService } = useCRM();
   const { activeOrgId } = useOrg();
 
   // Form state
@@ -606,28 +580,60 @@ export function EmailComposer({
   useEffect(() => {
     const load = async () => {
       try {
-        // Load templates
-        const templateData = await templateService.listTemplates();
+        // Load templates and signatures in parallel
+        const [templateData, sigData] = await Promise.all([
+          templateService.listTemplates(),
+          activeOrgId ? signatureService.getUserSignatures(activeOrgId) : Promise.resolve([]),
+        ]);
         setTemplates(templateData);
+        setSignatures(sigData);
 
-        // TODO: Load signatures from SignatureService when integrated
-        // const sigData = await signatureService.listSignatures(orgId);
-        // setSignatures(sigData);
+        // Auto-select default signature
+        const defaultSig = sigData.find((s: EmailSignature) => s.is_default);
+        if (defaultSig) {
+          setSelectedSignatureId(defaultSig.id);
+        }
       } catch (error) {
         console.error('Failed to load composer data:', error);
       }
     };
     load();
-  }, [templateService]);
+  }, [templateService, signatureService, activeOrgId]);
+
+  // Track current draft ID for auto-save
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null);
 
   // Auto-save handler
   const handleAutoSave = useCallback(async () => {
     if (!editor || !activeOrgId) return;
-    // TODO: Implement draft auto-save with DraftService
-    setLastSavedAt(new Date());
-  }, [editor, activeOrgId]);
+    try {
+      const html = editor.getHTML();
+      const draftData = {
+        to_addresses: to,
+        cc_addresses: cc,
+        bcc_addresses: bcc,
+        subject,
+        body_html: html,
+        lead_id: leadId,
+        contact_id: contactId,
+        account_id: accountId,
+        thread_id: threadId,
+        signature_id: selectedSignatureId || undefined,
+      };
 
-  // Send email
+      if (currentDraftId) {
+        await draftService.autoSaveDraft(currentDraftId, draftData);
+      } else {
+        const draft = await draftService.createDraft(activeOrgId, draftData);
+        setCurrentDraftId(draft.id);
+      }
+      setLastSavedAt(new Date());
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
+  }, [editor, activeOrgId, to, cc, bcc, subject, leadId, contactId, accountId, threadId, selectedSignatureId, currentDraftId, draftService]);
+
+  // Send email via v2 ComposerService (CC/BCC, attachments, tracking, threads)
   const handleSend = async () => {
     if (!editor || !activeOrgId) return;
 
@@ -644,6 +650,11 @@ export function EmailComposer({
     try {
       const html = editor.getHTML();
 
+      // Collect attachment IDs from uploaded attachments
+      const attachmentIds = attachments
+        .filter((a) => a.id)
+        .map((a) => a.id as string);
+
       const input: EnhancedEmailSendInput = {
         to,
         cc: cc.length > 0 ? cc : undefined,
@@ -655,23 +666,19 @@ export function EmailComposer({
         account_id: accountId,
         thread_id: threadId,
         signature_id: selectedSignatureId || undefined,
+        attachment_ids: attachmentIds.length > 0 ? attachmentIds : undefined,
         track_opens: true,
         track_clicks: true,
       };
 
-      // TODO: Use ComposerService when fully integrated
-      // const result = await composerService.sendEmail(activeOrgId, input);
-
-      // For now, use the basic emailService.sendDirect
-      const result = await emailService.sendDirect(
-        to[0], // Primary recipient
-        subject,
-        html,
-        leadId
-      );
+      const result = await composerService.sendEmail(activeOrgId, input);
 
       if (result.success) {
         toast.success('Email sent successfully');
+        // Clean up draft if one was created
+        if (currentDraftId) {
+          try { await draftService.deleteDraft(currentDraftId); } catch {}
+        }
         onSent?.(result.email_id || '');
         onClose?.();
       } else {
@@ -691,10 +698,30 @@ export function EmailComposer({
 
     setSaving(true);
     try {
-      // TODO: Implement with DraftService
+      const html = editor.getHTML();
+      const draftData = {
+        to_addresses: to,
+        cc_addresses: cc,
+        bcc_addresses: bcc,
+        subject,
+        body_html: html,
+        lead_id: leadId,
+        contact_id: contactId,
+        account_id: accountId,
+        thread_id: threadId,
+        signature_id: selectedSignatureId || undefined,
+      };
+
+      if (currentDraftId) {
+        await draftService.updateDraft(currentDraftId, draftData);
+      } else {
+        const draft = await draftService.createDraft(activeOrgId, draftData);
+        setCurrentDraftId(draft.id);
+      }
+
       toast.success('Draft saved');
       setLastSavedAt(new Date());
-      onSaved?.('draft-id');
+      onSaved?.(currentDraftId || '');
     } catch (error) {
       console.error('Save draft error:', error);
       toast.error('Failed to save draft');
@@ -727,17 +754,45 @@ export function EmailComposer({
     toast.success(`Template "${template.name}" applied`);
   };
 
-  // Handle file selection
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection - upload to Supabase storage via DraftService
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 50 * 1024 * 1024; // 50MB
 
     for (const file of files) {
       if (file.size > maxSize) {
-        toast.error(`${file.name} exceeds 10MB limit`);
+        toast.error(`${file.name} exceeds 50MB limit`);
         continue;
       }
-      setAttachments((prev) => [...prev, { file }]);
+
+      // Ensure we have a draft to attach to
+      let dId = currentDraftId;
+      if (!dId && activeOrgId) {
+        try {
+          const draft = await draftService.createDraft(activeOrgId, {
+            to_addresses: to,
+            subject,
+            body_html: editor?.getHTML() || '',
+          });
+          dId = draft.id;
+          setCurrentDraftId(draft.id);
+        } catch {
+          toast.error('Failed to create draft for attachment');
+          continue;
+        }
+      }
+
+      if (dId) {
+        try {
+          const attachment = await draftService.uploadAttachment(dId, file);
+          setAttachments((prev) => [...prev, { file, id: attachment.id }]);
+        } catch (error) {
+          toast.error(`Failed to upload ${file.name}`);
+        }
+      } else {
+        // Fallback: store locally if no org
+        setAttachments((prev) => [...prev, { file }]);
+      }
     }
 
     // Reset input

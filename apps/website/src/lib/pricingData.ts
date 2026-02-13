@@ -1,3 +1,10 @@
+/**
+ * @deprecated This file is deprecated. Pricing data is now stored in the
+ * plan_pricing database table and accessed via @mpbhealth/plans-core.
+ * Use dbRateEngine.ts for database-backed rate calculations.
+ * This file is kept for backward compatibility with the legacy rate engines
+ * (newRateEngine.ts, newRateEngine.v2.ts, pricingService.ts).
+ */
 import rateTablesConfigV2 from '../../content/rate_tables.config.v2.json';
 
 export interface ProductPricing {

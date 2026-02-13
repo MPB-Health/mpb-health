@@ -25,7 +25,7 @@ const PAGE_SIZE = 20;
 
 export default function QuickRateEstimateLeads() {
   const navigate = useNavigate();
-  const { importService } = useCRM();
+  const { importService, zohoConfigured } = useCRM();
 
   const [submissions, setSubmissions] = useState<QuoteSubmission[]>([]);
   const [total, setTotal] = useState(0);
@@ -176,7 +176,8 @@ export default function QuickRateEstimateLeads() {
             />
           </div>
 
-          {/* Sync Status Filter */}
+          {/* Sync Status Filter — only when Zoho is configured */}
+          {zohoConfigured && (
           <select
             value={syncFilter}
             onChange={(e) => setSyncFilter(e.target.value)}
@@ -187,6 +188,7 @@ export default function QuickRateEstimateLeads() {
             <option value="success">Synced</option>
             <option value="failed">Failed</option>
           </select>
+          )}
 
           {/* Refresh */}
           <button
@@ -236,9 +238,11 @@ export default function QuickRateEstimateLeads() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-th-text-secondary uppercase">
                   Source
                 </th>
+                {zohoConfigured && (
                 <th className="px-4 py-3 text-left text-xs font-medium text-th-text-secondary uppercase">
                   Status
                 </th>
+                )}
                 <th className="px-4 py-3 text-left text-xs font-medium text-th-text-secondary uppercase">
                   Date
                 </th>
@@ -248,7 +252,7 @@ export default function QuickRateEstimateLeads() {
             <tbody className="divide-y divide-th-border">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
+                  <td colSpan={zohoConfigured ? 8 : 7} className="px-4 py-12 text-center">
                     <div className="flex items-center justify-center gap-2 text-th-text-tertiary">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-th-accent-600" />
                       Loading...
@@ -257,7 +261,7 @@ export default function QuickRateEstimateLeads() {
                 </tr>
               ) : submissions.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
+                  <td colSpan={zohoConfigured ? 8 : 7} className="px-4 py-12 text-center">
                     <Calculator className="w-12 h-12 mx-auto text-th-text-tertiary mb-3" />
                     <p className="text-th-text-secondary">No quote submissions found</p>
                   </td>
@@ -301,9 +305,11 @@ export default function QuickRateEstimateLeads() {
                     <td className="px-4 py-3 text-sm text-th-text-secondary">
                       {sub.source_cta || sub.source_page || '-'}
                     </td>
+                    {zohoConfigured && (
                     <td className="px-4 py-3">
                       {getSyncStatusBadge(sub.zoho_sync_status)}
                     </td>
+                    )}
                     <td className="px-4 py-3 text-sm text-th-text-tertiary">
                       {formatDate(sub.created_at)}
                     </td>
@@ -389,9 +395,11 @@ export default function QuickRateEstimateLeads() {
                       <div className="font-medium text-th-text-primary">
                         {selectedSubmission.first_name} {selectedSubmission.last_name}
                       </div>
+                      {zohoConfigured && (
                       <div className="text-sm text-th-text-tertiary">
                         {getSyncStatusBadge(selectedSubmission.zoho_sync_status)}
                       </div>
+                      )}
                     </div>
                   </div>
 
@@ -504,8 +512,8 @@ export default function QuickRateEstimateLeads() {
                 </div>
               </div>
 
-              {/* Zoho Link */}
-              {selectedSubmission.zoho_lead_id && (
+              {/* Zoho Link — only when Zoho is configured */}
+              {zohoConfigured && selectedSubmission.zoho_lead_id && (
                 <div className="mb-6">
                   <a
                     href={`https://crm.zoho.com/crm/org/tab/Leads/${selectedSubmission.zoho_lead_id}`}

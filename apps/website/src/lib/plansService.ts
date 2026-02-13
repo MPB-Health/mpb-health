@@ -20,6 +20,10 @@ export interface Plan {
   is_hsa_compatible: boolean;
   sort_order: number;
   is_active: boolean;
+  enroll_url: string | null;
+  enrollment_fee: number;
+  annual_membership_fee: number;
+  tobacco_surcharge_pct: number;
 }
 
 export interface PlanWithFeatures extends Plan {
@@ -27,6 +31,16 @@ export interface PlanWithFeatures extends Plan {
   price_display?: string;
   enroll_url?: string;
 }
+
+// Fallback enroll URLs for backward compatibility (used if DB field is null)
+const FALLBACK_ENROLL_URLS: Record<string, string> = {
+  'essentials': 'https://essentials.enrollmpb.com/',
+  'mec-essentials': 'https://mec.enrollmpb.com/',
+  'care-plus': 'https://careplus.enrollmpb.com/',
+  'careplus': 'https://careplus.enrollmpb.com/',
+  'direct': 'https://direct.enrollmpb.com/',
+  'secure-hsa': 'https://securehsa.enrollmpb.com/',
+};
 
 export async function getActivePlans(): Promise<PlanWithFeatures[]> {
   const { data: plans, error: plansError } = await supabase
@@ -57,7 +71,7 @@ export async function getActivePlans(): Promise<PlanWithFeatures[]> {
         .select('*')
         .eq('plan_id', plan.id)
         .eq('member_type', 'individual')
-        .order('age_min')
+        .order('monthly_contribution')
         .limit(1)
         .maybeSingle();
 
@@ -65,20 +79,12 @@ export async function getActivePlans(): Promise<PlanWithFeatures[]> {
         ? `$${pricing.monthly_contribution}`
         : '$0';
 
-      const enrollUrls: Record<string, string> = {
-        'essentials': 'https://essentials.enrollmpb.com/',
-        'mec-essentials': 'https://mec.enrollmpb.com/',
-        'care-plus': 'https://careplus.enrollmpb.com/',
-        'careplus': 'https://careplus.enrollmpb.com/',
-        'direct': 'https://direct.enrollmpb.com/',
-        'secure-hsa': 'https://securehsa.enrollmpb.com/',
-      };
-
       return {
         ...plan,
         features: features || [],
         price_display: priceDisplay,
-        enroll_url: enrollUrls[plan.slug] || '/get-started',
+        // Use DB enroll_url if available, fallback to hardcoded map
+        enroll_url: plan.enroll_url || FALLBACK_ENROLL_URLS[plan.slug] || '/get-started',
       };
     })
   );
@@ -110,7 +116,7 @@ export async function getPlanBySlug(slug: string): Promise<PlanWithFeatures | nu
     .select('*')
     .eq('plan_id', plan.id)
     .eq('member_type', 'individual')
-    .order('age_min')
+    .order('monthly_contribution')
     .limit(1)
     .maybeSingle();
 
@@ -118,19 +124,10 @@ export async function getPlanBySlug(slug: string): Promise<PlanWithFeatures | nu
     ? `$${pricing.monthly_contribution}`
     : '$0';
 
-  const enrollUrls: Record<string, string> = {
-    'essentials': 'https://essentials.enrollmpb.com/',
-    'mec-essentials': 'https://mec.enrollmpb.com/',
-    'care-plus': 'https://careplus.enrollmpb.com/',
-    'careplus': 'https://careplus.enrollmpb.com/',
-    'direct': 'https://direct.enrollmpb.com/',
-    'secure-hsa': 'https://securehsa.enrollmpb.com/',
-  };
-
   return {
     ...plan,
     features: features || [],
     price_display: priceDisplay,
-    enroll_url: enrollUrls[plan.slug] || '/get-started',
+    enroll_url: plan.enroll_url || FALLBACK_ENROLL_URLS[plan.slug] || '/get-started',
   };
 }

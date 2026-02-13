@@ -24,6 +24,10 @@ import {
   createQuoteService,
   createInvoiceService,
   createCampaignService,
+  // Championship Email Services
+  createComposerService,
+  createSignatureService,
+  createDraftService,
   // Studio services
   createModuleService,
   createFieldService,
@@ -63,6 +67,10 @@ import {
   type QuoteService,
   type InvoiceService,
   type CampaignService,
+  // Championship Email types
+  type ComposerService,
+  type SignatureService,
+  type DraftService,
   // Studio types
   type ModuleService,
   type FieldService,
@@ -107,6 +115,10 @@ interface CRMContextType {
   quoteService: QuoteService;
   invoiceService: InvoiceService;
   campaignService: CampaignService;
+  // Championship Email services
+  composerService: ComposerService;
+  signatureService: SignatureService;
+  draftService: DraftService;
   // Studio services
   moduleService: ModuleService;
   fieldService: FieldService;
@@ -126,6 +138,9 @@ interface CRMContextType {
   overdueTasks: LeadTask[];
   recentActivities: LeadActivity[];
   calendarEvents: CalendarEvent[];
+
+  // Integration status
+  zohoConfigured: boolean;
 
   // Loading states
   loading: boolean;
@@ -169,6 +184,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     quoteService: createQuoteService(supabase),
     invoiceService: createInvoiceService(supabase),
     campaignService: createCampaignService(supabase),
+    // Championship Email services
+    composerService: createComposerService(supabase, supabaseUrl),
+    signatureService: createSignatureService(supabase),
+    draftService: createDraftService(supabase),
     // Studio services
     moduleService: createModuleService(supabase),
     fieldService: createFieldService(supabase),
@@ -190,6 +209,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [zohoConfigured, setZohoConfigured] = useState(false);
 
   // Refresh functions
   const refreshDashboard = useCallback(async () => {
@@ -255,6 +275,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         refreshLeads(),
         refreshTasks(),
         refreshCalendar(),
+        // Check Zoho configuration (non-blocking — failure just means unconfigured)
+        services.zohoService.checkConfiguration()
+          .then((status) => setZohoConfigured(status?.configured === true))
+          .catch(() => setZohoConfigured(false)),
       ]);
       setLoading(false);
     };
@@ -291,6 +315,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         overdueTasks,
         recentActivities,
         calendarEvents,
+        zohoConfigured,
         loading,
         refreshing,
         refreshDashboard,

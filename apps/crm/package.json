@@ -18,6 +18,7 @@
     "@mpbhealth/config": "workspace:*",
     "@mpbhealth/crm-core": "workspace:*",
     "@mpbhealth/database": "workspace:*",
+    "@mpbhealth/plans-core": "workspace:*",
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
     "@supabase/supabase-js": "^2.49.1",

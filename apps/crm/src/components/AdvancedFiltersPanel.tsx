@@ -4,6 +4,7 @@ import type { LeadFilters } from '@mpbhealth/crm-core';
 interface AdvancedFiltersPanelProps {
   filters: LeadFilters;
   onChange: (filters: LeadFilters) => void;
+  zohoConfigured?: boolean;
 }
 
 const PRIORITY_OPTIONS = [
@@ -21,7 +22,7 @@ const ZOHO_STATUS_OPTIONS = [
   { value: 'failed', label: 'Failed' },
 ];
 
-export function AdvancedFiltersPanel({ filters, onChange }: AdvancedFiltersPanelProps) {
+export function AdvancedFiltersPanel({ filters, onChange, zohoConfigured = false }: AdvancedFiltersPanelProps) {
   const update = (key: string, value: string) => {
     if (key === 'tags') {
       const tagArray = value ? value.split(',').map(t => t.trim()).filter(Boolean) : undefined;
@@ -62,6 +63,7 @@ export function AdvancedFiltersPanel({ filters, onChange }: AdvancedFiltersPanel
           options={PRIORITY_OPTIONS}
         />
 
+        {zohoConfigured && (
         <SelectField
           label="Zoho Sync"
           name="zohoSyncStatus"
@@ -69,6 +71,7 @@ export function AdvancedFiltersPanel({ filters, onChange }: AdvancedFiltersPanel
           onChange={(e) => update('zohoSyncStatus', e.target.value)}
           options={ZOHO_STATUS_OPTIONS}
         />
+        )}
 
         <InputField
           label="From Date"

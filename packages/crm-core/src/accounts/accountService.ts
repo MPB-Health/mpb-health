@@ -21,10 +21,7 @@ export class AccountService {
     try {
       let query = this.supabase
         .from('crm_accounts')
-        .select(`
-          *,
-          owner:auth.users!crm_accounts_owner_id_fkey(id, email, raw_user_meta_data)
-        `, { count: 'exact' });
+        .select('*', { count: 'exact' });
 
       // Apply filters
       if (filters.account_type) {
@@ -63,7 +60,30 @@ export class AccountService {
         return { accounts: [], total: 0 };
       }
 
-      return { accounts: (data as unknown) as AccountWithRelations[], total: count || 0 };
+      // Fetch owner profiles separately (auth.users is not exposed via PostgREST)
+      const accounts = (data || []) as AccountWithRelations[];
+      const ownerIds = [...new Set(accounts.map(a => a.owner_id).filter(Boolean))] as string[];
+
+      if (ownerIds.length > 0) {
+        const { data: profiles } = await this.supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', ownerIds);
+
+        if (profiles) {
+          const profileMap = new Map(profiles.map(p => [p.id, p]));
+          for (const account of accounts) {
+            if (account.owner_id) {
+              const profile = profileMap.get(account.owner_id);
+              account.owner = profile
+                ? { id: profile.id, email: profile.email || '', full_name: profile.full_name || null }
+                : null;
+            }
+          }
+        }
+      }
+
+      return { accounts, total: count || 0 };
     } catch (error) {
       console.error('Get accounts error:', error);
       return { accounts: [], total: 0 };

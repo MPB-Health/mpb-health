@@ -22,6 +22,7 @@ import { AddNoteModal, LogCallModal, LogMeetingModal } from '../components/Quick
 import { AddTaskModal } from '../components/AddTaskModal';
 import { AIInsightsPanel } from '../components/AIInsightsPanel';
 import { ScoreBreakdownPanel } from '../components/ScoreBreakdownPanel';
+import { UnifiedTimeline } from '../components/UnifiedTimeline';
 import { useOrg } from '../contexts/OrgContext';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type { Lead, LeadActivity, LeadTask } from '@mpbhealth/crm-core';
@@ -30,7 +31,7 @@ import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/cr
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { leadService, activityService, taskService, zohoService, automationService, pipelineStages } = useCRM();
+  const { leadService, activityService, taskService, zohoService, automationService, pipelineStages, zohoConfigured } = useCRM();
   const { activeOrgId } = useOrg();
 
   const [lead, setLead] = useState<Lead | null>(null);
@@ -38,7 +39,7 @@ export default function LeadDetail() {
   const [tasks, setTasks] = useState<LeadTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'activities' | 'tasks'>('activities');
+  const [activeTab, setActiveTab] = useState<'activities' | 'tasks' | 'timeline'>('activities');
   const [showEditLead, setShowEditLead] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
   const [showLogCall, setShowLogCall] = useState(false);
@@ -163,6 +164,7 @@ export default function LeadDetail() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
+          {zohoConfigured && (
           <button
             onClick={handleSyncToZoho}
             disabled={syncing}
@@ -171,6 +173,7 @@ export default function LeadDetail() {
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
             <span>Sync to Zoho</span>
           </button>
+          )}
           <PermissionGate permission="leads.update">
             <button
               onClick={() => setShowEditLead(true)}
@@ -245,6 +248,7 @@ export default function LeadDetail() {
                   {getPriorityLabel(lead.priority as any || 'normal')}
                 </span>
               </div>
+              {zohoConfigured && (
               <div>
                 <label className="block text-sm text-th-text-tertiary mb-2">Zoho Status</label>
                 <span
@@ -259,6 +263,7 @@ export default function LeadDetail() {
                   {lead.zoho_sync_status}
                 </span>
               </div>
+              )}
             </div>
           </div>
 
@@ -322,6 +327,16 @@ export default function LeadDetail() {
               >
                 Tasks ({tasks.filter((t) => !t.completed).length})
               </button>
+              <button
+                onClick={() => setActiveTab('timeline')}
+                className={`flex-1 px-6 py-4 text-sm font-medium ${
+                  activeTab === 'timeline'
+                    ? 'text-th-accent-600 border-b-2 border-th-accent-600'
+                    : 'text-th-text-tertiary hover:text-th-text-secondary'
+                }`}
+              >
+                Timeline
+              </button>
               {activeTab === 'tasks' && (
                 <button
                   onClick={() => setShowAddTask(true)}
@@ -357,6 +372,8 @@ export default function LeadDetail() {
                     </p>
                   )}
                 </div>
+              ) : activeTab === 'timeline' ? (
+                <UnifiedTimeline leadId={id} />
               ) : (
                 <div className="space-y-3">
                   {tasks.map((task) => (

@@ -27,8 +27,14 @@ import {
   FileText,
   Zap,
   Mail,
+  Inbox,
   Send,
   Clock,
+  PenTool,
+  ListOrdered,
+  Activity,
+  ShieldCheck,
+  Video,
   Building2,
   UserCircle,
   DollarSign,
@@ -121,6 +127,7 @@ const navigationSections: NavSection[] = [
     items: [
       { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
       { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
+      { name: 'Meetings', href: '/meetings', icon: Video, permission: 'tasks.read' },
     ],
   },
   {
@@ -128,12 +135,14 @@ const navigationSections: NavSection[] = [
     label: 'Analytics',
     items: [
       { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.read' },
+      { name: 'Sales Activity', href: '/sales-activity', icon: Activity, permission: 'reports.read' },
     ],
   },
   {
     id: 'email',
     label: 'Email',
     items: [
+      { name: 'Inbox', href: '/email/inbox', icon: Inbox, permission: 'email.read' },
       {
         name: 'Email',
         href: '#',
@@ -142,8 +151,11 @@ const navigationSections: NavSection[] = [
         children: [
           { name: 'Sent Emails', href: '/email/sent', permission: 'email.read' },
           { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
+          { name: 'Sequences', href: '/email/sequences', permission: 'email.read' },
+          { name: 'Deliverability', href: '/email/deliverability', permission: 'email.read' },
         ],
       },
+      { name: 'Signatures', href: '/email/signatures', icon: PenTool, permission: 'email.read' },
     ],
   },
   {
@@ -198,7 +210,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
-  const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
+  const { dashboardStats, tasksDueToday, overdueTasks, zohoConfigured } = useCRM();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -252,9 +264,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const totalPendingTasks = tasksDueToday.length + overdueTasks.length;
 
-  // Filter nav items based on permissions
+  // Filter nav items based on permissions and feature flags
   const visibleNav: NavItem[] = navigation
     .filter((item) => {
+      // Hide Zoho-specific items when Zoho is not configured
+      if (item.href === '/import/zoho' && !zohoConfigured) return false;
       if (!item.permission) return true;
       return can(item.permission);
     })

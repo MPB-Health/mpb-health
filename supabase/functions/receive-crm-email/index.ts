@@ -1,0 +1,443 @@
+// ============================================================================
+// CRM Inbound Email Receiver - Resend Inbound Webhook Handler
+// Processes incoming emails and routes them to CRM leads/threads
+// Deploy with: supabase functions deploy receive-crm-email
+//
+// Configure Resend Inbound webhook:
+// URL: https://your-project.supabase.co/functions/v1/receive-crm-email
+// ============================================================================
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface InboundHeader {
+  name: string;
+  value: string;
+}
+
+interface InboundAttachment {
+  filename: string;
+  content: string; // Base64 encoded
+  content_type: string;
+}
+
+interface ResendInboundPayload {
+  from: string;
+  to: string;
+  cc?: string;
+  subject: string;
+  html: string;
+  text: string;
+  headers: InboundHeader[];
+  attachments?: InboundAttachment[];
+}
+
+interface ParsedAddress {
+  name: string;
+  email: string;
+}
+
+// ============================================================================
+// Main Handler
+// ============================================================================
+
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  // Only accept POST
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  try {
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Supabase configuration is missing');
+    }
+
+    // Parse Resend Inbound webhook payload
+    const payload: ResendInboundPayload = await req.json();
+    console.log(`[receive-crm-email] Inbound email from: ${payload.from}, subject: ${payload.subject}`);
+
+    // Initialize Supabase client with service role
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // ========================================================================
+    // 1. Parse sender and recipient addresses
+    // ========================================================================
+
+    const sender = parseEmailAddress(payload.from);
+    const toAddresses = parseAddressList(payload.to);
+    const ccAddresses = payload.cc ? parseAddressList(payload.cc) : [];
+
+    console.log(`[receive-crm-email] Sender: ${sender.name} <${sender.email}>`);
+    console.log(`[receive-crm-email] To: ${toAddresses.map(a => a.email).join(', ')}`);
+    if (ccAddresses.length > 0) {
+      console.log(`[receive-crm-email] CC: ${ccAddresses.map(a => a.email).join(', ')}`);
+    }
+
+    // ========================================================================
+    // 2. Extract headers (Message-ID, In-Reply-To, References)
+    // ========================================================================
+
+    const headers = payload.headers || [];
+    const messageId = getHeaderValue(headers, 'Message-ID') || getHeaderValue(headers, 'message-id');
+    const inReplyTo = getHeaderValue(headers, 'In-Reply-To') || getHeaderValue(headers, 'in-reply-to');
+    const referencesHeader = getHeaderValue(headers, 'References') || getHeaderValue(headers, 'references');
+
+    console.log(`[receive-crm-email] Message-ID: ${messageId}`);
+    if (inReplyTo) console.log(`[receive-crm-email] In-Reply-To: ${inReplyTo}`);
+    if (referencesHeader) console.log(`[receive-crm-email] References: ${referencesHeader}`);
+
+    // ========================================================================
+    // 3. Match sender to a lead in zoho_lead_submissions
+    // ========================================================================
+
+    let leadId: string | null = null;
+    let orgId: string | null = null;
+
+    const { data: lead, error: leadError } = await supabase
+      .from('zoho_lead_submissions')
+      .select('id, org_id')
+      .ilike('email', sender.email)
+      .limit(1)
+      .maybeSingle();
+
+    if (leadError) {
+      console.error('[receive-crm-email] Error looking up lead:', leadError);
+    }
+
+    if (lead) {
+      leadId = lead.id;
+      orgId = lead.org_id || null;
+      console.log(`[receive-crm-email] Matched to lead: ${leadId}`);
+    } else {
+      console.log(`[receive-crm-email] No lead found for sender: ${sender.email}`);
+    }
+
+    // ========================================================================
+    // 4. Thread matching via In-Reply-To / References headers
+    // ========================================================================
+
+    let threadId: string | null = null;
+
+    // Try to match via In-Reply-To header first
+    if (inReplyTo) {
+      const { data: existingEmail } = await supabase
+        .from('crm_email_log')
+        .select('thread_id')
+        .eq('message_id', inReplyTo)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingEmail?.thread_id) {
+        threadId = existingEmail.thread_id;
+        console.log(`[receive-crm-email] Matched thread via In-Reply-To: ${threadId}`);
+      }
+    }
+
+    // If not found, try matching via References header
+    if (!threadId && referencesHeader) {
+      const referenceIds = referencesHeader.split(/\s+/).filter(Boolean);
+      for (const refId of referenceIds) {
+        const { data: refEmail } = await supabase
+          .from('crm_email_log')
+          .select('thread_id')
+          .eq('message_id', refId.trim())
+          .limit(1)
+          .maybeSingle();
+
+        if (refEmail?.thread_id) {
+          threadId = refEmail.thread_id;
+          console.log(`[receive-crm-email] Matched thread via References: ${threadId}`);
+          break;
+        }
+      }
+    }
+
+    // If no existing thread found, create one via RPC
+    if (!threadId && orgId) {
+      const allParticipants = [
+        sender.email,
+        ...toAddresses.map(a => a.email),
+        ...ccAddresses.map(a => a.email),
+      ];
+
+      const { data: newThreadId, error: threadError } = await supabase.rpc(
+        'get_or_create_email_thread',
+        {
+          p_org_id: orgId,
+          p_subject: payload.subject || '(No Subject)',
+          p_lead_id: leadId,
+          p_participants: allParticipants,
+        }
+      );
+
+      if (threadError) {
+        console.error('[receive-crm-email] Error creating thread:', threadError);
+      } else {
+        threadId = newThreadId;
+        console.log(`[receive-crm-email] Created/found thread via RPC: ${threadId}`);
+      }
+    }
+
+    // ========================================================================
+    // 5. Generate body preview
+    // ========================================================================
+
+    const bodyPreview = (payload.text || payload.html || '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 200);
+
+    // ========================================================================
+    // 6. Insert email record into crm_email_log
+    // ========================================================================
+
+    const { data: emailLog, error: insertError } = await supabase
+      .from('crm_email_log')
+      .insert({
+        org_id: orgId,
+        lead_id: leadId,
+        thread_id: threadId,
+        direction: 'inbound',
+        from_address: sender.email,
+        from_name: sender.name,
+        to_email: toAddresses[0]?.email || payload.to,
+        to_addresses: toAddresses.map(a => a.email),
+        cc_addresses: ccAddresses.map(a => a.email),
+        bcc_addresses: [],
+        subject: payload.subject || '(No Subject)',
+        body_preview: bodyPreview,
+        body_html: payload.html || null,
+        status: 'delivered',
+        is_read: false,
+        is_starred: false,
+        is_archived: false,
+        has_attachments: (payload.attachments && payload.attachments.length > 0) || false,
+        attachment_count: payload.attachments?.length || 0,
+        labels: [],
+        message_id: messageId || null,
+        in_reply_to: inReplyTo || null,
+        references_header: referencesHeader || null,
+        inbound_address: toAddresses[0]?.email || null,
+        metadata: {
+          sender_name: sender.name,
+          sender_email: sender.email,
+          has_text_body: !!payload.text,
+          has_html_body: !!payload.html,
+          received_at: new Date().toISOString(),
+        },
+        sent_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('[receive-crm-email] Error inserting email log:', insertError);
+      throw new Error(`Failed to save inbound email: ${insertError.message}`);
+    }
+
+    console.log(`[receive-crm-email] Email logged with ID: ${emailLog.id}`);
+
+    // ========================================================================
+    // 7. Handle attachments
+    // ========================================================================
+
+    if (payload.attachments && payload.attachments.length > 0 && emailLog) {
+      console.log(`[receive-crm-email] Processing ${payload.attachments.length} attachment(s)`);
+
+      for (const attachment of payload.attachments) {
+        try {
+          await processAttachment(supabase, emailLog.id, leadId, attachment);
+        } catch (attError) {
+          console.error(`[receive-crm-email] Error processing attachment ${attachment.filename}:`, attError);
+          // Continue with other attachments even if one fails
+        }
+      }
+    }
+
+    // ========================================================================
+    // 8. Create activity log for the lead
+    // ========================================================================
+
+    if (leadId) {
+      await supabase.from('lead_activities').insert({
+        lead_id: leadId,
+        activity_type: 'email',
+        title: `Inbound email: ${payload.subject || '(No Subject)'}`,
+        description: bodyPreview,
+        metadata: {
+          email_id: emailLog.id,
+          direction: 'inbound',
+          from: sender.email,
+          has_attachments: (payload.attachments?.length || 0) > 0,
+        },
+      });
+    }
+
+    // ========================================================================
+    // 9. Return success
+    // ========================================================================
+
+    console.log(`[receive-crm-email] Successfully processed inbound email from ${sender.email}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        email_id: emailLog.id,
+        thread_id: threadId,
+        lead_id: leadId,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error('[receive-crm-email] Error:', error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message || 'Unknown error',
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+});
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Parse an email address string like "John Smith <john@example.com>" or "john@example.com"
+ */
+function parseEmailAddress(raw: string): ParsedAddress {
+  if (!raw) return { name: '', email: '' };
+
+  // Match "Name <email>" format
+  const namedMatch = raw.match(/^(.+?)\s*<([^>]+)>$/);
+  if (namedMatch) {
+    return {
+      name: namedMatch[1].replace(/^["']|["']$/g, '').trim(),
+      email: namedMatch[2].trim().toLowerCase(),
+    };
+  }
+
+  // Plain email address
+  const email = raw.trim().toLowerCase();
+  return { name: '', email };
+}
+
+/**
+ * Parse a comma-separated list of email addresses
+ */
+function parseAddressList(raw: string): ParsedAddress[] {
+  if (!raw) return [];
+
+  // Split by comma, but not commas inside angle brackets
+  const addresses: string[] = [];
+  let current = '';
+  let inBracket = false;
+
+  for (const char of raw) {
+    if (char === '<') inBracket = true;
+    if (char === '>') inBracket = false;
+    if (char === ',' && !inBracket) {
+      if (current.trim()) addresses.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) addresses.push(current.trim());
+
+  return addresses.map(parseEmailAddress).filter(a => a.email);
+}
+
+/**
+ * Get a header value by name (case-insensitive)
+ */
+function getHeaderValue(headers: InboundHeader[], name: string): string | null {
+  const header = headers.find(
+    h => h.name.toLowerCase() === name.toLowerCase()
+  );
+  return header?.value || null;
+}
+
+/**
+ * Process and store an email attachment
+ */
+async function processAttachment(
+  supabase: ReturnType<typeof createClient>,
+  emailId: string,
+  leadId: string | null,
+  attachment: InboundAttachment
+): Promise<void> {
+  const { filename, content, content_type } = attachment;
+
+  // Decode base64 content
+  const binaryContent = Uint8Array.from(atob(content), c => c.charCodeAt(0));
+  const fileSize = binaryContent.length;
+
+  // Generate storage path: inbound/{date}/{emailId}/{filename}
+  const datePrefix = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const storagePath = `inbound/${datePrefix}/${emailId}/${filename}`;
+
+  // Upload to Supabase Storage
+  const { error: uploadError } = await supabase.storage
+    .from('email-attachments')
+    .upload(storagePath, binaryContent, {
+      contentType: content_type || 'application/octet-stream',
+      upsert: false,
+    });
+
+  if (uploadError) {
+    console.error(`[receive-crm-email] Storage upload error for ${filename}:`, uploadError);
+    throw uploadError;
+  }
+
+  // Get the public/signed URL
+  const { data: urlData } = supabase.storage
+    .from('email-attachments')
+    .getPublicUrl(storagePath);
+
+  // Create attachment record
+  const { error: recordError } = await supabase
+    .from('crm_email_attachments')
+    .insert({
+      email_id: emailId,
+      file_name: filename,
+      file_type: content_type || 'application/octet-stream',
+      file_size: fileSize,
+      storage_bucket: 'email-attachments',
+      storage_path: storagePath,
+      public_url: urlData?.publicUrl || null,
+    });
+
+  if (recordError) {
+    console.error(`[receive-crm-email] Error creating attachment record for ${filename}:`, recordError);
+    throw recordError;
+  }
+
+  console.log(`[receive-crm-email] Attachment stored: ${filename} (${fileSize} bytes)`);
+}

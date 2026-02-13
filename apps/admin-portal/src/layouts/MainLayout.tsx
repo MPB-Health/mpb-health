@@ -8,6 +8,7 @@ import {
   ClipboardList,
   LogOut,
   Bell,
+  Package,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -22,6 +23,7 @@ const navigation: NavItem[] = [
     icon: UserPlus,
     // badge is set dynamically below
   },
+  { name: 'Plan Management', href: '/plans', icon: Package },
   {
     name: 'Content',
     href: '#',

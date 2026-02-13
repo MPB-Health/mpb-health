@@ -6,7 +6,7 @@ import type { NotificationPreferences, ScoringWeightConfig } from '@mpbhealth/cr
 import { importContactsFromCSV, type ImportResult } from '../utils/csvImporter';
 
 export default function Settings() {
-  const { zohoService, pipelineStages, preferencesService, leadService, scoringService, refreshLeads, refreshDashboard } = useCRM();
+  const { zohoService, pipelineStages, preferencesService, leadService, scoringService, refreshLeads, refreshDashboard, zohoConfigured } = useCRM();
   const [zohoStatus, setZohoStatus] = useState<{
     configured: boolean;
     error?: string;
@@ -120,8 +120,10 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    checkZohoConnection();
-  }, []);
+    if (zohoConfigured) {
+      checkZohoConnection();
+    }
+  }, [zohoConfigured]);
 
   // CSV Import handlers
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,7 +214,8 @@ export default function Settings() {
         </p>
       </div>
 
-      {/* Zoho CRM Integration */}
+      {/* Zoho CRM Integration — only show when configured */}
+      {zohoConfigured && (
       <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -237,22 +240,12 @@ export default function Settings() {
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-surface-secondary rounded-lg">
             <div className="flex items-center space-x-3">
-              {zohoStatus?.configured ? (
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <Check className="w-5 h-5 text-green-600" />
-                </div>
-              ) : (
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <X className="w-5 h-5 text-red-600" />
-                </div>
-              )}
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <Check className="w-5 h-5 text-green-600" />
+              </div>
               <div>
                 <p className="font-medium text-th-text-primary">Connection Status</p>
-                <p className="text-sm text-th-text-tertiary">
-                  {zohoStatus?.configured
-                    ? 'Connected to Zoho CRM'
-                    : zohoStatus?.error || 'Not connected'}
-                </p>
+                <p className="text-sm text-th-text-tertiary">Connected to Zoho CRM</p>
               </div>
             </div>
           </div>
@@ -301,6 +294,7 @@ export default function Settings() {
           )}
         </div>
       </div>
+      )}
 
       {/* CSV Import */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-6">
@@ -584,6 +578,7 @@ export default function Settings() {
               />
             </label>
 
+            {zohoConfigured && (
             <label className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-th-text-primary">Auto-sync to Zoho</p>
@@ -598,6 +593,7 @@ export default function Settings() {
                 className="w-5 h-5 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
               />
             </label>
+            )}
 
             <hr className="border-th-border" />
 

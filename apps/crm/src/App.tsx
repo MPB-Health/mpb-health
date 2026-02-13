@@ -49,6 +49,16 @@ const QuickRateEstimateLeads = lazy(() => import('./pages/QuickRateEstimateLeads
 // Zoho Import
 const ZohoImport = lazy(() => import('./pages/ZohoImport'));
 
+// Email System
+const Inbox = lazy(() => import('./pages/Inbox'));
+const EmailSignatures = lazy(() => import('./pages/EmailSignatures'));
+const EmailSequences = lazy(() => import('./pages/EmailSequences'));
+
+// Enterprise Features
+const MeetingScheduler = lazy(() => import('./pages/MeetingScheduler'));
+const SalesActivityDashboard = lazy(() => import('./pages/SalesActivityDashboard'));
+const EmailDeliverability = lazy(() => import('./pages/EmailDeliverability'));
+
 // Loading component for Suspense
 function PageLoader() {
   return (
@@ -219,6 +229,16 @@ export default function App() {
                   }
                 />
                 <Route
+                  path="/email/inbox"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Inbox />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
                   path="/email/sent"
                   element={
                     <Guarded permission="email.read">
@@ -231,6 +251,56 @@ export default function App() {
                   element={
                     <Guarded permission="email.templates">
                       <EmailSchedules />
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/signatures"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <EmailSignatures />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/sequences"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <EmailSequences />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/deliverability"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <EmailDeliverability />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/meetings"
+                  element={
+                    <Guarded permission="tasks.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <MeetingScheduler />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/sales-activity"
+                  element={
+                    <Guarded permission="reports.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <SalesActivityDashboard />
+                      </Suspense>
                     </Guarded>
                   }
                 />

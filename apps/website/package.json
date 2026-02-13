@@ -17,6 +17,7 @@
     "@mpbhealth/auth": "workspace:*",
     "@mpbhealth/crm-core": "workspace:*",
     "@mpbhealth/database": "workspace:*",
+    "@mpbhealth/plans-core": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
     "@mpbhealth/config": "workspace:*",
     "@dnd-kit/core": "^6.3.1",

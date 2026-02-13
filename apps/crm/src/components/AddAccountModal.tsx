@@ -115,19 +115,30 @@ export function AddAccountModal({ open, onClose, onSuccess, account }: AddAccoun
   useEffect(() => {
     async function loadTeamMembers() {
       try {
-        const { data, error } = await supabase
-          .from('org_members')
-          .select('user_id, users:auth.users(id, email, raw_user_meta_data)')
-          .eq('org_id', activeOrgId);
+        // Step 1: Get org membership user IDs
+        const { data: memberships, error: memError } = await supabase
+          .from('org_memberships')
+          .select('user_id')
+          .eq('org_id', activeOrgId)
+          .eq('status', 'active');
 
-        if (!error && data) {
-          const members = data
-            .filter((m: any) => m.users)
-            .map((m: any) => ({
-              id: m.user_id,
-              email: m.users.email,
-              full_name: m.users.raw_user_meta_data?.full_name || null,
-            }));
+        if (memError || !memberships || memberships.length === 0) {
+          return;
+        }
+
+        // Step 2: Fetch profiles for those users (auth.users not exposed via PostgREST)
+        const userIds = memberships.map((m: any) => m.user_id);
+        const { data: profiles, error: profError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', userIds);
+
+        if (!profError && profiles) {
+          const members = profiles.map((p: any) => ({
+            id: p.id,
+            email: p.email || '',
+            full_name: p.full_name || null,
+          }));
           setTeamMembers(members);
         }
       } catch (err) {

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useOrg } from '../contexts/OrgContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useCRM } from '../contexts/CRMContext';
 
 interface ZohoLead {
   id: string;
@@ -40,6 +41,7 @@ interface ConnectionStatus {
 export default function ZohoImport() {
   const { activeOrgId } = useOrg();
   const { user } = useAuth();
+  const { zohoConfigured } = useCRM();
 
   const [status, setStatus] = useState<ConnectionStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -253,6 +255,28 @@ export default function ZohoImport() {
     }
     setSelectedLeads(newSelected);
   };
+
+  // If Zoho is not configured, show a friendly message instead of calling the
+  // edge function (which would produce a 400/500 error in the console).
+  if (!zohoConfigured) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-th-text-primary">Import from Zoho</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">
+            Import existing leads from your Zoho CRM account
+          </p>
+        </div>
+        <div className="text-center py-16 bg-surface-primary rounded-xl border border-th-border">
+          <AlertCircle className="w-12 h-12 text-th-text-tertiary mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-th-text-primary mb-2">Zoho CRM Not Configured</h2>
+          <p className="text-sm text-th-text-tertiary max-w-md mx-auto">
+            Zoho CRM integration requires API credentials to be configured. Contact your administrator to set up the Zoho CRM connection.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

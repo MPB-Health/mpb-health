@@ -133,7 +133,7 @@ export default function Dashboard() {
       />
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <button onClick={() => navigate('/inbox')} className="text-left h-full w-full">
           <MetricCard
             label="Inbox"
@@ -147,13 +147,6 @@ export default function Dashboard() {
           label="Upcoming Meetings"
           value={upcomingMeetings.length}
           icon={<Video className="w-5 h-5" />}
-          className="h-full"
-        />
-
-        <MetricCard
-          label="Training Progress"
-          value={`${trainingStats.completionPercentage.toFixed(0)}%`}
-          icon={<GraduationCap className="w-5 h-5" />}
           className="h-full"
         />
 

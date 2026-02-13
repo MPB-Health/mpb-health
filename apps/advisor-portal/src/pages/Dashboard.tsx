@@ -21,6 +21,9 @@ import {
   Phone,
   FileText as FileTextIcon,
   Bell,
+  ChevronLeft,
+  ChevronRight,
+  Play,
 } from 'lucide-react';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
@@ -69,6 +72,59 @@ const ENROLL_OPTIONS = [
 // Teams meeting link for recurring advisor meetings
 const TEAMS_MEETING_URL = ''; // TODO: Add Teams meeting link
 
+// Video slider data - matching the advisor playbook video slider
+const ADVISOR_VIDEOS = [
+  {
+    id: 'v0',
+    title: 'Zion Healthshare Contest',
+    vimeoId: '1121281554',
+    thumbnail: 'https://vumbnail.com/1121281554.jpg',
+  },
+  {
+    id: 'v1',
+    title: 'What is Medical Cost Sharing?',
+    vimeoId: '867328836',
+    thumbnail: 'https://advisor.mpb.health/wp-content/uploads/2025/02/Cream-Neutral-Minimalist-New-Business-Pitch-Deck-Presentation1.jpg',
+  },
+  {
+    id: 'v2',
+    title: 'MPB Health - Accessible, Flexible y Eficaz',
+    vimeoId: '999576729',
+    thumbnail: 'https://advisor.mpb.health/wp-content/uploads/2025/02/Cream-Neutral-Minimalist-New-Business-Pitch-Deck-Presentation3-1.jpg',
+  },
+  {
+    id: 'v3',
+    title: 'MPB.Health Membership Overview',
+    vimeoId: '560882524',
+    thumbnail: 'https://advisor.mpb.health/wp-content/uploads/2025/02/Cream-Neutral-Minimalist-New-Business-Pitch-Deck-Presentation6.jpg',
+  },
+  {
+    id: 'v4',
+    title: 'Premium Care',
+    vimeoId: '951207884',
+    thumbnail: 'https://advisor.mpb.health/wp-content/uploads/2025/02/Cream-Neutral-Minimalist-New-Business-Pitch-Deck-Presentation2.jpg',
+  },
+  {
+    id: 'v5',
+    title: 'Premium HSA',
+    vimeoId: '952446997',
+    thumbnail: 'https://advisor.mpb.health/wp-content/uploads/2025/02/Cream-Neutral-Minimalist-New-Business-Pitch-Deck-Presentation5.jpg',
+  },
+  {
+    id: 'v6',
+    title: 'App Video',
+    vimeoId: '889549950',
+    thumbnail: 'https://advisor.mpb.health/wp-content/uploads/2025/02/Cream-Neutral-Minimalist-New-Business-Pitch-Deck-Presentation4.jpg',
+  },
+  {
+    id: 'v7',
+    title: 'Advisor Landing Page Training',
+    vimeoId: '1098270274',
+    vimeoHash: '8a7898b305',
+    thumbnail: 'https://advisor.mpb.health/wp-content/uploads/2025/07/videos-overlay.jpg',
+  },
+];
+
 // Get the next N upcoming 2nd and 4th Tuesdays
 function getUpcomingRecurringMeetings(count = 4): Date[] {
   const meetings: Date[] = [];
@@ -115,6 +171,9 @@ export default function Dashboard() {
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const thumbnailScrollRef = useRef<HTMLDivElement>(null);
   const [shareModal, setShareModal] = useState<{ label: string; url: string } | null>(null);
   const [shareForm, setShareForm] = useState({ name: '', email: '' });
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
@@ -301,62 +360,107 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Continue Training */}
-        <div className="bg-surface-primary rounded-xl border border-th-border">
+        {/* Video Slider */}
+        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
-            <h2 className="font-semibold text-th-text-primary">Continue Training</h2>
+            <h2 className="font-semibold text-th-text-primary flex items-center gap-2">
+              <Video className="w-5 h-5 text-th-text-tertiary" />
+              Videos
+            </h2>
+            <span className="text-xs text-th-text-tertiary font-medium">
+              {activeVideoIndex + 1} / {ADVISOR_VIDEOS.length}
+            </span>
+          </div>
+
+          {/* Main Video Area */}
+          <div className="relative bg-black">
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+              {videoPlaying ? (
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src={`https://player.vimeo.com/video/${ADVISOR_VIDEOS[activeVideoIndex].vimeoId}${ADVISOR_VIDEOS[activeVideoIndex].vimeoHash ? '?h=' + ADVISOR_VIDEOS[activeVideoIndex].vimeoHash + '&' : '?'}autoplay=1&dnt=1&app_id=122963`}
+                  title={ADVISOR_VIDEOS[activeVideoIndex].title}
+                  frameBorder="0"
+                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
+                  allowFullScreen
+                />
+              ) : (
+                <button
+                  onClick={() => setVideoPlaying(true)}
+                  className="absolute inset-0 w-full h-full group cursor-pointer"
+                >
+                  <img
+                    src={ADVISOR_VIDEOS[activeVideoIndex].thumbnail}
+                    alt={ADVISOR_VIDEOS[activeVideoIndex].title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-white/90 group-hover:bg-white group-hover:scale-110 flex items-center justify-center transition-all shadow-lg">
+                      <Play className="w-7 h-7 text-gray-900 ml-1" fill="currentColor" />
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                    <p className="text-white font-medium text-sm">
+                      {ADVISOR_VIDEOS[activeVideoIndex].title}
+                    </p>
+                  </div>
+                </button>
+              )}
+            </div>
+
+            {/* Navigation Arrows */}
             <button
-              onClick={() => navigate('/training')}
-              className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center space-x-1"
+              onClick={() => {
+                setActiveVideoIndex((prev) => (prev === 0 ? ADVISOR_VIDEOS.length - 1 : prev - 1));
+                setVideoPlaying(false);
+              }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors z-10"
             >
-              <span>View All</span>
-              <ArrowRight className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => {
+                setActiveVideoIndex((prev) => (prev === ADVISOR_VIDEOS.length - 1 ? 0 : prev + 1));
+                setVideoPlaying(false);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors z-10"
+            >
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
-          <div className="p-5">
-            {inProgressModules.length > 0 ? (
-              <div className="space-y-4">
-                {inProgressModules.slice(0, 3).map((module) => {
-                  const progress = trainingProgress.find(
-                    (p) => p.module_id === module.id
-                  );
-                  return (
-                    <button
-                      key={module.id}
-                      onClick={() => navigate(`/training/${module.id}`)}
-                      className="w-full flex items-center space-x-4 p-3 rounded-lg hover:bg-surface-tertiary transition-colors text-left"
-                    >
-                      <div className="w-12 h-12 bg-th-accent-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <GraduationCap className="w-6 h-6 text-th-accent-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-th-text-primary truncate">
-                          {module.title}
-                        </p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Clock className="w-4 h-4 text-th-text-tertiary" />
-                          <span className="text-sm text-th-text-tertiary">
-                            {progress?.time_spent_minutes || 0} min spent
-                          </span>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-th-text-tertiary" />
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-th-text-tertiary">
-                <GraduationCap className="w-12 h-12 mx-auto mb-3 text-th-text-tertiary" />
-                <p>No modules in progress</p>
+
+          {/* Thumbnail Strip */}
+          <div className="relative border-t border-th-border-subtle">
+            <div
+              ref={thumbnailScrollRef}
+              className="flex gap-1 p-2 overflow-x-auto scrollbar-thin"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {ADVISOR_VIDEOS.map((video, index) => (
                 <button
-                  onClick={() => navigate('/training')}
-                  className="mt-3 text-th-accent-600 hover:text-th-accent-700 font-medium"
+                  key={video.id}
+                  onClick={() => {
+                    setActiveVideoIndex(index);
+                    setVideoPlaying(false);
+                  }}
+                  className={`relative flex-shrink-0 w-24 h-14 rounded-md overflow-hidden transition-all ${
+                    index === activeVideoIndex
+                      ? 'ring-2 ring-th-accent-500 opacity-100'
+                      : 'opacity-60 hover:opacity-90'
+                  }`}
                 >
-                  Start Training
+                  <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    className="w-full h-full object-cover"
+                  />
+                  {index === activeVideoIndex && (
+                    <div className="absolute inset-0 border-2 border-th-accent-500 rounded-md" />
+                  )}
                 </button>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </div>
 

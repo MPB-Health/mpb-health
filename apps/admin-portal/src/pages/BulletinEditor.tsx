@@ -18,6 +18,8 @@ import {
   Tag,
   FileText,
   Trash2,
+  Code,
+  Type,
 } from 'lucide-react';
 import {
   bulletinService,
@@ -39,6 +41,8 @@ export default function BulletinEditor() {
   const [categories, setCategories] = useState<BulletinCategory[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editorMode, setEditorMode] = useState<'visual' | 'html'>('visual');
+  const [showModeWarning, setShowModeWarning] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -84,6 +88,10 @@ export default function BulletinEditor() {
           is_featured: bulletin.is_featured || false,
           published_date: bulletin.published_date || '',
         });
+        // Auto-detect inline styles and default to HTML mode to preserve them
+        if (bulletin.content && /style\s*=\s*"/.test(bulletin.content)) {
+          setEditorMode('html');
+        }
       } else {
         toast.error('Bulletin not found');
         navigate('/content/bulletins');
@@ -292,15 +300,65 @@ export default function BulletinEditor() {
 
           {/* Content Editor */}
           <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-            <label className="block text-sm font-medium text-th-text-secondary mb-2">
-              Content
-            </label>
-            <RichTextEditor
-              content={formData.content}
-              onChange={(html) => setFormData({ ...formData, content: html })}
-              placeholder="Write your bulletin content..."
-              minHeight="400px"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-th-text-secondary">
+                Content
+              </label>
+              <div className="flex items-center gap-1 bg-surface-tertiary rounded-lg p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (editorMode === 'html') {
+                      setShowModeWarning(true);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    editorMode === 'visual'
+                      ? 'bg-surface-primary text-th-text-primary shadow-sm'
+                      : 'text-th-text-tertiary hover:text-th-text-secondary'
+                  }`}
+                >
+                  <Type className="w-3.5 h-3.5" />
+                  Visual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditorMode('html')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    editorMode === 'html'
+                      ? 'bg-surface-primary text-th-text-primary shadow-sm'
+                      : 'text-th-text-tertiary hover:text-th-text-secondary'
+                  }`}
+                >
+                  <Code className="w-3.5 h-3.5" />
+                  HTML
+                </button>
+              </div>
+            </div>
+
+            {editorMode === 'html' && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                HTML mode preserves inline styles. Switching to Visual mode will strip inline styles.
+              </p>
+            )}
+
+            {editorMode === 'visual' ? (
+              <RichTextEditor
+                content={formData.content}
+                onChange={(html) => setFormData({ ...formData, content: html })}
+                placeholder="Write your bulletin content..."
+                minHeight="400px"
+              />
+            ) : (
+              <textarea
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                placeholder="Write or paste HTML content..."
+                className="w-full px-4 py-3 bg-gray-900 text-green-400 font-mono text-sm border border-th-border rounded-xl focus:outline-none focus:ring-2 focus:ring-th-accent-500 resize-y"
+                style={{ minHeight: '400px' }}
+                spellCheck={false}
+              />
+            )}
           </div>
         </div>
 
@@ -432,6 +490,38 @@ export default function BulletinEditor() {
           </div>
         </div>
       </div>
+
+      {/* Mode Switch Warning Modal */}
+      {showModeWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface-primary rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-th-text-primary mb-2">Switch to Visual Editor?</h3>
+            <p className="text-th-text-secondary mb-2">
+              The Visual Editor will <strong>strip all inline styles</strong> from your content. This means any custom formatting (colors, fonts, spacing, etc.) will be lost.
+            </p>
+            <p className="text-th-text-secondary mb-6">
+              This cannot be undone. Only switch if you want to re-format the content from scratch.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowModeWarning(false)}
+                className="px-4 py-2 border border-th-border rounded-xl text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+              >
+                Stay in HTML
+              </button>
+              <button
+                onClick={() => {
+                  setEditorMode('visual');
+                  setShowModeWarning(false);
+                }}
+                className="px-4 py-2 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors"
+              >
+                Switch Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

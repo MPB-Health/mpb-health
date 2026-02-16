@@ -22,13 +22,13 @@ export const OptimizedHeader: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const location = useLocation();
-  const { user, profile, signOut } = useAuth();
+  const { user, isAdmin, isAdvisor, signOut } = useAuth();
 
   const dropdownRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const lastScrollY = useRef(0);
 
   const isActive = (path: string) => location.pathname === path;
-  const userRole = profile?.role || (user ? 'member' : 'guest');
+  const userRole = isAdmin ? 'admin' : isAdvisor ? 'advisor' : user ? 'member' : 'guest';
   const navigationItems = getNavigationByRole(userRole as any);
 
   useEffect(() => {
@@ -168,10 +168,10 @@ export const OptimizedHeader: React.FC = () => {
                         />
                       </button>
                       <MegaMenuV2
-                        items={[item]}
+                        items={[{ ...item, external: item.external ?? false } as any]}
                         isOpen={isOpen}
                         onClose={() => setOpenDropdown(null)}
-                        columns={item.children.length <= 4 ? 2 : 3}
+                        columns={(item.children?.length ?? 0) <= 4 ? 2 : 3}
                       />
                     </div>
                   );

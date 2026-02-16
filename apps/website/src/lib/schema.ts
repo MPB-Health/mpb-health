@@ -11,10 +11,10 @@ export type MembershipType = typeof MEMBERSHIP_TYPES[number];
 export const rateCalculatorSchema = z.object({
   state: z.string().min(2, 'State is required'),
   householdType: z.enum(MEMBERSHIP_TYPES, {
-    errorMap: () => ({ message: 'Please select a membership type' }),
+    error: () => ({ message: 'Please select a membership type' }),
   }),
   primaryAge: z
-    .number({ invalid_type_error: 'Age is required' })
+    .number({ message: 'Age is required' })
     .min(18, 'Primary member must be at least 18')
     .max(64, 'Primary member must be 64 or younger'),
   spouseAge: z
@@ -32,15 +32,15 @@ export const rateCalculatorSchema = z.object({
   primaryTobacco: z.boolean().default(false),
   spouseTobacco: z.boolean().default(false),
   selectedPlan: z.enum(
-    ['essentials', 'mec-essentials', 'care-plus', 'direct', 'secure-hsa'],
+    ['essentials', 'mec-essentials', 'care-plus', 'direct', 'secure-hsa'] as const,
     {
-      errorMap: () => ({ message: 'Please select a plan' }),
+      error: () => ({ message: 'Please select a plan' }),
     }
   ),
   benefitTier: z.string().optional(),
-  currentMonthly: z.number().optional().nullable().or(z.nan()).transform((val) => {
-    if (isNaN(val) || val === null || val === undefined) return undefined;
-    return val;
+  currentMonthly: z.number().optional().nullable().or(z.nan()).transform((val: any) => {
+    if (val === null || val === undefined || (typeof val === 'number' && isNaN(val))) return undefined;
+    return val as number;
   }),
 }).refine(
   (data) => {
@@ -102,10 +102,10 @@ export interface RateCalculatorInput {
 export const comparisonCalculatorSchema = z.object({
   state: z.string().min(2, 'State is required'),
   householdType: z.enum(MEMBERSHIP_TYPES, {
-    errorMap: () => ({ message: 'Please select a membership type' }),
+    error: () => ({ message: 'Please select a membership type' }),
   }),
   primaryAge: z
-    .number({ invalid_type_error: 'Age is required' })
+    .number({ message: 'Age is required' })
     .min(18, 'Primary member must be at least 18')
     .max(64, 'Primary member must be 64 or younger'),
   spouseAge: z
@@ -122,9 +122,9 @@ export const comparisonCalculatorSchema = z.object({
     .default(0),
   primaryTobacco: z.boolean().default(false),
   spouseTobacco: z.boolean().default(false),
-  currentMonthly: z.number().optional().nullable().or(z.nan()).transform((val) => {
-    if (isNaN(val) || val === null || val === undefined) return undefined;
-    return val;
+  currentMonthly: z.number().optional().nullable().or(z.nan()).transform((val: any) => {
+    if (val === null || val === undefined || (typeof val === 'number' && isNaN(val))) return undefined;
+    return val as number;
   }),
 }).refine(
   (data) => {
@@ -182,18 +182,18 @@ export interface RateEstimate {
 
 export const businessRateCalculatorSchema = z.object({
   state: z.string().min(2, 'State is required'),
-  businessType: z.enum(['sole-proprietor', 'llc', 'corporation', 'partnership'], {
-    errorMap: () => ({ message: 'Please select a business type' }),
+  businessType: z.enum(['sole-proprietor', 'llc', 'corporation', 'partnership'] as const, {
+    error: () => ({ message: 'Please select a business type' }),
   }),
   employeeCount: z
-    .number({ invalid_type_error: 'Number of employees is required' })
+    .number({ message: 'Number of employees is required' })
     .min(1, 'Must have at least 1 employee')
     .max(100, 'Maximum 100 employees'),
   householdType: z.enum(MEMBERSHIP_TYPES, {
-    errorMap: () => ({ message: 'Please select a membership type' }),
+    error: () => ({ message: 'Please select a membership type' }),
   }),
   primaryAge: z
-    .number({ invalid_type_error: 'Age is required' })
+    .number({ message: 'Age is required' })
     .min(18, 'Primary member must be at least 18')
     .max(64, 'Primary member must be 64 or younger'),
   spouseAge: z
@@ -210,13 +210,13 @@ export const businessRateCalculatorSchema = z.object({
     .default(0),
   primaryTobacco: z.boolean().default(false),
   spouseTobacco: z.boolean().default(false),
-  selectedPlan: z.enum(['mec-essentials', 'secure-hsa'], {
-    errorMap: () => ({ message: 'Please select a plan' }),
+  selectedPlan: z.enum(['mec-essentials', 'secure-hsa'] as const, {
+    error: () => ({ message: 'Please select a plan' }),
   }),
   benefitTier: z.string().optional(),
-  currentMonthly: z.number().optional().nullable().or(z.nan()).transform((val) => {
-    if (isNaN(val) || val === null || val === undefined) return undefined;
-    return val;
+  currentMonthly: z.number().optional().nullable().or(z.nan()).transform((val: any) => {
+    if (val === null || val === undefined || (typeof val === 'number' && isNaN(val))) return undefined;
+    return val as number;
   }),
 }).refine(
   (data) => {

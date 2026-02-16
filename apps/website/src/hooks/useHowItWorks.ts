@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { HOW_IT_WORKS_STEPS } from '../lib/onboarding/howItWorksSteps.tsx';
+import { HOW_IT_WORKS_STEPS } from '../lib/onboarding/howItWorksSteps';
 
 const AUTO_ADVANCE_MS = 6000;
 

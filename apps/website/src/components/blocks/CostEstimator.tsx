@@ -36,7 +36,7 @@ const CostEstimator: React.FC = () => {
     const calculationResult = calculateCosts({
       householdSize,
       members,
-      coverage: membershipLevel
+      membershipLevel
     });
 
     setResult(calculationResult);

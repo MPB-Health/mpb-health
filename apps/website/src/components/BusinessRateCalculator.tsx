@@ -82,7 +82,7 @@ export default function BusinessRateCalculator() {
     setValue,
     formState: { errors },
   } = useForm<BusinessRateCalculatorInput>({
-    resolver: zodResolver(businessRateCalculatorSchema),
+    resolver: zodResolver(businessRateCalculatorSchema) as any,
     defaultValues: {
       businessType: 'sole-proprietor',
       householdType: 'member-only',
@@ -122,7 +122,7 @@ export default function BusinessRateCalculator() {
     setProgress((filledFields / totalFields) * 100);
   }, [watchedState, watchedBusinessType, watchedEmployeeCount, watchedPrimaryAge, watchedSelectedPlan, watchedHouseholdType, watch]);
 
-  const onSubmit = (data: BusinessRateCalculatorInput) => {
+  const onSubmit = (data: BusinessRateCalculatorInput): void => {
     setIsCalculating(true);
 
     if (calculationTimeout != null) {

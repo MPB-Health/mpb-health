@@ -298,12 +298,12 @@ WHERE content_type = 'bulletin'
   AND content NOT LIKE '%font-size: 32px%';
 
 -- Clean up: remove any duplicate that was inserted by migration 160000 if the original is now formatted
--- Keep only one copy — the one we just updated
+-- Keep only one copy — the one we just updated (use id::text for MIN since UUID lacks a native MIN aggregate)
 DELETE FROM advisor_content
 WHERE content_type = 'bulletin'
   AND slug = 'advisor-bulletin-august-14-2025'
-  AND id NOT IN (
-    SELECT MIN(id) FROM advisor_content
+  AND id::text NOT IN (
+    SELECT MIN(id::text) FROM advisor_content
     WHERE content_type = 'bulletin'
       AND content LIKE '%font-size: 32px%'
       AND content LIKE '%Onward and upward%'

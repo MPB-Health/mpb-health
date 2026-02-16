@@ -21,12 +21,12 @@ import { cn } from '../../lib/utils';
 const DashboardToggle: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isSuperAdmin, isAdmin, isAdvisor, rolesLoading } = useAuth();
+  const { user, isSuperAdmin, isAdmin, isAdvisor, isCrmUser, rolesLoading } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Don't show if user is not logged in or has no elevated roles
   if (!user || rolesLoading) return null;
-  if (!isSuperAdmin && !isAdmin && !isAdvisor) return null;
+  if (!isSuperAdmin && !isAdmin && !isAdvisor && !isCrmUser) return null;
 
   // Determine current portal
   const currentPath = location.pathname;
@@ -72,7 +72,7 @@ const DashboardToggle: React.FC = () => {
       shortLabel: 'CRM',
       icon: Building2,
       path: getPortalUrl('crm'),
-      canAccess: isSuperAdmin || isAdmin,
+      canAccess: isSuperAdmin || isCrmUser,
       color: 'bg-indigo-600 hover:bg-indigo-700',
       activeColor: 'bg-indigo-700',
       external: true,

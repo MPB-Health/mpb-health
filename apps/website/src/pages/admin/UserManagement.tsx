@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Crown,
   Briefcase,
+  Building2,
   Mail,
   Key,
   Eye,
@@ -49,8 +50,11 @@ const RoleIcons: Record<UserRole, React.FC<{ className?: string }>> = {
   super_admin: Crown,
   admin: ShieldCheck,
   advisor: Briefcase,
+  crm_user: Building2,
   member: User,
 };
+
+const DEFAULT_ORG_ID = '00000000-0000-4000-a000-000000000001';
 
 // ============================================================================
 // Main Component
@@ -278,12 +282,45 @@ const UserManagement: React.FC = () => {
     try {
       const result = await userRolesService.toggleRole(userId, role, user?.id);
       if (result.success) {
-        toast.success(result.data ? `${ROLE_LABELS[role]} granted` : `${ROLE_LABELS[role]} revoked`);
+        const wasGranted = result.data;
+        toast.success(wasGranted ? `${ROLE_LABELS[role]} granted` : `${ROLE_LABELS[role]} revoked`);
+
+        // Sync org_memberships when crm_user role is toggled
+        if (role === 'crm_user') {
+          try {
+            if (wasGranted) {
+              // Grant: add user to default org with advisor role
+              await supabase
+                .from('org_memberships')
+                .upsert(
+                  {
+                    user_id: userId,
+                    org_id: DEFAULT_ORG_ID,
+                    role: 'advisor',
+                    status: 'active',
+                    joined_at: new Date().toISOString(),
+                  },
+                  { onConflict: 'user_id,org_id' }
+                );
+            } else {
+              // Revoke: remove user from default org
+              await supabase
+                .from('org_memberships')
+                .update({ status: 'left' })
+                .eq('user_id', userId)
+                .eq('org_id', DEFAULT_ORG_ID);
+            }
+          } catch (orgError) {
+            console.error('Error syncing org membership:', orgError);
+            toast.error('CRM role updated but org membership sync failed');
+          }
+        }
+
         // Update local state
         setUsers((prev) =>
           prev.map((u) => {
             if (u.id === userId) {
-              const newRoles = result.data
+              const newRoles = wasGranted
                 ? [...u.roles, role]
                 : u.roles.filter((r) => r !== role);
               return { ...u, roles: newRoles };
@@ -318,6 +355,7 @@ const UserManagement: React.FC = () => {
     superAdmins: users.filter((u) => u.roles.includes('super_admin')).length,
     admins: users.filter((u) => u.roles.includes('admin')).length,
     advisors: users.filter((u) => u.roles.includes('advisor')).length,
+    crmUsers: users.filter((u) => u.roles.includes('crm_user')).length,
   };
 
   // Access check
@@ -375,7 +413,7 @@ const UserManagement: React.FC = () => {
         )}
 
         {/* Stats */}
-        <div className="grid md:grid-cols-4 gap-4 mb-6">
+        <div className="grid md:grid-cols-5 gap-4 mb-6">
           <Card className="p-4 bg-slate-50 border-l-4 border-slate-600">
             <div className="flex items-center gap-3">
               <Users className="h-8 w-8 text-slate-600" />
@@ -409,6 +447,15 @@ const UserManagement: React.FC = () => {
               <div>
                 <div className="text-sm font-medium text-neutral-600">Advisors</div>
                 <div className="text-2xl font-bold text-neutral-900">{stats.advisors}</div>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 bg-indigo-50 border-l-4 border-indigo-600">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-8 w-8 text-indigo-600" />
+              <div>
+                <div className="text-sm font-medium text-neutral-600">CRM Users</div>
+                <div className="text-2xl font-bold text-neutral-900">{stats.crmUsers}</div>
               </div>
             </div>
           </Card>
@@ -449,6 +496,7 @@ const UserManagement: React.FC = () => {
                       {role === 'super_admin' && 'All portals + User Management'}
                       {role === 'admin' && 'Admin portal access'}
                       {role === 'advisor' && 'Advisor portal access'}
+                      {role === 'crm_user' && 'CRM portal access'}
                       {role === 'member' && 'Member portal access'}
                     </div>
                   </div>
@@ -496,6 +544,10 @@ const UserManagement: React.FC = () => {
                     <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
                       <Briefcase className="h-4 w-4 inline mr-1" />
                       Advisor
+                    </th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
+                      <Building2 className="h-4 w-4 inline mr-1" />
+                      CRM User
                     </th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
                       <Key className="h-4 w-4 inline mr-1" />
@@ -569,6 +621,14 @@ const UserManagement: React.FC = () => {
                           onToggle={() => handleToggleRole(u.id, 'advisor')}
                         />
                       </td>
+                      {/* CRM User Toggle */}
+                      <td className="px-4 py-4 text-center">
+                        <RoleToggle
+                          hasRole={u.roles.includes('crm_user')}
+                          isSaving={saving === `${u.id}-crm_user`}
+                          onToggle={() => handleToggleRole(u.id, 'crm_user')}
+                        />
+                      </td>
                       {/* Password Actions */}
                       <td className="px-4 py-4">
                         <div className="flex items-center justify-center gap-2">
@@ -627,6 +687,10 @@ const UserManagement: React.FC = () => {
             <li className="flex items-start gap-2">
               <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
               <span>You <strong>cannot remove your own Super Admin</strong> role for safety</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <span><strong>CRM User</strong> toggle grants access to the CRM portal with default advisor permissions</span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />

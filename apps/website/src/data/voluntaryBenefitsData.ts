@@ -36,6 +36,7 @@ export interface VoluntaryBenefit {
   detailedDescription: string;
   keyFeatures: BenefitFeature[];
   membership: string[];
+  coverage: string[];
   pricingTiers?: BenefitPricingTier[];
   eligibility: string[];
   faqs: BenefitFAQ[];
@@ -78,6 +79,13 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       'Benefits continue during recovery period',
       'No restrictions on how benefits are used',
       'Portable membership that follows you between jobs'
+    ],
+    coverage: [
+      'Short-term disability benefits',
+      'Long-term disability benefits',
+      'Income replacement during disability',
+      'Partial income protection',
+      'Recovery period coverage'
     ],
     pricingTiers: [
       {
@@ -149,6 +157,14 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       'Kidney failure requiring dialysis',
       'Paralysis and loss of limbs',
       'Severe burns and other traumatic injuries'
+    ],
+    coverage: [
+      'Heart attack and stroke',
+      'Cancer diagnosis and treatment',
+      'Major organ transplant',
+      'Kidney failure and dialysis',
+      'Paralysis and loss of limbs',
+      'Severe burns and traumatic injuries'
     ],
     pricingTiers: [
       {
@@ -222,6 +238,14 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       'LASIK and PRK surgery discounts',
       'Large network of providers'
     ],
+    coverage: [
+      'Annual comprehensive eye exams',
+      'Prescription eyeglasses (frames and lenses)',
+      'Contact lenses',
+      'Lens enhancements',
+      'LASIK and PRK surgery discounts',
+      'Additional pairs discounts'
+    ],
     pricingTiers: [
       {
         name: 'Individual',
@@ -292,6 +316,14 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       'Living benefits for terminal illness (on some policies)',
       'Accidental death and dismemberment riders available',
       'Waiver of premium if disabled'
+    ],
+    coverage: [
+      'Death benefit for beneficiaries',
+      'Terminal illness living benefits',
+      'Accidental death benefits',
+      'Dismemberment benefits',
+      'Waiver of premium',
+      'Cash value accumulation (whole life)'
     ],
     pricingTiers: [
       {
@@ -364,6 +396,15 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       'Emergency room visit benefits',
       'Ambulance transportation',
       'Outpatient surgery benefits'
+    ],
+    coverage: [
+      'Hospital admission benefits',
+      'Daily hospital stay payments',
+      'ICU stay benefits',
+      'Surgical procedure benefits',
+      'Emergency room visits',
+      'Ambulance transportation',
+      'Outpatient surgery'
     ],
     pricingTiers: [
       {
@@ -440,6 +481,18 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       'Prosthetic devices',
       'Death and dismemberment benefits'
     ],
+    coverage: [
+      'Emergency room treatment',
+      'Urgent care visits',
+      'Fractures and dislocations',
+      'Burns and lacerations',
+      'Ambulance transportation',
+      'Hospitalization',
+      'Surgery',
+      'Physical therapy',
+      'Prosthetic devices',
+      'Death and dismemberment'
+    ],
     pricingTiers: [
       {
         name: 'Individual',
@@ -511,6 +564,14 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       'Periodontal (gum) disease treatment',
       'Orthodontics (braces/aligners) on select plans',
       'Large network of dentists nationwide'
+    ],
+    coverage: [
+      'Preventive care (cleanings, exams, X-rays)',
+      'Basic procedures (fillings, extractions)',
+      'Major services (crowns, bridges, root canals)',
+      'Emergency dental care',
+      'Periodontal treatment',
+      'Orthodontics (on select plans)'
     ],
     pricingTiers: [
       {
@@ -584,6 +645,16 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       'Cancer treatment',
       'Hereditary and congenital conditions',
       'Optional wellness membership: vaccines, checkups, dental cleaning'
+    ],
+    coverage: [
+      'Emergency accidents and injuries',
+      'Illnesses and chronic conditions',
+      'Surgery and hospitalization',
+      'Diagnostic tests and imaging',
+      'Prescription medications',
+      'Cancer treatment',
+      'Hereditary conditions',
+      'Wellness care (optional)'
     ],
     pricingTiers: [
       {

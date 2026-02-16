@@ -50,7 +50,7 @@ export function getPlanBadges(plan: PlanWithDetails) {
     badges.push({ label: 'HSA Compatible', variant: 'outline' });
   }
 
-  if (plan.sharing_details?.has_international_membership) {
+  if (plan.sharing_details?.has_international_coverage) {
     badges.push({ label: 'International Membership', variant: 'outline' });
   }
 
@@ -120,7 +120,7 @@ export function formatSharingDetails(plan: PlanWithDetails): string[] {
     details.push(`${sharing.maternity_waiting_months}-month maternity waiting period`);
   }
 
-  if (sharing.has_international_membership) {
+  if (sharing.has_international_coverage) {
     details.push('International travel protection');
   }
 

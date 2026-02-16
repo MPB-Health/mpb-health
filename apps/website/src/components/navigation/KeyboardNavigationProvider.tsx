@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface KeyboardNavigationContextType {
   isKeyboardMode: boolean;
-  setKeyboardMode: (value: boolean) => void;
+  setIsKeyboardMode: (value: boolean) => void;
 }
 
 const KeyboardNavigationContext = createContext<KeyboardNavigationContextType | undefined>(
@@ -51,7 +51,7 @@ export const KeyboardNavigationProvider: React.FC<{ children: React.ReactNode }>
   }, [isKeyboardMode]);
 
   return (
-    <KeyboardNavigationContext.Provider value={{ isKeyboardMode, setKeyboardMode }}>
+    <KeyboardNavigationContext.Provider value={{ isKeyboardMode, setIsKeyboardMode }}>
       {children}
     </KeyboardNavigationContext.Provider>
   );

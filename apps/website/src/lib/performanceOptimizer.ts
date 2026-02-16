@@ -59,12 +59,15 @@ interface PerformanceMetrics {
 
 export const reportWebVitals = (onPerfEntry?: (metric: any) => void): void => {
   if (onPerfEntry && typeof onPerfEntry === 'function') {
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+    // @ts-ignore - web-vitals may not be installed
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }: any) => {
       getCLS(onPerfEntry);
       getFID(onPerfEntry);
       getFCP(onPerfEntry);
       getLCP(onPerfEntry);
       getTTFB(onPerfEntry);
+    }).catch(() => {
+      // Silently fail if web-vitals is not available
     });
   }
 };

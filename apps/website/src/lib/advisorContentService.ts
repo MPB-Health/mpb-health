@@ -112,11 +112,13 @@ export const advisorContentService = {
         advisor_id: advisorId
       });
 
-    await supabase.rpc('increment', {
-      table_name: 'advisor_content',
-      row_id: contentId,
-      column_name: 'view_count'
-    }).catch(() => {
+    try {
+      await supabase.rpc('increment', {
+        table_name: 'advisor_content',
+        row_id: contentId,
+        column_name: 'view_count'
+      });
+    } catch {
       // Fallback if increment function doesn't exist
       supabase
         .from('advisor_content')
@@ -132,7 +134,7 @@ export const advisorContentService = {
               .then(() => {});
           }
         });
-    });
+    }
   },
 
   async getBookmarks(advisorId: string): Promise<AdvisorContent[]> {

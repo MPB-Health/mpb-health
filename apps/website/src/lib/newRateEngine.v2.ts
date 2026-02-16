@@ -141,7 +141,7 @@ export function estimateMonthly(input: RateCalculatorInput, opts?: RateOptions):
     throw new Error(`Age band not found: ${ageBand}`);
   }
 
-  const hasSpouse = input.householdType !== 'individual' && input.spouseAge !== undefined && input.spouseAge !== null;
+  const hasSpouse = (input.householdType === 'member-spouse' || input.householdType === 'member-family') && input.spouseAge !== undefined && input.spouseAge !== null;
   const hasDependents = input.dependentsCount > 0;
   const membershipType = getMembershipType(input.householdType, hasSpouse, hasDependents);
 

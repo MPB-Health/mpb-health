@@ -62,6 +62,7 @@ export {
   isSuperAdmin,
   isAdmin,
   isAdvisor,
+  isCrmUser,
   getAllUsersWithRoles,
   searchUsersByEmail,
   grantRole,
@@ -70,6 +71,7 @@ export {
   toggleRole,
   canAccessAdminPortal,
   canAccessAdvisorPortal,
+  canAccessCrmPortal,
   canAccessMemberPortal,
   getAccessiblePortals,
 } from './services/userRolesService';

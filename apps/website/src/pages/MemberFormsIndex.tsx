@@ -90,7 +90,7 @@ export default function MemberFormsIndex() {
                               </Button>
                             </Link>
                             <Link to={form.slug}>
-                              <Button variant="outline" size="default">
+                              <Button variant="outline" size="md">
                                 <Share2 className="w-4 h-4" />
                               </Button>
                             </Link>

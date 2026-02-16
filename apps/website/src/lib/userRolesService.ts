@@ -8,7 +8,7 @@ import { supabase } from './supabase';
 // Types
 // ============================================================================
 
-export type UserRole = 'super_admin' | 'admin' | 'advisor' | 'member';
+export type UserRole = 'super_admin' | 'admin' | 'advisor' | 'member' | 'crm_user';
 
 export interface UserRoleRecord {
   id: string;
@@ -43,13 +43,15 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Admin',
   advisor: 'Advisor',
   member: 'Member',
+  crm_user: 'CRM User',
 };
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  super_admin: 'Full access to all portals (Admin, Advisor, Member)',
+  super_admin: 'Full access to all portals (Admin, Advisor, Member, CRM)',
   admin: 'Access to Admin portal',
   advisor: 'Access to Advisor portal',
   member: 'Access to Member portal',
+  crm_user: 'Access to CRM portal',
 };
 
 export const ROLE_COLORS: Record<UserRole, string> = {
@@ -57,9 +59,10 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   admin: 'bg-blue-100 text-blue-800 border-blue-200',
   advisor: 'bg-green-100 text-green-800 border-green-200',
   member: 'bg-gray-100 text-gray-800 border-gray-200',
+  crm_user: 'bg-indigo-100 text-indigo-800 border-indigo-200',
 };
 
-export const ALL_ROLES: UserRole[] = ['super_admin', 'admin', 'advisor', 'member'];
+export const ALL_ROLES: UserRole[] = ['super_admin', 'admin', 'advisor', 'crm_user', 'member'];
 
 // ============================================================================
 // Cache
@@ -372,6 +375,14 @@ export async function toggleRole(
 // ============================================================================
 
 /**
+ * Check if a user is a CRM user (crm_user or super_admin)
+ */
+export async function isCrmUser(userId: string): Promise<boolean> {
+  const roles = await getUserRoles(userId);
+  return roles.includes('crm_user') || roles.includes('super_admin');
+}
+
+/**
  * Check if user can access admin portal
  */
 export async function canAccessAdminPortal(userId: string): Promise<boolean> {
@@ -385,6 +396,14 @@ export async function canAccessAdminPortal(userId: string): Promise<boolean> {
 export async function canAccessAdvisorPortal(userId: string): Promise<boolean> {
   const roles = await getUserRoles(userId);
   return roles.includes('super_admin') || roles.includes('advisor');
+}
+
+/**
+ * Check if user can access CRM portal
+ */
+export async function canAccessCrmPortal(userId: string): Promise<boolean> {
+  const roles = await getUserRoles(userId);
+  return roles.includes('super_admin') || roles.includes('crm_user');
 }
 
 /**
@@ -403,10 +422,11 @@ export async function getAccessiblePortals(userId: string): Promise<string[]> {
   const portals: string[] = ['member']; // Everyone gets member access
 
   if (roles.includes('super_admin')) {
-    portals.push('admin', 'advisor');
+    portals.push('admin', 'advisor', 'crm');
   } else {
     if (roles.includes('admin')) portals.push('admin');
     if (roles.includes('advisor')) portals.push('advisor');
+    if (roles.includes('crm_user')) portals.push('crm');
   }
 
   return portals;
@@ -423,6 +443,7 @@ export const userRolesService = {
   isSuperAdmin,
   isAdmin,
   isAdvisor,
+  isCrmUser,
   getAllUsersWithRoles,
   searchUsersByEmail,
   grantRole,
@@ -431,6 +452,7 @@ export const userRolesService = {
   toggleRole,
   canAccessAdminPortal,
   canAccessAdvisorPortal,
+  canAccessCrmPortal,
   canAccessMemberPortal,
   getAccessiblePortals,
   invalidateCache,

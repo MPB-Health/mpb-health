@@ -57,7 +57,7 @@ export default function RateCalculator() {
     setValue,
     formState: { errors },
   } = useForm<ComparisonCalculatorInput>({
-    resolver: zodResolver(comparisonCalculatorSchema),
+    resolver: zodResolver(comparisonCalculatorSchema) as any,
     defaultValues: {
       householdType: 'member-only',
       dependentsCount: 0,
@@ -87,7 +87,7 @@ export default function RateCalculator() {
     setProgress((filledFields / totalFields) * 100);
   }, [watchedState, watchedPrimaryAge, watchedHouseholdType, watch]);
 
-  const onSubmit = (data: ComparisonCalculatorInput) => {
+  const onSubmit = (data: ComparisonCalculatorInput): void => {
     setIsCalculating(true);
     setCurrentMonthly(data.currentMonthly ?? undefined);
 

@@ -97,7 +97,7 @@ export const getAffiliateStats = async (
   totalCommissions: number;
 }> => {
   try {
-    const { data: clicks, error: clicksError } = await supabase
+    const { count: clickCount, error: clicksError } = await supabase
       .from('affiliate_clicks')
       .select('*', { count: 'exact', head: true })
       .eq('affiliate_id', affiliateId)
@@ -115,15 +115,15 @@ export const getAffiliateStats = async (
       throw new Error('Failed to fetch affiliate stats');
     }
 
-    const clickCount = clicks || 0;
+    const clickCountValue = clickCount || 0;
     const conversionCount = conversions?.length || 0;
     const totalRevenue = conversions?.reduce((sum, c) => sum + (c.conversion_value || 0), 0) || 0;
     const totalCommissions = conversions?.reduce((sum, c) => sum + (c.commission_amount || 0), 0) || 0;
 
     return {
-      clicks: clickCount,
+      clicks: clickCountValue,
       conversions: conversionCount,
-      conversionRate: clickCount > 0 ? (conversionCount / clickCount) * 100 : 0,
+      conversionRate: clickCountValue > 0 ? (conversionCount / clickCountValue) * 100 : 0,
       totalRevenue,
       totalCommissions,
     };

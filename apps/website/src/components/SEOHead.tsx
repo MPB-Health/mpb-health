@@ -17,8 +17,10 @@ import {
   generateEnrollmentHowToSchema,
 } from '../lib/schemaMarkup';
 
-interface SEOHeadProps {
+export interface SEOHeadProps {
   pathname?: string;
+  title?: string;
+  description?: string;
   customTitle?: string;
   customDescription?: string;
   customKeywords?: string;
@@ -64,6 +66,8 @@ interface SEOHeadProps {
 
 export const SEOHead: React.FC<SEOHeadProps> = ({
   pathname,
+  title: titleProp,
+  description: descriptionProp,
   customTitle,
   customDescription,
   customKeywords,
@@ -78,9 +82,10 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 }) => {
   const seo = pathname ? getSEOForPage(pathname) : null;
 
-  const title = customTitle || seo?.title || 'MPB Health - Affordable Health Sharing Plans';
+  const title = customTitle || titleProp || seo?.title || 'MPB Health - Affordable Health Sharing Plans';
   const description =
     customDescription ||
+    descriptionProp ||
     seo?.description ||
     'Join thousands of families saving on healthcare with MPB Health sharing plans.';
   const keywords =

@@ -73,12 +73,12 @@ export interface AdvisorLessonCompletion {
 }
 
 export interface CourseWithProgress extends ExternalLMSCourse {
-  enrollment: AdvisorLMSEnrollment | null;
+  enrollment: AdvisorLMSEnrollment | undefined;
   lessonsWithProgress: LessonWithProgress[];
 }
 
 export interface LessonWithProgress extends ExternalLMSLesson {
-  completion: AdvisorLessonCompletion | null;
+  completion: AdvisorLessonCompletion | undefined;
 }
 
 // ============================================================================
@@ -320,7 +320,7 @@ export async function getCoursesWithProgress(
   const coursesWithProgress: CourseWithProgress[] = [];
 
   for (const course of courses) {
-    const enrollment = enrollmentMap.get(course.id) || null;
+    const enrollment = enrollmentMap.get(course.id) || undefined;
     let lessonsWithProgress: LessonWithProgress[] = [];
 
     if (enrollment) {
@@ -330,13 +330,13 @@ export async function getCoursesWithProgress(
 
       lessonsWithProgress = lessons.map(lesson => ({
         ...lesson,
-        completion: completionMap.get(lesson.id) || null,
+        completion: completionMap.get(lesson.id) || undefined,
       }));
     } else {
       const lessons = await getCourseLessons(course.id);
       lessonsWithProgress = lessons.map(lesson => ({
         ...lesson,
-        completion: null,
+        completion: undefined,
       }));
     }
 
@@ -368,18 +368,18 @@ export async function getCourseWithProgress(
 
     lessonsWithProgress = lessons.map(lesson => ({
       ...lesson,
-      completion: completionMap.get(lesson.id) || null,
+      completion: completionMap.get(lesson.id) || undefined,
     }));
   } else {
     lessonsWithProgress = lessons.map(lesson => ({
       ...lesson,
-      completion: null,
+      completion: undefined,
     }));
   }
 
   return {
     ...course,
-    enrollment,
+    enrollment: enrollment || undefined,
     lessonsWithProgress,
   };
 }

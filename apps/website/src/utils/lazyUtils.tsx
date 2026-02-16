@@ -187,9 +187,9 @@ function clearCachesAndReload(): void {
   markReloadAttempted();
   
   // Clear all caches
-  if ('caches' in window) {
-    caches.keys().then((names) => {
-      Promise.all(names.map((name) => caches.delete(name))).then(() => {
+  if ('caches' in window && window.caches) {
+    window.caches.keys().then((names) => {
+      Promise.all(names.map((name) => window.caches!.delete(name))).then(() => {
         // Force reload bypassing cache
         window.location.reload();
       });

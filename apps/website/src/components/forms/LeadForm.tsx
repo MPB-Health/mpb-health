@@ -135,7 +135,7 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, className }) => {
         throw new Error(result.error || 'Submission failed');
       }
 
-      trackFormStep('lead_form', 'completed', totalSteps);
+      trackFormStep('lead_form', 4, totalSteps);
 
       if (onSubmit) {
         onSubmit(formData);

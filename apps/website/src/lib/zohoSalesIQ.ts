@@ -26,6 +26,8 @@ declare global {
   interface Window {
     $zoho?: {
       salesiq?: {
+        widgetcode?: string;
+        values?: Record<string, any>;
         ready: (callback: () => void) => void;
         floatbutton?: {
           visible: (visible: 'show' | 'hide') => void;
@@ -35,6 +37,10 @@ declare global {
         };
       };
     };
+  }
+  
+  interface HTMLScriptElement {
+    readyState?: string;
   }
 }
 

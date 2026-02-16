@@ -8,6 +8,7 @@ export interface CalculatorInputs {
   householdSize: number;
   members: HouseholdMember[];
   membershipLevel: 'essential' | 'premier' | 'elite';
+  coverage?: 'essential' | 'premier' | 'elite';
 }
 
 export interface CalculatorResult {

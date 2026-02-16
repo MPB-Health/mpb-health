@@ -214,7 +214,7 @@ export const getGeoLocationFromIP = async (skipCache = false): Promise<GeoLocati
         const result: GeoLocationData = {
           ...eligibility,
           state: parsed.stateCode.toUpperCase(),
-          stateName: parsed.stateName || STATE_NAMES[parsed.stateCode.toUpperCase()],
+          stateName: (parsed as any).stateName || STATE_NAMES[parsed.stateCode.toUpperCase()],
           city: parsed.city,
           country: parsed.country,
           latitude: parsed.latitude,

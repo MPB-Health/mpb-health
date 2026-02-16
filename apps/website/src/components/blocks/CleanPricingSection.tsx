@@ -17,6 +17,9 @@ const fallbackPlans: PlanWithFeatures[] = [
     is_hsa_compatible: false,
     sort_order: 1,
     is_active: true,
+    enrollment_fee: 0,
+    annual_membership_fee: 0,
+    tobacco_surcharge_pct: 0,
     price_display: '$50',
     enroll_url: 'https://essentials.enrollmpb.com/',
     features: [
@@ -39,6 +42,9 @@ const fallbackPlans: PlanWithFeatures[] = [
     is_hsa_compatible: false,
     sort_order: 2,
     is_active: true,
+    enrollment_fee: 0,
+    annual_membership_fee: 0,
+    tobacco_surcharge_pct: 0,
     price_display: '$125',
     enroll_url: 'https://mec.enrollmpb.com/',
     features: [
@@ -60,6 +66,9 @@ const fallbackPlans: PlanWithFeatures[] = [
     is_hsa_compatible: false,
     sort_order: 3,
     is_active: true,
+    enrollment_fee: 0,
+    annual_membership_fee: 0,
+    tobacco_surcharge_pct: 0,
     price_display: '$166',
     enroll_url: 'https://careplus.enrollmpb.com/',
     features: [
@@ -82,6 +91,9 @@ const fallbackPlans: PlanWithFeatures[] = [
     is_hsa_compatible: false,
     sort_order: 4,
     is_active: true,
+    enrollment_fee: 0,
+    annual_membership_fee: 0,
+    tobacco_surcharge_pct: 0,
     price_display: '$201',
     enroll_url: 'https://direct.enrollmpb.com/',
     features: [
@@ -104,6 +116,9 @@ const fallbackPlans: PlanWithFeatures[] = [
     is_hsa_compatible: true,
     sort_order: 5,
     is_active: true,
+    enrollment_fee: 0,
+    annual_membership_fee: 0,
+    tobacco_surcharge_pct: 0,
     price_display: '$239',
     enroll_url: 'https://securehsa.enrollmpb.com/',
     features: [

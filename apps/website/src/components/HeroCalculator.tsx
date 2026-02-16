@@ -153,6 +153,7 @@ export default function HeroCalculator() {
         dependentsCount: data.dependentsCount || 0,
         primaryTobacco: false,
         spouseTobacco: false,
+        currentMonthly: undefined,
       };
 
       const allEstimates = estimateAllMemberships(comparisonInput);

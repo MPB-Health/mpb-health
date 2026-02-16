@@ -92,7 +92,7 @@ export function AdvisorTerminal({ onClose, defaultMinimized = false }: AdvisorTe
         if (result.suggestions && result.suggestions.length > 0) {
           setLines(prev => [...prev, {
             type: 'info',
-            content: `\nSuggestions:\n${result.suggestions.map((s, i) => `  ${i + 1}. ${s}`).join('\n')}`,
+            content: `\nSuggestions:\n${result.suggestions?.map((s, i) => `  ${i + 1}. ${s}`).join('\n')}`,
             timestamp: new Date()
           }]);
         }

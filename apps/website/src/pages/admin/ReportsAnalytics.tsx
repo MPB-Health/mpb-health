@@ -102,14 +102,14 @@ const ReportsAnalytics: React.FC = () => {
         ticketsResult,
         resolvedTicketsResult
       ] = await Promise.all([
-        safeQuery(supabase.from('member_profiles').select('id', { count: 'exact', head: true })),
-        safeQuery(supabase.from('member_profiles').select('id', { count: 'exact', head: true }).gte('created_at', dateFilter)),
-        safeQuery(supabase.from('member_profiles').select('id', { count: 'exact', head: true }).eq('membership_status', 'active')),
-        safeQuery(supabase.from('transactions').select('amount').eq('status', 'completed').eq('transaction_type', 'membership_fee').gte('created_at', dateFilter)),
-        safeQuery(supabase.from('claims').select('id, total_amount', { count: 'exact' }).gte('created_at', dateFilter)),
-        safeQuery(supabase.from('claims').select('id', { count: 'exact', head: true }).eq('status', 'approved').gte('created_at', dateFilter)),
-        safeQuery(supabase.from('support_tickets').select('id', { count: 'exact', head: true }).gte('created_at', dateFilter)),
-        safeQuery(supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'resolved').gte('created_at', dateFilter))
+        safeQuery(supabase.from('member_profiles').select('id', { count: 'exact', head: true }) as any),
+        safeQuery(supabase.from('member_profiles').select('id', { count: 'exact', head: true }).gte('created_at', dateFilter) as any),
+        safeQuery(supabase.from('member_profiles').select('id', { count: 'exact', head: true }).eq('membership_status', 'active') as any),
+        safeQuery(supabase.from('transactions').select('amount').eq('status', 'completed').eq('transaction_type', 'membership_fee').gte('created_at', dateFilter) as any),
+        safeQuery(supabase.from('claims').select('id, total_amount', { count: 'exact' }).gte('created_at', dateFilter) as any),
+        safeQuery(supabase.from('claims').select('id', { count: 'exact', head: true }).eq('status', 'approved').gte('created_at', dateFilter) as any),
+        safeQuery(supabase.from('support_tickets').select('id', { count: 'exact', head: true }).gte('created_at', dateFilter) as any),
+        safeQuery(supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'resolved').gte('created_at', dateFilter) as any)
       ]);
 
       const totalRevenue = (revenueResult.data as { amount?: number }[] | null)?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;

@@ -30,7 +30,8 @@ import {
   CreditCard,
   Pill,
   Calendar,
-  Shield
+  Shield,
+  XCircle
 } from 'lucide-react';
 import { formsService, type CognitoFormRecord } from '../../lib/formsService';
 

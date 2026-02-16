@@ -29,7 +29,6 @@ export interface Plan {
 export interface PlanWithFeatures extends Plan {
   features: PlanFeature[];
   price_display?: string;
-  enroll_url?: string;
 }
 
 // Fallback enroll URLs for backward compatibility (used if DB field is null)

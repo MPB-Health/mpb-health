@@ -8,6 +8,7 @@ interface TooltipProviderProps {
 
 interface TooltipProps {
   children: React.ReactNode;
+  content?: string;
 }
 
 interface TooltipTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -39,7 +40,7 @@ export function TooltipProvider({ children, delayDuration = 200 }: TooltipProvid
   );
 }
 
-export function Tooltip({ children }: TooltipProps) {
+export function Tooltip({ children, content: _content }: TooltipProps) {
   return <div className="relative inline-block">{children}</div>;
 }
 

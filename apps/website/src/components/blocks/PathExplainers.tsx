@@ -237,4 +237,3 @@ const PathExplainers = forwardRef<PathExplainersHandle>((props, ref) => {
 PathExplainers.displayName = 'PathExplainers';
 
 export { PathExplainers };
-export type { PathExplainersHandle };

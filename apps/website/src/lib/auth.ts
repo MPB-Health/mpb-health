@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-export type UserRole = "guest" | "member" | "advisor" | "admin" | "staff";
+export type UserRole = "guest" | "member" | "advisor" | "admin" | "staff" | "superadmin";
 
 export interface UserProfile {
   id: string;

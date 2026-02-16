@@ -111,7 +111,7 @@ export async function classifyLeadPriority(
   // Check household size (family leads are higher priority)
   if (lead.household_size && lead.household_size >= 3) {
     reasons.push(`Family size: ${lead.household_size} members`);
-    if (priority !== 'critical') {
+    if (priority === 'normal') {
       priority = 'high';
     }
   }

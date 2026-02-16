@@ -14,8 +14,10 @@ interface AuthContextType {
   isSuperAdmin: boolean;
   isAdmin: boolean;
   isAdvisor: boolean;
+  isCrmUser: boolean;
   canAccessAdminPortal: boolean;
   canAccessAdvisorPortal: boolean;
+  canAccessCrmPortal: boolean;
   refreshRoles: () => Promise<void>;
   // Auth methods
   signIn: (email: string, password: string) => Promise<{ data: any; error: AuthError | null }>;
@@ -126,8 +128,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isSuperAdmin = userRoles.includes('super_admin');
   const isAdmin = userRoles.includes('super_admin') || userRoles.includes('admin');
   const isAdvisor = userRoles.includes('super_admin') || userRoles.includes('advisor');
+  const isCrmUser = userRoles.includes('super_admin') || userRoles.includes('crm_user');
   const canAccessAdminPortal = isAdmin;
   const canAccessAdvisorPortal = isAdvisor;
+  const canAccessCrmPortal = isCrmUser;
 
   const value = {
     user,
@@ -139,8 +143,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isSuperAdmin,
     isAdmin,
     isAdvisor,
+    isCrmUser,
     canAccessAdminPortal,
     canAccessAdvisorPortal,
+    canAccessCrmPortal,
     refreshRoles,
     signIn,
     signUp,

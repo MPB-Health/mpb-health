@@ -67,7 +67,7 @@ export default function MFAEnrollment() {
     setError('');
 
     try {
-      const verified = await mfaService.verifyTOTPEnrollment(userId, verificationCode, factorId);
+      const verified = await mfaService.verifyTOTPEnrollment(userId, verificationCode, _factorId);
 
       if (!verified) {
         setError('Invalid verification code. Please try again.');

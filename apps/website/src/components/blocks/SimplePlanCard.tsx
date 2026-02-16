@@ -224,7 +224,7 @@ export function SimplePlanCard({
                           <Check className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                           <span className="flex-1 text-xs">{feature.feature_name}</span>
                           {feature.notes && (
-                            <Info className="w-3 h-3 text-neutral-400 cursor-help flex-shrink-0 mt-0.5" title={feature.notes} />
+                            <Info className="w-3 h-3 text-neutral-400 cursor-help flex-shrink-0 mt-0.5" aria-label={feature.notes} />
                           )}
                         </div>
                       ))}

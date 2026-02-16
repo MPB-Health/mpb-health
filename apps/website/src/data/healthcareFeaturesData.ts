@@ -1,4 +1,5 @@
-import { Stethoscope, Ambulance, Brain, Baby, Pill, Wallet, ShieldCheck, Headphones, PawPrint, Heart, Video as LucideIcon } from 'lucide-react';
+import { Stethoscope, Ambulance, Brain, Baby, Pill, Wallet, ShieldCheck, Headphones, PawPrint, Heart, Video } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 export interface FeatureKeyPoint {
   title: string;

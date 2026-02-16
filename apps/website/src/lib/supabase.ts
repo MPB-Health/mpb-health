@@ -127,6 +127,8 @@ export interface BlogArticle {
   tags?: string[];
   published_date: string;
   is_published: boolean;
+  read_time?: number;
+  view_count?: number;
   created_at: string;
   updated_at: string;
 }

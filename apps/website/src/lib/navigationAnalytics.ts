@@ -282,8 +282,8 @@ export const getTopNavigationItems = async (
       return acc;
     }, {});
 
-    return Object.values(counts)
-      .sort((a: any, b: any) => b.count - a.count)
+    return (Object.values(counts) as Array<{ item_id: string; label: string; count: number }>)
+      .sort((a, b) => b.count - a.count)
       .slice(0, limit);
   } catch (err) {
     console.error('Error fetching top navigation items:', err);

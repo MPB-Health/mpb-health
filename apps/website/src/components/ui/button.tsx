@@ -3,7 +3,7 @@ import { cn } from '../../lib/utils';
 import { trackCTAClick } from '../../lib/analytics';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'outline';
+  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   children: React.ReactNode;
   trackingName?: string;
@@ -45,6 +45,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             'bg-accent text-white hover:bg-accent/90 active:bg-accent/95 shadow-lg hover:shadow-xl': variant === 'secondary',
             'hover:bg-neutral-100 hover:text-neutral-900 active:bg-neutral-200': variant === 'ghost',
             'border border-neutral-300 bg-white hover:bg-neutral-50 active:bg-neutral-100 shadow-sm hover:shadow-md': variant === 'outline',
+            'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-lg hover:shadow-xl': variant === 'destructive',
           },
           {
             'h-8 px-3 text-sm': size === 'sm',

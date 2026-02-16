@@ -125,7 +125,7 @@ class PushNotificationService {
         // Create new subscription
         subscription = await this.swRegistration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey),
+          applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey) as BufferSource,
         });
       }
 
@@ -249,10 +249,10 @@ class PushNotificationService {
         badge: payload.badge || '/assets/mpb-badge.png',
         tag: payload.tag,
         data: payload.data,
-        actions: payload.actions,
         requireInteraction: payload.requireInteraction,
         vibrate: payload.vibrate,
-      });
+        ...(payload.actions ? { actions: payload.actions } : {}),
+      } as NotificationOptions);
     } else {
       // Fallback to basic notification
       new Notification(payload.title, {

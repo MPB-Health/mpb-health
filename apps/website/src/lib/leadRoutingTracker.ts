@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { trackEvent } from './analytics';
 
 export interface CTAClickContext {
-  ctaType: 'enroll_now' | 'get_quote' | 'see_plans' | 'calculator_result' | 'plan_select';
+  ctaType: 'enroll_now' | 'get_quote' | 'see_plans' | 'calculator_result' | 'plan_select' | 'comparison_grid_select';
   ctaText: string;
   ctaLocation: string;
   planType?: string;

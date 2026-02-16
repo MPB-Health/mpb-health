@@ -114,14 +114,14 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ className, onResultC
       ];
 
       const staticPages: SearchResult[] = [
-        { id: 'plans', title: 'Plans & Pricing', href: '/plans', type: 'page' },
-        { id: 'how-it-works', title: 'How It Works', href: '/how-it-works', type: 'page' },
-        { id: 'features', title: 'Features', href: '/features', type: 'page' },
-        { id: 'individuals', title: 'Individuals & Families', href: '/individuals-and-families', type: 'page' },
-        { id: 'business', title: 'Businesses & Organizations', href: '/businesses-and-organizations', type: 'page' },
-        { id: 'about', title: 'About Us', href: '/about-us', type: 'page' },
-        { id: 'contact', title: 'Contact', href: '/contact', type: 'page' },
-        { id: 'faq', title: 'FAQ', href: '/faq', type: 'page' },
+        { id: 'plans', title: 'Plans & Pricing', href: '/plans', type: 'page' as const },
+        { id: 'how-it-works', title: 'How It Works', href: '/how-it-works', type: 'page' as const },
+        { id: 'features', title: 'Features', href: '/features', type: 'page' as const },
+        { id: 'individuals', title: 'Individuals & Families', href: '/individuals-and-families', type: 'page' as const },
+        { id: 'business', title: 'Businesses & Organizations', href: '/businesses-and-organizations', type: 'page' as const },
+        { id: 'about', title: 'About Us', href: '/about-us', type: 'page' as const },
+        { id: 'contact', title: 'Contact', href: '/contact', type: 'page' as const },
+        { id: 'faq', title: 'FAQ', href: '/faq', type: 'page' as const },
       ].filter(page =>
         page.title.toLowerCase().includes(searchQuery.toLowerCase())
       );

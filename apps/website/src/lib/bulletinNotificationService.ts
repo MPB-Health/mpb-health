@@ -210,7 +210,7 @@ export const bulletinNotificationService = {
           'completed',
           data.successful_sends || recipients.length,
           data.failed_sends || 0,
-          null,
+          undefined,
           data.batch_id
         );
 

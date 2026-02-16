@@ -135,15 +135,17 @@ export const BlogArticle: React.FC = () => {
         }
 
         // Also log to page_views for detailed analytics
-        await supabase.from('page_views').insert({
+        const pageViewsResult = await supabase.from('page_views').insert({
           path: `/blog/${article.slug}`,
           page_title: article.title,
           referrer: document.referrer || null,
           user_agent: navigator.userAgent,
           session_id: sessionStorage.getItem('session_id') || crypto.randomUUID()
-        }).catch(() => {
-          // Silently fail if page_views table doesn't exist
         });
+        
+        if (pageViewsResult.error) {
+          // Silently fail if page_views table doesn't exist
+        }
       } catch (err) {
         // Silently fail view tracking - don't break the user experience
         console.debug('View tracking skipped:', err);

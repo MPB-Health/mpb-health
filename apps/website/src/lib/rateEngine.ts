@@ -1,4 +1,5 @@
 import { RateCalculatorInput, RateEstimate } from './schema';
+// @ts-ignore - path alias resolved by bundler
 import rateTablesConfig from '@/content/rate_tables.config.json';
 
 // Type definitions for the rate table configuration
@@ -121,7 +122,7 @@ export function estimateMonthly(input: RateCalculatorInput): RateEstimate {
   let total = primaryBase;
   
   // Spouse rate
-  if (input.householdType !== 'individual' && input.spouseAge) {
+  if ((input.householdType === 'member-spouse' || input.householdType === 'member-family') && input.spouseAge) {
     const spouseBase = getBaseRate(input.selectedPlan, input.spouseAge);
     lineItems.push({
       description: `Spouse (Age ${input.spouseAge})`,
@@ -234,7 +235,7 @@ export function __tests__() {
   // Test basic individual rate
   const test1 = estimateMonthly({
     state: 'CO',
-    householdType: 'individual',
+    householdType: 'member-only',
     primaryAge: 35,
     dependentsCount: 0,
     primaryTobacco: false,
@@ -246,7 +247,7 @@ export function __tests__() {
   // Test couple with tobacco
   const test2 = estimateMonthly({
     state: 'FL',
-    householdType: 'couple', 
+    householdType: 'member-spouse', 
     primaryAge: 45,
     spouseAge: 42,
     dependentsCount: 0,

@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 interface AccordionProps {
   children: React.ReactNode;
   type?: 'single' | 'multiple';
+  collapsible?: boolean;
   className?: string;
   value?: string[];
   onValueChange?: (value: string[]) => void;

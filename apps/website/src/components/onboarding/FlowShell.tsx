@@ -12,6 +12,12 @@ import { supabase } from '../../lib/supabase';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
+declare global {
+  interface Window {
+    dataLayer?: Array<Record<string, unknown>>;
+  }
+}
+
 const TOTAL_STEPS = 8;
 
 export function FlowShell() {

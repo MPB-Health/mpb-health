@@ -35,26 +35,33 @@ interface TerminalProviderProps {
 }
 
 export function TerminalProvider({ children }: TerminalProviderProps) {
-  const { user, profile } = useAuth();
+  const { user, userRoles, isAdvisor } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (user && profile) {
+    if (user && userRoles.length > 0) {
       initializeSession();
     }
-  }, [user, profile]);
+  }, [user, userRoles]);
 
   const generateSessionId = () => {
     return `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   };
 
   const initializeSession = async () => {
-    if (!user || !profile) return;
+    if (!user || userRoles.length === 0) return;
 
     const newSessionId = generateSessionId();
     setSessionId(newSessionId);
+
+    // Determine primary role for terminal session
+    const primaryRole = userRoles.includes('super_admin') || userRoles.includes('admin') 
+      ? 'admin' 
+      : userRoles.includes('advisor') 
+      ? 'advisor' 
+      : 'member';
 
     try {
       const { error } = await supabase
@@ -62,7 +69,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
         .insert({
           session_id: newSessionId,
           user_id: user.id,
-          role: profile.role || 'advisor',
+          role: primaryRole,
           started_at: new Date().toISOString(),
           last_activity_at: new Date().toISOString()
         });
@@ -76,7 +83,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
   };
 
   const executeCommand = useCallback(async (command: string): Promise<CommandResult> => {
-    if (!user || !profile || !sessionId) {
+    if (!user || userRoles.length === 0 || !sessionId) {
       return {
         success: false,
         error: 'Not authenticated or session not initialized',
@@ -94,6 +101,13 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
         throw new Error('No active session');
       }
 
+      // Determine primary role
+      const primaryRole = userRoles.includes('super_admin') || userRoles.includes('admin') 
+        ? 'admin' 
+        : userRoles.includes('advisor') 
+        ? 'advisor' 
+        : 'member';
+
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
         `${supabaseUrl}/functions/v1/advisor-terminal-agent`,
@@ -108,8 +122,8 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
             session_id: sessionId,
             context: {
               user_id: user.id,
-              role: profile.role || 'advisor',
-              advisor_id: profile.role === 'advisor' ? user.id : undefined
+              role: primaryRole,
+              advisor_id: isAdvisor ? user.id : undefined
             }
           }),
         }
@@ -141,7 +155,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, profile, sessionId, commandHistory.length]);
+  }, [user, userRoles, isAdvisor, sessionId, commandHistory.length]);
 
   const clearHistory = useCallback(() => {
     setCommandHistory([]);

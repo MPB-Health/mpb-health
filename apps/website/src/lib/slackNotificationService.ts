@@ -200,7 +200,10 @@ class SlackNotificationService {
             elements: [
               {
                 type: 'mrkdwn',
-                text: `Connected at ${new Date().toLocaleString()}`,
+                text: {
+                  type: 'mrkdwn',
+                  text: `Connected at ${new Date().toLocaleString()}`,
+                },
               },
             ],
           },

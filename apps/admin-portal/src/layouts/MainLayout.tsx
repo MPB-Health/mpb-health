@@ -29,6 +29,7 @@ const navigation: NavItem[] = [
     href: '#',
     icon: FileText,
     children: [
+      { name: 'Bulletins', href: '/content/bulletins' },
       { name: 'Blog Posts', href: '/content/blog' },
       { name: 'Resources', href: '/content/resources' },
     ],

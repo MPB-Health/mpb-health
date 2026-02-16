@@ -5,6 +5,14 @@ export * from './types';
 export { UserService, userService } from './users/UserService';
 export { EnrollmentService, enrollmentService } from './enrollments/EnrollmentService';
 export { ContentService, contentService } from './content/ContentService';
+export {
+  BulletinService,
+  bulletinService,
+  type AdminBulletin,
+  type BulletinCategory,
+  type BulletinCreateInput,
+  type BulletinUpdateInput,
+} from './content/BulletinService';
 export { SettingsService, settingsService } from './settings/SettingsService';
 export { AuditService, auditService } from './audit/AuditService';
 export { AnalyticsService, analyticsService } from './analytics/AnalyticsService';

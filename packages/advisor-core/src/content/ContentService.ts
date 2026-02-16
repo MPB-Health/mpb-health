@@ -185,11 +185,32 @@ export class ContentService {
     return this.getBulletins({}, advisorId);
   }
 
-  // Get featured/urgent bulletins (using metadata or view_count as priority)
+  // Get featured bulletins for the slider
   async getFeaturedBulletins(limit = 5): Promise<Bulletin[]> {
-    const bulletins = await this.getActiveBulletins();
-    // Return most viewed or most recent as "featured"
-    return bulletins.slice(0, limit);
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('advisor_content')
+      .select(`
+        *,
+        category:advisor_content_categories(id, name, slug, description, display_order)
+      `)
+      .eq('content_type', 'bulletin')
+      .eq('is_published', true)
+      .eq('is_featured', true)
+      .lte('published_date', now)
+      .order('published_date', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    // If no featured bulletins, fall back to most recent
+    if (!data || data.length === 0) {
+      const bulletins = await this.getActiveBulletins();
+      return bulletins.slice(0, limit);
+    }
+
+    return data || [];
   }
 
   // Get a single bulletin

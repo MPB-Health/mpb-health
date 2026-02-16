@@ -9,6 +9,8 @@ import EnrollmentDetail from './pages/EnrollmentDetail';
 import BlogPosts from './pages/BlogPosts';
 import BlogEditor from './pages/BlogEditor';
 import Resources from './pages/Resources';
+import BulletinsList from './pages/BulletinsList';
+import BulletinEditor from './pages/BulletinEditor';
 import Settings from './pages/Settings';
 import AuditLogs from './pages/AuditLogs';
 import Login from './pages/Login';
@@ -40,6 +42,9 @@ export default function App() {
           <Route path="content/blog" element={<BlogPosts />} />
           <Route path="content/blog/new" element={<BlogEditor />} />
           <Route path="content/blog/:postId" element={<BlogEditor />} />
+          <Route path="content/bulletins" element={<BulletinsList />} />
+          <Route path="content/bulletins/new" element={<BulletinEditor />} />
+          <Route path="content/bulletins/:bulletinId" element={<BulletinEditor />} />
           <Route path="content/resources" element={<Resources />} />
           <Route path="settings" element={<Settings />} />
           <Route path="settings/payments" element={<PaymentProcessors />} />

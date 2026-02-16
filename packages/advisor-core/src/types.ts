@@ -183,6 +183,7 @@ export interface Bulletin {
   published_date: string;
   featured_image_url: string | null;
   is_published: boolean;
+  is_featured: boolean;
   view_count: number;
   metadata: Record<string, unknown>;
   created_at: string;

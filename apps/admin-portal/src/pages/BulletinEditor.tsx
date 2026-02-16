@@ -43,6 +43,7 @@ export default function BulletinEditor() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editorMode, setEditorMode] = useState<'visual' | 'html'>('visual');
   const [showModeWarning, setShowModeWarning] = useState(false);
+  const [originalPublishedDate, setOriginalPublishedDate] = useState<string>('');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -88,6 +89,10 @@ export default function BulletinEditor() {
           is_featured: bulletin.is_featured || false,
           published_date: bulletin.published_date || '',
         });
+        // Preserve the original published date so saving doesn't change the position
+        if (bulletin.published_date) {
+          setOriginalPublishedDate(bulletin.published_date);
+        }
         // Auto-detect inline styles and default to HTML mode to preserve them
         if (bulletin.content && /style\s*=\s*"/.test(bulletin.content)) {
           setEditorMode('html');
@@ -173,7 +178,7 @@ export default function BulletinEditor() {
         is_published: isPublished,
         is_featured: formData.is_featured,
         published_date: isPublished
-          ? formData.published_date || new Date().toISOString()
+          ? formData.published_date || originalPublishedDate || new Date().toISOString()
           : null,
       };
 

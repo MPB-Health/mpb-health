@@ -79,3 +79,8 @@ SET content = '
 </ul>
 '
 WHERE slug = 'advisor-bulletin-october-15-2025' AND content_type = 'bulletin';
+
+-- Restore the original published_date (was changed when article was saved via admin)
+UPDATE advisor_content
+SET published_date = '2025-10-15T12:00:00Z'
+WHERE slug = 'advisor-bulletin-october-15-2025' AND content_type = 'bulletin';

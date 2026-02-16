@@ -98,3 +98,21 @@ VALUES (
   content = EXCLUDED.content,
   excerpt = EXCLUDED.excerpt,
   title = EXCLUDED.title;
+
+-- Also update if the article already exists under a different slug
+-- (e.g. advisor-bulletin-august-26-2025 or any other slug)
+UPDATE advisor_content
+SET content = (SELECT content FROM advisor_content WHERE slug = 'advisor-bulletin-august-2nd-half-2025' AND content_type = 'bulletin'),
+    excerpt = 'August 2nd Half — "Perseverance is not a long race; it is many short races one after the other." Updates on Sedera Summus partnership, MPB Health App enhancements, App Demo recording, MGM Grand contest, and rewards.'
+WHERE content_type = 'bulletin'
+  AND content LIKE '%August 2nd Half%'
+  AND content LIKE '%et_pb_%'
+  AND slug != 'advisor-bulletin-august-2nd-half-2025';
+
+-- Also handle the case where title matches but content is raw WordPress HTML
+UPDATE advisor_content
+SET content = (SELECT content FROM advisor_content WHERE slug = 'advisor-bulletin-august-2nd-half-2025' AND content_type = 'bulletin'),
+    excerpt = 'August 2nd Half — "Perseverance is not a long race; it is many short races one after the other." Updates on Sedera Summus partnership, MPB Health App enhancements, App Demo recording, MGM Grand contest, and rewards.'
+WHERE content_type = 'bulletin'
+  AND title LIKE '%August 26%'
+  AND content LIKE '%Preseverance%';

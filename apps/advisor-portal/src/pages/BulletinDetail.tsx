@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import DocumentPreviewModal from '../components/DocumentPreviewModal';
 
 export default function BulletinDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -24,6 +25,12 @@ export default function BulletinDetail() {
   const [bulletin, setBulletin] = useState<Bulletin | null>(null);
   const [loading, setLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [pdfModal, setPdfModal] = useState<{ isOpen: boolean; title: string; fileUrl: string }>({
+    isOpen: false,
+    title: '',
+    fileUrl: '',
+  });
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadBulletin = async () => {
@@ -64,6 +71,19 @@ export default function BulletinDetail() {
       // Fallback
     }
   };
+
+  const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (!anchor) return;
+
+    const href = anchor.getAttribute('href') || '';
+    if (href.toLowerCase().endsWith('.pdf')) {
+      e.preventDefault();
+      const linkText = anchor.textContent?.trim() || 'PDF Document';
+      setPdfModal({ isOpen: true, title: linkText, fileUrl: href });
+    }
+  }, []);
 
   const getCategoryIcon = (categorySlug: string | undefined) => {
     switch (categorySlug) {
@@ -203,7 +223,9 @@ export default function BulletinDetail() {
 
       {/* Article Content */}
       <div
+        ref={contentRef}
         className="bulletin-content max-w-none mb-12"
+        onClick={handleContentClick}
         dangerouslySetInnerHTML={{ __html: bulletin.content }}
       />
 
@@ -217,6 +239,14 @@ export default function BulletinDetail() {
           Back to all bulletins
         </button>
       </div>
+
+      {/* PDF Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={pdfModal.isOpen}
+        onClose={() => setPdfModal({ isOpen: false, title: '', fileUrl: '' })}
+        title={pdfModal.title}
+        fileUrl={pdfModal.fileUrl}
+      />
     </div>
   );
 }

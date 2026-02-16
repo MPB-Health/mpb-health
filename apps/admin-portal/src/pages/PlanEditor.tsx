@@ -10,6 +10,7 @@ import {
   Shield,
   Eye,
   ExternalLink,
+  Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '@mpbhealth/database';

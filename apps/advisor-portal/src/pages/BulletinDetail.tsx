@@ -224,7 +224,7 @@ export default function BulletinDetail() {
       {/* Article Content */}
       <div
         ref={contentRef}
-        className="bulletin-content max-w-none mb-12"
+        className="bulletin-content prose prose-lg max-w-none mb-12 dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h1:mb-6 prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-p:text-base prose-p:leading-relaxed prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-ul:my-4 prose-li:text-base prose-li:leading-relaxed prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-700 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-blockquote:border-l-4 prose-blockquote:border-blue-300 prose-blockquote:bg-gray-50 dark:prose-blockquote:bg-gray-800/50 prose-blockquote:rounded-r-lg prose-blockquote:py-2 prose-blockquote:px-4 prose-hr:my-8"
         onClick={handleContentClick}
         dangerouslySetInnerHTML={{ __html: bulletin.content }}
       />

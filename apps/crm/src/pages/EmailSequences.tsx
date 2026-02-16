@@ -41,6 +41,7 @@ import {
   Activity,
   Target,
   ChevronUp,
+  Zap,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';

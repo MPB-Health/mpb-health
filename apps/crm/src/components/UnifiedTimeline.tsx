@@ -70,8 +70,8 @@ interface TimelineEntry {
   timestamp: string;
   title: string;
   description?: string;
-  metadata?: Record<string, unknown>;
-  raw?: Record<string, unknown>;
+  metadata?: Record<string, any>;
+  raw?: Record<string, any>;
 }
 
 // ============================================================================

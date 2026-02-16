@@ -1442,7 +1442,7 @@ export default function MeetingScheduler() {
   const loadTemplates = useCallback(async () => {
     try {
       const data = await templateService.listTemplates({ template_type: 'email', is_active: true });
-      setTemplates((data || []).map((t: { id: string; name: string; subject?: string }) => ({ id: t.id, name: t.name, subject: t.subject })));
+      setTemplates((data || []).map((t) => ({ id: t.id, name: t.name, subject: t.subject ?? undefined })));
     } catch {
       // Templates are optional
     }

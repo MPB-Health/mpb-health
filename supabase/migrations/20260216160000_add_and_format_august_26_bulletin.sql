@@ -1,10 +1,9 @@
--- Insert and format Advisor Bulletin: August 26, 2025
--- This article was missing from the original seed
+-- Insert and format Advisor Bulletin: August 14, 2025 (August First Half)
 
 INSERT INTO advisor_content (title, slug, excerpt, content, content_type, category_id, published_date, is_published, is_featured, view_count, metadata)
 VALUES (
-  'Advisor Bulletin: August 26, 2025',
-  'advisor-bulletin-august-26-2025',
+  'Advisor Bulletin: August 14, 2025',
+  'advisor-bulletin-august-14-2025',
   'August First Half — "Great things are not done by impulse, but by a series of small things brought together." Updates on Virtual Care Upgrades, new MPB Health App demo, enrollment reminders, and rewards.',
   '
 <h1 style="font-size: 32px; font-weight: 700; color: #000000; margin: 0 0 8px 0; line-height: 1.3;">August – First Half</h1>
@@ -98,7 +97,7 @@ VALUES (
 ',
   'bulletin',
   (SELECT id FROM advisor_content_categories WHERE slug = 'bulletin' LIMIT 1),
-  '2025-08-26T12:00:00Z',
+  '2025-08-14T12:00:00Z',
   true,
   false,
   0,
@@ -107,3 +106,21 @@ VALUES (
   content = EXCLUDED.content,
   excerpt = EXCLUDED.excerpt,
   title = EXCLUDED.title;
+
+-- Also update if the article exists under a different slug (e.g. from WordPress import)
+UPDATE advisor_content
+SET content = (SELECT content FROM advisor_content WHERE slug = 'advisor-bulletin-august-14-2025' AND content_type = 'bulletin'),
+    excerpt = 'August First Half — "Great things are not done by impulse, but by a series of small things brought together." Updates on Virtual Care Upgrades, new MPB Health App demo, enrollment reminders, and rewards.',
+    title = 'Advisor Bulletin: August 14, 2025'
+WHERE content_type = 'bulletin'
+  AND title LIKE '%August 14%'
+  AND slug != 'advisor-bulletin-august-14-2025';
+
+UPDATE advisor_content
+SET content = (SELECT content FROM advisor_content WHERE slug = 'advisor-bulletin-august-14-2025' AND content_type = 'bulletin'),
+    excerpt = 'August First Half — "Great things are not done by impulse, but by a series of small things brought together." Updates on Virtual Care Upgrades, new MPB Health App demo, enrollment reminders, and rewards.',
+    title = 'Advisor Bulletin: August 14, 2025'
+WHERE content_type = 'bulletin'
+  AND content LIKE '%August – First Half%'
+  AND content LIKE '%Virtual Care Upgrades%'
+  AND slug != 'advisor-bulletin-august-14-2025';

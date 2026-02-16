@@ -1,17 +1,15 @@
 -- Update Advisor Bulletin: December 24, 2025 with properly formatted content
--- Matching the formatting from https://advisor.mpb.health/advisor-bulletin-december-24-2025/
+-- Matching the exact formatting from the WordPress source HTML
 
 UPDATE advisor_content
 SET content = '<h1>December 24, 2025</h1>
 
-<blockquote>
+<div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px 28px; margin: 24px 0; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
 <p><em>"Like snowflakes, every agent brings something unique, and together we create something powerful."</em></p>
 <p>— <em>MPB Health</em></p>
-</blockquote>
+</div>
 
-<hr />
-
-<h3>Updates:</h3>
+<h3 style="text-align: center;">Updates:</h3>
 
 <h2>Annual Wellness Visits:</h2>
 
@@ -58,7 +56,7 @@ SET content = '<h1>December 24, 2025</h1>
 <p>The updated forms are:</p>
 <ul>
 <li><a href="https://mpb.health/membership-changes/">Member Updates</a></li>
-<li>Update Form of Payment</li>
+<li><a href="https://mpb.health/update-payment">Update Form of Payment</a></li>
 </ul>
 
 <h2>Groups – Employee Changes:</h2>
@@ -67,9 +65,7 @@ SET content = '<h1>December 24, 2025</h1>
 
 <p>If an employee on a List Bill contacts you directly to make changes, please refer them back to their employer to initiate the request.</p>
 
-<hr />
-
-<h3>Reminders:</h3>
+<h3 style="text-align: center;">Reminders:</h3>
 
 <h2>2026 Pricing Effective Jan 1st:</h2>
 
@@ -77,11 +73,9 @@ SET content = '<h1>December 24, 2025</h1>
 
 <p>New Rates HERE:</p>
 
-<p><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/care.pdf">Care+ Price Sheet</a></p>
-
-<p><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/Direct.pdf">Direct Price Sheet</a></p>
-
-<p><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/securehsa.pdf">Secure HSA Price Sheet</a></p>
+<p><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/care.pdf" target="_blank">Care+ Price Sheet</a></p>
+<p><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/Direct.pdf" target="_blank">Direct Price Sheet</a></p>
+<p><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/securehsa.pdf" target="_blank">Secure HSA Price Sheet</a></p>
 
 <h2>Enrollment Deadline</h2>
 
@@ -91,16 +85,20 @@ SET content = '<h1>December 24, 2025</h1>
 
 <p><strong>Please continue to encourage your members to download the MPB Health App!!</strong></p>
 
-<p><a href="https://mpb.health/download-app">MPB Health App Download</a></p>
+<p><a href="https://mpb.health/download-app" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; transition: background-color 0.2s;">MPB Health App Download</a></p>
 
 <hr />
 
-<h3>Rewards in Motion</h3>
+<h3 style="text-align: center;">Rewards in Motion</h3>
 
 <h2>MGM Grand Las Vegas!</h2>
 
 <p>Open Enrollment is almost here, are you going to LAS VEGAS!? Let us know how we can support you! This is the time to take advantage of all the ACA changes coming through.</p>
 
-<p><a href="https://advisor.mpb.health/zion-healthshare-contest/">Leaderboard</a></p>'
+<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 24px 0; border-radius: 12px;">
+<iframe src="https://player.vimeo.com/video/1121281554?dnt=1&app_id=122963" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px;" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media" allowfullscreen></iframe>
+</div>
+
+<p><a href="https://advisor.mpb.health/zion-healthshare-contest/" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Leaderboard</a></p>'
 
 WHERE slug = 'advisor-bulletin-december-24-2025' AND content_type = 'bulletin';

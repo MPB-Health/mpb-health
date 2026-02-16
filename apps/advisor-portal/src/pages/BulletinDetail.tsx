@@ -205,9 +205,9 @@ export default function BulletinDetail() {
       <div
         className="bulletin-content prose prose-lg max-w-none dark:prose-invert
           prose-headings:text-th-text-primary prose-headings:font-bold
-          prose-h1:text-3xl prose-h1:mt-8 prose-h1:mb-4
+          prose-h1:text-3xl prose-h1:mt-6 prose-h1:mb-2
           prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-th-accent-700 dark:prose-h2:text-th-accent-400
-          prose-h3:text-xl prose-h3:mt-10 prose-h3:mb-4 prose-h3:uppercase prose-h3:tracking-wide prose-h3:border-b prose-h3:border-th-border prose-h3:pb-2
+          prose-h3:text-xl prose-h3:mt-10 prose-h3:mb-6 prose-h3:text-th-text-primary
           prose-h4:text-lg prose-h4:mt-6 prose-h4:mb-2
           prose-p:text-th-text-secondary prose-p:leading-relaxed prose-p:my-3
           prose-a:text-th-accent-600 prose-a:font-medium prose-a:underline prose-a:underline-offset-2 hover:prose-a:text-th-accent-700
@@ -216,10 +216,11 @@ export default function BulletinDetail() {
           prose-ul:text-th-text-secondary prose-ul:my-3 prose-ul:space-y-1
           prose-ol:text-th-text-secondary prose-ol:my-3 prose-ol:space-y-1
           prose-li:text-th-text-secondary prose-li:leading-relaxed
-          prose-hr:border-th-border prose-hr:my-8
+          prose-hr:border-th-border prose-hr:my-10
           prose-img:rounded-xl prose-img:shadow-md
           prose-code:bg-surface-tertiary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
           prose-pre:bg-gray-900 prose-pre:rounded-xl
+          [&_iframe]:rounded-xl
           mb-12"
         dangerouslySetInnerHTML={{ __html: bulletin.content }}
       />

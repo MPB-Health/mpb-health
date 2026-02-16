@@ -1,5 +1,5 @@
-import { useEffect, useCallback, useMemo } from 'react';
-import { X, ExternalLink, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { X, ExternalLink, Loader2, Download } from 'lucide-react';
 
 interface DocumentPreviewModalProps {
   isOpen: boolean;
@@ -98,20 +98,40 @@ export default function DocumentPreviewModal({
           </button>
         </div>
 
-        {/* Iframe Container */}
+        {/* Document Container */}
         <div className="flex-1 relative bg-surface-tertiary">
-          {/* Loading indicator */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-th-accent-500 animate-spin" />
-          </div>
-
-          {/* Office Online Viewer iframe */}
-          <iframe
-            src={viewerUrl}
-            title={`Preview: ${title}`}
-            className="absolute inset-0 w-full h-full border-0"
-            allowFullScreen
-          />
+          {isPDF ? (
+            <object
+              data={viewerUrl}
+              type="application/pdf"
+              className="w-full h-full"
+            >
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8">
+                <p className="text-th-text-secondary text-center">
+                  Unable to display PDF preview in your browser.
+                </p>
+                <button
+                  onClick={handleOpenDocument}
+                  className="px-4 py-2 rounded-lg bg-th-accent-600 text-white hover:bg-th-accent-700 transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Open PDF</span>
+                </button>
+              </div>
+            </object>
+          ) : (
+            <>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-th-accent-500 animate-spin" />
+              </div>
+              <iframe
+                src={viewerUrl}
+                title={`Preview: ${title}`}
+                className="absolute inset-0 w-full h-full border-0"
+                allowFullScreen
+              />
+            </>
+          )}
         </div>
 
         {/* Footer */}

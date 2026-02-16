@@ -156,13 +156,13 @@ const BusinessesOrganizations = () => {
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl transform rotate-3"></div>
               <img
-                src="/assets/businessTeamWorking.jpg"
-                alt="Professional accounting firm office"
+                src="/assets/businessTeamWorking.png"
+                alt="Business professionals shaking hands"
                 width={600}
                 height={500}
                 loading="lazy"
                 decoding="async"
-                className="relative rounded-2xl shadow-2xl w-full h-auto object-contain"
+                className="relative rounded-2xl shadow-2xl w-full h-auto object-cover"
               />
             </div>
 
@@ -205,36 +205,9 @@ const BusinessesOrganizations = () => {
             </p>
           </div>
 
-          {/* Full-width benefit */}
-          <div className="mb-8">
-            {services.slice(0, 1).map((service, index) => {
-              const Icon = service.icon;
-              return (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl p-6 shadow-sm border border-neutral-200 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex flex-col gap-4">
-                    <div className={`inline-flex w-14 h-14 rounded-xl ${service.bgColor} items-center justify-center`}>
-                      <Icon className={`h-7 w-7 ${service.color}`} />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-neutral-900">
-                        {service.title}
-                      </h4>
-                      {service.note && (
-                        <p className="text-neutral-600 text-sm mt-2">{service.note}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Three-column grid benefits */}
+          {/* Three-column grid benefits - 4 rows of 3 cards */}
           <div className="grid md:grid-cols-3 gap-6">
-            {services.slice(1).map((service, index) => {
+            {services.map((service, index) => {
               const Icon = service.icon;
               return (
                 <div

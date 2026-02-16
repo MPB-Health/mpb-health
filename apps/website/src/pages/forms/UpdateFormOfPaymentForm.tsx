@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { CreditCard, Shield, ExternalLink, ArrowLeft, Phone, KeyRound, Mail, MousePointerClick, Lock } from 'lucide-react';
+import { CreditCard, Shield, ExternalLink, ArrowLeft, Phone, KeyRound, Mail, MousePointerClick, Lock, Smartphone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 
 const PAYMENT_PORTAL_URL = 'https://www.1enrollment.com/MPBmembers';
+const MPB_APP_URL = 'https://app.mpb.health/';
 
 export default function UpdateFormOfPaymentForm() {
   const navigate = useNavigate();
@@ -194,6 +195,17 @@ export default function UpdateFormOfPaymentForm() {
                 </p>
 
                 <a
+                  href={MPB_APP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-[#0a4c8f]/10 text-[#0a4c8f] font-bold rounded-xl hover:bg-[#0a4c8f]/20 transition-all duration-300 text-lg group"
+                >
+                  <Smartphone className="w-6 h-6" />
+                  Update via MPB Health App
+                  <ExternalLink className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </a>
+
+                <a
                   href="tel:8558164650"
                   className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-white text-[#0a4c8f] font-bold rounded-xl border-2 border-[#0a4c8f]/20 hover:border-[#0a4c8f]/40 hover:bg-[#0a4c8f]/5 transition-all duration-300 text-lg"
                 >
@@ -239,7 +251,7 @@ export default function UpdateFormOfPaymentForm() {
 
               {/* Title */}
               <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 text-center mb-1">
-                Payment Portal
+                Secure Payment Portal
               </h2>
               <p className="text-base text-neutral-500 text-center mb-8">
                 Please read before continuing
@@ -313,6 +325,17 @@ export default function UpdateFormOfPaymentForm() {
                 Open Portal Login Page
                 <ExternalLink className="w-5 h-5" />
               </button>
+
+              {/* Update via MPB Health App */}
+              <a
+                href={MPB_APP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-[#0a4c8f]/10 text-[#0a4c8f] font-semibold rounded-xl hover:bg-[#0a4c8f]/20 transition-colors text-base mb-3"
+              >
+                <Smartphone className="w-5 h-5" />
+                Update via MPB Health App
+              </a>
 
               {/* Contact Concierge */}
               <a

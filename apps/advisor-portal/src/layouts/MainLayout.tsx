@@ -9,6 +9,7 @@ import {
   Bell,
   User,
   LogOut,
+  Video,
   Inbox,
   Settings,
   Search,
@@ -279,6 +280,15 @@ export default function MainLayout() {
 
   const topBarActions = (
     <>
+      {/* Meeting Button */}
+      <button
+        onClick={() => {/* Link will be added later */}}
+        className="flex items-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-full text-sm font-medium hover:bg-red-600 transition-colors"
+      >
+        <Video className="w-4 h-4" />
+        <span className="hidden md:inline">Meeting</span>
+      </button>
+
       {/* Global Search Button */}
       <button
         onClick={() => openCommandPalette('search')}

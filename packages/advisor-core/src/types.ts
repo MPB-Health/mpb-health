@@ -150,6 +150,7 @@ export interface SOPDocument {
 
 export interface SOPCategory {
   id: string;
+  slug: string;
   name: string;
   description: string | null;
   icon: string | null;

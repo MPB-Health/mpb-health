@@ -19,6 +19,7 @@ import {
   Video,
   BookOpen,
   ArrowRight,
+  Link2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/button';
@@ -48,6 +49,10 @@ interface CMSStats {
   upcomingMeetings: number;
   totalAdvisors: number;
   activeAdvisors: number;
+  videos: number;
+  activeVideos: number;
+  enrollmentLinks: number;
+  activeEnrollmentLinks: number;
   lastUpdated: string | null;
 }
 
@@ -80,6 +85,10 @@ export default function AdvisorCMSHub() {
     upcomingMeetings: 0,
     totalAdvisors: 0,
     activeAdvisors: 0,
+    videos: 0,
+    activeVideos: 0,
+    enrollmentLinks: 0,
+    activeEnrollmentLinks: 0,
     lastUpdated: null,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -104,6 +113,8 @@ export default function AdvisorCMSHub() {
         meetingsResult,
         advisorsAllResult,
         advisorsActiveResult,
+        videosResult,
+        enrollmentLinksResult,
       ] = await Promise.all([
         supabase.from('advisor_nav_menu').select('id', { count: 'exact' }),
         supabase.from('advisor_content').select('id, is_published', { count: 'exact' }).eq('content_type', 'bulletin'),
@@ -115,6 +126,8 @@ export default function AdvisorCMSHub() {
         supabase.from('advisor_meetings').select('id, scheduled_at, status', { count: 'exact' }),
         supabase.from('advisors').select('id', { count: 'exact', head: true }),
         supabase.from('advisors').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('advisor_videos').select('id, is_active', { count: 'exact' }),
+        supabase.from('advisor_enrollment_links').select('id, is_active', { count: 'exact' }),
       ]);
 
       // Calculate stats
@@ -124,6 +137,8 @@ export default function AdvisorCMSHub() {
       const upcomingMeetings = meetingsResult.data?.filter(m => 
         m.status === 'scheduled' && new Date(m.scheduled_at) > new Date()
       ).length || 0;
+      const activeVideos = videosResult.data?.filter(v => v.is_active).length || 0;
+      const activeEnrollmentLinks = enrollmentLinksResult.data?.filter(e => e.is_active).length || 0;
 
       setStats({
         navigationItems: navResult.count || 0,
@@ -140,6 +155,10 @@ export default function AdvisorCMSHub() {
         upcomingMeetings,
         totalAdvisors: advisorsAllResult.count || 0,
         activeAdvisors: advisorsActiveResult.count || 0,
+        videos: videosResult.count || 0,
+        activeVideos,
+        enrollmentLinks: enrollmentLinksResult.count || 0,
+        activeEnrollmentLinks,
         lastUpdated: new Date().toISOString(),
       });
 
@@ -231,6 +250,24 @@ export default function AdvisorCMSHub() {
       badge: stats.totalAdvisors - stats.activeAdvisors > 0 ? `${stats.totalAdvisors - stats.activeAdvisors} inactive` : null,
     },
     {
+      title: 'Video Library',
+      description: 'Manage Vimeo videos shown to advisors',
+      icon: Video,
+      href: '/admin/advisor-cms/videos',
+      color: 'purple',
+      stats: `${stats.activeVideos} active`,
+      badge: stats.videos - stats.activeVideos > 0 ? `${stats.videos - stats.activeVideos} hidden` : null,
+    },
+    {
+      title: 'Enrollment Links',
+      description: 'Manage enrollment page links for advisors',
+      icon: Link2,
+      href: '/admin/advisor-cms/enrollment',
+      color: 'blue',
+      stats: `${stats.activeEnrollmentLinks} active`,
+      badge: stats.enrollmentLinks - stats.activeEnrollmentLinks > 0 ? `${stats.enrollmentLinks - stats.activeEnrollmentLinks} hidden` : null,
+    },
+    {
       title: 'Meetings & Events',
       description: 'Schedule and manage advisor meetings',
       icon: Video,
@@ -246,6 +283,15 @@ export default function AdvisorCMSHub() {
       href: '/admin/advisor-cms/announcements',
       color: 'red',
       stats: `${stats.activeAnnouncements} active`,
+      badge: null,
+    },
+    {
+      title: 'Portal Settings',
+      description: 'Manage portal-wide configuration values',
+      icon: Settings,
+      href: '/admin/advisor-cms/settings',
+      color: 'slate',
+      stats: 'Key-value config',
       badge: null,
     },
     {

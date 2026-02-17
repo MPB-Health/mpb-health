@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -26,8 +26,26 @@ interface SOPLibraryProps {
   section?: string;
 }
 
-// Section configuration for filtering and display
-const sectionConfig: Record<string, { title: string; description: string; icon: React.ElementType }> = {
+// Map icon name strings from CMS to Lucide icon components
+const iconMap: Record<string, React.ElementType> = {
+  Presentation,
+  BookOpen,
+  BarChart2,
+  FileSearch,
+  FileImage,
+  File,
+  Heart,
+  Mountain,
+  Shield,
+  Pill,
+  DollarSign,
+  Search,
+};
+
+type SectionEntry = { title: string; description: string; icon: React.ElementType };
+
+// Fallback section configuration used when CMS categories haven't loaded or return empty
+const fallbackSectionConfig: Record<string, SectionEntry> = {
   'presentations': {
     title: 'Presentations',
     description: 'Sales and training presentations',
@@ -95,6 +113,21 @@ const sectionConfig: Record<string, { title: string; description: string; icon: 
   },
 };
 
+/** Build section config dynamically from CMS categories, falling back to hardcoded defaults */
+function buildSectionConfig(categories: SOPCategory[]): Record<string, SectionEntry> {
+  if (categories.length === 0) return fallbackSectionConfig;
+
+  const config: Record<string, SectionEntry> = {};
+  for (const cat of categories) {
+    config[cat.slug] = {
+      title: cat.name,
+      description: cat.description || '',
+      icon: (cat.icon && iconMap[cat.icon]) || BookOpen,
+    };
+  }
+  return config;
+}
+
 export default function SOPLibrary({ section }: SOPLibraryProps) {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<SOPDocument[]>([]);
@@ -103,6 +136,9 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [previewDoc, setPreviewDoc] = useState<SOPDocument | null>(null);
+
+  // Build section config dynamically from CMS categories, with hardcoded fallback
+  const sectionConfig = useMemo(() => buildSectionConfig(categories), [categories]);
 
   // Get section config if section is specified
   const currentSection = section ? sectionConfig[section] : null;

@@ -17,18 +17,23 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
+  Info,
+  AlertTriangle,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
+import { navigationService, meetingService, enrollmentService, portalSettingsService, announcementService, type QuickLink, type AdvisorMeeting, type EnrollmentLink, type Announcement } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
-interface DashboardQuickLink {
+interface FallbackQuickLink {
   label: string;
   url: string;
   image: string;
   description: string;
 }
 
-const dashboardQuickLinks: DashboardQuickLink[] = [
+const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
   {
     label: 'RX, Labs & Imaging Quote',
     url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2025',
@@ -73,13 +78,23 @@ const dashboardQuickLinks: DashboardQuickLink[] = [
   },
 ];
 
-// Enroll page options for My Advisor Page card
-const ENROLL_OPTIONS = [
+const fallbackImageMap: Record<string, string> = {
+  'RX, Labs & Imaging Quote': '/images/quick-links/quick-link-rx-labs-imaging.png',
+  'Laboratory Assist': '/images/quick-links/quick-link-lab-assist.png',
+  'Find a Provider': '/images/quick-links/quick-link-provider-search.png',
+  'Book a Doctor': '/images/quick-links/quick-link-zocdoc.png',
+  'Prescription Savings': '/images/quick-links/quick-link-goodrx.png',
+  'HealthyCare Podcast': '/images/quick-links/quick-link-healthy-care-podcast.png',
+  'MPB Health Channel': '/images/quick-links/quick-link-mpb-health-youtube.png',
+};
+
+// Fallback enroll page options (used when CMS data is unavailable)
+const FALLBACK_ENROLL_OPTIONS: { label: string; url: string }[] = [
   { label: 'Essentials', url: 'https://essentials.enrollmpb.com/?id=768413' },
   { label: 'Care+', url: 'https://careplus.enrollmpb.com/?id=768413' },
   { label: 'Secure HSA', url: 'https://securehsa.enrollmpb.com/?id=768413' },
   { label: 'MEC + Essentials', url: 'https://mec.enrollmpb.com/?id=768413' },
-] as const;
+];
 
 // Teams meeting link for recurring advisor meetings
 const TEAMS_MEETING_URL = ''; // TODO: Add Teams meeting link
@@ -184,6 +199,144 @@ export default function Dashboard() {
   const [shareForm, setShareForm] = useState({ name: '', email: '' });
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
 
+  // CMS-driven quick links
+  const [cmsQuickLinks, setCmsQuickLinks] = useState<QuickLink[]>([]);
+  const [quickLinksLoading, setQuickLinksLoading] = useState(true);
+
+  // CMS-driven meetings
+  const [upcomingMeetings, setUpcomingMeetings] = useState<AdvisorMeeting[]>([]);
+  const [meetingsLoading, setMeetingsLoading] = useState(true);
+
+  // CMS-driven enrollment links
+  const [cmsEnrollLinks, setCmsEnrollLinks] = useState<EnrollmentLink[]>([]);
+
+  // Portal settings (affiliate modal, advisor landing page)
+  const [portalSettings, setPortalSettings] = useState<Record<string, string>>({});
+
+  // CMS-driven announcements
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set(announcementService.getDismissedIds()));
+
+  // Fetch announcements on mount and subscribe to real-time changes
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const active = await announcementService.getActiveAnnouncements();
+        if (!cancelled) setAnnouncements(active);
+      } catch (err) {
+        console.error('Failed to load announcements:', err);
+      }
+    })();
+
+    const channel = announcementService.subscribeToAnnouncements((updated) => {
+      if (!cancelled) setAnnouncements(updated);
+    });
+
+    return () => {
+      cancelled = true;
+      channel.unsubscribe();
+    };
+  }, []);
+
+  const handleDismissAnnouncement = (id: string) => {
+    announcementService.dismissAnnouncement(id);
+    setDismissedIds((prev) => new Set([...prev, id]));
+  };
+
+  const visibleAnnouncements = announcements.filter((a) => !dismissedIds.has(a.id));
+
+  // Fetch portal settings on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await portalSettingsService.getMultipleSettings([
+          'affiliate_form_url',
+          'schedule_call_url',
+          'affiliate_phone',
+          'advisor_landing_page_url',
+        ]);
+        if (!cancelled) setPortalSettings(settings);
+      } catch (err) {
+        console.error('Failed to load portal settings:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Derive URLs from settings with hardcoded fallbacks
+  const affiliateFormUrl = portalSettings.affiliate_form_url || 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/448';
+  const scheduleCallUrl = portalSettings.schedule_call_url || 'https://calendly.com/rebalarney-mympb/time-with-reba';
+  const affiliatePhone = portalSettings.affiliate_phone || '(855) 816-4650';
+  const advisorLandingPageUrl = portalSettings.advisor_landing_page_url || 'https://advisorlandingpage.mpb.health/';
+
+  // Fetch CMS quick links on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const links = await navigationService.getDashboardQuickActions();
+        if (!cancelled) setCmsQuickLinks(links);
+      } catch (err) {
+        console.error('Failed to load dashboard quick links:', err);
+      } finally {
+        if (!cancelled) setQuickLinksLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch CMS enrollment links on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const links = await enrollmentService.getLinks();
+        if (!cancelled) setCmsEnrollLinks(links);
+      } catch (err) {
+        console.error('Failed to load enrollment links:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch CMS meetings when profile is available
+  useEffect(() => {
+    if (!profile?.id) {
+      setMeetingsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const meetings = await meetingService.getUpcomingMeetings(profile.id, 4);
+        if (!cancelled) setUpcomingMeetings(meetings);
+      } catch (err) {
+        console.error('Failed to load upcoming meetings:', err);
+      } finally {
+        if (!cancelled) setMeetingsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [profile?.id]);
+
+  // Derive display quick links: CMS data with fallback
+  const displayQuickLinks = cmsQuickLinks.length > 0
+    ? cmsQuickLinks.map((link) => ({
+        label: link.label,
+        url: link.url,
+        image: fallbackImageMap[link.label] || '/images/quick-links/quick-link-default.png',
+        description: link.description || '',
+      }))
+    : fallbackDashboardQuickLinks;
+
+  // Derive enrollment options: CMS data with fallback
+  const enrollOptions = cmsEnrollLinks.length > 0
+    ? cmsEnrollLinks.map((link) => ({ label: link.label, url: link.url }))
+    : FALLBACK_ENROLL_OPTIONS;
+
   // Close enroll dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -205,6 +358,89 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Announcements */}
+      {visibleAnnouncements.length > 0 && (
+        <div className="space-y-3">
+          {visibleAnnouncements.map((announcement) => {
+            const typeConfig: Record<Announcement['type'], { bg: string; border: string; icon: string; iconBg: string; textColor: string; IconComponent: typeof Info }> = {
+              info: {
+                bg: 'bg-blue-50 dark:bg-blue-950/30',
+                border: 'border-blue-200 dark:border-blue-800',
+                icon: 'text-blue-600 dark:text-blue-400',
+                iconBg: 'bg-blue-100 dark:bg-blue-900/40',
+                textColor: 'text-blue-800 dark:text-blue-200',
+                IconComponent: Info,
+              },
+              warning: {
+                bg: 'bg-amber-50 dark:bg-amber-950/30',
+                border: 'border-amber-200 dark:border-amber-800',
+                icon: 'text-amber-600 dark:text-amber-400',
+                iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+                textColor: 'text-amber-800 dark:text-amber-200',
+                IconComponent: AlertTriangle,
+              },
+              success: {
+                bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+                border: 'border-emerald-200 dark:border-emerald-800',
+                icon: 'text-emerald-600 dark:text-emerald-400',
+                iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+                textColor: 'text-emerald-800 dark:text-emerald-200',
+                IconComponent: CheckCircle2,
+              },
+              error: {
+                bg: 'bg-red-50 dark:bg-red-950/30',
+                border: 'border-red-200 dark:border-red-800',
+                icon: 'text-red-600 dark:text-red-400',
+                iconBg: 'bg-red-100 dark:bg-red-900/40',
+                textColor: 'text-red-800 dark:text-red-200',
+                IconComponent: AlertCircle,
+              },
+            };
+
+            const config = typeConfig[announcement.type] || typeConfig.info;
+            const IconComp = config.IconComponent;
+
+            return (
+              <div
+                key={announcement.id}
+                className={`relative flex items-start gap-3 rounded-xl border px-4 py-3.5 ${config.bg} ${config.border} transition-all duration-200`}
+              >
+                <div className={`flex-shrink-0 p-1.5 rounded-lg ${config.iconBg}`}>
+                  <IconComp className={`w-4.5 h-4.5 ${config.icon}`} />
+                </div>
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <p className={`text-sm font-semibold ${config.textColor}`}>{announcement.title}</p>
+                  {announcement.content && (
+                    <p className={`mt-0.5 text-sm ${config.textColor} opacity-80`}>{announcement.content}</p>
+                  )}
+                  {announcement.link_url && (
+                    <a
+                      href={announcement.link_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-1 mt-1.5 text-sm font-medium ${config.icon} hover:underline`}
+                    >
+                      {announcement.link_text || 'Learn more'}
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+                {announcement.is_dismissible && (
+                  <button
+                    type="button"
+                    onClick={() => handleDismissAnnouncement(announcement.id)}
+                    className={`flex-shrink-0 p-1 rounded-lg ${config.textColor} opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-all`}
+                    aria-label="Dismiss announcement"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Welcome header */}
       <GradientHeader
         title={`Welcome back, ${profile?.first_name}!`}
@@ -254,7 +490,7 @@ export default function Dashboard() {
                   My Advisor Page
                 </p>
                 <a
-                  href="https://advisorlandingpage.mpb.health/"
+                  href={advisorLandingPageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 hover:underline"
@@ -266,7 +502,7 @@ export default function Dashboard() {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShareModal({ label: 'My Advisor Page', url: 'https://advisorlandingpage.mpb.health/' });
+                    setShareModal({ label: 'My Advisor Page', url: advisorLandingPageUrl });
                     setShareForm({ name: '', email: '' });
                   }}
                   className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 hover:underline"
@@ -293,7 +529,7 @@ export default function Dashboard() {
                 </button>
                 {enrollDropdownOpen && (
                   <div className="mt-1 rounded-lg border border-th-border bg-surface-primary shadow-lg overflow-hidden z-10">
-                    {ENROLL_OPTIONS.map((option) => (
+                    {enrollOptions.map((option) => (
                       <div
                         key={option.url}
                         className="group flex items-center justify-between gap-2 px-3 py-2 hover:bg-surface-tertiary border-b border-th-border-subtle last:border-b-0"
@@ -387,6 +623,7 @@ export default function Dashboard() {
 
             {/* Navigation Arrows */}
             <button
+              aria-label="Previous video"
               onClick={() => {
                 setActiveVideoIndex((prev) => (prev === 0 ? ADVISOR_VIDEOS.length - 1 : prev - 1));
                 setVideoPlaying(false);
@@ -396,6 +633,7 @@ export default function Dashboard() {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
+              aria-label="Next video"
               onClick={() => {
                 setActiveVideoIndex((prev) => (prev === ADVISOR_VIDEOS.length - 1 ? 0 : prev + 1));
                 setVideoPlaying(false);
@@ -450,50 +688,95 @@ export default function Dashboard() {
           <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
             <h2 className="font-semibold text-th-text-primary">Upcoming Meetings</h2>
             <span className="text-xs text-th-text-tertiary font-medium">
-              Every 2nd & 4th Tuesday
+              {upcomingMeetings.length > 0 ? `${upcomingMeetings.length} upcoming` : 'Every 2nd & 4th Tuesday'}
             </span>
           </div>
           <div className="p-5">
-            <div className="space-y-4">
-              {getUpcomingRecurringMeetings(4).map((date, index) => {
-                const isNext = index === 0;
-                return (
-                  <div
-                    key={date.toISOString()}
-                    className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800' : ''}`}
-                  >
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-purple-600' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
-                      <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+            {meetingsLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4 p-3 rounded-lg animate-pulse">
+                    <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-th-text-primary">
-                        Advisor Meeting
-                        {isNext && <span className="ml-2 text-xs font-semibold text-purple-600 dark:text-purple-400">Next</span>}
-                      </p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Calendar className="w-4 h-4 text-th-text-tertiary" />
-                        <span className="text-sm text-th-text-tertiary">
-                          {format(date, 'EEEE, MMM d · h:mm a')}
-                        </span>
-                      </div>
-                    </div>
-                    {TEAMS_MEETING_URL ? (
-                      <a
-                        href={TEAMS_MEETING_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Join
-                      </a>
-                    ) : (
-                      <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
-                    )}
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : upcomingMeetings.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingMeetings.map((meeting, index) => {
+                  const isNext = index === 0;
+                  const meetingDate = new Date(meeting.scheduled_at);
+                  const joinUrl = meetingService.getJitsiUrl(meeting);
+                  return (
+                    <div
+                      key={meeting.id}
+                      className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800' : ''}`}
+                    >
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-purple-600' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
+                        <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-th-text-primary">
+                          {meeting.title}
+                          {isNext && <span className="ml-2 text-xs font-semibold text-purple-600 dark:text-purple-400">Next</span>}
+                        </p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Calendar className="w-4 h-4 text-th-text-tertiary" />
+                          <span className="text-sm text-th-text-tertiary">
+                            {format(meetingDate, 'EEEE, MMM d · h:mm a')}
+                          </span>
+                        </div>
+                      </div>
+                      {joinUrl ? (
+                        <a
+                          href={joinUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Join
+                        </a>
+                      ) : (
+                        <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {getUpcomingRecurringMeetings(4).map((date, index) => {
+                  const isNext = index === 0;
+                  return (
+                    <div
+                      key={date.toISOString()}
+                      className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800' : ''}`}
+                    >
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-purple-600' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
+                        <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-th-text-primary">
+                          Advisor Meeting
+                          {isNext && <span className="ml-2 text-xs font-semibold text-purple-600 dark:text-purple-400">Next</span>}
+                        </p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Calendar className="w-4 h-4 text-th-text-tertiary" />
+                          <span className="text-sm text-th-text-tertiary">
+                            {format(date, 'EEEE, MMM d · h:mm a')}
+                          </span>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -510,32 +793,48 @@ export default function Dashboard() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          {dashboardQuickLinks.map((link) => (
-            <a
-              key={link.url}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={link.description}
-              className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5"
-            >
-              <div className="relative w-full aspect-[16/10] overflow-hidden">
-                <img
-                  src={link.image}
-                  alt={link.label}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+        {quickLinksLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-th-border overflow-hidden animate-pulse"
+              >
+                <div className="w-full aspect-[16/10] bg-gray-200 dark:bg-gray-700" />
+                <div className="p-2.5">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto" />
+                </div>
               </div>
-              <div className="p-2.5 flex items-center gap-1.5">
-                <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
-                  {link.label}
-                </span>
-                <ExternalLink className="w-3 h-3 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
-              </div>
-            </a>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {displayQuickLinks.map((link) => (
+              <a
+                key={link.url}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={link.description}
+                className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5"
+              >
+                <div className="relative w-full aspect-[16/10] overflow-hidden">
+                  <img
+                    src={link.image}
+                    alt={link.label}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-2.5 flex items-center gap-1.5">
+                  <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
+                    {link.label}
+                  </span>
+                  <ExternalLink className="w-3 h-3 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Affiliate modal */}
@@ -596,11 +895,11 @@ export default function Dashboard() {
                   Schedule a Call
                 </button>
                 <a
-                  href="tel:8558164650"
+                  href={`tel:${affiliatePhone.replace(/\D/g, '')}`}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-th-text-primary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
                 >
                   <Phone className="w-4 h-4" />
-                  (855) 816-4650
+                  {affiliatePhone}
                 </a>
               </div>
               <button
@@ -644,7 +943,7 @@ export default function Dashboard() {
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">
                 <iframe
-                  src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/448"
+                  src={affiliateFormUrl}
                   className="w-full h-full border-0"
                   title="Application Form"
                   allow="payment"
@@ -680,7 +979,7 @@ export default function Dashboard() {
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">
                 <iframe
-                  src="https://calendly.com/rebalarney-mympb/time-with-reba"
+                  src={scheduleCallUrl}
                   className="w-full h-full border-0"
                   title="Schedule a Call"
                 />

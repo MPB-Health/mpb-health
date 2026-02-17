@@ -181,6 +181,9 @@ const AdvisorCMSForms = lazyAuto(() => import('./pages/admin/advisor-cms/FormsMa
 const AdvisorCMSTraining = lazyAuto(() => import('./pages/admin/advisor-cms/TrainingManager'));
 const AdvisorCMSQuickActions = lazyAuto(() => import('./pages/admin/advisor-cms/QuickActionsManager'));
 const AdvisorCMSDirectory = lazyAuto(() => import('./pages/admin/advisor-cms/DirectoryManager'));
+const AdvisorCMSVideos = lazyAuto(() => import('./pages/admin/advisor-cms/VideosManager'));
+const AdvisorCMSEnrollment = lazyAuto(() => import('./pages/admin/advisor-cms/EnrollmentLinksManager'));
+const AdvisorCMSSettings = lazyAuto(() => import('./pages/admin/advisor-cms/PortalSettingsManager'));
 
 // Forms Manager
 const FormsManager = lazyAuto(() => import('./pages/admin/FormsManager'));
@@ -673,6 +676,30 @@ const App = () => {
                     element={
                       <ProtectedRoute>
                         <AdvisorCMSDirectory />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/videos"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorCMSVideos />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/enrollment"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorCMSEnrollment />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/settings"
+                    element={
+                      <ProtectedRoute>
+                        <AdvisorCMSSettings />
                       </ProtectedRoute>
                     }
                   />

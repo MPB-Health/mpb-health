@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Send, Phone, User, MessageSquare } from 'lucide-react';
+import { portalSettingsService } from '@mpbhealth/advisor-core';
+import { supabase } from '@mpbhealth/database';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -10,6 +12,28 @@ export default function Contact() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [contactPhone, setContactPhone] = useState('(561) 922-9647');
+  const [contactEmail, setContactEmail] = useState('support@mpb.health');
+
+  // Load dynamic contact settings
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await portalSettingsService.getMultipleSettings([
+          'contact_phone',
+          'contact_email',
+        ]);
+        if (!cancelled) {
+          if (settings.contact_phone) setContactPhone(settings.contact_phone);
+          if (settings.contact_email) setContactEmail(settings.contact_email);
+        }
+      } catch (err) {
+        console.error('Failed to load contact settings:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -19,8 +43,21 @@ export default function Contact() {
     e.preventDefault();
     setSubmitting(true);
 
-    // TODO: Wire up to backend / email service
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const { error } = await supabase.from('contact_submissions').insert({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        message: formData.message,
+        source: 'advisor_portal',
+      });
+
+      if (error) {
+        console.error('Contact submission error:', error);
+      }
+    } catch (err) {
+      console.error('Failed to submit contact form:', err);
+    }
 
     setSubmitting(false);
     setSubmitted(true);
@@ -177,7 +214,11 @@ export default function Contact() {
         </p>
         <div className="flex items-center gap-2 mt-3 text-sm text-th-text-secondary">
           <Phone className="w-4 h-4 text-th-text-tertiary" />
-          <a href="tel:+15619229647" className="hover:text-th-accent-600">(561) 922-9647</a>
+          <a href={`tel:${contactPhone.replace(/\D/g, '')}`} className="hover:text-th-accent-600">{contactPhone}</a>
+        </div>
+        <div className="flex items-center gap-2 mt-2 text-sm text-th-text-secondary">
+          <Mail className="w-4 h-4 text-th-text-tertiary" />
+          <a href={`mailto:${contactEmail}`} className="hover:text-th-accent-600">{contactEmail}</a>
         </div>
       </div>
     </div>

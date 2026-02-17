@@ -1,35 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   UsersRound,
   Search,
 } from 'lucide-react';
+import {
+  formsService,
+  type AdvisorForm,
+} from '@mpbhealth/advisor-core';
+
+const fallbackGroups: AdvisorForm[] = [
+  {
+    id: 'employer-group-census',
+    slug: 'employer-group-census',
+    label: 'Employer Group Census',
+    category: 'employer',
+    description: 'Submit your employer group census form',
+    icon: 'users-round',
+    estimated_minutes: 15,
+    cognito_embed: 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/169',
+    is_active: true,
+    requires_auth: false,
+    sort_order: 1,
+    show_in_menu: true,
+    menu_section: 'employer',
+    menu_order: 1,
+    created_at: '',
+    updated_at: '',
+    name: 'Employer Group Census',
+    embed_url: 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/169',
+  } as AdvisorForm,
+  {
+    id: 'employer-group-listbill',
+    slug: 'employer-group-listbill',
+    label: 'Employer Group List-Bill Setup',
+    category: 'employer',
+    description: 'Set up list billing for your employer group',
+    icon: 'users-round',
+    estimated_minutes: 10,
+    cognito_embed: 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/343',
+    is_active: true,
+    requires_auth: false,
+    sort_order: 2,
+    show_in_menu: true,
+    menu_section: 'employer',
+    menu_order: 2,
+    created_at: '',
+    updated_at: '',
+    name: 'Employer Group List-Bill Setup',
+    embed_url: 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/343',
+  } as AdvisorForm,
+];
 
 export default function SubmitGroup() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState<{ id: string; title: string; url: string } | null>(null);
+  const [selectedForm, setSelectedForm] = useState<AdvisorForm | null>(null);
+  const [forms, setForms] = useState<AdvisorForm[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const groups = [
-    {
-      id: 'employer-group-census',
-      title: 'Employer Group Census',
-      description: 'Submit your employer group census form',
-      thumbnail_url: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/employer-group-census.jpg',
-      url: 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/169',
-    },
-    {
-      id: 'employer-group-listbill',
-      title: 'Employer Group List-Bill Setup',
-      description: 'Set up list billing for your employer group',
-      thumbnail_url: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/employer-group-listbill.jpg',
-      url: 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/343',
-    },
-  ];
+  useEffect(() => {
+    const loadForms = async () => {
+      try {
+        const cmsForms = await formsService.getForms('employer');
+        setForms(cmsForms.length > 0 ? cmsForms : fallbackGroups);
+      } catch (err) {
+        console.error('Failed to load employer forms:', err);
+        setForms(fallbackGroups);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filteredGroups = groups.filter((group) => {
+    loadForms();
+  }, []);
+
+  const filteredForms = forms.filter((form) => {
     const matchesSearch =
       !searchQuery ||
-      group.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      form.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      form.description?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -60,59 +108,84 @@ export default function SubmitGroup() {
         />
       </div>
 
-      {/* Cards grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredGroups.map((group) => {
-          const hasThumbnail = !!group.thumbnail_url;
-
-          return (
-            <button
-              key={group.id}
-              onClick={() => setSelectedGroup(group)}
-              className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col text-left"
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-surface-primary rounded-xl border border-th-border h-full flex flex-col animate-pulse"
             >
-              {hasThumbnail ? (
-                <div
-                  className="document-card__thumbnail bg-surface-tertiary"
-                  style={{
-                    backgroundImage: `url(${group.thumbnail_url})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center top',
-                    backgroundRepeat: 'no-repeat',
-                  }}
-                  role="img"
-                  aria-label={group.title}
-                />
-              ) : (
-                <div className="document-card__content p-5 pb-0">
-                  <div className="flex items-start justify-between">
-                    <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-surface-tertiary">
-                      <UsersRound className="w-6 h-6 text-th-text-tertiary" />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className={`document-card__content flex-1 flex flex-col ${hasThumbnail ? 'p-5' : 'p-5 pt-4'}`}>
-                <h3 className="font-semibold text-th-text-primary leading-snug">
-                  {group.title}
-                </h3>
-                {group.description && (
-                  <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
-                    {group.description}
-                  </p>
-                )}
-                <div className="mt-auto" aria-hidden="true"></div>
-                <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
-                  <span className="text-sm text-th-text-tertiary">Form</span>
-                  <span className="text-sm text-th-accent-600 font-medium">Fill out →</span>
+              <div className="document-card__thumbnail bg-surface-tertiary" />
+              <div className="p-5 flex-1 flex flex-col gap-3">
+                <div className="h-5 bg-surface-tertiary rounded w-3/4" />
+                <div className="h-4 bg-surface-tertiary rounded w-full" />
+                <div className="mt-auto pt-3.5 border-t border-th-border-subtle flex justify-between">
+                  <div className="h-4 bg-surface-tertiary rounded w-12" />
+                  <div className="h-4 bg-surface-tertiary rounded w-16" />
                 </div>
               </div>
-            </button>
-          );
-        })}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {filteredGroups.length === 0 && (
+      {/* Cards grid */}
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredForms.map((form) => {
+            const thumbnailUrl = (form as AdvisorForm & { thumbnail_url?: string }).thumbnail_url;
+            const hasThumbnail = !!thumbnailUrl;
+
+            return (
+              <button
+                key={form.id}
+                onClick={() => setSelectedForm(form)}
+                className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col text-left"
+              >
+                {hasThumbnail ? (
+                  <div
+                    className="document-card__thumbnail bg-surface-tertiary"
+                    style={{
+                      backgroundImage: `url(${thumbnailUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center top',
+                      backgroundRepeat: 'no-repeat',
+                    }}
+                    role="img"
+                    aria-label={form.label}
+                  />
+                ) : (
+                  <div className="document-card__content p-5 pb-0">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-surface-tertiary">
+                        <UsersRound className="w-6 h-6 text-th-text-tertiary" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className={`document-card__content flex-1 flex flex-col ${hasThumbnail ? 'p-5' : 'p-5 pt-4'}`}>
+                  <h3 className="font-semibold text-th-text-primary leading-snug">
+                    {form.label}
+                  </h3>
+                  {form.description && (
+                    <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
+                      {form.description}
+                    </p>
+                  )}
+                  <div className="mt-auto" aria-hidden="true"></div>
+                  <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
+                    <span className="text-sm text-th-text-tertiary">Form</span>
+                    <span className="text-sm text-th-accent-600 font-medium">Fill out →</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading && filteredForms.length === 0 && (
         <div className="text-center py-12">
           <UsersRound className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
           <p className="text-th-text-tertiary">No groups found</p>
@@ -120,20 +193,20 @@ export default function SubmitGroup() {
       )}
 
       {/* Form modal */}
-      {selectedGroup && (
+      {selectedForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
             className="fixed inset-0 bg-black/50"
-            onClick={() => setSelectedGroup(null)}
+            onClick={() => setSelectedForm(null)}
           />
           <div className="relative min-h-screen flex items-center justify-center p-4">
             <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
               <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
                 <h2 className="text-lg font-semibold text-th-text-primary">
-                  {selectedGroup.title}
+                  {selectedForm.label}
                 </h2>
                 <button
-                  onClick={() => setSelectedGroup(null)}
+                  onClick={() => setSelectedForm(null)}
                   className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
                 >
                   <span className="sr-only">Close</span>
@@ -144,9 +217,9 @@ export default function SubmitGroup() {
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">
                 <iframe
-                  src={selectedGroup.url}
+                  src={formsService.getEmbedUrl(selectedForm)}
                   className="w-full h-full border-0"
-                  title={selectedGroup.title}
+                  title={selectedForm.label}
                 />
               </div>
             </div>

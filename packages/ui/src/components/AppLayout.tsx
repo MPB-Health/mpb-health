@@ -122,14 +122,14 @@ export function AppLayout({
           collapsed && !isMobile ? 'justify-center px-2' : 'justify-between px-4'
         )}>
           <div className="flex items-center gap-3 min-w-0">
-            {logoSrc ? (
+            {appName && logoSrc ? (
               <img src={logoSrc} alt={appName} className="w-8 h-8 rounded-lg object-contain" />
-            ) : (
+            ) : appName ? (
               <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shrink-0">
                 <span className="text-white font-bold text-xs">{appName.slice(0, 3).toUpperCase()}</span>
               </div>
-            )}
-            {!(collapsed && !isMobile) && (
+            ) : null}
+            {appName && !(collapsed && !isMobile) && (
               <span className="font-semibold text-white truncate text-sm">
                 {appName}
               </span>

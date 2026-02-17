@@ -317,8 +317,7 @@ export default function MainLayout() {
       {/* Add padding for mobile bottom nav */}
       <div className="pb-16 lg:pb-0">
         <AppLayout
-        appName="Advisor Portal"
-        logoSrc="/logo.png"
+        appName=""
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
         portalSwitcher={

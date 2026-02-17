@@ -21,7 +21,7 @@ export function estimateBusinessMonthly(input: BusinessRateCalculatorInput): Bus
 
     const lineItems = [
       {
-        description: `${input.selectedPlan === 'mec-essentials' ? 'MEC+ Essentials' : 'Secure HSA'} - Per Employee`,
+        description: `${input.selectedPlan === 'mec-essentials' ? 'MEC+ Essentials' : 'Secure HSA'} - Per Membership`,
         amount: perEmployeeCost
       },
       ...rateResult.lineItems.slice(1).map(item => ({
@@ -29,7 +29,7 @@ export function estimateBusinessMonthly(input: BusinessRateCalculatorInput): Bus
         amount: item.amount * input.employeeCount
       })),
       {
-        description: `Total for ${input.employeeCount} ${input.employeeCount === 1 ? 'Employee' : 'Employees'}`,
+        description: `Total for ${input.employeeCount} ${input.employeeCount === 1 ? 'Membership' : 'Memberships'}`,
         amount: totalBusinessCost
       }
     ];

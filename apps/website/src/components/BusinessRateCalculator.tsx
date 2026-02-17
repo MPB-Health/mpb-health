@@ -261,7 +261,7 @@ export default function BusinessRateCalculator() {
 
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="employeeCount" className="text-base font-semibold text-gray-900">Number of Employees *</Label>
+                    <Label htmlFor="employeeCount" className="text-base font-semibold text-gray-900">Number of Memberships *</Label>
                     <Input
                       id="employeeCount"
                       type="number"
@@ -303,7 +303,7 @@ export default function BusinessRateCalculator() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-base font-semibold text-gray-900">Who's Covered? (Per Employee) *</Label>
+                  <Label className="text-base font-semibold text-gray-900">Who's Covered? (Per Membership) *</Label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {householdTypes.map((type) => (
                       <button
@@ -339,7 +339,7 @@ export default function BusinessRateCalculator() {
 
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="primaryAge" className="text-base font-semibold text-gray-900">Employee Age *</Label>
+                    <Label htmlFor="primaryAge" className="text-base font-semibold text-gray-900">Member Age *</Label>
                     <Input
                       id="primaryAge"
                       type="number"
@@ -589,7 +589,7 @@ export default function BusinessRateCalculator() {
                       <CardTitle className={`${typography.headings.h3.card} text-gray-900 mb-1`}>
                         Your Business Estimate
                       </CardTitle>
-                      <CardDescription className="text-base">Monthly cost for {estimate.employeeCount} {estimate.employeeCount === 1 ? 'employee' : 'employees'}</CardDescription>
+                      <CardDescription className="text-base">Monthly cost for {estimate.employeeCount} {estimate.employeeCount === 1 ? 'membership' : 'memberships'}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -601,7 +601,7 @@ export default function BusinessRateCalculator() {
                     <div className="text-lg text-gray-600 font-medium">per month total</div>
                     <div className="mt-4 flex items-center justify-center gap-2">
                       <Badge className="bg-blue-100 text-blue-800 px-4 py-1 text-sm font-semibold">
-                        {fmtMoney(estimate.perEmployeeCost)} per employee
+                        {fmtMoney(estimate.perEmployeeCost)} per membership
                       </Badge>
                     </div>
                   </div>

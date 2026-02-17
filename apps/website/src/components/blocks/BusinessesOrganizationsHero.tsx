@@ -183,7 +183,7 @@ const BusinessesOrganizationsHero: React.FC = () => {
                       <div className="text-3xl font-bold text-red-600">
                         ${savingsView === 'monthly' ? '650' : '7,800'}{savingsView === 'monthly' ? '/mo' : '/yr'}
                       </div>
-                      <div className="text-xs text-neutral-500 mt-1">Per employee average</div>
+                      <div className="text-xs text-neutral-500 mt-1">Per membership average</div>
                     </div>
                     <div className="text-red-500 text-2xl">❌</div>
                   </div>
@@ -198,7 +198,7 @@ const BusinessesOrganizationsHero: React.FC = () => {
                       <div className="text-3xl font-bold text-green-600">
                         ${savingsView === 'monthly' ? '250' : '3,000'}{savingsView === 'monthly' ? '/mo' : '/yr'}
                       </div>
-                      <div className="text-xs text-neutral-500 mt-1">Per employee average</div>
+                      <div className="text-xs text-neutral-500 mt-1">Per membership average</div>
                     </div>
                     <div className="text-green-600 text-2xl">✅</div>
                   </div>

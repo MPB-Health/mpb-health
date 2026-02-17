@@ -121,7 +121,7 @@ const InsightsAnalytics: React.FC = () => {
         'Monitor employee participation rates',
         'Track benefits utilization patterns',
         'Generate compliance reports',
-        'Analyze cost per employee trends'
+        'Analyze cost per membership trends'
       ]
     },
     {

@@ -289,18 +289,6 @@ export default function MainLayout() {
         <span className="hidden md:inline">Meeting</span>
       </button>
 
-      {/* Global Search Button */}
-      <button
-        onClick={() => openCommandPalette('search')}
-        className="flex items-center gap-2 px-3 py-1.5 text-th-text-secondary hover:text-th-text-primary bg-surface-secondary hover:bg-surface-tertiary rounded-lg transition-colors"
-      >
-        <Search className="w-4 h-4" />
-        <span className="text-sm hidden md:inline">Search</span>
-        <kbd className="hidden md:inline text-xs text-th-text-muted bg-surface-tertiary px-1.5 py-0.5 rounded font-mono">
-          ⌘K
-        </kbd>
-      </button>
-
       {/* Notification Center */}
       <NotificationCenter />
     </>

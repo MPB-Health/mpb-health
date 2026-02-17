@@ -68,6 +68,36 @@ const ENROLL_OPTIONS = [
   { label: 'MEC + Essentials', url: 'https://mec.enrollmpb.com/?id=768413' },
 ] as const;
 
+// Teams meeting link for recurring advisor meetings
+const TEAMS_MEETING_URL = ''; // TODO: Add Teams meeting link
+
+// Get the next N upcoming 2nd and 4th Tuesdays
+function getUpcomingRecurringMeetings(count = 4): Date[] {
+  const meetings: Date[] = [];
+  const now = new Date();
+  let month = now.getMonth();
+  let year = now.getFullYear();
+
+  while (meetings.length < count) {
+    const tuesdays: Date[] = [];
+    for (let d = 1; d <= 31; d++) {
+      const date = new Date(year, month, d);
+      if (date.getMonth() !== month) break;
+      if (date.getDay() === 2) tuesdays.push(date);
+    }
+    const targets = [tuesdays[1], tuesdays[3]].filter(Boolean);
+    for (const t of targets) {
+      if (t && t >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && meetings.length < count) {
+        t.setHours(12, 0, 0, 0);
+        meetings.push(t);
+      }
+    }
+    month++;
+    if (month > 11) { month = 0; year++; }
+  }
+  return meetings;
+}
+
 // Video slider data - matching the advisor playbook video slider
 const ADVISOR_VIDEOS = [
   {
@@ -323,9 +353,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div>
-        {/* Video Slider */}
-        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Video Slider - 2/3 width */}
+        <div className="lg:col-span-2 bg-surface-primary rounded-xl border border-th-border overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
             <h2 className="font-semibold text-th-text-primary flex items-center gap-2">
               <Video className="w-5 h-5 text-th-text-tertiary" />
@@ -433,6 +463,57 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Upcoming Meetings */}
+        <div className="lg:col-span-1 bg-surface-primary rounded-xl border border-th-border">
+          <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
+            <h2 className="font-semibold text-th-text-primary">Upcoming Meetings</h2>
+            <span className="text-xs text-th-text-tertiary font-medium">
+              Every 2nd & 4th Tuesday
+            </span>
+          </div>
+          <div className="p-5">
+            <div className="space-y-4">
+              {getUpcomingRecurringMeetings(4).map((date, index) => {
+                const isNext = index === 0;
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800' : ''}`}
+                  >
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-purple-600' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
+                      <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-th-text-primary">
+                        Advisor Meeting
+                        {isNext && <span className="ml-2 text-xs font-semibold text-purple-600 dark:text-purple-400">Next</span>}
+                      </p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Calendar className="w-4 h-4 text-th-text-tertiary" />
+                        <span className="text-sm text-th-text-tertiary">
+                          {format(date, 'EEEE, MMM d · h:mm a')}
+                        </span>
+                      </div>
+                    </div>
+                    {TEAMS_MEETING_URL ? (
+                      <a
+                        href={TEAMS_MEETING_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Join
+                      </a>
+                    ) : (
+                      <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Quick Links - Dynamic from CMS */}

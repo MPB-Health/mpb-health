@@ -4,13 +4,11 @@ import * as LucideIcons from 'lucide-react';
 import {
   LayoutDashboard,
   GraduationCap,
-  Video,
   FileText,
   BookOpen,
   Bell,
   User,
   LogOut,
-  Radio,
   Inbox,
   Settings,
   Search,
@@ -23,7 +21,6 @@ import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
-import LiveMeetingBanner from '../components/LiveMeetingBanner';
 import { NotificationCenter } from '../components/notifications';
 import { CommandPalette } from '../components/command-palette';
 import { MobileBottomNav } from '../components/mobile';
@@ -38,7 +35,6 @@ import { useUserPreferences } from '../hooks/useSettings';
 const iconMap: Record<string, LucideIcons.LucideIcon> = {
   LayoutDashboard,
   GraduationCap,
-  Video,
   FileText,
   BookOpen,
   Bell,
@@ -80,7 +76,6 @@ const fallbackNavigation: NavItem[] = [
       { name: 'Zion Training', href: '/training/zion' },
     ],
   },
-  { name: 'Meetings', href: '/meetings', icon: Video },
   { 
     name: 'Forms', 
     href: '/forms', 
@@ -139,7 +134,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, liveMeetings, unreadBulletinCount, logout, loading } = useAdvisor();
+  const { profile, unreadBulletinCount, logout, loading } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
@@ -283,17 +278,6 @@ export default function MainLayout() {
 
   const topBarActions = (
     <>
-      {/* Live meeting indicator */}
-      {liveMeetings.length > 0 && (
-        <button
-          onClick={() => navigate(`/meetings/${liveMeetings[0].id}`)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-full text-sm font-medium animate-pulse"
-        >
-          <Radio className="w-4 h-4" />
-          <span>Live Meeting</span>
-        </button>
-      )}
-
       {/* Global Search Button */}
       <button
         onClick={() => openCommandPalette('search')}
@@ -324,9 +308,6 @@ export default function MainLayout() {
         isOpen={showShortcutsModal}
         onClose={() => setShowShortcutsModal(false)}
       />
-
-      {/* Live Meeting Banner */}
-      {liveMeetings.length > 0 && <LiveMeetingBanner meetings={liveMeetings} />}
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />

@@ -5,8 +5,6 @@ import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Training from './pages/Training';
 import TrainingModule from './pages/TrainingModule';
-import Meetings from './pages/Meetings';
-import MeetingRoom from './pages/MeetingRoom';
 import Forms from './pages/Forms';
 import QuickLinks from './pages/QuickLinks';
 import SOPLibrary from './pages/SOPLibrary';
@@ -48,8 +46,6 @@ export default function App() {
           <Route path="training/sedera" element={<Training section="sedera" />} />
           <Route path="training/zion" element={<Training section="zion" />} />
           <Route path="training/:moduleId" element={<TrainingModule />} />
-          <Route path="meetings" element={<Meetings />} />
-          <Route path="meetings/:meetingId" element={<MeetingRoom />} />
           <Route path="forms" element={<Forms />} />
           <Route path="forms/advisor" element={<Forms section="advisor" />} />
           <Route path="forms/employer" element={<Forms section="employer" />} />

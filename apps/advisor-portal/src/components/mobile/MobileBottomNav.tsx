@@ -25,8 +25,8 @@ const mobileNavItems: NavItem[] = [
 export function MobileBottomNav() {
   const location = useLocation();
 
-  // Hide on certain pages (like conversation threads, meeting rooms)
-  const hiddenPaths = ['/meetings/', '/inbox/'];
+  // Hide on certain pages (like conversation threads)
+  const hiddenPaths = ['/inbox/'];
   const shouldHide = hiddenPaths.some((path) => location.pathname.startsWith(path) && location.pathname !== path.slice(0, -1));
 
   if (shouldHide) {

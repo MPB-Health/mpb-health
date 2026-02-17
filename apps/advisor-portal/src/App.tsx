@@ -118,7 +118,6 @@ export default function App() {
   return (
     <AdvisorProvider>
       <TourProvider>
-<<<<<<< HEAD
         <RouteErrorBoundary>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
@@ -176,59 +175,6 @@ export default function App() {
             </Routes>
           </Suspense>
         </RouteErrorBoundary>
-=======
-      <Routes>
-        {/* Auth routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="training" element={<Training />} />
-          <Route path="training/mpb" element={<Training section="mpb" />} />
-          <Route path="training/sedera" element={<Training section="sedera" />} />
-          <Route path="training/zion" element={<Training section="zion" />} />
-          <Route path="training/:moduleId" element={<TrainingModule />} />
-          <Route path="forms" element={<Forms />} />
-          <Route path="forms/advisor" element={<Forms section="advisor" />} />
-          <Route path="forms/employer" element={<Forms section="employer" />} />
-          <Route path="forms/member" element={<Forms section="member" />} />
-          <Route path="quick-links" element={<QuickLinks />} />
-          <Route path="sops" element={<SOPLibrary />} />
-          <Route path="sops/presentations" element={<SOPLibrary section="presentations" />} />
-          <Route path="sops/advisor-handbook" element={<SOPLibrary section="advisor-handbook" />} />
-          <Route path="sops/pricing-charts" element={<SOPLibrary section="pricing-charts" />} />
-          <Route path="sops/commission-structure" element={<SOPLibrary section="commission-structure" />} />
-          <Route path="sops/reference-materials" element={<SOPLibrary section="reference-materials" />} />
-          <Route path="sops/quick-reference" element={<SOPLibrary section="quick-reference" />} />
-          <Route path="sops/flyers-sedera" element={<SOPLibrary section="flyers-sedera" />} />
-          <Route path="sops/flyers" element={<SOPLibrary section="flyers" />} />
-          <Route path="sops/sharing-guidelines" element={<SOPLibrary section="sharing-guidelines" />} />
-          <Route path="sops/healthsharing-zion" element={<SOPLibrary section="healthsharing-zion" />} />
-          <Route path="sops/zion" element={<SOPLibrary section="zion" />} />
-          <Route path="sops/arm" element={<SOPLibrary section="arm" />} />
-          <Route path="sops/rx" element={<SOPLibrary section="rx" />} />
-          <Route path="sops/:documentId" element={<SOPDocument />} />
-          <Route path="bulletins" element={<Bulletins />} />
-          <Route path="bulletins/:slug" element={<BulletinDetail />} />
-          <Route path="submit-group" element={<SubmitGroup />} />
-          <Route path="contact" element={<Contact />} />
-          <Route path="inbox" element={<Inbox />} />
-          <Route path="inbox/:conversationId" element={<ConversationThread />} />
-          <Route path="audit-log" element={<AuditLog />} />
-          <Route path="profile" element={<Profile />} />
-          {/* Settings Routes */}
-          <Route path="settings" element={<SettingsHub />} />
-          <Route path="settings/organization" element={<OrganizationSettings />} />
-          <Route path="settings/team" element={<TeamManagement />} />
-          <Route path="settings/notifications" element={<NotificationPreferences />} />
-          <Route path="settings/preferences" element={<UserPreferences />} />
-          <Route path="settings/api-keys" element={<ApiKeys />} />
-          <Route path="settings/integrations" element={<Integrations />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
->>>>>>> 698753e6ee02bcec9724bc5f576681e358fac69f
       </TourProvider>
     </AdvisorProvider>
   );

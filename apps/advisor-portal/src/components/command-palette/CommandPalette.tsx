@@ -11,7 +11,6 @@ import {
   Users,
   MessageSquare,
   CheckCircle,
-  Video,
   BookOpen,
   GraduationCap,
   Workflow,
@@ -49,7 +48,6 @@ const ENTITY_ICONS: Record<SearchEntityType | string, typeof Search> = {
   lead: Users,
   message: MessageSquare,
   task: CheckCircle,
-  meeting: Video,
   document: BookOpen,
   training: GraduationCap,
   sequence: Workflow,
@@ -76,7 +74,6 @@ const ENTITY_COLORS: Record<SearchEntityType | string, string> = {
   lead: 'text-purple-500',
   message: 'text-blue-500',
   task: 'text-green-500',
-  meeting: 'text-orange-500',
   document: 'text-yellow-500',
   training: 'text-indigo-500',
   sequence: 'text-cyan-500',
@@ -168,7 +165,6 @@ function ActionItem({ action, isSelected, onSelect }: ActionItemProps) {
 const CREATE_ENTITY_URLS: Record<string, string> = {
   lead: '/leads?action=create',
   task: '/power-list?action=create-task',
-  meeting: '/meetings?action=create',
   sequence: '/sequences?action=create',
   message: '/inbox?action=compose',
 };
@@ -387,7 +383,7 @@ export default function CommandPalette() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder={
                 mode === 'search'
-                  ? 'Search leads, messages, tasks, meetings...'
+                  ? 'Search leads, messages, tasks...'
                   : 'Type a command or search...'
               }
               className="flex-1 bg-transparent border-none outline-none text-th-text-primary placeholder:text-th-text-muted"

@@ -26,7 +26,6 @@ const fallbackQuickActions: QuickActionItem[] = [
   { label: 'Training', url: '/training', icon: 'GraduationCap' },
   { label: 'Forms', url: '/forms', icon: 'FileText' },
   { label: 'SOPs', url: '/sops', icon: 'FileText' },
-  { label: 'Meetings', url: '/meetings', icon: 'Video' },
   { label: 'Profile', url: '/profile', icon: 'Award' },
 ];
 

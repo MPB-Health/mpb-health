@@ -10,9 +10,6 @@ import {
   BookmarkCheck,
   Share2,
   Bell,
-  AlertTriangle,
-  Info,
-  Megaphone,
 } from 'lucide-react';
 import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
 import { sanitizeHtml } from '@mpbhealth/utils';
@@ -79,36 +76,26 @@ export default function BulletinDetail() {
     if (!anchor) return;
 
     const href = anchor.getAttribute('href') || '';
-    if (href.toLowerCase().endsWith('.pdf')) {
+    const lowerHref = href.toLowerCase();
+
+    // Open all document links (PDFs, images, etc.) in a popup modal
+    const isDocument = lowerHref.endsWith('.pdf') ||
+      lowerHref.endsWith('.png') ||
+      lowerHref.endsWith('.jpg') ||
+      lowerHref.endsWith('.jpeg') ||
+      lowerHref.endsWith('.gif') ||
+      lowerHref.endsWith('.webp') ||
+      lowerHref.endsWith('.pptx') ||
+      lowerHref.endsWith('.docx') ||
+      lowerHref.endsWith('.xlsx');
+
+    if (isDocument) {
       e.preventDefault();
-      const linkText = anchor.textContent?.trim() || 'PDF Document';
+      const linkText = anchor.textContent?.trim() || 'Document';
       setPdfModal({ isOpen: true, title: linkText, fileUrl: href });
     }
   }, []);
 
-  const getCategoryIcon = (categorySlug: string | undefined) => {
-    switch (categorySlug) {
-      case 'alert': return AlertTriangle;
-      case 'announcement': return Megaphone;
-      case 'news': return Info;
-      default: return Bell;
-    }
-  };
-
-  const getCategoryColor = (categorySlug: string | undefined) => {
-    switch (categorySlug) {
-      case 'alert':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
-      case 'announcement':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
-      case 'news':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
-      case 'update':
-        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400';
-      default:
-        return 'bg-th-accent-100 dark:bg-th-accent-900/30 text-th-accent-700 dark:text-th-accent-400';
-    }
-  };
 
   if (loading) {
     return (
@@ -137,10 +124,6 @@ export default function BulletinDetail() {
     );
   }
 
-  const categorySlug = bulletin.category?.slug;
-  const CategoryIcon = getCategoryIcon(categorySlug);
-  const colorClass = getCategoryColor(categorySlug);
-
   return (
     <div className="max-w-4xl mx-auto">
       {/* Back Button */}
@@ -165,13 +148,11 @@ export default function BulletinDetail() {
 
       {/* Article Header */}
       <div className="mb-8">
-        {/* Category Badge */}
-        {bulletin.category && (
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-4 ${colorClass}`}>
-            <CategoryIcon className="w-3.5 h-3.5" />
-            {bulletin.category.name}
-          </span>
-        )}
+        {/* Bulletin Badge */}
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-4 bg-th-accent-100 dark:bg-th-accent-900/30 text-th-accent-700 dark:text-th-accent-400">
+          <Bell className="w-3.5 h-3.5" />
+          Bulletin
+        </span>
 
         {/* Title */}
         <h1 className="text-3xl md:text-4xl font-bold text-th-text-primary leading-tight mb-4">

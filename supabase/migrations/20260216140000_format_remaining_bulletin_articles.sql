@@ -391,8 +391,8 @@ SET content = '
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">In the meantime, remind clients to take advantage of the lower membership rates they receive until Dec 20th, and encourage your active clients to download the new MPB Health app for easier access.</p>
 
 <ul style="margin: 0 0 16px 0; padding-left: 24px; list-style-type: disc;">
-  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA-2.pdf" style="color: #2563eb; text-decoration: underline;">Price sheets</a></li>
-  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA-Comparison-4.pdf" style="color: #2563eb; text-decoration: underline;">Comparison sheet</a></li>
+  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/2026-prices-Care-Direct-Secure-HSA-2.pdf" style="color: #2563eb; text-decoration: underline;">Price sheets</a></li>
+  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/2026-prices-Care-Direct-Secure-HSA-Comparison-4.pdf" style="color: #2563eb; text-decoration: underline;">Comparison sheet</a></li>
 </ul>
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><strong style="color: #111827;">Reba Larney</strong><br>Business Development Director<br>(561) 922 9647<br>Rebalarney@mympb.com</p>
@@ -419,8 +419,8 @@ SET content = '
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><strong style="color: #111827;">Jan 1, 2026 (IUA):</strong> Only members currently at a $1,000 IUA will update to $1,250 per medical Need. All other IUA levels are unchanged.</p>
 
 <ul style="margin: 0 0 16px 0; padding-left: 24px; list-style-type: disc;">
-  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA-2.pdf" style="color: #2563eb; text-decoration: underline;">Price sheets</a></li>
-  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA-Comparison-4.pdf" style="color: #2563eb; text-decoration: underline;">Comparison sheet</a></li>
+  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/2026-prices-Care-Direct-Secure-HSA-2.pdf" style="color: #2563eb; text-decoration: underline;">Price sheets</a></li>
+  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/2026-prices-Care-Direct-Secure-HSA-Comparison-4.pdf" style="color: #2563eb; text-decoration: underline;">Comparison sheet</a></li>
 </ul>
 
 <hr style="border: none; border-top: 2px solid #e2e8f0; margin: 40px 0;">
@@ -463,7 +463,7 @@ SET content = '
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">We want to emphasize that this change does not affect other plans offered by MPB Health. Click to view our updated Do Not Sell States &amp; Individual Mandates chart.</p>
 
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/02/No-Sell-States-Chart3.png" style="color: #2563eb; text-decoration: underline;">NO SELL STATES</a></p>
+<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/No-Sell-States.pdf" style="color: #2563eb; text-decoration: underline;">NO SELL STATES</a></p>
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Thank you for your attention to this matter and your continued partnership.</p>
 
@@ -519,18 +519,5 @@ SET content = '
   <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;">Dependent members who get married must have their own membership and can no longer be on their parents'' plan.</li>
 </ul>
 
-<hr style="border: none; border-top: 2px solid #e2e8f0; margin: 40px 0;">
-
-<h3 style="text-align: center; font-size: 22px; font-weight: 700; color: #000000; margin: 40px 0 24px 0; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">Rewards in Motion</h3>
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">MGM Grand Las Vegas Contest</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://advisor.mpb.health/zion-healthshare-contest/" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Leaderboard</a></p>
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">Google Reviews</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Receive 5 or more Google reviews from members &amp; get dinner on us!</p>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://mpb.health/review-us/" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Review Us</a></p>
 '
 WHERE slug = 'advisor-bulletin-september-24-2025' AND content_type = 'bulletin';

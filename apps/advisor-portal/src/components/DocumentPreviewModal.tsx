@@ -18,21 +18,25 @@ export default function DocumentPreviewModal({
   title,
   fileUrl,
 }: DocumentPreviewModalProps) {
-  // Detect file type. PDFs: embed directly (Google Docs Viewer often blocks third-party URLs).
-  const { viewerUrl, isPDF } = useMemo(() => {
+  // Detect file type to choose the right viewer
+  const { viewerUrl, fileType } = useMemo(() => {
     const lowerUrl = fileUrl.toLowerCase();
-    const isPDFFile = lowerUrl.endsWith('.pdf');
 
-    if (isPDFFile) {
-      return {
-        viewerUrl: fileUrl,
-        isPDF: true,
-      };
+    if (lowerUrl.endsWith('.pdf')) {
+      return { viewerUrl: fileUrl, fileType: 'pdf' as const };
+    } else if (
+      lowerUrl.endsWith('.png') ||
+      lowerUrl.endsWith('.jpg') ||
+      lowerUrl.endsWith('.jpeg') ||
+      lowerUrl.endsWith('.gif') ||
+      lowerUrl.endsWith('.webp')
+    ) {
+      return { viewerUrl: fileUrl, fileType: 'image' as const };
     } else {
       // Use Microsoft Office Online viewer for Office files (PPTX, DOCX, XLSX)
       return {
         viewerUrl: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`,
-        isPDF: false,
+        fileType: 'office' as const,
       };
     }
   }, [fileUrl]);
@@ -100,17 +104,29 @@ export default function DocumentPreviewModal({
 
         {/* Document Container */}
         <div className="flex-1 relative bg-surface-tertiary">
-          {/* Loading indicator */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-th-accent-500 animate-spin" />
-          </div>
+          {fileType === 'image' ? (
+            <div className="absolute inset-0 flex items-center justify-center p-4 overflow-auto">
+              <img
+                src={viewerUrl}
+                alt={title}
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+          ) : (
+            <>
+              {/* Loading indicator */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-th-accent-500 animate-spin" />
+              </div>
 
-          <iframe
-            src={viewerUrl}
-            title={`Preview: ${title}`}
-            className="absolute inset-0 w-full h-full border-0"
-            allowFullScreen
-          />
+              <iframe
+                src={viewerUrl}
+                title={`Preview: ${title}`}
+                className="absolute inset-0 w-full h-full border-0"
+                allowFullScreen
+              />
+            </>
+          )}
         </div>
 
         {/* Footer */}

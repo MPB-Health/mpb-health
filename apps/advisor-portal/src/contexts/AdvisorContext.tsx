@@ -3,12 +3,10 @@ import { supabase } from '@mpbhealth/database';
 import {
   profileService,
   trainingService,
-  meetingService,
   contentService,
   type AdvisorProfile,
   type TrainingModule,
   type TrainingProgress,
-  type AdvisorMeeting,
   type Bulletin,
 } from '@mpbhealth/advisor-core';
 
@@ -27,17 +25,12 @@ interface AdvisorContextType {
     completionPercentage: number;
   };
 
-  // Meetings
-  upcomingMeetings: AdvisorMeeting[];
-  liveMeetings: AdvisorMeeting[];
-
   // Bulletins
   unreadBulletinCount: number;
 
   // Actions
   refreshProfile: () => Promise<void>;
   refreshTraining: () => Promise<void>;
-  refreshMeetings: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -56,8 +49,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     completionPercentage: 0,
   });
 
-  const [upcomingMeetings, setUpcomingMeetings] = useState<AdvisorMeeting[]>([]);
-  const [liveMeetings, setLiveMeetings] = useState<AdvisorMeeting[]>([]);
   const [unreadBulletinCount, setUnreadBulletinCount] = useState(0);
 
   // Load profile
@@ -107,23 +98,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Load meetings
-  const refreshMeetings = async () => {
-    if (!profile) return;
-
-    try {
-      const [upcoming, live] = await Promise.all([
-        meetingService.getUpcomingMeetings(profile.id),
-        meetingService.getLiveMeetings(),
-      ]);
-
-      setUpcomingMeetings(upcoming);
-      setLiveMeetings(live);
-    } catch (err) {
-      console.error('Failed to load meetings:', err);
-    }
-  };
-
   // Load bulletin count
   const loadBulletinCount = async () => {
     if (!profile) return;
@@ -170,21 +144,9 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (profile) {
       refreshTraining();
-      refreshMeetings();
       loadBulletinCount();
     }
   }, [profile?.id]);
-
-  // Subscribe to live meetings
-  useEffect(() => {
-    const channel = meetingService.subscribeLiveMeetings((meetings) => {
-      setLiveMeetings(meetings);
-    });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   // Subscribe to bulletins
   useEffect(() => {
@@ -208,12 +170,9 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         trainingModules,
         trainingProgress,
         trainingStats,
-        upcomingMeetings,
-        liveMeetings,
         unreadBulletinCount,
         refreshProfile,
         refreshTraining,
-        refreshMeetings,
         logout,
       }}
     >

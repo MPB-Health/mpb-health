@@ -16,7 +16,7 @@ SET content = '
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Sedera and their legal counsel have advised that, due to Florida Statute § 624.1265, they will be unable to pay commissions on any new Florida business written after July 1, 2025. However, they will continue to pay commissions on business written prior to that date.</p>
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">As a result, MPB Health has designated Florida as a no-sell state for Sedera plans (Premium Care and Premium HSA).</p>
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/09/No-Sell-States-Chart-9.pdf" style="color: #2563eb; text-decoration: underline;">No Sell States Chart</a></p>
+<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/No-Sell-States.pdf" style="color: #2563eb; text-decoration: underline;">No Sell States Chart</a></p>
 
 <h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">Zion Sharing Request Payments</h2>
 

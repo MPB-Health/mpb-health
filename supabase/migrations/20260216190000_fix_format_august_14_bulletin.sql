@@ -76,21 +76,6 @@ SET content = '
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">✉ PBARON@MYMPB.COM</p>
 
-<hr style="border: none; border-top: 2px solid #e2e8f0; margin: 40px 0;">
-
-<h3 style="text-align: center; font-size: 22px; font-weight: 700; color: #000000; margin: 40px 0 24px 0; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">Rewards in Motion</h3>
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">Google Reviews</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Advisors who receive <strong style="color: #111827;">5 or more</strong> Google reviews from their members will get Dinner on us! (in the form of a gift card).</p>
-
-<p style="margin: 0 0 16px 0;"><a href="https://mpb.health/review-us/" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Review Us</a></p>
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">MGM Grand Las Vegas – Planstin/Zion Healthshare</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Win an all-inclusive trip to the MGM Grand Las Vegas.</p>
-
-<p style="margin: 0 0 16px 0;"><a href="https://advisor.mpb.health/zion-healthshare-contest/" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Leaderboard</a></p>
 ',
     title = 'Advisor Bulletin: August 14, 2025',
     slug = 'advisor-bulletin-august-14-2025',
@@ -176,21 +161,6 @@ SET content = '
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">✉ PBARON@MYMPB.COM</p>
 
-<hr style="border: none; border-top: 2px solid #e2e8f0; margin: 40px 0;">
-
-<h3 style="text-align: center; font-size: 22px; font-weight: 700; color: #000000; margin: 40px 0 24px 0; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">Rewards in Motion</h3>
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">Google Reviews</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Advisors who receive <strong style="color: #111827;">5 or more</strong> Google reviews from their members will get Dinner on us! (in the form of a gift card).</p>
-
-<p style="margin: 0 0 16px 0;"><a href="https://mpb.health/review-us/" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Review Us</a></p>
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">MGM Grand Las Vegas – Planstin/Zion Healthshare</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Win an all-inclusive trip to the MGM Grand Las Vegas.</p>
-
-<p style="margin: 0 0 16px 0;"><a href="https://advisor.mpb.health/zion-healthshare-contest/" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Leaderboard</a></p>
 ',
     title = 'Advisor Bulletin: August 14, 2025',
     excerpt = 'August First Half — "Great things are not done by impulse, but by a series of small things brought together." Updates on Virtual Care Upgrades, new MPB Health App demo, enrollment reminders, and rewards.'
@@ -275,21 +245,6 @@ SET content = '
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">✉ PBARON@MYMPB.COM</p>
 
-<hr style="border: none; border-top: 2px solid #e2e8f0; margin: 40px 0;">
-
-<h3 style="text-align: center; font-size: 22px; font-weight: 700; color: #000000; margin: 40px 0 24px 0; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">Rewards in Motion</h3>
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">Google Reviews</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Advisors who receive <strong style="color: #111827;">5 or more</strong> Google reviews from their members will get Dinner on us! (in the form of a gift card).</p>
-
-<p style="margin: 0 0 16px 0;"><a href="https://mpb.health/review-us/" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Review Us</a></p>
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">MGM Grand Las Vegas – Planstin/Zion Healthshare</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Win an all-inclusive trip to the MGM Grand Las Vegas.</p>
-
-<p style="margin: 0 0 16px 0;"><a href="https://advisor.mpb.health/zion-healthshare-contest/" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Leaderboard</a></p>
 ',
     title = 'Advisor Bulletin: August 14, 2025',
     excerpt = 'August First Half — "Great things are not done by impulse, but by a series of small things brought together." Updates on Virtual Care Upgrades, new MPB Health App demo, enrollment reminders, and rewards.'

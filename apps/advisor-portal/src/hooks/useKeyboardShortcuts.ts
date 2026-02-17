@@ -22,7 +22,6 @@ const NAV_SHORTCUTS: Record<string, string> = {
   a: '/analytics', // Analytics
   c: '/compliance', // Compliance
   t: '/training', // Training
-  m: '/meetings', // Meetings
 };
 
 export function useKeyboardShortcuts(): KeyboardShortcutsState {

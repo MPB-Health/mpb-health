@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { cn } from '../utils';
 import type { Theme } from './ThemeProvider';
@@ -12,20 +12,20 @@ export interface ThemeToggleProps {
 
 const nextTheme: Record<Theme, Theme> = {
   light: 'dark',
-  dark: 'system',
+  dark: 'light',
   system: 'light',
 };
 
 const themeLabel: Record<Theme, string> = {
   light: 'Light',
   dark: 'Dark',
-  system: 'System',
+  system: 'Light',
 };
 
 const themeIcon: Record<Theme, React.ElementType> = {
   light: Sun,
   dark: Moon,
-  system: Monitor,
+  system: Sun,
 };
 
 const sizeClasses = {

@@ -5,7 +5,6 @@
 import { useState, useEffect } from 'react';
 import {
   Palette,
-  Monitor,
   Moon,
   Sun,
   Layout,
@@ -21,7 +20,6 @@ import type { UpdateUserPreferencesInput } from '@mpbhealth/champion-core';
 const THEME_OPTIONS = [
   { value: 'light', label: 'Light', icon: Sun, description: 'Classic light theme' },
   { value: 'dark', label: 'Dark', icon: Moon, description: 'Easy on the eyes' },
-  { value: 'system', label: 'System', icon: Monitor, description: 'Match your device' },
 ];
 
 const VIEW_OPTIONS = [

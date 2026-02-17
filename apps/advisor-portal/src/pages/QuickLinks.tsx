@@ -1,10 +1,12 @@
-import { ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { ExternalLink, X } from 'lucide-react';
 
 interface QuickLinkItem {
   label: string;
   url: string;
   image: string;
   description: string;
+  popup?: boolean;
 }
 
 const quickLinks: QuickLinkItem[] = [
@@ -13,6 +15,7 @@ const quickLinks: QuickLinkItem[] = [
     url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2025',
     image: '/images/quick-links/quick-link-rx-labs-imaging.png',
     description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
+    popup: true,
   },
   {
     label: 'Laboratory Assist',
@@ -59,6 +62,8 @@ const quickLinks: QuickLinkItem[] = [
 ];
 
 export default function QuickLinks() {
+  const [popupLink, setPopupLink] = useState<QuickLinkItem | null>(null);
+
   return (
     <div className="space-y-6">
       <div>
@@ -69,36 +74,101 @@ export default function QuickLinks() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {quickLinks.map((link) => (
-          <a
-            key={link.url}
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5"
-          >
-            <div className="relative w-full aspect-[16/9] overflow-hidden">
-              <img
-                src={link.image}
-                alt={link.label}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-            </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
-                  {link.label}
-                </h3>
-                <ExternalLink className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0 ml-2" />
+        {quickLinks.map((link) => {
+          if (link.popup) {
+            return (
+              <button
+                key={link.url}
+                onClick={() => setPopupLink(link)}
+                className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5 text-left"
+              >
+                <div className="relative w-full aspect-[16/9] overflow-hidden">
+                  <img
+                    src={link.image}
+                    alt={link.label}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
+                      {link.label}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-th-text-secondary leading-relaxed">
+                    {link.description}
+                  </p>
+                </div>
+              </button>
+            );
+          }
+
+          return (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5"
+            >
+              <div className="relative w-full aspect-[16/9] overflow-hidden">
+                <img
+                  src={link.image}
+                  alt={link.label}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               </div>
-              <p className="text-sm text-th-text-secondary leading-relaxed">
-                {link.description}
-              </p>
-            </div>
-          </a>
-        ))}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
+                    {link.label}
+                  </h3>
+                  <ExternalLink className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0 ml-2" />
+                </div>
+                <p className="text-sm text-th-text-secondary leading-relaxed">
+                  {link.description}
+                </p>
+              </div>
+            </a>
+          );
+        })}
       </div>
+
+      {/* Popup modal for iframe links */}
+      {popupLink && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setPopupLink(null)}
+          />
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  {popupLink.label}
+                </h2>
+                <button
+                  onClick={() => setPopupLink(null)}
+                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                >
+                  <span className="sr-only">Close</span>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <iframe
+                  src={popupLink.url}
+                  className="w-full h-full border-0"
+                  title={popupLink.label}
+                  allow="payment"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -26,6 +26,7 @@ interface DashboardQuickLink {
   url: string;
   image: string;
   description: string;
+  popup?: boolean;
 }
 
 const dashboardQuickLinks: DashboardQuickLink[] = [
@@ -34,6 +35,7 @@ const dashboardQuickLinks: DashboardQuickLink[] = [
     url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2025',
     image: '/images/quick-links/quick-link-rx-labs-imaging.png',
     description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
+    popup: true,
   },
   {
     label: 'Laboratory Assist',
@@ -183,6 +185,7 @@ export default function Dashboard() {
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
+  const [quickLinkPopup, setQuickLinkPopup] = useState<DashboardQuickLink | null>(null);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const thumbnailScrollRef = useRef<HTMLDivElement>(null);
@@ -516,31 +519,53 @@ export default function Dashboard() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          {dashboardQuickLinks.map((link) => (
-            <a
-              key={link.url}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={link.description}
-              className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5"
-            >
-              <div className="relative w-full aspect-[16/10] overflow-hidden">
-                <img
-                  src={link.image}
-                  alt={link.label}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="p-2.5 flex items-center gap-1.5">
-                <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
-                  {link.label}
-                </span>
-                <ExternalLink className="w-3 h-3 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
-              </div>
-            </a>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          {dashboardQuickLinks.map((link) =>
+            link.popup ? (
+              <button
+                key={link.url}
+                onClick={() => setQuickLinkPopup(link)}
+                title={link.description}
+                className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5 text-left"
+              >
+                <div className="relative w-full aspect-[16/10] overflow-hidden">
+                  <img
+                    src={link.image}
+                    alt={link.label}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-2.5 flex items-center gap-1.5">
+                  <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
+                    {link.label}
+                  </span>
+                </div>
+              </button>
+            ) : (
+              <a
+                key={link.url}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={link.description}
+                className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5"
+              >
+                <div className="relative w-full aspect-[16/10] overflow-hidden">
+                  <img
+                    src={link.image}
+                    alt={link.label}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-2.5 flex items-center gap-1.5">
+                  <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
+                    {link.label}
+                  </span>
+                  <ExternalLink className="w-3 h-3 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
+                </div>
+              </a>
+            )
+          )}
         </div>
       </div>
 
@@ -689,6 +714,40 @@ export default function Dashboard() {
                   src="https://calendly.com/rebalarney-mympb/time-with-reba"
                   className="w-full h-full border-0"
                   title="Schedule a Call"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Link popup modal */}
+      {quickLinkPopup && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setQuickLinkPopup(null)}
+          />
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  {quickLinkPopup.label}
+                </h2>
+                <button
+                  onClick={() => setQuickLinkPopup(null)}
+                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                >
+                  <span className="sr-only">Close</span>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <iframe
+                  src={quickLinkPopup.url}
+                  className="w-full h-full border-0"
+                  title={quickLinkPopup.label}
+                  allow="payment"
                 />
               </div>
             </div>

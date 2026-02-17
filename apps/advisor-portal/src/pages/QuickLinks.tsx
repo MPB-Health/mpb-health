@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ExternalLink, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { ExternalLink, Link as LinkIcon, AlertCircle, X } from 'lucide-react';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 
 interface FallbackQuickLink {
@@ -7,7 +7,8 @@ interface FallbackQuickLink {
   url: string;
   image: string;
   description: string;
-  is_external: boolean;
+  is_external?: boolean;
+  popup?: boolean;
 }
 
 const fallbackQuickLinks: FallbackQuickLink[] = [
@@ -17,6 +18,7 @@ const fallbackQuickLinks: FallbackQuickLink[] = [
     image: '/images/quick-links/quick-link-rx-labs-imaging.png',
     description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
     is_external: true,
+    popup: true,
   },
   {
     label: 'Laboratory Assist',
@@ -60,6 +62,13 @@ const fallbackQuickLinks: FallbackQuickLink[] = [
     description: 'Visit the official MPB Health YouTube channel for updates and content.',
     is_external: true,
   },
+  {
+    label: 'Preventive Care',
+    url: 'https://www.healthcare.gov/coverage/preventive-care-benefits/',
+    image: '/images/quick-links/quick-link-preventive-care.png',
+    description: 'Learn about preventive health services covered at no cost, including screenings and immunizations.',
+    is_external: true,
+  },
 ];
 
 const fallbackImageMap: Record<string, string> = {
@@ -70,7 +79,11 @@ const fallbackImageMap: Record<string, string> = {
   'Prescription Savings': '/images/quick-links/quick-link-goodrx.png',
   'HealthyCare Podcast': '/images/quick-links/quick-link-healthy-care-podcast.png',
   'MPB Health Channel': '/images/quick-links/quick-link-mpb-health-youtube.png',
+  'Preventive Care': '/images/quick-links/quick-link-preventive-care.png',
 };
+
+// Links that should open in a popup modal instead of a new tab
+const POPUP_LABELS = new Set(['RX, Labs & Imaging Quote']);
 
 function LoadingSkeleton() {
   return (
@@ -111,10 +124,83 @@ function EmptyState() {
   );
 }
 
+function LinkCard({
+  label,
+  url,
+  image,
+  description,
+  isExternal,
+  isPopup,
+  onPopupClick,
+}: {
+  label: string;
+  url: string;
+  image?: string | null;
+  description?: string | null;
+  isExternal?: boolean;
+  isPopup?: boolean;
+  onPopupClick: () => void;
+}) {
+  const cardContent = (
+    <>
+      {image && (
+        <div className="relative w-full aspect-[16/9] overflow-hidden">
+          <img
+            src={image}
+            alt={label}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        </div>
+      )}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-1.5">
+          <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
+            {label}
+          </h3>
+          {isExternal ? (
+            <ExternalLink className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0 ml-2" />
+          ) : (
+            <LinkIcon className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0 ml-2" />
+          )}
+        </div>
+        {description && (
+          <p className="text-sm text-th-text-secondary leading-relaxed">
+            {description}
+          </p>
+        )}
+      </div>
+    </>
+  );
+
+  if (isPopup) {
+    return (
+      <button
+        onClick={onPopupClick}
+        className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5 text-left"
+      >
+        {cardContent}
+      </button>
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target={isExternal ? '_blank' : undefined}
+      rel={isExternal ? 'noopener noreferrer' : undefined}
+      className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5"
+    >
+      {cardContent}
+    </a>
+  );
+}
+
 export default function QuickLinks() {
   const [links, setLinks] = useState<QuickLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [popupLink, setPopupLink] = useState<{ label: string; url: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,8 +243,8 @@ export default function QuickLinks() {
     };
   }, []);
 
-  const displayLinks = links.length > 0 ? links : null;
-  const useFallback = !loading && !error && links.length === 0;
+  const hasCmsLinks = links.length > 0;
+  const showFallback = !loading && !hasCmsLinks;
 
   return (
     <div className="space-y-6">
@@ -181,82 +267,71 @@ export default function QuickLinks() {
         </div>
       )}
 
-      {!loading && (displayLinks || useFallback || error) && (
+      {!loading && (hasCmsLinks || showFallback || error) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {displayLinks
-            ? displayLinks.map((link) => {
-                const image = fallbackImageMap[link.label];
-                return (
-                  <a
-                    key={link.id}
-                    href={link.url}
-                    target={link.is_external ? '_blank' : undefined}
-                    rel={link.is_external ? 'noopener noreferrer' : undefined}
-                    className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5"
-                  >
-                    {image && (
-                      <div className="relative w-full aspect-[16/9] overflow-hidden">
-                        <img
-                          src={image}
-                          alt={link.label}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
-                          {link.label}
-                        </h3>
-                        {link.is_external ? (
-                          <ExternalLink className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0 ml-2" />
-                        ) : (
-                          <LinkIcon className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0 ml-2" />
-                        )}
-                      </div>
-                      {link.description && (
-                        <p className="text-sm text-th-text-secondary leading-relaxed">
-                          {link.description}
-                        </p>
-                      )}
-                    </div>
-                  </a>
-                );
-              })
-            : (error ? fallbackQuickLinks : []).map((link) => (
-                <a
+          {hasCmsLinks
+            ? links.map((link) => (
+                <LinkCard
+                  key={link.id}
+                  label={link.label}
+                  url={link.url}
+                  image={fallbackImageMap[link.label] || link.image_url}
+                  description={link.description}
+                  isExternal={link.is_external}
+                  isPopup={POPUP_LABELS.has(link.label)}
+                  onPopupClick={() => setPopupLink({ label: link.label, url: link.url })}
+                />
+              ))
+            : (error ? fallbackQuickLinks : fallbackQuickLinks).map((link) => (
+                <LinkCard
                   key={link.url}
-                  href={link.url}
-                  target={link.is_external ? '_blank' : undefined}
-                  rel={link.is_external ? 'noopener noreferrer' : undefined}
-                  className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5"
-                >
-                  <div className="relative w-full aspect-[16/9] overflow-hidden">
-                    <img
-                      src={link.image}
-                      alt={link.label}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
-                        {link.label}
-                      </h3>
-                      <ExternalLink className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0 ml-2" />
-                    </div>
-                    <p className="text-sm text-th-text-secondary leading-relaxed">
-                      {link.description}
-                    </p>
-                  </div>
-                </a>
+                  label={link.label}
+                  url={link.url}
+                  image={link.image}
+                  description={link.description}
+                  isExternal={link.is_external}
+                  isPopup={link.popup}
+                  onPopupClick={() => setPopupLink({ label: link.label, url: link.url })}
+                />
               ))}
         </div>
       )}
 
-      {useFallback && !error && <EmptyState />}
+      {showFallback && !error && <EmptyState />}
+
+      {/* Popup modal for iframe links */}
+      {popupLink && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setPopupLink(null)}
+          />
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  {popupLink.label}
+                </h2>
+                <button
+                  onClick={() => setPopupLink(null)}
+                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                >
+                  <span className="sr-only">Close</span>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <iframe
+                  src={popupLink.url}
+                  className="w-full h-full border-0"
+                  title={popupLink.label}
+                  allow="payment"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

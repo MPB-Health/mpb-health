@@ -31,6 +31,7 @@ interface FallbackQuickLink {
   url: string;
   image: string;
   description: string;
+  popup?: boolean;
 }
 
 const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
@@ -39,6 +40,7 @@ const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
     url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2025',
     image: '/images/quick-links/quick-link-rx-labs-imaging.png',
     description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
+    popup: true,
   },
   {
     label: 'Laboratory Assist',
@@ -76,6 +78,12 @@ const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
     image: '/images/quick-links/quick-link-mpb-health-youtube.png',
     description: 'Visit the official MPB Health YouTube channel for updates and content.',
   },
+  {
+    label: 'Preventive Care',
+    url: 'https://www.healthcare.gov/coverage/preventive-care-benefits/',
+    image: '/images/quick-links/quick-link-preventive-care.png',
+    description: 'Learn about preventive health services covered at no cost, including screenings and immunizations.',
+  },
 ];
 
 const fallbackImageMap: Record<string, string> = {
@@ -86,6 +94,7 @@ const fallbackImageMap: Record<string, string> = {
   'Prescription Savings': '/images/quick-links/quick-link-goodrx.png',
   'HealthyCare Podcast': '/images/quick-links/quick-link-healthy-care-podcast.png',
   'MPB Health Channel': '/images/quick-links/quick-link-mpb-health-youtube.png',
+  'Preventive Care': '/images/quick-links/quick-link-preventive-care.png',
 };
 
 // Fallback enroll page options (used when CMS data is unavailable)
@@ -192,6 +201,7 @@ export default function Dashboard() {
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
+  const [quickLinkPopup, setQuickLinkPopup] = useState<DashboardQuickLink | null>(null);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const thumbnailScrollRef = useRef<HTMLDivElement>(null);
@@ -322,13 +332,17 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, [profile?.id]);
 
+  // Links that should open in a popup modal instead of a new tab
+  const POPUP_LABELS = new Set(['RX, Labs & Imaging Quote']);
+
   // Derive display quick links: CMS data with fallback
-  const displayQuickLinks = cmsQuickLinks.length > 0
+  const displayQuickLinks: FallbackQuickLink[] = cmsQuickLinks.length > 0
     ? cmsQuickLinks.map((link) => ({
         label: link.label,
         url: link.url,
         image: fallbackImageMap[link.label] || '/images/quick-links/quick-link-default.png',
         description: link.description || '',
+        popup: POPUP_LABELS.has(link.label),
       }))
     : fallbackDashboardQuickLinks;
 
@@ -794,8 +808,8 @@ export default function Dashboard() {
           </button>
         </div>
         {quickLinksLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {Array.from({ length: 7 }).map((_, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
                 className="rounded-lg border border-th-border overflow-hidden animate-pulse"
@@ -808,31 +822,53 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {displayQuickLinks.map((link) => (
-              <a
-                key={link.url}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={link.description}
-                className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5"
-              >
-                <div className="relative w-full aspect-[16/10] overflow-hidden">
-                  <img
-                    src={link.image}
-                    alt={link.label}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <div className="p-2.5 flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
-                    {link.label}
-                  </span>
-                  <ExternalLink className="w-3 h-3 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
-                </div>
-              </a>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            {displayQuickLinks.map((link) =>
+              link.popup ? (
+                <button
+                  key={link.url}
+                  onClick={() => setQuickLinkPopup(link)}
+                  title={link.description}
+                  className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5 text-left"
+                >
+                  <div className="relative w-full aspect-[16/10] overflow-hidden">
+                    <img
+                      src={link.image}
+                      alt={link.label}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-2.5 flex items-center gap-1.5">
+                    <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
+                      {link.label}
+                    </span>
+                  </div>
+                </button>
+              ) : (
+                <a
+                  key={link.url}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={link.description}
+                  className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5"
+                >
+                  <div className="relative w-full aspect-[16/10] overflow-hidden">
+                    <img
+                      src={link.image}
+                      alt={link.label}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-2.5 flex items-center gap-1.5">
+                    <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
+                      {link.label}
+                    </span>
+                    <ExternalLink className="w-3 h-3 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
+                  </div>
+                </a>
+              )
+            )}
           </div>
         )}
       </div>
@@ -982,6 +1018,40 @@ export default function Dashboard() {
                   src={scheduleCallUrl}
                   className="w-full h-full border-0"
                   title="Schedule a Call"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Link popup modal */}
+      {quickLinkPopup && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setQuickLinkPopup(null)}
+          />
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
+                <h2 className="text-lg font-semibold text-th-text-primary">
+                  {quickLinkPopup.label}
+                </h2>
+                <button
+                  onClick={() => setQuickLinkPopup(null)}
+                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                >
+                  <span className="sr-only">Close</span>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <iframe
+                  src={quickLinkPopup.url}
+                  className="w-full h-full border-0"
+                  title={quickLinkPopup.label}
+                  allow="payment"
                 />
               </div>
             </div>

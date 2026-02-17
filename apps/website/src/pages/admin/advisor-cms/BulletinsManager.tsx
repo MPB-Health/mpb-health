@@ -373,7 +373,7 @@ export default function BulletinsManager() {
                     {bulletin.featured_image_url && (
                       <img
                         src={bulletin.featured_image_url}
-                        alt=""
+                        alt={`Featured image for ${bulletin.title}`}
                         className="w-20 h-20 object-cover rounded-lg"
                       />
                     )}

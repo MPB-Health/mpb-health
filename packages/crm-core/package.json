@@ -127,8 +127,8 @@
   },
   "devDependencies": {
     "@mpbhealth/typescript-config": "workspace:*",
-    "tsup": "^8.3.5",
-    "typescript": "^5.5.0"
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.x"

@@ -20,9 +20,12 @@ import {
   Zap,
 } from 'lucide-react';
 import { Button } from '../../ui/button';
+import { createClientLogger } from '@mpbhealth/utils';
 import { aiTaskClusterService, type AILeadInsights, type FollowUpSuggestion } from '../../../lib/aiTaskClusterService';
 import type { Lead } from '../../../lib/crmService';
 import { cn } from '../../../lib/utils';
+
+const log = createClientLogger('AIInsights');
 
 // ============================================================================
 // Types
@@ -497,7 +500,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
                       type="email"
                       subject={insights.draft_email_subject || undefined}
                       body={insights.draft_email_body}
-                      onCopy={() => console.log('Copied email')}
+                      onCopy={() => log.info('Copied email')}
                       onRegenerate={() => regenerateDraft('email')}
                       isLoading={generatingDraft}
                     />
@@ -522,7 +525,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
                     <DraftPreview
                       type="sms"
                       body={insights.draft_sms}
-                      onCopy={() => console.log('Copied SMS')}
+                      onCopy={() => log.info('Copied SMS')}
                       onRegenerate={() => regenerateDraft('sms')}
                       isLoading={generatingDraft}
                     />

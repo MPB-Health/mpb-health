@@ -1,3 +1,7 @@
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('ZohoSalesIQ');
+
 export interface ZohoSalesIQError {
   timestamp: string;
   error_type: string;
@@ -197,16 +201,16 @@ class ZohoSalesIQManager {
         this.readyCallbacks.forEach(cb => {
           try {
             cb();
-          } catch (_error) {
-            // Silent in production
+          } catch (error) {
+            console.error('[Zoho SalesIQ] Ready callback error:', error);
           }
         });
 
         if (callback) {
           try {
             callback();
-          } catch (_error) {
-            // Silent in production
+          } catch (error) {
+            console.error('[Zoho SalesIQ] Ready callback error:', error);
           }
         }
       };
@@ -252,8 +256,8 @@ class ZohoSalesIQManager {
       });
 
       // Only log in development mode or when status changes
-      if (import.meta.env.DEV && !this.status.isReady) {
-        console.log('[Zoho SalesIQ] Health check completed');
+      if (!this.status.isReady) {
+        log.info('[Zoho SalesIQ] Health check completed');
       }
     } catch (error) {
       this.logError({
@@ -279,14 +283,16 @@ class ZohoSalesIQManager {
     this.errorCallbacks.forEach(callback => {
       try {
         callback(error);
-      } catch (_e) {
-        // Silent in production
+      } catch (callbackError) {
+        console.error('[Zoho SalesIQ] Error callback threw:', callbackError);
       }
     });
 
     // Still send errors to Supabase for monitoring (silent, no console output)
     if (!this.isDevelopmentEnvironment) {
-      this.sendErrorToSupabase(error).catch(() => {});
+      this.sendErrorToSupabase(error).catch((e) => {
+        console.error('[Zoho SalesIQ] Unhandled sendErrorToSupabase rejection:', e);
+      });
     }
   }
 
@@ -311,8 +317,8 @@ class ZohoSalesIQManager {
         });
 
       // Silent - no console output for database errors
-    } catch {
-      // Silent - no console output
+    } catch (error) {
+      console.error('[Zoho SalesIQ] Failed to send error to Supabase:', error);
     }
   }
 

@@ -29,6 +29,7 @@ import type {
   SignatureCreateInput,
   SocialLink,
 } from '@mpbhealth/crm-core';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 // ============================================================================
 // Constants
@@ -266,7 +267,7 @@ function SignatureCard({
         <div
           className="absolute inset-0 p-4 pointer-events-none origin-top-left scale-[0.65]"
           style={{ width: '154%' }}
-          dangerouslySetInnerHTML={{ __html: renderedHtml }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderedHtml) }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/80" />
       </div>
@@ -871,7 +872,7 @@ function SignatureEditorModal({
                     [Your email content goes here...]
                   </p>
                   <hr className="border-gray-200 my-4" />
-                  <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }} />
                 </div>
               </div>
 
@@ -1163,7 +1164,7 @@ export default function EmailSignatures() {
                     className="absolute inset-0 p-2 pointer-events-none origin-top-left scale-50"
                     style={{ width: '200%' }}
                     dangerouslySetInnerHTML={{
-                      __html: tpl.content
+                      __html: sanitizeHtml(tpl.content
                         .replace(/\{\{font_family\}\}/g, 'Arial, sans-serif')
                         .replace(/\{\{primary_color\}\}/g, '#6366F1')
                         .replace(/\{\{user_name\}\}/g, 'John Doe')
@@ -1171,7 +1172,7 @@ export default function EmailSignatures() {
                         .replace(/\{\{phone\}\}/g, '(555) 123-4567')
                         .replace(/\{\{email\}\}/g, 'john@company.com')
                         .replace(/\{\{company_name\}\}/g, 'Acme Corp')
-                        .replace(/\{\{logo_url\}\}/g, ''),
+                        .replace(/\{\{logo_url\}\}/g, '')),
                     }}
                   />
                 </div>

@@ -1,4 +1,7 @@
 import { supabase } from './supabase';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('PushNotification');
 
 // ============================================================================
 // Types
@@ -97,7 +100,7 @@ class PushNotificationService {
         scope: '/',
       });
 
-      console.log('Service Worker registered:', this.swRegistration);
+      log.info('Service Worker registered:', this.swRegistration);
       return this.swRegistration;
     } catch (error) {
       console.error('Service Worker registration failed:', error);
@@ -506,7 +509,8 @@ self.addEventListener('notificationclick', function(event) {
 
 self.addEventListener('notificationclose', function(event) {
   // Track notification dismissal if needed
-  console.log('Notification closed:', event.notification.tag);
+  // Note: This is in service worker code string, so we can't use logger here
+  // Keeping console.log as it's inside a template string
 });
 `;
 

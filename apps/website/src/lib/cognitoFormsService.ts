@@ -50,12 +50,12 @@ class CognitoFormsService {
     }
 
     window.Cognito.forms.on('afterSubmit', (data: CognitoFormSubmission) => {
-      console.log('[Cognito Forms] Form submitted:', data);
+      log.info('[Cognito Forms] Form submitted:', data);
       this.handleFormSubmission(data);
     });
 
     window.Cognito.forms.on('formLoaded', () => {
-      console.log('[Cognito Forms] Form loaded');
+      log.info('[Cognito Forms] Form loaded');
       trackEvent('form_view', {
         form_type: 'get_a_quote',
         form_provider: 'cognito',
@@ -69,12 +69,12 @@ class CognitoFormsService {
       });
     });
 
-    console.log('[Cognito Forms] Event listeners configured');
+    log.info('[Cognito Forms] Event listeners configured');
   }
 
   private async handleFormSubmission(data: CognitoFormSubmission): Promise<void> {
     try {
-      console.log('[Cognito Forms] Processing submission...', data);
+      log.info('[Cognito Forms] Processing submission...', data);
 
       const leadData = this.mapCognitoFieldsToLeadData(data);
 
@@ -86,7 +86,7 @@ class CognitoFormsService {
       const result = await leadSubmissionService.submitLead(leadData);
 
       if (result.success) {
-        console.log('[Cognito Forms] Lead submitted successfully:', result);
+        log.info('[Cognito Forms] Lead submitted successfully:', result);
         trackEvent('quote_form_success', {
           submission_id: result.submissionId,
           zoho_lead_id: result.zohoLeadId,

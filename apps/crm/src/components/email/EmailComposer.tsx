@@ -7,12 +7,12 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import './EmailComposer.css';
 import StarterKit from '@tiptap/starter-kit';
-import { Link } from '@tiptap/extension-link';
-import { Image } from '@tiptap/extension-image';
-import { TextAlign } from '@tiptap/extension-text-align';
-import { Color } from '@tiptap/extension-color';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
+import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { Underline } from '@tiptap/extension-underline';
+import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import {
   Bold,
@@ -538,6 +538,8 @@ export function EmailComposer({
     extensions: [
       StarterKit.configure({
         heading: false, // Disable headings for email
+        link: false, // We configure Link separately below
+        underline: false, // We configure Underline separately below
       }),
       Link.configure({
         openOnClick: false,
@@ -561,6 +563,7 @@ export function EmailComposer({
       }),
     ],
     content: initialBody,
+    shouldRerenderOnTransaction: true,
     editorProps: {
       attributes: {
         class:

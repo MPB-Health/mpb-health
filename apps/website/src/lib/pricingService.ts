@@ -1,4 +1,7 @@
 import { PRICING_DATA, ProductPricing, BenefitTierPricing } from './pricingData';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('PricingService');
 
 // Support both legacy and new membership types
 export type HouseholdType = 'individual' | 'couple' | 'family' | 'member-only' | 'member-spouse' | 'member-child' | 'member-family';
@@ -91,7 +94,7 @@ export function lookupPrice(query: PricingQuery): PricingResult | null {
     : product.benefitTiers.find(t => t.benefitId === query.benefitTier && t.householdType === normalizedHouseholdType);
 
   if (!selectedTier && query.benefitTier) {
-    console.log(`[Pricing] Exact tier match not found, searching by benefitId only: ${query.benefitTier}`);
+    log.info(`[Pricing] Exact tier match not found, searching by benefitId only: ${query.benefitTier}`);
     selectedTier = product.benefitTiers.find(
       t => t.benefitId === query.benefitTier
     );
@@ -106,7 +109,7 @@ export function lookupPrice(query: PricingQuery): PricingResult | null {
 
   if (!selectedTier) {
     // Find the cheapest tier (highest IUA = lowest monthly cost) for "Starting at" pricing
-    console.log(`[Pricing] Tier not found by ID, finding lowest cost tier for household type: ${normalizedHouseholdType}`);
+    log.info(`[Pricing] Tier not found by ID, finding lowest cost tier for household type: ${normalizedHouseholdType}`);
     const matchingTiers = product.benefitTiers.filter(
       t => t.householdType === normalizedHouseholdType
     );
@@ -122,7 +125,7 @@ export function lookupPrice(query: PricingQuery): PricingResult | null {
   }
 
   if (!selectedTier) {
-    console.log(`[Pricing] Using first available tier as fallback`);
+    log.info(`[Pricing] Using first available tier as fallback`);
     selectedTier = product.benefitTiers[0];
   }
 
@@ -134,7 +137,7 @@ export function lookupPrice(query: PricingQuery): PricingResult | null {
     return null;
   }
 
-  console.log(`[Pricing] Selected tier:`, {
+  log.info(`[Pricing] Selected tier:`, {
     benefitId: selectedTier.benefitId,
     householdType: selectedTier.householdType,
     displayLabel: selectedTier.displayLabel

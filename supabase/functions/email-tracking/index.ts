@@ -6,11 +6,9 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('email-tracking');
 
 // 1x1 transparent GIF
 const TRACKING_PIXEL = new Uint8Array([
@@ -42,7 +40,7 @@ interface TrackingData {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   const url = new URL(req.url);
@@ -141,7 +139,7 @@ serve(async (req) => {
 
     return new Response('Not found', { status: 404 });
   } catch (error) {
-    console.error('[email-tracking] Error:', error);
+    log.error('Error:', error);
 
     // For open tracking, still return the pixel even if logging fails
     if (action === 'open') {
@@ -181,7 +179,7 @@ async function trackOpen(
     .single();
 
   if (!email) {
-    console.log(`[email-tracking] Email not found for tracking_id: ${data.tracking_id}`);
+    log.info(`Email not found for tracking_id: ${data.tracking_id}`);
     return;
   }
 
@@ -220,7 +218,7 @@ async function trackOpen(
       .eq('id', emailWithThread.thread_id);
   }
 
-  console.log(`[email-tracking] Tracked open for email ${email.id}`);
+  log.info(`Tracked open for email ${email.id}`);
 }
 
 async function trackClick(
@@ -237,7 +235,7 @@ async function trackClick(
     .single();
 
   if (!email) {
-    console.log(`[email-tracking] Email not found for tracking_id: ${data.tracking_id}`);
+    log.info(`Email not found for tracking_id: ${data.tracking_id}`);
     return;
   }
 
@@ -261,7 +259,7 @@ async function trackClick(
     })
     .eq('id', email.id);
 
-  console.log(`[email-tracking] Tracked click for email ${email.id}: ${data.link_url}`);
+  log.info(`Tracked click for email ${email.id}: ${data.link_url}`);
 }
 
 // ============================================================================

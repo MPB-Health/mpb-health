@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Plus, Edit2, Trash2, Eye, EyeOff, Star, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { supabase, Resource, ResourceType, TargetAudience, ResourceTopic } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Select } from '../components/ui/Select';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { RichTextEditor } from '../components/admin/RichTextEditor';
 import { ImageUploader } from '../components/admin/ImageUploader';
+
+const log = createClientLogger('ResourceAdmin');
 
 export const ResourceAdmin: React.FC = () => {
   const navigate = useNavigate();
@@ -83,7 +86,7 @@ export const ResourceAdmin: React.FC = () => {
 
     try {
       if (editingId) {
-        console.log('[ResourceAdmin] Updating resource:', editingId);
+        log.info('Updating resource:', editingId);
         const { data, error } = await supabase
           .from('resource_library')
           .update({
@@ -93,18 +96,18 @@ export const ResourceAdmin: React.FC = () => {
           .eq('id', editingId)
           .select();
 
-        console.log('[ResourceAdmin] Update response:', { data, error });
+        log.info('Update response:', { data, error });
 
         if (error) throw error;
         setNotification({ type: 'success', message: `Resource "${formData.title}" updated successfully!` });
       } else {
-        console.log('[ResourceAdmin] Creating new resource');
+        log.info('Creating new resource');
         const { data, error } = await supabase
           .from('resource_library')
           .insert([formData])
           .select();
 
-        console.log('[ResourceAdmin] Insert response:', { data, error });
+        log.info('Insert response:', { data, error });
 
         if (error) throw error;
         setNotification({ type: 'success', message: `Resource "${formData.title}" created successfully!` });

@@ -1,4 +1,7 @@
 import { safeJsonParse, safeJsonStringify } from './safeJson';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('SafeStorage');
 
 export interface StorageOptions {
   ttl?: number;
@@ -173,7 +176,7 @@ export class SafeStorage {
         }
       }
 
-      console.log(`[SafeStorage] Cleaned up ${removed} items`);
+      log.info(`[SafeStorage] Cleaned up ${removed} items`);
     } catch (error) {
       console.error('[SafeStorage] Cleanup failed:', error);
     }

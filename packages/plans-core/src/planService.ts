@@ -9,6 +9,16 @@ import type {
   ServiceResult,
 } from './planTypes';
 
+/**
+ * Sanitize a value for use inside a PostgREST filter string.
+ * Escapes characters that have special meaning in PostgREST filter syntax
+ * (commas, dots, parentheses, percent signs, backslashes, and asterisks)
+ * to prevent filter-injection attacks.
+ */
+function sanitizeFilterValue(value: string): string {
+  return value.replace(/[\\%_*.,()]/g, (ch) => `\\${ch}`);
+}
+
 export function createPlanService(supabase: SupabaseClient) {
   // -----------------------------------------------------------------------
   // List plans with optional filters
@@ -21,8 +31,9 @@ export function createPlanService(supabase: SupabaseClient) {
     let query = supabase.from('plans').select('*', { count: 'exact' });
 
     if (filters.search) {
+      const safe = sanitizeFilterValue(filters.search);
       query = query.or(
-        `name.ilike.%${filters.search}%,slug.ilike.%${filters.search}%,tagline.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+        `name.ilike.%${safe}%,slug.ilike.%${safe}%,tagline.ilike.%${safe}%,description.ilike.%${safe}%`
       );
     }
     if (filters.plan_type) {
@@ -32,7 +43,8 @@ export function createPlanService(supabase: SupabaseClient) {
       query = query.eq('is_active', filters.is_active);
     }
     if (filters.target_audience) {
-      query = query.ilike('target_audience', `%${filters.target_audience}%`);
+      const safeAudience = sanitizeFilterValue(filters.target_audience);
+      query = query.ilike('target_audience', `%${safeAudience}%`);
     }
 
     query = query.order('sort_order').range(offset, offset + limit - 1);

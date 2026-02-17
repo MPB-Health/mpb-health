@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { lazyAuto } from './utils/lazyUtils';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { NavigationProvider } from './contexts/NavigationContext';
@@ -267,8 +267,8 @@ const App = () => {
                   <Route path="/enrollment" element={<Enrollment />} />
                   <Route path="/get-started" element={<GetStarted />} />
                   <Route path="/get-a-quote" element={<GetAQuote />} />
-                  <Route path="/quote" element={<GetAQuote />} />
-                  <Route path="/calculator" element={<GetStarted />} />
+                  <Route path="/quote" element={<Navigate to="/get-a-quote" replace />} />
+                  <Route path="/calculator" element={<Navigate to="/get-started" replace />} />
                   <Route path="/individuals-and-families" element={<IndividualsAndFamilies />} />
                   <Route path="/businesses-and-organizations" element={<BusinessesOrganizations />} />
                   <Route path="/advisors-and-brokers" element={<AdvisorsAndBrokers />} />
@@ -361,15 +361,11 @@ const App = () => {
                     }
                   />
 
-                  {/* Legacy Protected Routes (kept for backward compatibility) */}
-                  <Route path="/member-portal" element={<MemberDashboard />} />
+                  {/* Legacy redirects — point old URLs to canonical member portal paths */}
+                  <Route path="/member-portal" element={<Navigate to="/member" replace />} />
                   <Route path="/member-portal/account" element={<MemberPortal />} />
-                  <Route path="/member-feedback" element={<MemberFeedbackProtected />} />
-                  <Route path="/refer-a-friend" element={<ReferFriendProtected />} />
-                  <Route path="/review-us" element={<ReviewUsProtected />} />
-                  <Route path="/review-or-change-advisor" element={<ChangeAdvisorProtected />} />
-                  <Route path="/schedule-welcome-call" element={<WelcomeCallProtected />} />
-                  <Route path="/welcome-call-survey" element={<WelcomeSurveyProtected />} />
+                  <Route path="/review-or-change-advisor" element={<Navigate to="/member/forms/change-advisor" replace />} />
+                  <Route path="/schedule-welcome-call" element={<Navigate to="/member/forms/welcome-call" replace />} />
 
                   {/* Protected Admin Routes */}
                   <Route
@@ -433,11 +429,6 @@ const App = () => {
                   <Route path="/admin/list-bill-update" element={<ListBillUpdateProtected />} />
                   <Route path="/admin/employee-removal" element={<EmployeeRemovalProtected />} />
 
-                  {/* Legacy Admin Routes (kept for backward compatibility) */}
-                  <Route path="/list-bill-setup" element={<ListBillSetupProtected />} />
-                  <Route path="/list-bill-conversion" element={<ListBillConversionProtected />} />
-                  <Route path="/list-bill-update" element={<ListBillUpdateProtected />} />
-                  <Route path="/employee-removal" element={<EmployeeRemovalProtected />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogArticle />} />
                   <Route path="/events" element={<Events />} />

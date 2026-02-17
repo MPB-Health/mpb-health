@@ -1,4 +1,7 @@
+import { createClientLogger } from '@mpbhealth/utils';
 import { supabase } from '../lib/supabase';
+
+const log = createClientLogger('MigrateArticles');
 
 const existingArticles = [
   {
@@ -297,11 +300,11 @@ const existingArticles = [
 ];
 
 export async function migrateArticles() {
-  console.log('Starting article migration...');
+  log.info('Starting article migration...');
 
   try {
     for (const article of existingArticles) {
-      console.log(`Migrating: ${article.title}`);
+      log.info(`Migrating: ${article.title}`);
 
       const { data: existing } = await supabase
         .from('blog_articles')
@@ -310,7 +313,7 @@ export async function migrateArticles() {
         .maybeSingle();
 
       if (existing) {
-        console.log(`  ↳ Already exists, skipping...`);
+        log.info(`  ↳ Already exists, skipping...`);
         continue;
       }
 
@@ -319,12 +322,12 @@ export async function migrateArticles() {
       if (error) {
         console.error(`  ↳ Error: ${error.message}`);
       } else {
-        console.log(`  ↳ Successfully migrated`);
+        log.info(`  ↳ Successfully migrated`);
       }
     }
 
-    console.log('\nMigration complete!');
-    console.log(`Total articles: ${existingArticles.length}`);
+    log.info('\nMigration complete!');
+    log.info(`Total articles: ${existingArticles.length}`);
   } catch (error) {
     console.error('Migration failed:', error);
   }

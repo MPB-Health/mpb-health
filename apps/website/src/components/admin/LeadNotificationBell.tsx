@@ -17,6 +17,9 @@ import {
   shouldPlaySound,
   LeadPriority,
 } from '../../lib/leadPriorityService';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('LeadNotificationBell');
 
 export const LeadNotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,7 +58,7 @@ export const LeadNotificationBell: React.FC = () => {
 
   // Handle new lead from real-time subscription
   const handleNewLead = useCallback((lead: EnhancedLeadSubmission) => {
-    console.log('[LeadNotificationBell] New enhanced lead received:', lead);
+    log.info('New enhanced lead received:', lead);
     
     // Add to recent leads at the top
     setRecentLeads(prev => [lead, ...prev.slice(0, 7)]);

@@ -316,13 +316,27 @@ class SecureAuthService {
     }
   }
 
-  async updateSessionActivity(userId: string, sessionToken: string): Promise<void> {
+  async updateSessionActivity(userId: string): Promise<void> {
     try {
-      await supabase
+      // Find the most recent active (non-revoked, non-expired) session for this user
+      // and update its last_activity timestamp. This matches by user_id rather than
+      // session_token because the token is an internal UUID not exposed to callers.
+      const { data: activeSession } = await supabase
         .from('user_sessions')
-        .update({ last_activity: new Date().toISOString() })
+        .select('id')
         .eq('user_id', userId)
-        .eq('session_token', sessionToken);
+        .eq('revoked', false)
+        .gt('expires_at', new Date().toISOString())
+        .order('last_activity', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeSession) {
+        await supabase
+          .from('user_sessions')
+          .update({ last_activity: new Date().toISOString() })
+          .eq('id', activeSession.id);
+      }
     } catch (error) {
       console.error('Failed to update session activity:', error);
     }
@@ -421,16 +435,48 @@ class SecureAuthService {
   }
 
   private async verifyCaptcha(token: string): Promise<boolean> {
-    // CAPTCHA verification requires server-side implementation
-    // For now, log a warning if CAPTCHA is being checked without proper setup
     if (!token) {
       console.warn('[SECURITY] CAPTCHA verification called without token');
       return false;
     }
-    // TODO: Implement server-side CAPTCHA verification (reCAPTCHA/hCaptcha)
-    // This should call a backend endpoint that verifies the token
-    console.warn('[SECURITY] CAPTCHA verification not implemented - skipping check');
-    return true;
+
+    // Feature flag: when CAPTCHA is not configured, fail closed (deny) in production
+    // and warn loudly rather than silently passing all requests.
+    const captchaEnabled = (import.meta as any).env?.VITE_CAPTCHA_ENABLED === 'true';
+    if (!captchaEnabled) {
+      console.warn(
+        '[SECURITY] CAPTCHA verification is DISABLED (VITE_CAPTCHA_ENABLED != "true"). ' +
+        'All CAPTCHA challenges will be REJECTED. ' +
+        'Set VITE_CAPTCHA_ENABLED=true and configure TURNSTILE_SECRET_KEY in Edge Function secrets to enable.'
+      );
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-captcha', {
+        body: { token },
+      });
+
+      if (error) {
+        console.error('[SECURITY] CAPTCHA verification edge function error:', error.message);
+        // Fail closed: treat verification errors as failed CAPTCHA
+        return false;
+      }
+
+      if (!data?.success) {
+        console.warn(
+          '[SECURITY] CAPTCHA verification failed:',
+          data?.errorCodes || 'unknown reason'
+        );
+        return false;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('[SECURITY] CAPTCHA verification request failed:', error.message);
+      // Fail closed: network/unexpected errors reject the CAPTCHA
+      return false;
+    }
   }
 
   async requireReauthentication(userId: string, operation: string): Promise<boolean> {

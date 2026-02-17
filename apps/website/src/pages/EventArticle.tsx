@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Calendar, User, ArrowLeft, Share2 } from 'lucide-react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { supabase, BlogArticle as BlogArticleType } from '../lib/supabase';
+import { sanitizeHtml } from '@mpbhealth/utils';
+
+const log = createClientLogger('EventArticle');
 
 export const EventArticle: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -66,7 +70,7 @@ export const EventArticle: React.FC = () => {
           url: window.location.href,
         });
       } catch (_err) {
-        console.log('Share cancelled or failed');
+        log.info('Share cancelled or failed');
       }
     } else {
       navigator.clipboard.writeText(window.location.href);
@@ -217,7 +221,7 @@ export const EventArticle: React.FC = () => {
               prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-neutral-600
               prose-img:rounded-lg prose-img:shadow-md
               prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }}
           />
         </div>
 

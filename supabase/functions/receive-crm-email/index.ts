@@ -9,11 +9,10 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { verifySvixSignature } from '../_shared/svix.ts';
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('receive-crm-email');
 
 // ============================================================================
 // Types
@@ -46,6 +45,10 @@ interface ParsedAddress {
   email: string;
 }
 
+// Allow Svix signature headers through CORS
+const RESEND_INBOUND_EXTRA_HEADERS =
+  'Content-Type, Authorization, X-Client-Info, Apikey, authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature';
+
 // ============================================================================
 // Main Handler
 // ============================================================================
@@ -53,7 +56,7 @@ interface ParsedAddress {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req, { allowHeaders: RESEND_INBOUND_EXTRA_HEADERS });
   }
 
   // Only accept POST
@@ -61,17 +64,58 @@ serve(async (req) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  const corsHeaders = { ...getCorsHeaders(req, { allowHeaders: RESEND_INBOUND_EXTRA_HEADERS }), 'Content-Type': 'application/json' };
+
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const RESEND_WEBHOOK_SECRET = Deno.env.get('RESEND_WEBHOOK_SECRET');
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Supabase configuration is missing');
     }
 
-    // Parse Resend Inbound webhook payload
-    const payload: ResendInboundPayload = await req.json();
-    console.log(`[receive-crm-email] Inbound email from: ${payload.from}, subject: ${payload.subject}`);
+    // ========================================================================
+    // 0. Verify Resend webhook signature (Svix)
+    // ========================================================================
+
+    if (!RESEND_WEBHOOK_SECRET) {
+      log.error('RESEND_WEBHOOK_SECRET is not configured');
+      return new Response(
+        JSON.stringify({ error: 'Webhook signing secret not configured' }),
+        { headers: corsHeaders, status: 500 },
+      );
+    }
+
+    const svixId = req.headers.get('svix-id');
+    const svixTimestamp = req.headers.get('svix-timestamp');
+    const svixSignature = req.headers.get('svix-signature');
+
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      log.warn('Missing required Svix headers');
+      return new Response(
+        JSON.stringify({ error: 'Missing webhook signature headers' }),
+        { headers: corsHeaders, status: 401 },
+      );
+    }
+
+    // Read the raw body for signature verification, then parse as JSON
+    const rawBody = await req.text();
+
+    try {
+      await verifySvixSignature(RESEND_WEBHOOK_SECRET, svixId, svixTimestamp, svixSignature, rawBody);
+      log.info('Webhook signature verified successfully');
+    } catch (verifyError) {
+      log.error(`Signature verification failed: ${verifyError.message}`);
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook signature' }),
+        { headers: corsHeaders, status: 401 },
+      );
+    }
+
+    // Parse the verified payload
+    const payload: ResendInboundPayload = JSON.parse(rawBody);
+    log.info(`Inbound email from: ${payload.from}, subject: ${payload.subject}`);
 
     // Initialize Supabase client with service role
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -84,10 +128,10 @@ serve(async (req) => {
     const toAddresses = parseAddressList(payload.to);
     const ccAddresses = payload.cc ? parseAddressList(payload.cc) : [];
 
-    console.log(`[receive-crm-email] Sender: ${sender.name} <${sender.email}>`);
-    console.log(`[receive-crm-email] To: ${toAddresses.map(a => a.email).join(', ')}`);
+    log.info(`Sender: ${sender.name} <${sender.email}>`);
+    log.info(`To: ${toAddresses.map(a => a.email).join(', ')}`);
     if (ccAddresses.length > 0) {
-      console.log(`[receive-crm-email] CC: ${ccAddresses.map(a => a.email).join(', ')}`);
+      log.info(`CC: ${ccAddresses.map(a => a.email).join(', ')}`);
     }
 
     // ========================================================================
@@ -99,9 +143,9 @@ serve(async (req) => {
     const inReplyTo = getHeaderValue(headers, 'In-Reply-To') || getHeaderValue(headers, 'in-reply-to');
     const referencesHeader = getHeaderValue(headers, 'References') || getHeaderValue(headers, 'references');
 
-    console.log(`[receive-crm-email] Message-ID: ${messageId}`);
-    if (inReplyTo) console.log(`[receive-crm-email] In-Reply-To: ${inReplyTo}`);
-    if (referencesHeader) console.log(`[receive-crm-email] References: ${referencesHeader}`);
+    log.info(`Message-ID: ${messageId}`);
+    if (inReplyTo) log.info(`In-Reply-To: ${inReplyTo}`);
+    if (referencesHeader) log.info(`References: ${referencesHeader}`);
 
     // ========================================================================
     // 3. Match sender to a lead in zoho_lead_submissions
@@ -118,15 +162,15 @@ serve(async (req) => {
       .maybeSingle();
 
     if (leadError) {
-      console.error('[receive-crm-email] Error looking up lead:', leadError);
+      log.error('Error looking up lead:', leadError);
     }
 
     if (lead) {
       leadId = lead.id;
       orgId = lead.org_id || null;
-      console.log(`[receive-crm-email] Matched to lead: ${leadId}`);
+      log.info(`Matched to lead: ${leadId}`);
     } else {
-      console.log(`[receive-crm-email] No lead found for sender: ${sender.email}`);
+      log.info(`No lead found for sender: ${sender.email}`);
     }
 
     // ========================================================================
@@ -146,7 +190,7 @@ serve(async (req) => {
 
       if (existingEmail?.thread_id) {
         threadId = existingEmail.thread_id;
-        console.log(`[receive-crm-email] Matched thread via In-Reply-To: ${threadId}`);
+        log.info(`Matched thread via In-Reply-To: ${threadId}`);
       }
     }
 
@@ -163,7 +207,7 @@ serve(async (req) => {
 
         if (refEmail?.thread_id) {
           threadId = refEmail.thread_id;
-          console.log(`[receive-crm-email] Matched thread via References: ${threadId}`);
+          log.info(`Matched thread via References: ${threadId}`);
           break;
         }
       }
@@ -188,10 +232,10 @@ serve(async (req) => {
       );
 
       if (threadError) {
-        console.error('[receive-crm-email] Error creating thread:', threadError);
+        log.error('Error creating thread:', threadError);
       } else {
         threadId = newThreadId;
-        console.log(`[receive-crm-email] Created/found thread via RPC: ${threadId}`);
+        log.info(`Created/found thread via RPC: ${threadId}`);
       }
     }
 
@@ -249,24 +293,24 @@ serve(async (req) => {
       .single();
 
     if (insertError) {
-      console.error('[receive-crm-email] Error inserting email log:', insertError);
+      log.error('Error inserting email log:', insertError);
       throw new Error(`Failed to save inbound email: ${insertError.message}`);
     }
 
-    console.log(`[receive-crm-email] Email logged with ID: ${emailLog.id}`);
+    log.info(`Email logged with ID: ${emailLog.id}`);
 
     // ========================================================================
     // 7. Handle attachments
     // ========================================================================
 
     if (payload.attachments && payload.attachments.length > 0 && emailLog) {
-      console.log(`[receive-crm-email] Processing ${payload.attachments.length} attachment(s)`);
+      log.info(`Processing ${payload.attachments.length} attachment(s)`);
 
       for (const attachment of payload.attachments) {
         try {
           await processAttachment(supabase, emailLog.id, leadId, attachment);
         } catch (attError) {
-          console.error(`[receive-crm-email] Error processing attachment ${attachment.filename}:`, attError);
+          log.error(`Error processing attachment ${attachment.filename}:`, attError);
           // Continue with other attachments even if one fails
         }
       }
@@ -295,7 +339,7 @@ serve(async (req) => {
     // 9. Return success
     // ========================================================================
 
-    console.log(`[receive-crm-email] Successfully processed inbound email from ${sender.email}`);
+    log.info(`Successfully processed inbound email from ${sender.email}`);
 
     return new Response(
       JSON.stringify({
@@ -305,19 +349,19 @@ serve(async (req) => {
         lead_id: leadId,
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         status: 200,
       }
     );
   } catch (error) {
-    console.error('[receive-crm-email] Error:', error);
+    log.error('Unhandled error:', error);
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message || 'Unknown error',
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_INBOUND_EXTRA_HEADERS }), 'Content-Type': 'application/json' },
         status: 500,
       }
     );
@@ -412,7 +456,7 @@ async function processAttachment(
     });
 
   if (uploadError) {
-    console.error(`[receive-crm-email] Storage upload error for ${filename}:`, uploadError);
+    log.error(`Storage upload error for ${filename}:`, uploadError);
     throw uploadError;
   }
 
@@ -435,9 +479,9 @@ async function processAttachment(
     });
 
   if (recordError) {
-    console.error(`[receive-crm-email] Error creating attachment record for ${filename}:`, recordError);
+    log.error(`Error creating attachment record for ${filename}:`, recordError);
     throw recordError;
   }
 
-  console.log(`[receive-crm-email] Attachment stored: ${filename} (${fileSize} bytes)`);
+  log.info(`Attachment stored: ${filename} (${fileSize} bytes)`);
 }

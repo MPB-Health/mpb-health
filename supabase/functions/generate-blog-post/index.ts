@@ -1,11 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('generate-blog-post');
 
 interface GenerateBlogRequest {
   promptId?: string;
@@ -23,10 +20,7 @@ interface _GeminiResponse {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -136,7 +130,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (logError) {
-      console.error("Failed to log generation:", logError);
+      log.error("Failed to log generation:", logError);
     }
 
     let blogPostId = null;
@@ -171,7 +165,7 @@ Deno.serve(async (req: Request) => {
         .single();
 
       if (blogError) {
-        console.error("Failed to save blog post:", blogError);
+        log.error("Failed to save blog post:", blogError);
       } else {
         blogPostId = blogPost?.id;
       }
@@ -189,13 +183,13 @@ Deno.serve(async (req: Request) => {
       {
         status: 200,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           "Content-Type": "application/json",
         },
       }
     );
   } catch (error) {
-    console.error("Blog generation error:", error);
+    log.error("Blog generation error:", error);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -209,7 +203,7 @@ Deno.serve(async (req: Request) => {
           error_message: error instanceof Error ? error.message : "Unknown error",
         });
       } catch (logError) {
-        console.error("Failed to log error:", logError);
+        log.error("Failed to log error:", logError);
       }
     }
 
@@ -221,7 +215,7 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           "Content-Type": "application/json",
         },
       }

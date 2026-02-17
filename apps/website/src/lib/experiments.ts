@@ -1,4 +1,8 @@
 // Simple A/B testing utilities
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('Experiments');
+
 export type ExperimentVariant = 'A' | 'B';
 
 export interface Experiment {
@@ -38,7 +42,7 @@ export const getExperimentVariant = (experimentId: keyof typeof experiments): Ex
 
 export const trackExperiment = (experimentId: string, variant: ExperimentVariant, event: string) => {
   // Track experiment exposure and conversion
-  console.log('Experiment:', experimentId, 'Variant:', variant, 'Event:', event);
+  log.info('Experiment:', experimentId, 'Variant:', variant, 'Event:', event);
   
   // In a real implementation, send to your analytics platform
   // analytics.track('experiment_event', { experimentId, variant, event });

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { sanitizeHTML } from '../../lib/sanitizer';
+import { sanitizeHtml } from '@mpbhealth/utils';
 import { useFAQByCategory } from '../../hooks/useFAQ';
 
 interface AccordionItemProps {
@@ -34,7 +34,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
     }
   };
 
-  const sanitizedContent = sanitizeHTML(contentHtml);
+  const sanitizedContent = sanitizeHtml(contentHtml);
 
   return (
     <div className="border-b border-neutral-200 last:border-b-0">

@@ -41,6 +41,9 @@ import { Badge } from '../../components/ui/Badge';
 import { AdvisorTerminal } from '../../components/terminal/AdvisorTerminal';
 import { AdvisorToolkit } from '../../components/advisor/AdvisorToolkit';
 import { LiveMeetingBanner } from '../../components/advisor/LiveMeetingBanner';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('AdvisorDashboard');
 
 // Helper to dynamically render Lucide icons by name
 const DynamicIcon = ({ name, className }: { name: string; className?: string }) => {
@@ -89,7 +92,7 @@ export default function AdvisorDashboard() {
 
     try {
       setLoading(true);
-      console.log('[AdvisorDashboard] Loading data for user:', user.id);
+      log.info('Loading data for user:', user.id);
 
       const [profileData, modulesData, certsData, statsData, bulletinsData] = await Promise.all([
         advisorAuthService.getAdvisorProfile(user.id),
@@ -99,9 +102,9 @@ export default function AdvisorDashboard() {
         advisorContentService.getLatestBulletins(3),
       ]);
 
-      console.log('[AdvisorDashboard] Profile data:', profileData);
-      console.log('[AdvisorDashboard] Modules:', modulesData.length);
-      console.log('[AdvisorDashboard] Stats:', statsData);
+      log.info('Profile data:', profileData);
+      log.info('Modules:', modulesData.length);
+      log.info('Stats:', statsData);
 
       setProfile(profileData);
       setModules(modulesData.slice(0, 6));

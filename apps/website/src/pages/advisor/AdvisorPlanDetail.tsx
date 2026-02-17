@@ -22,6 +22,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/Badge';
 import { supabase } from '../../lib/supabase';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 interface PlanDetails {
   id: string;
@@ -304,7 +305,7 @@ export default function AdvisorPlanDetail() {
               </div>
               <div className="prose prose-gray max-w-none">
                 {plan.overview_content ? (
-                  <div dangerouslySetInnerHTML={{ __html: plan.overview_content }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(plan.overview_content) }} />
                 ) : (
                   <p className="text-gray-600 italic">Overview content coming soon. Check back later for detailed plan information.</p>
                 )}
@@ -320,7 +321,7 @@ export default function AdvisorPlanDetail() {
                 <h2 className="text-xl font-bold text-gray-900">Membership Pricing</h2>
               </div>
               {plan.pricing_content ? (
-                <div className="prose prose-gray max-w-none" dangerouslySetInnerHTML={{ __html: plan.pricing_content }} />
+                <div className="prose prose-gray max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(plan.pricing_content) }} />
               ) : (
                 <div className="p-6 bg-gray-50 rounded-lg text-center">
                   <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />

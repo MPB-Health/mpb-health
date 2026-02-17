@@ -39,7 +39,12 @@ export async function triggerN8nWebhook(
 ): Promise<TriggerWebhookResponse> {
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    // Use the authenticated user's access token so the edge function can
+    // verify the caller's identity. Falls back to the anon key for the
+    // Supabase API gateway requirement.
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
     const response = await fetch(
       `${supabaseUrl}/functions/v1/trigger-n8n-webhook`,
@@ -47,7 +52,7 @@ export async function triggerN8nWebhook(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(request),
       }

@@ -5,6 +5,7 @@
 // Supabase client
 export {
   supabase,
+  supabaseUrl,
   getSupabase,
   isSupabaseConfigured,
   checkSupabaseHealth,

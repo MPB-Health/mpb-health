@@ -37,6 +37,7 @@ import {
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import { EmailComposerModal } from './email/EmailComposerModal';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 // ============================================================================
 // Types
@@ -454,7 +455,7 @@ function TimelineCard({ entry, onReply, onCompleteTask }: TimelineCardProps) {
               {meta.html_body ? (
                 <div
                   className="prose prose-sm max-w-none text-th-text-secondary"
-                  dangerouslySetInnerHTML={{ __html: String(meta.html_body) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(String(meta.html_body)) }}
                 />
               ) : (
                 <p className="text-sm text-th-text-secondary whitespace-pre-wrap">

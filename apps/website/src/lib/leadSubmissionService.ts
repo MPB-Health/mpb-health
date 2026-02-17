@@ -2,6 +2,9 @@ import { supabase } from './supabase';
 import { zohoCRMService, type ZohoLead } from './zohoCRMService';
 import { sendLeadNotification, sendLeadWelcomeEmail } from './emailService';
 import { triggerN8nWebhook } from './n8nWebhookService';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('LeadSubmission');
 
 export interface LeadFormData {
   firstName: string;
@@ -276,7 +279,7 @@ class LeadSubmissionService {
         firstName: formData.firstName,
         email: formData.email,
       });
-      console.log(`[LeadSubmission] Welcome email sent to ${formData.email}`);
+      log.info(`[LeadSubmission] Welcome email sent to ${formData.email}`);
     } catch (error) {
       console.error('Lead welcome email error:', error);
     }

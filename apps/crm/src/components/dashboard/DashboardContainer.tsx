@@ -5,10 +5,13 @@
 
 import { useEffect } from 'react';
 import { Loader2, AlertCircle, LayoutDashboard } from 'lucide-react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { DashboardProvider, useDashboardStore } from '../../contexts/DashboardContext';
 import { DashboardToolbar } from './DashboardToolbar';
 import { WidgetGrid } from './WidgetGrid';
 import { useKeyboardShortcuts } from './KeyboardShortcuts';
+
+const log = createClientLogger('DashboardContainer');
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
   classes.filter(Boolean).join(' ');
 
@@ -39,7 +42,7 @@ function DashboardContent() {
     const handleRefresh = () => {
       // Trigger widget refresh by dispatching a custom event
       // Individual widgets listen for this
-      console.log('Dashboard refresh triggered');
+      log.info('Dashboard refresh triggered');
     };
 
     window.addEventListener('dashboard:refresh', handleRefresh);

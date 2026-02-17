@@ -38,6 +38,7 @@ import {
 } from '../../lib/formsService';
 import { toast } from 'sonner';
 import { cn } from '../../lib/utils';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 // ============================================================================
 // Types
@@ -635,7 +636,7 @@ const FormsManager: React.FC = () => {
                         <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
                         <div 
                           className="bg-white border rounded p-4"
-                          dangerouslySetInnerHTML={{ __html: formData.cognito_embed }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.cognito_embed, { ADD_TAGS: ['iframe', 'script'], ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling'] }) }}
                         />
                       </div>
                     )}

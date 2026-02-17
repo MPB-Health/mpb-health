@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { HOW_IT_WORKS_STEPS } from '../lib/onboarding/howItWorksSteps';
+
+const log = createClientLogger('useHowItWorks');
 
 const AUTO_ADVANCE_MS = 6000;
 
@@ -47,7 +50,7 @@ export function useHowItWorks(options: UseHowItWorksOptions = {}) {
       });
     }
 
-    console.log('[HowItWorks Analytics]', eventData);
+    log.info('[HowItWorks Analytics]', eventData);
   }, [enableAnalytics]);
 
   useEffect(() => {

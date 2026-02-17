@@ -17,6 +17,7 @@ import {
   type FormSubmission,
 } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 interface FormsProps {
   section?: 'advisor' | 'employer' | 'member';
@@ -243,7 +244,7 @@ export default function Forms({ section }: FormsProps) {
                 {/* Display form embed - cognito_embed contains full iframe/script */}
                 {selectedForm.cognito_embed ? (
                   <div 
-                    dangerouslySetInnerHTML={{ __html: selectedForm.cognito_embed }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedForm.cognito_embed, { ADD_TAGS: ['iframe', 'script'], ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling'] }) }}
                     className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
                   />
                 ) : selectedForm.embed_url ? (

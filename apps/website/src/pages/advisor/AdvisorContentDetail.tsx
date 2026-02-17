@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/Badge';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 export default function AdvisorContentDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -178,7 +179,7 @@ export default function AdvisorContentDetail() {
 
           <div
             className="prose prose-lg max-w-none"
-            dangerouslySetInnerHTML={{ __html: content.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.content) }}
           />
         </Card>
 

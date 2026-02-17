@@ -1,11 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('create-admin-user');
 
 interface CreateUserRequest {
   email: string;
@@ -20,7 +17,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 async function sendInviteEmail(email: string, firstName: string, tempPassword: string): Promise<void> {
   if (!RESEND_API_KEY) {
-    console.log("Resend API key not configured, skipping invite email");
+    log.info('Resend API key not configured, skipping invite email');
     return;
   }
 
@@ -99,7 +96,7 @@ function generateTempPassword(): string {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -118,7 +115,7 @@ Deno.serve(async (req: Request) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -129,7 +126,7 @@ Deno.serve(async (req: Request) => {
     if (authError || !caller) {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid authorization" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -144,7 +141,7 @@ Deno.serve(async (req: Request) => {
     if (!callerRoles) {
       return new Response(
         JSON.stringify({ success: false, error: "Only super admins can create users" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -155,7 +152,7 @@ Deno.serve(async (req: Request) => {
     if (!email || !first_name || !last_name || !role) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing required fields" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -175,10 +172,10 @@ Deno.serve(async (req: Request) => {
     });
 
     if (createUserError) {
-      console.error("Create user error:", createUserError);
+      log.error('Create user error:', createUserError);
       return new Response(
         JSON.stringify({ success: false, error: createUserError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -198,7 +195,7 @@ Deno.serve(async (req: Request) => {
       });
 
     if (adminUserError) {
-      console.error("Admin user insert error:", adminUserError);
+      log.error('Admin user insert error:', adminUserError);
       // Continue anyway, user is created
     }
 
@@ -212,7 +209,7 @@ Deno.serve(async (req: Request) => {
       });
 
     if (roleError) {
-      console.error("User role insert error:", roleError);
+      log.error('User role insert error:', roleError);
       // Continue anyway, user is created
     }
 
@@ -221,7 +218,7 @@ Deno.serve(async (req: Request) => {
       try {
         await sendInviteEmail(email, first_name, tempPassword);
       } catch (emailError) {
-        console.error("Email send error:", emailError);
+        log.error('Email send error:', emailError);
         // Continue anyway, user is created
       }
     }
@@ -234,16 +231,16 @@ Deno.serve(async (req: Request) => {
           ? "User created and invitation email sent"
           : "User created successfully",
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Edge function error:", error);
+    log.error('Unhandled error:', error);
     return new Response(
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

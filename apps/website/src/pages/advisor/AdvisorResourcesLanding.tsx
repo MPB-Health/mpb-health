@@ -14,7 +14,10 @@ import {
 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { createClientLogger } from '@mpbhealth/utils';
 import { supabase } from '../../lib/supabase';
+
+const log = createClientLogger('AdvisorResources');
 
 interface PlanResource {
   id: string;
@@ -131,7 +134,7 @@ export default function AdvisorResourcesLanding() {
         .order('order_index', { ascending: true });
 
       if (error) {
-        console.log('Using default plans (table may not exist yet)');
+        log.info('Using default plans (table may not exist yet)');
         // Use default plans if table doesn't exist or is empty
         setPlans(DEFAULT_PLANS.map((p, i) => ({ ...p, id: `default-${i}` })));
       } else if (data && data.length > 0) {

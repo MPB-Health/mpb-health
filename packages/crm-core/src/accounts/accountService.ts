@@ -7,6 +7,16 @@ import type {
   AccountUpdateInput,
 } from './accountTypes';
 
+/**
+ * Sanitize a value for use inside a PostgREST filter string.
+ * Escapes characters that have special meaning in PostgREST filter syntax
+ * (commas, dots, parentheses, percent signs, backslashes, and asterisks)
+ * to prevent filter-injection attacks.
+ */
+function sanitizeFilterValue(value: string): string {
+  return value.replace(/[\\%_*.,()]/g, (ch) => `\\${ch}`);
+}
+
 export class AccountService {
   constructor(private supabase: SupabaseClient) {}
 
@@ -43,8 +53,9 @@ export class AccountService {
         query = query.lte('created_at', filters.dateTo);
       }
       if (filters.search) {
+        const safe = sanitizeFilterValue(filters.search);
         query = query.or(
-          `name.ilike.%${filters.search}%,industry.ilike.%${filters.search}%,website.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`
+          `name.ilike.%${safe}%,industry.ilike.%${safe}%,website.ilike.%${safe}%,phone.ilike.%${safe}%`
         );
       }
       if (filters.tags && filters.tags.length > 0) {

@@ -16,7 +16,10 @@ import {
   type OrgRole,
   type UserPermissionSet,
 } from '@mpbhealth/auth';
+import { createClientLogger } from '@mpbhealth/utils';
 import { useAuth } from './AuthContext';
+
+const log = createClientLogger('OrgContext');
 
 const ACTIVE_ORG_KEY = 'mpb_active_org_id';
 
@@ -105,7 +108,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     }
     getUserOrgRole(activeOrgId)
       .then((role) => {
-        console.log('[OrgContext] User role loaded:', role);
+        log.info('[OrgContext] User role loaded:', role);
         setOrgRole(role);
       })
       .catch((err) => {

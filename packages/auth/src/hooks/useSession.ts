@@ -49,10 +49,7 @@ export function useSession(options: UseSessionOptions = {}): UseSessionReturn {
       const { data: { session: newSession } } = await supabase.auth.refreshSession();
       if (newSession) {
         setSession(newSession);
-        await secureAuthService.updateSessionActivity(
-          session.user.id,
-          newSession.access_token
-        );
+        await secureAuthService.updateSessionActivity(newSession.user.id);
       }
     } catch (error) {
       console.error('Failed to extend session:', error);

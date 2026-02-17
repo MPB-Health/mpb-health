@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { zohoSalesIQManager, ZohoSalesIQStatus, ZohoSalesIQError } from '../lib/zohoSalesIQ';
+
+const log = createClientLogger('ZohoSalesIQ');
 
 export function ZohoSalesIQMonitor() {
   const [status, setStatus] = useState<ZohoSalesIQStatus | null>(null);
@@ -62,7 +65,7 @@ export function ZohoSalesIQMonitor() {
                 <button
                   onClick={async () => {
                     const diagnostics = await zohoSalesIQManager.exportDiagnosticsReport();
-                    console.log('Diagnostics:', diagnostics);
+                    log.info('Diagnostics:', diagnostics);
                   }}
                   className="text-xs font-medium text-red-800 hover:text-red-900 underline"
                 >
@@ -102,7 +105,7 @@ export function ZohoSalesIQMonitor() {
                 <button
                   onClick={async () => {
                     const diagnostics = await zohoSalesIQManager.exportDiagnosticsReport();
-                    console.log('Diagnostics:', diagnostics);
+                    log.info('Diagnostics:', diagnostics);
                   }}
                   className="text-sm font-medium text-red-800 hover:text-red-900 underline"
                 >

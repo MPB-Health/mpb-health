@@ -140,7 +140,7 @@ export default function Bulletins() {
                     <div className="hidden md:block w-2/5 relative">
                       <img
                         src={bulletin.featured_image_url}
-                        alt=""
+                        alt={`Featured image for ${bulletin.title}`}
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent to-th-accent-700/80" />
@@ -279,7 +279,7 @@ export default function Bulletins() {
                   <div className="relative h-48 overflow-hidden">
                     <img
                       src={bulletin.featured_image_url}
-                      alt=""
+                      alt={`Featured image for ${bulletin.title}`}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {isUnread && (

@@ -1,11 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('advisor-terminal-agent');
 
 interface CommandRequest {
   command: string;
@@ -25,10 +22,7 @@ interface _ToolResult {
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return handleCorsPreflightRequest(req);
   }
 
   const startTime = Date.now();
@@ -45,7 +39,7 @@ serve(async (req: Request) => {
 
     const { command, session_id, context }: CommandRequest = await req.json();
 
-    console.log('[Terminal Agent] Processing command:', {
+    log.info('Processing command:', {
       command,
       user_id: context.user_id,
       role: context.role
@@ -63,7 +57,7 @@ serve(async (req: Request) => {
       success = result.success;
       errorMessage = result.error;
     } catch (error) {
-      console.error('[Terminal Agent] Error processing command:', error);
+      log.error('Error processing command:', error);
       success = false;
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
       response = `Error: ${errorMessage}`;
@@ -88,7 +82,7 @@ serve(async (req: Request) => {
       .single();
 
     if (logError) {
-      console.error('[Terminal Agent] Error logging command:', logError);
+      log.error('Error logging command:', logError);
     }
 
     return new Response(
@@ -102,13 +96,13 @@ serve(async (req: Request) => {
       }),
       {
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           'Content-Type': 'application/json',
         },
       }
     );
   } catch (error) {
-    console.error('[Terminal Agent] Request error:', error);
+    log.error('Request error:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -118,7 +112,7 @@ serve(async (req: Request) => {
       {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           'Content-Type': 'application/json',
         },
       }

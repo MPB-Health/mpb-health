@@ -27,6 +27,7 @@ import { AdminBreadcrumb } from '../../../components/admin/AdminBreadcrumb';
 import { supabase } from '../../../lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '../../../lib/utils';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 // ============================================================================
 // Types
@@ -635,7 +636,7 @@ export default function FormsManager() {
                   const previewForm = forms.find(f => f.id === showPreview);
                   if (!previewForm?.cognito_embed) return <p>No embed code</p>;
                   return (
-                    <div dangerouslySetInnerHTML={{ __html: previewForm.cognito_embed }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewForm.cognito_embed, { ADD_TAGS: ['iframe', 'script'], ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling'] }) }} />
                   );
                 })()}
               </div>

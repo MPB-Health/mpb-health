@@ -1,3 +1,7 @@
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('Analytics');
+
 declare global {
   interface Window {
     gtag?: (...args: any[]) => void;
@@ -89,9 +93,7 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
   }
 
   // Development logging
-  if (import.meta.env.DEV) {
-    console.log('Track Event:', eventName, properties);
-  }
+  log.info('Track Event:', eventName, properties);
 };
 
 export const trackPageView = (path: string) => {

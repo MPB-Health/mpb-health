@@ -496,7 +496,7 @@ export const ContentManagementPanel: React.FC = () => {
                           {article.featured_image_url && (
                             <img
                               src={article.featured_image_url.startsWith('http') ? article.featured_image_url : `/${article.featured_image_url.replace(/^\//, '')}`}
-                              alt=""
+                              alt={`Thumbnail for ${article.title}`}
                               className="w-10 h-10 rounded object-cover"
                               onError={(e) => { e.currentTarget.style.display = 'none'; }}
                             />

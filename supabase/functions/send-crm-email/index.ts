@@ -3,11 +3,9 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('send-crm-email');
 
 interface RequestBody {
   to: string;
@@ -20,7 +18,7 @@ interface RequestBody {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -85,7 +83,7 @@ serve(async (req) => {
     } else {
       const errorData = await response.json();
       status = 'failed';
-      console.error('Resend error:', errorData);
+      log.error('Resend error:', errorData);
     }
 
     // Log to crm_email_log
@@ -104,19 +102,19 @@ serve(async (req) => {
     if (status === 'failed') {
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to send email via Resend' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
     return new Response(
       JSON.stringify({ success: true, email_id: resendEmailId }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {
-    console.error('Error sending CRM email:', error);
+    log.error('Error sending CRM email:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message || 'Unknown error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });

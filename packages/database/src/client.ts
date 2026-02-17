@@ -1,7 +1,10 @@
 /// <reference types="vite/client" />
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClientLogger } from '@mpbhealth/utils';
 
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
+const log = createClientLogger('Database');
+
+export const supabaseUrl = ((import.meta as any).env?.VITE_SUPABASE_URL as string | undefined) || '';
 const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 const hasValidConfig = Boolean(
@@ -37,7 +40,7 @@ if (!hasValidConfig) {
     );
   }
 } else {
-  console.log('[Supabase] Configuration valid:', {
+  log.info('[Supabase] Configuration valid:', {
     url: supabaseUrl,
     hasAnonKey: Boolean(supabaseAnonKey)
   });

@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { Calendar, User, ArrowLeft, Tag } from 'lucide-react';
 import { supabase, BlogArticle as BlogArticleType, BlogAuthor } from '../lib/supabase';
 import { BlogFooter } from '../components/blog';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 export const BlogArticle: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -144,7 +145,7 @@ export const BlogArticle: React.FC = () => {
         });
         
         if (pageViewsResult.error) {
-          // Silently fail if page_views table doesn't exist
+          console.error('Blog view tracking: page_views insert failed:', pageViewsResult.error.message);
         }
       } catch (err) {
         // Silently fail view tracking - don't break the user experience
@@ -304,7 +305,7 @@ export const BlogArticle: React.FC = () => {
               prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-neutral-600
               prose-img:rounded-lg prose-img:shadow-md
               prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }}
           />
         </div>
 

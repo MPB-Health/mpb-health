@@ -1,10 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('zoho-crm');
 
 interface ZohoLead {
   First_Name: string;
@@ -78,7 +75,7 @@ async function getAccessToken(): Promise<string> {
 
     return accessToken;
   } catch (error) {
-    console.error("Zoho token refresh error:", error);
+    log.error("Zoho token refresh error:", error);
     throw error;
   }
 }
@@ -108,7 +105,7 @@ async function createLead(leadData: ZohoLead): Promise<{ success: boolean; leadI
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Zoho CRM API error:", errorText);
+      log.error("Zoho CRM API error:", errorText);
       throw new Error(`Zoho API error: ${response.status} - ${errorText}`);
     }
 
@@ -127,7 +124,7 @@ async function createLead(leadData: ZohoLead): Promise<{ success: boolean; leadI
       };
     }
   } catch (error) {
-    console.error("Create lead error:", error);
+    log.error("Create lead error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create lead in Zoho CRM",
@@ -173,7 +170,7 @@ async function updateLead(leadId: string, updates: Partial<ZohoLead>): Promise<{
       };
     }
   } catch (error) {
-    console.error("Update lead error:", error);
+    log.error("Update lead error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to update lead in Zoho CRM",
@@ -214,7 +211,7 @@ async function searchLeadByEmail(email: string): Promise<{ found: boolean; leadI
 
     return { found: false };
   } catch (error) {
-    console.error("Search lead error:", error);
+    log.error("Search lead error:", error);
     return { found: false };
   }
 }
@@ -259,7 +256,7 @@ async function listLeads(params: {
       info: result.info || { count: result.data?.length || 0 },
     };
   } catch (error) {
-    console.error("List leads error:", error);
+    log.error("List leads error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to list leads from Zoho CRM",
@@ -292,7 +289,7 @@ async function getLead(leadId: string): Promise<{ success: boolean; lead?: any; 
 
     return { success: false, error: "Lead not found" };
   } catch (error) {
-    console.error("Get lead error:", error);
+    log.error("Get lead error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to get lead from Zoho CRM",
@@ -349,10 +346,7 @@ async function healthCheck(): Promise<{ success: boolean; configured: boolean; c
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -365,7 +359,7 @@ Deno.serve(async (req: Request) => {
         {
           status: 500,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         }
@@ -383,7 +377,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: result.success ? 200 : 400,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -394,7 +388,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: result.success ? 200 : 400,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -408,7 +402,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: result.success ? 200 : 503,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -423,7 +417,7 @@ Deno.serve(async (req: Request) => {
             {
               status: 400,
               headers: {
-                ...corsHeaders,
+                ...getCorsHeaders(req),
                 "Content-Type": "application/json",
               },
             }
@@ -434,7 +428,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: 200,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -459,7 +453,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: result.success ? 200 : 400,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -474,7 +468,7 @@ Deno.serve(async (req: Request) => {
             {
               status: 400,
               headers: {
-                ...corsHeaders,
+                ...getCorsHeaders(req),
                 "Content-Type": "application/json",
               },
             }
@@ -485,7 +479,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: result.success ? 200 : 400,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -497,13 +491,13 @@ Deno.serve(async (req: Request) => {
       {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           "Content-Type": "application/json",
         },
       }
     );
   } catch (error) {
-    console.error("Edge function error:", error);
+    log.error("Unhandled error:", error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -512,7 +506,7 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           "Content-Type": "application/json",
         },
       }

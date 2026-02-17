@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { supabase, Resource, ResourceFilters, ResourceTopic, isSupabaseConfigured } from '../lib/supabase';
+
+const log = createClientLogger('useResources');
 
 interface UseResourcesResult {
   resources: Resource[];
@@ -57,7 +60,7 @@ export const useResources = (filters: ResourceFilters): UseResourcesResult => {
       }
 
       if (data) {
-        console.log('[useResources] Successfully loaded', data.length, 'topics');
+        log.info('Successfully loaded', data.length, 'topics');
         setTopics(data);
       }
     } catch (err) {
@@ -76,7 +79,7 @@ export const useResources = (filters: ResourceFilters): UseResourcesResult => {
     setError(null);
 
     try {
-      console.log('[useResources] Fetching resources with filters:', filters);
+      log.info('Fetching resources with filters:', filters);
 
       let query = supabase
         .from('resource_library')
@@ -127,7 +130,7 @@ export const useResources = (filters: ResourceFilters): UseResourcesResult => {
       }
 
       if (data) {
-        console.log('[useResources] Successfully loaded', data.length, 'resources');
+        log.info('Successfully loaded', data.length, 'resources');
         setResources(data);
         setTotalCount(count || 0);
       }
@@ -174,7 +177,7 @@ export const useResourceDetail = (slug: string) => {
       setError(null);
 
       try {
-        console.log('[useResourceDetail] Fetching resource:', slug);
+        log.info('Fetching resource:', slug);
 
         const { data, error: fetchError } = await supabase
           .from('resource_library')
@@ -189,7 +192,7 @@ export const useResourceDetail = (slug: string) => {
         }
 
         if (data) {
-          console.log('[useResourceDetail] Successfully loaded resource:', data.title);
+          log.info('Successfully loaded resource:', data.title);
           setResource(data);
 
           await supabase

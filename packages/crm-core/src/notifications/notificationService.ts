@@ -7,7 +7,10 @@ import type {
   LeadCountsByPriority,
 } from './types';
 import type { LeadPriority } from '../priority/types';
+import { createClientLogger } from '@mpbhealth/utils';
 import { PriorityService } from '../priority/priorityService';
+
+const log = createClientLogger('NotificationService');
 
 export class NotificationService {
   private realtimeChannel: RealtimeChannel | null = null;
@@ -89,7 +92,7 @@ export class NotificationService {
         }
       )
       .subscribe((status) => {
-        console.log('[NotificationService] Subscription status:', status);
+        log.info('[NotificationService] Subscription status:', status);
       });
 
     return this.realtimeChannel;

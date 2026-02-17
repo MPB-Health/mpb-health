@@ -535,7 +535,7 @@ export default function TrainingManager() {
                         {module.thumbnail_url ? (
                           <img
                             src={module.thumbnail_url}
-                            alt=""
+                            alt={`Thumbnail for ${module.title}`}
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (

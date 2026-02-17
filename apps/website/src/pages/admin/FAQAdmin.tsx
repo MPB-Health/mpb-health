@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
 import { supabase } from '../../lib/supabase';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 interface FAQItem {
   id: string;
@@ -395,7 +396,7 @@ const FAQAdmin: React.FC = () => {
                       </div>
                       <div
                         className="prose prose-sm text-neutral-600 max-w-none"
-                        dangerouslySetInnerHTML={{ __html: item.content_html }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.content_html) }}
                       />
                       <p className="mt-2 text-xs text-neutral-500">
                         Order: {item.order_index} | Created: {new Date(item.created_at).toLocaleDateString()}

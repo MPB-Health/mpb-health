@@ -173,6 +173,8 @@ export default function Users() {
                         <img
                           src={user.avatar_url}
                           alt=""
+                          aria-hidden="true"
+                          role="presentation"
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (

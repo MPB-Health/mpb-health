@@ -44,6 +44,7 @@ import type {
   InboxStats,
   EnhancedEmailFilters,
 } from '@mpbhealth/crm-core';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 // ============================================================================
 // Constants
@@ -742,7 +743,7 @@ function DraftReadingPane({
         {draft.body_html ? (
           <div
             className="prose prose-sm max-w-none text-th-text-primary"
-            dangerouslySetInnerHTML={{ __html: draft.body_html }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(draft.body_html) }}
           />
         ) : (
           <p className="text-sm text-th-text-tertiary italic">No content</p>
@@ -877,7 +878,7 @@ function MessageItem({
           {message.body_html ? (
             <div
               className="prose prose-sm max-w-none text-th-text-primary [&_a]:text-th-accent-600 [&_img]:max-w-full [&_img]:h-auto"
-              dangerouslySetInnerHTML={{ __html: message.body_html }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(message.body_html) }}
             />
           ) : (
             <p className="text-sm text-th-text-tertiary italic whitespace-pre-wrap">

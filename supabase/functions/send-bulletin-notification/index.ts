@@ -3,11 +3,9 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('send-bulletin-notification');
 
 interface Recipient {
   advisor_id: string;
@@ -28,7 +26,7 @@ interface RequestBody {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -247,13 +245,13 @@ Manage notification preferences: ${unsubscribeUrl}
     return new Response(
       JSON.stringify(responseData),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         status: failedSends === recipients.length ? 500 : 200
       }
     );
 
   } catch (error) {
-    console.error('Error sending bulletin notification:', error);
+    log.error('Error sending bulletin notification:', error);
 
     return new Response(
       JSON.stringify({
@@ -261,7 +259,7 @@ Manage notification preferences: ${unsubscribeUrl}
         error: error.message || 'Unknown error'
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         status: 500
       }
     );

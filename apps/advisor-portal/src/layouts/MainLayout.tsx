@@ -254,6 +254,8 @@ export default function MainLayout() {
           <img
             src={profile.avatar_url}
             alt=""
+            aria-hidden="true"
+            role="presentation"
             className="w-8 h-8 rounded-full object-cover"
           />
         ) : (

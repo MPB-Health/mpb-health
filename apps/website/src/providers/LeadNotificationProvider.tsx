@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { supabase } from '../lib/supabase';
 import {
   classifyLeadPriority,
@@ -14,6 +15,8 @@ import {
 } from '../lib/leadPriorityService';
 import { ToastContainer, LeadToastData } from '../components/notifications/LeadToast';
 import type { RealtimeChannel, RealtimePostgresInsertPayload } from '@supabase/supabase-js';
+
+const log = createClientLogger('LeadNotificationProvider');
 
 // Lead data from Supabase realtime
 interface LeadSubmission {
@@ -94,7 +97,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
   // Request notification permission
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!('Notification' in window)) {
-      console.log('[LeadNotifications] Browser does not support notifications');
+      log.info('Browser does not support notifications');
       return false;
     }
 
@@ -105,7 +108,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
     }
 
     if (Notification.permission === 'denied') {
-      console.log('[LeadNotifications] Notifications are blocked');
+      log.info('Notifications are blocked');
       return false;
     }
 
@@ -200,7 +203,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
   // Handle new lead
   const handleNewLead = useCallback(
     async (lead: LeadSubmission) => {
-      console.log('[LeadNotifications] New lead received:', lead);
+      log.info('New lead received:', lead);
 
       // Classify priority
       const priority = await classifyLeadPriority({
@@ -217,7 +220,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
         created_at: lead.created_at,
       });
 
-      console.log('[LeadNotifications] Priority classified:', priority);
+      log.info('Priority classified:', priority);
 
       // Add to recent leads
       setRecentLeads((prev) => [lead, ...prev.slice(0, MAX_RECENT_LEADS - 1)]);
@@ -257,7 +260,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
   useEffect(() => {
     if (!enabled) return;
 
-    console.log('[LeadNotifications] Setting up realtime subscription...');
+    log.info('Setting up realtime subscription...');
 
     channelRef.current = supabase
       .channel('lead_notifications_realtime')
@@ -273,7 +276,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
         }
       )
       .subscribe((status) => {
-        console.log('[LeadNotifications] Subscription status:', status);
+        log.info('Subscription status:', status);
         setIsSubscribed(status === 'SUBSCRIBED');
       });
 
@@ -298,7 +301,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
   // Mark a lead as viewed
   const markAsViewed = useCallback((leadId: string) => {
     // Could track individual viewed leads if needed
-    console.log('[LeadNotifications] Marking lead as viewed:', leadId);
+    log.info('Marking lead as viewed:', leadId);
   }, []);
 
   // Mark all as viewed and reset unread count

@@ -6,6 +6,7 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { createClientLogger } from '@mpbhealth/utils';
 import { useOrg } from './OrgContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -13,6 +14,8 @@ import {
   type WidgetInstance,
   type DashboardLayout,
 } from '@mpbhealth/crm-core/dashboard';
+
+const log = createClientLogger('DashboardContext');
 
 // Simple UUID generator using crypto API
 const generateId = (): string => {
@@ -368,7 +371,7 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
   const refreshWidget = (_widgetId: string) => {
     // Trigger a re-render of specific widget
     // This is handled by individual widgets listening to their data
-    console.log('Refresh widget:', _widgetId);
+    log.info('Refresh widget:', _widgetId);
   };
 
   const refreshAllWidgets = () => {

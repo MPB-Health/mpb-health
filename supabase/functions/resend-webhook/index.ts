@@ -10,11 +10,13 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { verifySvixSignature } from '../_shared/svix.ts';
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('resend-webhook');
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature',
-};
+const RESEND_WEBHOOK_EXTRA_HEADERS =
+  'Content-Type, Authorization, X-Client-Info, Apikey, authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature';
 
 // ============================================================================
 // Types
@@ -70,7 +72,7 @@ interface WebhookPayload {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req, { allowHeaders: RESEND_WEBHOOK_EXTRA_HEADERS });
   }
 
   // Only accept POST
@@ -87,23 +89,43 @@ serve(async (req) => {
       throw new Error('Supabase configuration is missing');
     }
 
-    // Verify webhook signature (optional but recommended)
-    if (RESEND_WEBHOOK_SECRET) {
-      const svixId = req.headers.get('svix-id');
-      const svixTimestamp = req.headers.get('svix-timestamp');
-      const svixSignature = req.headers.get('svix-signature');
-
-      if (!svixId || !svixTimestamp || !svixSignature) {
-        console.warn('[resend-webhook] Missing Svix headers');
-        // Continue anyway for now, but log warning
-      }
-
-      // TODO: Implement proper Svix signature verification
-      // For production, use the svix library to verify signatures
+    // Verify webhook signature — reject unverified requests
+    if (!RESEND_WEBHOOK_SECRET) {
+      log.error('RESEND_WEBHOOK_SECRET is not configured');
+      return new Response(
+        JSON.stringify({ error: 'Webhook verification is not configured' }),
+        { headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_WEBHOOK_EXTRA_HEADERS }), 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
-    const payload: WebhookPayload = await req.json();
-    console.log(`[resend-webhook] Received event: ${payload.type} for email ${payload.data.email_id}`);
+    const svixId = req.headers.get('svix-id');
+    const svixTimestamp = req.headers.get('svix-timestamp');
+    const svixSignature = req.headers.get('svix-signature');
+
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      log.warn('Missing required Svix headers');
+      return new Response(
+        JSON.stringify({ error: 'Missing webhook signature headers' }),
+        { headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_WEBHOOK_EXTRA_HEADERS }), 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Read raw body for signature verification (must happen before parsing JSON)
+    const rawBody = await req.text();
+
+    try {
+      await verifySvixSignature(RESEND_WEBHOOK_SECRET, svixId, svixTimestamp, svixSignature, rawBody);
+      log.info('Webhook signature verified successfully');
+    } catch (verifyError) {
+      log.error(`Signature verification failed: ${verifyError.message}`);
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook signature' }),
+        { headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_WEBHOOK_EXTRA_HEADERS }), 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    const payload: WebhookPayload = JSON.parse(rawBody);
+    log.info(`Received event: ${payload.type} for email ${payload.data.email_id}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -115,10 +137,10 @@ serve(async (req) => {
       .single();
 
     if (findError || !email) {
-      console.log(`[resend-webhook] Email not found for Resend ID: ${payload.data.email_id}`);
+      log.info(`Email not found for Resend ID: ${payload.data.email_id}`);
       // Return 200 anyway to acknowledge receipt
       return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_WEBHOOK_EXTRA_HEADERS }), 'Content-Type': 'application/json' },
         status: 200,
       });
     }
@@ -160,22 +182,22 @@ serve(async (req) => {
         break;
 
       default:
-        console.log(`[resend-webhook] Unhandled event type: ${payload.type}`);
+        log.info(`Unhandled event type: ${payload.type}`);
     }
 
     return new Response(
       JSON.stringify({ received: true, event: payload.type }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_WEBHOOK_EXTRA_HEADERS }), 'Content-Type': 'application/json' },
         status: 200,
       }
     );
   } catch (error) {
-    console.error('[resend-webhook] Error:', error);
+    log.error('Unhandled error:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Unknown error' }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_WEBHOOK_EXTRA_HEADERS }), 'Content-Type': 'application/json' },
         status: 500,
       }
     );
@@ -203,7 +225,7 @@ async function handleEmailSent(
     })
     .eq('id', emailId);
 
-  console.log(`[resend-webhook] Email ${emailId} marked as sent`);
+  log.info(`Email ${emailId} marked as sent`);
 }
 
 async function handleEmailDelivered(
@@ -223,7 +245,7 @@ async function handleEmailDelivered(
     })
     .eq('id', emailId);
 
-  console.log(`[resend-webhook] Email ${emailId} marked as delivered`);
+  log.info(`Email ${emailId} marked as delivered`);
 }
 
 async function handleDeliveryDelayed(
@@ -247,7 +269,7 @@ async function handleDeliveryDelayed(
     .update({ metadata })
     .eq('id', emailId);
 
-  console.log(`[resend-webhook] Email ${emailId} delivery delayed`);
+  log.info(`Email ${emailId} delivery delayed`);
 }
 
 async function handleEmailBounced(
@@ -297,7 +319,7 @@ async function handleEmailBounced(
     }
   }
 
-  console.log(`[resend-webhook] Email ${emailId} bounced: ${bounce?.type}`);
+  log.info(`Email ${emailId} bounced: ${bounce?.type}`);
 }
 
 async function handleEmailComplained(
@@ -344,7 +366,7 @@ async function handleEmailComplained(
       .eq('id', leadId);
   }
 
-  console.log(`[resend-webhook] Email ${emailId} received spam complaint`);
+  log.info(`Email ${emailId} received spam complaint`);
 }
 
 async function handleEmailOpened(
@@ -380,7 +402,7 @@ async function handleEmailOpened(
     tracked_at: openData.timestamp,
   });
 
-  console.log(`[resend-webhook] Email ${emailId} opened (via Resend tracking)`);
+  log.info(`Email ${emailId} opened (via Resend tracking)`);
 }
 
 async function handleEmailClicked(
@@ -415,5 +437,5 @@ async function handleEmailClicked(
     tracked_at: clickData.timestamp,
   });
 
-  console.log(`[resend-webhook] Email ${emailId} link clicked: ${clickData.link}`);
+  log.info(`Email ${emailId} link clicked: ${clickData.link}`);
 }

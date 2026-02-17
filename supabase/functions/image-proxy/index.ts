@@ -1,17 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('image-proxy');
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -24,7 +18,7 @@ Deno.serve(async (req: Request) => {
         {
           status: 400,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         }
@@ -49,7 +43,7 @@ Deno.serve(async (req: Request) => {
         {
           status: 403,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         }
@@ -68,7 +62,7 @@ Deno.serve(async (req: Request) => {
         {
           status: imageResponse.status,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         }
@@ -80,13 +74,13 @@ Deno.serve(async (req: Request) => {
 
     return new Response(imageBlob, {
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(req),
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
   } catch (error) {
-    console.error("Image proxy error:", error);
+    log.error("Image proxy error:", error);
 
     return new Response(
       JSON.stringify({
@@ -96,7 +90,7 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           "Content-Type": "application/json",
         },
       }

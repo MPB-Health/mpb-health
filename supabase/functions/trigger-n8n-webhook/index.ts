@@ -1,11 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('trigger-n8n-webhook');
 
 interface WebhookPayload {
   eventType: string;
@@ -19,15 +16,66 @@ interface WebhookPayload {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return handleCorsPreflightRequest(req);
   }
+
+  const corsHeaders = { ...getCorsHeaders(req), "Content-Type": "application/json" };
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const N8N_WEBHOOK_SECRET = Deno.env.get("N8N_WEBHOOK_SECRET");
+
+    // ========================================================================
+    // Authentication: require either a valid Supabase user JWT or an API key.
+    //
+    // - Browser clients send the Supabase access_token as a Bearer token.
+    //   We verify it by calling supabase.auth.getUser() with the token.
+    // - Server-to-server callers can send "Bearer <N8N_WEBHOOK_SECRET>" or
+    //   pass it as an "x-webhook-secret" header.
+    // ========================================================================
+
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const bearerToken = authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : "";
+    const webhookSecretHeader = req.headers.get("x-webhook-secret") ?? "";
+
+    let authenticated = false;
+
+    // Path 1: Server-to-server API key via x-webhook-secret header
+    if (N8N_WEBHOOK_SECRET && webhookSecretHeader) {
+      if (webhookSecretHeader === N8N_WEBHOOK_SECRET) {
+        authenticated = true;
+      } else {
+        log.warn("Invalid x-webhook-secret");
+      }
+    }
+
+    // Path 2: Server-to-server API key as Bearer token
+    if (!authenticated && N8N_WEBHOOK_SECRET && bearerToken === N8N_WEBHOOK_SECRET) {
+      authenticated = true;
+    }
+
+    // Path 3: Supabase user JWT (browser clients)
+    if (!authenticated && bearerToken) {
+      const supabaseAuth = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(bearerToken);
+      if (authError || !user) {
+        log.warn("Invalid Supabase JWT:", authError?.message);
+      } else {
+        authenticated = true;
+      }
+    }
+
+    if (!authenticated) {
+      log.error("Unauthorized request rejected");
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        { status: 401, headers: corsHeaders },
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const requestBody: WebhookPayload = await req.json();
@@ -72,7 +120,7 @@ Deno.serve(async (req: Request) => {
         }
       } catch (error) {
         lastError = error instanceof Error ? error : new Error("Unknown error");
-        console.error(`Webhook attempt ${attempt + 1} failed:`, lastError);
+        log.error(`Webhook attempt ${attempt + 1} failed:`, lastError);
       }
 
       if (attempt < maxRetries) {
@@ -102,29 +150,17 @@ Deno.serve(async (req: Request) => {
         responseStatus: responseStatus,
         responseBody: responseBody,
       }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
+      { status: 200, headers: corsHeaders },
     );
   } catch (error) {
-    console.error("Webhook trigger error:", error);
+    log.error("Webhook trigger error:", error);
 
     return new Response(
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
+      { status: 500, headers: corsHeaders },
     );
   }
 });

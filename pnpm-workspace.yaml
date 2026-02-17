@@ -1,3 +1,34 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# ============================================================================
+# Shared dependency catalog — single source of truth for version alignment
+# Usage: replace version specifiers in package.json with "catalog:"
+# Docs: https://pnpm.io/catalogs
+# ============================================================================
+catalog:
+  # ---------- UI / Runtime ----------
+  lucide-react: ^0.564.0
+  date-fns: ^3.6.0
+  recharts: ^2.13.3
+  "@dnd-kit/core": ^6.3.1
+  "@dnd-kit/sortable": ^10.0.0
+  "@dnd-kit/utilities": ^3.2.2
+
+  # ---------- Build toolchain ----------
+  typescript: ^5.5.3
+  vite: ^5.4.21
+  "@vitejs/plugin-react": ^4.3.1
+  tsup: ^8.3.5
+
+  # ---------- CSS toolchain ----------
+  tailwindcss: ^3.4.13
+  postcss: ^8.4.47
+  autoprefixer: ^10.4.20
+
+  # ---------- React ----------
+  react: ^18.3.1
+  react-dom: ^18.3.1
+  "@types/react": ^18.3.5
+  "@types/react-dom": ^18.3.0

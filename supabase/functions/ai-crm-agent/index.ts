@@ -1,10 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('ai-crm-agent');
 
 interface ConversationSummaryRequest {
   action: 'summarize_conversation';
@@ -61,7 +59,7 @@ type RequestBody = ConversationSummaryRequest | DraftGenerationRequest | NextAct
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -70,7 +68,7 @@ serve(async (req) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -87,7 +85,7 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -107,19 +105,19 @@ serve(async (req) => {
       default:
         return new Response(
           JSON.stringify({ error: 'Unknown action' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
         );
     }
 
     return new Response(
       JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('AI CRM Agent error:', error);
+    log.error('AI CRM Agent error:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });
@@ -206,7 +204,7 @@ Be concise and actionable. Focus on information useful for sales follow-up.`;
       nextSteps: ['Follow up with lead'],
     };
   } catch (error) {
-    console.error('Summarization error:', error);
+    log.error('Summarization error:', error);
     return {
       summary: `Lead ${request.lead.name} is in ${request.lead.stage} stage with ${request.activities.length} recorded activities.`,
       keyPoints: [],
@@ -255,7 +253,7 @@ Return ONLY the SMS text, nothing else.`;
       const sms = await callGemini(prompt, apiKey);
       return { sms: sms.trim().slice(0, 160) };
     } catch (error) {
-      console.error('SMS generation error:', error);
+      log.error('SMS generation error:', error);
       return {
         sms: `Hi ${request.lead.first_name}! Following up on your health plan inquiry. Have time for a quick call? -{{advisor_name}}`,
       };
@@ -292,7 +290,7 @@ Return a JSON object:
         emailBody: response.slice(0, 1000),
       };
     } catch (error) {
-      console.error('Email generation error:', error);
+      log.error('Email generation error:', error);
       return {
         emailSubject: `${request.lead.first_name}, let's find your perfect health plan`,
         emailBody: `Hi ${request.lead.first_name},
@@ -370,7 +368,7 @@ Focus on actionable, specific recommendations that will move this lead forward.`
       ],
     };
   } catch (error) {
-    console.error('Next actions error:', error);
+    log.error('Next actions error:', error);
     return {
       actions: [
         {

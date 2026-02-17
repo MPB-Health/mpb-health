@@ -1,20 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storageKey: 'mpb-auth-token',
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'mpb-health-crm',
-    },
-  },
-});
-
-export { supabaseUrl, supabaseAnonKey };
+// Re-export Supabase client and utilities from shared database package
+// This ensures all apps use the same singleton client instance
+export { supabase, supabaseUrl } from '@mpbhealth/database';

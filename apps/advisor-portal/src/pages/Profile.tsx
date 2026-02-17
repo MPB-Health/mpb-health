@@ -111,6 +111,8 @@ export default function Profile() {
               <img
                 src={profile.avatar_url}
                 alt=""
+                aria-hidden="true"
+                role="presentation"
                 className="w-24 h-24 rounded-full object-cover"
               />
             ) : (
@@ -309,7 +311,7 @@ export default function Profile() {
                 {cert.badge_url ? (
                   <img
                     src={cert.badge_url}
-                    alt=""
+                    alt={`${cert.name} certification badge`}
                     className="w-12 h-12 rounded-lg"
                   />
                 ) : (

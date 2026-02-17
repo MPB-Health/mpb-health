@@ -151,6 +151,8 @@ export default function UserDetail() {
               <img
                 src={user.avatar_url}
                 alt=""
+                aria-hidden="true"
+                role="presentation"
                 className="w-16 h-16 rounded-full object-cover"
               />
             ) : (

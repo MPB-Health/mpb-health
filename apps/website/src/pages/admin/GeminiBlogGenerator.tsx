@@ -21,6 +21,7 @@ import {
   bulkImportBlogPosts,
   type BulkImportResult,
 } from '../../lib/blogGenerationService';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 const GeminiBlogGenerator: React.FC = () => {
   const navigate = useNavigate();
@@ -375,7 +376,7 @@ const GeminiBlogGenerator: React.FC = () => {
                           <h3 className="font-medium text-gray-900 mb-3">Generated Content:</h3>
                           <div
                             className="prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: result.content }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(result.content) }}
                           />
                         </div>
                       </>

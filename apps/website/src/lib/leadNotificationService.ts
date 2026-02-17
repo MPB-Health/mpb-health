@@ -5,6 +5,9 @@ import {
   getQuickPriority,
   LeadPriority,
 } from './leadPriorityService';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('LeadNotification');
 
 export interface LeadSubmission {
   id: string;
@@ -111,7 +114,7 @@ export const subscribeToLeadSubmissions = (
       }
     )
     .subscribe((status) => {
-      console.log('[LeadNotificationService] Subscription status:', status);
+      log.info('[LeadNotificationService] Subscription status:', status);
     });
 
   return realtimeChannel;

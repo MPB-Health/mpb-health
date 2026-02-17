@@ -11,10 +11,10 @@ export type MembershipType = typeof MEMBERSHIP_TYPES[number];
 export const rateCalculatorSchema = z.object({
   state: z.string().min(2, 'State is required'),
   householdType: z.enum(MEMBERSHIP_TYPES, {
-    error: () => ({ message: 'Please select a membership type' }),
+    errorMap: () => ({ message: 'Please select a membership type' }),
   }),
   primaryAge: z
-    .number({ message: 'Age is required' })
+    .number({ invalid_type_error: 'Age is required', required_error: 'Age is required' })
     .min(18, 'Primary member must be at least 18')
     .max(64, 'Primary member must be 64 or younger'),
   spouseAge: z
@@ -34,7 +34,7 @@ export const rateCalculatorSchema = z.object({
   selectedPlan: z.enum(
     ['essentials', 'mec-essentials', 'care-plus', 'direct', 'secure-hsa'] as const,
     {
-      error: () => ({ message: 'Please select a plan' }),
+      errorMap: () => ({ message: 'Please select a plan' }),
     }
   ),
   benefitTier: z.string().optional(),
@@ -102,10 +102,10 @@ export interface RateCalculatorInput {
 export const comparisonCalculatorSchema = z.object({
   state: z.string().min(2, 'State is required'),
   householdType: z.enum(MEMBERSHIP_TYPES, {
-    error: () => ({ message: 'Please select a membership type' }),
+    errorMap: () => ({ message: 'Please select a membership type' }),
   }),
   primaryAge: z
-    .number({ message: 'Age is required' })
+    .number({ invalid_type_error: 'Age is required', required_error: 'Age is required' })
     .min(18, 'Primary member must be at least 18')
     .max(64, 'Primary member must be 64 or younger'),
   spouseAge: z
@@ -183,17 +183,17 @@ export interface RateEstimate {
 export const businessRateCalculatorSchema = z.object({
   state: z.string().min(2, 'State is required'),
   businessType: z.enum(['sole-proprietor', 'llc', 'corporation', 'partnership'] as const, {
-    error: () => ({ message: 'Please select a business type' }),
+    errorMap: () => ({ message: 'Please select a business type' }),
   }),
   employeeCount: z
-    .number({ message: 'Number of employees is required' })
+    .number({ invalid_type_error: 'Number of employees is required', required_error: 'Number of employees is required' })
     .min(1, 'Must have at least 1 employee')
     .max(100, 'Maximum 100 employees'),
   householdType: z.enum(MEMBERSHIP_TYPES, {
-    error: () => ({ message: 'Please select a membership type' }),
+    errorMap: () => ({ message: 'Please select a membership type' }),
   }),
   primaryAge: z
-    .number({ message: 'Age is required' })
+    .number({ invalid_type_error: 'Age is required', required_error: 'Age is required' })
     .min(18, 'Primary member must be at least 18')
     .max(64, 'Primary member must be 64 or younger'),
   spouseAge: z
@@ -211,7 +211,7 @@ export const businessRateCalculatorSchema = z.object({
   primaryTobacco: z.boolean().default(false),
   spouseTobacco: z.boolean().default(false),
   selectedPlan: z.enum(['mec-essentials', 'secure-hsa'] as const, {
-    error: () => ({ message: 'Please select a plan' }),
+    errorMap: () => ({ message: 'Please select a plan' }),
   }),
   benefitTier: z.string().optional(),
   currentMonthly: z.number().optional().nullable().or(z.nan()).transform((val: any) => {

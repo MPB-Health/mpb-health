@@ -34,7 +34,10 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { createTickerService, type TickerItem, TICKER_EVENT_CONFIG } from '@mpbhealth/crm-core';
+import { createClientLogger } from '@mpbhealth/utils';
 import { cn } from '../../lib/utils';
+
+const log = createClientLogger('AdminNotificationTicker');
 
 // ============================================================================
 // Icon Map
@@ -265,7 +268,7 @@ export const AdminNotificationTicker: React.FC = () => {
   const handleItemClick = useCallback((item: TickerItem) => {
     // In admin portal, we could open a modal or navigate to the CRM
     // For now, just log and potentially open CRM in new tab
-    console.log('[AdminNotificationTicker] Item clicked:', item);
+    log.info('Item clicked:', item);
 
     if (item.entityType && item.entityId) {
       // Could open CRM link

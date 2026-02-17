@@ -1,11 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('invite-user');
 
 interface InviteRequest {
   org_id: string;
@@ -24,7 +21,7 @@ async function sendInviteEmail(
   inviteToken: string
 ): Promise<void> {
   if (!RESEND_API_KEY) {
-    console.log("Resend API key not configured, skipping invite email");
+    log.info('Resend API key not configured, skipping invite email');
     return;
   }
 
@@ -118,7 +115,7 @@ async function sendInviteEmail(
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -133,7 +130,7 @@ Deno.serve(async (req: Request) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -144,7 +141,7 @@ Deno.serve(async (req: Request) => {
     if (authError || !caller) {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid authorization" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -166,7 +163,7 @@ Deno.serve(async (req: Request) => {
     if (!org_id || !email || !role) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing required fields" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -182,7 +179,7 @@ Deno.serve(async (req: Request) => {
     if (existingInvite) {
       return new Response(
         JSON.stringify({ success: false, error: "User already has a pending invitation" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -205,7 +202,7 @@ Deno.serve(async (req: Request) => {
       if (existingMembership) {
         return new Response(
           JSON.stringify({ success: false, error: "User is already a member of this organization" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
         );
       }
     }
@@ -224,10 +221,10 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (inviteError) {
-      console.error("Invite insert error:", inviteError);
+      log.error('Invite insert error:', inviteError);
       return new Response(
         JSON.stringify({ success: false, error: inviteError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -235,7 +232,7 @@ Deno.serve(async (req: Request) => {
     try {
       await sendInviteEmail(email, inviterName, org_name || "MPB Health", role, invite.token);
     } catch (emailError) {
-      console.error("Email send error:", emailError);
+      log.error('Email send error:', emailError);
       // Continue anyway, invite is created
     }
 
@@ -245,16 +242,16 @@ Deno.serve(async (req: Request) => {
         message: "Invitation sent successfully",
         invite_token: invite.token,
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Edge function error:", error);
+    log.error('Unhandled error:', error);
     return new Response(
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

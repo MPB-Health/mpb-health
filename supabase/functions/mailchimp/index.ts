@@ -1,10 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('mailchimp');
 
 const MAILCHIMP_API_KEY = Deno.env.get("MAILCHIMP_API_KEY");
 const MAILCHIMP_AUDIENCE_ID = Deno.env.get("MAILCHIMP_AUDIENCE_ID");
@@ -264,7 +261,7 @@ async function addSubscriber(data: SubscriberRequest): Promise<MailchimpResponse
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("Mailchimp API error:", errorData);
+      log.error("Mailchimp API error:", errorData);
 
       if (response.status === 400 && errorData.title === "Member Exists") {
         return {
@@ -287,7 +284,7 @@ async function addSubscriber(data: SubscriberRequest): Promise<MailchimpResponse
       id: result.id,
     };
   } catch (error) {
-    console.error("Mailchimp subscription error:", error);
+    log.error("Mailchimp subscription error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -320,7 +317,7 @@ async function unsubscribe(email: string): Promise<MailchimpResponse> {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("Mailchimp API error:", errorData);
+      log.error("Mailchimp API error:", errorData);
       return {
         success: false,
         error: errorData.detail || errorData.title || "Failed to unsubscribe",
@@ -334,7 +331,7 @@ async function unsubscribe(email: string): Promise<MailchimpResponse> {
       id: result.id,
     };
   } catch (error) {
-    console.error("Mailchimp unsubscribe error:", error);
+      log.error("Mailchimp unsubscribe error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -372,7 +369,7 @@ async function updateTags(data: TagUpdateRequest): Promise<MailchimpResponse> {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("Mailchimp tag update error:", errorData);
+      log.error("Mailchimp tag update error:", errorData);
       return {
         success: false,
         error: errorData.detail || errorData.title || "Failed to update tags",
@@ -384,7 +381,7 @@ async function updateTags(data: TagUpdateRequest): Promise<MailchimpResponse> {
       success: true,
     };
   } catch (error) {
-    console.error("Mailchimp tag update error:", error);
+    log.error("Mailchimp tag update error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -431,7 +428,7 @@ async function getSubscriberInfo(email: string): Promise<{ success: boolean; sub
       subscriber,
     };
   } catch (error) {
-    console.error("Error fetching subscriber info:", error);
+    log.error("Error fetching subscriber info:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -442,10 +439,7 @@ async function getSubscriberInfo(email: string): Promise<{ success: boolean; sub
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -459,7 +453,7 @@ Deno.serve(async (req: Request) => {
         {
           status: 500,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         }
@@ -478,7 +472,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: result.success ? 200 : 400,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -489,7 +483,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: result.success ? 200 : 400,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -500,7 +494,7 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify(result), {
           status: result.success ? 200 : 400,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(req),
             "Content-Type": "application/json",
           },
         });
@@ -516,7 +510,7 @@ Deno.serve(async (req: Request) => {
           {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(req),
               "Content-Type": "application/json",
             },
           }
@@ -527,7 +521,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify(result), {
         status: result.success ? 200 : 404,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           "Content-Type": "application/json",
         },
       });
@@ -542,13 +536,13 @@ Deno.serve(async (req: Request) => {
       {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           "Content-Type": "application/json",
         },
       }
     );
   } catch (error) {
-    console.error("Edge function error:", error);
+    log.error("Unhandled error:", error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -557,7 +551,7 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(req),
           "Content-Type": "application/json",
         },
       }

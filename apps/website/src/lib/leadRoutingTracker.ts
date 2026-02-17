@@ -1,5 +1,8 @@
 import { supabase } from './supabase';
 import { trackEvent } from './analytics';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('LeadRouting');
 
 export interface CTAClickContext {
   ctaType: 'enroll_now' | 'get_quote' | 'see_plans' | 'calculator_result' | 'plan_select' | 'comparison_grid_select';
@@ -63,7 +66,7 @@ export async function trackCTAClick(context: CTAClickContext): Promise<void> {
       plan_type: context.planType,
     });
 
-    console.log('[Lead Routing] CTA click tracked:', context);
+    log.info('[Lead Routing] CTA click tracked:', context);
   } catch (error) {
     console.error('[Lead Routing] Failed to track CTA click:', error);
   }

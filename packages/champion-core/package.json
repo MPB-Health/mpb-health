@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "build": "echo 'No build needed — source-only package'",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/"
   },
@@ -19,6 +20,6 @@
   "devDependencies": {
     "@mpbhealth/typescript-config": "workspace:*",
     "@mpbhealth/eslint-config": "workspace:*",
-    "typescript": "^5.3.3"
+    "typescript": "catalog:"
   }
 }

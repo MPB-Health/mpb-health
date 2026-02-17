@@ -1,3 +1,6 @@
+import sharedConfig from '@mpbhealth/tailwind-config';
+import typography from '@tailwindcss/typography';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -5,7 +8,7 @@ export default {
     './src/**/*.{js,ts,jsx,tsx}',
     '../../packages/ui/src/**/*.{js,ts,jsx,tsx}',
   ],
-  presets: [require('@mpbhealth/config/tailwind')],
+  presets: [sharedConfig],
   theme: {
     extend: {
       colors: {
@@ -100,5 +103,5 @@ export default {
       },
     },
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: [typography],
 };

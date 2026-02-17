@@ -20,6 +20,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/Badge';
 import { ResourceCard } from '../components/resources/ResourceCard';
 import { useResources } from '../hooks/useResources';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 const getResourceIcon = (type: string) => {
   switch (type) {
@@ -183,7 +184,7 @@ export const ResourceDetail: React.FC = () => {
 
               <div
                 className="prose prose-neutral max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
-                dangerouslySetInnerHTML={{ __html: resource.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(resource.content) }}
               />
             </div>
 

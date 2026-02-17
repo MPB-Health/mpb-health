@@ -203,7 +203,7 @@ export default function BlogPosts() {
                       {post.featured_image ? (
                         <img
                           src={post.featured_image}
-                          alt=""
+                          alt={`Featured image for ${post.title}`}
                           className="w-12 h-12 rounded-lg object-cover"
                         />
                       ) : (

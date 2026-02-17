@@ -222,15 +222,15 @@ export function updateRateTable(product: string, ageBand: string, state: string,
     config.rate_tables[product] = {};
   }
   // This would require a way to persist back to the JSON file
-  console.log(`Rate update requested: ${key} = ${rate}`);
+  log.info(`Rate update requested: ${key} = ${rate}`);
 }
 
 // Simple unit tests (updated to work with new structure)
 export function __tests__() {
-  console.log('Running rate engine tests with configuration...');
-  console.log(`Configuration version: ${getConfigurationVersion()}`);
-  console.log(`Available plans: ${getAvailablePlans().join(', ')}`);
-  console.log(`Rate tables populated: ${isRateTablesPopulated()}`);
+  log.info('Running rate engine tests with configuration...');
+  log.info(`Configuration version: ${getConfigurationVersion()}`);
+  log.info(`Available plans: ${getAvailablePlans().join(', ')}`);
+  log.info(`Rate tables populated: ${isRateTablesPopulated()}`);
   
   // Test basic individual rate
   const test1 = estimateMonthly({
@@ -261,5 +261,5 @@ export function __tests__() {
   const expectedTotal = expectedBase + expectedTobacco + expectedState;
   console.assert(test2.total === expectedTotal, `Expected ${expectedTotal}, got ${test2.total}`);
   
-  console.log('Rate engine tests completed');
+  log.info('Rate engine tests completed');
 }

@@ -6,12 +6,9 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('calendar-sync');
 
 // ============================================================================
 // Environment Variables
@@ -70,15 +67,15 @@ interface OutlookEvent {
 // Helpers
 // ============================================================================
 
-function jsonResponse(data: unknown, status = 200): Response {
+function jsonResponse(req: Request, data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
   });
 }
 
-function errorResponse(message: string, status = 400): Response {
-  return jsonResponse({ error: message }, status);
+function errorResponse(req: Request, message: string, status = 400): Response {
+  return jsonResponse(req, { error: message }, status);
 }
 
 /** Create a service-role Supabase client for DB operations. */
@@ -103,15 +100,15 @@ async function verifyAuth(req: Request) {
 // Action: auth_url — Generate OAuth2 authorization URL
 // ============================================================================
 
-function handleAuthUrl(url: URL): Response {
+function handleAuthUrl(req: Request, url: URL): Response {
   const provider = url.searchParams.get('provider') as Provider | null;
   const redirectUri = url.searchParams.get('redirect_uri');
 
   if (!provider || !['google', 'outlook'].includes(provider)) {
-    return errorResponse('Missing or invalid provider. Must be "google" or "outlook".');
+    return errorResponse(req, 'Missing or invalid provider. Must be "google" or "outlook".');
   }
   if (!redirectUri) {
-    return errorResponse('Missing redirect_uri parameter.');
+    return errorResponse(req, 'Missing redirect_uri parameter.');
   }
 
   let authUrl: string;
@@ -138,7 +135,7 @@ function handleAuthUrl(url: URL): Response {
     authUrl = `https://login.microsoftonline.com/common/oauth2/v2/authorize?${params.toString()}`;
   }
 
-  return jsonResponse({ auth_url: authUrl });
+  return jsonResponse(req, { auth_url: authUrl });
 }
 
 // ============================================================================
@@ -150,12 +147,12 @@ async function handleCallback(req: Request): Promise<Response> {
   const { provider, code, redirect_uri, user_id, org_id } = body;
 
   if (!provider || !['google', 'outlook'].includes(provider)) {
-    return errorResponse('Missing or invalid provider.');
+    return errorResponse(req, 'Missing or invalid provider.');
   }
-  if (!code) return errorResponse('Missing authorization code.');
-  if (!redirect_uri) return errorResponse('Missing redirect_uri.');
-  if (!user_id) return errorResponse('Missing user_id.');
-  if (!org_id) return errorResponse('Missing org_id.');
+  if (!code) return errorResponse(req, 'Missing authorization code.');
+  if (!redirect_uri) return errorResponse(req, 'Missing redirect_uri.');
+  if (!user_id) return errorResponse(req, 'Missing user_id.');
+  if (!org_id) return errorResponse(req, 'Missing org_id.');
 
   let tokenData: { access_token: string; refresh_token: string; expires_in: number };
 
@@ -174,8 +171,8 @@ async function handleCallback(req: Request): Promise<Response> {
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error('Google token exchange failed:', errText);
-      return errorResponse(`Google token exchange failed: ${errText}`, 502);
+      log.error('Google token exchange failed:', errText);
+      return errorResponse(req, `Google token exchange failed: ${errText}`, 502);
     }
 
     tokenData = await res.json();
@@ -196,8 +193,8 @@ async function handleCallback(req: Request): Promise<Response> {
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error('Microsoft token exchange failed:', errText);
-      return errorResponse(`Microsoft token exchange failed: ${errText}`, 502);
+      log.error('Microsoft token exchange failed:', errText);
+      return errorResponse(req, `Microsoft token exchange failed: ${errText}`, 502);
     }
 
     tokenData = await res.json();
@@ -224,11 +221,11 @@ async function handleCallback(req: Request): Promise<Response> {
     );
 
   if (upsertError) {
-    console.error('Failed to store integration:', upsertError);
-    return errorResponse('Failed to store calendar integration.', 500);
+    log.error('Failed to store integration:', upsertError);
+    return errorResponse(req, 'Failed to store calendar integration.', 500);
   }
 
-  return jsonResponse({ success: true, provider });
+  return jsonResponse(req, { success: true, provider });
 }
 
 // ============================================================================
@@ -286,7 +283,7 @@ async function ensureValidToken(integration: CalendarIntegration): Promise<strin
     return integration.access_token_encrypted;
   }
 
-  console.log(`Refreshing ${integration.provider} token for user ${integration.user_id}`);
+  log.info(`Refreshing ${integration.provider} token for user ${integration.user_id}`);
 
   let newAccessToken: string;
   let newRefreshToken: string | undefined;
@@ -458,10 +455,10 @@ async function handleSync(req: Request): Promise<Response> {
   const body = await req.json();
   const { user_id, org_id, provider } = body;
 
-  if (!user_id) return errorResponse('Missing user_id.');
-  if (!org_id) return errorResponse('Missing org_id.');
+  if (!user_id) return errorResponse(req, 'Missing user_id.');
+  if (!org_id) return errorResponse(req, 'Missing org_id.');
   if (!provider || !['google', 'outlook'].includes(provider)) {
-    return errorResponse('Missing or invalid provider.');
+    return errorResponse(req, 'Missing or invalid provider.');
   }
 
   const supabase = getServiceClient();
@@ -475,7 +472,7 @@ async function handleSync(req: Request): Promise<Response> {
     .single();
 
   if (loadError || !integration) {
-    return errorResponse('Calendar integration not found. Please connect your calendar first.', 404);
+    return errorResponse(req, 'Calendar integration not found. Please connect your calendar first.', 404);
   }
 
   // Update sync status to in_progress
@@ -557,7 +554,7 @@ async function handleSync(req: Request): Promise<Response> {
       .is('external_event_id', null);
 
     if (crmError) {
-      console.error('Failed to load CRM events for push:', crmError);
+      log.error('Failed to load CRM events for push:', crmError);
     }
 
     if (crmEvents && crmEvents.length > 0) {
@@ -595,7 +592,7 @@ async function handleSync(req: Request): Promise<Response> {
 
           pushed++;
         } catch (pushErr) {
-          console.error(`Failed to push event ${event.id} to ${provider}:`, pushErr);
+          log.error(`Failed to push event ${event.id} to ${provider}:`, pushErr);
         }
       }
     }
@@ -609,9 +606,9 @@ async function handleSync(req: Request): Promise<Response> {
       })
       .eq('id', integration.id);
 
-    return jsonResponse({ success: true, pulled, pushed });
+    return jsonResponse(req, { success: true, pulled, pushed });
   } catch (syncError) {
-    console.error('Sync failed:', syncError);
+    log.error('Sync failed:', syncError);
 
     // Mark the integration as errored
     await supabase
@@ -619,7 +616,7 @@ async function handleSync(req: Request): Promise<Response> {
       .update({ sync_status: 'error' })
       .eq('id', integration.id);
 
-    return errorResponse(`Sync failed: ${(syncError as Error).message}`, 500);
+    return errorResponse(req, `Sync failed: ${(syncError as Error).message}`, 500);
   }
 }
 
@@ -631,9 +628,9 @@ async function handleDisconnect(req: Request): Promise<Response> {
   const body = await req.json();
   const { user_id, provider } = body;
 
-  if (!user_id) return errorResponse('Missing user_id.');
+  if (!user_id) return errorResponse(req, 'Missing user_id.');
   if (!provider || !['google', 'outlook'].includes(provider)) {
-    return errorResponse('Missing or invalid provider.');
+    return errorResponse(req, 'Missing or invalid provider.');
   }
 
   const supabase = getServiceClient();
@@ -645,11 +642,11 @@ async function handleDisconnect(req: Request): Promise<Response> {
     .eq('provider', provider);
 
   if (error) {
-    console.error('Failed to disconnect integration:', error);
-    return errorResponse('Failed to disconnect calendar integration.', 500);
+    log.error('Failed to disconnect integration:', error);
+    return errorResponse(req, 'Failed to disconnect calendar integration.', 500);
   }
 
-  return jsonResponse({ success: true });
+  return jsonResponse(req, { success: true });
 }
 
 // ============================================================================
@@ -659,7 +656,7 @@ async function handleDisconnect(req: Request): Promise<Response> {
 serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -670,12 +667,12 @@ serve(async (req: Request) => {
     try {
       await verifyAuth(req);
     } catch (authErr) {
-      return errorResponse(`Unauthorized: ${(authErr as Error).message}`, 401);
+      return errorResponse(req, `Unauthorized: ${(authErr as Error).message}`, 401);
     }
 
     switch (action) {
       case 'auth_url':
-        return handleAuthUrl(url);
+        return handleAuthUrl(req, url);
 
       case 'callback':
         return await handleCallback(req);
@@ -688,12 +685,13 @@ serve(async (req: Request) => {
 
       default:
         return errorResponse(
+          req,
           'Unknown action. Supported actions: auth_url, callback, sync, disconnect.',
           400
         );
     }
   } catch (err) {
-    console.error('Unhandled error in calendar-sync:', err);
-    return errorResponse(`Internal server error: ${(err as Error).message}`, 500);
+    log.error('Unhandled error:', err);
+    return errorResponse(req, `Internal server error: ${(err as Error).message}`, 500);
   }
 });

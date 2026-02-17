@@ -1,11 +1,14 @@
 import React from 'react';
 import { Phone, Mail, MapPin, Clock } from 'lucide-react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { SEOHead } from '../components/SEOHead';
 import { ContactForm } from '../components/forms/ContactForm';
 
+const log = createClientLogger('Contact');
+
 const Contact: React.FC = () => {
   const handleFormSubmit = (formData: any) => {
-    console.log('Form submitted:', formData);
+    log.info('Form submitted:', formData);
   };
 
   return (

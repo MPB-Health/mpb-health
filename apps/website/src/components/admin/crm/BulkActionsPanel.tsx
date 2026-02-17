@@ -12,8 +12,11 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Button } from '../../ui/button';
+import { createClientLogger } from '@mpbhealth/utils';
 import { crmService, type Lead, type PipelineStage } from '../../../lib/crmService';
 import { cn } from '../../../lib/utils';
+
+const log = createClientLogger('BulkActions');
 
 // ============================================================================
 // Types
@@ -434,7 +437,7 @@ export const BulkActionsPanel: React.FC<BulkActionsPanelProps> = ({
                 className="gap-2"
                 onClick={() => {
                   // TODO: Open email campaign modal
-                  console.log('Email campaign', leadIds);
+                  log.info('Email campaign', leadIds);
                 }}
               >
                 <Mail className="h-4 w-4" />
@@ -447,7 +450,7 @@ export const BulkActionsPanel: React.FC<BulkActionsPanelProps> = ({
                 className="gap-2"
                 onClick={() => {
                   // TODO: Open SMS campaign modal
-                  console.log('SMS campaign', leadIds);
+                  log.info('SMS campaign', leadIds);
                 }}
               >
                 <MessageSquare className="h-4 w-4" />

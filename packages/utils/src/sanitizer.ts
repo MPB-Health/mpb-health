@@ -15,105 +15,20 @@ const HTML_ENTITIES: Record<string, string> = {
 };
 
 /**
- * Sanitize HTML by escaping dangerous characters
+ * Escape HTML by replacing dangerous characters with HTML entities.
+ * Use this when you want to display raw text safely (NOT for dangerouslySetInnerHTML).
  */
-export function sanitizeHtml(html: string): string {
+export function escapeHtml(html: string): string {
   return html.replace(/[&<>"'`=/]/g, (char) => HTML_ENTITIES[char] || char);
 }
 
-/**
- * Sanitize input by removing or escaping potentially dangerous content
- */
-export function sanitizeInput(
-  input: string,
-  options: {
-    maxLength?: number;
-    allowedTags?: string[];
-    trimWhitespace?: boolean;
-    removeNewlines?: boolean;
-  } = {}
-): string {
-  const {
-    maxLength,
-    allowedTags = [],
-    trimWhitespace = true,
-    removeNewlines = false,
-  } = options;
-
-  let sanitized = input;
-
-  // Trim whitespace
-  if (trimWhitespace) {
-    sanitized = sanitized.trim();
-  }
-
-  // Remove newlines
-  if (removeNewlines) {
-    sanitized = sanitized.replace(/[\r\n]+/g, ' ');
-  }
-
-  // Remove script tags and event handlers
-  sanitized = sanitized
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/on\w+\s*=\s*(['"]).*?\1/gi, '')
-    .replace(/javascript:/gi, '');
-
-  // If no tags allowed, escape all HTML
-  if (allowedTags.length === 0) {
-    sanitized = sanitizeHtml(sanitized);
-  } else {
-    // Remove disallowed tags while keeping allowed ones
-    const tagPattern = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi;
-    sanitized = sanitized.replace(tagPattern, (match, tagName) => {
-      return allowedTags.includes(tagName.toLowerCase()) ? match : sanitizeHtml(match);
-    });
-  }
-
-  // Enforce max length
-  if (maxLength && sanitized.length > maxLength) {
-    sanitized = sanitized.substring(0, maxLength);
-  }
-
-  return sanitized;
-}
-
-/**
- * Remove all HTML tags from a string
- */
-export function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '');
-}
-
-/**
- * Sanitize a filename for safe use
- */
-export function sanitizeFilename(filename: string): string {
-  return filename
-    .replace(/[^a-zA-Z0-9.-_]/g, '_')
-    .replace(/\.{2,}/g, '.')
-    .replace(/^\.+|\.+$/g, '')
-    .substring(0, 255);
-}
-
-/**
- * Sanitize a URL slug
- */
-export function sanitizeSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 // ============================================================================
-// DOMPurify-based Enhanced Sanitization Functions
+// DOMPurify-based Sanitization
 // ============================================================================
 
 /**
- * Rich text sanitization config for TipTap/email content
- * Allows safe HTML tags while removing dangerous elements
+ * Rich text sanitization config for content rendered via dangerouslySetInnerHTML.
+ * Allows safe HTML tags while removing dangerous elements.
  */
 const RICH_TEXT_CONFIG: Config = {
   ALLOWED_TAGS: [
@@ -159,17 +74,15 @@ const RICH_TEXT_CONFIG: Config = {
 };
 
 /**
- * Sanitize rich text/HTML content (for TipTap, email templates, etc.)
- * Allows safe formatting tags while removing XSS vectors
+ * Sanitize HTML content using DOMPurify for safe rendering via dangerouslySetInnerHTML.
+ * Allows safe formatting tags (headings, lists, links, images, tables, etc.)
+ * while removing XSS vectors (scripts, event handlers, dangerous URIs).
  *
  * @param html - The HTML content to sanitize
- * @param options - Additional DOMPurify options
- * @returns Sanitized HTML string
+ * @param options - Additional DOMPurify config overrides
+ * @returns Sanitized HTML string safe for dangerouslySetInnerHTML
  */
-export function sanitizeRichText(
-  html: string,
-  options: Partial<Config> = {}
-): string {
+export function sanitizeHtml(html: string, options: Partial<Config> = {}): string {
   if (!html || typeof html !== 'string') {
     return '';
   }
@@ -177,6 +90,102 @@ export function sanitizeRichText(
   const config = { ...RICH_TEXT_CONFIG, ...options };
   return DOMPurify.sanitize(html, config);
 }
+
+/**
+ * Sanitize input by removing or escaping potentially dangerous content
+ */
+export function sanitizeInput(
+  input: string,
+  options: {
+    maxLength?: number;
+    allowedTags?: string[];
+    trimWhitespace?: boolean;
+    removeNewlines?: boolean;
+  } = {}
+): string {
+  const {
+    maxLength,
+    allowedTags = [],
+    trimWhitespace = true,
+    removeNewlines = false,
+  } = options;
+
+  let sanitized = input;
+
+  // Trim whitespace
+  if (trimWhitespace) {
+    sanitized = sanitized.trim();
+  }
+
+  // Remove newlines
+  if (removeNewlines) {
+    sanitized = sanitized.replace(/[\r\n]+/g, ' ');
+  }
+
+  // Remove script tags and event handlers
+  sanitized = sanitized
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/javascript:/gi, '');
+
+  // If no tags allowed, escape all HTML
+  if (allowedTags.length === 0) {
+    sanitized = escapeHtml(sanitized);
+  } else {
+    // Remove disallowed tags while keeping allowed ones
+    const tagPattern = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi;
+    sanitized = sanitized.replace(tagPattern, (match, tagName) => {
+      return allowedTags.includes(tagName.toLowerCase()) ? match : escapeHtml(match);
+    });
+  }
+
+  // Enforce max length
+  if (maxLength && sanitized.length > maxLength) {
+    sanitized = sanitized.substring(0, maxLength);
+  }
+
+  return sanitized;
+}
+
+/**
+ * Remove all HTML tags from a string
+ */
+export function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '');
+}
+
+/**
+ * Sanitize a filename for safe use
+ */
+export function sanitizeFilename(filename: string): string {
+  return filename
+    .replace(/[^a-zA-Z0-9.-_]/g, '_')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.+|\.+$/g, '')
+    .substring(0, 255);
+}
+
+/**
+ * Sanitize a URL slug
+ */
+export function sanitizeSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// ============================================================================
+// Backward-compatible aliases
+// ============================================================================
+
+/**
+ * Alias for sanitizeHtml — sanitize rich text/HTML content.
+ * @deprecated Use sanitizeHtml instead
+ */
+export const sanitizeRichText = sanitizeHtml;
 
 /**
  * Sanitize PHI (Protected Health Information) fields

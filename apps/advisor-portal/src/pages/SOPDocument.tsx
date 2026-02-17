@@ -11,6 +11,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { contentService, type SOPDocument as SOPDocumentType } from '@mpbhealth/advisor-core';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 export default function SOPDocument() {
   const { documentId } = useParams<{ documentId: string }>();
@@ -145,7 +146,7 @@ export default function SOPDocument() {
         ) : document.content_type === 'html' ? (
           <div
             className="prose prose-neutral dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: document.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(document.content) }}
           />
         ) : document.content_type === 'pdf' && document.file_url ? (
           <iframe

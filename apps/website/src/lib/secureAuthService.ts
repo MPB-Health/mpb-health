@@ -314,13 +314,27 @@ class SecureAuthService {
     }
   }
 
-  async updateSessionActivity(userId: string, sessionToken: string): Promise<void> {
+  async updateSessionActivity(userId: string): Promise<void> {
     try {
-      await supabase
+      // Find the most recent active (non-revoked, non-expired) session for this user
+      // and update its last_activity timestamp. This matches by user_id rather than
+      // session_token because the token is an internal UUID not exposed to callers.
+      const { data: activeSession } = await supabase
         .from('user_sessions')
-        .update({ last_activity: new Date().toISOString() })
+        .select('id')
         .eq('user_id', userId)
-        .eq('session_token', sessionToken);
+        .eq('revoked', false)
+        .gt('expires_at', new Date().toISOString())
+        .order('last_activity', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeSession) {
+        await supabase
+          .from('user_sessions')
+          .update({ last_activity: new Date().toISOString() })
+          .eq('id', activeSession.id);
+      }
     } catch (error) {
       console.error('Failed to update session activity:', error);
     }

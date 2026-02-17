@@ -2,12 +2,15 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { createClientLogger } from '@mpbhealth/utils';
 import { LeadForm } from '../components/forms/LeadForm';
 import { Button } from '../components/ui/button';
 
+const log = createClientLogger('Quote');
+
 const Quote: React.FC = () => {
   const handleFormSubmit = (formData: any) => {
-    console.log('Form submitted:', formData);
+    log.info('Form submitted:', formData);
     // In a real implementation, this would send data to your CRM/backend
   };
 

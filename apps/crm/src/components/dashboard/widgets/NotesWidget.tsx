@@ -9,6 +9,7 @@ import { useOrg } from '../../../contexts/OrgContext';
 import { supabase } from '../../../lib/supabase';
 import { createDashboardNotesService, type DashboardNote } from '@mpbhealth/crm-core/dashboard';
 import type { BaseWidgetProps } from '../types';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
   classes.filter(Boolean).join(' ');
@@ -150,7 +151,7 @@ function NoteCard({ note, onTogglePin, onDelete }: NoteCardProps) {
       <div className="flex items-start justify-between gap-2">
         <div
           className="flex-1 text-sm prose prose-sm dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: note.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(note.content) }}
         />
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button

@@ -6,11 +6,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 
 // ============================================================================
 // Types
@@ -79,7 +75,7 @@ interface ResendError {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -202,7 +198,7 @@ serve(async (req) => {
     }
 
     // Send via Resend API
-    console.log(`[send-crm-email-v2] Sending email to ${to.join(', ')}`);
+    log.info(`Sending email to ${to.join(', ')}`);
 
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -220,12 +216,12 @@ serve(async (req) => {
     if (resendResponse.ok) {
       const result: ResendResponse = await resendResponse.json();
       resendEmailId = result.id;
-      console.log(`[send-crm-email-v2] Email sent successfully. Resend ID: ${resendEmailId}`);
+      log.info(`Email sent successfully. Resend ID: ${resendEmailId}`);
     } else {
       const errorData: ResendError = await resendResponse.json();
       status = 'failed';
       errorMessage = errorData.message || 'Unknown Resend error';
-      console.error('[send-crm-email-v2] Resend error:', errorData);
+      log.error('Resend error:', errorData);
     }
 
     // Generate body preview (strip HTML)
@@ -279,7 +275,7 @@ serve(async (req) => {
       .single();
 
     if (logError) {
-      console.error('[send-crm-email-v2] Failed to log email:', logError);
+      log.error('Failed to log email:', logError);
     }
 
     // Update attachment records with email_id
@@ -332,7 +328,7 @@ serve(async (req) => {
           error: errorMessage || 'Failed to send email via Resend',
         }),
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
           status: 500,
         }
       );
@@ -347,19 +343,19 @@ serve(async (req) => {
         tracking_id: trackingId,
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         status: 200,
       }
     );
   } catch (error) {
-    console.error('[send-crm-email-v2] Error:', error);
+    log.error('Unhandled error:', error);
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message || 'Unknown error',
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         status: 500,
       }
     );

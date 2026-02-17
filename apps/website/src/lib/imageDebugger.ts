@@ -1,3 +1,7 @@
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('ImageDebugger');
+
 export interface ImageDebugResult {
   url: string;
   status: 'success' | 'error' | 'cors' | 'timeout';
@@ -92,18 +96,18 @@ export const logImageDebug = (result: ImageDebugResult): void => {
   const style = result.status === 'success' ? 'color: green' : 'color: red';
 
   console.group(`${icon} Image Debug: ${result.url}`);
-  console.log(`%cStatus: ${result.status}`, style);
+  log.info(`%cStatus: ${result.status}`, style);
 
   if (result.loadTime) {
-    console.log(`Load Time: ${result.loadTime}ms`);
+    log.info(`Load Time: ${result.loadTime}ms`);
   }
 
   if (result.dimensions) {
-    console.log(`Dimensions: ${result.dimensions.width}x${result.dimensions.height}`);
+    log.info(`Dimensions: ${result.dimensions.width}x${result.dimensions.height}`);
   }
 
   if (result.headers) {
-    console.log('Headers:', result.headers);
+    log.info('Headers:', result.headers);
   }
 
   if (result.error) {
@@ -160,9 +164,9 @@ if (typeof window !== 'undefined') {
   (window as any).logImageDebug = logImageDebug;
   (window as any).checkImageAccessibility = checkImageAccessibility;
 
-  console.log('🔍 Image Debugger loaded. Available functions:');
-  console.log('  - debugImage(url)');
-  console.log('  - debugMultipleImages([url1, url2])');
-  console.log('  - logImageDebug(result)');
-  console.log('  - checkImageAccessibility(url)');
+  log.info('🔍 Image Debugger loaded. Available functions:');
+  log.info('  - debugImage(url)');
+  log.info('  - debugMultipleImages([url1, url2])');
+  log.info('  - logImageDebug(result)');
+  log.info('  - checkImageAccessibility(url)');
 }

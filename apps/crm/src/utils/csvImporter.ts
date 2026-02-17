@@ -1,4 +1,7 @@
 import type { LeadCreateInput, LeadPriority } from '@mpbhealth/crm-core';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('CSVImporter');
 
 /**
  * Complete Zoho CRM Contact interface - ALL 157 fields from export
@@ -949,7 +952,7 @@ export function importContactsFromCSV(
     const headers = rows[0];
     const { mapping: headerMapping, unmappedHeaders } = mapHeaders(headers);
 
-    console.log(`Mapped ${headerMapping.size} columns, ${unmappedHeaders.size} unmapped columns`);
+    log.info(`Mapped ${headerMapping.size} columns, ${unmappedHeaders.size} unmapped columns`);
 
     if (headerMapping.size === 0) {
       result.errors.push({ 

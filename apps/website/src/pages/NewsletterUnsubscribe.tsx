@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Mail, AlertCircle } from 'lucide-react';
+import { createClientLogger } from '@mpbhealth/utils';
 import { Button } from '../components/ui/button';
 import { unsubscribeFromNewsletter, getSubscriptionStatus } from '../lib/newsletterService';
 import { SEOHead } from '../components/SEOHead';
+
+const log = createClientLogger('NewsletterUnsubscribe');
 
 const NewsletterUnsubscribe = () => {
   const [searchParams] = useSearchParams();
@@ -73,7 +76,7 @@ const NewsletterUnsubscribe = () => {
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Unsubscribe feedback:', { email, reason: selectedReason, feedback });
+    log.info('Unsubscribe feedback:', { email, reason: selectedReason, feedback });
     setFeedback('');
     setSelectedReason('');
   };

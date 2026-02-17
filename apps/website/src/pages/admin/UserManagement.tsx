@@ -40,7 +40,10 @@ import {
   ALL_ROLES,
 } from '../../lib/userRolesService';
 import { toast } from 'sonner';
+import { createClientLogger } from '@mpbhealth/utils';
 import { cn } from '../../lib/utils';
+
+const log = createClientLogger('UserManagement');
 
 // ============================================================================
 // Icon Map for Roles
@@ -169,7 +172,7 @@ const UserManagement: React.FC = () => {
 
     setPasswordSaving(true);
     try {
-      console.log('[UserManagement] Changing password for userId:', passwordModal.userId, 'email:', passwordModal.email);
+      log.info('Changing password for userId:', passwordModal.userId, 'email:', passwordModal.email);
       
       // Call edge function to update password (requires service role)
       const { data, error } = await supabase.functions.invoke('admin-update-password', {
@@ -181,7 +184,7 @@ const UserManagement: React.FC = () => {
       // Show confirmed target email from the response
       const targetEmail = data?.targetEmail || passwordModal.email;
       toast.success(`Password updated for ${targetEmail}`);
-      console.log('[UserManagement] Password change confirmed for:', targetEmail);
+      log.info('Password change confirmed for:', targetEmail);
       closePasswordModal();
     } catch (error: any) {
       console.error('Error changing password:', error);

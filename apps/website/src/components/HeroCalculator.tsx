@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { createClientLogger } from '@mpbhealth/utils';
 import { Card, CardContent } from './ui/Card';
 import { Button } from './ui/button';
 import { Input } from './ui/Input';
@@ -16,6 +17,8 @@ import { CompactMembershipPrioritySelector } from './CompactMembershipPrioritySe
 import { AllPlansComparisonTable } from './AllPlansComparisonTable';
 import { recommendPlans, PlanRecommendation } from '../lib/membershipPriorities';
 import { leadSubmissionService } from '../lib/leadSubmissionService';
+
+const log = createClientLogger('HeroCalculator');
 
 // Simplified schema - no plan selection required upfront
 // Uses correct membership types to match pricing: MemberOnly, MemberSpouse, MemberChild, MemberFamily
@@ -141,7 +144,7 @@ export default function HeroCalculator() {
     setSubmissionError(null);
     setShowSuccessMessage(false);
 
-    console.log('[HeroCalculator] Starting form submission with all-plans comparison...');
+    log.info('Starting form submission with all-plans comparison...');
 
     try {
       // Calculate estimates for ALL plans at once
@@ -160,8 +163,8 @@ export default function HeroCalculator() {
       const planRecommendations = recommendPlans(data.membershipPriorities || []);
       const traditional = estimateTraditionalInsurance(data.householdType, data.primaryAge);
 
-      console.log('[HeroCalculator] All plans estimates:', allEstimates);
-      console.log('[HeroCalculator] Recommendations:', planRecommendations);
+      log.info('All plans estimates:', allEstimates);
+      log.info('Recommendations:', planRecommendations);
 
       // Build the all_plan_rates object for storage
       const allPlanRates: Record<string, any> = {};
@@ -176,7 +179,7 @@ export default function HeroCalculator() {
       });
 
       // Submit the lead with all plan rates
-      console.log('[HeroCalculator] Submitting lead with all plan comparisons:', {
+      log.info('Submitting lead with all plan comparisons:', {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email
@@ -214,10 +217,10 @@ export default function HeroCalculator() {
         },
       });
 
-      console.log('[HeroCalculator] Submission result:', submissionResult);
+      log.info('Submission result:', submissionResult);
 
       if (submissionResult.success) {
-        console.log('[HeroCalculator] Submission successful!');
+        log.info('Submission successful!');
         setShowSuccessMessage(true);
         setAllPlansEstimate(allEstimates);
         setRecommendations(planRecommendations);

@@ -11,14 +11,14 @@ export { parseCSV, generateCSV, downloadCSV } from './csv';
 export { safeJsonParse, safeJsonStringify } from './safeJson';
 export { safeLocalStorage, safeSessionStorage } from './safeStorage';
 
-// Sanitization (basic and enhanced with DOMPurify)
+// Sanitization (DOMPurify-based and utility functions)
 export {
   sanitizeHtml,
+  escapeHtml,
   sanitizeInput,
   stripHtml,
   sanitizeFilename,
   sanitizeSlug,
-  // DOMPurify-based enhanced functions
   sanitizeRichText,
   sanitizePHI,
   sanitizeUrl,
@@ -32,6 +32,9 @@ export { slugify, truncate, capitalize } from './strings';
 
 // Date utilities
 export { parseDate, formatRelativeTime, isDateInPast, isDateInFuture } from './dates';
+
+// Logger
+export { logger, createClientLogger, type LogLevel } from './logger';
 
 // Validation schemas (Zod-based)
 export * from './validation';

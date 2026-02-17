@@ -1,5 +1,8 @@
 import { supabase } from './supabase';
 import { crmService, type Lead, type LeadActivity, type LeadTask } from './crmService';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('AITaskCluster');
 
 // ============================================================================
 // Types
@@ -756,7 +759,7 @@ MPB Health Advisor`,
 
         case 'send_notification':
           // This will be handled by the notification service
-          console.log('Notification triggered by automation:', rule.name);
+          log.info('Notification triggered by automation:', rule.name);
           break;
 
         case 'update_priority':

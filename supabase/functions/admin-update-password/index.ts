@@ -1,11 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createLogger } from '../_shared/logger.ts';
+const log = createLogger('admin-update-password');
 
 interface UpdatePasswordRequest {
   userId: string;
@@ -15,7 +12,7 @@ interface UpdatePasswordRequest {
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return handleCorsPreflightRequest(req);
   }
 
   try {
@@ -23,7 +20,7 @@ Deno.serve(async (req: Request) => {
     if (req.method !== "POST") {
       return new Response(
         JSON.stringify({ error: "Method not allowed" }),
-        { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 405, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -32,7 +29,7 @@ Deno.serve(async (req: Request) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -43,7 +40,7 @@ Deno.serve(async (req: Request) => {
     if (!supabaseUrl || !supabaseServiceKey) {
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -57,7 +54,7 @@ Deno.serve(async (req: Request) => {
     if (authError || !callingUser) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -71,7 +68,7 @@ Deno.serve(async (req: Request) => {
     if (rolesError || !roles || roles.length === 0) {
       return new Response(
         JSON.stringify({ error: "Only super admins can update user passwords" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -82,14 +79,14 @@ Deno.serve(async (req: Request) => {
     if (!userId || !password) {
       return new Response(
         JSON.stringify({ error: "Missing userId or password" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
     if (password.length < 8) {
       return new Response(
         JSON.stringify({ error: "Password must be at least 8 characters" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -99,19 +96,19 @@ Deno.serve(async (req: Request) => {
     });
 
     // Log the operation for debugging
-    console.log(`[admin-update-password] Caller: ${callingUser.id} (${callingUser.email}), Target: ${userId}`);
+    log.info(`Caller: ${callingUser.id} (${callingUser.email}), Target: ${userId}`);
 
     // Get target user info for confirmation
     const { data: targetUser, error: targetError } = await adminClient.auth.admin.getUserById(userId);
     if (targetError || !targetUser?.user) {
-      console.error("Target user not found:", targetError);
+      log.error('Target user not found:', targetError);
       return new Response(
         JSON.stringify({ error: `User not found: ${userId}` }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 404, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[admin-update-password] Updating password for: ${targetUser.user.email}`);
+    log.info(`Updating password for: ${targetUser.user.email}`);
 
     // Update the user's password
     const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
@@ -119,10 +116,10 @@ Deno.serve(async (req: Request) => {
     });
 
     if (updateError) {
-      console.error("Error updating password:", updateError);
+      log.error('Error updating password:', updateError);
       return new Response(
         JSON.stringify({ error: updateError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -132,13 +129,13 @@ Deno.serve(async (req: Request) => {
         message: `Password updated successfully for ${targetUser.user.email}`,
         targetEmail: targetUser.user.email 
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Unexpected error:", error);
+    log.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

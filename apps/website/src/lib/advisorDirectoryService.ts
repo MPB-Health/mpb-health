@@ -1,4 +1,7 @@
 import { supabase } from './supabase';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('AdvisorDirectory');
 
 export interface Advisor {
   id: string;
@@ -40,7 +43,7 @@ export interface AdvisorFilters {
 
 export async function getAdvisors(filters?: AdvisorFilters): Promise<Advisor[]> {
   try {
-    console.log('[advisorDirectoryService] Fetching advisors with filters:', filters);
+    log.info('[advisorDirectoryService] Fetching advisors with filters:', filters);
 
     let query = supabase
       .from('advisors')
@@ -80,7 +83,7 @@ export async function getAdvisors(filters?: AdvisorFilters): Promise<Advisor[]> 
       return [];
     }
 
-    console.log('[advisorDirectoryService] Fetched advisors:', data?.length || 0);
+    log.info('[advisorDirectoryService] Fetched advisors:', data?.length || 0);
     return data || [];
   } catch (error) {
     console.error('[advisorDirectoryService] Error in getAdvisors:', error);

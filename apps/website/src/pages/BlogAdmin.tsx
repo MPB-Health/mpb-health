@@ -2,11 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Plus, Edit, Trash2, Eye, Save, X, LogOut, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { createClientLogger } from '@mpbhealth/utils';
 import { supabase, BlogArticle } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { RichTextEditor } from '../components/admin/RichTextEditor';
 import { ImageUploader } from '../components/admin/ImageUploader';
 import { AdminLayout } from '../components/admin/AdminLayout';
+
+const log = createClientLogger('BlogAdmin');
 
 export const BlogAdmin: React.FC = () => {
   const navigate = useNavigate();
@@ -107,14 +110,14 @@ export const BlogAdmin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[BlogAdmin] handleSubmit called', { editingArticle: editingArticle?.id, formData });
+    log.info('handleSubmit called', { editingArticle: editingArticle?.id, formData });
 
     setSaving(true);
     setNotification(null);
 
     try {
       if (editingArticle) {
-        console.log('[BlogAdmin] Updating article:', editingArticle.id);
+        log.info('Updating article:', editingArticle.id);
         const { data, error } = await supabase
           .from('blog_articles')
           .update({
@@ -124,18 +127,18 @@ export const BlogAdmin: React.FC = () => {
           .eq('id', editingArticle.id)
           .select();
 
-        console.log('[BlogAdmin] Update response:', { data, error });
+        log.info('Update response:', { data, error });
 
         if (error) throw error;
         setNotification({ type: 'success', message: `Article "${formData.title}" updated successfully!` });
       } else {
-        console.log('[BlogAdmin] Creating new article');
+        log.info('Creating new article');
         const { data, error } = await supabase
           .from('blog_articles')
           .insert([formData])
           .select();
 
-        console.log('[BlogAdmin] Insert response:', { data, error });
+        log.info('Insert response:', { data, error });
 
         if (error) throw error;
         setNotification({ type: 'success', message: `Article "${formData.title}" created successfully!` });
@@ -152,7 +155,7 @@ export const BlogAdmin: React.FC = () => {
   };
 
   const handleEdit = (article: BlogArticle) => {
-    console.log('[BlogAdmin] handleEdit called for article:', article.id, article.title);
+    log.info('handleEdit called for article:', article.id, article.title);
     setEditingArticle(article);
     setFormData({
       title: article.title,
@@ -164,7 +167,7 @@ export const BlogAdmin: React.FC = () => {
       author: article.author,
       is_published: article.is_published,
     });
-    console.log('[BlogAdmin] Form data set, opening form modal');
+    log.info('Form data set, opening form modal');
     setShowForm(true);
   };
 
@@ -519,7 +522,7 @@ export const BlogAdmin: React.FC = () => {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('[BlogAdmin] Edit button clicked for:', article.title);
+                              log.info('Edit button clicked for:', article.title);
                               handleEdit(article);
                             }}
                             className="p-2 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"

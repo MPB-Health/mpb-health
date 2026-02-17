@@ -5,6 +5,9 @@ import {
   getConfigurationVersion as getConfigurationVersionV2
 } from './newRateEngine.v2';
 import { lookupPrice } from './pricingService';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('NewRateEngine');
 
 // Re-export types for backward compatibility
 export interface BenefitTier {
@@ -62,7 +65,7 @@ const FLAT_RATE_PLANS = ['essentials', 'mec-essentials'];
  * - MemberFamily (couple with children)
  */
 export function estimateMonthly(input: RateCalculatorInput, opts?: RateOptions): RateEstimate {
-  console.log('[RateEngine] Calculating estimate for:', {
+  log.info('[RateEngine] Calculating estimate for:', {
     plan: input.selectedPlan,
     householdType: input.householdType,
     primaryAge: input.primaryAge,
@@ -73,7 +76,7 @@ export function estimateMonthly(input: RateCalculatorInput, opts?: RateOptions):
 
   // Use legacy pricing service for flat-rate plans (essentials, mec-essentials)
   if (FLAT_RATE_PLANS.includes(input.selectedPlan)) {
-    console.log('[RateEngine] Using legacy pricing for flat-rate plan:', input.selectedPlan);
+    log.info('[RateEngine] Using legacy pricing for flat-rate plan:', input.selectedPlan);
     
     const pricingResult = lookupPrice({
       planId: input.selectedPlan,
@@ -85,7 +88,7 @@ export function estimateMonthly(input: RateCalculatorInput, opts?: RateOptions):
     });
 
     if (pricingResult) {
-      console.log('[RateEngine] Legacy pricing result:', {
+      log.info('[RateEngine] Legacy pricing result:', {
         total: pricingResult.totalMonthly,
         breakdown: pricingResult.breakdown.length
       });
@@ -115,7 +118,7 @@ export function estimateMonthly(input: RateCalculatorInput, opts?: RateOptions):
   // Use v2 engine for IUA-based plans (care-plus, direct, secure-hsa)
   try {
     const result = estimateMonthlyV2(input, opts);
-    console.log('[RateEngine] Pricing result:', {
+    log.info('[RateEngine] Pricing result:', {
       total: result.total,
       lineItems: result.lineItems.length
     });

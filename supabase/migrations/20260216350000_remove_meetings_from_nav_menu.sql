@@ -1,3 +1,3 @@
 -- Remove the "Meetings" item from the navigation menu
-DELETE FROM nav_menu_items
+DELETE FROM public.advisor_nav_menu
 WHERE label = 'Meetings' AND url = '/meetings';

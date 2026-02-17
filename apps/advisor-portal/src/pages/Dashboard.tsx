@@ -1,22 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import * as LucideIcons from 'lucide-react';
 import {
-  GraduationCap,
   Video,
-  FileText,
-  Award,
   ArrowRight,
-  Clock,
   Calendar,
-  Link,
   ExternalLink,
   Share2,
   X,
   Users,
   Heart,
-  Send,
   Sparkles,
   Phone,
   FileText as FileTextIcon,
@@ -25,39 +18,59 @@ import {
   ChevronRight,
   Play,
 } from 'lucide-react';
-import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
-// Map icon name strings to Lucide icon components
-function getIconComponent(iconName: string): LucideIcons.LucideIcon {
-  // Try to get from LucideIcons dynamically
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const lucideModule = LucideIcons as any;
-  if (lucideModule[iconName] && typeof lucideModule[iconName] === 'function') {
-    return lucideModule[iconName] as LucideIcons.LucideIcon;
-  }
-  // Fallback to Link icon
-  return Link;
-}
-
-// Type for quick action items
-interface QuickActionItem {
+interface DashboardQuickLink {
   label: string;
   url: string;
-  icon: string;
-  highlight?: boolean;
-  description?: string;
-  is_external?: boolean;
+  image: string;
+  description: string;
 }
 
-// Fallback quick actions (used when CMS data isn't available)
-const fallbackQuickActions: QuickActionItem[] = [
-  { label: 'Inbox', url: '/inbox', icon: 'Inbox', highlight: true },
-  { label: 'Training', url: '/training', icon: 'GraduationCap' },
-  { label: 'Forms', url: '/forms', icon: 'FileText' },
-  { label: 'SOPs', url: '/sops', icon: 'FileText' },
-  { label: 'Profile', url: '/profile', icon: 'Award' },
+const dashboardQuickLinks: DashboardQuickLink[] = [
+  {
+    label: 'RX, Labs & Imaging Quote',
+    url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2025',
+    image: '/images/quick-links/quick-link-rx-labs-imaging.png',
+    description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
+  },
+  {
+    label: 'Laboratory Assist',
+    url: 'https://laboratoryassist.com/',
+    image: '/images/quick-links/quick-link-lab-assist.png',
+    description: 'Nationwide access to affordable diagnostic lab tests.',
+  },
+  {
+    label: 'Find a Provider',
+    url: 'https://providersearch.multiplan.com/',
+    image: '/images/quick-links/quick-link-provider-search.png',
+    description: 'Search the MultiPlan network for in-network healthcare providers.',
+  },
+  {
+    label: 'Book a Doctor',
+    url: 'https://www.zocdoc.com/?dd_referrer=',
+    image: '/images/quick-links/quick-link-zocdoc.png',
+    description: 'Find and book doctor appointments online through ZocDoc.',
+  },
+  {
+    label: 'Prescription Savings',
+    url: 'https://www.goodrx.com/',
+    image: '/images/quick-links/quick-link-goodrx.png',
+    description: 'Compare prescription drug prices and find discounts with GoodRx.',
+  },
+  {
+    label: 'HealthyCare Podcast',
+    url: 'https://www.youtube.com/@HealthyCarePodcast',
+    image: '/images/quick-links/quick-link-healthy-care-podcast.png',
+    description: 'Watch the HealthyCare Podcast for health education and tips.',
+  },
+  {
+    label: 'MPB Health Channel',
+    url: 'https://www.youtube.com/@MPBHealth_official',
+    image: '/images/quick-links/quick-link-mpb-health-youtube.png',
+    description: 'Visit the official MPB Health YouTube channel for updates and content.',
+  },
 ];
 
 // Enroll page options for My Advisor Page card
@@ -160,7 +173,6 @@ export default function Dashboard() {
     trainingProgress,
   } = useAdvisor();
 
-  const [cmsQuickActions, setCmsQuickActions] = useState<QuickLink[]>([]);
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
@@ -171,21 +183,6 @@ export default function Dashboard() {
   const [shareModal, setShareModal] = useState<{ label: string; url: string } | null>(null);
   const [shareForm, setShareForm] = useState({ name: '', email: '' });
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Fetch quick actions from CMS
-  useEffect(() => {
-    const loadQuickActions = async () => {
-      try {
-        const actions = await navigationService.getDashboardQuickActions();
-        setCmsQuickActions(actions);
-      } catch (error) {
-        console.error('Failed to load quick actions from CMS:', error);
-        // Will use fallback actions
-      }
-    };
-
-    loadQuickActions();
-  }, []);
 
   // Close enroll dropdown when clicking outside
   useEffect(() => {
@@ -199,21 +196,6 @@ export default function Dashboard() {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [enrollDropdownOpen]);
-
-  // Use CMS quick actions or fallback
-  const quickActions = useMemo((): QuickActionItem[] => {
-    if (cmsQuickActions.length > 0) {
-      return cmsQuickActions.map(action => ({
-        label: action.label,
-        url: action.url,
-        icon: action.icon,
-        highlight: action.icon === 'Zap' || action.label.toLowerCase().includes('power'),
-        description: action.description || undefined,
-        is_external: action.is_external,
-      }));
-    }
-    return fallbackQuickActions;
-  }, [cmsQuickActions]);
 
   // Get in-progress training modules
   const inProgressModules = trainingModules.filter((module) => {
@@ -516,48 +498,43 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Links - Dynamic from CMS */}
+      {/* Quick Links */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-5">
-        <h2 className="font-semibold text-th-text-primary mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          {quickActions.map((action, index) => {
-            const IconComponent = getIconComponent(action.icon);
-            const isHighlight = action.highlight;
-            
-            const handleClick = () => {
-              if (action.is_external) {
-                window.open(action.url, '_blank');
-              } else {
-                navigate(action.url);
-              }
-            };
-
-            return (
-              <button
-                key={`${action.url}-${index}`}
-                onClick={handleClick}
-                title={action.description || action.label}
-                className={`flex flex-col items-center p-4 rounded-lg border transition-colors ${
-                  isHighlight
-                    ? 'border-yellow-200 bg-yellow-50 hover:border-yellow-400 hover:bg-yellow-100'
-                    : 'border-th-border hover:border-th-accent-300 hover:bg-th-accent-50'
-                }`}
-              >
-                <IconComponent 
-                  className={`w-8 h-8 mb-2 ${
-                    isHighlight ? 'text-yellow-600' : 'text-th-accent-600'
-                  }`} 
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-th-text-primary">Quick Links</h2>
+          <button
+            onClick={() => navigate('/quick-links')}
+            className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
+          >
+            View All
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          {dashboardQuickLinks.map((link) => (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={link.description}
+              className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5"
+            >
+              <div className="relative w-full aspect-[16/10] overflow-hidden">
+                <img
+                  src={link.image}
+                  alt={link.label}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                <span 
-                  className={`text-sm font-medium text-center ${
-                    isHighlight ? 'text-yellow-700' : 'text-th-text-secondary'
-                  }`}
-                >
-                  {action.label}
+              </div>
+              <div className="p-2.5 flex items-center gap-1.5">
+                <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
+                  {link.label}
                 </span>
-              </button>
-            );
-          })}
+                <ExternalLink className="w-3 h-3 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
+              </div>
+            </a>
+          ))}
         </div>
       </div>
 

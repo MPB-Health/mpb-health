@@ -78,9 +78,22 @@ export default function BulletinDetail() {
     if (!anchor) return;
 
     const href = anchor.getAttribute('href') || '';
-    if (href.toLowerCase().endsWith('.pdf')) {
+    const lowerHref = href.toLowerCase();
+
+    // Open all document links (PDFs, images, etc.) in a popup modal
+    const isDocument = lowerHref.endsWith('.pdf') ||
+      lowerHref.endsWith('.png') ||
+      lowerHref.endsWith('.jpg') ||
+      lowerHref.endsWith('.jpeg') ||
+      lowerHref.endsWith('.gif') ||
+      lowerHref.endsWith('.webp') ||
+      lowerHref.endsWith('.pptx') ||
+      lowerHref.endsWith('.docx') ||
+      lowerHref.endsWith('.xlsx');
+
+    if (isDocument) {
       e.preventDefault();
-      const linkText = anchor.textContent?.trim() || 'PDF Document';
+      const linkText = anchor.textContent?.trim() || 'Document';
       setPdfModal({ isOpen: true, title: linkText, fileUrl: href });
     }
   }, []);

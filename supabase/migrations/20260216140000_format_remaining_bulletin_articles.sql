@@ -391,8 +391,8 @@ SET content = '
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">In the meantime, remind clients to take advantage of the lower membership rates they receive until Dec 20th, and encourage your active clients to download the new MPB Health app for easier access.</p>
 
 <ul style="margin: 0 0 16px 0; padding-left: 24px; list-style-type: disc;">
-  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA-2.pdf" style="color: #2563eb; text-decoration: underline;">Price sheets</a></li>
-  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA-Comparison-4.pdf" style="color: #2563eb; text-decoration: underline;">Comparison sheet</a></li>
+  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/2026-prices-Care-Direct-Secure-HSA-2.pdf" style="color: #2563eb; text-decoration: underline;">Price sheets</a></li>
+  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/2026-prices-Care-Direct-Secure-HSA-Comparison-4.pdf" style="color: #2563eb; text-decoration: underline;">Comparison sheet</a></li>
 </ul>
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><strong style="color: #111827;">Reba Larney</strong><br>Business Development Director<br>(561) 922 9647<br>Rebalarney@mympb.com</p>
@@ -419,8 +419,8 @@ SET content = '
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><strong style="color: #111827;">Jan 1, 2026 (IUA):</strong> Only members currently at a $1,000 IUA will update to $1,250 per medical Need. All other IUA levels are unchanged.</p>
 
 <ul style="margin: 0 0 16px 0; padding-left: 24px; list-style-type: disc;">
-  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA-2.pdf" style="color: #2563eb; text-decoration: underline;">Price sheets</a></li>
-  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA-Comparison-4.pdf" style="color: #2563eb; text-decoration: underline;">Comparison sheet</a></li>
+  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/2026-prices-Care-Direct-Secure-HSA-2.pdf" style="color: #2563eb; text-decoration: underline;">Price sheets</a></li>
+  <li style="font-size: 16px; line-height: 1.7; color: #334155; margin-bottom: 6px;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/2026-prices-Care-Direct-Secure-HSA-Comparison-4.pdf" style="color: #2563eb; text-decoration: underline;">Comparison sheet</a></li>
 </ul>
 
 <hr style="border: none; border-top: 2px solid #e2e8f0; margin: 40px 0;">
@@ -463,7 +463,7 @@ SET content = '
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">We want to emphasize that this change does not affect other plans offered by MPB Health. Click to view our updated Do Not Sell States &amp; Individual Mandates chart.</p>
 
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://advisor.mpb.health/wp-content/uploads/2025/02/No-Sell-States-Chart3.png" style="color: #2563eb; text-decoration: underline;">NO SELL STATES</a></p>
+<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/No-Sell-States.pdf" style="color: #2563eb; text-decoration: underline;">NO SELL STATES</a></p>
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Thank you for your attention to this matter and your continued partnership.</p>
 

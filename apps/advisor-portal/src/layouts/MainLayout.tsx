@@ -317,18 +317,10 @@ export default function MainLayout() {
       {/* Add padding for mobile bottom nav */}
       <div className="pb-16 lg:pb-0">
         <AppLayout
-        appName=""
+        appName="Advisor Portal"
+        logoSrc="/logo.png"
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
-        portalSwitcher={
-          <PortalSwitcher
-            currentPortal="advisors"
-            canAccessAdmin={true}
-            canAccessCRM={true}
-            canAccessAdvisor={true}
-            getPortalUrl={getPortalUrl}
-          />
-        }
         userSection={userSection}
         topBarActions={topBarActions}
         renderNavLink={(item, props) => (

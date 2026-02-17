@@ -31,9 +31,9 @@ VALUES (
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">Please be aware that there are two separate links for the Healthcare Advisor Meetings held on the 2nd Tuesday and 4th Tuesday of each month. If your links have not been working in previous meetings, or if you are new to our meetings, please be sure to add both links to your calendar.</p>
 
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><strong style="color: #111827;">2nd Tuesday Meeting</strong> – <a href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_OThlYThjZmUtNzA1YS00NDIyLWJjYjMtNDAxYjgwYWQ5ODE0%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d" target="_blank" style="color: #2563eb; text-decoration: underline;">Click on the link</a></p>
+<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_OThlYThjZmUtNzA1YS00NDIyLWJjYjMtNDAxYjgwYWQ5ODE0%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d" target="_blank" style="color: #2563eb; text-decoration: underline;"><strong style="color: #2563eb;">2nd Tuesday Meeting</strong></a></p>
 
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><strong style="color: #111827;">4th Tuesday Meeting</strong> – <a href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODY1ZGM0NjEtYWIwNi00YzdmLTg1MjEtZWRiODEwZDc3NDVh%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d" target="_blank" style="color: #2563eb; text-decoration: underline;">Click on the link</a></p>
+<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;"><a href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODY1ZGM0NjEtYWIwNi00YzdmLTg1MjEtZWRiODEwZDc3NDVh%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d" target="_blank" style="color: #2563eb; text-decoration: underline;"><strong style="color: #2563eb;">4th Tuesday Meeting</strong></a></p>
 
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">We''ll be adding these links directly inside the Advisor Playbook.</p>
 
@@ -95,13 +95,6 @@ VALUES (
 </ul>
 <p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 12px 0;">If the member opens a Need, they will have to inform the Healthshare that they had previous coverage with no gap.</p>
 
-<hr style="border: none; border-top: 2px solid #e2e8f0; margin: 40px 0;">
-
-<h2 style="font-size: 24px; font-weight: 700; color: #000000; margin: 32px 0 16px 0; line-height: 1.3;">MGM Grand Las Vegas Contest</h2>
-
-<p style="font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 16px 0;">The contest leaderboard is available in the Advisor Playbook. Christine, Lou, Leslie, Misty and Wendy are in the lead!</p>
-
-<p style="margin: 0 0 16px 0;"><a href="https://advisor.mpb.health/zion-healthshare-contest/" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #2563eb; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Leaderboard</a></p>
 ',
   'bulletin',
   (SELECT id FROM advisor_content_categories WHERE slug = 'bulletin' LIMIT 1),

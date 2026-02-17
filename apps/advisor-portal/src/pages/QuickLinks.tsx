@@ -50,6 +50,12 @@ const quickLinks: QuickLinkItem[] = [
     image: '/images/quick-links/quick-link-mpb-health-youtube.png',
     description: 'Visit the official MPB Health YouTube channel for updates and content.',
   },
+  {
+    label: 'Preventive Care',
+    url: 'https://www.healthcare.gov/coverage/preventive-care-benefits/',
+    image: '/images/quick-links/quick-link-preventive-care.png',
+    description: 'Learn about preventive health services covered at no cost, including screenings and immunizations.',
+  },
 ];
 
 export default function QuickLinks() {

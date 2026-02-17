@@ -8,8 +8,6 @@ import MainLayout from './layouts/MainLayout';
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Training = React.lazy(() => import('./pages/Training'));
 const TrainingModule = React.lazy(() => import('./pages/TrainingModule'));
-const Meetings = React.lazy(() => import('./pages/Meetings'));
-const MeetingRoom = React.lazy(() => import('./pages/MeetingRoom'));
 const Forms = React.lazy(() => import('./pages/Forms'));
 const QuickLinks = React.lazy(() => import('./pages/QuickLinks'));
 const SOPLibrary = React.lazy(() => import('./pages/SOPLibrary'));
@@ -132,8 +130,6 @@ export default function App() {
                 <Route path="training/sedera" element={<Training section="sedera" />} />
                 <Route path="training/zion" element={<Training section="zion" />} />
                 <Route path="training/:moduleId" element={<TrainingModule />} />
-                <Route path="meetings" element={<Meetings />} />
-                <Route path="meetings/:meetingId" element={<MeetingRoom />} />
                 <Route path="forms" element={<Forms />} />
                 <Route path="forms/advisor" element={<Forms section="advisor" />} />
                 <Route path="forms/employer" element={<Forms section="employer" />} />

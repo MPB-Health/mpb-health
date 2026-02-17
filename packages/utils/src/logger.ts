@@ -23,16 +23,21 @@ interface Logger {
 
 function isDev(): boolean {
   try {
-    // Vite environment
-    return import.meta.env?.DEV === true;
+    // Vite environment — cast to avoid needing vite/client types at build time
+    const meta = import.meta as unknown as { env?: Record<string, unknown> };
+    if (meta.env?.DEV === true) return true;
   } catch {
-    // Fallback for non-Vite environments
-    try {
-      return typeof process !== 'undefined' && process.env?.NODE_ENV === 'development';
-    } catch {
-      return false;
-    }
+    // import.meta.env not available
   }
+  try {
+    // Fallback for non-Vite / SSR environments
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g = globalThis as any;
+    if (g.process?.env?.NODE_ENV === 'development') return true;
+  } catch {
+    // process not available
+  }
+  return false;
 }
 
 /**

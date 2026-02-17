@@ -123,7 +123,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mpbhealth/database": "workspace:*"
+    "@mpbhealth/database": "workspace:*",
+    "@mpbhealth/utils": "workspace:*"
   },
   "devDependencies": {
     "@mpbhealth/typescript-config": "workspace:*",

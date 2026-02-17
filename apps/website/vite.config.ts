@@ -87,7 +87,6 @@ export default defineConfig(({ mode }) => {
             'react-vendor': [
               'react',
               'react-dom',
-              'react-router',
               'react-router-dom',
               'react-helmet-async',
               'react-hook-form',

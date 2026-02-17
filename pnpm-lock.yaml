@@ -705,6 +705,9 @@ importers:
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../database
+      '@mpbhealth/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@supabase/supabase-js':
         specifier: ^2.x
         version: 2.93.1
@@ -721,6 +724,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@mpbhealth/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@supabase/supabase-js':
         specifier: ^2.57.0
         version: 2.93.1

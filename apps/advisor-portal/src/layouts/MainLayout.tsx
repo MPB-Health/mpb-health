@@ -90,7 +90,6 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
   { name: 'Contact', href: '/contact', icon: Mail },
-  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 // Convert CMS nav items to AppLayout NavItem format (supports hierarchy)

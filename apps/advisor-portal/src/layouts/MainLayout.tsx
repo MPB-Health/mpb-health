@@ -207,6 +207,57 @@ export default function MainLayout() {
     ];
   }, [cmsNavItems]);
 
+  // Determine if today is a meeting day (2nd or 4th Tuesday)
+  // NOTE: This useMemo MUST be above the early returns to satisfy React's Rules of Hooks.
+  const meetingInfo = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayOfWeek = today.getDay();
+
+    // Check if today is a Tuesday
+    const isTuesday = dayOfWeek === 2;
+
+    // Find which Tuesday of the month this is
+    let tuesayCount = 0;
+    if (isTuesday) {
+      for (let d = 1; d <= today.getDate(); d++) {
+        const date = new Date(today.getFullYear(), today.getMonth(), d);
+        if (date.getDay() === 2) tuesayCount++;
+      }
+    }
+
+    const isMeetingDay = isTuesday && (tuesayCount === 2 || tuesayCount === 4);
+
+    // Find next meeting date (next 2nd or 4th Tuesday)
+    let nextMeeting: Date | null = null;
+    let month = now.getMonth();
+    let year = now.getFullYear();
+    let found = false;
+
+    while (!found) {
+      const tuesdays: Date[] = [];
+      for (let d = 1; d <= 31; d++) {
+        const date = new Date(year, month, d);
+        if (date.getMonth() !== month) break;
+        if (date.getDay() === 2) tuesdays.push(date);
+      }
+      const targets = [tuesdays[1], tuesdays[3]].filter(Boolean);
+      for (const t of targets) {
+        if (t && t > today) {
+          nextMeeting = t;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        month++;
+        if (month > 11) { month = 0; year++; }
+      }
+    }
+
+    return { isMeetingDay, nextMeeting };
+  }, []);
+
   // Redirect to login if not authenticated
   if (!loading && !profile) {
     return <Navigate to="/login" replace />;
@@ -279,56 +330,6 @@ export default function MainLayout() {
       </button>
     </div>
   );
-
-  // Determine if today is a meeting day (2nd or 4th Tuesday)
-  const meetingInfo = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayOfWeek = today.getDay();
-
-    // Check if today is a Tuesday
-    const isTuesday = dayOfWeek === 2;
-
-    // Find which Tuesday of the month this is
-    let tuesayCount = 0;
-    if (isTuesday) {
-      for (let d = 1; d <= today.getDate(); d++) {
-        const date = new Date(today.getFullYear(), today.getMonth(), d);
-        if (date.getDay() === 2) tuesayCount++;
-      }
-    }
-
-    const isMeetingDay = isTuesday && (tuesayCount === 2 || tuesayCount === 4);
-
-    // Find next meeting date (next 2nd or 4th Tuesday)
-    let nextMeeting: Date | null = null;
-    let month = now.getMonth();
-    let year = now.getFullYear();
-    let found = false;
-
-    while (!found) {
-      const tuesdays: Date[] = [];
-      for (let d = 1; d <= 31; d++) {
-        const date = new Date(year, month, d);
-        if (date.getMonth() !== month) break;
-        if (date.getDay() === 2) tuesdays.push(date);
-      }
-      const targets = [tuesdays[1], tuesdays[3]].filter(Boolean);
-      for (const t of targets) {
-        if (t && t > today) {
-          nextMeeting = t;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        month++;
-        if (month > 11) { month = 0; year++; }
-      }
-    }
-
-    return { isMeetingDay, nextMeeting };
-  }, []);
 
   const topBarActions = (
     <>

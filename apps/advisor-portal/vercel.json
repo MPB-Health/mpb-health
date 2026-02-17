@@ -12,6 +12,19 @@
   ],
   "headers": [
     {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
+    },
+    {
       "source": "/assets/(.*)",
       "headers": [
         {
@@ -25,7 +38,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://meet.jit.si https://assets.calendly.com https://www.cognitoforms.com https://static.cognitoforms.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.cognitoforms.com https://static.cognitoforms.com https://assets.calendly.com; font-src 'self' https://fonts.gstatic.com https://www.cognitoforms.com https://static.cognitoforms.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.cognitoforms.com https://static.cognitoforms.com https://calendly.com https://meet.jit.si; frame-src 'self' https://*.supabase.co https://advisor.mpb.health https://view.officeapps.live.com https://docs.google.com https://www.cognitoforms.com https://calendly.com; object-src 'self' https://*.supabase.co; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://meet.jit.si https://assets.calendly.com https://www.cognitoforms.com https://static.cognitoforms.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.cognitoforms.com https://static.cognitoforms.com https://assets.calendly.com https://vercel.live; font-src 'self' https://fonts.gstatic.com https://www.cognitoforms.com https://static.cognitoforms.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.cognitoforms.com https://static.cognitoforms.com https://calendly.com https://meet.jit.si https://vercel.live https://*.vercel.live; frame-src 'self' https://*.supabase.co https://advisor.mpb.health https://view.officeapps.live.com https://docs.google.com https://www.cognitoforms.com https://calendly.com https://vercel.live; object-src 'self' https://*.supabase.co; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
         },
         {
           "key": "Strict-Transport-Security",

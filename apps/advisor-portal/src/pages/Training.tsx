@@ -791,6 +791,7 @@ interface CourseCard {
   gradient: string;
   icon: React.ElementType;
   available: boolean;
+  external?: boolean;
 }
 
 const courses: CourseCard[] = [
@@ -813,10 +814,11 @@ const courses: CourseCard[] = [
       'Learn about Sedera medical cost sharing community, membership options, and how to present Sedera solutions to your clients.',
     topicCount: 0,
     lessonCount: 0,
-    href: '/training/sedera',
+    href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl',
     gradient: 'from-emerald-600 via-teal-600 to-cyan-700',
     icon: Shield,
-    available: false,
+    available: true,
+    external: true,
   },
   {
     id: 'zion',
@@ -1157,8 +1159,16 @@ export default function Training({ section }: TrainingProps) {
             return (
               <div
                 key={course.id}
-                onClick={() => course.available && navigate(course.href)}
-                onKeyDown={(e) => e.key === 'Enter' && course.available && navigate(course.href)}
+                onClick={() => {
+                  if (!course.available) return;
+                  if (course.external) { window.open(course.href, '_blank', 'noopener,noreferrer'); }
+                  else { navigate(course.href); }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter' || !course.available) return;
+                  if (course.external) { window.open(course.href, '_blank', 'noopener,noreferrer'); }
+                  else { navigate(course.href); }
+                }}
                 role={course.available ? 'button' : undefined}
                 tabIndex={course.available ? 0 : undefined}
                 className={`rounded-xl border border-th-border overflow-hidden flex flex-col transition-all ${
@@ -1184,18 +1194,22 @@ export default function Training({ section }: TrainingProps) {
                   <div className="mt-auto flex items-center justify-between">
                     {course.available ? (
                       <>
-                        <div className="flex items-center gap-4 text-xs text-th-text-tertiary">
-                          <span className="flex items-center gap-1">
-                            <BookOpen className="w-3.5 h-3.5" />
-                            {course.topicCount} Topics
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <FileText className="w-3.5 h-3.5" />
-                            {course.lessonCount} Lessons
-                          </span>
-                        </div>
+                        {course.external ? (
+                          <span className="text-xs text-th-text-tertiary">External training</span>
+                        ) : (
+                          <div className="flex items-center gap-4 text-xs text-th-text-tertiary">
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              {course.topicCount} Topics
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <FileText className="w-3.5 h-3.5" />
+                              {course.lessonCount} Lessons
+                            </span>
+                          </div>
+                        )}
                         <span className="flex items-center gap-1 text-sm text-th-accent-600 font-medium">
-                          Start <ArrowRight className="w-4 h-4" />
+                          {course.external ? 'Open' : 'Start'} {course.external ? <ExternalLink className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
                         </span>
                       </>
                     ) : (

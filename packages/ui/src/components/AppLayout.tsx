@@ -12,7 +12,7 @@ export interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: React.ReactNode;
-  children?: { name: string; href: string }[];
+  children?: { name: string; href: string; external?: boolean }[];
 }
 
 export interface AppLayoutProps {
@@ -27,7 +27,7 @@ export interface AppLayoutProps {
   /** Initial collapsed state for the sidebar */
   initialCollapsed?: boolean;
   renderNavLink: (item: NavItem, props: NavLinkRenderProps) => React.ReactNode;
-  renderChildNavLink?: (child: { name: string; href: string }, props: ChildNavLinkRenderProps) => React.ReactNode;
+  renderChildNavLink?: (child: { name: string; href: string; external?: boolean }, props: ChildNavLinkRenderProps) => React.ReactNode;
 }
 
 export interface NavLinkRenderProps {

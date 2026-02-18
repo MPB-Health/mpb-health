@@ -75,7 +75,7 @@ const fallbackNavigation: NavItem[] = [
     icon: GraduationCap,
     children: [
       { name: 'MPB Training', href: '/training/mpb' },
-      { name: 'Sedera Training', href: '/training/sedera' },
+      { name: 'Sedera Training', href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
       { name: 'Zion Training', href: '/training/zion' },
     ],
   },
@@ -410,22 +410,35 @@ export default function MainLayout() {
             {props.children}
           </NavLink>
         )}
-        renderChildNavLink={(child, props) => (
-          <NavLink
-            key={child.name}
-            to={child.href}
-            className={({ isActive }) =>
-              `${props.className} ${
-                isActive
-                  ? 'text-white font-medium'
-                  : 'text-white/50 hover:text-white'
-              }`
-            }
-            onClick={props.onClick}
-          >
-            {props.children}
-          </NavLink>
-        )}
+        renderChildNavLink={(child, props) =>
+          child.external ? (
+            <a
+              key={child.name}
+              href={child.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${props.className} text-white/50 hover:text-white`}
+              onClick={props.onClick}
+            >
+              {props.children}
+            </a>
+          ) : (
+            <NavLink
+              key={child.name}
+              to={child.href}
+              className={({ isActive }) =>
+                `${props.className} ${
+                  isActive
+                    ? 'text-white font-medium'
+                    : 'text-white/50 hover:text-white'
+                }`
+              }
+              onClick={props.onClick}
+            >
+              {props.children}
+            </NavLink>
+          )
+        }
       >
         <Outlet />
       </AppLayout>

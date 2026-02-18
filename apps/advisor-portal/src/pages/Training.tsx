@@ -22,7 +22,12 @@ import {
   Globe,
   ClipboardList,
   ArrowRight,
+  Download,
+  RotateCcw,
+  Trophy,
+  XCircle,
 } from 'lucide-react';
+import { useAdvisor } from '../contexts/AdvisorContext';
 
 interface TrainingProps {
   section?: 'mpb' | 'sedera' | 'zion';
@@ -312,6 +317,508 @@ function findTopicForLesson(lessonId: string): Topic | undefined {
   return mpbCourseTopics.find((t) => t.lessons.some((l) => l.id === lessonId));
 }
 
+/* ------------------------------------------------------------------ */
+/*  Quiz Data & Components                                              */
+/* ------------------------------------------------------------------ */
+
+interface QuizQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctIndex: number;
+}
+
+const quizQuestions: QuizQuestion[] = [
+  {
+    id: 1,
+    question: "What is MPB Health's mission?",
+    options: [
+      'To sell traditional health insurance policies',
+      'To empower people to live healthier and happier lives with innovative healthcare solutions',
+      'To provide only dental and vision coverage',
+      'To replace hospitals with virtual-only clinics',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 2,
+    question: 'Which of the following is NOT one of MPB Health\'s core values?',
+    options: ['Care', 'Compassion', 'Profitability', 'Trust'],
+    correctIndex: 2,
+  },
+  {
+    id: 3,
+    question: 'What is a key benefit of being an MPB Healthcare Advisor?',
+    options: [
+      'You can only sell during Open Enrollment periods',
+      'You are limited to a single product type',
+      'You get your own landing page and access to an open network with no Open Enrollment periods',
+      'You must work exclusively from a corporate office',
+    ],
+    correctIndex: 2,
+  },
+  {
+    id: 4,
+    question: 'What is expected from MPB Healthcare Advisors?',
+    options: [
+      'Only communicate through email once per week',
+      'Deliver fast, efficient, and accurate information with prompt responses to inquiries',
+      'Follow up with members once a month at most',
+      'Offer only one solution per client to simplify the process',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 5,
+    question: 'What is the Initial Unshareable Amount (IUA) in medical cost sharing?',
+    options: [
+      'The total cost of medical treatment',
+      'The amount the member is responsible for before eligible costs are shared by the community',
+      'The monthly premium payment for membership',
+      'The maximum amount the community will ever share',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 6,
+    question: 'What does Minimum Essential Coverage (MEC) provide?',
+    options: [
+      'Only emergency room visits',
+      'Preventive care at 100% with no waiting period or pre-existing condition limitations',
+      'Only dental and vision benefits',
+      'Only prescription medication coverage',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 7,
+    question: "What is the primary function of the MPB Concierge?",
+    options: [
+      'To sell additional insurance products to members',
+      'To be a trusted guide and advocate for members throughout their healthcare journey',
+      'To process membership cancellations and refunds',
+      'To schedule hospital admissions only',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 8,
+    question: 'Which compliance practice is critical for MPB Healthcare Advisors?',
+    options: [
+      'You may describe programs as health insurance for simplicity',
+      'Never misrepresent MPB programs as health insurance',
+      'State compliance guidelines are optional',
+      'Terms and conditions only need to be disclosed when asked',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 9,
+    question: 'What approach should advisors use to help clients select the right plan?',
+    options: [
+      'Always recommend the most expensive plan available',
+      'Use pre-qualifying questions and actively listen to responses to determine unique needs',
+      'Let clients research and figure it out on their own',
+      'Only offer plans that pay the highest commission',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 10,
+    question: 'What does the QR LifeCode provide to members?',
+    options: [
+      'Discount coupons for local pharmacies',
+      'Instant access to vital emergency health information and secure medical records',
+      'Free gym membership passes',
+      'Insurance claim submission forms',
+    ],
+    correctIndex: 1,
+  },
+];
+
+const PASS_THRESHOLD = 0.8;
+const QUIZ_RESULT_KEY = 'mpb-quiz-result';
+
+function loadQuizResult(): { passed: boolean; score: number; date: string } | null {
+  try {
+    const raw = localStorage.getItem(QUIZ_RESULT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveQuizResult(result: { passed: boolean; score: number; date: string }) {
+  localStorage.setItem(QUIZ_RESULT_KEY, JSON.stringify(result));
+}
+
+function generateCertificate(name: string, date: string): Promise<Blob> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const W = 1400;
+    const H = 1000;
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d')!;
+
+    // Background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, W, H);
+
+    // Outer border
+    ctx.strokeStyle = '#1e3a5f';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(30, 30, W - 60, H - 60);
+
+    // Inner decorative border
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(45, 45, W - 90, H - 90);
+
+    // Accent line
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(100, 180, W - 200, 3);
+
+    // Header
+    ctx.fillStyle = '#1e3a5f';
+    ctx.font = 'bold 18px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('MPB HEALTH', W / 2, 130);
+
+    ctx.font = '14px Georgia, serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('MPowering Benefits Inc.', W / 2, 155);
+
+    // Title
+    ctx.fillStyle = '#1e3a5f';
+    ctx.font = '46px Georgia, serif';
+    ctx.fillText('Certificate of Completion', W / 2, 260);
+
+    // Subtitle
+    ctx.fillStyle = '#64748b';
+    ctx.font = '18px Georgia, serif';
+    ctx.fillText('This is to certify that', W / 2, 330);
+
+    // Name
+    ctx.fillStyle = '#1e3a5f';
+    ctx.font = 'bold 42px Georgia, serif';
+    ctx.fillText(name, W / 2, 400);
+
+    // Decorative line under name
+    const nameWidth = ctx.measureText(name).width;
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(W / 2 - nameWidth / 2 - 20, 415, nameWidth + 40, 2);
+
+    // Course description
+    ctx.fillStyle = '#475569';
+    ctx.font = '18px Georgia, serif';
+    ctx.fillText('has successfully completed the training course', W / 2, 470);
+
+    ctx.fillStyle = '#1e3a5f';
+    ctx.font = 'bold 28px Georgia, serif';
+    ctx.fillText('Become an MPB Healthcare Advisor', W / 2, 520);
+
+    ctx.fillStyle = '#475569';
+    ctx.font = '16px Georgia, serif';
+    ctx.fillText('and has demonstrated proficiency in MPB Health programs, membership benefits,', W / 2, 570);
+    ctx.fillText('compliance guidelines, and healthcare advisory best practices.', W / 2, 595);
+
+    // Score & Date section
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(100, 650, W - 200, 3);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '16px Georgia, serif';
+    ctx.fillText(`Certification Date: ${date}`, W / 2, 700);
+
+    ctx.font = '14px Georgia, serif';
+    ctx.fillText('Passed with 80% or higher on the Healthcare Advisor Certification Quiz', W / 2, 730);
+
+    // Bottom decorative element
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(100, 780, W - 200, 3);
+
+    // Award icon (drawn with text/symbols)
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '48px serif';
+    ctx.fillText('★', W / 2, 850);
+
+    ctx.fillStyle = '#1e3a5f';
+    ctx.font = 'bold 14px Georgia, serif';
+    ctx.fillText('MPB Health Certified Healthcare Advisor', W / 2, 890);
+
+    // Corner decorations
+    const corners = [
+      [70, 70],
+      [W - 70, 70],
+      [70, H - 70],
+      [W - 70, H - 70],
+    ];
+    ctx.fillStyle = '#3b82f6';
+    for (const [x, y] of corners) {
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    canvas.toBlob((blob) => resolve(blob!), 'image/png');
+  });
+}
+
+function QuizViewer({
+  advisorName,
+  onMarkComplete,
+  completed,
+}: {
+  advisorName: string;
+  onMarkComplete: () => void;
+  completed: boolean;
+}) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [passed, setPassed] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const saved = loadQuizResult();
+    if (saved && saved.passed) {
+      setSubmitted(true);
+      setScore(saved.score);
+      setPassed(true);
+    }
+  }, []);
+
+  const handleSelect = (questionId: number, optionIndex: number) => {
+    if (submitted) return;
+    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+  };
+
+  const handleSubmit = () => {
+    let correct = 0;
+    for (const q of quizQuestions) {
+      if (answers[q.id] === q.correctIndex) correct++;
+    }
+    const pct = correct / quizQuestions.length;
+    const didPass = pct >= PASS_THRESHOLD;
+    setScore(correct);
+    setPassed(didPass);
+    setSubmitted(true);
+
+    if (didPass) {
+      const result = { passed: true, score: correct, date: new Date().toLocaleDateString() };
+      saveQuizResult(result);
+      if (!completed) onMarkComplete();
+    }
+
+    topRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleRetry = () => {
+    setAnswers({});
+    setSubmitted(false);
+    setScore(0);
+    setPassed(false);
+    topRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleDownloadCertificate = async () => {
+    setGenerating(true);
+    try {
+      const date = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const blob = await generateCertificate(advisorName, date);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'MPB_Healthcare_Advisor_Certificate.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const allAnswered = quizQuestions.every((q) => answers[q.id] !== undefined);
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div ref={topRef} className="px-8 pt-8 pb-4">
+        <h2 className="text-2xl font-bold text-th-text-primary">Healthcare Advisor Certification Quiz</h2>
+        <p className="text-th-text-secondary text-sm mt-2">
+          Answer all 10 questions below. You need at least 80% (8 out of 10) to pass and earn your certificate.
+        </p>
+      </div>
+
+      {/* Results Banner */}
+      {submitted && (
+        <div className="px-8 mb-6">
+          <div
+            className={`rounded-xl p-6 ${
+              passed
+                ? 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800/30'
+                : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-200 dark:border-red-800/30'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                  passed ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+                }`}
+              >
+                {passed ? (
+                  <Trophy className="w-8 h-8 text-green-600 dark:text-green-400" />
+                ) : (
+                  <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3
+                  className={`text-lg font-bold ${
+                    passed ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'
+                  }`}
+                >
+                  {passed ? 'Congratulations! You Passed!' : 'Not Quite — Try Again'}
+                </h3>
+                <p
+                  className={`text-sm mt-1 ${
+                    passed ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+                  }`}
+                >
+                  You scored {score} out of {quizQuestions.length} ({Math.round((score / quizQuestions.length) * 100)}%)
+                  {passed
+                    ? ' — You are now a certified MPB Healthcare Advisor!'
+                    : ` — You need at least ${Math.round(PASS_THRESHOLD * 100)}% to pass. Review the lessons and try again.`}
+                </p>
+              </div>
+            </div>
+
+            {passed && (
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  onClick={handleDownloadCertificate}
+                  disabled={generating}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  {generating ? 'Generating...' : 'Download Certificate'}
+                </button>
+              </div>
+            )}
+
+            {!passed && (
+              <div className="mt-4">
+                <button
+                  onClick={handleRetry}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Retake Quiz
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Questions */}
+      <div className="px-8 pb-8 space-y-6">
+        {quizQuestions.map((q, qi) => {
+          const selected = answers[q.id];
+          const isCorrect = submitted && selected === q.correctIndex;
+          const isWrong = submitted && selected !== undefined && selected !== q.correctIndex;
+
+          return (
+            <div
+              key={q.id}
+              className={`rounded-xl border p-5 transition-all ${
+                submitted
+                  ? isCorrect
+                    ? 'border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-900/10'
+                    : isWrong
+                    ? 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-900/10'
+                    : 'border-th-border'
+                  : 'border-th-border hover:border-th-accent-300'
+              }`}
+            >
+              <div className="flex items-start gap-3 mb-4">
+                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold">
+                  {qi + 1}
+                </span>
+                <h4 className="text-[15px] font-semibold text-th-text-primary pt-1">{q.question}</h4>
+              </div>
+
+              <div className="space-y-2 ml-11">
+                {q.options.map((opt, oi) => {
+                  const isSelected = selected === oi;
+                  const isThisCorrect = submitted && oi === q.correctIndex;
+                  const isThisWrong = submitted && isSelected && oi !== q.correctIndex;
+
+                  return (
+                    <button
+                      key={oi}
+                      onClick={() => handleSelect(q.id, oi)}
+                      disabled={submitted}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm transition-all ${
+                        submitted
+                          ? isThisCorrect
+                            ? 'bg-green-100 dark:bg-green-900/20 border-green-400 dark:border-green-700 border text-green-800 dark:text-green-300 font-medium'
+                            : isThisWrong
+                            ? 'bg-red-100 dark:bg-red-900/20 border-red-400 dark:border-red-700 border text-red-800 dark:text-red-300'
+                            : 'bg-surface-tertiary border border-transparent text-th-text-secondary'
+                          : isSelected
+                          ? 'bg-blue-50 dark:bg-blue-900/15 border-blue-400 dark:border-blue-600 border text-blue-700 dark:text-blue-300 font-medium'
+                          : 'bg-surface-tertiary hover:bg-blue-50/50 dark:hover:bg-blue-900/5 border border-transparent text-th-text-secondary'
+                      }`}
+                    >
+                      <span
+                        className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
+                          submitted
+                            ? isThisCorrect
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : isThisWrong
+                              ? 'bg-red-500 border-red-500 text-white'
+                              : 'border-gray-300 dark:border-gray-600'
+                            : isSelected
+                            ? 'bg-blue-500 border-blue-500 text-white'
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      >
+                        {submitted && isThisCorrect && '✓'}
+                        {submitted && isThisWrong && '✗'}
+                        {!submitted && isSelected && '●'}
+                        {!submitted && !isSelected && String.fromCharCode(65 + oi)}
+                      </span>
+                      <span>{opt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Submit Button */}
+        {!submitted && (
+          <div className="flex justify-center pt-4">
+            <button
+              onClick={handleSubmit}
+              disabled={!allAnswered}
+              className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl text-base font-semibold transition-colors shadow-lg shadow-blue-600/20"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              Submit Quiz ({Object.keys(answers).length}/{quizQuestions.length} answered)
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface CourseCard {
   id: string;
   title: string;
@@ -554,15 +1061,7 @@ function LessonViewer({
           </div>
         )}
 
-        {/* Quiz notice */}
-        {lesson.type === 'quiz' && (
-          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg p-4 mt-4">
-            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-              <HelpCircle className="w-5 h-5" />
-              <span className="font-medium text-sm">Quiz will be available after completing all lessons</span>
-            </div>
-          </div>
-        )}
+        {/* Quiz is handled separately via QuizViewer, not here */}
       </div>
 
       {/* Mark as Complete + Navigation */}
@@ -617,6 +1116,7 @@ function LessonViewer({
 
 export default function Training({ section }: TrainingProps) {
   const navigate = useNavigate();
+  const { profile } = useAdvisor();
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['introduction']));
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(loadCompleted);
@@ -919,16 +1419,29 @@ export default function Training({ section }: TrainingProps) {
 
         {/* Right Content Area */}
         {activeLesson ? (
-          <LessonViewer
-            key={activeLesson.id}
-            lesson={activeLesson}
-            completed={completedLessons.has(activeLesson.id)}
-            onMarkComplete={handleMarkComplete}
-            onPrev={handlePrev}
-            onNext={handleNext}
-            hasPrev={activeIndex > 0}
-            hasNext={activeIndex < flat.length - 1}
-          />
+          activeLesson.type === 'quiz' ? (
+            <QuizViewer
+              key={activeLesson.id}
+              advisorName={
+                profile
+                  ? `${profile.first_name} ${profile.last_name}`
+                  : 'Healthcare Advisor'
+              }
+              onMarkComplete={handleMarkComplete}
+              completed={completedLessons.has(activeLesson.id)}
+            />
+          ) : (
+            <LessonViewer
+              key={activeLesson.id}
+              lesson={activeLesson}
+              completed={completedLessons.has(activeLesson.id)}
+              onMarkComplete={handleMarkComplete}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              hasPrev={activeIndex > 0}
+              hasNext={activeIndex < flat.length - 1}
+            />
+          )
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center max-w-md px-6">

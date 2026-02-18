@@ -36,6 +36,16 @@ export default function TrainingModule() {
           trainingService.getModule(moduleId),
           trainingService.getModuleProgress(profile.id, moduleId),
         ]);
+
+        // Redirect MPB course modules to the new course page
+        if (
+          mod?.category?.toLowerCase().includes('mpb') ||
+          mod?.title?.toLowerCase().includes('become an mpb')
+        ) {
+          navigate('/training/mpb', { replace: true });
+          return;
+        }
+
         setModule(mod);
         setProgress(prog);
       } catch (err) {

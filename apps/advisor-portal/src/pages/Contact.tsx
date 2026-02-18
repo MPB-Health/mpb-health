@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { portalSettingsService } from '@mpbhealth/advisor-core';
 
-const COGNITO_FORM_EMBED_URL = 'https://www.cognitoforms.com/f/MPoweringBenefits1/ContactForm2';
+const COGNITO_FORM_EMBED_URL = 'https://www.cognitoforms.com/MPoweringBenefits1/ContactForm2';
 
 export default function Contact() {
   const [contactPhone, setContactPhone] = useState('(561) 922-9647');

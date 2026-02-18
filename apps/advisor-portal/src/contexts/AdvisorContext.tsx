@@ -120,6 +120,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    window.location.href = 'https://mpb.health/';
   };
 
   // Initial load

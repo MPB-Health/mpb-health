@@ -257,7 +257,8 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
           filteredDocuments.map((doc) => {
             const isPPTX = doc.file_url?.toLowerCase().match(/\.pptx?$/) !== null;
             const isPDF = doc.file_url?.toLowerCase().endsWith('.pdf') === true;
-            const canPreview = isPPTX || isPDF;
+            const isImage = /\.(png|jpe?g|gif|webp)$/i.test(doc.file_url || '');
+            const canPreview = isPPTX || isPDF || isImage;
             const isExternalLink = !!doc.file_url;
 
             const handleClick = () => {

@@ -1,4 +1,4 @@
-import { FileText, Eye, ExternalLink, Presentation, FileType } from 'lucide-react';
+import { FileText, Eye, ExternalLink, Presentation, FileType, Image } from 'lucide-react';
 import type { SOPDocument } from '@mpbhealth/advisor-core';
 
 interface DocumentCardProps {
@@ -14,6 +14,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
   const hasImage = !!doc.image_url;
   const isPPTX = doc.file_url?.toLowerCase().match(/\.pptx?$/) !== null;
   const isPDF = doc.file_url?.toLowerCase().endsWith('.pdf') === true;
+  const isImage = /\.(png|jpe?g|gif|webp)$/i.test(doc.file_url || '');
   const isExternalLink = !!doc.file_url;
 
   return (
@@ -69,6 +70,10 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
             ) : isPDF ? (
               <>
                 Preview <FileType className="w-3.5 h-3.5" />
+              </>
+            ) : isImage ? (
+              <>
+                Preview <Image className="w-3.5 h-3.5" />
               </>
             ) : isExternalLink ? (
               <>

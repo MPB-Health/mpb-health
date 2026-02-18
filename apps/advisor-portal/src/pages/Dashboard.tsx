@@ -34,67 +34,69 @@ interface FallbackQuickLink {
   popup?: boolean;
 }
 
+const STORAGE_BASE = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents';
+
 const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
   {
     label: 'RX, Labs & Imaging Quote',
     url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2025',
-    image: '/images/quick-links/quick-link-rx-labs-imaging.jpg',
+    image: `${STORAGE_BASE}/quick-link-rx-labs-imaging.jpg`,
     description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
     popup: true,
   },
   {
     label: 'Laboratory Assist',
     url: 'https://laboratoryassist.com/',
-    image: '/images/quick-links/quick-link-lab-assist.jpg',
+    image: `${STORAGE_BASE}/quick-link-lab-assist.jpg`,
     description: 'Nationwide access to affordable diagnostic lab tests.',
   },
   {
     label: 'Find a Provider',
     url: 'https://providersearch.multiplan.com/',
-    image: '/images/quick-links/quick-link-provider-search.jpg',
+    image: `${STORAGE_BASE}/quick-link-provider-search.jpg`,
     description: 'Search the MultiPlan network for in-network healthcare providers.',
   },
   {
     label: 'Book a Doctor',
     url: 'https://www.zocdoc.com/?dd_referrer=',
-    image: '/images/quick-links/quick-link-zocdoc.jpg',
+    image: `${STORAGE_BASE}/quick-link-zocdoc.jpg`,
     description: 'Find and book doctor appointments online through ZocDoc.',
   },
   {
     label: 'Prescription Savings',
     url: 'https://www.goodrx.com/',
-    image: '/images/quick-links/quick-link-goodrx.jpg',
+    image: `${STORAGE_BASE}/quick-link-goodrx.jpg`,
     description: 'Compare prescription drug prices and find discounts with GoodRx.',
   },
   {
     label: 'HealthyCare Podcast',
     url: 'https://www.youtube.com/@HealthyCarePodcast',
-    image: '/images/quick-links/quick-link-healthy-care-podcast.jpg',
+    image: `${STORAGE_BASE}/quick-link-healthy-care-podcast.jpg`,
     description: 'Watch the HealthyCare Podcast for health education and tips.',
   },
   {
     label: 'MPB Health Channel',
     url: 'https://www.youtube.com/@MPBHealth_official',
-    image: '/images/quick-links/quick-link-mpb-health-youtube.jpg',
+    image: `${STORAGE_BASE}/quick-link-mpb-health-youtube.jpg`,
     description: 'Visit the official MPB Health YouTube channel for updates and content.',
   },
   {
     label: 'Preventive Care',
     url: 'https://www.healthcare.gov/coverage/preventive-care-benefits/',
-    image: '/images/quick-links/quick-link-preventive-care.jpg',
+    image: `${STORAGE_BASE}/quick-link-preventive-care.jpg`,
     description: 'Learn about preventive health services covered at no cost, including screenings and immunizations.',
   },
 ];
 
 const fallbackImageMap: Record<string, string> = {
-  'RX, Labs & Imaging Quote': '/images/quick-links/quick-link-rx-labs-imaging.jpg',
-  'Laboratory Assist': '/images/quick-links/quick-link-lab-assist.jpg',
-  'Find a Provider': '/images/quick-links/quick-link-provider-search.jpg',
-  'Book a Doctor': '/images/quick-links/quick-link-zocdoc.jpg',
-  'Prescription Savings': '/images/quick-links/quick-link-goodrx.jpg',
-  'HealthyCare Podcast': '/images/quick-links/quick-link-healthy-care-podcast.jpg',
-  'MPB Health Channel': '/images/quick-links/quick-link-mpb-health-youtube.jpg',
-  'Preventive Care': '/images/quick-links/quick-link-preventive-care.jpg',
+  'RX, Labs & Imaging Quote': `${STORAGE_BASE}/quick-link-rx-labs-imaging.jpg`,
+  'Laboratory Assist': `${STORAGE_BASE}/quick-link-lab-assist.jpg`,
+  'Find a Provider': `${STORAGE_BASE}/quick-link-provider-search.jpg`,
+  'Book a Doctor': `${STORAGE_BASE}/quick-link-zocdoc.jpg`,
+  'Prescription Savings': `${STORAGE_BASE}/quick-link-goodrx.jpg`,
+  'HealthyCare Podcast': `${STORAGE_BASE}/quick-link-healthy-care-podcast.jpg`,
+  'MPB Health Channel': `${STORAGE_BASE}/quick-link-mpb-health-youtube.jpg`,
+  'Preventive Care': `${STORAGE_BASE}/quick-link-preventive-care.jpg`,
 };
 
 // Fallback enroll page options (used when CMS data is unavailable)
@@ -340,7 +342,7 @@ export default function Dashboard() {
     ? cmsQuickLinks.map((link) => ({
         label: link.label,
         url: link.url,
-        image: fallbackImageMap[link.label] || '/images/quick-links/quick-link-default.jpg',
+        image: fallbackImageMap[link.label] || `${STORAGE_BASE}/quick-link-default.jpg`,
         description: link.description || '',
         popup: POPUP_LABELS.has(link.label),
       }))

@@ -27,7 +27,7 @@ export default function Bulletins() {
       try {
         const [bulletinsData, featuredData] = await Promise.all([
           contentService.getBulletins({}, profile?.id),
-          contentService.getFeaturedBulletins(5),
+          contentService.getFeaturedBulletins(3),
         ]);
         setBulletins(bulletinsData);
         setFeaturedBulletins(featuredData);

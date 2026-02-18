@@ -204,13 +204,18 @@ export class ContentService {
 
     if (error) throw error;
 
-    // If no featured bulletins, fall back to most recent
-    if (!data || data.length === 0) {
+    // If fewer featured bulletins than requested, backfill with most recent non-featured
+    const featured = data || [];
+    if (featured.length < limit) {
+      const featuredIds = new Set(featured.map(b => b.id));
       const bulletins = await this.getActiveBulletins();
-      return bulletins.slice(0, limit);
+      const backfill = bulletins
+        .filter(b => !featuredIds.has(b.id))
+        .slice(0, limit - featured.length);
+      return [...featured, ...backfill];
     }
 
-    return data || [];
+    return featured;
   }
 
   // Get a single bulletin

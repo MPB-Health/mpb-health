@@ -70,16 +70,7 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Quick Links', href: '/quick-links', icon: Link },
-  { 
-    name: 'Training', 
-    href: '/training', 
-    icon: GraduationCap,
-    children: [
-      { name: 'MPB Training', href: '/training/mpb' },
-      { name: 'Sedera Training', href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
-      { name: 'Zion Training', href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
-    ],
-  },
+  { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
   { 
     name: 'Forms', 
     href: '/forms', 
@@ -90,7 +81,16 @@ const fallbackNavigation: NavItem[] = [
       { name: 'Member', href: '/forms/member' },
     ],
   },
-  { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
+  { 
+    name: 'Training', 
+    href: '/training', 
+    icon: GraduationCap,
+    children: [
+      { name: 'MPB Training', href: '/training/mpb' },
+      { name: 'Sedera Training', href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
+      { name: 'Zion Training', href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
+    ],
+  },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
@@ -212,27 +212,22 @@ export default function MainLayout() {
       return item;
     });
 
-    // Move Bulletins to second position (right after Dashboard)
-    const bulletinsIndex = base.findIndex(item => item.name === 'Bulletins' || item.href === '/bulletins');
-    if (bulletinsIndex > 1) {
-      const [bulletinsItem] = base.splice(bulletinsIndex, 1);
-      base.splice(1, 0, bulletinsItem);
+    // Enforce sidebar order: Dashboard, Bulletins, Quick Links, SOPs, Forms, Training, Submit Group, Contact
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Quick Links', 'SOPs & Playbooks', 'Forms', 'Training', 'Submit Group', 'Contact'];
+    base = [...base].sort((a, b) => {
+      const ai = ORDER.indexOf(a.name);
+      const bi = ORDER.indexOf(b.name);
+      return (ai === -1 ? ORDER.length : ai) - (bi === -1 ? ORDER.length : bi);
+    });
+
+    // Inject Quick Links if not present
+    const hasQuickLinks = base.some((item) => item.href === '/quick-links' || item.name === 'Quick Links');
+    if (!hasQuickLinks) {
+      const quickLinksItem: NavItem = { name: 'Quick Links', href: '/quick-links', icon: Link };
+      base.splice(2, 0, quickLinksItem);
     }
 
-    const hasQuickLinks = base.some((item) => item.href === '/quick-links' || item.name === 'Quick Links');
-    if (hasQuickLinks) return base;
-    const quickLinksItem: NavItem = { name: 'Quick Links', href: '/quick-links', icon: Link };
-    const formsIndex = base.findIndex(
-      (item) => item.name === 'Forms' || item.href === '/forms'
-    );
-    if (formsIndex === -1) {
-      return [...base, quickLinksItem];
-    }
-    return [
-      ...base.slice(0, formsIndex + 1),
-      quickLinksItem,
-      ...base.slice(formsIndex + 1),
-    ];
+    return base;
   }, [cmsNavItems]);
 
   // Determine if today is a meeting day (2nd or 4th Tuesday)

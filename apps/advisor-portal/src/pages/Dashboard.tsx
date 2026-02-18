@@ -23,7 +23,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
-import { navigationService, meetingService, enrollmentService, portalSettingsService, announcementService, type QuickLink, type AdvisorMeeting, type EnrollmentLink, type Announcement } from '@mpbhealth/advisor-core';
+import { meetingService, enrollmentService, portalSettingsService, announcementService, type AdvisorMeeting, type EnrollmentLink, type Announcement } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 interface FallbackQuickLink {
@@ -40,64 +40,54 @@ const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
   {
     label: 'RX, Labs & Imaging Quote',
     url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2025',
-    image: `${STORAGE_BASE}/quick-link-rx-labs-imaging.jpg`,
+    image: `${STORAGE_BASE}/quick-link-rx-labs-imaging.png`,
     description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
     popup: true,
   },
   {
     label: 'Laboratory Assist',
     url: 'https://laboratoryassist.com/',
-    image: `${STORAGE_BASE}/quick-link-lab-assist.jpg`,
+    image: `${STORAGE_BASE}/quick-link-lab-assist.png`,
     description: 'Nationwide access to affordable diagnostic lab tests.',
   },
   {
     label: 'Find a Provider',
     url: 'https://providersearch.multiplan.com/',
-    image: `${STORAGE_BASE}/quick-link-provider-search.jpg`,
+    image: `${STORAGE_BASE}/quick-link-provider-search.png`,
     description: 'Search the MultiPlan network for in-network healthcare providers.',
   },
   {
     label: 'Book a Doctor',
     url: 'https://www.zocdoc.com/?dd_referrer=',
-    image: `${STORAGE_BASE}/quick-link-zocdoc.jpg`,
+    image: `${STORAGE_BASE}/quick-link-zocdoc.png`,
     description: 'Find and book doctor appointments online through ZocDoc.',
   },
   {
     label: 'Prescription Savings',
     url: 'https://www.goodrx.com/',
-    image: `${STORAGE_BASE}/quick-link-goodrx.jpg`,
+    image: `${STORAGE_BASE}/quick-link-goodrx.png`,
     description: 'Compare prescription drug prices and find discounts with GoodRx.',
   },
   {
     label: 'HealthyCare Podcast',
     url: 'https://www.youtube.com/@HealthyCarePodcast',
-    image: `${STORAGE_BASE}/quick-link-healthy-care-podcast.jpg`,
+    image: `${STORAGE_BASE}/quick-link-healthy-care-podcast.png`,
     description: 'Watch the HealthyCare Podcast for health education and tips.',
   },
   {
     label: 'MPB Health Channel',
     url: 'https://www.youtube.com/@MPBHealth_official',
-    image: `${STORAGE_BASE}/quick-link-mpb-health-youtube.jpg`,
+    image: `${STORAGE_BASE}/quick-link-mpb-health-youtube.png`,
     description: 'Visit the official MPB Health YouTube channel for updates and content.',
   },
   {
     label: 'Preventive Care',
     url: 'https://www.healthcare.gov/coverage/preventive-care-benefits/',
-    image: `${STORAGE_BASE}/quick-link-preventive-care.jpg`,
+    image: `${STORAGE_BASE}/quick-link-preventive-care.png`,
     description: 'Learn about preventive health services covered at no cost, including screenings and immunizations.',
   },
 ];
 
-const fallbackImageMap: Record<string, string> = {
-  'RX, Labs & Imaging Quote': `${STORAGE_BASE}/quick-link-rx-labs-imaging.jpg`,
-  'Laboratory Assist': `${STORAGE_BASE}/quick-link-lab-assist.jpg`,
-  'Find a Provider': `${STORAGE_BASE}/quick-link-provider-search.jpg`,
-  'Book a Doctor': `${STORAGE_BASE}/quick-link-zocdoc.jpg`,
-  'Prescription Savings': `${STORAGE_BASE}/quick-link-goodrx.jpg`,
-  'HealthyCare Podcast': `${STORAGE_BASE}/quick-link-healthy-care-podcast.jpg`,
-  'MPB Health Channel': `${STORAGE_BASE}/quick-link-mpb-health-youtube.jpg`,
-  'Preventive Care': `${STORAGE_BASE}/quick-link-preventive-care.jpg`,
-};
 
 // Fallback enroll page options (used when CMS data is unavailable)
 const FALLBACK_ENROLL_OPTIONS: { label: string; url: string }[] = [
@@ -211,9 +201,7 @@ export default function Dashboard() {
   const [shareForm, setShareForm] = useState({ name: '', email: '' });
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
 
-  // CMS-driven quick links
-  const [cmsQuickLinks, setCmsQuickLinks] = useState<QuickLink[]>([]);
-  const [quickLinksLoading, setQuickLinksLoading] = useState(true);
+  const [quickLinksLoading] = useState(false);
 
   // CMS-driven meetings
   const [upcomingMeetings, setUpcomingMeetings] = useState<AdvisorMeeting[]>([]);
@@ -284,21 +272,6 @@ export default function Dashboard() {
   const affiliatePhone = portalSettings.affiliate_phone || '(855) 816-4650';
   const advisorLandingPageUrl = portalSettings.advisor_landing_page_url || 'https://advisorlandingpage.mpb.health/';
 
-  // Fetch CMS quick links on mount
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const links = await navigationService.getDashboardQuickActions();
-        if (!cancelled) setCmsQuickLinks(links);
-      } catch (err) {
-        console.error('Failed to load dashboard quick links:', err);
-      } finally {
-        if (!cancelled) setQuickLinksLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
 
   // Fetch CMS enrollment links on mount
   useEffect(() => {
@@ -334,19 +307,7 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, [profile?.id]);
 
-  // Links that should open in a popup modal instead of a new tab
-  const POPUP_LABELS = new Set(['RX, Labs & Imaging Quote']);
-
-  // Derive display quick links: CMS data with fallback
-  const displayQuickLinks: FallbackQuickLink[] = cmsQuickLinks.length > 0
-    ? cmsQuickLinks.map((link) => ({
-        label: link.label,
-        url: link.url,
-        image: fallbackImageMap[link.label] || `${STORAGE_BASE}/quick-link-default.jpg`,
-        description: link.description || '',
-        popup: POPUP_LABELS.has(link.label),
-      }))
-    : fallbackDashboardQuickLinks;
+  const displayQuickLinks: FallbackQuickLink[] = fallbackDashboardQuickLinks;
 
   // Derive enrollment options: CMS data with fallback
   const enrollOptions = cmsEnrollLinks.length > 0

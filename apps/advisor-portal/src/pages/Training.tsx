@@ -1228,39 +1228,15 @@ export default function Training({ section }: TrainingProps) {
     );
   }
 
-  /* -------------------- Sedera / Zion Placeholder -------------------- */
+  /* -------------------- Sedera / Zion → redirect to external -------------------- */
   if (section === 'sedera' || section === 'zion') {
-    const cfg = {
-      sedera: {
-        title: 'Sedera Training',
-        desc: 'Sedera training content is coming soon.',
-        gradient: 'from-emerald-600 via-teal-600 to-cyan-700',
-      },
-      zion: {
-        title: 'Zion Training',
-        desc: 'Zion training content is coming soon.',
-        gradient: 'from-orange-500 via-red-500 to-rose-600',
-      },
+    const externalUrls = {
+      sedera: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl',
+      zion: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare',
     };
-    const c = cfg[section];
-
-    return (
-      <div className="space-y-6">
-        <div className={`bg-gradient-to-br ${c.gradient} rounded-2xl p-8 text-white text-center`}>
-          <GraduationCap className="w-16 h-16 mx-auto mb-4 opacity-60" />
-          <h1 className="text-2xl font-bold mb-2">{c.title}</h1>
-          <p className="text-white/70">{c.desc}</p>
-        </div>
-        <div className="text-center">
-          <button
-            onClick={() => navigate('/training')}
-            className="text-th-accent-600 hover:text-th-accent-700 font-medium text-sm"
-          >
-            &larr; Back to Training
-          </button>
-        </div>
-      </div>
-    );
+    window.open(externalUrls[section], '_blank', 'noopener,noreferrer');
+    navigate('/training');
+    return null;
   }
 
   /* -------------------- MPB Course Detail (Sidebar + Content) ---- */

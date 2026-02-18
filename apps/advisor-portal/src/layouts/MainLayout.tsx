@@ -188,9 +188,29 @@ export default function MainLayout() {
     };
   }, [loadNavigation]);
 
+  // External training links that override CMS/fallback values
+  const EXTERNAL_TRAINING_LINKS: Record<string, { href: string; external: true }> = {
+    'Sedera Training': { href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
+    'Zion Training': { href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
+  };
+
   // Use CMS navigation if available, otherwise fallback. Inject Quick Links after Forms if not already present.
   const navigation = useMemo(() => {
-    const base = cmsNavItems.length > 0 ? cmsNavItems : fallbackNavigation;
+    let base = cmsNavItems.length > 0 ? cmsNavItems : fallbackNavigation;
+
+    // Override Sedera/Zion training links to external URLs
+    base = base.map(item => {
+      if (item.children) {
+        return {
+          ...item,
+          children: item.children.map(child => {
+            const override = EXTERNAL_TRAINING_LINKS[child.name];
+            return override ? { ...child, ...override } : child;
+          }),
+        };
+      }
+      return item;
+    });
     const hasQuickLinks = base.some((item) => item.href === '/quick-links' || item.name === 'Quick Links');
     if (hasQuickLinks) return base;
     const quickLinksItem: NavItem = { name: 'Quick Links', href: '/quick-links', icon: Link };

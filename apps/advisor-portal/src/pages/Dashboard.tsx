@@ -201,7 +201,7 @@ export default function Dashboard() {
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
-  const [quickLinkPopup, setQuickLinkPopup] = useState<DashboardQuickLink | null>(null);
+  const [quickLinkPopup, setQuickLinkPopup] = useState<{ label: string; url: string } | null>(null);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const thumbnailScrollRef = useRef<HTMLDivElement>(null);

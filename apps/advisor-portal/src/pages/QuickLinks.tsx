@@ -275,7 +275,7 @@ export default function QuickLinks() {
                   key={link.id}
                   label={link.label}
                   url={link.url}
-                  image={fallbackImageMap[link.label] || link.image_url}
+                  image={fallbackImageMap[link.label] || '/images/quick-links/quick-link-default.png'}
                   description={link.description}
                   isExternal={link.is_external}
                   isPopup={POPUP_LABELS.has(link.label)}

@@ -270,7 +270,11 @@ export default function Dashboard() {
   const affiliateFormUrl = portalSettings.affiliate_form_url || 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/448';
   const scheduleCallUrl = portalSettings.schedule_call_url || 'https://calendly.com/rebalarney-mympb/time-with-reba';
   const affiliatePhone = portalSettings.affiliate_phone || '(855) 816-4650';
-  const advisorLandingPageUrl = portalSettings.advisor_landing_page_url || 'https://advisorlandingpage.mpb.health/';
+  const advisorLandingPageBase = portalSettings.advisor_landing_page_url || 'https://advisorlandingpage.mpb.health/';
+  const advisorSlug = profile?.first_name?.toLowerCase().replace(/\s+/g, '-') || '';
+  const advisorLandingPageUrl = advisorSlug
+    ? `${advisorLandingPageBase.replace(/\/+$/, '')}/${advisorSlug}`
+    : advisorLandingPageBase;
 
 
   // Fetch CMS enrollment links on mount

@@ -154,13 +154,6 @@ const mpbCourseTopics: Topic[] = [
           'The Concierge\u2019s primary function is to be a trusted guide and advocate for members, ensuring they receive the best possible care. This involves providing personalized assistance at every stage of their healthcare journey.\n\nThe Concierges offer a range of support, including but not limited to:\n\n**Finding Cost-Effective Services**\n\n\u2022 Medication pricing: They can research different pharmacies and compare prices to help members find the most affordable medications.\n\u2022 Laboratory and imaging costs: The concierge can identify facilities that offer competitive rates for lab tests and imaging procedures.\n\n**Identifying High-Quality Providers**\n\n\u2022 Researching providers: They can use databases and member reviews to find qualified doctors, specialists, and hospitals.\n\u2022 Matching members with providers: The concierge can recommend providers based on the member\u2019s specific needs and preferences.',
       },
       {
-        id: 'qr-lifecode',
-        title: 'QR LifeCode & Personal Medical Records Vault',
-        type: 'text',
-        content:
-          'Empowers members by providing instant access to:\n\n\u2022 Member\u2019s vital emergency health information\n\u2022 Complete, Secure, and current medical records\n\u2022 Member-managed private tracking of health observations\n\n**Services**\n\n\u2022 Unique LifeCode: Members get LifeCodes on ID cards, labels, cellphones, and customized solutions\n\u2022 Medical Records: Create Emergency Profile, upload & import medical records. All securely stored and member-controlled\n\u2022 Health Tracking: Members, their families and caregivers can easily record vital confidential health observations\n\u2022 24/7 Urgent Assistance: Call or access online for EMS, diagnosis, treatment, and preventive and predictive care assistance\n\n**Benefits**\n\n\u2022 Actionable Data: Complete health information at the point of care facilitates faster diagnosis and action\n\u2022 Earlier Care: Reminders, health tracking, and innovative services identify and promote needed care.\n\u2022 Lower Cost: Earlier care, consumer-focused solutions, care continuity, and fewer errors mean everyone saves\n\u2022 Better Outcomes: More complete and accurate data, assistance, and innovative solutions deliver better health.',
-      },
-      {
         id: 'supplements',
         title: 'Discounted Supplements & Wellness Products',
         type: 'text',
@@ -394,12 +387,12 @@ const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 10,
-    question: 'What does the QR LifeCode provide to members?',
+    question: 'What does the Debt Dismissal Program help members with?',
     options: [
-      'Discount coupons for local pharmacies',
-      'Instant access to vital emergency health information and secure medical records',
-      'Free gym membership passes',
-      'Insurance claim submission forms',
+      'Applying for credit cards with low interest rates',
+      'Managing and reducing medical debt through negotiation and financial counseling',
+      'Paying monthly membership contributions automatically',
+      'Filing lawsuits against healthcare providers',
     ],
     correctIndex: 1,
   },

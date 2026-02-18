@@ -6,7 +6,7 @@ const COGNITO_FORM_EMBED_URL = 'https://www.cognitoforms.com/MPoweringBenefits1/
 
 export default function Contact() {
   const [contactPhone, setContactPhone] = useState('(610) 331-6423');
-  const [contactEmail, setContactEmail] = useState('support@mpb.health');
+  const [contactEmail, setContactEmail] = useState('rebalarney@mympb.com');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {

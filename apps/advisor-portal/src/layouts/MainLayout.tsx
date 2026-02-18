@@ -68,6 +68,7 @@ function getIconComponent(iconName: string): LucideIcons.LucideIcon {
 // Fallback navigation for when CMS data isn't available
 const fallbackNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Quick Links', href: '/quick-links', icon: Link },
   { 
     name: 'Training', 
@@ -90,7 +91,6 @@ const fallbackNavigation: NavItem[] = [
     ],
   },
   { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
-  { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
@@ -211,6 +211,14 @@ export default function MainLayout() {
       }
       return item;
     });
+
+    // Move Bulletins to second position (right after Dashboard)
+    const bulletinsIndex = base.findIndex(item => item.name === 'Bulletins' || item.href === '/bulletins');
+    if (bulletinsIndex > 1) {
+      const [bulletinsItem] = base.splice(bulletinsIndex, 1);
+      base.splice(1, 0, bulletinsItem);
+    }
+
     const hasQuickLinks = base.some((item) => item.href === '/quick-links' || item.name === 'Quick Links');
     if (hasQuickLinks) return base;
     const quickLinksItem: NavItem = { name: 'Quick Links', href: '/quick-links', icon: Link };

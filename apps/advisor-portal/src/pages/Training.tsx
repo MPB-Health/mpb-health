@@ -827,10 +827,11 @@ const courses: CourseCard[] = [
       'Explore Zion HealthShare programs and learn how to effectively advise clients on Zion membership options.',
     topicCount: 0,
     lessonCount: 0,
-    href: '/training/zion',
+    href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare',
     gradient: 'from-orange-500 via-red-500 to-rose-600',
     icon: Heart,
-    available: false,
+    available: true,
+    external: true,
   },
 ];
 

@@ -76,7 +76,7 @@ const fallbackNavigation: NavItem[] = [
     children: [
       { name: 'MPB Training', href: '/training/mpb' },
       { name: 'Sedera Training', href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
-      { name: 'Zion Training', href: '/training/zion' },
+      { name: 'Zion Training', href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
     ],
   },
   { 

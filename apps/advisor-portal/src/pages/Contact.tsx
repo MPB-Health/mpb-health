@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { portalSettingsService } from '@mpbhealth/advisor-core';
 
-const COGNITO_FORM_URL = 'https://www.cognitoforms.com/f/seamless.js';
-const COGNITO_FORM_KEY = 'MPoweringBenefits1';
-const COGNITO_FORM_ID = 'ContactForm2';
+const COGNITO_FORM_EMBED_URL = 'https://www.cognitoforms.com/f/MPoweringBenefits1/ContactForm2';
 
 export default function Contact() {
   const [contactPhone, setContactPhone] = useState('(561) 922-9647');
   const [contactEmail, setContactEmail] = useState('support@mpb.health');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,23 +29,14 @@ export default function Contact() {
   }, []);
 
   useEffect(() => {
-    const existingScript = document.querySelector(`script[src="${COGNITO_FORM_URL}"]`);
-    if (existingScript) {
-      existingScript.remove();
-    }
-
-    (window as any).Cognito = undefined;
-
-    const script = document.createElement('script');
-    script.src = COGNITO_FORM_URL;
-    script.dataset.key = COGNITO_FORM_KEY;
-    script.dataset.form = COGNITO_FORM_ID;
-    script.async = true;
-    document.getElementById('cognito-form-container')?.appendChild(script);
-
-    return () => {
-      script.remove();
+    const handleMessage = (e: MessageEvent) => {
+      if (e.origin !== 'https://www.cognitoforms.com') return;
+      if (typeof e.data === 'object' && e.data.height && iframeRef.current) {
+        iframeRef.current.style.height = `${e.data.height}px`;
+      }
     };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   return (
@@ -73,7 +63,14 @@ export default function Contact() {
           </p>
         </div>
 
-        <div id="cognito-form-container" className="min-h-[300px]" />
+        <iframe
+          ref={iframeRef}
+          src={COGNITO_FORM_EMBED_URL}
+          title="Contact Form"
+          className="w-full border-0 rounded-lg"
+          style={{ minHeight: '500px' }}
+          allow="payment"
+        />
       </div>
 
       {/* Contact info */}

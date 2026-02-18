@@ -425,7 +425,7 @@ export default function Dashboard() {
       {/* Welcome header */}
       <GradientHeader
         title={`Welcome back, ${profile?.first_name}!`}
-        subtitle="Here's what needs your attention today."
+        subtitle="Empowering Healthcare Advisors – Making a Difference Every Day!"
       />
 
       {/* Stats grid */}

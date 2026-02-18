@@ -262,24 +262,6 @@ const mpbCourseTopics: Topic[] = [
     ],
   },
   {
-    id: 'required-forms',
-    title: 'Required Forms',
-    icon: ClipboardList,
-    lessons: [
-      {
-        id: 'complete-forms',
-        title: 'Complete Your Required Forms',
-        type: 'form',
-        content: "You're almost set\u2014let's wrap up the paperwork",
-        resourceLinks: [
-          { label: 'Healthcare Advisor Agreement Form \u2192', url: '#' },
-          { label: 'Error & Omissions Insurance Form \u2192', url: '#' },
-          { label: 'Request Landing Page Form \u2192', url: '#' },
-        ],
-      },
-    ],
-  },
-  {
     id: 'quiz',
     title: 'Quiz',
     icon: HelpCircle,

@@ -358,13 +358,15 @@ export default function MainLayout() {
     <>
       {/* Meeting Button */}
       {meetingInfo.isMeetingDay ? (
-        <button
-          onClick={() => {/* Link will be added later */}}
+        <a
+          href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODY1ZGM0NjEtYWIwNi00YzdmLTg1MjEtZWRiODEwZDc3NDVh%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d"
+          target="_blank"
+          rel="noopener noreferrer"
           className="relative flex items-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-full text-sm font-medium hover:bg-red-600 transition-colors animate-pulse"
         >
           <Radio className="w-4 h-4" />
           <span className="hidden md:inline">Live Meeting</span>
-        </button>
+        </a>
       ) : (
         <div className="relative group">
           <button

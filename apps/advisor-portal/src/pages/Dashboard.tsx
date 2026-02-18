@@ -98,7 +98,7 @@ const FALLBACK_ENROLL_OPTIONS: { label: string; url: string }[] = [
 ];
 
 // Teams meeting link for recurring advisor meetings
-const TEAMS_MEETING_URL = ''; // TODO: Add Teams meeting link
+const TEAMS_MEETING_URL = 'https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODY1ZGM0NjEtYWIwNi00YzdmLTg1MjEtZWRiODEwZDc3NDVh%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d';
 
 // Get the next N upcoming 2nd and 4th Tuesdays
 function getUpcomingRecurringMeetings(count = 4): Date[] {
@@ -117,7 +117,7 @@ function getUpcomingRecurringMeetings(count = 4): Date[] {
     const targets = [tuesdays[1], tuesdays[3]].filter(Boolean);
     for (const t of targets) {
       if (t && t >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && meetings.length < count) {
-        t.setHours(12, 0, 0, 0);
+        t.setHours(16, 0, 0, 0);
         meetings.push(t);
       }
     }
@@ -728,6 +728,8 @@ export default function Dashboard() {
               <div className="space-y-4">
                 {getUpcomingRecurringMeetings(4).map((date, index) => {
                   const isNext = index === 0;
+                  const today = new Date();
+                  const isToday = date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
                   return (
                     <div
                       key={date.toISOString()}
@@ -748,7 +750,19 @@ export default function Dashboard() {
                           </span>
                         </div>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
+                      {isToday && TEAMS_MEETING_URL ? (
+                        <a
+                          href={TEAMS_MEETING_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Join
+                        </a>
+                      ) : (
+                        <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
+                      )}
                     </div>
                   );
                 })}

@@ -17,6 +17,7 @@ import {
   type TrainingProgress,
 } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import Training from './Training';
 
 export default function TrainingModule() {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -26,6 +27,7 @@ export default function TrainingModule() {
   const [progress, setProgress] = useState<TrainingProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [isMpbCourse, setIsMpbCourse] = useState(false);
 
   useEffect(() => {
     const loadModule = async () => {
@@ -37,12 +39,12 @@ export default function TrainingModule() {
           trainingService.getModuleProgress(profile.id, moduleId),
         ]);
 
-        // Redirect MPB course modules to the new course page
         if (
           mod?.category?.toLowerCase().includes('mpb') ||
           mod?.title?.toLowerCase().includes('become an mpb')
         ) {
-          navigate('/training/mpb', { replace: true });
+          setIsMpbCourse(true);
+          setLoading(false);
           return;
         }
 
@@ -107,6 +109,10 @@ export default function TrainingModule() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
       </div>
     );
+  }
+
+  if (isMpbCourse) {
+    return <Training section="mpb" />;
   }
 
   if (!module) {

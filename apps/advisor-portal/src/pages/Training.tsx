@@ -233,19 +233,6 @@ const mpbCourseTopics: Topic[] = [
     icon: Briefcase,
     lessons: [
       {
-        id: 'useful-resources',
-        title: 'Useful Resources',
-        type: 'resource',
-        content: 'PRESENTATIONS:',
-        resourceLinks: [
-          { label: 'Employer Presentation', url: '#' },
-          { label: 'Employee Presentation', url: '#' },
-          { label: 'Zion HealthShare Maternity Flyer', url: '#' },
-          { label: 'Sedera Maternity Flyer', url: '#' },
-          { label: 'Client Objections & How To Respond', url: '#' },
-        ],
-      },
-      {
         id: 'networking',
         title: 'Best Platforms & Apps for Networking',
         type: 'text',

@@ -68,7 +68,7 @@ VALUES (
   true,
   true,
   0,
-  '{"thumbnail_title": "Secure HSA Pricing", "thumbnail_title_top": "100px", "thumbnail_title_font_size": "37px", "thumbnail_title_color": "#ffffff"}'::jsonb
+  '{"thumbnail_title": "Secure HSA Pricing", "thumbnail_title_top": "100px", "thumbnail_title_font_size": "37px", "thumbnail_title_color": "#ffffff", "image_position": "center -104px"}'::jsonb
 )
 ON CONFLICT DO NOTHING;
 

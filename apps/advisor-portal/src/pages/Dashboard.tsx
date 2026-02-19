@@ -40,7 +40,7 @@ const STORAGE_BASE = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object
 const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
   {
     label: 'RX, Labs & Imaging Quote',
-    url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2025',
+    url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2026',
     image: `${STORAGE_BASE}/quick-link-rx-labs-imaging.png`,
     description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
     popup: true,

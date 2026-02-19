@@ -33,7 +33,6 @@ export default function Profile() {
     first_name: '',
     last_name: '',
     phone: '',
-    bio: '',
   });
 
   useEffect(() => {
@@ -42,7 +41,6 @@ export default function Profile() {
         first_name: profile.first_name,
         last_name: profile.last_name,
         phone: profile.phone || '',
-        bio: profile.bio || '',
       });
 
       // Load certifications and stats
@@ -176,19 +174,6 @@ export default function Profile() {
                     className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                    Bio
-                  </label>
-                  <textarea
-                    value={formData.bio}
-                    onChange={(e) =>
-                      setFormData({ ...formData, bio: e.target.value })
-                    }
-                    rows={3}
-                    className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
-                  />
-                </div>
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={handleSave}
@@ -234,9 +219,6 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-                {profile.bio && (
-                  <p className="mt-4 text-th-text-secondary">{profile.bio}</p>
-                )}
               </>
             )}
           </div>

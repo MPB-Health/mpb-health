@@ -1137,16 +1137,6 @@ export default function Dashboard() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(shareModal.url);
-                    }}
-                    className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary border border-th-border rounded-lg"
-                    disabled={shareSending}
-                  >
-                    Copy link
-                  </button>
-                  <button
-                    type="button"
                     disabled={shareSending || !shareForm.name.trim() || !shareForm.email.trim()}
                     onClick={async () => {
                       setShareError(null);

@@ -39,6 +39,16 @@ declare global {
         chat?: {
           start: () => void;
         };
+        customfield?: {
+          add: (config: {
+            name: string;
+            hint?: string;
+            type: string;
+            required?: boolean;
+            visibility?: string;
+            options?: Array<{ text: string; value: string }>;
+          }) => void;
+        };
       };
     };
   }
@@ -192,11 +202,31 @@ class ZohoSalesIQManager {
     }
   }
 
+  private registerCustomFields() {
+    try {
+      window.$zoho?.salesiq?.customfield?.add({
+        name: "MemberStatus",
+        hint: "Are you a member?",
+        type: "radio",
+        required: true,
+        visibility: "both",
+        options: [
+          { text: "Member", value: "Member" },
+          { text: "Non-Member", value: "Non-Member" }
+        ]
+      });
+    } catch (error) {
+      console.error('[Zoho SalesIQ] Failed to register custom fields:', error);
+    }
+  }
+
   private setupReadyHandler() {
     if (window.$zoho?.salesiq) {
       window.$zoho.salesiq.ready = (callback: () => void) => {
         this.status.isReady = true;
         this.status.lastChecked = new Date().toISOString();
+
+        this.registerCustomFields();
 
         this.readyCallbacks.forEach(cb => {
           try {

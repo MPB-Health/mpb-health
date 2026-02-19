@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { meetingService, enrollmentService, portalSettingsService, announcementService, type AdvisorMeeting, type EnrollmentLink, type Announcement } from '@mpbhealth/advisor-core';
+import { supabase } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 interface FallbackQuickLink {
@@ -199,6 +200,9 @@ export default function Dashboard() {
   const thumbnailScrollRef = useRef<HTMLDivElement>(null);
   const [shareModal, setShareModal] = useState<{ label: string; url: string } | null>(null);
   const [shareForm, setShareForm] = useState({ name: '', email: '' });
+  const [shareSending, setShareSending] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [shareSuccess, setShareSuccess] = useState(false);
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
 
   const [quickLinksLoading] = useState(false);
@@ -1053,6 +1057,8 @@ export default function Dashboard() {
                 onClick={() => {
                   setShareModal(null);
                   setShareForm({ name: '', email: '' });
+                  setShareError(null);
+                  setShareSuccess(false);
                 }}
                 className="p-1 text-th-text-muted hover:text-th-text-primary rounded"
                 aria-label="Close"
@@ -1060,66 +1066,123 @@ export default function Dashboard() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={shareForm.name}
-                  onChange={(e) => setShareForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
-                  placeholder="Recipient name"
-                />
+
+            {shareSuccess ? (
+              <div className="p-6 text-center">
+                <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <p className="text-th-text-primary font-medium">Email sent successfully!</p>
+                <p className="text-sm text-th-text-secondary mt-1">
+                  Your advisor page link has been shared with {shareForm.name}.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShareModal(null);
+                    setShareForm({ name: '', email: '' });
+                    setShareSuccess(false);
+                  }}
+                  className="mt-4 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700"
+                >
+                  Done
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  value={shareForm.email}
-                  onChange={(e) => setShareForm((f) => ({ ...f, email: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
-                  placeholder="email@example.com"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 p-4 border-t border-th-border">
-              <button
-                type="button"
-                onClick={() => {
-                  setShareModal(null);
-                  setShareForm({ name: '', email: '' });
-                }}
-                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(shareModal.url);
-                  setShareModal(null);
-                  setShareForm({ name: '', email: '' });
-                }}
-                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary border border-th-border rounded-lg"
-              >
-                Copy link
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  // Placeholder: could send email via API later
-                  setShareModal(null);
-                  setShareForm({ name: '', email: '' });
-                }}
-                className="px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700"
-              >
-                Send
-              </button>
-            </div>
+            ) : (
+              <>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      value={shareForm.name}
+                      onChange={(e) => { setShareForm((f) => ({ ...f, name: e.target.value })); setShareError(null); }}
+                      className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
+                      placeholder="Recipient name"
+                      disabled={shareSending}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                      Email address
+                    </label>
+                    <input
+                      type="email"
+                      value={shareForm.email}
+                      onChange={(e) => { setShareForm((f) => ({ ...f, email: e.target.value })); setShareError(null); }}
+                      className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
+                      placeholder="email@example.com"
+                      disabled={shareSending}
+                    />
+                  </div>
+                  {shareError && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{shareError}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end gap-3 p-4 border-t border-th-border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShareModal(null);
+                      setShareForm({ name: '', email: '' });
+                      setShareError(null);
+                    }}
+                    className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary"
+                    disabled={shareSending}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(shareModal.url);
+                    }}
+                    className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary border border-th-border rounded-lg"
+                    disabled={shareSending}
+                  >
+                    Copy link
+                  </button>
+                  <button
+                    type="button"
+                    disabled={shareSending || !shareForm.name.trim() || !shareForm.email.trim()}
+                    onClick={async () => {
+                      setShareError(null);
+                      setShareSending(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke('share-advisor-page', {
+                          body: {
+                            recipientName: shareForm.name.trim(),
+                            recipientEmail: shareForm.email.trim(),
+                            advisorName: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim(),
+                            advisorUrl: shareModal.url,
+                          },
+                        });
+                        if (error) throw error;
+                        if (data && !data.success) throw new Error(data.error || 'Failed to send email');
+                        setShareSuccess(true);
+                      } catch (err: unknown) {
+                        const message = err instanceof Error ? err.message : 'Failed to send email. Please try again.';
+                        setShareError(message);
+                      } finally {
+                        setShareSending(false);
+                      }
+                    }}
+                    className="px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {shareSending && (
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    )}
+                    {shareSending ? 'Sending...' : 'Send'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

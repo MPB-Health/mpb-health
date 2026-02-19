@@ -32,7 +32,6 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
             backgroundSize: 'cover',
             backgroundPosition: (doc.metadata?.image_position as string) || 'center top',
             backgroundRepeat: 'no-repeat',
-            position: 'relative',
           }}
           role="img"
           aria-label={doc.title}
@@ -40,14 +39,13 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
           {doc.metadata?.thumbnail_title && (
             <span
               style={{
-                position: 'absolute',
-                top: (doc.metadata.thumbnail_title_top as string) || '100px',
-                left: 0,
-                right: 0,
+                display: 'block',
+                paddingTop: (doc.metadata.thumbnail_title_top as string) || '100px',
                 textAlign: 'center',
                 fontSize: (doc.metadata.thumbnail_title_font_size as string) || '24px',
                 fontWeight: 700,
                 color: (doc.metadata.thumbnail_title_color as string) || '#1e293b',
+                textShadow: '0 1px 4px rgba(0,0,0,0.3)',
                 pointerEvents: 'none',
               }}
             >

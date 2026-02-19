@@ -62,7 +62,7 @@ VALUES (
   ARRAY['pricing', 'pricing charts', 'secure hsa', 'hsa', 'rates'],
   'Secure HSA Pricing - plan pricing and rates overview.',
   'pdf',
-  'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/bulletin-images/Secure%20HSA%20pricing.pdf',
+  'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/Secure%20HSA%20pricing.pdf',
   'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/secure-hsa-pricing-thumbnail.png',
   '1.0',
   true,

@@ -35,24 +35,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
           }}
           role="img"
           aria-label={doc.title}
-        >
-          {doc.metadata?.thumbnail_title && (
-            <span
-              style={{
-                display: 'block',
-                paddingTop: (doc.metadata.thumbnail_title_top as string) || '100px',
-                textAlign: 'center',
-                fontSize: (doc.metadata.thumbnail_title_font_size as string) || '24px',
-                fontWeight: 700,
-                color: (doc.metadata.thumbnail_title_color as string) || '#1e293b',
-                textShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                pointerEvents: 'none',
-              }}
-            >
-              {doc.metadata.thumbnail_title as string}
-            </span>
-          )}
-        </div>
+        />
       ) : (
         <div className="document-card__content p-5 pb-0">
           <div className="flex items-start justify-between">

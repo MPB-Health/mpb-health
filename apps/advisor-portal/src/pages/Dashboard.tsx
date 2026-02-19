@@ -466,88 +466,16 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
-          <div className="absolute top-0 left-0 right-0 h-0.5 gradient-accent opacity-60 group-hover:opacity-100 transition-opacity" />
+        <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 group overflow-hidden h-full">
+          <div className="absolute top-0 left-0 right-0 h-0.5 gradient-accent opacity-60 transition-opacity" />
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-medium text-th-text-secondary">
-                  My Advisor Page
-                </p>
-                <a
-                  href={advisorLandingPageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 hover:underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Link
-                </a>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareModal({ label: 'My Advisor Page', url: advisorLandingPageUrl });
-                    setShareForm({ name: '', email: '' });
-                  }}
-                  className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 hover:underline"
-                >
-                  Share
-                </button>
-              </div>
-              <div className="mt-3" ref={enrollDropdownRef}>
-                <label className="block text-xs font-medium text-th-text-tertiary mb-1.5">
-                  Enrollments
-                </label>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEnrollDropdownOpen((open) => !open);
-                  }}
-                  className="w-full rounded-lg border border-th-border bg-surface-primary px-3 py-2 text-sm text-th-text-primary text-left focus:border-th-accent-500 focus:outline-none focus:ring-1 focus:ring-th-accent-500 flex items-center justify-between"
-                >
-                  <span className="text-th-text-secondary">Select a page</span>
-                  <ArrowRight
-                    className={`w-4 h-4 text-th-text-tertiary transition-transform ${enrollDropdownOpen ? 'rotate-90' : ''}`}
-                  />
-                </button>
-                {enrollDropdownOpen && (
-                  <div className="mt-1 rounded-lg border border-th-border bg-surface-primary shadow-lg overflow-hidden z-10">
-                    {enrollOptions.map((option) => (
-                      <div
-                        key={option.url}
-                        className="group flex items-center justify-between gap-2 px-3 py-2 hover:bg-surface-tertiary border-b border-th-border-subtle last:border-b-0"
-                      >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(option.url, '_blank', 'noopener,noreferrer');
-                            setEnrollDropdownOpen(false);
-                          }}
-                          className="flex-1 text-left text-sm text-th-text-primary font-medium"
-                        >
-                          {option.label}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShareModal({ label: option.label, url: option.url });
-                            setShareForm({ name: '', email: '' });
-                            setEnrollDropdownOpen(false);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs text-th-accent-600 hover:text-th-accent-700 font-medium transition-opacity"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          Share
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <p className="text-sm font-medium text-th-text-secondary">
+                My Advisor Page
+              </p>
+              <p className="text-base font-semibold text-th-text-primary mt-1.5 leading-snug">
+                Direct link to my new Advisor Page coming soon
+              </p>
             </div>
             <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-th-accent-50 dark:bg-th-accent-900/20 text-th-accent-600 dark:text-th-accent-400">
               <ExternalLink className="w-5 h-5" />

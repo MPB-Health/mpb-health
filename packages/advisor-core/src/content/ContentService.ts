@@ -185,7 +185,7 @@ export class ContentService {
     return this.getBulletins({}, advisorId);
   }
 
-  // Get featured bulletins for the slider
+  // Get bulletins for the slider (most recent first)
   async getFeaturedBulletins(limit = 5): Promise<Bulletin[]> {
     const now = new Date().toISOString();
 
@@ -197,25 +197,12 @@ export class ContentService {
       `)
       .eq('content_type', 'bulletin')
       .eq('is_published', true)
-      .eq('is_featured', true)
       .lte('published_date', now)
       .order('published_date', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-
-    // If fewer featured bulletins than requested, backfill with most recent non-featured
-    const featured = data || [];
-    if (featured.length < limit) {
-      const featuredIds = new Set(featured.map(b => b.id));
-      const bulletins = await this.getActiveBulletins();
-      const backfill = bulletins
-        .filter(b => !featuredIds.has(b.id))
-        .slice(0, limit - featured.length);
-      return [...featured, ...backfill];
-    }
-
-    return featured;
+    return data || [];
   }
 
   // Get a single bulletin

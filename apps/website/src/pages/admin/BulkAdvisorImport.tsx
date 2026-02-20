@@ -16,7 +16,7 @@ import {
   Send,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface ParsedAdvisor {
   agent_id: string;

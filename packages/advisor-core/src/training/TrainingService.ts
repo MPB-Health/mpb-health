@@ -211,6 +211,36 @@ export class TrainingService {
     return data || [];
   }
 
+  // Save quiz certification when advisor passes the Healthcare Advisor quiz
+  async saveQuizCertification(advisorId: string, score: number): Promise<Certification | null> {
+    const existing = await supabase
+      .from('certifications')
+      .select('id')
+      .eq('advisor_id', advisorId)
+      .eq('name', 'MPB Healthcare Advisor')
+      .maybeSingle();
+
+    if (existing.data) return null;
+
+    const { data, error } = await supabase
+      .from('certifications')
+      .insert({
+        advisor_id: advisorId,
+        name: 'MPB Healthcare Advisor',
+        description: `Passed the Healthcare Advisor Certification Quiz with ${score}/10`,
+        issued_at: new Date().toISOString(),
+        issuer: 'MPB Health',
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to save quiz certification:', error);
+      return null;
+    }
+    return data;
+  }
+
   // Check and issue certifications based on completed training
   async checkAndIssueCertifications(advisorId: string): Promise<Certification[]> {
     // This would typically check if the advisor has completed

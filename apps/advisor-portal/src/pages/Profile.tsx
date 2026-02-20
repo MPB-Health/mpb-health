@@ -12,6 +12,7 @@ import {
   Video,
   FileText,
   CheckCircle2,
+  Download,
 } from 'lucide-react';
 import {
   profileService,
@@ -19,12 +20,14 @@ import {
   type Certification,
 } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { generateCertificate } from '../utils/generateCertificate';
 
 export default function Profile() {
   const { profile, trainingStats, refreshProfile } = useAdvisor();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [generating, setGenerating] = useState(false);
   const [stats, setStats] = useState({
     meetingsAttended: 0,
     formsSubmitted: 0,
@@ -85,6 +88,32 @@ export default function Profile() {
       toast.success('Avatar updated!');
     } catch (err) {
       toast.error('Failed to upload avatar');
+    }
+  };
+
+  const quizCert = certifications.find(c => c.name === 'MPB Healthcare Advisor');
+
+  const handleDownloadCertificate = async () => {
+    if (!profile || !quizCert) return;
+    setGenerating(true);
+    try {
+      const date = new Date(quizCert.issued_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const blob = await generateCertificate(
+        `${profile.first_name} ${profile.last_name}`,
+        date,
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'MPB_Healthcare_Advisor_Certificate.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -225,7 +254,34 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Stats - hidden for now */}
+      {/* Certificate Download */}
+      {quizCert && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-200 dark:border-blue-800 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-th-text-primary">
+                  Your earned MPB Certificate is available to download
+                </h2>
+                <p className="text-sm text-th-text-tertiary mt-0.5">
+                  Issued on {new Date(quizCert.issued_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleDownloadCertificate}
+              disabled={generating}
+              className="flex items-center space-x-2 px-5 py-2.5 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>{generating ? 'Generating...' : 'Download'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Certifications */}
       {certifications.length > 0 && (

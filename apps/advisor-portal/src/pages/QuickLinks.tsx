@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink, X, Smartphone, ArrowRight } from 'lucide-react';
 
 const STORAGE_BASE = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents';
 
@@ -136,6 +136,34 @@ export default function QuickLinks() {
           Shortcuts to common actions and resources.
         </p>
       </div>
+
+      {/* Download App Banner */}
+      <a
+        href="https://mpb.health/download-app/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative block rounded-xl border border-th-accent-200 dark:border-th-accent-800 bg-gradient-to-r from-th-accent-50 via-blue-50 to-indigo-50 dark:from-th-accent-950/40 dark:via-blue-950/30 dark:to-indigo-950/30 overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-400 hover:-translate-y-0.5"
+      >
+        <div className="flex items-center justify-between px-6 py-5">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-th-accent-600 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200">
+              <Smartphone className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-th-text-primary">
+                Download the MPB Health App
+              </h2>
+              <p className="text-sm text-th-text-secondary mt-0.5">
+                Get the company mobile app for on-the-go access to resources, member tools, and more.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-5 py-2.5 bg-th-accent-600 text-white rounded-lg font-medium group-hover:bg-th-accent-700 transition-colors shrink-0">
+            <span>Get the App</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </div>
+      </a>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {quickLinks.map((link) => (

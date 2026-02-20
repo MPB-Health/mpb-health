@@ -13,6 +13,7 @@ import {
   Shield,
   Pill,
   DollarSign,
+  Briefcase,
 } from 'lucide-react';
 import {
   contentService,
@@ -40,31 +41,22 @@ const iconMap: Record<string, React.ElementType> = {
   Pill,
   DollarSign,
   Search,
+  Briefcase,
 };
 
 type SectionEntry = { title: string; description: string; icon: React.ElementType };
 
 // Fallback section configuration used when CMS categories haven't loaded or return empty
 const fallbackSectionConfig: Record<string, SectionEntry> = {
-  'presentations': {
-    title: 'Presentations',
-    description: 'Sales and training presentations',
-    icon: Presentation,
-  },
-  'advisor-handbook': {
-    title: 'Advisor Handbook',
-    description: 'Advisor handbooks and e-books',
-    icon: BookOpen,
+  'advisor-toolkit': {
+    title: 'Advisor Toolkit',
+    description: 'Presentations, advisor handbooks, and commission structure',
+    icon: Briefcase,
   },
   'pricing-charts': {
     title: 'Pricing Charts',
     description: 'Product pricing and comparison charts',
     icon: BarChart2,
-  },
-  'commission-structure': {
-    title: 'Commission Structure',
-    description: 'Commission structure and payout details',
-    icon: DollarSign,
   },
   'reference-materials': {
     title: 'Reference Materials',
@@ -175,6 +167,9 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
     loadData();
   }, [section]);
 
+  // Categories grouped under "Advisor Toolkit"
+  const TOOLKIT_CATEGORIES = ['presentations', 'advisor handbook', 'commission structure'];
+
   const filteredDocuments = documents.filter((doc) => {
     // Apply section filter if specified
     if (section) {
@@ -182,13 +177,21 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       const categoryLower = doc.category?.toLowerCase() || '';
       const sectionLower = section.toLowerCase().replace('-', ' ');
       const sectionNameLower = sectionName.toLowerCase();
-      
-      const matchesSection = 
-        categoryLower === sectionNameLower ||
-        categoryLower === sectionLower ||
-        categoryLower.includes(sectionLower) ||
-        doc.tags?.some(tag => tag.toLowerCase().includes(sectionLower));
-      
+
+      let matchesSection: boolean;
+
+      if (section === 'advisor-toolkit') {
+        matchesSection =
+          TOOLKIT_CATEGORIES.some(cat => categoryLower === cat || categoryLower.includes(cat)) ||
+          doc.tags?.some(tag => TOOLKIT_CATEGORIES.some(cat => tag.toLowerCase().includes(cat))) || false;
+      } else {
+        matchesSection =
+          categoryLower === sectionNameLower ||
+          categoryLower === sectionLower ||
+          categoryLower.includes(sectionLower) ||
+          doc.tags?.some(tag => tag.toLowerCase().includes(sectionLower)) || false;
+      }
+
       if (!matchesSection) return false;
     }
     const matchesSearch =

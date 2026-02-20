@@ -10,6 +10,9 @@ export interface AdvisorProfile {
   specialization: string;
   bio: string | null;
   avatar_url: string | null;
+  agent_id: string | null;
+  company_name: string | null;
+  must_change_password: boolean;
   status: 'pending' | 'active' | 'suspended' | 'inactive';
   onboarding_completed: boolean;
   onboarding_completed_at: string | null;

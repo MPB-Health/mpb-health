@@ -286,6 +286,11 @@ export default function MainLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  // Force password change for newly imported accounts
+  if (!loading && profile?.must_change_password) {
+    return <Navigate to="/change-password" replace />;
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-surface-secondary">

@@ -160,6 +160,7 @@ const NotificationsAdmin = lazyAuto(() => import('./pages/admin/NotificationsAdm
 const SystemSettings = lazyAuto(() => import('./pages/admin/SystemSettings'));
 const HandbookHub = lazyAuto(() => import('./pages/admin/HandbookHub'));
 const UserManagement = lazyAuto(() => import('./pages/admin/UserManagement'));
+const BulkAdvisorImport = lazyAuto(() => import('./pages/admin/BulkAdvisorImport'));
 
 // CRM Module
 const CRMDashboard = lazyAuto(() => import('./pages/admin/CRMDashboard'));
@@ -560,6 +561,14 @@ const App = () => {
                     element={
                       <ProtectedRoute>
                         <UserManagement />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/users/bulk-import"
+                    element={
+                      <ProtectedRoute>
+                        <BulkAdvisorImport />
                       </ProtectedRoute>
                     }
                   />

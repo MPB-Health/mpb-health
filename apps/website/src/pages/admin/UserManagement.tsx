@@ -85,6 +85,18 @@ const UserManagement: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [nameSaving, setNameSaving] = useState(false);
 
+  // Mass invite email state
+  const [inviteModal, setInviteModal] = useState(false);
+  const [invitePassword, setInvitePassword] = useState('MPBHealth2025!');
+  const [showInvitePassword, setShowInvitePassword] = useState(false);
+  const [sendingMassInvites, setSendingMassInvites] = useState(false);
+  const [massInviteResult, setMassInviteResult] = useState<{
+    total: number;
+    sent: number;
+    skipped: number;
+    errors: number;
+  } | null>(null);
+
   useEffect(() => {
     checkTableAndLoadData();
   }, []);
@@ -342,6 +354,35 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleSendMassInvites = async () => {
+    setSendingMassInvites(true);
+    setMassInviteResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-advisor-invites', {
+        body: { send_all_pending: true, password: invitePassword },
+      });
+
+      if (error) {
+        toast.error(`Failed to send invites: ${error.message}`);
+        return;
+      }
+
+      setMassInviteResult(data.summary);
+
+      if (data.summary.total === 0) {
+        toast('No pending advisor accounts found to invite', { icon: 'ℹ️' });
+      } else if (data.summary.errors === 0) {
+        toast.success(`Successfully sent ${data.summary.sent} invite emails!`);
+      } else {
+        toast(`Sent ${data.summary.sent}, ${data.summary.errors} failed`, { icon: '⚠️' });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send invites');
+    } finally {
+      setSendingMassInvites(false);
+    }
+  };
+
   // Filter users by search
   const filteredUsers = users.filter((u) => {
     if (!searchQuery.trim()) return true;
@@ -393,10 +434,20 @@ const UserManagement: React.FC = () => {
                 Manage user roles and access levels across all portals
               </p>
             </div>
-            <Button onClick={loadUsers} variant="outline" disabled={loading}>
-              <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setInviteModal(true)} variant="outline">
+                <Mail className="h-4 w-4 mr-2" />
+                Send Invites
+              </Button>
+              <Button onClick={() => navigate('/admin/users/bulk-import')} variant="outline">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Bulk Import
+              </Button>
+              <Button onClick={loadUsers} variant="outline" disabled={loading}>
+                <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -870,6 +921,112 @@ const UserManagement: React.FC = () => {
                   </>
                 )}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mass Invite Modal */}
+      {inviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-teal-50 rounded-lg">
+                  <Mail className="h-5 w-5 text-teal-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-neutral-900">Send Mass Invite Emails</h2>
+                  <p className="text-sm text-neutral-600">
+                    Send welcome emails to all advisors who haven't logged in yet
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  This will send an email to all advisor accounts that still have a pending password change
+                  (newly created accounts that haven't logged in). Each email includes their login credentials
+                  and a link to the Advisor Portal.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="invite-password" className="block text-sm font-medium text-neutral-700 mb-1.5">
+                  Temporary Password to Include
+                </label>
+                <div className="relative">
+                  <input
+                    id="invite-password"
+                    type={showInvitePassword ? 'text' : 'password'}
+                    value={invitePassword}
+                    onChange={(e) => setInvitePassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowInvitePassword(!showInvitePassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    aria-label={showInvitePassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showInvitePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-neutral-500">
+                  This is the temporary password the advisors will use to first log in.
+                </p>
+              </div>
+
+              {massInviteResult && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                    <p className="text-lg font-bold text-green-700">{massInviteResult.sent}</p>
+                    <p className="text-xs text-green-600">Sent</p>
+                  </div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+                    <p className="text-lg font-bold text-yellow-700">{massInviteResult.skipped}</p>
+                    <p className="text-xs text-yellow-600">Skipped</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                    <p className="text-lg font-bold text-red-700">{massInviteResult.errors}</p>
+                    <p className="text-xs text-red-600">Failed</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-neutral-200 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setInviteModal(false);
+                  setMassInviteResult(null);
+                }}
+                disabled={sendingMassInvites}
+              >
+                {massInviteResult ? 'Close' : 'Cancel'}
+              </Button>
+              {!massInviteResult && (
+                <button
+                  onClick={handleSendMassInvites}
+                  disabled={sendingMassInvites || !invitePassword}
+                  className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {sendingMassInvites ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4" />
+                      Send Invite Emails
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -23,6 +23,7 @@ const AuditLog = React.lazy(() => import('./pages/AuditLog'));
 const Login = React.lazy(() => import('./pages/Login'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
+const ChangePassword = React.lazy(() => import('./pages/ChangePassword'));
 
 // Settings pages (lazy-loaded individually instead of barrel import)
 const SettingsHub = React.lazy(() => import('./pages/settings/SettingsHub'));
@@ -123,6 +124,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/change-password" element={<ChangePassword />} />
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="training" element={<Training />} />

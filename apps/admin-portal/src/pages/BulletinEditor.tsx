@@ -120,7 +120,7 @@ export default function BulletinEditor() {
     setFormData((prev) => ({
       ...prev,
       title,
-      slug: prev.slug || generateSlug(title),
+      slug: generateSlug(title),
     }));
   };
 
@@ -165,11 +165,11 @@ export default function BulletinEditor() {
 
     setSaving(true);
     try {
-      const slug = formData.slug || generateSlug(formData.title);
+      const slug = (formData.slug || generateSlug(formData.title)).trim();
       const isPublished = publish || formData.is_published;
 
       const payload = {
-        title: formData.title,
+        title: formData.title.trim(),
         slug,
         excerpt: formData.excerpt,
         content: formData.content,

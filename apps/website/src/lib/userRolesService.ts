@@ -433,6 +433,53 @@ export async function getAccessiblePortals(userId: string): Promise<string[]> {
 }
 
 // ============================================================================
+// Advisor Profile Enrichment
+// ============================================================================
+
+export interface AdvisorProfileInfo {
+  agent_id: string | null;
+  company_name: string | null;
+  must_change_password: boolean;
+  status: string;
+  onboarding_completed: boolean;
+  first_name: string;
+  last_name: string;
+}
+
+/**
+ * Fetch advisor_profiles data for all users who have the advisor role.
+ * Returns a map of user_id -> AdvisorProfileInfo.
+ */
+export async function getAdvisorProfiles(): Promise<Map<string, AdvisorProfileInfo>> {
+  const map = new Map<string, AdvisorProfileInfo>();
+  try {
+    const { data, error } = await supabase
+      .from('advisor_profiles')
+      .select('id, agent_id, company_name, must_change_password, status, onboarding_completed, first_name, last_name');
+
+    if (error) {
+      console.warn('Error fetching advisor profiles:', error);
+      return map;
+    }
+
+    for (const row of data || []) {
+      map.set(row.id, {
+        agent_id: row.agent_id,
+        company_name: row.company_name,
+        must_change_password: row.must_change_password ?? false,
+        status: row.status || 'pending',
+        onboarding_completed: row.onboarding_completed ?? false,
+        first_name: row.first_name || '',
+        last_name: row.last_name || '',
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching advisor profiles:', error);
+  }
+  return map;
+}
+
+// ============================================================================
 // Export as namespace
 // ============================================================================
 
@@ -456,4 +503,5 @@ export const userRolesService = {
   canAccessMemberPortal,
   getAccessiblePortals,
   invalidateCache,
+  getAdvisorProfiles,
 };

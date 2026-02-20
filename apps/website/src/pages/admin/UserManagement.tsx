@@ -22,6 +22,10 @@ import {
   EyeOff,
   Edit2,
   UserPlus,
+  Send,
+  CheckSquare,
+  Square,
+  MinusSquare,
 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/button';
@@ -35,6 +39,7 @@ import {
   userRolesService,
   type UserWithRoles,
   type UserRole,
+  type AdvisorProfileInfo,
   ROLE_LABELS,
   ROLE_COLORS,
   ALL_ROLES,
@@ -71,6 +76,16 @@ const UserManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [tableAvailable, setTableAvailable] = useState(true);
+
+  // Role filter state
+  type RoleFilter = 'all' | UserRole;
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+
+  // Advisor profile enrichment
+  const [advisorProfiles, setAdvisorProfiles] = useState<Map<string, AdvisorProfileInfo>>(new Map());
+
+  // Checkbox selection for targeted invites
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Password management state
   const [passwordModal, setPasswordModal] = useState<{ userId: string; email: string } | null>(null);
@@ -114,13 +129,15 @@ const UserManagement: React.FC = () => {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      let data: UserWithRoles[];
-      if (searchQuery.trim()) {
-        data = await userRolesService.searchUsersByEmail(searchQuery);
-      } else {
-        data = await userRolesService.getAllUsersWithRoles();
-      }
+      const [data, profiles] = await Promise.all([
+        searchQuery.trim()
+          ? userRolesService.searchUsersByEmail(searchQuery)
+          : userRolesService.getAllUsersWithRoles(),
+        userRolesService.getAdvisorProfiles(),
+      ]);
       setUsers(data);
+      setAdvisorProfiles(profiles);
+      setSelectedIds(new Set());
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
@@ -354,12 +371,16 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleSendMassInvites = async () => {
+  const handleSendInvites = async (mode: 'selected' | 'all_pending') => {
     setSendingMassInvites(true);
     setMassInviteResult(null);
     try {
+      const body = mode === 'selected'
+        ? { advisor_ids: Array.from(selectedIds), password: invitePassword }
+        : { send_all_pending: true, password: invitePassword };
+
       const { data, error } = await supabase.functions.invoke('send-advisor-invites', {
-        body: { send_all_pending: true, password: invitePassword },
+        body,
       });
 
       if (error) {
@@ -370,7 +391,7 @@ const UserManagement: React.FC = () => {
       setMassInviteResult(data.summary);
 
       if (data.summary.total === 0) {
-        toast('No pending advisor accounts found to invite', { icon: 'ℹ️' });
+        toast('No advisor accounts found to invite', { icon: 'ℹ️' });
       } else if (data.summary.errors === 0) {
         toast.success(`Successfully sent ${data.summary.sent} invite emails!`);
       } else {
@@ -383,8 +404,9 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // Filter users by search
+  // Filter users by search + role tab
   const filteredUsers = users.filter((u) => {
+    if (roleFilter !== 'all' && !u.roles.includes(roleFilter)) return false;
     if (!searchQuery.trim()) return true;
     const search = searchQuery.toLowerCase();
     return (
@@ -392,6 +414,29 @@ const UserManagement: React.FC = () => {
       u.full_name?.toLowerCase().includes(search)
     );
   });
+
+  // Checkbox helpers
+  const isAdvisorView = roleFilter === 'advisor';
+  const advisorUsers = filteredUsers.filter((u) => u.roles.includes('advisor'));
+  const allAdvisorsSelected = advisorUsers.length > 0 && advisorUsers.every((u) => selectedIds.has(u.id));
+  const someAdvisorsSelected = advisorUsers.some((u) => selectedIds.has(u.id));
+
+  const toggleSelectAll = () => {
+    if (allAdvisorsSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(advisorUsers.map((u) => u.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Stats
   const stats = {
@@ -466,53 +511,33 @@ const UserManagement: React.FC = () => {
           </Card>
         )}
 
-        {/* Stats */}
+        {/* Filter Tabs */}
         <div className="grid md:grid-cols-5 gap-4 mb-6">
-          <Card className="p-4 bg-slate-50 border-l-4 border-slate-600">
-            <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-slate-600" />
-              <div>
-                <div className="text-sm font-medium text-neutral-600">Total Users</div>
-                <div className="text-2xl font-bold text-neutral-900">{stats.total}</div>
+          {([
+            { key: 'all' as RoleFilter, label: 'Total Users', count: stats.total, Icon: Users, bg: 'bg-slate-50', border: 'border-slate-600', activeBg: 'bg-slate-100 ring-2 ring-slate-400', iconColor: 'text-slate-600' },
+            { key: 'super_admin' as RoleFilter, label: 'Super Admins', count: stats.superAdmins, Icon: Crown, bg: 'bg-purple-50', border: 'border-purple-600', activeBg: 'bg-purple-100 ring-2 ring-purple-400', iconColor: 'text-purple-600' },
+            { key: 'admin' as RoleFilter, label: 'Admins', count: stats.admins, Icon: ShieldCheck, bg: 'bg-blue-50', border: 'border-blue-600', activeBg: 'bg-blue-100 ring-2 ring-blue-400', iconColor: 'text-blue-600' },
+            { key: 'advisor' as RoleFilter, label: 'Advisors', count: stats.advisors, Icon: Briefcase, bg: 'bg-green-50', border: 'border-green-600', activeBg: 'bg-green-100 ring-2 ring-green-400', iconColor: 'text-green-600' },
+            { key: 'crm_user' as RoleFilter, label: 'CRM Users', count: stats.crmUsers, Icon: Building2, bg: 'bg-indigo-50', border: 'border-indigo-600', activeBg: 'bg-indigo-100 ring-2 ring-indigo-400', iconColor: 'text-indigo-600' },
+          ]).map(({ key, label, count, Icon, bg, border, activeBg, iconColor }) => (
+            <button
+              key={key}
+              onClick={() => { setRoleFilter(key); setSelectedIds(new Set()); }}
+              className={cn(
+                'p-4 rounded-lg border-l-4 text-left transition-all',
+                border,
+                roleFilter === key ? activeBg : cn(bg, 'hover:opacity-80'),
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Icon className={cn('h-8 w-8', iconColor)} />
+                <div>
+                  <div className="text-sm font-medium text-neutral-600">{label}</div>
+                  <div className="text-2xl font-bold text-neutral-900">{count}</div>
+                </div>
               </div>
-            </div>
-          </Card>
-          <Card className="p-4 bg-purple-50 border-l-4 border-purple-600">
-            <div className="flex items-center gap-3">
-              <Crown className="h-8 w-8 text-purple-600" />
-              <div>
-                <div className="text-sm font-medium text-neutral-600">Super Admins</div>
-                <div className="text-2xl font-bold text-neutral-900">{stats.superAdmins}</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 bg-blue-50 border-l-4 border-blue-600">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="h-8 w-8 text-blue-600" />
-              <div>
-                <div className="text-sm font-medium text-neutral-600">Admins</div>
-                <div className="text-2xl font-bold text-neutral-900">{stats.admins}</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 bg-green-50 border-l-4 border-green-600">
-            <div className="flex items-center gap-3">
-              <Briefcase className="h-8 w-8 text-green-600" />
-              <div>
-                <div className="text-sm font-medium text-neutral-600">Advisors</div>
-                <div className="text-2xl font-bold text-neutral-900">{stats.advisors}</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 bg-indigo-50 border-l-4 border-indigo-600">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-indigo-600" />
-              <div>
-                <div className="text-sm font-medium text-neutral-600">CRM Users</div>
-                <div className="text-2xl font-bold text-neutral-900">{stats.crmUsers}</div>
-              </div>
-            </div>
-          </Card>
+            </button>
+          ))}
         </div>
 
         {/* Search */}
@@ -560,12 +585,38 @@ const UserManagement: React.FC = () => {
           </div>
         </Card>
 
+        {/* Floating Action Bar for selected advisors */}
+        {selectedIds.size > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-teal-700 text-white rounded-xl shadow-2xl px-6 py-3 flex items-center gap-4">
+            <span className="text-sm font-medium">{selectedIds.size} advisor{selectedIds.size > 1 ? 's' : ''} selected</span>
+            <button
+              onClick={() => setInviteModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-1.5 bg-white text-teal-700 rounded-lg text-sm font-semibold hover:bg-teal-50 transition-colors"
+            >
+              <Send className="h-4 w-4" />
+              Send Invite
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-teal-200 hover:text-white text-sm"
+              aria-label="Clear selection"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {/* Users Table */}
         <Card className="overflow-hidden">
-          <div className="p-4 border-b border-neutral-200">
+          <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
             <h3 className="font-semibold text-neutral-900">
-              Users with Roles ({filteredUsers.length})
+              {roleFilter === 'all' ? 'All Users' : ROLE_LABELS[roleFilter] + 's'} ({filteredUsers.length})
             </h3>
+            {isAdvisorView && advisorUsers.length > 0 && (
+              <span className="text-xs text-neutral-500">
+                Select advisors to send targeted invites
+              </span>
+            )}
           </div>
 
           {loading ? (
@@ -577,7 +628,7 @@ const UserManagement: React.FC = () => {
               <Users className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-neutral-900 mb-2">No users found</h3>
               <p className="text-neutral-600">
-                {searchQuery ? 'Try a different search term' : 'No users have been assigned roles yet'}
+                {searchQuery ? 'Try a different search term' : roleFilter !== 'all' ? `No users with the ${ROLE_LABELS[roleFilter]} role` : 'No users have been assigned roles yet'}
               </p>
             </div>
           ) : (
@@ -585,138 +636,163 @@ const UserManagement: React.FC = () => {
               <table className="w-full">
                 <thead className="bg-neutral-50">
                   <tr>
+                    {isAdvisorView && (
+                      <th className="px-3 py-3 text-center w-10">
+                        <button onClick={toggleSelectAll} className="text-neutral-500 hover:text-neutral-900" aria-label="Select all">
+                          {allAdvisorsSelected ? <CheckSquare className="h-4 w-4" /> : someAdvisorsSelected ? <MinusSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                        </button>
+                      </th>
+                    )}
                     <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">User</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">Current Roles</th>
+                    {isAdvisorView ? (
+                      <>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">Agent ID</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">Company</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">Portal Status</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">Password</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">Current Roles</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
+                          <Crown className="h-4 w-4 inline mr-1" />Super Admin
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
+                          <ShieldCheck className="h-4 w-4 inline mr-1" />Admin
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
+                          <Briefcase className="h-4 w-4 inline mr-1" />Advisor
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
+                          <Building2 className="h-4 w-4 inline mr-1" />CRM User
+                        </th>
+                      </>
+                    )}
                     <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
-                      <Crown className="h-4 w-4 inline mr-1" />
-                      Super Admin
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
-                      <ShieldCheck className="h-4 w-4 inline mr-1" />
-                      Admin
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
-                      <Briefcase className="h-4 w-4 inline mr-1" />
-                      Advisor
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
-                      <Building2 className="h-4 w-4 inline mr-1" />
-                      CRM User
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
-                      <Key className="h-4 w-4 inline mr-1" />
-                      Password
+                      <Key className="h-4 w-4 inline mr-1" />Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-neutral-50">
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-neutral-900">
-                                {u.full_name || 'No name'}
-                              </span>
-                              <button
-                                onClick={() => openNameModal(u.id, u.email, u.full_name)}
-                                className="p-1 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                title="Edit name"
-                              >
-                                <Edit2 className="h-3 w-3" />
+                  {filteredUsers.map((u) => {
+                    const profile = advisorProfiles.get(u.id);
+                    const isAdvisor = u.roles.includes('advisor');
+
+                    return (
+                      <tr key={u.id} className={cn('hover:bg-neutral-50', selectedIds.has(u.id) && 'bg-teal-50/50')}>
+                        {isAdvisorView && (
+                          <td className="px-3 py-4 text-center">
+                            {isAdvisor && (
+                              <button onClick={() => toggleSelect(u.id)} className="text-neutral-500 hover:text-neutral-900" aria-label={selectedIds.has(u.id) ? 'Deselect' : 'Select'}>
+                                {selectedIds.has(u.id) ? <CheckSquare className="h-4 w-4 text-teal-600" /> : <Square className="h-4 w-4" />}
                               </button>
-                            </div>
-                            <div className="text-sm text-neutral-500">{u.email}</div>
-                          </div>
-                          {u.id === user?.id && (
-                            <Badge className="bg-blue-100 text-blue-700">You</Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {u.roles.length === 0 ? (
-                            <span className="text-sm text-neutral-400">No roles</span>
-                          ) : (
-                            u.roles.map((role) => (
-                              <Badge key={role} className={cn('text-xs', ROLE_COLORS[role])}>
-                                {ROLE_LABELS[role]}
-                              </Badge>
-                            ))
-                          )}
-                        </div>
-                      </td>
-                      {/* Super Admin Toggle */}
-                      <td className="px-4 py-4 text-center">
-                        <RoleToggle
-                          hasRole={u.roles.includes('super_admin')}
-                          isSaving={saving === `${u.id}-super_admin`}
-                          disabled={u.id === user?.id}
-                          onToggle={() => handleToggleRole(u.id, 'super_admin')}
-                        />
-                      </td>
-                      {/* Admin Toggle */}
-                      <td className="px-4 py-4 text-center">
-                        <RoleToggle
-                          hasRole={u.roles.includes('admin')}
-                          isSaving={saving === `${u.id}-admin`}
-                          onToggle={() => handleToggleRole(u.id, 'admin')}
-                        />
-                      </td>
-                      {/* Advisor Toggle */}
-                      <td className="px-4 py-4 text-center">
-                        <RoleToggle
-                          hasRole={u.roles.includes('advisor')}
-                          isSaving={saving === `${u.id}-advisor`}
-                          onToggle={() => handleToggleRole(u.id, 'advisor')}
-                        />
-                      </td>
-                      {/* CRM User Toggle */}
-                      <td className="px-4 py-4 text-center">
-                        <RoleToggle
-                          hasRole={u.roles.includes('crm_user')}
-                          isSaving={saving === `${u.id}-crm_user`}
-                          onToggle={() => handleToggleRole(u.id, 'crm_user')}
-                        />
-                      </td>
-                      {/* Password Actions */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSendPasswordReset(u.email, u.id)}
-                            disabled={sendingReset === u.id}
-                            title="Send password reset email"
-                            className="text-xs"
-                          >
-                            {sendingReset === u.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <>
-                                <Mail className="h-3 w-3 mr-1" />
-                                Reset
-                              </>
                             )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openPasswordModal(u.id, u.email)}
-                            title="Set password directly"
-                            className="text-xs"
-                          >
-                            <Key className="h-3 w-3 mr-1" />
-                            Set
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          </td>
+                        )}
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={cn('w-10 h-10 rounded-full flex items-center justify-center', isAdvisor && profile ? 'bg-green-100' : 'bg-blue-100')}>
+                              <User className={cn('h-5 w-5', isAdvisor && profile ? 'text-green-600' : 'text-blue-600')} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-neutral-900 truncate">
+                                  {profile ? `${profile.first_name} ${profile.last_name}`.trim() || u.full_name || 'No name' : u.full_name || 'No name'}
+                                </span>
+                                <button
+                                  onClick={() => openNameModal(u.id, u.email, u.full_name)}
+                                  className="p-1 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors shrink-0"
+                                  title="Edit name"
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                              <div className="text-sm text-neutral-500 truncate">{u.email}</div>
+                            </div>
+                            {u.id === user?.id && (
+                              <Badge className="bg-blue-100 text-blue-700 shrink-0">You</Badge>
+                            )}
+                          </div>
+                        </td>
+
+                        {isAdvisorView ? (
+                          <>
+                            <td className="px-4 py-4 text-sm font-mono text-neutral-700">
+                              {profile?.agent_id || <span className="text-neutral-300">--</span>}
+                            </td>
+                            <td className="px-4 py-4 text-sm text-neutral-700">
+                              {profile?.company_name || <span className="text-neutral-300">--</span>}
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              {profile ? (
+                                <Badge className={cn('text-xs', {
+                                  'bg-green-100 text-green-800': profile.status === 'active',
+                                  'bg-yellow-100 text-yellow-800': profile.status === 'pending',
+                                  'bg-red-100 text-red-800': profile.status === 'suspended' || profile.status === 'inactive',
+                                })}>
+                                  {profile.status.charAt(0).toUpperCase() + profile.status.slice(1)}
+                                </Badge>
+                              ) : (
+                                <Badge className="text-xs bg-red-50 text-red-600 border border-red-200">No Profile</Badge>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              {profile ? (
+                                profile.must_change_password ? (
+                                  <Badge className="text-xs bg-amber-100 text-amber-800">Pending Login</Badge>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-xs text-green-700">
+                                    <Check className="h-3 w-3" /> Changed
+                                  </span>
+                                )
+                              ) : (
+                                <span className="text-neutral-300">--</span>
+                              )}
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-4 py-4">
+                              <div className="flex flex-wrap gap-1">
+                                {u.roles.length === 0 ? (
+                                  <span className="text-sm text-neutral-400">No roles</span>
+                                ) : (
+                                  u.roles.map((role) => (
+                                    <Badge key={role} className={cn('text-xs', ROLE_COLORS[role])}>
+                                      {ROLE_LABELS[role]}
+                                    </Badge>
+                                  ))
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <RoleToggle hasRole={u.roles.includes('super_admin')} isSaving={saving === `${u.id}-super_admin`} disabled={u.id === user?.id} onToggle={() => handleToggleRole(u.id, 'super_admin')} />
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <RoleToggle hasRole={u.roles.includes('admin')} isSaving={saving === `${u.id}-admin`} onToggle={() => handleToggleRole(u.id, 'admin')} />
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <RoleToggle hasRole={u.roles.includes('advisor')} isSaving={saving === `${u.id}-advisor`} onToggle={() => handleToggleRole(u.id, 'advisor')} />
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <RoleToggle hasRole={u.roles.includes('crm_user')} isSaving={saving === `${u.id}-crm_user`} onToggle={() => handleToggleRole(u.id, 'crm_user')} />
+                            </td>
+                          </>
+                        )}
+
+                        <td className="px-4 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleSendPasswordReset(u.email, u.id)} disabled={sendingReset === u.id} title="Send password reset email" className="text-xs">
+                              {sendingReset === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Mail className="h-3 w-3 mr-1" />Reset</>}
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => openPasswordModal(u.id, u.email)} title="Set password directly" className="text-xs">
+                              <Key className="h-3 w-3 mr-1" />Set
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -926,32 +1002,53 @@ const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Mass Invite Modal */}
+      {/* Send Invites Modal */}
       {inviteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
             <div className="p-6 border-b border-neutral-200">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-teal-50 rounded-lg">
-                  <Mail className="h-5 w-5 text-teal-600" />
+                  <Send className="h-5 w-5 text-teal-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-neutral-900">Send Mass Invite Emails</h2>
+                  <h2 className="text-lg font-bold text-neutral-900">Send Invite Emails</h2>
                   <p className="text-sm text-neutral-600">
-                    Send welcome emails to all advisors who haven't logged in yet
+                    {selectedIds.size > 0
+                      ? `Send invites to ${selectedIds.size} selected advisor${selectedIds.size > 1 ? 's' : ''}`
+                      : 'Send invites to all advisors with pending logins'}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-800">
-                  This will send an email to all advisor accounts that still have a pending password change
-                  (newly created accounts that haven't logged in). Each email includes their login credentials
-                  and a link to the Advisor Portal.
-                </p>
-              </div>
+              {selectedIds.size > 0 && (
+                <div className="p-3 bg-teal-50 rounded-lg border border-teal-200">
+                  <p className="text-sm text-teal-800 font-medium mb-2">Selected Advisors:</p>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {Array.from(selectedIds).map((id) => {
+                      const u = users.find((x) => x.id === id);
+                      const p = advisorProfiles.get(id);
+                      const name = p ? `${p.first_name} ${p.last_name}`.trim() : u?.full_name;
+                      return (
+                        <Badge key={id} className="text-xs bg-white text-teal-800 border border-teal-200">
+                          {name || u?.email || id.slice(0, 8)}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {selectedIds.size === 0 && (
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    This will send an email to all advisor accounts that still have a pending password change.
+                    Each email includes their login credentials and a link to the Advisor Portal.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label htmlFor="invite-password" className="block text-sm font-medium text-neutral-700 mb-1.5">
@@ -975,7 +1072,7 @@ const UserManagement: React.FC = () => {
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-neutral-500">
-                  This is the temporary password the advisors will use to first log in.
+                  This is the temporary password included in the invite email.
                 </p>
               </div>
 
@@ -1010,7 +1107,7 @@ const UserManagement: React.FC = () => {
               </Button>
               {!massInviteResult && (
                 <button
-                  onClick={handleSendMassInvites}
+                  onClick={() => handleSendInvites(selectedIds.size > 0 ? 'selected' : 'all_pending')}
                   disabled={sendingMassInvites || !invitePassword}
                   className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
@@ -1021,8 +1118,8 @@ const UserManagement: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <Mail className="h-4 w-4" />
-                      Send Invite Emails
+                      <Send className="h-4 w-4" />
+                      {selectedIds.size > 0 ? `Send to ${selectedIds.size} Selected` : 'Send to All Pending'}
                     </>
                   )}
                 </button>

@@ -5,6 +5,7 @@ import { createLogger } from "../_shared/logger.ts";
 
 const log = createLogger("send-advisor-invites");
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const RESEND_FROM = Deno.env.get("RESEND_FROM_EMAIL") || "MPB Health <onboarding@resend.dev>";
 
 interface InviteRequest {
   advisor_ids?: string[];
@@ -210,7 +211,7 @@ Deno.serve(async (req: Request) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "MPB Health <notifications@mympb.com>",
+            from: RESEND_FROM,
             to: [advisor.email],
             subject: "Your MPB Health Advisor Portal Account is Ready",
             html,
@@ -219,8 +220,13 @@ Deno.serve(async (req: Request) => {
 
         if (!res.ok) {
           const errBody = await res.text();
+          let reason = `HTTP ${res.status}`;
+          try {
+            const parsed = JSON.parse(errBody);
+            reason = parsed.message || reason;
+          } catch { /* use default */ }
           log.error(`Resend error for ${advisor.email}: ${res.status} ${errBody}`);
-          results.push({ email: advisor.email, first_name: advisor.first_name, status: "error", reason: `HTTP ${res.status}` });
+          results.push({ email: advisor.email, first_name: advisor.first_name, status: "error", reason });
           errors++;
           continue;
         }

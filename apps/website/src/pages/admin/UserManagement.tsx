@@ -474,7 +474,7 @@ const UserManagement: React.FC = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-neutral-900">User Management</h1>
+              <h1 className="text-3xl font-bold text-neutral-900">User Management </h1>
               <p className="mt-2 text-neutral-600">
                 Manage user roles and access levels across all portals
               </p>

@@ -72,7 +72,7 @@ export function getCorsHeaders(
       opts?.methods ?? "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
       opts?.allowHeaders ??
-      "Content-Type, Authorization, X-Client-Info, Apikey, authorization, x-client-info, apikey, content-type",
+      "Content-Type, Authorization, X-Client-Info, X-Supabase-Client-Platform, Apikey, authorization, x-client-info, x-supabase-client-platform, apikey, content-type",
     "Vary": "Origin",
   };
 }

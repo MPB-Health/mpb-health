@@ -20,6 +20,10 @@ interface ImportResult {
   reason?: string;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
@@ -34,7 +38,6 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verify caller is super_admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -70,7 +73,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Parse request
     const body = await req.json();
     const advisors: AdvisorRecord[] = body.advisors;
     const genericPassword: string = body.password || "MPBHealth2025!";
@@ -94,32 +96,38 @@ Deno.serve(async (req: Request) => {
     let skipped = 0;
     let errors = 0;
 
-    for (const advisor of advisors) {
-      const { email, first_name, last_name, agent_id, company_name } = advisor;
+    for (let i = 0; i < advisors.length; i++) {
+      const { email, first_name, last_name, agent_id, company_name } = advisors[i];
 
-      if (!email) {
-        results.push({ email: "", agent_id, status: "skipped", reason: "No email" });
+      if (!email || typeof email !== "string") {
+        results.push({ email: email || "", agent_id, status: "skipped", reason: "No email" });
         skipped++;
         continue;
       }
 
-      try {
-        // Check if auth user already exists by email
-        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers({
-          page: 1,
-          perPage: 1,
-        });
+      const cleanEmail = email.toLowerCase().trim();
 
-        // Use getUserByEmail-style check via listing
+      if (!cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+        results.push({
+          email: cleanEmail,
+          agent_id,
+          status: "error",
+          reason: "Invalid email format",
+        });
+        errors++;
+        continue;
+      }
+
+      try {
         const { data: lookupResult } = await supabaseAdmin
           .from("advisor_profiles")
           .select("id, email")
-          .eq("email", email.toLowerCase().trim())
+          .eq("email", cleanEmail)
           .maybeSingle();
 
         if (lookupResult) {
           results.push({
-            email,
+            email: cleanEmail,
             agent_id,
             status: "skipped",
             reason: "Advisor profile already exists",
@@ -128,10 +136,9 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // Create auth user
         const { data: authUser, error: createError } =
           await supabaseAdmin.auth.admin.createUser({
-            email: email.toLowerCase().trim(),
+            email: cleanEmail,
             password: genericPassword,
             email_confirm: true,
             user_metadata: {
@@ -142,10 +149,10 @@ Deno.serve(async (req: Request) => {
           });
 
         if (createError) {
-          // User may already exist in auth but not in advisor_profiles
-          if (createError.message?.includes("already been registered")) {
+          const msg = createError.message || "Unknown auth error";
+          if (msg.includes("already been registered") || msg.includes("already exists")) {
             results.push({
-              email,
+              email: cleanEmail,
               agent_id,
               status: "skipped",
               reason: "Auth user already exists",
@@ -153,19 +160,32 @@ Deno.serve(async (req: Request) => {
             skipped++;
             continue;
           }
-          throw createError;
+          log.error(`Auth createUser failed for ${cleanEmail}: ${msg}`);
+          results.push({ email: cleanEmail, agent_id, status: "error", reason: msg });
+          errors++;
+          continue;
+        }
+
+        if (!authUser?.user?.id) {
+          results.push({
+            email: cleanEmail,
+            agent_id,
+            status: "error",
+            reason: "User created but no ID returned",
+          });
+          errors++;
+          continue;
         }
 
         const userId = authUser.user.id;
 
-        // Create advisor_profiles row
         const { error: profileError } = await supabaseAdmin
           .from("advisor_profiles")
           .insert({
             id: userId,
             first_name: first_name || "Advisor",
             last_name: last_name || "",
-            email: email.toLowerCase().trim(),
+            email: cleanEmail,
             agent_id: agent_id || null,
             company_name: company_name || null,
             status: "active",
@@ -174,10 +194,9 @@ Deno.serve(async (req: Request) => {
           });
 
         if (profileError) {
-          log.error(`Profile insert failed for ${email}:`, profileError);
-          // Auth user was created but profile failed — still count as error
+          log.error(`Profile insert failed for ${cleanEmail}:`, profileError.message);
           results.push({
-            email,
+            email: cleanEmail,
             agent_id,
             status: "error",
             reason: `Profile: ${profileError.message}`,
@@ -186,7 +205,6 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // Assign advisor role
         const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
           user_id: userId,
           role: "advisor",
@@ -194,17 +212,21 @@ Deno.serve(async (req: Request) => {
         });
 
         if (roleError) {
-          log.error(`Role insert failed for ${email}:`, roleError);
-          // Profile created, role failed — log but count as created
+          log.error(`Role insert failed for ${cleanEmail}:`, roleError.message);
         }
 
-        results.push({ email, agent_id, status: "created" });
+        results.push({ email: cleanEmail, agent_id, status: "created" });
         created++;
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
-        log.error(`Failed to create advisor ${email}:`, err);
-        results.push({ email, agent_id, status: "error", reason: message });
+        const message = err instanceof Error ? err.message : String(err);
+        log.error(`Failed to create advisor ${cleanEmail}:`, message);
+        results.push({ email: cleanEmail, agent_id, status: "error", reason: message });
         errors++;
+      }
+
+      // Rate-limit: pause every 10 users to avoid hitting Supabase limits
+      if ((i + 1) % 10 === 0 && i + 1 < advisors.length) {
+        await sleep(500);
       }
     }
 

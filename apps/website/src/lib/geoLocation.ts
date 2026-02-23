@@ -154,64 +154,8 @@ export const getGeoLocationFromIP = async (skipCache = false): Promise<GeoLocati
     }
   }
 
-  // Try multiple geo APIs with fallback
-  const geoApis = [
-    {
-      url: 'https://api.bigdatacloud.net/data/ip-geolocation-full?localityLanguage=en',
-      parseResponse: (data: any) => ({
-        stateCode: data.principalSubdivisionCode?.replace('US-', ''),
-        stateName: data.principalSubdivision,
-        city: data.city || data.locality,
-        country: data.countryCode,
-        latitude: typeof data.latitude === 'number' ? data.latitude : parseFloat(data.latitude),
-        longitude: typeof data.longitude === 'number' ? data.longitude : parseFloat(data.longitude),
-      }),
-    },
-  ];
-
-  for (const api of geoApis) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-      const response = await fetch(api.url, {
-        signal: controller.signal,
-        headers: { 'Accept': 'application/json' },
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        continue; // Try next API
-      }
-
-      const data = await response.json();
-      const parsed = api.parseResponse(data);
-
-      if (parsed.stateCode && /^[A-Z]{2}$/i.test(parsed.stateCode)) {
-        const eligibility = checkStateEligibility(parsed.stateCode);
-        const result: GeoLocationData = {
-          ...eligibility,
-          state: parsed.stateCode.toUpperCase(),
-          stateName: (parsed as any).stateName || STATE_NAMES[parsed.stateCode.toUpperCase()],
-          city: parsed.city,
-          country: parsed.country,
-          latitude: parsed.latitude,
-          longitude: parsed.longitude,
-          detectionMethod: 'ip',
-        };
-
-        // Cache successful result
-        cacheGeoLocation(result);
-        return result;
-      }
-    } catch {
-      // Silently try next API
-      continue;
-    }
-  }
-
-  // All APIs failed - return graceful fallback
+  // Return graceful fallback -- IP-based geolocation is unreliable in production
+  // due to third-party CORS restrictions; browser/geo/ZIP detection are preferred.
   return {
     isRestricted: false,
     message: 'Unable to detect location automatically. Please enter your ZIP code to continue.',

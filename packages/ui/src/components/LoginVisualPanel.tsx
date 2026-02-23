@@ -12,14 +12,14 @@ import {
 export interface LoginVisualPanelProps {
   appName: string;
   tagline?: string;
-  accentVariant?: 'blue' | 'teal' | 'purple' | 'red';
+  accentVariant?: 'blue' | 'teal' | 'cyan' | 'red';
   features?: Array<{ icon: React.ReactNode; title: string; description: string }>;
 }
 
 const accentGradients: Record<string, string> = {
   blue: 'from-[#062C54] via-[#0A4E8E] to-[#083D71]',
   teal: 'from-[#042f2e] via-[#0f766e] to-[#115e59]',
-  purple: 'from-[#2e1065] via-[#581c87] to-[#3b0764]',
+  cyan: 'from-[#083344] via-[#0e7490] to-[#155e75]',
   red: 'from-[#450A0A] via-[#991B1B] to-[#7F1D1D]',
 };
 

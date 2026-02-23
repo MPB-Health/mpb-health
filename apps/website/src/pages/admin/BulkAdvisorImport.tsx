@@ -45,6 +45,48 @@ interface ImportSummary {
 
 type Step = 'upload' | 'preview' | 'importing' | 'results';
 
+async function invokeEdgeFunction<T>(
+  functionName: string,
+  body: unknown,
+): Promise<{ data: T | null; error: Error | null }> {
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      return { data: null, error: new Error('You must be logged in to perform this action.') };
+    }
+
+    const supabaseUrl = (import.meta as ImportMeta & { env: { VITE_SUPABASE_URL?: string } }).env
+      .VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      return { data: null, error: new Error('Supabase URL is not configured.') };
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const message = payload?.error || payload?.message || `Request failed (${response.status})`;
+      return { data: null, error: new Error(message) };
+    }
+
+    return { data: payload as T, error: null };
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error('Unexpected request failure') };
+  }
+}
+
 function parseCSVLine(line: string): string[] {
   const fields: string[] = [];
   let current = '';
@@ -259,9 +301,10 @@ export default function BulkAdvisorImport() {
           company_name: r.company_name,
         }));
 
-        const { data, error } = await supabase.functions.invoke('bulk-create-advisors', {
-          body: { advisors: batch, password },
-        });
+        const { data, error } = await invokeEdgeFunction<{
+          summary?: { created?: number; skipped?: number; errors?: number };
+          results?: ImportResult[];
+        }>('bulk-create-advisors', { advisors: batch, password });
 
         if (error) {
           toast.error(`Batch ${Math.floor(i / batchSize) + 1} failed: ${error.message}`);
@@ -311,9 +354,9 @@ export default function BulkAdvisorImport() {
 
     setSendingInvites(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-advisor-invites', {
-        body: { send_all_pending: true, password },
-      });
+      const { data, error } = await invokeEdgeFunction<{
+        summary: { total: number; sent: number; skipped: number; errors: number };
+      }>('send-advisor-invites', { send_all_pending: true, password });
 
       if (error) {
         toast.error(`Failed to send invites: ${error.message}`);
@@ -554,12 +597,12 @@ export default function BulkAdvisorImport() {
             Processing {validRecords.length} records. Please do not close this page.
           </p>
           <div className="max-w-md mx-auto">
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+            <progress
+              value={progress}
+              max={100}
+              className="w-full h-3 rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-gray-200 [&::-webkit-progress-value]:bg-blue-600 [&::-moz-progress-bar]:bg-blue-600"
+              aria-label="Import progress"
+            />
             <p className="mt-2 text-sm text-gray-500">{progress}% complete</p>
           </div>
         </div>

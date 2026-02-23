@@ -64,6 +64,48 @@ const RoleIcons: Record<UserRole, React.FC<{ className?: string }>> = {
 
 const DEFAULT_ORG_ID = '00000000-0000-4000-a000-000000000001';
 
+async function invokeEdgeFunction<T>(
+  functionName: string,
+  body: unknown,
+): Promise<{ data: T | null; error: Error | null }> {
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      return { data: null, error: new Error('You must be logged in to perform this action.') };
+    }
+
+    const supabaseUrl = (import.meta as ImportMeta & { env: { VITE_SUPABASE_URL?: string } }).env
+      .VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      return { data: null, error: new Error('Supabase URL is not configured.') };
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const message = payload?.error || payload?.message || `Request failed (${response.status})`;
+      return { data: null, error: new Error(message) };
+    }
+
+    return { data: payload as T, error: null };
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error('Unexpected request failure') };
+  }
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -204,9 +246,10 @@ const UserManagement: React.FC = () => {
       log.info('Changing password for userId:', passwordModal.userId, 'email:', passwordModal.email);
       
       // Call edge function to update password (requires service role)
-      const { data, error } = await supabase.functions.invoke('admin-update-password', {
-        body: { userId: passwordModal.userId, password: newPassword },
-      });
+      const { data, error } = await invokeEdgeFunction<{ targetEmail?: string }>(
+        'admin-update-password',
+        { userId: passwordModal.userId, password: newPassword },
+      );
 
       if (error) throw error;
 
@@ -251,9 +294,10 @@ const UserManagement: React.FC = () => {
     setNameSaving(true);
     try {
       // Try edge function first (for updating other users)
-      const { error } = await supabase.functions.invoke('admin-update-user', {
-        body: { userId: nameModal.userId, full_name: editName.trim() },
-      });
+      const { error } = await invokeEdgeFunction(
+        'admin-update-user',
+        { userId: nameModal.userId, full_name: editName.trim() },
+      );
 
       if (error) throw error;
 
@@ -379,9 +423,9 @@ const UserManagement: React.FC = () => {
         ? { advisor_ids: Array.from(selectedIds), password: invitePassword }
         : { send_all_pending: true, password: invitePassword };
 
-      const { data, error } = await supabase.functions.invoke('send-advisor-invites', {
-        body,
-      });
+      const { data, error } = await invokeEdgeFunction<{
+        summary: { total: number; sent: number; skipped: number; errors: number };
+      }>('send-advisor-invites', body);
 
       if (error) {
         toast.error(`Failed to send invites: ${error.message}`);
@@ -847,6 +891,7 @@ const UserManagement: React.FC = () => {
                 </div>
                 <button
                   onClick={closePasswordModal}
+                  aria-label="Close set password modal"
                   className="text-neutral-400 hover:text-neutral-600"
                 >
                   <X className="h-5 w-5" />
@@ -947,6 +992,7 @@ const UserManagement: React.FC = () => {
                 </div>
                 <button
                   onClick={closeNameModal}
+                  aria-label="Close edit name modal"
                   className="text-neutral-400 hover:text-neutral-600"
                 >
                   <X className="h-5 w-5" />

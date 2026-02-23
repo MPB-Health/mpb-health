@@ -65,14 +65,16 @@ export function getCorsHeaders(
 ): Record<string, string> {
   const origin = req.headers.get("Origin") ?? "";
   const allowedOrigin = isOriginAllowed(origin) ? origin : ALLOWED_ORIGINS[0];
+  const requestedHeaders = req.headers.get("Access-Control-Request-Headers");
+  const defaultAllowHeaders =
+    "Content-Type, Authorization, X-Client-Info, X-Supabase-Client-Platform, Apikey, authorization, x-client-info, x-supabase-client-platform, apikey, content-type";
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods":
       opts?.methods ?? "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
-      opts?.allowHeaders ??
-      "Content-Type, Authorization, X-Client-Info, X-Supabase-Client-Platform, Apikey, authorization, x-client-info, x-supabase-client-platform, apikey, content-type",
+      opts?.allowHeaders ?? requestedHeaders ?? defaultAllowHeaders,
     "Vary": "Origin",
   };
 }

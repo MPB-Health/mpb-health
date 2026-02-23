@@ -56,6 +56,32 @@ const LAST_VIEWED_KEY = 'mpb_leads_last_viewed';
 const MAX_TOASTS = 5;
 const MAX_RECENT_LEADS = 10;
 
+const playLeadNotificationTone = () => {
+  try {
+    const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const context = new AudioCtx();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.22);
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.24);
+    oscillator.onended = () => {
+      void context.close();
+    };
+  } catch {
+    // Ignore audio initialization errors
+  }
+};
+
 interface LeadNotificationProviderProps {
   children: React.ReactNode;
   enabled?: boolean;
@@ -72,17 +98,6 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
   const [unreadCount, setUnreadCount] = useState(0);
   
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Initialize audio element
-  useEffect(() => {
-    audioRef.current = new Audio('/sounds/new-lead.mp3');
-    audioRef.current.volume = 0.4;
-    
-    return () => {
-      audioRef.current = null;
-    };
-  }, []);
 
   // Check for existing notification permission
   useEffect(() => {
@@ -128,12 +143,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
 
   // Play notification sound
   const playSound = useCallback(() => {
-    if (!audioRef.current) return;
-
-    audioRef.current.currentTime = 0;
-    audioRef.current.play().catch(() => {
-      // Ignore autoplay errors
-    });
+    playLeadNotificationTone();
   }, []);
 
   // Send desktop notification

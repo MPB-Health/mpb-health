@@ -157,35 +157,14 @@ export const getGeoLocationFromIP = async (skipCache = false): Promise<GeoLocati
   // Try multiple geo APIs with fallback
   const geoApis = [
     {
-      url: 'https://ipwho.is/',
+      url: 'https://api.bigdatacloud.net/data/ip-geolocation-full?localityLanguage=en',
       parseResponse: (data: any) => ({
-        stateCode: data.region_code || data.region,
-        city: data.city,
-        country: data.country_code,
-        latitude: data.latitude,
-        longitude: data.longitude,
-      }),
-    },
-    {
-      url: 'https://ip-api.com/json/?fields=status,region,regionName,city,country,lat,lon',
-      parseResponse: (data: any) => ({
-        stateCode: data.region,
-        stateName: data.regionName,
-        city: data.city,
-        country: data.country === 'United States' ? 'US' : data.country,
-        latitude: data.lat,
-        longitude: data.lon,
-      }),
-    },
-    {
-      url: 'https://ipapi.co/json/',
-      parseResponse: (data: any) => ({
-        stateCode: data.region_code,
-        stateName: data.region,
-        city: data.city,
-        country: data.country_code,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        stateCode: data.principalSubdivisionCode?.replace('US-', ''),
+        stateName: data.principalSubdivision,
+        city: data.city || data.locality,
+        country: data.countryCode,
+        latitude: typeof data.latitude === 'number' ? data.latitude : parseFloat(data.latitude),
+        longitude: typeof data.longitude === 'number' ? data.longitude : parseFloat(data.longitude),
       }),
     },
   ];
@@ -209,7 +188,7 @@ export const getGeoLocationFromIP = async (skipCache = false): Promise<GeoLocati
       const data = await response.json();
       const parsed = api.parseResponse(data);
 
-      if (parsed.stateCode) {
+      if (parsed.stateCode && /^[A-Z]{2}$/i.test(parsed.stateCode)) {
         const eligibility = checkStateEligibility(parsed.stateCode);
         const result: GeoLocationData = {
           ...eligibility,

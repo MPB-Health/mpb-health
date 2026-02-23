@@ -53,6 +53,15 @@
 
     <!-- Defer third-party scripts to load after main app -->
     <script>
+      function isProductionHostname() {
+        var hostname = window.location.hostname;
+        return (
+          hostname === 'mpbhealth.com' ||
+          hostname === 'www.mpbhealth.com' ||
+          hostname === 'website.mpbhealth.com'
+        );
+      }
+
       // Load third-party scripts after page interactive
       if ('requestIdleCallback' in window) {
         requestIdleCallback(() => {
@@ -65,6 +74,10 @@
       }
 
       function loadThirdPartyScripts() {
+        if (!isProductionHostname()) {
+          return;
+        }
+
         // Zoho SalesIQ - widgetcode already set above
         var d=document;
         var s=d.createElement("script");

@@ -21,6 +21,32 @@ import { createClientLogger } from '@mpbhealth/utils';
 
 const log = createClientLogger('LeadNotificationBell');
 
+const playLeadNotificationTone = () => {
+  try {
+    const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const context = new AudioCtx();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.22);
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.24);
+    oscillator.onended = () => {
+      void context.close();
+    };
+  } catch {
+    // Ignore audio initialization errors
+  }
+};
+
 export const LeadNotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -29,16 +55,6 @@ export const LeadNotificationBell: React.FC = () => {
   const [hasNewLead, setHasNewLead] = useState(false);
   const [newLeadPriority, setNewLeadPriority] = useState<LeadPriority>('normal');
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Initialize audio
-  useEffect(() => {
-    audioRef.current = new Audio('/sounds/new-lead.mp3');
-    audioRef.current.volume = 0.4;
-    return () => {
-      audioRef.current = null;
-    };
-  }, []);
 
   // Load initial data
   const loadData = useCallback(async () => {
@@ -74,11 +90,8 @@ export const LeadNotificationBell: React.FC = () => {
     setTimeout(() => setHasNewLead(false), 3000);
 
     // Play notification sound for high/critical priority only
-    if (shouldPlaySound(lead.priority) && audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {
-        // Ignore audio play errors
-      });
+    if (shouldPlaySound(lead.priority)) {
+      playLeadNotificationTone();
     }
   }, []);
 
@@ -213,6 +226,7 @@ export const LeadNotificationBell: React.FC = () => {
             </div>
             <button 
               onClick={() => setIsOpen(false)}
+              aria-label="Close notifications panel"
               className="text-white/80 hover:text-white transition-colors"
             >
               <X className="h-4 w-4" />

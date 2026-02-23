@@ -2,8 +2,8 @@
 // Service Worker for MPB Health Advisor Portal PWA
 // ============================================================================
 
-const CACHE_NAME = 'advisor-portal-v1';
-const RUNTIME_CACHE = 'advisor-runtime-v1';
+const CACHE_NAME = 'advisor-portal-v2';
+const RUNTIME_CACHE = 'advisor-runtime-v2';
 
 // Files to cache on install (app shell)
 const APP_SHELL = [
@@ -24,6 +24,7 @@ const API_CACHE_PATTERNS = [
 const STATIC_CACHE_PATTERNS = [
   /\.js$/,
   /\.css$/,
+  /\.json$/,
   /\.woff2?$/,
   /\.ttf$/,
   /\.eot$/,
@@ -62,20 +63,19 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
 
+  const CURRENT_CACHES = new Set([CACHE_NAME, RUNTIME_CACHE]);
+
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((cacheName) => {
-            return cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE;
-          })
-          .map((cacheName) => {
-            console.log('[SW] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
+          .filter((name) => !CURRENT_CACHES.has(name))
+          .map((name) => {
+            console.log('[SW] Deleting old cache:', name);
+            return caches.delete(name);
           })
       );
     }).then(() => {
-      // Claim all clients immediately
       return self.clients.claim();
     })
   );
@@ -133,13 +133,15 @@ self.addEventListener('fetch', (event) => {
 // ============================================================================
 
 /**
- * Cache-first strategy for static assets
+ * Cache-first strategy for static assets.
+ * For hashed assets (Vite chunks), a cache miss + network error means
+ * the app was redeployed with new hashes — trigger a page reload so
+ * the client picks up the new index.html with correct chunk references.
  */
 async function cacheFirstStrategy(request) {
   const cachedResponse = await caches.match(request);
 
   if (cachedResponse) {
-    // Refresh cache in background
     refreshCache(request);
     return cachedResponse;
   }
@@ -150,6 +152,14 @@ async function cacheFirstStrategy(request) {
     if (networkResponse.ok) {
       const cache = await caches.open(RUNTIME_CACHE);
       cache.put(request, networkResponse.clone());
+    } else if (networkResponse.status === 403 || networkResponse.status === 404) {
+      const url = new URL(request.url);
+      const isHashedAsset = /\-[A-Za-z0-9_-]{6,}\.\w+$/.test(url.pathname);
+      if (isHashedAsset) {
+        console.log('[SW] Hashed asset missing, notifying clients to reload:', url.pathname);
+        const clients = await self.clients.matchAll({ type: 'window' });
+        clients.forEach((client) => client.postMessage({ type: 'RELOAD_PAGE' }));
+      }
     }
 
     return networkResponse;

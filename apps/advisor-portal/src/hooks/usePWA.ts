@@ -99,22 +99,35 @@ export function usePWA() {
     };
   }, []);
 
-  // Check for service worker updates
+  // Check for service worker updates and listen for reload signals
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setState((prev) => ({ ...prev, needsUpdate: true }));
-              }
-            });
-          }
-        });
+    if (!('serviceWorker' in navigator)) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'RELOAD_PAGE') {
+        console.log('[PWA] Stale assets detected, reloading...');
+        window.location.reload();
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+
+    navigator.serviceWorker.ready.then((registration) => {
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              setState((prev) => ({ ...prev, needsUpdate: true }));
+            }
+          });
+        }
       });
-    }
+    });
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleMessage);
+    };
   }, []);
 
   // Install the PWA

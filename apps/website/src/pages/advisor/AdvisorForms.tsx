@@ -43,7 +43,7 @@ const DEFAULT_EMPLOYEE_FORMS: FormItem[] = [
 
 const DEFAULT_ADVISOR_FORMS: FormItem[] = [
   { label: 'Commission Structure', url: 'https://www.canva.com/design/DAGdsIAKdIk/cY1TxCRLcMfFTN-jSgC4Vg/view?utm_content=DAGdsIAKdIk&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h44ea02a2b8' },
-  { label: 'Advisor Agreement', url: 'https://advisor.mpb.health/advisor-agreement/' },
+  { label: 'Advisor Agreement', url: 'https://www.cognitoforms.com/MPoweringBenefits1/HealthcareAdvisorAgreement2026' },
   { label: 'Enroll E&O', url: 'https://advisor.mpb.health/eo/' },
   { label: 'Media Release Consent', url: 'https://advisor.mpb.health/media-release-consent/' },
   { label: 'Referring Individual', url: 'https://advisor.mpb.health/referring-individual/' },

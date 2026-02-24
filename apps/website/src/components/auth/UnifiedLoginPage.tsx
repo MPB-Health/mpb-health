@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, UserPlus, LogIn } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { LoginLayout } from '@mpbhealth/ui';
 import { Button } from '../ui/button';
 
@@ -63,6 +63,10 @@ export function UnifiedLoginPage({
   const [mode, setMode] = useState<'signin' | 'onboarding'>('signin');
 
   const handleSubmit = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Authentication service is not configured. Please contact support.');
+    }
+
     const { error: signInError, data } = await signIn(email, password);
     if (signInError) throw signInError;
 

@@ -61,8 +61,13 @@ export function LoginLayout({
     try {
       await onSubmit(email, password);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : 'Authentication failed. Please try again.';
+      let msg = 'Authentication failed. Please try again.';
+      if (err instanceof Error && err.message) {
+        msg = err.message;
+      } else if (err && typeof err === 'object') {
+        const errObj = err as Record<string, unknown>;
+        msg = (errObj.error_description || errObj.msg || errObj.message || msg) as string;
+      }
       setError(msg);
     } finally {
       setLoading(false);

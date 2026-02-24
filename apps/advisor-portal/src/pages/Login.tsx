@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@mpbhealth/database';
+import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { LoginLayout } from '@mpbhealth/ui';
 
@@ -7,6 +7,9 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Authentication service is not configured. Please contact support.');
+    }
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { LoginLayout } from '@mpbhealth/ui';
 
 export default function Login() {
@@ -7,15 +8,16 @@ export default function Login() {
   const { signIn } = useAuth();
 
   const handleSubmit = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Authentication service is not configured. Please contact support.');
+    }
     try {
       const { error } = await signIn(email, password);
       if (error) {
-        // Return the error message to be displayed by LoginLayout
         throw new Error(error.message || 'Invalid email or password');
       }
       navigate('/');
     } catch (err) {
-      // Re-throw for LoginLayout to handle and display
       throw err instanceof Error ? err : new Error('Login failed. Please try again.');
     }
   };

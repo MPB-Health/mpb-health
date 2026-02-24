@@ -62,7 +62,12 @@ const noOpLock = async <R>(
 // When Supabase is not configured, intercept all fetch calls to prevent
 // ERR_NAME_NOT_RESOLVED errors from hitting placeholder.supabase.co
 const noOpFetch = async (_url: RequestInfo | URL, _options?: RequestInit): Promise<Response> => {
-  return new Response(JSON.stringify({ message: 'Supabase not configured', data: null }), {
+  return new Response(JSON.stringify({
+    message: 'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+    msg: 'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+    error: 'service_unavailable',
+    error_description: 'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+  }), {
     status: 503,
     headers: { 'Content-Type': 'application/json' },
   });

@@ -87,7 +87,9 @@ export default function Profile() {
       await refreshProfile();
       toast.success('Avatar updated!');
     } catch (err) {
-      toast.error('Failed to upload avatar');
+      const message =
+        err instanceof Error ? err.message : 'Failed to upload avatar';
+      toast.error(message);
     }
   };
 

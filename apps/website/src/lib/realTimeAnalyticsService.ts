@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import type { RealtimeChannel, RealtimePostgresInsertPayload } from '@supabase/supabase-js';
 
 export interface PageView {
@@ -37,8 +37,9 @@ let realtimeChannel: RealtimeChannel | null = null;
  */
 export const subscribeToPageViews = (
   onNewPageView: (pageView: PageView) => void
-): RealtimeChannel => {
-  // Clean up existing subscription
+): RealtimeChannel | null => {
+  if (!isSupabaseConfigured) return null;
+
   if (realtimeChannel) {
     realtimeChannel.unsubscribe();
   }
@@ -75,6 +76,8 @@ export const unsubscribeFromPageViews = (): void => {
  * Get active visitors count (unique sessions in last 5 minutes)
  */
 export const getActiveVisitors = async (): Promise<number> => {
+  if (!isSupabaseConfigured) return 0;
+
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
@@ -95,6 +98,8 @@ export const getActiveVisitors = async (): Promise<number> => {
  * Get page views in the last N minutes
  */
 export const getRecentPageViews = async (minutes: number = 5): Promise<PageView[]> => {
+  if (!isSupabaseConfigured) return [];
+
   const since = new Date(Date.now() - minutes * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
@@ -118,6 +123,8 @@ export const getRecentPageViews = async (minutes: number = 5): Promise<PageView[
 export const getTopPagesNow = async (
   limit: number = 10
 ): Promise<Array<{ path: string; title: string | null; count: number }>> => {
+  if (!isSupabaseConfigured) return [];
+
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
@@ -155,6 +162,8 @@ export const getDeviceBreakdown = async (): Promise<{
   tablet: number;
   unknown: number;
 }> => {
+  if (!isSupabaseConfigured) return { desktop: 0, mobile: 0, tablet: 0, unknown: 0 };
+
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
@@ -213,6 +222,8 @@ export const getRealTimeStats = async (): Promise<RealTimeStats> => {
 export const getTodayHourlyBreakdown = async (): Promise<
   Array<{ hour: number; count: number }>
 > => {
+  if (!isSupabaseConfigured) return [];
+
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
@@ -249,6 +260,8 @@ export const getTodayHourlyBreakdown = async (): Promise<
 export const getGeographicDistribution = async (): Promise<
   Array<{ country: string; count: number }>
 > => {
+  if (!isSupabaseConfigured) return [];
+
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase

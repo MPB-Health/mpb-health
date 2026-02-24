@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export interface Plan {
   id: string;
@@ -48,6 +48,11 @@ export function usePlans() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchPlans() {
       try {
         const { data, error: fetchError } = await supabase
@@ -77,6 +82,11 @@ export function usePlanDetails(planSlug: string) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchPlanDetails() {
       try {
         const { data: planData, error: planError } = await supabase
@@ -133,6 +143,11 @@ export function usePlanComparison(planSlugs: string[]) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchPlansForComparison() {
       try {
         const { data: plansData, error: plansError } = await supabase

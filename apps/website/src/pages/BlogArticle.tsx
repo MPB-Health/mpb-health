@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Calendar, User, ArrowLeft, Tag } from 'lucide-react';
-import { supabase, BlogArticle as BlogArticleType, BlogAuthor } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, BlogArticle as BlogArticleType, BlogAuthor } from '../lib/supabase';
 import { BlogFooter } from '../components/blog';
 import { sanitizeHtml } from '@mpbhealth/utils';
 
@@ -16,6 +16,11 @@ export const BlogArticle: React.FC = () => {
   const viewTracked = useRef(false);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     const fetchArticle = async () => {
       if (!slug) return;
 

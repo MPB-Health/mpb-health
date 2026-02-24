@@ -5,7 +5,7 @@
  * enabling real-time data in the admin dashboard.
  */
 
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 // ============================================================================
 // Constants
@@ -244,7 +244,7 @@ export const supabaseAnalytics = {
    * Initialize analytics - call once on app load
    */
   async init(): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
 
     // Get or create visitor and session
     const { isNew: isNewVisitor } = getVisitorId();
@@ -260,7 +260,7 @@ export const supabaseAnalytics = {
    * Start a new session
    */
   async startSession(sessionId: string, isNewVisitor: boolean): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
 
     const referrer = document.referrer || null;
     const utm = getUTMParams();
@@ -297,7 +297,7 @@ export const supabaseAnalytics = {
    * Track a page view
    */
   async trackPageView(path: string, title?: string): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
 
     const { id: sessionId, isNewSession } = getSessionId();
     const { id: _visitorId, isNew: isNewVisitor } = getVisitorId();
@@ -342,7 +342,7 @@ export const supabaseAnalytics = {
     eventValue?: number,
     metadata?: Record<string, any>
   ): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
 
     const { id: sessionId } = getSessionId();
 
@@ -380,7 +380,7 @@ export const supabaseAnalytics = {
     scrollDepth: number,
     isExit: boolean = false
   ): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
 
     const { id: sessionId } = getSessionId();
 

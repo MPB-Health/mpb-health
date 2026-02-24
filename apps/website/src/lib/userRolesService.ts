@@ -2,7 +2,7 @@
  * User Roles Service - Manages role-based access control
  */
 
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 // ============================================================================
 // Types
@@ -108,7 +108,8 @@ export async function isRolesTableAvailable(): Promise<boolean> {
  * Get all roles for a specific user
  */
 export async function getUserRoles(userId: string): Promise<UserRole[]> {
-  // Check cache first
+  if (!isSupabaseConfigured) return [];
+
   if (isCacheValid() && rolesCache.has(userId)) {
     return rolesCache.get(userId) || [];
   }

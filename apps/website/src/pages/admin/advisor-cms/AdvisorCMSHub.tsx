@@ -26,7 +26,7 @@ import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/Badge';
 import { AdminLayout } from '../../../components/admin/AdminLayout';
 import { AdminBreadcrumb } from '../../../components/admin/AdminBreadcrumb';
-import { supabase } from '../../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '../../../lib/utils';
 
@@ -96,6 +96,10 @@ export default function AdvisorCMSHub() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
     loadStats();
   }, []);
 

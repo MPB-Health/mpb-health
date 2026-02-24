@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
@@ -20,7 +20,15 @@ const ResetPassword = () => {
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check if we have a valid recovery token
+    if (!isSupabaseConfigured) {
+      setIsValidToken(false);
+      setError('Authentication service is not configured. Please contact support.');
+      return;
+    }
+
+    // The Supabase client may have already consumed the hash params via
+    // detectSessionInUrl, establishing a session before this component mounts.
+    // We check multiple sources: hash params, existing session, and auth events.
     const checkToken = async () => {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
@@ -28,13 +36,36 @@ const ResetPassword = () => {
 
       if (type === 'recovery' && accessToken) {
         setIsValidToken(true);
-      } else {
-        setIsValidToken(false);
-        setError('Invalid or expired password reset link. Please request a new one.');
+        return;
       }
+
+      // Hash may already be consumed — check if Supabase established a session
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsValidToken(true);
+          return;
+        }
+      } catch {
+        // Fall through to invalid
+      }
+
+      setIsValidToken(false);
+      setError('Invalid or expired password reset link. Please request a new one.');
     };
 
     checkToken();
+
+    // Also listen for PASSWORD_RECOVERY event in case the token exchange
+    // completes after our initial check
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsValidToken(true);
+        setError('');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

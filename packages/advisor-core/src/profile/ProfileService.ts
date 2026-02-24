@@ -52,22 +52,42 @@ export class ProfileService {
     return this.normalizeProfile(data)!;
   }
 
-  // Upload avatar
+  private static AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+  private static AVATAR_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
   async uploadAvatar(advisorId: string, file: File): Promise<string> {
-    const fileExt = file.name.split('.').pop();
+    if (!ProfileService.AVATAR_ALLOWED_TYPES.includes(file.type)) {
+      throw new Error('Invalid file type. Please upload a PNG, JPG, WebP, or GIF image.');
+    }
+
+    if (file.size > ProfileService.AVATAR_MAX_SIZE) {
+      throw new Error('File is too large. Maximum size is 5 MB.');
+    }
+
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const fileName = `${advisorId}/avatar.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('advisor-avatars')
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, file, {
+        upsert: true,
+        contentType: file.type,
+      });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('[ProfileService] Avatar upload failed:', uploadError);
+      if (uploadError.message?.includes('Bucket not found')) {
+        throw new Error(
+          'Avatar storage is not configured. Please contact support.'
+        );
+      }
+      throw uploadError;
+    }
 
     const { data } = supabase.storage
       .from('advisor-avatars')
       .getPublicUrl(fileName);
 
-    // Update profile with avatar URL
     await this.updateProfile(advisorId, { avatar_url: data.publicUrl });
 
     return data.publicUrl;

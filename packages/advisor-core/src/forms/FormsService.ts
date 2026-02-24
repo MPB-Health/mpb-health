@@ -1,4 +1,4 @@
-import { supabase } from '@mpbhealth/database';
+import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import type { AdvisorForm, FormSubmission } from '../types';
 
 // Helper to map cognito_forms to AdvisorForm with backward compatible fields
@@ -14,6 +14,7 @@ function mapCognitoFormToAdvisorForm(data: Record<string, unknown>): AdvisorForm
 export class FormsService {
   // Get all available forms (from cognito_forms table - CMS managed)
   async getForms(category?: string): Promise<AdvisorForm[]> {
+    if (!isSupabaseConfigured) return [];
     let query = supabase
       .from('cognito_forms')
       .select('*')

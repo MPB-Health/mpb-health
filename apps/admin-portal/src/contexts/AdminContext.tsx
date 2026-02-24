@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@mpbhealth/database';
+import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import {
   userService,
   analyticsService,
@@ -101,9 +101,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   // Initial load
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     loadUser();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event) => {
         if (event === 'SIGNED_IN') {

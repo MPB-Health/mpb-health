@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 export interface NavigationClickEvent {
   navigation_item_id: string;
@@ -160,6 +160,7 @@ export const trackNavigationClick = async (
   action: 'click' | 'hover' | 'keyboard' = 'click',
   userId?: string
 ): Promise<void> => {
+  if (!isSupabaseConfigured) return;
   try {
     const event: NavigationClickEvent = {
       navigation_item_id: navigationItemId,
@@ -188,6 +189,7 @@ export const trackNavigationSearch = async (
   selectedResult?: string,
   userId?: string
 ): Promise<void> => {
+  if (!isSupabaseConfigured) return;
   try {
     const event: NavigationSearchEvent = {
       query,
@@ -212,6 +214,7 @@ export const trackPageView = async (
   title: string,
   userId?: string
 ): Promise<void> => {
+  if (!isSupabaseConfigured) return;
   try {
     const deviceType = getDeviceType();
     const country = getCountryFromTimezone();

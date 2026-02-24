@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 // ============================================================================
 // Session Tracking Service
@@ -209,7 +209,7 @@ const getUtmParams = () => {
  * Initialize a new session
  */
 export const initializeSession = async (): Promise<void> => {
-  if (isSessionInitialized) return;
+  if (isSessionInitialized || !isSupabaseConfigured) return;
   isSessionInitialized = true;
 
   const sessionId = getSessionId();
@@ -282,7 +282,7 @@ export const initializeSession = async (): Promise<void> => {
  * Update session with user ID when user logs in
  */
 export const updateSessionUserId = async (userId: string): Promise<void> => {
-  if (!currentSession) return;
+  if (!currentSession || !isSupabaseConfigured) return;
 
   try {
     await supabase
@@ -323,7 +323,7 @@ export const startPageEngagement = (path: string, title: string): void => {
  * End tracking for current page and save metrics
  */
 export const endPageEngagement = async (): Promise<void> => {
-  if (!currentPageEngagement || !currentSession) return;
+  if (!currentPageEngagement || !currentSession || !isSupabaseConfigured) return;
 
   const timeOnPage = Math.floor((Date.now() - currentPageEngagement.startTime) / 1000);
 
@@ -408,7 +408,7 @@ export const trackEvent = async (
     metadata?: Record<string, any>;
   } = {}
 ): Promise<void> => {
-  if (!currentSession) return;
+  if (!currentSession || !isSupabaseConfigured) return;
 
   try {
     await supabase.from('analytics_events').insert({

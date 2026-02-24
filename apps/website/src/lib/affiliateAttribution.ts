@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 export interface AffiliateClick {
   affiliate_id: string;
@@ -28,6 +28,7 @@ export const trackAffiliateClick = async (
   referralCode: string,
   utmParams: Record<string, string> = {}
 ): Promise<void> => {
+  if (!isSupabaseConfigured) return;
   try {
     const visitorId = getOrCreateVisitorId();
 
@@ -59,6 +60,7 @@ export const trackAffiliateConversion = async (
   conversionType: 'quote' | 'enrollment' | 'payment',
   conversionValue?: number
 ): Promise<void> => {
+  if (!isSupabaseConfigured) return;
   try {
     const affiliateData = getAffiliateCookie();
     if (!affiliateData) return;

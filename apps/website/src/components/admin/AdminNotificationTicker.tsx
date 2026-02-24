@@ -32,7 +32,7 @@ import {
   Pause,
   Play,
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { createTickerService, type TickerItem, TICKER_EVENT_CONFIG } from '@mpbhealth/crm-core';
 import { createClientLogger } from '@mpbhealth/utils';
 import { cn } from '../../lib/utils';
@@ -196,6 +196,11 @@ export const AdminNotificationTicker: React.FC = () => {
 
   // Load initial items
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
     const loadItems = async () => {
       setIsLoading(true);
       try {

@@ -2,13 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Calendar, Users, Award } from 'lucide-react';
-import { supabase, BlogArticle } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, BlogArticle } from '../lib/supabase';
 
 const Events: React.FC = () => {
   const [events, setEvents] = useState<BlogArticle[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     const fetchEvents = async () => {
       try {
         const { data, error } = await supabase

@@ -2,7 +2,7 @@
  * Forms Service - Manages Cognito Forms from database with static fallback
  */
 
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { FORMS, type FormEntry, type FormCategory } from '../config/forms.config';
 
 // ============================================================================
@@ -91,6 +91,8 @@ function invalidateCache(): void {
  * Get all forms from database, fallback to static config
  */
 export async function getAllForms(): Promise<CognitoFormRecord[]> {
+  if (!isSupabaseConfigured) return convertStaticToRecords();
+
   if (isCacheValid() && formsCache) {
     return formsCache;
   }
@@ -161,8 +163,8 @@ export async function getActiveForms(): Promise<CognitoFormRecord[]> {
  * Returns empty array if menu columns don't exist yet (graceful fallback)
  */
 export async function getMenuForms(): Promise<CognitoFormRecord[]> {
+  if (!isSupabaseConfigured) return [];
   try {
-    // First check if the show_in_menu column exists by doing a simple query
     const { data, error } = await supabase
       .from('cognito_forms')
       .select('*')
@@ -461,6 +463,7 @@ export function recordToFormEntry(record: CognitoFormRecord): FormEntry {
  * Check if database table exists and is accessible
  */
 export async function isFormsTableAvailable(): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
   try {
     const { error } = await supabase
       .from('cognito_forms')

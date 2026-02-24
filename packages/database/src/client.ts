@@ -59,23 +59,31 @@ const noOpLock = async <R>(
   return await fn();
 };
 
+// When Supabase is not configured, intercept all fetch calls to prevent
+// ERR_NAME_NOT_RESOLVED errors from hitting placeholder.supabase.co
+const noOpFetch = async (_url: RequestInfo | URL, _options?: RequestInit): Promise<Response> => {
+  return new Response(JSON.stringify({ message: 'Supabase not configured', data: null }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
 export const supabase: SupabaseClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
   {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
+      persistSession: hasValidConfig,
+      autoRefreshToken: hasValidConfig,
+      detectSessionInUrl: hasValidConfig,
       storageKey: 'mpb-auth-token',
-      // Use no-op lock to prevent Web Locks API deadlocks
-      // This is safe for single-tab usage; multi-tab scenarios may have race conditions
       lock: noOpLock,
     },
     global: {
       headers: {
         'X-Client-Info': 'mpb-health-web'
-      }
+      },
+      ...(hasValidConfig ? {} : { fetch: noOpFetch }),
     }
   }
 );

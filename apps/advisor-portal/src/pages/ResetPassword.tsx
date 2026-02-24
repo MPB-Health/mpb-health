@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@mpbhealth/database';
+import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -14,17 +14,32 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // Check if we have a valid session from the reset link
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      toast.error('Authentication service is not configured');
+      navigate('/login');
+      return;
+    }
+
+    let hasValidSession = false;
+
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          toast.error('Invalid or expired reset link');
-          navigate('/forgot-password');
+        if (session) {
+          hasValidSession = true;
+          return;
         }
+
+        // Give the auth state change listener a moment to fire
+        // before redirecting (the token exchange may still be in progress)
+        setTimeout(() => {
+          if (!hasValidSession) {
+            toast.error('Invalid or expired reset link');
+            navigate('/forgot-password');
+          }
+        }, 2000);
       } catch (err) {
-        // Ignore AbortError from Web Locks API - these are benign
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
@@ -32,7 +47,16 @@ export default function ResetPassword() {
         navigate('/forgot-password');
       }
     };
+
     checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        hasValidSession = true;
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   // Password strength checks

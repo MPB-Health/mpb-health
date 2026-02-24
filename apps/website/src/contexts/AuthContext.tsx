@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { userRolesService, type UserRole } from '../lib/userRolesService';
 
 interface AuthContextType {
@@ -63,6 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user?.id, fetchRoles]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      setRolesLoading(false);
+      return;
+    }
+
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
@@ -71,7 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        // Fetch roles after getting session
         fetchRoles(session?.user?.id);
       })
       .catch((error) => {
@@ -87,7 +92,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      // Fetch roles on auth state change
       fetchRoles(session?.user?.id);
     });
 

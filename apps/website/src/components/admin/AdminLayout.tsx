@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, createContext, useContext } fr
 import { AdminSidebar } from './AdminSidebar';
 import { AdminStatsBar } from './AdminStatsBar';
 import { AdminNotificationTicker } from './AdminNotificationTicker';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
 import { getRealTimeStats, getTodayHourlyBreakdown } from '../../lib/realTimeAnalyticsService';
 import { analyticsDataService } from '../../lib/analyticsDataService';
@@ -231,9 +231,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   }, []);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     loadAdminStats();
     
-    // Refresh stats every 30 seconds for real-time analytics
     const interval = setInterval(loadAdminStats, 30000);
     return () => clearInterval(interval);
   }, [loadAdminStats]);

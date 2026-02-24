@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
   classifyLeadPriority,
   LeadPriority,
@@ -70,6 +70,11 @@ export function useLeadNotifications(
 
   // Fetch and optionally classify leads
   const refreshLeads = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 

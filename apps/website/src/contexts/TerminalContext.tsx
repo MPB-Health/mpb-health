@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
 interface CommandResult {
@@ -51,7 +51,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
   };
 
   const initializeSession = async () => {
-    if (!user || userRoles.length === 0) return;
+    if (!user || userRoles.length === 0 || !isSupabaseConfigured) return;
 
     const newSessionId = generateSessionId();
     setSessionId(newSessionId);

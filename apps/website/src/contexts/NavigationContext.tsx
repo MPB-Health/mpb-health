@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
 interface NavigationItem {
@@ -645,6 +645,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [fetchNavigation]);
 
   const trackNavigationClick = useCallback(async (itemId: string, action: string = 'click') => {
+    if (!isSupabaseConfigured) return;
     try {
       const sessionId = getSessionId();
 

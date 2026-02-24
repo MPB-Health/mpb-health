@@ -7,7 +7,7 @@ import React, {
   useRef,
 } from 'react';
 import { createClientLogger } from '@mpbhealth/utils';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
   classifyLeadPriority,
   shouldPlaySound,
@@ -268,7 +268,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
 
   // Subscribe to Supabase realtime
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isSupabaseConfigured) return;
 
     log.info('Setting up realtime subscription...');
 

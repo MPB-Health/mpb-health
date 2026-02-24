@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, TrendingUp, Heart, Calendar, Clock, ArrowRight } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
-import { supabase, BlogArticle } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, BlogArticle } from '../lib/supabase';
 import { NewsletterSubscribe } from '../components/blocks/NewsletterSubscribe';
 
 const Blog: React.FC = () => {
@@ -11,6 +11,11 @@ const Blog: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     const fetchBlogPosts = async () => {
       try {
         const { data, error } = await supabase

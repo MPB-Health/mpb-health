@@ -7,6 +7,7 @@ import {
   formsService,
   type AdvisorForm,
 } from '@mpbhealth/advisor-core';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 const fallbackGroups: AdvisorForm[] = [
   {
@@ -216,11 +217,18 @@ export default function SubmitGroup() {
                 </button>
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">
-                <iframe
-                  src={formsService.getEmbedUrl(selectedForm)}
-                  className="w-full h-full border-0"
-                  title={selectedForm.label}
-                />
+                {selectedForm.cognito_embed && selectedForm.cognito_embed.includes('<') ? (
+                  <div
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedForm.cognito_embed, { ADD_TAGS: ['iframe', 'script'], ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling', 'data-key', 'data-form'] }) }}
+                    className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
+                  />
+                ) : (
+                  <iframe
+                    src={formsService.getEmbedUrl(selectedForm)}
+                    className="w-full h-full border-0"
+                    title={selectedForm.label}
+                  />
+                )}
               </div>
             </div>
           </div>

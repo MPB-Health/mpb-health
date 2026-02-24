@@ -22,6 +22,8 @@ export interface AppLayoutProps {
   navigation: NavItem[];
   userSection?: React.ReactNode;
   topBarActions?: React.ReactNode;
+  /** Content rendered in the center of the top bar (e.g. global search) */
+  topBarCenter?: React.ReactNode;
   /** Optional portal switcher dropdown to enable navigation between portals */
   portalSwitcher?: React.ReactNode;
   /** Initial collapsed state for the sidebar */
@@ -53,6 +55,7 @@ export function AppLayout({
   navigation,
   userSection,
   topBarActions,
+  topBarCenter,
   portalSwitcher,
   initialCollapsed = false,
   renderNavLink,

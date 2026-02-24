@@ -365,11 +365,11 @@ export default function Dashboard() {
                 IconComponent: AlertTriangle,
               },
               success: {
-                bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-                border: 'border-emerald-200 dark:border-emerald-800',
-                icon: 'text-emerald-600 dark:text-emerald-400',
-                iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
-                textColor: 'text-emerald-800 dark:text-emerald-200',
+                bg: 'bg-green-50 dark:bg-green-950/30',
+                border: 'border-green-200 dark:border-green-800',
+                icon: 'text-green-600 dark:text-green-400',
+                iconBg: 'bg-green-100 dark:bg-green-900/40',
+                textColor: 'text-green-800 dark:text-green-200',
                 IconComponent: CheckCircle2,
               },
               error: {

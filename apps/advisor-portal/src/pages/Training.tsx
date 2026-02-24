@@ -515,7 +515,7 @@ function QuizViewer({
           <div
             className={`rounded-xl p-6 ${
               passed
-                ? 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800/30'
+                ? 'bg-gradient-to-br from-green-50 to-green-50 dark:from-green-900/20 dark:to-green-900/20 border border-green-200 dark:border-green-800/30'
                 : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-200 dark:border-red-800/30'
             }`}
           >
@@ -709,7 +709,7 @@ const courses: CourseCard[] = [
     topicCount: 0,
     lessonCount: 0,
     href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl',
-    gradient: 'from-emerald-600 via-teal-600 to-cyan-700',
+    gradient: 'from-blue-700 via-blue-600 to-cyan-600',
     icon: Shield,
     available: true,
     external: true,
@@ -888,8 +888,8 @@ function LessonViewer({
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 rounded-lg border border-th-border hover:bg-surface-tertiary hover:border-th-accent-300 transition-all group"
               >
-                <div className="w-8 h-8 rounded-md bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
-                  <ExternalLink className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-8 h-8 rounded-md bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                  <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <span className="text-sm text-th-text-primary font-medium group-hover:text-th-accent-600 transition-colors">
                   {link.label}

@@ -32,7 +32,7 @@ export default function Login() {
       appDescription="Sign in to access your dashboard"
       onSubmit={handleSubmit}
       onForgotPassword={handleForgotPassword}
-      accentVariant="teal"
+      accentVariant="blue"
       showForgotPassword={true}
       showRememberMe={true}
       emailPlaceholder="advisor@mympb.com"

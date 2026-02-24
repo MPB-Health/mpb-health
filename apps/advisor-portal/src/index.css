@@ -5,19 +5,23 @@
 @tailwind utilities;
 
 /* ============================================================================
-   Advisor Portal - Teal/Emerald Accent Overrides
+   Advisor Portal - MPB Health Brand Blue Accent
+   Brand palette: #0A4E8E, #0C71C3, #A4CC43, #E2EAF0, #0E2D41
    ============================================================================ */
 :root {
-  --accent-50: 240 253 250;
-  --accent-100: 204 251 241;
-  --accent-200: 153 246 228;
-  --accent-300: 94 234 212;
-  --accent-400: 45 212 191;
-  --accent-500: 20 184 166;
-  --accent-600: 13 148 136;
-  --accent-700: 15 118 110;
-  --accent-800: 17 94 89;
-  --accent-900: 20 78 74;
+  --accent-50: 232 244 253;
+  --accent-100: 209 233 251;
+  --accent-200: 163 211 247;
+  --accent-300: 117 189 243;
+  --accent-400: 71 167 239;
+  --accent-500: 12 113 195;
+  --accent-600: 10 78 142;
+  --accent-700: 15 101 161;
+  --accent-800: 10 78 142;
+  --accent-900: 8 61 113;
+
+  --sidebar-bg: 14 45 65;
+  --sidebar-hover: 10 78 142;
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

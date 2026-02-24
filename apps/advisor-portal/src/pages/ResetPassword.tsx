@@ -122,7 +122,7 @@ export default function ResetPassword() {
             <p className="text-gray-600 mb-4">
               Your password has been successfully reset. Redirecting to login...
             </p>
-            <div className="animate-spin h-6 w-6 border-2 border-teal-600 border-t-transparent rounded-full mx-auto" />
+            <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto" />
           </div>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function ResetPassword() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="new-password"
-                  className="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-11 text-gray-900 placeholder:text-gray-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                  className="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-11 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-colors"
                 />
                 <button
                   type="button"
@@ -244,7 +244,7 @@ export default function ResetPassword() {
                       ? passwordsMatch
                         ? 'border-green-500 focus:border-green-500 focus:ring-green-500/20'
                         : 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                      : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500/20'
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500/20'
                   }`}
                 />
                 <button
@@ -263,7 +263,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={loading || !isPasswordStrong || !passwordsMatch}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/25 hover:bg-teal-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (
                 <>

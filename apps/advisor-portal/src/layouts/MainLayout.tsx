@@ -419,7 +419,7 @@ export default function MainLayout() {
       <div className="pb-16 lg:pb-0">
         <AppLayout
         appName="Advisor Portal"
-        logoSrc="/favicon.svg"
+        logoSrc="/assets/MPB-Health-No-background.png"
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
         userSection={userSection}

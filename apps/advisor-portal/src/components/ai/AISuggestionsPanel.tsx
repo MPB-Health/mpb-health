@@ -41,7 +41,7 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof MessageSquare> = {
 const SUGGESTION_COLORS: Record<SuggestionType, string> = {
   message_draft: 'from-blue-500 to-cyan-500',
   reply_suggestion: 'from-purple-500 to-pink-500',
-  score_adjustment: 'from-green-500 to-emerald-500',
+  score_adjustment: 'from-green-500 to-green-600',
   lane_move: 'from-orange-500 to-amber-500',
   next_action: 'from-indigo-500 to-violet-500',
 };

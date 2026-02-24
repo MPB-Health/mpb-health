@@ -5,6 +5,7 @@ export interface GradientHeaderProps {
   title: string;
   subtitle?: string;
   icon?: React.ReactNode;
+  actions?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -26,6 +27,7 @@ export function GradientHeader({
   title,
   subtitle,
   icon,
+  actions,
   children,
   className,
   size = 'md',
@@ -33,28 +35,32 @@ export function GradientHeader({
   return (
     <div
       className={cn(
-        'gradient-accent rounded-2xl text-white relative overflow-hidden',
+        'rounded-2xl text-white relative overflow-hidden bg-gradient-to-br from-[#0A4E8E] via-[#0C71C3] to-[#0E2D41]',
         sizeClasses[size],
         className
       )}
     >
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 opacity-[0.07] grid-pattern-overlay" />
-      {/* Glow orb */}
-      <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-white/10 blur-3xl" />
+      <div className="absolute inset-0 opacity-[0.04] grid-pattern-overlay" />
+      <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#A4CC43]/20 blur-[100px]" />
+      <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/5 blur-[80px]" />
 
       <div className="relative z-10">
-        <div className="flex items-center gap-3">
-          {icon && <div className="flex-shrink-0">{icon}</div>}
-          <h1 className={cn('font-bold tracking-tight', titleSizes[size])}>
-            {title}
-          </h1>
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              {icon && <div className="flex-shrink-0">{icon}</div>}
+              <h1 className={cn('font-bold tracking-tight', titleSizes[size])}>
+                {title}
+              </h1>
+            </div>
+            {subtitle && (
+              <p className="text-white/60 text-sm md:text-base max-w-2xl">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
-        {subtitle && (
-          <p className="mt-1 text-white/75 text-sm md:text-base max-w-2xl">
-            {subtitle}
-          </p>
-        )}
         {children && <div className="mt-4">{children}</div>}
       </div>
     </div>

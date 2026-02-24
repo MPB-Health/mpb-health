@@ -16,6 +16,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
+import { GradientHeader } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 export default function Bulletins() {
@@ -83,62 +84,43 @@ export default function Bulletins() {
 
   return (
     <div className="space-y-6">
-      {/* Hero header */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#0A4E8E] via-[#0C71C3] to-[#0E2D41]">
-        <div className="absolute inset-0 opacity-[0.04] grid-pattern-overlay" />
-        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#A4CC43]/20 blur-[100px]" />
-        <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/5 blur-[80px]" />
-
-        <div className="relative z-10 p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
-            <div className="space-y-1">
-              <p className="text-white/50 text-sm font-medium uppercase tracking-wider">
-                {format(new Date(), 'EEEE, MMMM d, yyyy')}
-              </p>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-                Bulletins &amp; Announcements
-              </h1>
-              <p className="text-white/60 text-sm max-w-md">
-                Stay informed with the latest updates, policy changes, and important announcements from MPB Health.
-              </p>
+      <GradientHeader
+        title="Bulletins & Announcements"
+        subtitle="Stay informed with the latest updates, policy changes, and important announcements from MPB Health."
+        icon={<Newspaper className="w-6 h-6" />}
+        actions={
+          unreadBulletinCount > 0 ? (
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/10">
+              <div className="relative">
+                <Bell className="w-4 h-4 text-amber-400" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+              </div>
+              <span className="text-sm font-medium text-white">
+                {unreadBulletinCount} unread
+              </span>
             </div>
-
-            <div className="flex items-center gap-3">
-              {unreadBulletinCount > 0 && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/10">
-                  <div className="relative">
-                    <Bell className="w-4 h-4 text-amber-400" />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-                  </div>
-                  <span className="text-sm font-medium text-white">
-                    {unreadBulletinCount} unread
-                  </span>
-                </div>
-              )}
-            </div>
+          ) : undefined
+        }
+      >
+        <div className="mt-1 pt-5 border-t border-white/10 flex flex-wrap gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.08] backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/[0.06]">
+            <Newspaper className="w-3.5 h-3.5 text-[#A4CC43]" />
+            <span><strong className="text-white">{bulletins.length}</strong> total bulletins</span>
           </div>
-
-          {/* Stat pills */}
-          <div className="mt-5 pt-5 border-t border-white/10 flex flex-wrap gap-3">
+          {bulletins.length > 0 && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.08] backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/[0.06]">
-              <Newspaper className="w-3.5 h-3.5 text-[#A4CC43]" />
-              <span><strong className="text-white">{bulletins.length}</strong> total bulletins</span>
+              <CalendarDays className="w-3.5 h-3.5 text-[#A4CC43]" />
+              <span>Latest: <strong className="text-white">{format(new Date(bulletins[0].published_date), 'MMM d, yyyy')}</strong></span>
             </div>
-            {bulletins.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.08] backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/[0.06]">
-                <CalendarDays className="w-3.5 h-3.5 text-[#A4CC43]" />
-                <span>Latest: <strong className="text-white">{format(new Date(bulletins[0].published_date), 'MMM d, yyyy')}</strong></span>
-              </div>
-            )}
-            {unreadBulletinCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 backdrop-blur-sm rounded-full text-xs text-amber-200 border border-amber-400/20">
-                <Eye className="w-3.5 h-3.5" />
-                <span><strong className="text-white">{unreadBulletinCount}</strong> to review</span>
-              </div>
-            )}
-          </div>
+          )}
+          {unreadBulletinCount > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 backdrop-blur-sm rounded-full text-xs text-amber-200 border border-amber-400/20">
+              <Eye className="w-3.5 h-3.5" />
+              <span><strong className="text-white">{unreadBulletinCount}</strong> to review</span>
+            </div>
+          )}
         </div>
-      </div>
+      </GradientHeader>
 
       {/* Latest bulletin ticker */}
       {latestBulletins.length > 0 && (

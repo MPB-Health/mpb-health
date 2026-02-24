@@ -132,15 +132,8 @@ export function AppLayout({
               )}
             </>
           ) : (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                {logoSrc ? (
-                  <img src={logoSrc} alt={appName} className="h-8 w-auto object-contain" />
-                ) : (
-                  <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shrink-0">
-                    <span className="text-white font-bold text-xs">{appName.slice(0, 3).toUpperCase()}</span>
-                  </div>
-                )}
+            <div className="relative flex flex-col items-center gap-2 py-1">
+              <div className="absolute top-1 right-0">
                 {isMobile ? (
                   <button
                     onClick={closeSidebar}
@@ -157,7 +150,14 @@ export function AppLayout({
                   </button>
                 )}
               </div>
-              <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider">
+              {logoSrc ? (
+                <img src={logoSrc} alt={appName} className="h-14 w-auto object-contain" />
+              ) : (
+                <div className="w-12 h-12 rounded-lg gradient-accent flex items-center justify-center shrink-0">
+                  <span className="text-white font-bold text-sm">{appName.slice(0, 3).toUpperCase()}</span>
+                </div>
+              )}
+              <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider text-center">
                 {appName}
               </span>
             </div>

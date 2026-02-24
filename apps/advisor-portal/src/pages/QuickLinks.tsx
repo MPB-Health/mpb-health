@@ -131,7 +131,7 @@ export default function QuickLinks() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-th-text-primary">Quick Links</h1>
+        <h1 className="text-2xl font-semibold text-th-text-primary">Resource Center</h1>
         <p className="mt-1 text-th-text-secondary">
           Shortcuts to common actions and resources.
         </p>

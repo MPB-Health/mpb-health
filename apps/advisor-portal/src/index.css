@@ -133,3 +133,17 @@ button[class*="document-card"] > * {
   display: block !important;
   vertical-align: top;
 }
+
+/* Ticker scroll animation for bulletin headlines */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-scroll {
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}

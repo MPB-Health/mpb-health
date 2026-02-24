@@ -69,7 +69,7 @@ function getIconComponent(iconName: string): LucideIcons.LucideIcon {
 const fallbackNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
-  { name: 'Quick Links', href: '/quick-links', icon: Link },
+  { name: 'Resource Center', href: '/quick-links', icon: Link },
   { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
   { 
     name: 'Forms', 
@@ -213,20 +213,21 @@ export default function MainLayout() {
       return item;
     });
 
-    // Enforce sidebar order: Dashboard, Bulletins, Quick Links, SOPs, Forms, Training, Submit Group, Contact
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Quick Links', 'SOPs & Playbooks', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Contact'];
+    // Inject items that may not exist in CMS nav
+    if (!base.some((item) => item.href === '/quick-links' || item.name === 'Resource Center')) {
+      base.push({ name: 'Resource Center', href: '/quick-links', icon: Link });
+    }
+    if (!base.some((item) => item.href === '/videos' || item.name === 'Video Library')) {
+      base.push({ name: 'Video Library', href: '/videos', icon: Video });
+    }
+
+    // Enforce sidebar order
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'SOPs & Playbooks', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Contact'];
     base = [...base].sort((a, b) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);
       return (ai === -1 ? ORDER.length : ai) - (bi === -1 ? ORDER.length : bi);
     });
-
-    // Inject Quick Links if not present
-    const hasQuickLinks = base.some((item) => item.href === '/quick-links' || item.name === 'Quick Links');
-    if (!hasQuickLinks) {
-      const quickLinksItem: NavItem = { name: 'Quick Links', href: '/quick-links', icon: Link };
-      base.splice(2, 0, quickLinksItem);
-    }
 
     return base;
   }, [cmsNavItems]);

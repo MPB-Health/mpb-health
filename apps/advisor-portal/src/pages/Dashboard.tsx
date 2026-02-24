@@ -914,7 +914,7 @@ export default function Dashboard() {
       {/* Quick Links */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-th-text-primary">Quick Links</h2>
+          <h2 className="font-semibold text-th-text-primary">Resource Center</h2>
           <button
             onClick={() => navigate('/quick-links')}
             className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"

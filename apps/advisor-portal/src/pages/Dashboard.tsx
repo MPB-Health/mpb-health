@@ -503,7 +503,7 @@ export default function Dashboard() {
             {/* Quick-access actions */}
             <div className="flex flex-col sm:flex-row gap-2">
               <a
-                href="https://desk.zoho.com/agent/mympb/all/tickets/list/open-cases"
+                href="https://support.mpb.health/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-2.5 px-4 py-2.5 bg-white text-[#0A4E8E] rounded-lg text-sm font-semibold shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02] transition-all"

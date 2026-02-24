@@ -187,10 +187,6 @@ function getColorStyles(color: KPIMetric['color']) {
       bg: 'bg-green-100 dark:bg-green-900/30',
       icon: 'text-green-600 dark:text-green-400',
     },
-    blue: {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      icon: 'text-blue-600 dark:text-blue-400',
-    },
     orange: {
       bg: 'bg-orange-100 dark:bg-orange-900/30',
       icon: 'text-orange-600 dark:text-orange-400',

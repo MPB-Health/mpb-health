@@ -75,7 +75,6 @@ const METRICS: Record<string, MetricConfig> = {
 const COLOR_CLASSES: Record<string, { bg: string; text: string; icon: string }> = {
   blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600', icon: 'text-blue-500' },
   green: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600', icon: 'text-green-500' },
-  blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600', icon: 'text-blue-500' },
   red: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600', icon: 'text-red-500' },
   emerald: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600', icon: 'text-green-500' },
   amber: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600', icon: 'text-amber-500' },

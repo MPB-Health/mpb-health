@@ -141,11 +141,10 @@ interface StatCardProps {
   icon: typeof Briefcase;
   label: string;
   value: string;
-  color: 'blue' | 'blue' | 'green';
+  color: 'blue' | 'green';
 }
 
 const COLOR_CLASSES = {
-  blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
   blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
   green: 'bg-green-100 text-green-600 dark:bg-green-900/30',
 };

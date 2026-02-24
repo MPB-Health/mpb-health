@@ -46,13 +46,11 @@ function getColorClasses(color: string): { bg: string; text: string; border: str
   const colorMap: Record<string, { bg: string; text: string; border: string }> = {
     blue: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
     green: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' },
-    blue: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
     orange: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
     red: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' },
     yellow: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200' },
     pink: { bg: 'bg-pink-100', text: 'text-pink-700', border: 'border-pink-200' },
-    blue: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
-    teal: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+    teal: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200' },
     cyan: { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-200' },
   };
   return colorMap[color] || colorMap.blue;

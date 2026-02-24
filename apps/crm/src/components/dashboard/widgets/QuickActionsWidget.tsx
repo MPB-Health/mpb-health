@@ -33,10 +33,8 @@ const ACTIONS: QuickAction[] = [
 
 const COLOR_CLASSES: Record<string, { bg: string; hover: string; text: string }> = {
   blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50', text: 'text-blue-600' },
-  blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50', text: 'text-blue-600' },
   green: { bg: 'bg-green-100 dark:bg-green-900/30', hover: 'hover:bg-green-200 dark:hover:bg-green-900/50', text: 'text-green-600' },
   yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', hover: 'hover:bg-yellow-200 dark:hover:bg-yellow-900/50', text: 'text-yellow-600' },
-  blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50', text: 'text-blue-600' },
   cyan: { bg: 'bg-cyan-100 dark:bg-cyan-900/30', hover: 'hover:bg-cyan-200 dark:hover:bg-cyan-900/50', text: 'text-cyan-600' },
 };
 

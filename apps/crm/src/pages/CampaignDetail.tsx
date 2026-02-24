@@ -936,7 +936,6 @@ function StatRow({
     gray: { bg: 'bg-gray-100', text: 'text-gray-700', bar: 'bg-gray-400' },
     blue: { bg: 'bg-blue-100', text: 'text-blue-700', bar: 'bg-blue-500' },
     cyan: { bg: 'bg-cyan-100', text: 'text-cyan-700', bar: 'bg-cyan-500' },
-    blue: { bg: 'bg-blue-100', text: 'text-blue-700', bar: 'bg-blue-500' },
     green: { bg: 'bg-green-100', text: 'text-green-700', bar: 'bg-green-500' },
     emerald: { bg: 'bg-green-100', text: 'text-green-700', bar: 'bg-green-500' },
     orange: { bg: 'bg-orange-100', text: 'text-orange-700', bar: 'bg-orange-500' },

@@ -140,7 +140,6 @@ const NOTE_COLORS: Record<string, string> = {
   yellow: 'bg-yellow-50 dark:bg-yellow-900/20',
   green: 'bg-green-50 dark:bg-green-900/20',
   blue: 'bg-blue-50 dark:bg-blue-900/20',
-  blue: 'bg-blue-50 dark:bg-blue-900/20',
   red: 'bg-red-50 dark:bg-red-900/20',
   orange: 'bg-orange-50 dark:bg-orange-900/20',
 };

@@ -27,6 +27,7 @@ import {
   Copy,
   CheckCheck,
   GraduationCap,
+  Smartphone,
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { meetingService, enrollmentService, portalSettingsService, announcementService, type AdvisorMeeting, type EnrollmentLink, type Announcement } from '@mpbhealth/advisor-core';
@@ -480,6 +481,16 @@ export default function Dashboard() {
               >
                 <ExternalLink className="w-4 h-4" />
                 My Landing Page
+              </a>
+              <a
+                href="https://app.mpb.health/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-2.5 px-4 py-2.5 bg-[#A4CC43]/20 hover:bg-[#A4CC43]/30 backdrop-blur-sm rounded-lg text-sm font-medium text-white transition-all border border-[#A4CC43]/30"
+              >
+                <Smartphone className="w-4 h-4" />
+                MPB Health APP
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all" />
               </a>
             </div>
           </div>

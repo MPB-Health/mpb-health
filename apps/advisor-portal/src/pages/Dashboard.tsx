@@ -28,9 +28,14 @@ import {
   CheckCheck,
   GraduationCap,
   Smartphone,
+  Download,
+  Search,
+  Pill,
+  Stethoscope,
+  ClipboardList,
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
-import { meetingService, enrollmentService, portalSettingsService, announcementService, type AdvisorMeeting, type EnrollmentLink, type Announcement } from '@mpbhealth/advisor-core';
+import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm } from '@mpbhealth/advisor-core';
 import { supabase } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
@@ -43,6 +48,14 @@ interface FallbackQuickLink {
 }
 
 const STORAGE_BASE = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents';
+
+const APP_STORE_URL = 'https://apps.apple.com/us/app/mpb-health/id6747984750';
+const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=com.mpb.health&utm_source=na_Med';
+const MPB_WEB_APP_URL = 'https://app.mpb.health/';
+const WEBSITE_BASE_URL = 'https://mpb.health';
+const PHCS_SEARCH_URL = 'https://providersearch.multiplan.com/';
+const ZOCDOC_URL = 'https://www.zocdoc.com/?dd_referrer=';
+const RX_VALET_URL = 'https://www.rxvalet.com';
 
 const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
   {
@@ -214,6 +227,9 @@ export default function Dashboard() {
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
 
   const [quickLinksLoading] = useState(false);
+  const [copiedFormSlug, setCopiedFormSlug] = useState<string | null>(null);
+  const [memberForms, setMemberForms] = useState<AdvisorForm[]>([]);
+  const [memberFormsLoading, setMemberFormsLoading] = useState(true);
 
   // CMS-driven meetings
   const [upcomingMeetings, setUpcomingMeetings] = useState<AdvisorMeeting[]>([]);
@@ -303,6 +319,22 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, []);
 
+  // Fetch member forms for the membership forms section
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const forms = await formsService.getForms('member');
+        if (!cancelled) setMemberForms(forms);
+      } catch (err) {
+        console.error('Failed to load member forms:', err);
+      } finally {
+        if (!cancelled) setMemberFormsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Fetch CMS meetings when profile is available
   useEffect(() => {
     if (!profile?.id) {
@@ -342,6 +374,13 @@ export default function Dashboard() {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [enrollDropdownOpen]);
+
+  const handleCopyFormLink = (slug: string) => {
+    const url = `${WEBSITE_BASE_URL}${slug.startsWith('/') ? slug : '/' + slug}`;
+    navigator.clipboard.writeText(url);
+    setCopiedFormSlug(slug);
+    setTimeout(() => setCopiedFormSlug(null), 2000);
+  };
 
   // Get in-progress training modules
   const inProgressModules = trainingModules.filter((module) => {
@@ -688,6 +727,243 @@ export default function Dashboard() {
             </div>
           </div>
         </button>
+      </div>
+
+      {/* Member Tools: APP Access, Providers, RX Valet */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* APP Access */}
+        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+          <div className="bg-gradient-to-r from-[#0A4E8E] to-[#0C71C3] p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+                <Smartphone className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">MPB Health APP</p>
+                <p className="text-white/70 text-xs">Access & Download</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <a
+              href={MPB_WEB_APP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Web App
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+            </a>
+            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800">
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Sample Login</p>
+              <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+                <span className="font-mono font-semibold">MPB111</span>
+                <span className="text-blue-400">/</span>
+                <span className="font-mono font-semibold">01.01.1990</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-th-text-primary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                App Store
+              </a>
+              <a
+                href={GOOGLE_PLAY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-th-text-primary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Google Play
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Providers */}
+        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+          <div className="bg-gradient-to-r from-[#0A4E8E] to-[#0C71C3] p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+                <Stethoscope className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">Providers</p>
+                <p className="text-white/70 text-xs">Find care for members</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <a
+              href={PHCS_SEARCH_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-3 w-full px-4 py-3 text-left bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <Search className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-th-text-primary">PHCS Search</p>
+                <p className="text-xs text-th-text-tertiary">MultiPlan provider network</p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-th-text-tertiary group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+            </a>
+            <a
+              href={ZOCDOC_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-3 w-full px-4 py-3 text-left bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/20 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-th-text-primary">ZocDoc</p>
+                <p className="text-xs text-th-text-tertiary">Book doctor appointments</p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-th-text-tertiary group-hover:text-green-600 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+            </a>
+          </div>
+        </div>
+
+        {/* RX Valet */}
+        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+          <div className="bg-gradient-to-r from-[#0E2D41] to-[#0A4E8E] p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+                <Pill className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">RX Valet</p>
+                <p className="text-white/70 text-xs">Prescription savings</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <a
+              href={RX_VALET_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
+            >
+              <Pill className="w-4 h-4" />
+              Open RX Valet
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+            </a>
+            <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800">
+              <p className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">Sample Login</p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-purple-600 dark:text-purple-400 text-xs">ID</span>
+                  <span className="font-mono font-semibold text-purple-800 dark:text-purple-200">MPB111</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-purple-600 dark:text-purple-400 text-xs">DOB</span>
+                  <span className="font-mono font-semibold text-purple-800 dark:text-purple-200">01.01.1990</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-th-text-tertiary leading-relaxed">
+              Access prescription pricing and savings for members through RX Valet.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Membership Forms */}
+      <div className="bg-surface-primary rounded-xl border border-th-border">
+        <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-th-text-tertiary" />
+            <h2 className="font-semibold text-th-text-primary">Membership Forms</h2>
+          </div>
+          <button
+            onClick={() => navigate('/forms/member')}
+            className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
+          >
+            View All
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="divide-y divide-th-border-subtle">
+          {memberFormsLoading ? (
+            <div className="p-5 space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 animate-pulse">
+                  <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                  <div className="flex-1 space-y-1">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                  </div>
+                  <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : memberForms.length > 0 ? (
+            memberForms.map((form) => (
+              <div
+                key={form.id}
+                className="flex items-center gap-4 px-5 py-3 hover:bg-surface-tertiary/50 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                  <FileTextIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-th-text-primary truncate">
+                    {form.name || form.label}
+                  </p>
+                  {form.description && (
+                    <p className="text-xs text-th-text-tertiary truncate">{form.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleCopyFormLink(form.slug)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                      copiedFormSlug === form.slug
+                        ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                        : 'text-th-text-secondary border border-th-border hover:bg-surface-tertiary'
+                    }`}
+                    title="Copy shareable link"
+                  >
+                    {copiedFormSlug === form.slug ? (
+                      <><CheckCheck className="w-3.5 h-3.5" /> Copied</>
+                    ) : (
+                      <><Copy className="w-3.5 h-3.5" /> Copy Link</>
+                    )}
+                  </button>
+                  <a
+                    href={`${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Open
+                  </a>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-8 text-center">
+              <FileTextIcon className="w-10 h-10 mx-auto mb-3 text-th-text-tertiary" />
+              <p className="text-sm text-th-text-tertiary">No membership forms available</p>
+              <button
+                onClick={() => navigate('/forms/member')}
+                className="mt-2 text-sm font-medium text-th-accent-600 hover:text-th-accent-700"
+              >
+                Browse all forms &rarr;
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

@@ -33,6 +33,7 @@ import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
+import { GlobalSearch } from '../components/GlobalSearch';
 
 // Icon mapping for dynamic icons from CMS
 const iconMap: Record<string, LucideIcons.LucideIcon> = {
@@ -425,6 +426,7 @@ export default function MainLayout() {
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
         userSection={userSection}
+        topBarCenter={<GlobalSearch />}
         topBarActions={topBarActions}
         renderNavLink={(item, props) => (
           <NavLink

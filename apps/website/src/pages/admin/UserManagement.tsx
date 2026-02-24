@@ -47,6 +47,7 @@ import {
 import { toast } from 'sonner';
 import { createClientLogger } from '@mpbhealth/utils';
 import { cn } from '../../lib/utils';
+import AddUserModal from '../../components/admin/AddUserModal';
 
 const log = createClientLogger('UserManagement');
 
@@ -141,6 +142,9 @@ const UserManagement: React.FC = () => {
   const [nameModal, setNameModal] = useState<{ userId: string; email: string; currentName: string } | null>(null);
   const [editName, setEditName] = useState('');
   const [nameSaving, setNameSaving] = useState(false);
+
+  // Add user modal state
+  const [addUserModal, setAddUserModal] = useState(false);
 
   // Mass invite email state
   const [inviteModal, setInviteModal] = useState(false);
@@ -524,6 +528,10 @@ const UserManagement: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <Button onClick={() => setAddUserModal(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
               <Button onClick={() => setInviteModal(true)} variant="outline">
                 <Mail className="h-4 w-4 mr-2" />
                 Send Invites
@@ -1047,6 +1055,13 @@ const UserManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Add User Modal */}
+      <AddUserModal
+        isOpen={addUserModal}
+        onClose={() => setAddUserModal(false)}
+        onSuccess={loadUsers}
+      />
 
       {/* Send Invites Modal */}
       {inviteModal && (

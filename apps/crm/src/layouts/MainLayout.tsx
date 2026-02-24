@@ -1,18 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
 import type { NavItem, NavLinkRenderProps } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { supabase } from '../lib/supabase';
-
-interface GlobalSearchResult {
-  entity_type: string;
-  entity_id: string;
-  title: string;
-  subtitle: string | null;
-  extra_info: string | null;
-  rank: number;
-}
 import {
   LayoutDashboard,
   Users,
@@ -22,7 +11,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Search,
   Shield,
   FileText,
   Zap,
@@ -55,6 +43,7 @@ import { useCRM } from '../contexts/CRMContext';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { NotificationTicker } from '../components/NotificationTicker';
 import CommandPalette from '../components/CommandPalette';
+import GlobalSearch from '../components/GlobalSearch';
 import { RouteErrorBoundary } from '../components/ErrorBoundary';
 
 interface ExtendedNavChild {
@@ -173,89 +162,12 @@ const navigationSections: NavSection[] = [
 // Flatten for backward compatibility
 const navigation: ExtendedNavItem[] = navigationSections.flatMap(section => section.items);
 
-// Helper function to get the path for an entity
-function getEntityPath(entityType: string, entityId: string): string {
-  const pathMap: Record<string, string> = {
-    lead: `/leads/${entityId}`,
-    account: `/accounts/${entityId}`,
-    contact: `/contacts/${entityId}`,
-    deal: `/deals/${entityId}`,
-    product: `/products/${entityId}`,
-    quote: `/quotes/${entityId}`,
-    invoice: `/invoices/${entityId}`,
-    campaign: `/campaigns/${entityId}`,
-    task: `/tasks`,
-  };
-  return pathMap[entityType] || '/';
-}
-
-// Helper function to get the icon for an entity type
-function getEntityIcon(entityType: string) {
-  const iconMap: Record<string, typeof Users> = {
-    lead: Users,
-    account: Building2,
-    contact: UserCircle,
-    deal: DollarSign,
-    product: Package,
-    quote: FileCheck,
-    invoice: Receipt,
-    campaign: Megaphone,
-    task: CheckSquare,
-  };
-  return iconMap[entityType] || FileText;
-}
-
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks, zohoConfigured } = useCRM();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-
-  // Debounced global search
-  useEffect(() => {
-    if (searchQuery.length < 2) {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      if (!activeOrg?.id) return;
-      setSearchLoading(true);
-      try {
-        const { data, error } = await supabase.rpc('crm_global_search', {
-          p_org_id: activeOrg.id,
-          p_query: searchQuery,
-          p_limit: 10,
-        });
-        if (!error && data) {
-          setSearchResults(data as GlobalSearchResult[]);
-          setShowSearchResults(true);
-        }
-      } catch (err) {
-        console.error('Global search error:', err);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, activeOrg?.id]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowSearchResults(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -364,11 +276,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   );
 
   const topBarActions = (
-    <div className="flex items-center space-x-4">
-      {/* Command Palette Trigger (visible on md+) */}
+    <div className="flex items-center space-x-3">
+      {/* Command Palette Trigger */}
       <button
         onClick={() => {
-          // Trigger command palette via keyboard event
           const event = new KeyboardEvent('keydown', {
             key: 'k',
             metaKey: true,
@@ -376,80 +287,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           });
           document.dispatchEvent(event);
         }}
-        className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-surface-tertiary hover:bg-surface-secondary rounded-lg text-sm text-th-text-tertiary transition-colors"
+        className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-tertiary hover:bg-surface-secondary rounded-lg text-xs text-th-text-tertiary transition-colors"
         title="Command Palette (⌘K)"
       >
-        <Command className="w-4 h-4" />
-        <span>Command</span>
-        <kbd className="text-xs bg-white/10 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+        <Command className="w-3.5 h-3.5" />
+        <kbd className="text-[10px] bg-white/10 px-1 py-0.5 rounded font-mono">⌘K</kbd>
       </button>
-
-      {/* Global Search */}
-      <div ref={searchRef} className="hidden sm:block md:hidden relative w-72">
-        <div className="flex items-center bg-surface-tertiary rounded-lg px-3 py-2">
-          <Search className="w-4 h-4 text-th-text-tertiary mr-2" />
-          <input
-            type="text"
-            placeholder="Search everything..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && searchQuery.trim()) {
-                navigate(`/leads?search=${encodeURIComponent(searchQuery)}`);
-                setShowSearchResults(false);
-                setSearchQuery('');
-              }
-            }}
-            className="bg-transparent border-none outline-none text-sm w-full text-th-text-secondary placeholder-th-text-tertiary"
-          />
-          {searchLoading && (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-th-accent-600" />
-          )}
-        </div>
-        {showSearchResults && searchResults.length > 0 && (
-          <div className="absolute top-full mt-1 w-full bg-surface-primary border border-th-border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-            {searchResults.map((result) => {
-              const entityPath = getEntityPath(result.entity_type, result.entity_id);
-              const EntityIcon = getEntityIcon(result.entity_type);
-              return (
-                <Link
-                  key={`${result.entity_type}-${result.entity_id}`}
-                  to={entityPath}
-                  onClick={() => { setShowSearchResults(false); setSearchQuery(''); }}
-                  className="flex items-start gap-3 px-3 py-2.5 hover:bg-surface-secondary border-b border-th-border-subtle last:border-b-0"
-                >
-                  <div className="mt-0.5">
-                    <EntityIcon className="w-4 h-4 text-th-text-tertiary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-th-text-primary truncate">
-                      {result.title}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-th-accent-600 capitalize">{result.entity_type}</span>
-                      {result.subtitle && (
-                        <span className="text-xs text-th-text-tertiary truncate">{result.subtitle}</span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-        {showSearchResults && searchResults.length === 0 && searchQuery.length >= 2 && !searchLoading && (
-          <div className="absolute top-full mt-1 w-full bg-surface-primary border border-th-border rounded-lg shadow-lg z-50 p-4 text-center">
-            <p className="text-sm text-th-text-tertiary">No results found</p>
-          </div>
-        )}
-      </div>
 
       {/* Stats badges */}
       {dashboardStats && (
-        <div className="hidden md:flex items-center space-x-4 text-sm">
+        <div className="hidden lg:flex items-center space-x-3 text-sm">
           <div className="flex items-center text-green-600">
             <span className="font-medium">{dashboardStats.new_leads}</span>
-            <span className="ml-1 text-th-text-tertiary">new today</span>
+            <span className="ml-1 text-th-text-tertiary">new</span>
           </div>
           <div className="flex items-center text-blue-600">
             <span className="font-medium">{dashboardStats.total_leads}</span>
@@ -482,6 +332,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           />
         }
         userSection={userSection}
+        topBarCenter={<GlobalSearch />}
         topBarActions={topBarActions}
         renderNavLink={renderNavLink}
         renderChildNavLink={renderChildNavLink}

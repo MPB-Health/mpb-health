@@ -1211,40 +1211,46 @@ export default function Dashboard() {
           </button>
         </div>
         {quickLinksLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="rounded-lg border border-th-border overflow-hidden animate-pulse"
+                className="flex items-center gap-4 rounded-xl border border-th-border p-4 animate-pulse"
               >
-                <div className="w-full aspect-[16/10] bg-gray-200 dark:bg-gray-700" />
-                <div className="p-2.5">
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto" />
+                <div className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayQuickLinks.map((link) =>
               link.popup ? (
                 <button
                   key={link.url}
                   onClick={() => setQuickLinkPopup(link)}
                   title={link.description}
-                  className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5 text-left"
+                  className="group flex items-center gap-4 rounded-xl border border-th-border p-4 transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5 text-left bg-surface-primary"
                 >
-                  <div className="relative w-full aspect-[16/10] overflow-hidden">
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                     <img
                       src={link.image}
                       alt={link.label}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
-                  <div className="p-2.5 flex items-center gap-1.5">
-                    <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-th-text-primary group-hover:text-th-accent-600 transition-colors leading-tight block truncate">
                       {link.label}
                     </span>
+                    {link.description && (
+                      <span className="text-xs text-th-text-tertiary mt-0.5 block truncate">
+                        {link.description}
+                      </span>
+                    )}
                   </div>
                 </button>
               ) : (
@@ -1254,21 +1260,26 @@ export default function Dashboard() {
                   target="_blank"
                   rel="noopener noreferrer"
                   title={link.description}
-                  className="group flex flex-col rounded-lg border border-th-border overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5"
+                  className="group flex items-center gap-4 rounded-xl border border-th-border p-4 transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5 bg-surface-primary"
                 >
-                  <div className="relative w-full aspect-[16/10] overflow-hidden">
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                     <img
                       src={link.image}
                       alt={link.label}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
-                  <div className="p-2.5 flex items-center gap-1.5">
-                    <span className="text-xs font-medium text-th-text-secondary group-hover:text-th-accent-600 transition-colors text-center flex-1 leading-tight">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-th-text-primary group-hover:text-th-accent-600 transition-colors leading-tight block truncate">
                       {link.label}
                     </span>
-                    <ExternalLink className="w-3 h-3 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
+                    {link.description && (
+                      <span className="text-xs text-th-text-tertiary mt-0.5 block truncate">
+                        {link.description}
+                      </span>
+                    )}
                   </div>
+                  <ExternalLink className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
                 </a>
               )
             )}

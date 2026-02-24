@@ -118,41 +118,49 @@ export function AppLayout({
 
         {/* ---- Logo area ---- */}
         <div className={cn(
-          'flex items-center h-16 border-b border-white/[0.06] shrink-0',
-          collapsed && !isMobile ? 'justify-center px-2' : 'justify-between px-4'
+          'border-b border-white/[0.06] shrink-0',
+          collapsed && !isMobile ? 'flex items-center justify-center h-16 px-2' : 'px-4 py-3'
         )}>
-          <div className="flex items-center gap-3 min-w-0">
-            {logoSrc ? (
-              <img src={logoSrc} alt={appName} className="w-8 h-8 rounded-lg object-contain" />
-            ) : (
-              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shrink-0">
-                <span className="text-white font-bold text-xs">{appName.slice(0, 3).toUpperCase()}</span>
+          {collapsed && !isMobile ? (
+            <>
+              {logoSrc ? (
+                <img src={logoSrc} alt={appName} className="w-8 h-8 rounded-lg object-contain" />
+              ) : (
+                <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shrink-0">
+                  <span className="text-white font-bold text-xs">{appName.slice(0, 3).toUpperCase()}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                {logoSrc ? (
+                  <img src={logoSrc} alt={appName} className="h-8 w-auto object-contain" />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shrink-0">
+                    <span className="text-white font-bold text-xs">{appName.slice(0, 3).toUpperCase()}</span>
+                  </div>
+                )}
+                {isMobile ? (
+                  <button
+                    onClick={closeSidebar}
+                    className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCollapsed(true)}
+                    className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors hidden lg:flex"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-            )}
-            {!(collapsed && !isMobile) && (
-              <span className="font-semibold text-white truncate text-sm">
+              <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider">
                 {appName}
               </span>
-            )}
-          </div>
-
-          {/* Close button on mobile, collapse toggle on desktop */}
-          {isMobile ? (
-            <button
-              onClick={closeSidebar}
-              className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors lg:hidden"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          ) : (
-            !collapsed && (
-              <button
-                onClick={() => setCollapsed(true)}
-                className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors hidden lg:flex"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )
+            </div>
           )}
         </div>
 

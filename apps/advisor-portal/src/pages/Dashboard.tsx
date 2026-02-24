@@ -21,6 +21,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
+  TreePine,
+  Link2,
+  LifeBuoy,
+  Copy,
+  CheckCheck,
+  GraduationCap,
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { meetingService, enrollmentService, portalSettingsService, announcementService, type AdvisorMeeting, type EnrollmentLink, type Announcement } from '@mpbhealth/advisor-core';
@@ -188,6 +194,7 @@ export default function Dashboard() {
     trainingStats,
     trainingModules,
     trainingProgress,
+    unreadBulletinCount,
   } = useAdvisor();
 
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
@@ -426,62 +433,199 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Welcome header */}
-      <GradientHeader
-        title={`Welcome back, ${profile?.first_name}!`}
-        subtitle="Empowering Healthcare Advisors – Making a Difference Every Day!"
-      />
+      {/* Welcome header with quick stats */}
+      <div className="gradient-accent rounded-2xl text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.07] grid-pattern-overlay" />
+        <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-white/10 blur-3xl" />
+        <div className="relative z-10 p-5 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                Welcome back, {profile?.first_name}!
+              </h1>
+              <p className="mt-1 text-white/70 text-sm md:text-base">
+                Empowering Healthcare Advisors – Making a Difference Every Day!
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <a
+                href="https://desk.zoho.com/agent/mympb/all/tickets/list/open-cases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-sm font-medium transition-colors border border-white/15"
+              >
+                <LifeBuoy className="w-4 h-4" />
+                Submit a Support Ticket
+              </a>
+              <a
+                href={advisorLandingPageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-sm font-medium transition-colors border border-white/10"
+              >
+                <ExternalLink className="w-4 h-4" />
+                My Landing Page
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <button onClick={() => setAffiliateModalOpen(true)} className="text-left h-full w-full">
-          <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 via-blue-500 to-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-th-text-secondary">Affiliates</p>
-                <p className="text-base font-semibold text-th-text-primary mt-1.5 leading-snug">
-                  Know someone who would be a perfect fit for MPB Health?
-                </p>
+      {/* Action cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Grow Your Tree - Refer Advisors */}
+        <button onClick={() => setAffiliateModalOpen(true)} className="text-left h-full w-full group">
+          <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
+            <div className="bg-gradient-to-r from-[#0A4E8E] to-[#0C71C3] p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+                    <TreePine className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">Grow Your Tree</p>
+                    <p className="text-white/70 text-xs">Refer Advisors</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
               </div>
-              <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
-                <Users className="w-5 h-5" />
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-th-text-secondary leading-relaxed">
+                Know a great advisor? Refer them to MPB Health and grow our community together.
+              </p>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-md">
+                  <Phone className="w-3 h-3" />
+                  {affiliatePhone}
+                </span>
               </div>
             </div>
           </div>
         </button>
 
-        <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 opacity-60 group-hover:opacity-100 transition-opacity" />
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-th-text-secondary">Notifications</p>
-              <p className="text-base font-semibold text-th-text-primary mt-1.5 leading-snug">
-                You don't have any new notifications
-              </p>
+        {/* Notifications */}
+        <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
+          <div className="flex items-center justify-between p-4 border-b border-th-border-subtle">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-th-text-primary">Notifications</p>
+                <p className="text-xs text-th-text-tertiary">Stay up to date</p>
+              </div>
             </div>
-            <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20">
-              <Bell className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            {unreadBulletinCount > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                {unreadBulletinCount}
+              </span>
+            )}
+          </div>
+          <div className="p-4">
+            {unreadBulletinCount > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm text-th-text-primary font-medium">
+                  You have {unreadBulletinCount} unread bulletin{unreadBulletinCount !== 1 ? 's' : ''}
+                </p>
+                <button
+                  onClick={() => navigate('/bulletins')}
+                  className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center gap-1"
+                >
+                  View bulletins <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 text-th-text-tertiary">
+                <CheckCheck className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <p className="text-sm">You're all caught up — no new notifications.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* My Advisor Page */}
+        <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
+          <div className="flex items-center justify-between p-4 border-b border-th-border-subtle">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-th-accent-50 dark:bg-th-accent-900/20 flex items-center justify-center">
+                <Link2 className="w-5 h-5 text-th-accent-600 dark:text-th-accent-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-th-text-primary">My Landing Page</p>
+                <p className="text-xs text-th-text-tertiary">Share your landing page</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-2 p-2.5 bg-surface-tertiary rounded-lg">
+              <Link2 className="w-4 h-4 text-th-text-tertiary flex-shrink-0" />
+              <span className="text-sm text-th-text-secondary truncate flex-1 font-mono">{advisorLandingPageUrl}</span>
+              <button
+                onClick={() => navigator.clipboard.writeText(advisorLandingPageUrl)}
+                className="p-1 hover:bg-surface-primary rounded transition-colors flex-shrink-0"
+                title="Copy link"
+              >
+                <Copy className="w-3.5 h-3.5 text-th-text-tertiary" />
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <a
+                href={advisorLandingPageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Visit Page
+              </a>
+              <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: 'MPB Health Advisor', url: advisorLandingPageUrl });
+                  } else {
+                    navigator.clipboard.writeText(advisorLandingPageUrl);
+                  }
+                }}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-th-accent-600 border border-th-accent-200 rounded-lg hover:bg-th-accent-50 transition-colors"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Share
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 group overflow-hidden h-full">
-          <div className="absolute top-0 left-0 right-0 h-0.5 gradient-accent opacity-60 transition-opacity" />
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-th-text-secondary">
-                My Advisor Page
-              </p>
-              <p className="text-base font-semibold text-th-text-primary mt-1.5 leading-snug">
-                Direct link to my new Advisor Page coming soon
-              </p>
+        {/* Training */}
+        <button onClick={() => navigate('/training')} className="text-left h-full w-full group">
+          <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
+            <div className="bg-gradient-to-r from-[#0E2D41] to-[#0A4E8E] p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+                    <GraduationCap className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">Training</p>
+                    <p className="text-white/70 text-xs">Courses & Certifications</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+              </div>
             </div>
-            <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-th-accent-50 dark:bg-th-accent-900/20 text-th-accent-600 dark:text-th-accent-400">
-              <ExternalLink className="w-5 h-5" />
+            <div className="p-4">
+              <p className="text-sm text-th-text-secondary leading-relaxed">
+                Access MPB, Sedera, Zion, and Planstin training modules to sharpen your skills and earn certifications.
+              </p>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs font-medium rounded-md">
+                  <CheckCheck className="w-3 h-3" />
+                  Start Learning
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -786,12 +930,11 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Affiliate modal */}
+      {/* Grow Your Tree - Refer Advisors modal */}
       {affiliateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-surface-primary rounded-2xl w-full max-w-lg mx-4 shadow-xl overflow-hidden">
-            {/* Header gradient */}
-            <div className="relative bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 px-6 py-8 text-white">
+            <div className="relative bg-gradient-to-br from-[#0A4E8E] to-[#0E2D41] px-6 py-8 text-white">
               <button
                 type="button"
                 onClick={() => setAffiliateModalOpen(false)}
@@ -802,43 +945,40 @@ export default function Dashboard() {
               </button>
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 rounded-xl bg-white/15">
-                  <Users className="w-6 h-6" />
+                  <TreePine className="w-6 h-6" />
                 </div>
-                <h2 className="text-xl font-bold">Affiliates</h2>
+                <div>
+                  <h2 className="text-xl font-bold">Grow Your Tree</h2>
+                  <p className="text-white/60 text-xs">Refer an Advisor</p>
+                </div>
               </div>
               <p className="text-white/90 text-sm leading-relaxed">
-                Know someone who would be a perfect fit for MPB Health?
+                Help us build a stronger advisor community. Know someone who would thrive at MPB Health?
               </p>
             </div>
-            {/* Body */}
-            <div className="px-6 py-6 space-y-5">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex-shrink-0 mt-0.5">
-                  <Heart className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <p className="text-sm text-th-text-secondary leading-relaxed">
-                  If you know someone who thrives in a dynamic environment and is dedicated to making a real impact in healthcare, we'd love to meet them!
+            <div className="px-6 py-6 space-y-4">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800">
+                <Heart className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-th-text-primary leading-relaxed">
+                  Refer someone who is dedicated to making a real impact in healthcare. We'd love to meet them!
                 </p>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex-shrink-0 mt-0.5">
-                  <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <p className="text-sm text-th-text-secondary leading-relaxed">
-                  Refer a friend or colleague and help us grow the MPB Health advisor community. Together, we can make healthcare more accessible and affordable.
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800">
+                <Sparkles className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-th-text-primary leading-relaxed">
+                  Together, we can make healthcare more accessible and affordable for everyone.
                 </p>
               </div>
             </div>
-            {/* Footer actions */}
             <div className="px-6 pb-6 flex flex-col gap-3">
-              <div className="flex gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setAffiliateModalOpen(false);
                     setScheduleCallOpen(true);
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
                 >
                   <Calendar className="w-4 h-4" />
                   Schedule a Call
@@ -848,7 +988,7 @@ export default function Dashboard() {
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-th-text-primary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
                 >
                   <Phone className="w-4 h-4" />
-                  {affiliatePhone}
+                  Call Us
                 </a>
               </div>
               <button
@@ -857,7 +997,7 @@ export default function Dashboard() {
                   setAffiliateModalOpen(false);
                   setApplicationFormOpen(true);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors dark:text-blue-300 dark:bg-blue-900/20 dark:border-blue-800 dark:hover:bg-blue-900/30"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-th-accent-700 bg-th-accent-50 border border-th-accent-200 rounded-lg hover:bg-th-accent-100 transition-colors"
               >
                 <FileTextIcon className="w-4 h-4" />
                 Application Form

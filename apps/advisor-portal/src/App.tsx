@@ -20,6 +20,7 @@ const Profile = React.lazy(() => import('./pages/Profile'));
 const Inbox = React.lazy(() => import('./pages/Inbox'));
 const ConversationThread = React.lazy(() => import('./pages/ConversationThread'));
 const AuditLog = React.lazy(() => import('./pages/AuditLog'));
+const VideoLibrary = React.lazy(() => import('./pages/VideoLibrary'));
 const Login = React.lazy(() => import('./pages/Login'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
@@ -152,6 +153,7 @@ export default function App() {
                 <Route path="sops/:documentId" element={<SOPDocument />} />
                 <Route path="bulletins" element={<Bulletins />} />
                 <Route path="bulletins/:slug" element={<BulletinDetail />} />
+                <Route path="videos" element={<VideoLibrary />} />
                 <Route path="submit-group" element={<SubmitGroup />} />
                 <Route path="contact" element={<Contact />} />
                 <Route path="inbox" element={<Inbox />} />

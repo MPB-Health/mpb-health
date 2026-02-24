@@ -548,62 +548,70 @@ export default function Dashboard() {
         </button>
 
         {/* Notifications */}
-        <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
-          <div className="flex items-center justify-between p-4 border-b border-th-border-subtle">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-                <Bell className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="font-semibold text-th-text-primary">Notifications</p>
-                <p className="text-xs text-th-text-tertiary">Stay up to date</p>
+        <button onClick={() => navigate('/bulletins')} className="text-left h-full w-full group">
+          <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
+            <div className="bg-gradient-to-r from-[#0A4E8E] to-[#0C71C3] p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">Notifications</p>
+                    <p className="text-white/70 text-xs">Stay up to date</p>
+                  </div>
+                </div>
+                {unreadBulletinCount > 0 ? (
+                  <span className="bg-white text-[#0A4E8E] text-xs font-bold rounded-full px-2.5 py-0.5">
+                    {unreadBulletinCount}
+                  </span>
+                ) : (
+                  <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                )}
               </div>
             </div>
-            {unreadBulletinCount > 0 && (
-              <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                {unreadBulletinCount}
-              </span>
-            )}
-          </div>
-          <div className="p-4">
-            {unreadBulletinCount > 0 ? (
-              <div className="space-y-2">
-                <p className="text-sm text-th-text-primary font-medium">
-                  You have {unreadBulletinCount} unread bulletin{unreadBulletinCount !== 1 ? 's' : ''}
+            <div className="p-4">
+              {unreadBulletinCount > 0 ? (
+                <p className="text-sm text-th-text-secondary leading-relaxed">
+                  You have <strong className="text-th-text-primary">{unreadBulletinCount}</strong> unread bulletin{unreadBulletinCount !== 1 ? 's' : ''} waiting for you.
                 </p>
-                <button
-                  onClick={() => navigate('/bulletins')}
-                  className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium flex items-center gap-1"
-                >
-                  View bulletins <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+              ) : (
+                <p className="text-sm text-th-text-secondary leading-relaxed">
+                  You're all caught up — no new notifications.
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-3">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-md">
+                  {unreadBulletinCount > 0 ? (
+                    <><Bell className="w-3 h-3" /> View Bulletins</>
+                  ) : (
+                    <><CheckCheck className="w-3 h-3" /> All Read</>
+                  )}
+                </span>
               </div>
-            ) : (
-              <div className="flex items-center gap-3 text-th-text-tertiary">
-                <CheckCheck className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <p className="text-sm">You're all caught up — no new notifications.</p>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        </button>
 
-        {/* My Advisor Page */}
+        {/* My Landing Page */}
         <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
-          <div className="flex items-center justify-between p-4 border-b border-th-border-subtle">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-th-accent-50 dark:bg-th-accent-900/20 flex items-center justify-center">
-                <Link2 className="w-5 h-5 text-th-accent-600 dark:text-th-accent-400" />
-              </div>
-              <div>
-                <p className="font-semibold text-th-text-primary">My Landing Page</p>
-                <p className="text-xs text-th-text-tertiary">Share your landing page</p>
+          <div className="bg-gradient-to-r from-[#0A4E8E] to-[#0C71C3] p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+                  <Link2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold">My Landing Page</p>
+                  <p className="text-white/70 text-xs">Share your page</p>
+                </div>
               </div>
             </div>
           </div>
           <div className="p-4 space-y-3">
             <div className="flex items-center gap-2 p-2.5 bg-surface-tertiary rounded-lg">
               <Link2 className="w-4 h-4 text-th-text-tertiary flex-shrink-0" />
-              <span className="text-sm text-th-text-secondary truncate flex-1 font-mono">{advisorLandingPageUrl}</span>
+              <span className="text-xs text-th-text-secondary truncate flex-1 font-mono">{advisorLandingPageUrl}</span>
               <button
                 onClick={() => navigator.clipboard.writeText(advisorLandingPageUrl)}
                 className="p-1 hover:bg-surface-primary rounded transition-colors flex-shrink-0"
@@ -620,7 +628,7 @@ export default function Dashboard() {
                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                Visit Page
+                Visit
               </a>
               <button
                 onClick={() => {
@@ -630,7 +638,7 @@ export default function Dashboard() {
                     navigator.clipboard.writeText(advisorLandingPageUrl);
                   }
                 }}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-th-accent-600 border border-th-accent-200 rounded-lg hover:bg-th-accent-50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-th-accent-600 border border-th-accent-200 rounded-lg hover:bg-th-accent-50 transition-colors"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 Share
@@ -679,9 +687,17 @@ export default function Dashboard() {
               <Video className="w-5 h-5 text-th-text-tertiary" />
               Videos
             </h2>
-            <span className="text-xs text-th-text-tertiary font-medium">
-              {activeVideoIndex + 1} / {ADVISOR_VIDEOS.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-th-text-tertiary font-medium">
+                {activeVideoIndex + 1} / {ADVISOR_VIDEOS.length}
+              </span>
+              <button
+                onClick={() => navigate('/videos')}
+                className="text-xs font-medium text-th-accent-600 hover:text-th-accent-700 transition-colors"
+              >
+                View Library &rarr;
+              </button>
+            </div>
           </div>
 
           {/* Main Video Area */}

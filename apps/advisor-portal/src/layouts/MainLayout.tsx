@@ -91,6 +91,7 @@ const fallbackNavigation: NavItem[] = [
       { name: 'Zion Training', href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
     ],
   },
+  { name: 'Video Library', href: '/videos', icon: Video },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
@@ -213,7 +214,7 @@ export default function MainLayout() {
     });
 
     // Enforce sidebar order: Dashboard, Bulletins, Quick Links, SOPs, Forms, Training, Submit Group, Contact
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Quick Links', 'SOPs & Playbooks', 'Forms', 'Training', 'Submit Group', 'Contact'];
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Quick Links', 'SOPs & Playbooks', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Contact'];
     base = [...base].sort((a, b) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);

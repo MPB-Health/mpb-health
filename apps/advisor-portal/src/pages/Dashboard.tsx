@@ -433,39 +433,82 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Welcome header with quick stats */}
-      <div className="gradient-accent rounded-2xl text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.07] grid-pattern-overlay" />
-        <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-white/10 blur-3xl" />
-        <div className="relative z-10 p-5 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                Welcome back, {profile?.first_name}!
+      {/* Welcome hero */}
+      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#0A4E8E] via-[#0C71C3] to-[#0E2D41]">
+        {/* Background layers */}
+        <div className="absolute inset-0 opacity-[0.04] grid-pattern-overlay" />
+        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#A4CC43]/20 blur-[100px]" />
+        <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/5 blur-[80px]" />
+
+        <div className="relative z-10 p-6 md:p-8">
+          {/* Top row: greeting + date */}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
+            <div className="space-y-1">
+              <p className="text-white/50 text-sm font-medium uppercase tracking-wider">
+                {format(new Date(), 'EEEE, MMMM d, yyyy')}
+              </p>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+                {(() => {
+                  const h = new Date().getHours();
+                  if (h < 12) return 'Good morning';
+                  if (h < 17) return 'Good afternoon';
+                  return 'Good evening';
+                })()}, {profile?.first_name}
               </h1>
-              <p className="mt-1 text-white/70 text-sm md:text-base">
-                Empowering Healthcare Advisors – Making a Difference Every Day!
+              <p className="text-white/60 text-sm max-w-md">
+                Empowering Healthcare Advisors – Making a Difference Every Day.
               </p>
             </div>
-            <div className="flex items-center gap-3 flex-wrap">
+
+            {/* Quick-access actions */}
+            <div className="flex flex-col sm:flex-row gap-2">
               <a
                 href="https://desk.zoho.com/agent/mympb/all/tickets/list/open-cases"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-sm font-medium transition-colors border border-white/15"
+                className="group flex items-center gap-2.5 px-4 py-2.5 bg-white text-[#0A4E8E] rounded-lg text-sm font-semibold shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02] transition-all"
               >
                 <LifeBuoy className="w-4 h-4" />
-                Submit a Support Ticket
+                Support Ticket
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all" />
               </a>
               <a
                 href={advisorLandingPageUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-sm font-medium transition-colors border border-white/10"
+                className="group flex items-center gap-2.5 px-4 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-sm font-medium text-white transition-all border border-white/10"
               >
                 <ExternalLink className="w-4 h-4" />
                 My Landing Page
               </a>
+            </div>
+          </div>
+
+          {/* Stat pills */}
+          <div className="mt-5 pt-5 border-t border-white/10 flex flex-wrap gap-3">
+            {(() => {
+              const nextMeeting = upcomingMeetings.length > 0
+                ? new Date(upcomingMeetings[0].scheduled_at)
+                : getUpcomingRecurringMeetings(1)[0];
+              return nextMeeting ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.08] backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/[0.06]">
+                  <Calendar className="w-3.5 h-3.5 text-[#A4CC43]" />
+                  <span>Next meeting: <strong className="text-white">{format(nextMeeting, 'MMM d')}</strong></span>
+                </div>
+              ) : null;
+            })()}
+            {unreadBulletinCount > 0 && (
+              <button
+                onClick={() => navigate('/bulletins')}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.08] backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/[0.06] hover:bg-white/[0.14] transition-colors"
+              >
+                <Bell className="w-3.5 h-3.5 text-amber-400" />
+                <span><strong className="text-white">{unreadBulletinCount}</strong> unread bulletin{unreadBulletinCount !== 1 ? 's' : ''}</span>
+              </button>
+            )}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.08] backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/[0.06]">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#A4CC43]" />
+              <span>Advisor since <strong className="text-white">{profile?.created_at ? format(new Date(profile.created_at), 'MMM yyyy') : 'N/A'}</strong></span>
             </div>
           </div>
         </div>

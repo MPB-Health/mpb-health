@@ -158,7 +158,7 @@ export default function AlertsWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/notifications"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-violet-600 hover:text-violet-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all notifications
         <ArrowRight className="h-4 w-4" />

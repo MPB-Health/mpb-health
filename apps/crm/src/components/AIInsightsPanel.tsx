@@ -73,11 +73,11 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
     return (
       <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-center space-x-2 mb-4">
-          <Sparkles className="w-5 h-5 text-purple-500" />
+          <Sparkles className="w-5 h-5 text-blue-500" />
           <h2 className="text-lg font-semibold text-th-text-primary">AI Insights</h2>
         </div>
         <div className="flex items-center justify-center h-24">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
         </div>
       </div>
     );
@@ -88,13 +88,13 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
       <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <Sparkles className="w-5 h-5 text-purple-500" />
+            <Sparkles className="w-5 h-5 text-blue-500" />
             <h2 className="text-lg font-semibold text-th-text-primary">AI Insights</h2>
           </div>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
+            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Generate
@@ -112,13 +112,13 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Sparkles className="w-5 h-5 text-purple-500" />
+          <Sparkles className="w-5 h-5 text-blue-500" />
           <h2 className="text-lg font-semibold text-th-text-primary">AI Insights</h2>
         </div>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
+          className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -175,10 +175,10 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
       )}
 
       {/* Recommended action */}
-      <div className="bg-purple-50 rounded-lg p-3">
-        <p className="text-xs font-medium text-purple-700 mb-1">Recommended Action</p>
-        <p className="text-sm text-purple-900">{insights.recommended_action}</p>
-        <p className="text-xs text-purple-600 mt-1">via {insights.recommended_channel}</p>
+      <div className="bg-blue-50 rounded-lg p-3">
+        <p className="text-xs font-medium text-blue-700 mb-1">Recommended Action</p>
+        <p className="text-sm text-blue-900">{insights.recommended_action}</p>
+        <p className="text-xs text-blue-600 mt-1">via {insights.recommended_channel}</p>
       </div>
 
       {/* Conversation summary */}
@@ -219,7 +219,7 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
               {leadEmail && (
                 <button
                   onClick={() => setShowSendModal(true)}
-                  className="text-purple-500 hover:text-purple-700 p-0.5"
+                  className="text-blue-500 hover:text-blue-700 p-0.5"
                   title="Send"
                 >
                   <Send className="w-4 h-4" />

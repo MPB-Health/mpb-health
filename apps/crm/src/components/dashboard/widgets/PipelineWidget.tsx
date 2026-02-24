@@ -78,7 +78,7 @@ export default function PipelineWidget({ config, size }: BaseWidgetProps) {
       {pipelineStages.length > maxStages && (
         <Link
           to="/pipeline"
-          className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-violet-600 hover:text-violet-700 transition-colors"
+          className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
         >
           View all stages
           <ArrowRight className="h-4 w-4" />

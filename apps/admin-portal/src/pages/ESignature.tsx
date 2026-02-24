@@ -44,7 +44,7 @@ const STATUS_COLORS: Record<DocumentStatus, string> = {
   draft: 'bg-gray-100 text-gray-600',
   sent: 'bg-blue-100 text-blue-700',
   viewed: 'bg-yellow-100 text-yellow-700',
-  signed: 'bg-purple-100 text-purple-700',
+  signed: 'bg-blue-100 text-blue-700',
   completed: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-700',
   voided: 'bg-gray-100 text-gray-500',
@@ -389,8 +389,8 @@ export default function ESignature() {
                 <div key={provider.id} className="p-4 hover:bg-surface-secondary/50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                        <PenTool className="w-6 h-6 text-purple-600" />
+                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                        <PenTool className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">

@@ -168,7 +168,7 @@ export function WidgetWrapper({
       style={style}
       className={cn(
         'bg-white dark:bg-gray-800 rounded-xl border shadow-sm overflow-hidden transition-all duration-200',
-        isSelected && isEditMode && 'ring-2 ring-violet-500 border-violet-500',
+        isSelected && isEditMode && 'ring-2 ring-blue-500 border-blue-500',
         isDragging && 'shadow-lg',
         !isEditMode && 'hover:shadow-md'
       )}
@@ -186,7 +186,7 @@ export function WidgetWrapper({
           {isEditMode && (
             <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0" />
           )}
-          <Icon className="h-4 w-4 text-violet-500 flex-shrink-0" />
+          <Icon className="h-4 w-4 text-blue-500 flex-shrink-0" />
           <span className="font-medium text-sm truncate">{widgetConfig.title}</span>
         </div>
 

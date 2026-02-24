@@ -142,7 +142,7 @@ export default function BulletinsList() {
           { label: 'Total Bulletins', value: stats.total, icon: FileText, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
           { label: 'Published', value: stats.published, icon: Eye, color: 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400' },
           { label: 'Drafts', value: stats.draft, icon: EyeOff, color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400' },
-          { label: 'Total Views', value: stats.totalViews, icon: BarChart3, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400' },
+          { label: 'Total Views', value: stats.totalViews, icon: BarChart3, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
         ].map((stat) => (
           <div key={stat.label} className="bg-surface-primary rounded-xl border border-th-border p-4 flex items-center space-x-4">
             <div className={`p-3 rounded-xl ${stat.color}`}>

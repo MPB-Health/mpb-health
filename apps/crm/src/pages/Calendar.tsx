@@ -57,7 +57,7 @@ const EVENT_TYPE_COLORS: Record<CalendarEventType, { bg: string; text: string; d
   call:      { bg: 'bg-green-100',  text: 'text-green-800',  dot: 'bg-green-500',  border: 'border-green-400' },
   follow_up: { bg: 'bg-amber-100',  text: 'text-amber-800',  dot: 'bg-amber-500',  border: 'border-amber-400' },
   deadline:  { bg: 'bg-red-100',    text: 'text-red-800',    dot: 'bg-red-500',    border: 'border-red-400' },
-  reminder:  { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-500', border: 'border-purple-400' },
+  reminder:  { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500', border: 'border-blue-400' },
   other:     { bg: 'bg-gray-100',   text: 'text-gray-700',   dot: 'bg-gray-400',   border: 'border-gray-400' },
 };
 

@@ -33,7 +33,7 @@ const ACTION_COLORS: Record<string, string> = {
   update: 'bg-blue-100 text-blue-800',
   delete: 'bg-red-100 text-red-800',
   view: 'bg-gray-100 text-gray-800',
-  login: 'bg-purple-100 text-purple-800',
+  login: 'bg-blue-100 text-blue-800',
   logout: 'bg-gray-100 text-gray-800',
 };
 

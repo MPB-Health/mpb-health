@@ -424,10 +424,10 @@ export default function Products() {
                             <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded font-medium">Cost Sharing</span>
                           )}
                           {plan.is_mec_compliant && (
-                            <span className="text-[10px] px-2 py-0.5 bg-purple-50 text-purple-600 rounded font-medium">MEC</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded font-medium">MEC</span>
                           )}
                           {plan.is_hsa_compatible && (
-                            <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded font-medium">HSA</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-600 rounded font-medium">HSA</span>
                           )}
                         </div>
                       </div>

@@ -80,15 +80,15 @@ const ACTION_ICONS: Record<string, typeof Search> = {
 };
 
 const ENTITY_COLORS: Record<string, string> = {
-  lead: 'text-purple-500',
+  lead: 'text-blue-500',
   account: 'text-blue-500',
   contact: 'text-green-500',
   deal: 'text-amber-500',
   product: 'text-cyan-500',
-  quote: 'text-indigo-500',
+  quote: 'text-blue-500',
   invoice: 'text-rose-500',
   campaign: 'text-orange-500',
-  task: 'text-emerald-500',
+  task: 'text-green-500',
 };
 
 // ============================================================================
@@ -143,7 +143,7 @@ function ResultItem({ result, isSelected, onSelect }: ResultItemProps) {
       onClick={onSelect}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
         isSelected
-          ? 'bg-violet-50 dark:bg-violet-900/20 border-l-2 border-violet-600'
+          ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-600'
           : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-l-2 border-transparent'
       }`}
     >
@@ -159,7 +159,7 @@ function ResultItem({ result, isSelected, onSelect }: ResultItemProps) {
       <span className="text-xs text-gray-500 capitalize bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
         {result.entity_type}
       </span>
-      {isSelected && <ArrowRight className="w-4 h-4 text-violet-600" />}
+      {isSelected && <ArrowRight className="w-4 h-4 text-blue-600" />}
     </button>
   );
 }
@@ -182,7 +182,7 @@ function ActionItem({ action, isSelected, onSelect }: ActionItemProps) {
       onClick={onSelect}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
         isSelected
-          ? 'bg-violet-50 dark:bg-violet-900/20 border-l-2 border-violet-600'
+          ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-600'
           : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-l-2 border-transparent'
       }`}
     >
@@ -404,7 +404,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
               }
               className="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
             />
-            {loading && <Loader2 className="w-5 h-5 text-violet-600 animate-spin" />}
+            {loading && <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />}
             <button
               onClick={close}
               className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors"
@@ -421,7 +421,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
               onClick={() => setMode('search')}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 mode === 'search'
-                  ? 'text-violet-600 border-b-2 border-violet-600'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
@@ -432,7 +432,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
               onClick={() => setMode('commands')}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 mode === 'commands'
-                  ? 'text-violet-600 border-b-2 border-violet-600'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >

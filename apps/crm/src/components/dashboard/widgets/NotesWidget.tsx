@@ -73,7 +73,7 @@ export default function NotesWidget({ config, size }: BaseWidgetProps) {
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Write a note..."
-            className="w-full p-2 text-sm border rounded-lg resize-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 dark:bg-gray-700 dark:border-gray-600"
+            className="w-full p-2 text-sm border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
             rows={3}
             autoFocus
           />
@@ -87,7 +87,7 @@ export default function NotesWidget({ config, size }: BaseWidgetProps) {
             <button
               onClick={handleAddNote}
               disabled={!newNote.trim()}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors disabled:opacity-50"
             >
               Save
             </button>
@@ -96,7 +96,7 @@ export default function NotesWidget({ config, size }: BaseWidgetProps) {
       ) : (
         <button
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 w-full p-2 mb-4 text-sm text-gray-500 border-2 border-dashed rounded-lg hover:border-violet-300 hover:text-violet-600 transition-colors"
+          className="flex items-center gap-2 w-full p-2 mb-4 text-sm text-gray-500 border-2 border-dashed rounded-lg hover:border-blue-300 hover:text-blue-600 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Add a note
@@ -140,7 +140,7 @@ const NOTE_COLORS: Record<string, string> = {
   yellow: 'bg-yellow-50 dark:bg-yellow-900/20',
   green: 'bg-green-50 dark:bg-green-900/20',
   blue: 'bg-blue-50 dark:bg-blue-900/20',
-  purple: 'bg-purple-50 dark:bg-purple-900/20',
+  blue: 'bg-blue-50 dark:bg-blue-900/20',
   red: 'bg-red-50 dark:bg-red-900/20',
   orange: 'bg-orange-50 dark:bg-orange-900/20',
 };

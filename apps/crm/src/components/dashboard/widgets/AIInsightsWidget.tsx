@@ -155,7 +155,7 @@ export default function AIInsightsWidget({ config, size }: BaseWidgetProps) {
     return (
       <div className="p-4">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-5 w-5 text-violet-500 animate-pulse" />
+          <Sparkles className="h-5 w-5 text-blue-500 animate-pulse" />
           <span className="text-sm text-gray-500">Analyzing your data...</span>
         </div>
         <div className="space-y-3 animate-pulse">
@@ -181,7 +181,7 @@ export default function AIInsightsWidget({ config, size }: BaseWidgetProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 pb-4 border-b dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 text-white">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
@@ -236,7 +236,7 @@ const INSIGHT_STYLES: Record<string, { bg: string; border: string; icon: string 
     icon: 'text-blue-500',
   },
   trend: {
-    bg: 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20',
+    bg: 'bg-gradient-to-r from-green-50 to-green-50 dark:from-green-900/20 dark:to-green-900/20',
     border: 'border-l-green-500',
     icon: 'text-green-500',
   },
@@ -274,7 +274,7 @@ function InsightCard({ insight }: InsightCardProps) {
           {insight.actionLink && (
             <Link
               to={insight.actionLink}
-              className="inline-flex items-center gap-1 mt-2 text-sm text-violet-600 hover:text-violet-700 font-medium"
+              className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
               {insight.actionLabel || 'Take action'}
               <ArrowRight className="h-3.5 w-3.5" />

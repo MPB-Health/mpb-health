@@ -102,11 +102,11 @@ export default function AIMessageAssistant({
   if (!isOpen) return null;
 
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200 overflow-hidden">
+    <div className="bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl border border-blue-200 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white/50 border-b border-purple-200">
+      <div className="flex items-center justify-between px-4 py-3 bg-white/50 border-b border-blue-200">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-500 flex items-center justify-center">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <div>
@@ -140,13 +140,13 @@ export default function AIMessageAssistant({
                   onClick={() => setSelectedAction(action.value)}
                   className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${
                     isSelected
-                      ? 'border-purple-300 bg-white shadow-sm'
+                      ? 'border-blue-300 bg-white shadow-sm'
                       : 'border-transparent bg-white/50 hover:bg-white'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isSelected ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <Icon className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
                   <div>
-                    <p className={`text-sm font-medium ${isSelected ? 'text-purple-900' : 'text-gray-700'}`}>
+                    <p className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>
                       {action.label}
                     </p>
                     <p className="text-xs text-gray-500">{action.description}</p>
@@ -170,7 +170,7 @@ export default function AIMessageAssistant({
                   onClick={() => setSelectedTone(tone.value)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                     selectedTone === tone.value
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-100'
                   }`}
                 >
@@ -185,7 +185,7 @@ export default function AIMessageAssistant({
         <button
           onClick={handleAssist}
           disabled={loading || !originalMessage.trim()}
-          className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {loading ? (
             <>

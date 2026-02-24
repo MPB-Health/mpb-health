@@ -55,7 +55,7 @@ export default function CalendarWidget({ config, size }: BaseWidgetProps) {
       <div className="flex items-center gap-3 mb-4 pb-4 border-b dark:border-gray-700">
         <div className="text-center">
           <p className="text-xs text-gray-500 uppercase">{now.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-          <p className="text-2xl font-bold text-violet-600">{now.getDate()}</p>
+          <p className="text-2xl font-bold text-blue-600">{now.getDate()}</p>
           <p className="text-xs text-gray-500">{now.toLocaleDateString('en-US', { month: 'short' })}</p>
         </div>
         <div className="flex-1">
@@ -75,7 +75,7 @@ export default function CalendarWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/calendar"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-violet-600 hover:text-violet-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View calendar
         <ArrowRight className="h-4 w-4" />
@@ -106,7 +106,7 @@ const EVENT_ICONS: Record<string, typeof Video> = {
 };
 
 const EVENT_COLORS: Record<string, string> = {
-  meeting: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30',
+  meeting: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
   call: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
   appointment: 'bg-green-100 text-green-600 dark:bg-green-900/30',
 };

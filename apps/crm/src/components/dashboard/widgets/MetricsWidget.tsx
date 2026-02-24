@@ -30,7 +30,7 @@ const METRICS: Record<string, MetricConfig> = {
     key: 'total_leads',
     label: 'Total Leads',
     icon: Users,
-    color: 'violet',
+    color: 'blue',
     getValue: (stats) => stats.total_leads || 0,
   },
   new_leads: {
@@ -58,7 +58,7 @@ const METRICS: Record<string, MetricConfig> = {
     key: 'conversion_rate',
     label: 'Conversion Rate',
     icon: TrendingUp,
-    color: 'emerald',
+    color: 'green',
     getValue: (stats) => stats.conversion_rate || 0,
     format: (value) => `${value.toFixed(1)}%`,
   },
@@ -73,11 +73,11 @@ const METRICS: Record<string, MetricConfig> = {
 };
 
 const COLOR_CLASSES: Record<string, { bg: string; text: string; icon: string }> = {
-  violet: { bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-600', icon: 'text-violet-500' },
+  blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600', icon: 'text-blue-500' },
   green: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600', icon: 'text-green-500' },
   blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600', icon: 'text-blue-500' },
   red: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600', icon: 'text-red-500' },
-  emerald: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600', icon: 'text-emerald-500' },
+  emerald: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600', icon: 'text-green-500' },
   amber: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600', icon: 'text-amber-500' },
 };
 
@@ -92,7 +92,7 @@ export default function MetricsWidget({ config, size }: BaseWidgetProps) {
   const showTrend = config.showTrend !== false;
 
   const metricConfig = METRICS[metricKey] || METRICS.total_leads;
-  const colors = COLOR_CLASSES[metricConfig.color] || COLOR_CLASSES.violet;
+  const colors = COLOR_CLASSES[metricConfig.color] || COLOR_CLASSES.blue;
 
   const value = useMemo(() => {
     return metricConfig.getValue((dashboardStats as unknown) as Record<string, number>);

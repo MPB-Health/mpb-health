@@ -158,7 +158,7 @@ export default function TeamWidget({ config, size }: BaseWidgetProps) {
                   className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800"
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800 bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-xs font-medium text-violet-600">
+                <div className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800 bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-xs font-medium text-blue-600">
                   {member.full_name.charAt(0)}
                 </div>
               )}
@@ -219,7 +219,7 @@ function TeamMembersList({ members }: TeamMembersListProps) {
                 className="h-10 w-10 rounded-full"
               />
             ) : (
-              <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-sm font-medium text-violet-600">
+              <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-sm font-medium text-blue-600">
                 {member.full_name.charAt(0)}
               </div>
             )}
@@ -278,7 +278,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
   call: 'bg-green-100 text-green-600 dark:bg-green-900/30',
   task: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
   note: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30',
-  lead: 'bg-violet-100 text-violet-600 dark:bg-violet-900/30',
+  lead: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
   message: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30',
 };
 

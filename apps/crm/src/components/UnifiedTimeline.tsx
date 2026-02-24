@@ -97,14 +97,14 @@ const TYPE_CONFIG: Record<
   },
   call: {
     icon: Phone,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-100',
+    color: 'text-green-600',
+    bgColor: 'bg-green-100',
     label: 'Call',
   },
   meeting: {
     icon: Video,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
     label: 'Meeting',
   },
   note: {
@@ -121,8 +121,8 @@ const TYPE_CONFIG: Record<
   },
   stage_change: {
     icon: ArrowRightLeft,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-100',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
     label: 'Stage Change',
   },
   deal: {
@@ -133,8 +133,8 @@ const TYPE_CONFIG: Record<
   },
   calendar_event: {
     icon: Calendar,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
     label: 'Event',
   },
 };

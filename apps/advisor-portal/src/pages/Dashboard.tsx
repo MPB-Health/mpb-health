@@ -436,7 +436,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <button onClick={() => setAffiliateModalOpen(true)} className="text-left h-full w-full">
           <div className="relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden hover:border-th-accent-300 h-full">
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 via-blue-500 to-blue-500 opacity-60 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-th-text-secondary">Affiliates</p>
@@ -444,7 +444,7 @@ export default function Dashboard() {
                   Know someone who would be a perfect fit for MPB Health?
                 </p>
               </div>
-              <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
+              <div className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
                 <Users className="w-5 h-5" />
               </div>
             </div>
@@ -626,15 +626,15 @@ export default function Dashboard() {
                   return (
                     <div
                       key={meeting.id}
-                      className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800' : ''}`}
+                      className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800' : ''}`}
                     >
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-purple-600' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
-                        <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-blue-600' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                        <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-th-text-primary">
                           {meeting.title}
-                          {isNext && <span className="ml-2 text-xs font-semibold text-purple-600 dark:text-purple-400">Next</span>}
+                          {isNext && <span className="ml-2 text-xs font-semibold text-blue-600 dark:text-blue-400">Next</span>}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
                           <Calendar className="w-4 h-4 text-th-text-tertiary" />
@@ -648,7 +648,7 @@ export default function Dashboard() {
                           href={joinUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
                           Join
@@ -669,15 +669,15 @@ export default function Dashboard() {
                   return (
                     <div
                       key={date.toISOString()}
-                      className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800' : ''}`}
+                      className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800' : ''}`}
                     >
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-purple-600' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
-                        <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-blue-600' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                        <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-th-text-primary">
                           Advisor Meeting
-                          {isNext && <span className="ml-2 text-xs font-semibold text-purple-600 dark:text-purple-400">Next</span>}
+                          {isNext && <span className="ml-2 text-xs font-semibold text-blue-600 dark:text-blue-400">Next</span>}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
                           <Calendar className="w-4 h-4 text-th-text-tertiary" />
@@ -691,7 +691,7 @@ export default function Dashboard() {
                           href={TEAMS_MEETING_URL}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
                           Join
@@ -791,7 +791,7 @@ export default function Dashboard() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-surface-primary rounded-2xl w-full max-w-lg mx-4 shadow-xl overflow-hidden">
             {/* Header gradient */}
-            <div className="relative bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 px-6 py-8 text-white">
+            <div className="relative bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 px-6 py-8 text-white">
               <button
                 type="button"
                 onClick={() => setAffiliateModalOpen(false)}
@@ -813,16 +813,16 @@ export default function Dashboard() {
             {/* Body */}
             <div className="px-6 py-6 space-y-5">
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex-shrink-0 mt-0.5">
-                  <Heart className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex-shrink-0 mt-0.5">
+                  <Heart className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <p className="text-sm text-th-text-secondary leading-relaxed">
                   If you know someone who thrives in a dynamic environment and is dedicated to making a real impact in healthcare, we'd love to meet them!
                 </p>
               </div>
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex-shrink-0 mt-0.5">
-                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex-shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <p className="text-sm text-th-text-secondary leading-relaxed">
                   Refer a friend or colleague and help us grow the MPB Health advisor community. Together, we can make healthcare more accessible and affordable.
@@ -838,7 +838,7 @@ export default function Dashboard() {
                     setAffiliateModalOpen(false);
                     setScheduleCallOpen(true);
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all"
                 >
                   <Calendar className="w-4 h-4" />
                   Schedule a Call
@@ -857,7 +857,7 @@ export default function Dashboard() {
                   setAffiliateModalOpen(false);
                   setApplicationFormOpen(true);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors dark:text-purple-300 dark:bg-purple-900/20 dark:border-purple-800 dark:hover:bg-purple-900/30"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors dark:text-blue-300 dark:bg-blue-900/20 dark:border-blue-800 dark:hover:bg-blue-900/30"
               >
                 <FileTextIcon className="w-4 h-4" />
                 Application Form

@@ -100,7 +100,7 @@ function DashboardContent() {
     <div
       className={cn(
         'flex flex-col min-h-screen',
-        editMode && 'bg-violet-50/50 dark:bg-violet-950/20'
+        editMode && 'bg-blue-50/50 dark:bg-blue-950/20'
       )}
     >
       {/* Toolbar */}
@@ -108,7 +108,7 @@ function DashboardContent() {
 
       {/* Edit mode indicator */}
       {editMode && (
-        <div className="bg-violet-100 dark:bg-violet-900/30 px-4 py-2 text-sm text-violet-700 dark:text-violet-300 border-b border-violet-200 dark:border-violet-800">
+        <div className="bg-blue-100 dark:bg-blue-900/30 px-4 py-2 text-sm text-blue-700 dark:text-blue-300 border-b border-blue-200 dark:border-blue-800">
           <span className="font-medium">Edit Mode:</span> Drag widgets to reorder, resize using the controls, or remove widgets you don't need.
         </div>
       )}

@@ -140,7 +140,7 @@ export default function Automation() {
                     {TRIGGER_LABELS[rule.trigger_type] || rule.trigger_type}
                   </span>
                   <span className="text-th-text-tertiary text-xs">&rarr;</span>
-                  <span className="inline-block px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded text-xs font-medium">
+                  <span className="inline-block px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-xs font-medium">
                     {ACTION_LABELS[rule.action_type] || rule.action_type}
                   </span>
                 </div>

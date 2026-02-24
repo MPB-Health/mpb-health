@@ -71,11 +71,11 @@ const ACTION_ICONS: Record<string, typeof Search> = {
 };
 
 const ENTITY_COLORS: Record<SearchEntityType | string, string> = {
-  lead: 'text-purple-500',
+  lead: 'text-blue-500',
   message: 'text-blue-500',
   task: 'text-green-500',
   document: 'text-yellow-500',
-  training: 'text-indigo-500',
+  training: 'text-blue-500',
   sequence: 'text-cyan-500',
 };
 

@@ -90,7 +90,7 @@ export function DashboardToolbar() {
             <>
               <button
                 onClick={() => setShowCatalog(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Add Widget
@@ -110,7 +110,7 @@ export function DashboardToolbar() {
                 disabled={isSaving}
                 className={cn(
                   'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                  'bg-violet-600 text-white hover:bg-violet-700',
+                  'bg-blue-600 text-white hover:bg-blue-700',
                   isSaving && 'opacity-50 cursor-not-allowed'
                 )}
               >
@@ -139,7 +139,7 @@ export function DashboardToolbar() {
             className={cn(
               'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               editMode
-                ? 'bg-violet-600 text-white hover:bg-violet-700'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             )}
           >

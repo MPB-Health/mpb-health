@@ -909,10 +909,10 @@ export default function PlanEditor() {
                   <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded font-medium">Cost Sharing</span>
                 )}
                 {formData.is_mec_compliant && (
-                  <span className="text-[10px] px-2 py-0.5 bg-purple-50 text-purple-600 rounded font-medium">MEC Compliant</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded font-medium">MEC Compliant</span>
                 )}
                 {formData.is_hsa_compatible && (
-                  <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded font-medium">HSA Compatible</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-600 rounded font-medium">HSA Compatible</span>
                 )}
               </div>
 

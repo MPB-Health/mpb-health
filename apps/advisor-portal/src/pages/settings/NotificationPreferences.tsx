@@ -288,8 +288,8 @@ export default function NotificationPreferences() {
           {/* Push Notifications */}
           <div className="bg-surface-primary rounded-xl border border-th-border-primary p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Smartphone className="w-5 h-5 text-purple-600" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Smartphone className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-th-text-primary">Push Notifications</h2>
@@ -368,8 +368,8 @@ export default function NotificationPreferences() {
           {/* Digest Settings */}
           <div className="bg-surface-primary rounded-xl border border-th-border-primary p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Clock className="w-5 h-5 text-indigo-600" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Clock className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-th-text-primary">Digest Schedule</h2>

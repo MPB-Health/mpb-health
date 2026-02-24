@@ -98,7 +98,7 @@ export default function TasksWidget({ config }: BaseWidgetProps) {
 
       <Link
         to="/tasks"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-violet-600 hover:text-violet-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all tasks
         <ArrowRight className="h-4 w-4" />
@@ -118,7 +118,7 @@ function ViewButton({ active, onClick, children }: { active: boolean; onClick: (
       className={cn(
         'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
         active
-          ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
+          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
           : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
       )}
     >

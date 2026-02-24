@@ -73,7 +73,7 @@ export default function Enrollments() {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'advisor':
-        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
       case 'member':
         return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
       case 'partner':

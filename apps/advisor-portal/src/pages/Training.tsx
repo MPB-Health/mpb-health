@@ -697,7 +697,7 @@ const courses: CourseCard[] = [
     topicCount: 8,
     lessonCount: 24,
     href: '/training/mpb',
-    gradient: 'from-blue-600 via-indigo-600 to-purple-700',
+    gradient: 'from-blue-600 via-blue-600 to-blue-700',
     icon: GraduationCap,
     available: true,
   },
@@ -1137,7 +1137,7 @@ export default function Training({ section }: TrainingProps) {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 text-white flex-shrink-0 rounded-t-xl">
+      <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white flex-shrink-0 rounded-t-xl">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/training')}
@@ -1293,7 +1293,7 @@ export default function Training({ section }: TrainingProps) {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center max-w-md px-6">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-6">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mx-auto mb-6">
                 <GraduationCap className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-xl font-bold text-th-text-primary mb-2">

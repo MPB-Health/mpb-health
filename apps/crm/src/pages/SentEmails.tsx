@@ -185,7 +185,7 @@ export default function SentEmails() {
               <BarChart3 className="w-4 h-4" />
               <span className="text-sm">CTO Rate</span>
             </div>
-            <p className="text-2xl font-bold text-purple-600">{stats.click_to_open_rate}%</p>
+            <p className="text-2xl font-bold text-blue-600">{stats.click_to_open_rate}%</p>
           </div>
         </div>
       )}

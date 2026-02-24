@@ -35,7 +35,7 @@ const CATEGORY_ICONS: Record<NotificationCategory | 'default', typeof Bell> = {
 };
 
 const CATEGORY_COLORS: Record<NotificationCategory | 'default', string> = {
-  lead: 'bg-purple-100 text-purple-600',
+  lead: 'bg-blue-100 text-blue-600',
   message: 'bg-blue-100 text-blue-600',
   task: 'bg-green-100 text-green-600',
   compliance: 'bg-yellow-100 text-yellow-600',

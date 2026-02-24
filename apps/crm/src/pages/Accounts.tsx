@@ -60,7 +60,7 @@ function getTypeColors(type: string) {
     case 'customer':
       return { bg: 'bg-green-100', text: 'text-green-700' };
     case 'prospect':
-      return { bg: 'bg-purple-100', text: 'text-purple-700' };
+      return { bg: 'bg-blue-100', text: 'text-blue-700' };
     case 'partner':
       return { bg: 'bg-blue-100', text: 'text-blue-700' };
     case 'vendor':

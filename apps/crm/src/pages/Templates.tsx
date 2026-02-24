@@ -105,15 +105,15 @@ const SAMPLE_LEAD_DATA: Record<string, string> = {
 const CATEGORY_COLORS: Record<string, string> = {
   general: 'bg-gray-100 text-gray-700',
   follow_up: 'bg-amber-100 text-amber-700',
-  welcome: 'bg-emerald-100 text-emerald-700',
+  welcome: 'bg-green-100 text-green-700',
   appointment: 'bg-blue-100 text-blue-700',
-  nurture: 'bg-purple-100 text-purple-700',
-  pitch: 'bg-indigo-100 text-indigo-700',
+  nurture: 'bg-blue-100 text-blue-700',
+  pitch: 'bg-blue-100 text-blue-700',
   cold_outreach: 'bg-cyan-100 text-cyan-700',
   proposal: 'bg-rose-100 text-rose-700',
   objection_handling: 'bg-orange-100 text-orange-700',
-  re_engagement: 'bg-teal-100 text-teal-700',
-  upsell: 'bg-fuchsia-100 text-fuchsia-700',
+  re_engagement: 'bg-blue-100 text-blue-700',
+  upsell: 'bg-blue-100 text-blue-700',
 };
 
 // =============================================================================
@@ -155,7 +155,7 @@ function TypeBadge({ type }: { type: TemplateType }) {
   const config = {
     email: { bg: 'bg-blue-100 text-blue-700', icon: Mail },
     sms: { bg: 'bg-green-100 text-green-700', icon: MessageSquare },
-    both: { bg: 'bg-purple-100 text-purple-700', icon: Send },
+    both: { bg: 'bg-blue-100 text-blue-700', icon: Send },
   };
   const { bg, icon: Icon } = config[type];
   return (
@@ -906,7 +906,7 @@ function TemplateEditorModal({
                     key={field.key}
                     type="button"
                     onClick={() => insertMergeField(field.key)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-md hover:bg-indigo-100 transition-colors border border-indigo-200"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors border border-blue-200"
                   >
                     <span>{`{{${field.key}}}`}</span>
                   </button>
@@ -1002,7 +1002,7 @@ function TemplateEditorModal({
                   ).map((v) => (
                     <span
                       key={v.key}
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-50 text-indigo-700 border border-indigo-200"
+                      className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200"
                     >
                       {v.label}
                     </span>

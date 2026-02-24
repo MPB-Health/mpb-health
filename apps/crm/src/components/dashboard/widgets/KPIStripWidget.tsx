@@ -35,7 +35,7 @@ interface KPIMetric {
   trend?: 'up' | 'down' | 'flat';
   trendValue?: string;
   icon: React.ElementType;
-  color: 'violet' | 'green' | 'blue' | 'orange' | 'red' | 'gray';
+  color: 'blue' | 'green' | 'blue' | 'orange' | 'red' | 'gray';
   onClick?: () => void;
 }
 
@@ -72,7 +72,7 @@ export default function KPIStripWidget({ config, size }: BaseWidgetProps) {
       value: totalLeads,
       trend: 'flat',
       icon: GitBranch,
-      color: 'violet',
+      color: 'blue',
     },
     {
       id: 'conversion',
@@ -179,9 +179,9 @@ function KPICard({ metric }: KPICardProps) {
 
 function getColorStyles(color: KPIMetric['color']) {
   const colors = {
-    violet: {
-      bg: 'bg-violet-100 dark:bg-violet-900/30',
-      icon: 'text-violet-600 dark:text-violet-400',
+    blue: {
+      bg: 'bg-blue-100 dark:bg-blue-900/30',
+      icon: 'text-blue-600 dark:text-blue-400',
     },
     green: {
       bg: 'bg-green-100 dark:bg-green-900/30',
@@ -223,7 +223,7 @@ export function KPIStrip() {
     {
       label: 'Pipeline',
       value: dashboardStats?.total_leads || 0,
-      color: 'violet' as const,
+      color: 'blue' as const,
     },
     {
       label: 'Tasks Due',
@@ -246,7 +246,7 @@ export function KPIStrip() {
             metric.color === 'green' ? 'text-green-600' :
             metric.color === 'red' ? 'text-red-600' :
             metric.color === 'blue' ? 'text-blue-600' :
-            'text-violet-600'
+            'text-blue-600'
           )}>
             {metric.value}
           </span>

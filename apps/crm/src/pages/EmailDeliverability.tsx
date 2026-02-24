@@ -736,16 +736,16 @@ export default function EmailDeliverability() {
           />
           <MetricCard
             icon={<Mail className="w-5 h-5" />}
-            iconColor="text-purple-500"
-            iconBg="bg-purple-50"
+            iconColor="text-blue-500"
+            iconBg="bg-blue-50"
             label="Open Rate"
             value={`${metrics.openRate.toFixed(1)}%`}
             subtext={`${metrics.opened.toLocaleString()} opens`}
           />
           <MetricCard
             icon={<MousePointerClick className="w-5 h-5" />}
-            iconColor="text-indigo-500"
-            iconBg="bg-indigo-50"
+            iconColor="text-blue-500"
+            iconBg="bg-blue-50"
             label="Click Rate"
             value={`${metrics.clickRate.toFixed(1)}%`}
             subtext={`${metrics.clicked.toLocaleString()} clicks`}

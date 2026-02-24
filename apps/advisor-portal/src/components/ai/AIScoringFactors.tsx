@@ -26,7 +26,7 @@ interface AIScoringFactorsProps {
 const FACTOR_TYPE_COLORS: Record<string, string> = {
   engagement: 'bg-blue-100 text-blue-700',
   response_time: 'bg-green-100 text-green-700',
-  sentiment: 'bg-purple-100 text-purple-700',
+  sentiment: 'bg-blue-100 text-blue-700',
   intent: 'bg-orange-100 text-orange-700',
   recency: 'bg-cyan-100 text-cyan-700',
   completeness: 'bg-pink-100 text-pink-700',
@@ -61,11 +61,11 @@ export default function AIScoringFactors({
     return (
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 overflow-hidden ${className}`}
+        className={`w-full bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg border border-blue-200 overflow-hidden ${className}`}
       >
         <div className="flex items-center justify-between p-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-500 flex items-center justify-center">
               <Brain className="h-4 w-4 text-white" />
             </div>
             <span className="text-sm font-medium text-gray-900">AI Score Factors</span>
@@ -86,7 +86,7 @@ export default function AIScoringFactors({
         </div>
 
         {isExpanded && (
-          <div className="border-t border-purple-200 p-3 space-y-2">
+          <div className="border-t border-blue-200 p-3 space-y-2">
             {factors.map((factor) => (
               <FactorRow key={factor.id} factor={factor} />
             ))}
@@ -99,9 +99,9 @@ export default function AIScoringFactors({
   return (
     <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-gray-200">
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50 to-blue-50 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-500 flex items-center justify-center">
             <Brain className="h-4 w-4 text-white" />
           </div>
           <div>

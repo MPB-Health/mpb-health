@@ -174,7 +174,7 @@ const TRIGGER_LABELS: Record<TriggerType, { label: string; icon: typeof Zap }> =
 const STEP_TYPE_CONFIG: Record<StepType, { label: string; icon: typeof Mail; color: string; bg: string }> = {
   email: { label: 'Email', icon: Mail, color: 'text-blue-600', bg: 'bg-blue-50' },
   wait: { label: 'Wait', icon: Timer, color: 'text-amber-600', bg: 'bg-amber-50' },
-  condition: { label: 'Condition', icon: GitBranch, color: 'text-purple-600', bg: 'bg-purple-50' },
+  condition: { label: 'Condition', icon: GitBranch, color: 'text-blue-600', bg: 'bg-blue-50' },
   task: { label: 'Task', icon: ListChecks, color: 'text-green-600', bg: 'bg-green-50' },
 };
 
@@ -182,7 +182,7 @@ const ENROLLMENT_STATUS_CONFIG: Record<EnrollmentStatus, { label: string; color:
   active: { label: 'Active', color: 'text-green-700', bg: 'bg-green-100' },
   paused: { label: 'Paused', color: 'text-amber-700', bg: 'bg-amber-100' },
   completed: { label: 'Completed', color: 'text-blue-700', bg: 'bg-blue-100' },
-  replied: { label: 'Replied', color: 'text-purple-700', bg: 'bg-purple-100' },
+  replied: { label: 'Replied', color: 'text-blue-700', bg: 'bg-blue-100' },
   bounced: { label: 'Bounced', color: 'text-red-700', bg: 'bg-red-100' },
   unsubscribed: { label: 'Unsubscribed', color: 'text-gray-700', bg: 'bg-gray-100' },
   removed: { label: 'Removed', color: 'text-gray-500', bg: 'bg-gray-50' },
@@ -513,7 +513,7 @@ function SequenceCard({
           <p className="text-[10px] uppercase tracking-wider text-th-text-secondary font-medium">Completed</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-purple-600">{sequence.total_replied}</p>
+          <p className="text-lg font-bold text-blue-600">{sequence.total_replied}</p>
           <p className="text-[10px] uppercase tracking-wider text-th-text-secondary font-medium">Replied</p>
         </div>
         <div className="text-center">
@@ -536,7 +536,7 @@ function SequenceCard({
         </div>
         <div className="flex items-center justify-between text-xs mt-1.5">
           <span className="text-th-text-secondary">Reply Rate</span>
-          <span className="font-medium text-purple-600">{replyRate}%</span>
+          <span className="font-medium text-blue-600">{replyRate}%</span>
         </div>
       </div>
     </div>
@@ -790,7 +790,7 @@ function StepCard({
                   />
                 </div>
               )}
-              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200 text-sm text-purple-700">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm text-blue-700">
                 <GitBranch className="w-4 h-4 inline-block mr-1.5" />
                 Leads matching this condition continue; others skip to next non-condition step.
               </div>
@@ -1456,7 +1456,7 @@ function SequenceAnalytics({
                         <span className="text-th-text-secondary">{step.total_clicked}</span>
                       </div>
                       <div className="flex items-center gap-1 text-xs" title="Replied">
-                        <MessageSquareReply className="w-3 h-3 text-purple-500" />
+                        <MessageSquareReply className="w-3 h-3 text-blue-500" />
                         <span className="text-th-text-secondary">{step.total_replied}</span>
                       </div>
                     </div>
@@ -1508,7 +1508,7 @@ function SequenceAnalytics({
                     <td className="px-4 py-2.5 text-right text-th-text-primary">{step.total_clicked}</td>
                     <td className="px-4 py-2.5 text-right text-green-600 font-medium">{pct(step.total_clicked, step.total_sent)}%</td>
                     <td className="px-4 py-2.5 text-right text-th-text-primary">{step.total_replied}</td>
-                    <td className="px-4 py-2.5 text-right text-purple-600 font-medium">{pct(step.total_replied, step.total_sent)}%</td>
+                    <td className="px-4 py-2.5 text-right text-blue-600 font-medium">{pct(step.total_replied, step.total_sent)}%</td>
                   </tr>
                 );
               })}

@@ -54,7 +54,7 @@ export interface EntityHeaderProps {
   entityIcon?: LucideIcon;
   entityStatus?: {
     label: string;
-    color: 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'purple';
+    color: 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'blue';
   };
 
   // Quick actions
@@ -96,7 +96,7 @@ const statusColors = {
   green: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
   yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
   red: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
-  purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300',
+  blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
 };
 
 function StatusBadge({ label, color }: { label: string; color: keyof typeof statusColors }) {
@@ -130,7 +130,7 @@ function QuickActionButton({
 }: QuickActionButtonProps) {
   const variantStyles = {
     default: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800',
-    primary: 'text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-900/30',
+    primary: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30',
     danger: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30',
   };
 
@@ -192,7 +192,7 @@ function OverflowMenu({ actions }: OverflowMenuProps) {
             const Icon = action.icon;
             const variantColors = {
               default: 'text-gray-700 dark:text-gray-300',
-              primary: 'text-violet-600 dark:text-violet-400',
+              primary: 'text-blue-600 dark:text-blue-400',
               danger: 'text-red-600 dark:text-red-400',
             };
             return (
@@ -312,8 +312,8 @@ export function EntityHeader({
           {/* Left: Entity info */}
           <div className="flex items-center gap-4 min-w-0">
             {EntityIcon && (
-              <div className="w-12 h-12 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                <EntityIcon className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                <EntityIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
             )}
             <div className="min-w-0">

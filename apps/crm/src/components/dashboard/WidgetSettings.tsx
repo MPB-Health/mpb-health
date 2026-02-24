@@ -74,8 +74,8 @@ export function WidgetSettings({ widget, isOpen, onClose }: WidgetSettingsProps)
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30">
-              <Icon className="h-5 w-5 text-violet-600" />
+            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+              <Icon className="h-5 w-5 text-blue-600" />
             </div>
             <div>
               <h2 className="text-lg font-semibold">{widgetConfig.title} Settings</h2>
@@ -102,7 +102,7 @@ export function WidgetSettings({ widget, isOpen, onClose }: WidgetSettingsProps)
                 onClick={() => setLocalSize(size)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   localSize === size
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -146,7 +146,7 @@ export function WidgetSettings({ widget, isOpen, onClose }: WidgetSettingsProps)
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
               Save Changes
             </button>
@@ -179,7 +179,7 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
             type="text"
             value={(value as string) || ''}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 dark:bg-gray-700 dark:border-gray-600"
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />
           {field.description && (
             <p className="text-xs text-gray-500 mt-1">{field.description}</p>
@@ -197,7 +197,7 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
             type="number"
             value={(value as number) || 0}
             onChange={(e) => onChange(parseInt(e.target.value, 10))}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 dark:bg-gray-700 dark:border-gray-600"
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />
           {field.description && (
             <p className="text-xs text-gray-500 mt-1">{field.description}</p>
@@ -214,7 +214,7 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
           <select
             value={(value as string) || ''}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 dark:bg-gray-700 dark:border-gray-600"
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
           >
             {field.options?.map((option) => (
               <option key={option.value} value={option.value}>
@@ -236,7 +236,7 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
             id={field.key}
             checked={(value as boolean) || false}
             onChange={(e) => onChange(e.target.checked)}
-            className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <label
             htmlFor={field.key}

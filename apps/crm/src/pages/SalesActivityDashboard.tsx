@@ -904,8 +904,8 @@ export default function SalesActivityDashboard() {
         />
         <KPICard
           icon={<MailOpen className="w-5 h-5" />}
-          iconColor="text-indigo-500"
-          iconBg="bg-indigo-50"
+          iconColor="text-blue-500"
+          iconBg="bg-blue-50"
           label="Emails Received"
           value={kpis.emailsReceived.toLocaleString()}
         />
@@ -918,8 +918,8 @@ export default function SalesActivityDashboard() {
         />
         <KPICard
           icon={<Calendar className="w-5 h-5" />}
-          iconColor="text-purple-500"
-          iconBg="bg-purple-50"
+          iconColor="text-blue-500"
+          iconBg="bg-blue-50"
           label="Meetings Held"
           value={kpis.meetingsHeld.toLocaleString()}
         />
@@ -932,8 +932,8 @@ export default function SalesActivityDashboard() {
         />
         <KPICard
           icon={<DollarSign className="w-5 h-5" />}
-          iconColor="text-emerald-500"
-          iconBg="bg-emerald-50"
+          iconColor="text-green-500"
+          iconBg="bg-green-50"
           label="Pipeline Influenced"
           value={formatCurrency(kpis.pipelineValue)}
         />

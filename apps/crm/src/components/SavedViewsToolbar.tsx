@@ -165,7 +165,7 @@ export function SavedViewsToolbar({
             className={cn(
               'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors',
               activeView
-                ? 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-900/30 dark:border-violet-700 dark:text-violet-300'
+                ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
                 : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
             )}
           >
@@ -185,12 +185,12 @@ export function SavedViewsToolbar({
                 }}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-800',
-                  !activeView && 'bg-violet-50 dark:bg-violet-900/30'
+                  !activeView && 'bg-blue-50 dark:bg-blue-900/30'
                 )}
               >
                 <LayoutGrid className="w-4 h-4 text-gray-400" />
                 <span>All Records</span>
-                {!activeView && <Check className="w-4 h-4 text-violet-600 ml-auto" />}
+                {!activeView && <Check className="w-4 h-4 text-blue-600 ml-auto" />}
               </button>
 
               {/* Saved Views */}
@@ -205,7 +205,7 @@ export function SavedViewsToolbar({
                       key={view.id}
                       className={cn(
                         'group flex items-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800',
-                        activeView?.id === view.id && 'bg-violet-50 dark:bg-violet-900/30'
+                        activeView?.id === view.id && 'bg-blue-50 dark:bg-blue-900/30'
                       )}
                     >
                       <button
@@ -218,7 +218,7 @@ export function SavedViewsToolbar({
                         {view.isPinned && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
                         <span className="truncate">{view.name}</span>
                         {activeView?.id === view.id && (
-                          <Check className="w-4 h-4 text-violet-600 ml-auto" />
+                          <Check className="w-4 h-4 text-blue-600 ml-auto" />
                         )}
                       </button>
                       {onViewDelete && (
@@ -244,7 +244,7 @@ export function SavedViewsToolbar({
                     setShowViewsDropdown(false);
                     setShowSaveViewModal(true);
                   }}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                 >
                   <BookmarkPlus className="w-4 h-4" />
                   Save Current View
@@ -260,14 +260,14 @@ export function SavedViewsToolbar({
           className={cn(
             'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors',
             hasActiveFilters
-              ? 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-900/30 dark:border-violet-700 dark:text-violet-300'
+              ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
               : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
           )}
         >
           <SlidersHorizontal className="w-4 h-4" />
           <span>Filters</span>
           {hasActiveFilters && (
-            <span className="bg-violet-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+            <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
               {activeFilters.length}
             </span>
           )}
@@ -296,7 +296,7 @@ export function SavedViewsToolbar({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         )}
@@ -501,7 +501,7 @@ function FiltersPanel({ availableFilters, activeFilters, onFiltersChange, onClos
         {/* Add Filter Button */}
         <button
           onClick={handleAddFilter}
-          className="flex items-center gap-2 text-sm text-violet-600 hover:text-violet-700"
+          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
         >
           <Plus className="w-4 h-4" />
           Add Filter
@@ -518,7 +518,7 @@ function FiltersPanel({ availableFilters, activeFilters, onFiltersChange, onClos
         </button>
         <button
           onClick={handleApply}
-          className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
         >
           Apply Filters
         </button>
@@ -553,13 +553,13 @@ function FilterPill({ filter, availableFilters, onRemove }: FilterPillProps) {
   };
 
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full text-xs">
+    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
       <span className="font-medium">{field?.label || filter.field}</span>
-      <span className="text-violet-500">{operatorLabels[filter.operator]}</span>
+      <span className="text-blue-500">{operatorLabels[filter.operator]}</span>
       {filter.value !== null && <span>"{filter.value}"</span>}
       <button
         onClick={onRemove}
-        className="ml-1 hover:text-violet-900 dark:hover:text-violet-100"
+        className="ml-1 hover:text-blue-900 dark:hover:text-blue-100"
       >
         <X className="w-3 h-3" />
       </button>
@@ -604,7 +604,7 @@ function SaveViewModal({ viewName, onViewNameChange, onSave, onClose }: SaveView
           <button
             onClick={onSave}
             disabled={!viewName.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
           >
             Save View
           </button>

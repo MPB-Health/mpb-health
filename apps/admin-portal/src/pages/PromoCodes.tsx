@@ -282,7 +282,7 @@ export default function PromoCodes() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                         {code.discount_type === 'percentage' && <Percent className="w-3 h-3" />}
                         {code.discount_type === 'fixed' && <DollarSign className="w-3 h-3" />}
                         {code.discount_type === 'free_months' && <Calendar className="w-3 h-3" />}

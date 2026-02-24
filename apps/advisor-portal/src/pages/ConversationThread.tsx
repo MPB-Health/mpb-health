@@ -294,7 +294,7 @@ export default function ConversationThread() {
             onClick={() => setShowAIAssist(!showAIAssist)}
             className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               showAIAssist
-                ? 'bg-purple-100 text-purple-700'
+                ? 'bg-blue-100 text-blue-700'
                 : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
             }`}
           >
@@ -362,7 +362,7 @@ export default function ConversationThread() {
         )}
 
         {showAIAssist && !content.trim() && (
-          <div className="mb-3 p-4 bg-purple-50 border border-purple-200 rounded-xl text-center text-sm text-purple-600">
+          <div className="mb-3 p-4 bg-blue-50 border border-blue-200 rounded-xl text-center text-sm text-blue-600">
             Start typing your message to get AI assistance
           </div>
         )}

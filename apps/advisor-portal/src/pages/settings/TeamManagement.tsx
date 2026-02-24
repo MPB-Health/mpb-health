@@ -60,7 +60,7 @@ function getInitials(firstName: string | null, lastName: string | null): string 
 function getRoleBadgeColor(role: string): string {
   switch (role) {
     case 'admin':
-      return 'bg-purple-100 text-purple-700';
+      return 'bg-blue-100 text-blue-700';
     case 'manager':
       return 'bg-blue-100 text-blue-700';
     case 'advisor':

@@ -27,7 +27,7 @@ export default function Login() {
       appName="CRM"
       appDescription="MPB Health Customer Relationship Management"
       onSubmit={handleSubmit}
-      accentVariant="cyan"
+      accentVariant="blue"
       showForgotPassword={false}
       showRememberMe={true}
       emailPlaceholder="you@mympb.com"

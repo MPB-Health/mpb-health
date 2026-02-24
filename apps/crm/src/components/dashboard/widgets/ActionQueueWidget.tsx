@@ -203,7 +203,7 @@ function FilterButton({
       className={cn(
         'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
         active
-          ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
+          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
           : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
       )}
     >

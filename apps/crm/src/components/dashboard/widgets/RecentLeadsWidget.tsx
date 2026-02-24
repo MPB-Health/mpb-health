@@ -42,7 +42,7 @@ export default function RecentLeadsWidget({ config, size }: BaseWidgetProps) {
             className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           >
             {showAvatar && (
-              <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 font-medium text-sm">
+              <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-medium text-sm">
                 {getInitials(lead.first_name, lead.last_name)}
               </div>
             )}
@@ -63,7 +63,7 @@ export default function RecentLeadsWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/leads"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-violet-600 hover:text-violet-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all leads
         <ArrowRight className="h-4 w-4" />

@@ -49,7 +49,7 @@ function getCategoryColor(type: IntegrationType): string {
     case 'crm':
       return 'bg-blue-100 text-blue-700';
     case 'email':
-      return 'bg-purple-100 text-purple-700';
+      return 'bg-blue-100 text-blue-700';
     case 'sms':
       return 'bg-green-100 text-green-700';
     case 'calendar':

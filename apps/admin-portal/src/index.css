@@ -5,19 +5,22 @@
 @tailwind utilities;
 
 /* ============================================================================
-   Admin Portal - Blue/Indigo Accent Overrides
+   Admin Portal - MPB Health Brand Blue Accent Overrides
    ============================================================================ */
 :root {
-  --accent-50: 238 242 255;
-  --accent-100: 224 231 254;
-  --accent-200: 199 210 254;
-  --accent-300: 165 180 252;
-  --accent-400: 129 140 248;
-  --accent-500: 99 102 241;
-  --accent-600: 79 70 229;
-  --accent-700: 67 56 202;
-  --accent-800: 55 48 163;
-  --accent-900: 49 46 129;
+  --accent-50: 232 244 253;
+  --accent-100: 209 233 251;
+  --accent-200: 163 211 247;
+  --accent-300: 117 189 243;
+  --accent-400: 71 167 239;
+  --accent-500: 12 113 195;
+  --accent-600: 10 78 142;
+  --accent-700: 15 101 161;
+  --accent-800: 10 78 142;
+  --accent-900: 8 61 113;
+
+  --sidebar-bg: 14 45 65;
+  --sidebar-hover: 10 78 142;
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

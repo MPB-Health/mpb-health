@@ -111,7 +111,7 @@ export function WidgetCatalog({ isOpen, onClose }: WidgetCatalogProps) {
                 placeholder="Search widgets..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 dark:bg-gray-700 dark:border-gray-600"
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
               />
             </div>
 
@@ -119,7 +119,7 @@ export function WidgetCatalog({ isOpen, onClose }: WidgetCatalogProps) {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value as WidgetCategory | 'all')}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 dark:bg-gray-700 dark:border-gray-600"
+              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
             >
               <option value="all">All Categories</option>
               {categories.map((category) => (
@@ -179,14 +179,14 @@ function WidgetCard({ widget, onAdd }: WidgetCardProps) {
     <div
       className={cn(
         'flex items-start gap-4 p-4 rounded-xl border',
-        'hover:border-violet-300 dark:hover:border-violet-600',
-        'hover:bg-violet-50 dark:hover:bg-violet-900/10',
+        'hover:border-blue-300 dark:hover:border-blue-600',
+        'hover:bg-blue-50 dark:hover:bg-blue-900/10',
         'transition-all cursor-pointer group'
       )}
       onClick={onAdd}
     >
-      <div className="p-2.5 rounded-lg bg-violet-100 dark:bg-violet-900/30 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/50 transition-colors">
-        <Icon className="h-5 w-5 text-violet-600" />
+      <div className="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+        <Icon className="h-5 w-5 text-blue-600" />
       </div>
 
       <div className="flex-1 min-w-0">
@@ -199,7 +199,7 @@ function WidgetCard({ widget, onAdd }: WidgetCardProps) {
               e.stopPropagation();
               onAdd();
             }}
-            className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-600 hover:bg-violet-200 dark:hover:bg-violet-900/50 opacity-0 group-hover:opacity-100 transition-all"
+            className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/50 opacity-0 group-hover:opacity-100 transition-all"
           >
             <Plus className="h-4 w-4" />
           </button>

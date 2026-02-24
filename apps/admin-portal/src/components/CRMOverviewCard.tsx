@@ -67,8 +67,8 @@ export default function CRMOverviewCard() {
           <p className="text-xs text-th-text-tertiary">New Today</p>
         </div>
         <div className="text-center">
-          <div className="flex items-center justify-center w-9 h-9 bg-purple-100 dark:bg-purple-900/30 rounded-lg mx-auto mb-2">
-            <TrendingUp className="w-4.5 h-4.5 text-purple-600 dark:text-purple-400" />
+          <div className="flex items-center justify-center w-9 h-9 bg-blue-100 dark:bg-blue-900/30 rounded-lg mx-auto mb-2">
+            <TrendingUp className="w-4.5 h-4.5 text-blue-600 dark:text-blue-400" />
           </div>
           <p className="text-xl font-bold text-th-text-primary">{summary.conversion_rate}%</p>
           <p className="text-xs text-th-text-tertiary">Conversion</p>

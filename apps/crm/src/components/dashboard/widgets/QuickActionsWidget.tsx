@@ -23,20 +23,20 @@ interface QuickAction {
 }
 
 const ACTIONS: QuickAction[] = [
-  { id: 'add-lead', label: 'Add Lead', icon: UserPlus, color: 'violet', description: 'Create a new lead' },
+  { id: 'add-lead', label: 'Add Lead', icon: UserPlus, color: 'blue', description: 'Create a new lead' },
   { id: 'add-task', label: 'Add Task', icon: CheckSquare, color: 'blue', description: 'Schedule a task' },
   { id: 'log-call', label: 'Log Call', icon: Phone, color: 'green', description: 'Record a call' },
   { id: 'add-note', label: 'Add Note', icon: StickyNote, color: 'yellow', description: 'Quick note' },
-  { id: 'add-event', label: 'Add Event', icon: Calendar, color: 'purple', description: 'Schedule event' },
+  { id: 'add-event', label: 'Add Event', icon: Calendar, color: 'blue', description: 'Schedule event' },
   { id: 'send-email', label: 'Send Email', icon: Mail, color: 'cyan', description: 'Compose email' },
 ];
 
 const COLOR_CLASSES: Record<string, { bg: string; hover: string; text: string }> = {
-  violet: { bg: 'bg-violet-100 dark:bg-violet-900/30', hover: 'hover:bg-violet-200 dark:hover:bg-violet-900/50', text: 'text-violet-600' },
+  blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50', text: 'text-blue-600' },
   blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50', text: 'text-blue-600' },
   green: { bg: 'bg-green-100 dark:bg-green-900/30', hover: 'hover:bg-green-200 dark:hover:bg-green-900/50', text: 'text-green-600' },
   yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', hover: 'hover:bg-yellow-200 dark:hover:bg-yellow-900/50', text: 'text-yellow-600' },
-  purple: { bg: 'bg-purple-100 dark:bg-purple-900/30', hover: 'hover:bg-purple-200 dark:hover:bg-purple-900/50', text: 'text-purple-600' },
+  blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50', text: 'text-blue-600' },
   cyan: { bg: 'bg-cyan-100 dark:bg-cyan-900/30', hover: 'hover:bg-cyan-200 dark:hover:bg-cyan-900/50', text: 'text-cyan-600' },
 };
 
@@ -64,7 +64,7 @@ export default function QuickActionsWidget({ size }: BaseWidgetProps) {
         )}
       >
         {displayActions.map((action) => {
-          const colors = COLOR_CLASSES[action.color] || COLOR_CLASSES.violet;
+          const colors = COLOR_CLASSES[action.color] || COLOR_CLASSES.blue;
           const Icon = action.icon;
 
           return (

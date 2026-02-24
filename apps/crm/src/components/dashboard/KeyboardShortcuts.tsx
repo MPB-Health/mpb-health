@@ -208,8 +208,8 @@ export function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShortcutsHelp
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30">
-              <Keyboard className="h-5 w-5 text-violet-600" />
+            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+              <Keyboard className="h-5 w-5 text-blue-600" />
             </div>
             <div>
               <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>

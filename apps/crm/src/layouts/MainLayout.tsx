@@ -470,7 +470,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       <AppLayout
         appName="CRM"
-        logoSrc="/logo.png"
+        logoSrc="/assets/MPB-Health-No-background.png"
         navigation={visibleNav}
         portalSwitcher={
           <PortalSwitcher

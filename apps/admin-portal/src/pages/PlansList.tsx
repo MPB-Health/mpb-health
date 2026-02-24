@@ -268,12 +268,12 @@ export default function PlansList() {
                     </span>
                   )}
                   {plan.is_mec_compliant && (
-                    <span className="px-2 py-0.5 bg-purple-50 rounded text-[10px] font-medium text-purple-600">
+                    <span className="px-2 py-0.5 bg-blue-50 rounded text-[10px] font-medium text-blue-600">
                       MEC
                     </span>
                   )}
                   {plan.is_hsa_compatible && (
-                    <span className="px-2 py-0.5 bg-emerald-50 rounded text-[10px] font-medium text-emerald-600">
+                    <span className="px-2 py-0.5 bg-green-50 rounded text-[10px] font-medium text-green-600">
                       HSA
                     </span>
                   )}

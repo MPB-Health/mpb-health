@@ -40,10 +40,10 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof MessageSquare> = {
 
 const SUGGESTION_COLORS: Record<SuggestionType, string> = {
   message_draft: 'from-blue-500 to-cyan-500',
-  reply_suggestion: 'from-purple-500 to-pink-500',
+  reply_suggestion: 'from-blue-500 to-pink-500',
   score_adjustment: 'from-green-500 to-green-600',
   lane_move: 'from-orange-500 to-amber-500',
-  next_action: 'from-indigo-500 to-violet-500',
+  next_action: 'from-blue-500 to-blue-500',
 };
 
 export default function AISuggestionsPanel({
@@ -113,7 +113,7 @@ export default function AISuggestionsPanel({
   return (
     <div className={`space-y-3 ${className}`}>
       <div className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-blue-500 flex items-center justify-center">
           <Sparkles className="h-3.5 w-3.5 text-white" />
         </div>
         <h3 className="text-sm font-semibold text-gray-900">AI Suggestions</h3>

@@ -192,7 +192,7 @@ export default function Reports() {
                 <p className="text-xs text-th-text-tertiary mt-1">Avg First Contact</p>
               </div>
               <div className="text-center p-4 bg-surface-tertiary rounded-lg">
-                <Clock className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                <Clock className="w-6 h-6 text-blue-500 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-th-text-primary">{responseTime.median_first_contact_hours}h</p>
                 <p className="text-xs text-th-text-tertiary mt-1">Median First Contact</p>
               </div>

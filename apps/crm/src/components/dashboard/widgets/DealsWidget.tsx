@@ -80,7 +80,7 @@ export default function DealsWidget({ config, size }: BaseWidgetProps) {
           icon={Briefcase}
           label="Total Deals"
           value={stats.total.toString()}
-          color="violet"
+          color="blue"
         />
         <StatCard
           icon={DollarSign}
@@ -124,7 +124,7 @@ export default function DealsWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/deals"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-violet-600 hover:text-violet-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all deals
         <ArrowRight className="h-4 w-4" />
@@ -141,11 +141,11 @@ interface StatCardProps {
   icon: typeof Briefcase;
   label: string;
   value: string;
-  color: 'violet' | 'blue' | 'green';
+  color: 'blue' | 'blue' | 'green';
 }
 
 const COLOR_CLASSES = {
-  violet: 'bg-violet-100 text-violet-600 dark:bg-violet-900/30',
+  blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
   blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
   green: 'bg-green-100 text-green-600 dark:bg-green-900/30',
 };

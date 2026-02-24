@@ -142,7 +142,7 @@ export default function QuickLinks() {
         href="https://mpb.health/download-app/"
         target="_blank"
         rel="noopener noreferrer"
-        className="group relative block rounded-xl border border-th-accent-200 dark:border-th-accent-800 bg-gradient-to-r from-th-accent-50 via-blue-50 to-indigo-50 dark:from-th-accent-950/40 dark:via-blue-950/30 dark:to-indigo-950/30 overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-400 hover:-translate-y-0.5"
+        className="group relative block rounded-xl border border-th-accent-200 dark:border-th-accent-800 bg-gradient-to-r from-th-accent-50 via-blue-50 to-blue-50 dark:from-th-accent-950/40 dark:via-blue-950/30 dark:to-blue-950/30 overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-400 hover:-translate-y-0.5"
       >
         <div className="flex items-center justify-between px-6 py-5">
           <div className="flex items-center gap-5">

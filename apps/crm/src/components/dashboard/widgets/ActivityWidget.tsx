@@ -27,10 +27,10 @@ const ACTIVITY_ICONS: Record<string, typeof Phone> = {
 const ACTIVITY_COLORS: Record<string, string> = {
   call: 'bg-blue-500',
   email: 'bg-green-500',
-  meeting: 'bg-purple-500',
+  meeting: 'bg-blue-500',
   note: 'bg-yellow-500',
-  task_created: 'bg-violet-500',
-  task_completed: 'bg-emerald-500',
+  task_created: 'bg-blue-500',
+  task_completed: 'bg-green-500',
 };
 
 // ============================================================================
@@ -92,7 +92,7 @@ export default function ActivityWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/leads"
-        className="flex items-center justify-center gap-1 mt-2 pt-4 border-t dark:border-gray-700 text-sm text-violet-600 hover:text-violet-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-2 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all activity
         <ArrowRight className="h-4 w-4" />

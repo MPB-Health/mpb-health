@@ -45,7 +45,7 @@ const statusColors: Record<CampaignStatus, { bg: string; text: string }> = {
   scheduled: { bg: 'bg-blue-100', text: 'text-blue-700' },
   active: { bg: 'bg-green-100', text: 'text-green-700' },
   paused: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  completed: { bg: 'bg-purple-100', text: 'text-purple-700' },
+  completed: { bg: 'bg-blue-100', text: 'text-blue-700' },
   cancelled: { bg: 'bg-red-100', text: 'text-red-700' },
 };
 
@@ -53,9 +53,9 @@ const memberStatusColors: Record<MemberStatus, { bg: string; text: string }> = {
   pending: { bg: 'bg-gray-100', text: 'text-gray-700' },
   sent: { bg: 'bg-blue-100', text: 'text-blue-700' },
   opened: { bg: 'bg-cyan-100', text: 'text-cyan-700' },
-  clicked: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
+  clicked: { bg: 'bg-blue-100', text: 'text-blue-700' },
   responded: { bg: 'bg-green-100', text: 'text-green-700' },
-  converted: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  converted: { bg: 'bg-green-100', text: 'text-green-700' },
   unsubscribed: { bg: 'bg-orange-100', text: 'text-orange-700' },
   bounced: { bg: 'bg-red-100', text: 'text-red-700' },
 };
@@ -336,7 +336,7 @@ export default function CampaignDetail() {
               {canComplete && (
                 <button
                   onClick={() => setShowConfirmAction('complete')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100"
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100"
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>Complete</span>
@@ -386,8 +386,8 @@ export default function CampaignDetail() {
         </div>
         <div className="bg-surface-primary rounded-xl border border-th-border p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <MousePointer className="w-5 h-5 text-purple-600" />
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <MousePointer className="w-5 h-5 text-blue-600" />
             </div>
             <div>
               <p className="text-sm text-th-text-tertiary">Click Rate</p>
@@ -702,7 +702,7 @@ export default function CampaignDetail() {
                     label="Clicked"
                     value={stats.clickedCount}
                     icon={<MousePointer className="w-4 h-4" />}
-                    color="indigo"
+                    color="blue"
                     percentage={stats.clickRate}
                   />
                   <StatRow
@@ -716,7 +716,7 @@ export default function CampaignDetail() {
                     label="Converted"
                     value={stats.convertedCount}
                     icon={<UserCheck className="w-4 h-4" />}
-                    color="emerald"
+                    color="green"
                     percentage={stats.conversionRate}
                   />
                 </div>
@@ -900,7 +900,7 @@ export default function CampaignDetail() {
                   ? 'bg-green-600 hover:bg-green-700'
                   : showConfirmAction === 'pause'
                   ? 'bg-yellow-600 hover:bg-yellow-700'
-                  : 'bg-purple-600 hover:bg-purple-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
               {actionLoading
@@ -936,9 +936,9 @@ function StatRow({
     gray: { bg: 'bg-gray-100', text: 'text-gray-700', bar: 'bg-gray-400' },
     blue: { bg: 'bg-blue-100', text: 'text-blue-700', bar: 'bg-blue-500' },
     cyan: { bg: 'bg-cyan-100', text: 'text-cyan-700', bar: 'bg-cyan-500' },
-    indigo: { bg: 'bg-indigo-100', text: 'text-indigo-700', bar: 'bg-indigo-500' },
+    blue: { bg: 'bg-blue-100', text: 'text-blue-700', bar: 'bg-blue-500' },
     green: { bg: 'bg-green-100', text: 'text-green-700', bar: 'bg-green-500' },
-    emerald: { bg: 'bg-emerald-100', text: 'text-emerald-700', bar: 'bg-emerald-500' },
+    emerald: { bg: 'bg-green-100', text: 'text-green-700', bar: 'bg-green-500' },
     orange: { bg: 'bg-orange-100', text: 'text-orange-700', bar: 'bg-orange-500' },
     red: { bg: 'bg-red-100', text: 'text-red-700', bar: 'bg-red-500' },
   };

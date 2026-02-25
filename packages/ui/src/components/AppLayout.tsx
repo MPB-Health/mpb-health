@@ -109,7 +109,7 @@ export function AppLayout({
         className={cn(
           'fixed top-0 left-0 z-50 h-full flex flex-col',
           'bg-[rgb(var(--sidebar-bg))] text-[rgb(var(--sidebar-text))]',
-          'border-r border-white/[0.06] transition-all duration-300 ease-in-out',
+          'border-r border-[rgb(var(--sidebar-text)_/_0.1)] transition-all duration-300 ease-in-out',
           sidebarWidth,
           isMobile
             ? sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -121,7 +121,7 @@ export function AppLayout({
 
         {/* ---- Logo area ---- */}
         <div className={cn(
-          'border-b border-white/[0.06] shrink-0',
+          'border-b border-[rgb(var(--sidebar-text)_/_0.1)] shrink-0',
           collapsed && !isMobile ? 'flex items-center justify-center h-16 px-2' : 'px-4 py-3'
         )}>
           {collapsed && !isMobile ? (
@@ -140,14 +140,14 @@ export function AppLayout({
                 {isMobile ? (
                   <button
                     onClick={closeSidebar}
-                    className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                    className="p-1.5 rounded-lg text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 ) : (
                   <button
                     onClick={() => setCollapsed(true)}
-                    className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors hidden lg:flex"
+                    className="p-1.5 rounded-lg text-[rgb(var(--sidebar-text)_/_0.6)] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors hidden lg:flex"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -160,7 +160,7 @@ export function AppLayout({
                   <span className="text-white font-bold text-sm">{appName.slice(0, 3).toUpperCase()}</span>
                 </div>
               )}
-              <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider text-center">
+              <span className="text-[11px] font-medium text-[rgb(var(--sidebar-text)_/_0.7)] uppercase tracking-wider text-center">
                 {appName}
               </span>
             </div>
@@ -169,7 +169,7 @@ export function AppLayout({
 
         {/* ---- Portal Switcher ---- */}
         {portalSwitcher && !(collapsed && !isMobile) && (
-          <div className="px-3 py-2 border-b border-white/[0.06]">
+          <div className="px-3 py-2 border-b border-[rgb(var(--sidebar-text)_/_0.1)]">
             {portalSwitcher}
           </div>
         )}
@@ -188,7 +188,7 @@ export function AppLayout({
                     onClick={() => toggleGroup(item.name)}
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                      'text-white/60 hover:text-white hover:bg-white/[0.08]',
+                      'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]',
                       collapsed && !isMobile && 'justify-center px-0'
                     )}
                   >
@@ -204,7 +204,7 @@ export function AppLayout({
                     )}
                   </button>
                   {isExpanded && !(collapsed && !isMobile) && (
-                    <div className="ml-[30px] mt-1 space-y-0.5 border-l border-white/10 pl-3">
+                    <div className="ml-[30px] mt-1 space-y-0.5 border-l border-[rgb(var(--sidebar-text)_/_0.1)] pl-3">
                       {item.children.map((child) =>
                         renderChildNavLink(child, {
                           className: 'block px-3 py-2 rounded-lg text-sm transition-all duration-150',
@@ -247,14 +247,14 @@ export function AppLayout({
 
         {/* ---- Bottom section: User + Theme ---- */}
         <div className={cn(
-          'shrink-0 border-t border-white/[0.06]',
+          'shrink-0 border-t border-[rgb(var(--sidebar-text)_/_0.1)]',
           collapsed && !isMobile ? 'p-2' : 'p-3'
         )}>
           {/* Expand button when collapsed */}
           {collapsed && !isMobile && (
             <button
               onClick={() => setCollapsed(false)}
-              className="w-full flex items-center justify-center p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors mb-2"
+              className="w-full flex items-center justify-center p-2.5 rounded-xl text-[rgb(var(--sidebar-text)_/_0.6)] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors mb-2"
             >
               <ChevronLeft className="w-4 h-4 rotate-180" />
             </button>
@@ -268,7 +268,7 @@ export function AppLayout({
             <ThemeToggle
               size="sm"
               showLabel={!(collapsed && !isMobile)}
-              className="w-full justify-start text-white/60 hover:text-white hover:bg-white/[0.08] rounded-xl px-3 py-2.5"
+              className="w-full justify-start text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] rounded-xl px-3 py-2.5"
             />
           </div>
 

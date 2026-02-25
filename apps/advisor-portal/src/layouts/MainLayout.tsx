@@ -331,8 +331,8 @@ export default function MainLayout() {
         className={({ isActive }) =>
           `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
             isActive
-              ? 'bg-white/15 text-white'
-              : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+              ? 'bg-[rgb(var(--sidebar-active-bg)_/_0.15)] text-[rgb(var(--sidebar-text-active))]'
+              : 'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]'
           }`
         }
       >
@@ -345,15 +345,15 @@ export default function MainLayout() {
             className="w-8 h-8 rounded-full object-cover"
           />
         ) : (
-          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-white/80" />
+          <div className="w-8 h-8 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-[rgb(var(--sidebar-text))]" />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="truncate text-white">
+          <p className="truncate text-[rgb(var(--sidebar-text-active))]">
             {profile?.first_name} {profile?.last_name}
           </p>
-          <p className="text-xs text-white/50 truncate">
+          <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] truncate">
             {profile?.specialization}
           </p>
         </div>
@@ -362,7 +362,7 @@ export default function MainLayout() {
       <button
         onClick={openSupport}
         disabled={ssoLoading}
-        className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.08] transition-all duration-150 disabled:opacity-50"
+        className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150 disabled:opacity-50"
       >
         <Headphones className="w-[18px] h-[18px]" />
         <span>{ssoLoading ? 'Opening...' : 'Support Portal'}</span>
@@ -370,7 +370,7 @@ export default function MainLayout() {
 
       <button
         onClick={logout}
-        className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.08] transition-all duration-150"
+        className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150"
       >
         <LogOut className="w-[18px] h-[18px]" />
         <span>Sign Out</span>
@@ -451,8 +451,8 @@ export default function MainLayout() {
             className={({ isActive }) =>
               `${props.className} ${
                 isActive
-                  ? 'bg-white/15 text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+                  ? 'bg-[rgb(var(--sidebar-active-bg)_/_0.15)] text-[rgb(var(--sidebar-text-active))]'
+                  : 'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]'
               }`
             }
             onClick={props.onClick}
@@ -467,7 +467,7 @@ export default function MainLayout() {
               href={child.href}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${props.className} text-white/50 hover:text-white`}
+              className={`${props.className} text-[rgb(var(--sidebar-text)_/_0.7)] hover:text-[rgb(var(--sidebar-text-active))]`}
               onClick={props.onClick}
             >
               {props.children}
@@ -479,8 +479,8 @@ export default function MainLayout() {
               className={({ isActive }) =>
                 `${props.className} ${
                   isActive
-                    ? 'text-white font-medium'
-                    : 'text-white/50 hover:text-white'
+                    ? 'text-[rgb(var(--sidebar-text-active))] font-medium'
+                    : 'text-[rgb(var(--sidebar-text)_/_0.7)] hover:text-[rgb(var(--sidebar-text-active))]'
                 }`
               }
               onClick={props.onClick}

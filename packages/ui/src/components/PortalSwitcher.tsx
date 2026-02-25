@@ -103,8 +103,8 @@ export function PortalSwitcher({
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150',
-          'text-white/80 hover:text-white hover:bg-white/[0.08]',
-          isOpen && 'bg-white/[0.08] text-white'
+          'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]',
+          isOpen && 'bg-[rgb(var(--sidebar-hover))] text-[rgb(var(--sidebar-text-active))]'
         )}
       >
         <CurrentIcon className="w-4 h-4" />
@@ -119,9 +119,9 @@ export function PortalSwitcher({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 py-2 rounded-xl bg-[rgb(var(--sidebar-bg))] border border-white/10 shadow-xl z-50">
-          <div className="px-3 py-2 border-b border-white/10">
-            <p className="text-xs font-medium text-white/40 uppercase tracking-wider">
+        <div className="absolute top-full left-0 mt-2 w-64 py-2 rounded-xl bg-[rgb(var(--sidebar-bg))] border border-[rgb(var(--sidebar-text)_/_0.1)] shadow-xl z-50">
+          <div className="px-3 py-2 border-b border-[rgb(var(--sidebar-text)_/_0.1)]">
+            <p className="text-xs font-medium text-[rgb(var(--sidebar-text)_/_0.6)] uppercase tracking-wider">
               Switch Portal
             </p>
           </div>
@@ -137,21 +137,21 @@ export function PortalSwitcher({
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all duration-150',
                     isActive
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
+                      ? 'bg-[rgb(var(--sidebar-hover))] text-[rgb(var(--sidebar-text-active))]'
+                      : 'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover)_/_0.5)]'
                   )}
                 >
                   <div
                     className={cn(
                       'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-                      isActive ? 'bg-white/20' : 'bg-white/10'
+                      isActive ? 'bg-[rgb(var(--sidebar-text)_/_0.15)]' : 'bg-[rgb(var(--sidebar-text)_/_0.08)]'
                     )}
                   >
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{portal.name}</p>
-                    <p className="text-xs text-white/40 truncate">{portal.description}</p>
+                    <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.6)] truncate">{portal.description}</p>
                   </div>
                   {isActive && (
                     <Check className="w-4 h-4 text-green-400 shrink-0" />

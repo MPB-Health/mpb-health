@@ -207,8 +207,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         to={item.href}
         className={`${props.className} ${
           isActive
-            ? 'bg-white/15 text-white'
-            : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+            ? 'bg-[rgb(var(--sidebar-active-bg)_/_0.15)] text-[rgb(var(--sidebar-text-active))]'
+            : 'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]'
         }`}
         onClick={props.onClick}
       >
@@ -226,8 +226,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         onClick={props.onClick}
         className={`${props.className} ${
           isActive
-            ? 'bg-white/15 text-white'
-            : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+            ? 'bg-[rgb(var(--sidebar-active-bg)_/_0.15)] text-[rgb(var(--sidebar-text-active))]'
+            : 'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]'
         }`}
       >
         {props.children}
@@ -248,26 +248,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </div>
       {/* User info */}
       <div className="flex items-center space-x-3 px-3">
-        <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
-          <span className="text-white font-medium text-sm">
+        <div className="w-9 h-9 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full flex items-center justify-center">
+          <span className="text-[rgb(var(--sidebar-text-active))] font-medium text-sm">
             {user?.email?.charAt(0).toUpperCase()}
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">
+          <p className="text-sm font-medium text-[rgb(var(--sidebar-text-active))] truncate">
             {user?.email?.split('@')[0]}
           </p>
           {orgRole && (
             <div className="flex items-center gap-1">
-              <Shield className="w-3 h-3 text-white/50" />
-              <p className="text-xs text-white/50 capitalize">{orgRole}</p>
+              <Shield className="w-3 h-3 text-[rgb(var(--sidebar-text)_/_0.7)]" />
+              <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] capitalize">{orgRole}</p>
             </div>
           )}
         </div>
       </div>
       <button
         onClick={handleSignOut}
-        className="w-full flex items-center px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/[0.08] rounded-lg transition-colors"
+        className="w-full flex items-center px-3 py-2 text-sm text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] rounded-lg transition-colors"
       >
         <LogOut className="w-4 h-4 mr-3" />
         Sign out

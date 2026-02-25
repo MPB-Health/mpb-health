@@ -513,15 +513,6 @@ export default function Dashboard() {
                 <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all" />
               </a>
               <a
-                href={advisorLandingPageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center gap-2.5 px-4 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-sm font-medium text-white transition-all border border-white/10"
-              >
-                <ExternalLink className="w-4 h-4" />
-                My Landing Page
-              </a>
-              <a
                 href="https://app.mpb.health/"
                 target="_blank"
                 rel="noopener noreferrer"

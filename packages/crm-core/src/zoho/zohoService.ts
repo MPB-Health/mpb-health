@@ -18,22 +18,22 @@ export class ZohoService {
     this.edgeFunctionUrl = `${supabaseUrl}/functions/v1/zoho-crm`;
   }
 
+  private async getHeaders(): Promise<HeadersInit> {
+    const { data: { session } } = await this.supabase.auth.getSession();
+    const anonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+    const headers: HeadersInit = {
+      'Authorization': `Bearer ${session?.access_token || anonKey}`,
+      'Content-Type': 'application/json',
+    };
+    return headers;
+  }
+
   /**
    * Check if Zoho CRM is configured and accessible
    */
   async checkConfiguration(): Promise<{ configured: boolean; error?: string }> {
     try {
-      const {
-        data: { session },
-      } = await this.supabase.auth.getSession();
-
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
+      const headers = await this.getHeaders();
 
       const response = await fetch(`${this.edgeFunctionUrl}?action=health`, {
         method: 'GET',
@@ -62,17 +62,7 @@ export class ZohoService {
     leadData: ZohoLead
   ): Promise<{ success: boolean; leadId?: string; error?: string }> {
     try {
-      const {
-        data: { session },
-      } = await this.supabase.auth.getSession();
-
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
+      const headers = await this.getHeaders();
 
       const response = await fetch(`${this.edgeFunctionUrl}?action=create`, {
         method: 'POST',
@@ -104,17 +94,7 @@ export class ZohoService {
     updates: Partial<ZohoLead>
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const {
-        data: { session },
-      } = await this.supabase.auth.getSession();
-
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
+      const headers = await this.getHeaders();
 
       const response = await fetch(`${this.edgeFunctionUrl}?action=update`, {
         method: 'POST',
@@ -145,15 +125,7 @@ export class ZohoService {
     email: string
   ): Promise<{ found: boolean; leadId?: string; lead?: unknown }> {
     try {
-      const {
-        data: { session },
-      } = await this.supabase.auth.getSession();
-
-      const headers: HeadersInit = {};
-
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
+      const headers = await this.getHeaders();
 
       const response = await fetch(
         `${this.edgeFunctionUrl}?action=search&email=${encodeURIComponent(email)}`,

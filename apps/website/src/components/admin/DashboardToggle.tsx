@@ -82,11 +82,11 @@ const DashboardToggle: React.FC = () => {
       label: 'Member Dashboard',
       shortLabel: 'Member',
       icon: Users,
-      path: '/member/dashboard',
+      path: getPortalUrl('app'),
       canAccess: true, // All authenticated users
       color: 'bg-purple-600 hover:bg-purple-700',
       activeColor: 'bg-purple-700',
-      external: false,
+      external: true,
     },
   ];
 

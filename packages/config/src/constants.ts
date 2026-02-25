@@ -14,14 +14,16 @@ export const COMPANY = {
 
 export const DOMAINS = {
   website: 'www.mpb.health',
+  app: 'app.mpb.health',
   crm: 'crm.mpb.health',
-  advisors: 'advisors.mpb.health',
+  advisors: 'advisor.mpb.health',
   admin: 'admin.mpb.health',
   training: 'training.mpb.health',
 } as const;
 
 export const DEV_PORTS = {
   website: 5173,
+  app: 5173,
   admin: 5176,
   crm: 5174,
   advisors: 5175,

@@ -19,19 +19,20 @@ const PRIORITY_COLORS = {
 
 export function NotificationCenter() {
   const navigate = useNavigate();
-  const { notificationCenterService } = useCRM();
+  const { notificationCenterService, loading: crmLoading } = useCRM();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<UnifiedNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load unread count on mount and periodically
+  // Load unread count on mount and periodically (only after CRM is ready)
   useEffect(() => {
+    if (crmLoading) return;
     loadUnreadCount();
-    const interval = setInterval(loadUnreadCount, 30_000); // Every 30s
+    const interval = setInterval(loadUnreadCount, 30_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [crmLoading]);
 
   // Close on outside click
   useEffect(() => {

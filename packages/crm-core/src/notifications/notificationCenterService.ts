@@ -2,19 +2,32 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { UnifiedNotification } from './notificationCenterTypes';
 
 export class NotificationCenterService {
+  private tablesAvailable = true;
+
   constructor(private supabase: SupabaseClient) {}
 
+  private async isAuthenticated(): Promise<boolean> {
+    const { data: { session } } = await this.supabase.auth.getSession();
+    return !!session?.access_token;
+  }
+
   async getNotifications(limit: number = 20): Promise<UnifiedNotification[]> {
+    if (!this.tablesAvailable || !(await this.isAuthenticated())) {
+      return [];
+    }
+
     const notifications: UnifiedNotification[] = [];
 
     // 1. Unacknowledged lead notifications
     try {
-      const { data: leadNotifs } = await this.supabase
+      const { data: leadNotifs, error } = await this.supabase
         .from('lead_notifications')
         .select('id, lead_id, priority, is_repeat, created_at, acknowledged_at')
         .is('acknowledged_at', null)
         .order('created_at', { ascending: false })
         .limit(limit);
+
+      if (error) throw error;
 
       if (leadNotifs) {
         // Get lead names for these notifications
@@ -49,20 +62,26 @@ export class NotificationCenterService {
           });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        this.tablesAvailable = false;
+        return [];
+      }
       console.error('Error fetching lead notifications:', error);
     }
 
     // 2. Overdue tasks
     try {
       const now = new Date().toISOString();
-      const { data: overdueTasks } = await this.supabase
+      const { data: overdueTasks, error } = await this.supabase
         .from('lead_tasks')
         .select('id, title, due_date, lead_id')
         .eq('completed', false)
         .lt('due_date', now)
         .order('due_date', { ascending: true })
         .limit(10);
+
+      if (error) throw error;
 
       if (overdueTasks) {
         for (const task of overdueTasks) {
@@ -78,7 +97,11 @@ export class NotificationCenterService {
           });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        this.tablesAvailable = false;
+        return [];
+      }
       console.error('Error fetching overdue tasks:', error);
     }
 
@@ -120,23 +143,44 @@ export class NotificationCenterService {
   }
 
   async getUnreadCount(): Promise<number> {
+    if (!this.tablesAvailable || !(await this.isAuthenticated())) {
+      return 0;
+    }
+
     try {
-      // Count unacknowledged lead notifications
-      const { count: leadCount } = await this.supabase
+      let total = 0;
+
+      const { count: leadCount, error: leadError } = await this.supabase
         .from('lead_notifications')
         .select('id', { count: 'exact', head: true })
         .is('acknowledged_at', null);
 
-      // Count overdue tasks
-      const { count: taskCount } = await this.supabase
+      if (leadError) {
+        if (leadError.code === '42P01' || leadError.message?.includes('does not exist')) {
+          this.tablesAvailable = false;
+          return 0;
+        }
+      } else {
+        total += leadCount || 0;
+      }
+
+      const { count: taskCount, error: taskError } = await this.supabase
         .from('lead_tasks')
         .select('id', { count: 'exact', head: true })
         .eq('completed', false)
         .lt('due_date', new Date().toISOString());
 
-      return (leadCount || 0) + (taskCount || 0);
-    } catch (error) {
-      console.error('Error getting unread count:', error);
+      if (taskError) {
+        if (taskError.code === '42P01' || taskError.message?.includes('does not exist')) {
+          this.tablesAvailable = false;
+          return 0;
+        }
+      } else {
+        total += taskCount || 0;
+      }
+
+      return total;
+    } catch {
       return 0;
     }
   }

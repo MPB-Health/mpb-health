@@ -350,6 +350,21 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const url = new URL(req.url);
+    const action = url.searchParams.get("action");
+
+    // Health check is allowed without Zoho credentials being configured
+    if (req.method === "GET" && action === "health") {
+      const result = await healthCheck();
+      return new Response(JSON.stringify(result), {
+        status: result.success ? 200 : 503,
+        headers: {
+          ...getCorsHeaders(req),
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
     if (!ZOHO_CLIENT_ID || !ZOHO_CLIENT_SECRET || !ZOHO_REFRESH_TOKEN) {
       return new Response(
         JSON.stringify({
@@ -365,9 +380,6 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
-
-    const url = new URL(req.url);
-    const action = url.searchParams.get("action");
 
     if (req.method === "POST") {
       const body = await req.json();
@@ -396,18 +408,6 @@ Deno.serve(async (req: Request) => {
     }
 
     if (req.method === "GET") {
-      // Health check
-      if (action === "health") {
-        const result = await healthCheck();
-        return new Response(JSON.stringify(result), {
-          status: result.success ? 200 : 503,
-          headers: {
-            ...getCorsHeaders(req),
-            "Content-Type": "application/json",
-          },
-        });
-      }
-
       // Search by email
       if (action === "search") {
         const email = url.searchParams.get("email");

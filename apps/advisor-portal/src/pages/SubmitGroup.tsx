@@ -1,13 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   UsersRound,
   Search,
+  Link2,
+  CheckCheck,
+  ExternalLink,
+  Copy,
 } from 'lucide-react';
 import {
   formsService,
   type AdvisorForm,
 } from '@mpbhealth/advisor-core';
 import { sanitizeHtml } from '@mpbhealth/utils';
+
+const WEBSITE_BASE_URL = 'https://mpb.health';
+
+function getShareableUrl(form: AdvisorForm): string | null {
+  if (form.slug) {
+    if (form.slug.startsWith('http')) return form.slug;
+    return `${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`;
+  }
+  if (form.embed_url && form.embed_url.startsWith('http')) return form.embed_url;
+  if (form.cognito_embed && form.cognito_embed.startsWith('http') && !form.cognito_embed.includes('<')) {
+    return form.cognito_embed;
+  }
+  return null;
+}
 
 const fallbackGroups: AdvisorForm[] = [
   {
@@ -57,6 +75,16 @@ export default function SubmitGroup() {
   const [selectedForm, setSelectedForm] = useState<AdvisorForm | null>(null);
   const [forms, setForms] = useState<AdvisorForm[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyLink = useCallback((e: React.MouseEvent, form: AdvisorForm) => {
+    e.stopPropagation();
+    const url = getShareableUrl(form);
+    if (!url) return;
+    navigator.clipboard.writeText(url);
+    setCopiedId(form.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }, []);
 
   useEffect(() => {
     const loadForms = async () => {
@@ -137,16 +165,17 @@ export default function SubmitGroup() {
           {filteredForms.map((form) => {
             const thumbnailUrl = (form as AdvisorForm & { thumbnail_url?: string }).thumbnail_url;
             const hasThumbnail = !!thumbnailUrl;
+            const shareUrl = getShareableUrl(form);
+            const isCopied = copiedId === form.id;
 
             return (
-              <button
+              <div
                 key={form.id}
-                onClick={() => setSelectedForm(form)}
-                className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col text-left"
+                className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all h-full flex flex-col text-left"
               >
                 {hasThumbnail ? (
                   <div
-                    className="document-card__thumbnail bg-surface-tertiary"
+                    className="document-card__thumbnail bg-surface-tertiary cursor-pointer"
                     style={{
                       backgroundImage: `url(${thumbnailUrl})`,
                       backgroundSize: 'cover',
@@ -155,6 +184,7 @@ export default function SubmitGroup() {
                     }}
                     role="img"
                     aria-label={form.label}
+                    onClick={() => setSelectedForm(form)}
                   />
                 ) : (
                   <div className="document-card__content p-5 pb-0">
@@ -162,6 +192,30 @@ export default function SubmitGroup() {
                       <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-surface-tertiary">
                         <UsersRound className="w-6 h-6 text-th-text-tertiary" />
                       </div>
+                      {shareUrl && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => handleCopyLink(e, form)}
+                            className="p-1.5 rounded-lg text-th-text-tertiary hover:text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
+                            title="Copy shareable link"
+                          >
+                            {isCopied ? (
+                              <CheckCheck className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Link2 className="w-4 h-4" />
+                            )}
+                          </button>
+                          <a
+                            href={shareUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg text-th-text-tertiary hover:text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
+                            title="Open in new tab"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -177,10 +231,26 @@ export default function SubmitGroup() {
                   <div className="mt-auto" aria-hidden="true"></div>
                   <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
                     <span className="text-sm text-th-text-tertiary">Form</span>
-                    <span className="text-sm text-th-accent-600 font-medium">Fill out →</span>
+                    <div className="flex items-center gap-2">
+                      {shareUrl && (
+                        <button
+                          onClick={(e) => handleCopyLink(e, form)}
+                          className="flex items-center gap-1 text-xs text-th-text-tertiary hover:text-th-accent-600 transition-colors"
+                        >
+                          {isCopied ? <CheckCheck className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+                          {isCopied ? 'Copied!' : 'Share'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setSelectedForm(form)}
+                        className="text-sm text-th-accent-600 font-medium hover:text-th-accent-700 transition-colors"
+                      >
+                        Fill out →
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -203,18 +273,47 @@ export default function SubmitGroup() {
           <div className="relative min-h-screen flex items-center justify-center p-4">
             <div className="relative bg-surface-primary rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] flex flex-col overflow-hidden">
               <div className="flex items-center justify-between p-4 border-b border-th-border flex-shrink-0">
-                <h2 className="text-lg font-semibold text-th-text-primary">
+                <h2 className="text-lg font-semibold text-th-text-primary truncate mr-4">
                   {selectedForm.label}
                 </h2>
-                <button
-                  onClick={() => setSelectedForm(null)}
-                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {(() => {
+                    const url = getShareableUrl(selectedForm);
+                    if (!url) return null;
+                    const copied = copiedId === selectedForm.id;
+                    return (
+                      <>
+                        <button
+                          onClick={(e) => handleCopyLink(e, selectedForm)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+                          title="Copy shareable link"
+                        >
+                          {copied ? <CheckCheck className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copied ? 'Copied!' : 'Copy Link'}
+                        </button>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+                          title="Open in new tab"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Open
+                        </a>
+                      </>
+                    );
+                  })()}
+                  <button
+                    onClick={() => setSelectedForm(null)}
+                    className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                  >
+                    <span className="sr-only">Close</span>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">
                 {selectedForm.cognito_embed && selectedForm.cognito_embed.includes('<') ? (

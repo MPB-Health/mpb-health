@@ -52,17 +52,24 @@ export default function ChangePassword() {
 
       // Clear the must_change_password flag
       if (profile?.id) {
-        await supabase
+        const { error: flagError } = await supabase
           .from('advisor_profiles')
           .update({ must_change_password: false })
           .eq('id', profile.id);
+
+        if (flagError) {
+          console.error('Failed to clear must_change_password flag:', flagError);
+        }
       }
 
       setSuccess(true);
       toast.success('Password updated successfully!');
 
-      // Refresh profile so the flag is cleared, then redirect
-      await refreshProfile();
+      // Refresh profile in the background — don't block navigation.
+      // Awaiting refreshProfile() here could stall indefinitely when the
+      // session token is being rotated after the password change.
+      refreshProfile().catch(() => {});
+
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 1500);

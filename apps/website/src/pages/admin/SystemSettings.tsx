@@ -23,6 +23,8 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { siteMediaService } from '../../lib/siteMediaService';
+import { toast } from 'sonner';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/button';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
@@ -246,11 +248,16 @@ const SystemSettings: React.FC = () => {
         }
       }
 
+      // Clear media cache so website immediately shows updated videos
+      siteMediaService.clearCache();
+
       setUnsavedChanges({});
       await loadSettings();
+      toast.success('Settings saved successfully. Video changes are now live on the website.');
     } catch (error) {
       console.error('Error saving settings:', error);
-      setSaveError('Failed to save settings. Please try again.');
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      setSaveError(`Failed to save: ${errMsg}`);
     }
 
     setSaving(false);

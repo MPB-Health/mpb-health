@@ -4,7 +4,10 @@
       "Bash(./node_modules/.bin/tsc --noEmit --project apps/website/tsconfig.json)",
       "Bash(apps/website/node_modules/.bin/tsc --noEmit --project apps/website/tsconfig.json)",
       "Bash(./node_modules/.bin/tsc --noEmit --project apps/advisor-portal/tsconfig.json)",
-      "Bash(apps/advisor-portal/node_modules/.bin/tsc --noEmit --project apps/advisor-portal/tsconfig.json)"
+      "Bash(apps/advisor-portal/node_modules/.bin/tsc --noEmit --project apps/advisor-portal/tsconfig.json)",
+      "Bash(supabase --version)",
+      "Bash(supabase projects list)",
+      "Bash(supabase functions deploy ticket-proxy --project-ref dtmnkzllidaiqyheguhl)"
     ]
   }
 }

@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 
 const log = createLogger("admin-toggle-role");
@@ -13,8 +13,15 @@ interface ToggleRoleRequest {
 }
 
 Deno.serve(async (req: Request) => {
+  // Handle CORS preflight - must return 200 with CORS headers for browser requests
   if (req.method === "OPTIONS") {
-    return handleCorsPreflightRequest(req);
+    return new Response("ok", {
+      status: 200,
+      headers: {
+        ...getCorsHeaders(req),
+        "Access-Control-Max-Age": "86400",
+      },
+    });
   }
 
   try {

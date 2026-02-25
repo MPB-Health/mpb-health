@@ -565,7 +565,7 @@ export default function Dashboard() {
       </div>
 
       {/* Action cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Grow Your Tree - Refer Advisors */}
         <button onClick={() => setAffiliateModalOpen(true)} className="text-left h-full w-full group">
           <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">

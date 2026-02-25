@@ -158,20 +158,25 @@ export class TemplateService {
    * Record template usage
    */
   async recordUsage(templateId: string): Promise<void> {
-    const { error } = await supabase
-      .from('message_templates')
-      .update({
-        times_used: supabase.rpc('increment_times_used'),
-        last_used_at: new Date().toISOString(),
-      })
-      .eq('id', templateId);
+    const { error } = await supabase.rpc('increment_message_template_times_used', {
+      template_id: templateId,
+    });
 
-    // Fallback if RPC doesn't exist
     if (error) {
-      await supabase.rpc('sql', {
-        query: `UPDATE message_templates SET times_used = times_used + 1, last_used_at = NOW() WHERE id = $1`,
-        params: [templateId],
-      });
+      // Fallback: fetch current count and update
+      const { data } = await supabase
+        .from('message_templates')
+        .select('times_used')
+        .eq('id', templateId)
+        .single();
+      const newCount = (data?.times_used ?? 0) + 1;
+      await supabase
+        .from('message_templates')
+        .update({
+          times_used: newCount,
+          last_used_at: new Date().toISOString(),
+        })
+        .eq('id', templateId);
     }
   }
 

@@ -177,10 +177,10 @@ export async function getAllUsersWithRoles(): Promise<UserWithRoles[]> {
     if (error) {
       console.warn('Error fetching users with roles via RPC:', error);
       
-      // Fallback: get from user_roles and join manually
+      // Fallback: get from user_roles and join manually (use explicit columns to avoid 400)
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select('*')
+        .select('user_id, role')
         .order('created_at', { ascending: false });
 
       if (rolesError) {

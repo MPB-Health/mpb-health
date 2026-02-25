@@ -9,6 +9,14 @@ type ProxyAction = "list" | "detail" | "stats" | "list_all" | "detail_admin" | "
 
 const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment"];
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_COMMENT_LENGTH = 10_000;
+
+/** Strip characters that could manipulate PostgREST filter syntax */
+function sanitizeSearch(raw: string): string {
+  return raw.replace(/[%_*(),."\\]/g, "").trim().slice(0, 200);
+}
+
 interface ProxyRequest {
   action: ProxyAction;
   ticket_id?: string;
@@ -155,7 +163,10 @@ async function listAllTickets(
   if (opts.status) query = query.eq("status", opts.status);
   if (opts.priority) query = query.eq("priority", opts.priority);
   if (opts.search) {
-    query = query.or(`subject.ilike.%${opts.search}%,ticket_number.eq.${parseInt(opts.search) || 0}`);
+    const safe = sanitizeSearch(opts.search);
+    if (safe) {
+      query = query.or(`subject.ilike.%${safe}%,ticket_number.eq.${parseInt(safe) || 0}`);
+    }
   }
 
   const { data: tickets, count, error } = await query;
@@ -264,7 +275,11 @@ async function addComment(
 ) {
   // Find admin's ITSTS profile
   const authorId = await getItstsUserId(itstsAdmin, authorEmail);
-  if (!authorId) throw new Error("Admin profile not found in support system");
+  if (!authorId) {
+    throw new Error(
+      "Your admin account has not been set up in the support system. Please contact a super admin to create your support profile.",
+    );
+  }
 
   const { error: commentError } = await itstsAdmin
     .from("ticket_comments")
@@ -357,9 +372,9 @@ Deno.serve(async (req: Request) => {
         });
         break;
       case "detail":
-        if (!body.ticket_id) {
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
           return new Response(
-            JSON.stringify({ success: false, error: "ticket_id required" }),
+            JSON.stringify({ success: false, error: "Valid ticket_id required" }),
             { status: 400, headers },
           );
         }
@@ -380,9 +395,9 @@ Deno.serve(async (req: Request) => {
         });
         break;
       case "detail_admin":
-        if (!body.ticket_id) {
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
           return new Response(
-            JSON.stringify({ success: false, error: "ticket_id required" }),
+            JSON.stringify({ success: false, error: "Valid ticket_id required" }),
             { status: 400, headers },
           );
         }
@@ -392,13 +407,19 @@ Deno.serve(async (req: Request) => {
         result = await getAllTicketStats(itstsAdmin);
         break;
       case "add_comment":
-        if (!body.ticket_id || !body.content) {
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
           return new Response(
-            JSON.stringify({ success: false, error: "ticket_id and content required" }),
+            JSON.stringify({ success: false, error: "Valid ticket_id required" }),
             { status: 400, headers },
           );
         }
-        result = await addComment(itstsAdmin, body.ticket_id, body.content, user.email);
+        if (!body.content || body.content.trim().length === 0 || body.content.length > MAX_COMMENT_LENGTH) {
+          return new Response(
+            JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            { status: 400, headers },
+          );
+        }
+        result = await addComment(itstsAdmin, body.ticket_id, body.content.trim(), user.email);
         break;
 
       default:

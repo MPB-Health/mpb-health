@@ -70,6 +70,7 @@ export default function AdminTickets() {
   // Reply
   const [replyContent, setReplyContent] = useState('');
   const [replySending, setReplySending] = useState(false);
+  const [replyError, setReplyError] = useState('');
 
   // Role check
   useEffect(() => {
@@ -140,6 +141,7 @@ export default function AdminTickets() {
   const handleSendReply = async () => {
     if (!selectedTicket || !replyContent.trim()) return;
     setReplySending(true);
+    setReplyError('');
     try {
       await ticketService.addComment(selectedTicket.ticket.id, replyContent.trim());
       // Refresh detail
@@ -147,7 +149,8 @@ export default function AdminTickets() {
       setSelectedTicket(detail);
       setReplyContent('');
     } catch (err) {
-      console.error('Failed to send reply:', err);
+      const msg = err instanceof Error ? err.message : 'Failed to send reply';
+      setReplyError(msg);
     } finally {
       setReplySending(false);
     }
@@ -269,6 +272,12 @@ export default function AdminTickets() {
               rows={4}
               className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-colors resize-none"
             />
+            {replyError && (
+              <div className="flex items-center gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{replyError}</span>
+              </div>
+            )}
             <div className="flex justify-end mt-3">
               <button
                 onClick={handleSendReply}
@@ -320,7 +329,7 @@ export default function AdminTickets() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
             type="text"
-            placeholder="Search by subject, email, or ticket #..."
+            placeholder="Search by subject or ticket #..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"

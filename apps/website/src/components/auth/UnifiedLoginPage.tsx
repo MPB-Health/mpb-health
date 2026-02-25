@@ -70,22 +70,39 @@ export function UnifiedLoginPage({
     const { error: signInError, data } = await signIn(email, password);
     if (signInError) throw signInError;
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data?.user?.id)
-      .maybeSingle();
+    const userId = data?.user?.id;
+    const [profileRes, rolesRes] = await Promise.all([
+      supabase.from('profiles').select('role').eq('id', userId).maybeSingle(),
+      supabase.from('user_roles').select('role').eq('user_id', userId),
+    ]);
 
-    if (profileError) {
-      console.error(`[${portalType}Login] Profile fetch error:`, profileError);
+    if (profileRes.error) {
+      console.error(`[${portalType}Login] Profile fetch error:`, profileRes.error);
+    }
+    if (rolesRes.error) {
+      console.error(`[${portalType}Login] User roles fetch error:`, rolesRes.error);
     }
 
-    const isSuperAdmin = profile?.role === 'superadmin';
+    const profileRole = profileRes.data?.role;
+    const userRoles = (rolesRes.data ?? []).map((r) => r.role);
+
+    // Super admin: profiles.role = 'superadmin' OR user_roles has 'super_admin'
+    const isSuperAdmin =
+      profileRole === 'superadmin' || userRoles.includes('super_admin');
+
+    // Effective roles: profile role + user_roles (map super_admin -> admin for compatibility)
+    const effectiveRoles = new Set<string>();
+    if (profileRole) effectiveRoles.add(profileRole);
+    userRoles.forEach((r) => {
+      effectiveRoles.add(r);
+      if (r === 'super_admin') effectiveRoles.add('admin');
+    });
 
     if (isSuperAdmin) {
       navigate(redirectPath);
     } else if (allowedRoles.length > 0) {
-      if (profile?.role && allowedRoles.includes(profile.role)) {
+      const hasAllowedRole = allowedRoles.some((r) => effectiveRoles.has(r));
+      if (hasAllowedRole) {
         navigate(redirectPath);
       } else {
         const roleDescription = portalType === 'member' ? 'members' : `${portalType}s`;

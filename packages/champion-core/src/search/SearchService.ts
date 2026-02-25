@@ -271,19 +271,25 @@ class SearchService {
    * Record usage of a saved search
    */
   async useSavedSearch(searchId: string): Promise<void> {
-    const { error } = await supabase
-      .from('saved_searches')
-      .update({
-        last_used_at: new Date().toISOString(),
-        use_count: supabase.rpc('increment_use_count'),
-      })
-      .eq('id', searchId);
+    const { error } = await supabase.rpc('increment_saved_search_use_count', {
+      search_id: searchId,
+    });
 
-    // Fallback if RPC doesn't exist
     if (error) {
-      await supabase.rpc('sql', {
-        query: `UPDATE saved_searches SET use_count = use_count + 1, last_used_at = now() WHERE id = '${searchId}'`,
-      });
+      // Fallback: fetch current count and update
+      const { data } = await supabase
+        .from('saved_searches')
+        .select('use_count')
+        .eq('id', searchId)
+        .single();
+      const newCount = (data?.use_count ?? 0) + 1;
+      await supabase
+        .from('saved_searches')
+        .update({
+          use_count: newCount,
+          last_used_at: new Date().toISOString(),
+        })
+        .eq('id', searchId);
     }
   }
 

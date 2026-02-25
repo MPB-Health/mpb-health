@@ -196,12 +196,21 @@ const UserManagement: React.FC = () => {
     await loadUsers();
   };
 
+  // Get the correct reset-password URL based on user's primary portal (role)
+  const getResetRedirectUrl = (roles: UserRole[]): string => {
+    if (roles.includes('super_admin') || roles.includes('admin')) return 'https://admin.mpb.health/reset-password';
+    if (roles.includes('advisor')) return 'https://advisor.mpbhealth.com/reset-password';
+    if (roles.includes('crm_user')) return 'https://crm.mpbhealth.com/reset-password';
+    return 'https://app.mpbhealth.com/reset-password'; // member
+  };
+
   // Send password reset email
-  const handleSendPasswordReset = async (email: string, userId: string) => {
+  const handleSendPasswordReset = async (email: string, userId: string, roles: UserRole[]) => {
     setSendingReset(userId);
     try {
+      const redirectTo = getResetRedirectUrl(roles);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo,
       });
 
       if (error) throw error;
@@ -834,7 +843,7 @@ const UserManagement: React.FC = () => {
 
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleSendPasswordReset(u.email, u.id)} disabled={sendingReset === u.id} title="Send password reset email" className="text-xs">
+                            <Button variant="outline" size="sm" onClick={() => handleSendPasswordReset(u.email, u.id, u.roles)} disabled={sendingReset === u.id} title="Send password reset email" className="text-xs">
                               {sendingReset === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Mail className="h-3 w-3 mr-1" />Reset</>}
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => openPasswordModal(u.id, u.email)} title="Set password directly" className="text-xs">

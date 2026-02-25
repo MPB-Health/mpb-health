@@ -15,6 +15,11 @@ interface CreateUserRequest {
   roles: UserRole[];
   password?: string;
   send_invite: boolean;
+  phone?: string;
+  specialization?: string;
+  agent_id?: string;
+  company_name?: string;
+  avatar_url?: string;
 }
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -162,7 +167,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const body: CreateUserRequest = await req.json();
-    const { email, first_name, last_name, roles, password, send_invite } = body;
+    const { email, first_name, last_name, roles, password, send_invite, phone, specialization, agent_id, company_name, avatar_url } = body;
 
     if (!email || !first_name || !last_name || !roles?.length) {
       return new Response(
@@ -228,6 +233,11 @@ Deno.serve(async (req: Request) => {
       roles,
       action: "create",
       password: tempPassword,
+      phone: phone || undefined,
+      specialization: specialization || undefined,
+      agent_id: agent_id || undefined,
+      company_name: company_name || undefined,
+      avatar_url: avatar_url || undefined,
     }).catch((e) => log.warn("ITSTS sync failed (non-blocking)", e));
 
     return new Response(

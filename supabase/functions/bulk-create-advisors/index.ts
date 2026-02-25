@@ -224,6 +224,8 @@ Deno.serve(async (req: Request) => {
           roles: ["advisor"],
           action: "create",
           password: genericPassword,
+          agent_id: agent_id || undefined,
+          company_name: company_name || undefined,
         }).catch(() => {});
 
         results.push({ email: cleanEmail, agent_id, status: "created" });

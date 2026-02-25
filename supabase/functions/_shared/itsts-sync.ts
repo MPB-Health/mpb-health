@@ -19,6 +19,21 @@ interface SyncUserParams {
   roles: MonorepoRole[];
   action: SyncAction;
   password?: string;
+  phone?: string | null;
+  specialization?: string | null;
+  agent_id?: string | null;
+  company_name?: string | null;
+  avatar_url?: string | null;
+}
+
+function buildProfileExtras(params: SyncUserParams): Record<string, string> {
+  const extras: Record<string, string> = {};
+  if (params.phone) extras.phone = params.phone;
+  if (params.specialization) extras.specialization = params.specialization;
+  if (params.agent_id) extras.agent_id = params.agent_id;
+  if (params.company_name) extras.company_name = params.company_name;
+  if (params.avatar_url) extras.avatar_url = params.avatar_url;
+  return extras;
 }
 
 const ROLE_MAP: Record<string, ItstsRole> = {
@@ -87,10 +102,12 @@ export async function syncUserToItsts(params: SyncUserParams): Promise<boolean> 
       .eq("email", params.email)
       .maybeSingle();
 
+    const extras = buildProfileExtras(params);
+
     if (existing) {
       await client
         .from("profiles")
-        .update({ full_name: fullName, role: itstsRole, is_active: true })
+        .update({ full_name: fullName, role: itstsRole, is_active: true, ...extras })
         .eq("id", existing.id);
       console.info(`[itsts-sync] Updated existing ITSTS user ${params.email} -> ${itstsRole}`);
       return true;
@@ -111,7 +128,7 @@ export async function syncUserToItsts(params: SyncUserParams): Promise<boolean> 
         const found = users?.users?.find((u) => u.email === params.email);
         if (found) {
           await client.from("profiles").upsert(
-            { id: found.id, email: params.email, full_name: fullName, role: itstsRole, is_active: true },
+            { id: found.id, email: params.email, full_name: fullName, role: itstsRole, is_active: true, ...extras },
             { onConflict: "id" },
           );
           console.info(`[itsts-sync] Created profile for existing auth user ${params.email}`);
@@ -122,7 +139,7 @@ export async function syncUserToItsts(params: SyncUserParams): Promise<boolean> 
     }
 
     await client.from("profiles").upsert(
-      { id: authUser.user.id, email: params.email, full_name: fullName, role: itstsRole, is_active: true },
+      { id: authUser.user.id, email: params.email, full_name: fullName, role: itstsRole, is_active: true, ...extras },
       { onConflict: "id" },
     );
 

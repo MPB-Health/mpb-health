@@ -17,6 +17,21 @@ interface SyncRequest {
   roles: MonorepoRole[];
   action: SyncAction;
   password?: string;
+  phone?: string | null;
+  specialization?: string | null;
+  agent_id?: string | null;
+  company_name?: string | null;
+  avatar_url?: string | null;
+}
+
+function buildProfileExtras(req: SyncRequest): Record<string, string> {
+  const extras: Record<string, string> = {};
+  if (req.phone) extras.phone = req.phone;
+  if (req.specialization) extras.specialization = req.specialization;
+  if (req.agent_id) extras.agent_id = req.agent_id;
+  if (req.company_name) extras.company_name = req.company_name;
+  if (req.avatar_url) extras.avatar_url = req.avatar_url;
+  return extras;
 }
 
 const ROLE_MAP: Record<MonorepoRole, ItstsRole> = {
@@ -76,6 +91,7 @@ async function handleCreate(
 ) {
   const itstsRole = mapToItstsRole(req.roles);
   const fullName = `${req.first_name} ${req.last_name}`.trim();
+  const extras = buildProfileExtras(req);
 
   // Check if user already exists in ITSTS
   const existing = await findItstsUserByEmail(itstsAdmin, req.email);
@@ -83,7 +99,7 @@ async function handleCreate(
     log.info("User already exists in ITSTS, updating role", { email: req.email, role: itstsRole });
     await itstsAdmin
       .from("profiles")
-      .update({ role: itstsRole, full_name: fullName, is_active: true })
+      .update({ role: itstsRole, full_name: fullName, is_active: true, ...extras })
       .eq("id", existing.id);
     return { synced: true, itsts_user_id: existing.id, action: "updated_existing" };
   }
@@ -116,6 +132,7 @@ async function handleCreate(
             full_name: fullName,
             role: itstsRole,
             is_active: true,
+            ...extras,
           }, { onConflict: "id" });
         return { synced: true, itsts_user_id: existingAuth.id, action: "profile_created" };
       }
@@ -134,6 +151,7 @@ async function handleCreate(
       full_name: fullName,
       role: itstsRole,
       is_active: true,
+      ...extras,
     }, { onConflict: "id" });
 
   if (profileError) {
@@ -149,6 +167,7 @@ async function handleUpdate(
 ) {
   const itstsRole = mapToItstsRole(req.roles);
   const fullName = `${req.first_name} ${req.last_name}`.trim();
+  const extras = buildProfileExtras(req);
 
   const existing = await findItstsUserByEmail(itstsAdmin, req.email);
   if (!existing) {
@@ -169,7 +188,7 @@ async function handleUpdate(
   // Update profile
   await itstsAdmin
     .from("profiles")
-    .update({ full_name: fullName, role: itstsRole, is_active: true })
+    .update({ full_name: fullName, role: itstsRole, is_active: true, ...extras })
     .eq("id", existing.id);
 
   return { synced: true, itsts_user_id: existing.id, action: "updated" };

@@ -71,6 +71,25 @@ Deno.serve(async (req: Request) => {
       userRolesMap.set(r.user_id, arr);
     }
 
+    // Fetch advisor profiles for rich data
+    const { data: advisorProfiles } = await supabaseAdmin
+      .from("advisor_profiles")
+      .select("id, phone, specialization, agent_id, company_name, avatar_url");
+
+    const advisorProfileMap = new Map<string, {
+      phone?: string; specialization?: string; agent_id?: string;
+      company_name?: string; avatar_url?: string;
+    }>();
+    for (const ap of advisorProfiles || []) {
+      advisorProfileMap.set(ap.id, {
+        phone: ap.phone || undefined,
+        specialization: ap.specialization || undefined,
+        agent_id: ap.agent_id || undefined,
+        company_name: ap.company_name || undefined,
+        avatar_url: ap.avatar_url || undefined,
+      });
+    }
+
     // Fetch all auth users in batches
     const allUsers: Array<{ id: string; email: string; first_name: string; last_name: string }> = [];
     let page = 1;
@@ -90,7 +109,7 @@ Deno.serve(async (req: Request) => {
       page++;
     }
 
-    log.info(`Found ${allUsers.length} auth users, ${userRolesMap.size} with roles`);
+    log.info(`Found ${allUsers.length} auth users, ${userRolesMap.size} with roles, ${advisorProfileMap.size} advisor profiles`);
 
     let synced = 0;
     let skipped = 0;
@@ -105,12 +124,19 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
+      const profile = advisorProfileMap.get(u.id);
+
       const ok = await syncUserToItsts({
         email: u.email,
         first_name: u.first_name,
         last_name: u.last_name,
         roles: roles as Array<"super_admin" | "admin" | "advisor" | "member" | "crm_user">,
         action: "create",
+        phone: profile?.phone,
+        specialization: profile?.specialization,
+        agent_id: profile?.agent_id,
+        company_name: profile?.company_name,
+        avatar_url: profile?.avatar_url,
       });
 
       if (ok) {

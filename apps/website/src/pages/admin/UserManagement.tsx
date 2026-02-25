@@ -199,9 +199,9 @@ const UserManagement: React.FC = () => {
   // Get the correct reset-password URL based on user's primary portal (role)
   const getResetRedirectUrl = (roles: UserRole[]): string => {
     if (roles.includes('super_admin') || roles.includes('admin')) return 'https://admin.mpb.health/reset-password';
-    if (roles.includes('advisor')) return 'https://advisor.mpbhealth.com/reset-password';
+    if (roles.includes('advisor')) return 'https://mpb.health/reset-password';
     if (roles.includes('crm_user')) return 'https://crm.mpbhealth.com/reset-password';
-    return 'https://app.mpbhealth.com/reset-password'; // member
+    return 'https://mpb.health/reset-password'; // member
   };
 
   // Send password reset email

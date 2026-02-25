@@ -26,20 +26,38 @@ const ResetPassword = () => {
       return;
     }
 
-    // The Supabase client may have already consumed the hash params via
-    // detectSessionInUrl, establishing a session before this component mounts.
-    // We check multiple sources: hash params, existing session, and auth events.
-    const checkToken = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
+    // Token exchange is handled by /auth/confirm (the bridge page).
+    // By the time the user arrives here, they should already have a valid session.
+    // We also handle the legacy case where someone lands here directly with hash params.
+    const checkSession = async () => {
+      // Legacy fallback: if someone arrives with hash params directly on this page
+      // (e.g. old bookmarked link or old email), handle it
+      const hash = window.location.hash;
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const hashError = hashParams.get('error');
+        const errorDesc = hashParams.get('error_description');
 
-      if (type === 'recovery' && accessToken) {
-        setIsValidToken(true);
-        return;
+        if (hashError) {
+          setIsValidToken(false);
+          setError(
+            errorDesc ||
+            (hashError === 'access_denied' || hashError.includes('expired')
+              ? 'This password reset link has expired. Links are valid for about 1 hour and can only be used once. Please request a new one.'
+              : 'This password reset link is invalid. Please request a new one.')
+          );
+          return;
+        }
+
+        const accessToken = hashParams.get('access_token');
+        const type = hashParams.get('type');
+        if (type === 'recovery' && accessToken) {
+          setIsValidToken(true);
+          return;
+        }
       }
 
-      // Hash may already be consumed — check if Supabase established a session
+      // Normal flow: /auth/confirm already established the session
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
@@ -47,17 +65,32 @@ const ResetPassword = () => {
           return;
         }
       } catch {
-        // Fall through to invalid
+        // Fall through
+      }
+
+      // Give detectSessionInUrl time to finish (legacy hash case)
+      await new Promise((r) => setTimeout(r, 2000));
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsValidToken(true);
+          return;
+        }
+      } catch {
+        // Fall through
       }
 
       setIsValidToken(false);
-      setError('Invalid or expired password reset link. Please request a new one.');
+      setError(
+        'This password reset link is invalid or has expired. Links expire after about 1 hour and can only be used once. ' +
+          'If your email client or security software previews links, it may have used the link before you clicked it — please request a new one.'
+      );
     };
 
-    checkToken();
+    checkSession();
 
-    // Also listen for PASSWORD_RECOVERY event in case the token exchange
-    // completes after our initial check
+    // Listen for PASSWORD_RECOVERY event as a fallback
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsValidToken(true);
@@ -136,12 +169,15 @@ const ResetPassword = () => {
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
             <h1 className="text-2xl font-bold text-neutral-900">Invalid Reset Link</h1>
-            <p className="text-neutral-600">
-              This password reset link is invalid or has expired. Please request a new one.
-            </p>
-            <Button onClick={() => navigate('/login')} className="w-full mt-4">
-              Back to Login
-            </Button>
+            <p className="text-neutral-600 text-sm">{error}</p>
+            <div className="flex flex-col gap-2 w-full mt-4">
+              <Button onClick={() => navigate('/forgot-password')} variant="default" className="w-full">
+                Request New Reset Link
+              </Button>
+              <Button onClick={() => navigate('/login')} variant="outline" className="w-full">
+                Back to Login
+              </Button>
+            </div>
           </div>
         </Card>
       </div>

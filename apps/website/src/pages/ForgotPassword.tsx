@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
@@ -9,9 +9,11 @@ import { Card } from '../components/ui/Card';
 import { AlertCircle, CheckCircle, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 
 const ForgotPassword: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // Show error from query param if redirected from /auth/confirm with an expired/invalid link
+  const [error, setError] = useState(searchParams.get('error') || '');
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,7 +23,7 @@ const ForgotPassword: React.FC = () => {
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth/confirm`,
       });
 
       if (resetError) throw resetError;

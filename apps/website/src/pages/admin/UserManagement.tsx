@@ -196,14 +196,15 @@ const UserManagement: React.FC = () => {
     await loadUsers();
   };
 
-  // Get the correct reset-password URL based on user's primary portal (role)
-  // Use www.mpb.health for advisors/members - the main site may redirect mpb.health -> www.mpb.health
-  // and the hash (#access_token) can be lost during redirect, so use the canonical URL
+  // Get the correct auth confirmation URL based on user's primary portal (role).
+  // All resets now go through /auth/confirm — a bridge page that handles token
+  // exchange client-side. This prevents email security scanners (Defender, Proofpoint,
+  // etc.) from consuming single-use tokens before the member clicks.
   const getResetRedirectUrl = (roles: UserRole[]): string => {
     if (roles.includes('super_admin') || roles.includes('admin')) return 'https://admin.mpb.health/reset-password';
-    if (roles.includes('advisor')) return 'https://www.mpb.health/reset-password';
+    if (roles.includes('advisor')) return 'https://mpb.health/auth/confirm';
     if (roles.includes('crm_user')) return 'https://crm.mpbhealth.com/reset-password';
-    return 'https://www.mpb.health/reset-password'; // member
+    return 'https://mpb.health/auth/confirm'; // member
   };
 
   // Send password reset email

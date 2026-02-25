@@ -108,6 +108,7 @@ const WelcomeCallSurveyForm = lazyAuto(() => import('./pages/forms/WelcomeCallSu
 const DependentOver18InformationForm = lazyAuto(() => import('./pages/forms/DependentOver18InformationForm'));
 
 // Auth
+const AuthConfirm = lazyAuto(() => import('./pages/AuthConfirm'));
 const ResetPassword = lazyAuto(() => import('./pages/ResetPassword'));
 const ForgotPassword = lazyAuto(() => import('./pages/ForgotPassword'));
 const MFAEnrollment = lazyAuto(() => import('./pages/MFAEnrollment'));
@@ -324,6 +325,7 @@ const App = () => {
                   {/* Login Routes */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/auth/confirm" element={<AuthConfirm />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/advisor/login" element={<AdvisorLogin />} />
                   <Route path="/admin/login" element={<AdminLogin />} />

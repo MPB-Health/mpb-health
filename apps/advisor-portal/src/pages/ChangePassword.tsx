@@ -65,9 +65,22 @@ export default function ChangePassword() {
       setSuccess(true);
       toast.success('Password updated successfully!');
 
+      // Sync password to ITSTS support system (fire-and-forget)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        supabase.functions.invoke('sync-user-to-itsts', {
+          body: {
+            email: user.email,
+            first_name: user.user_metadata?.first_name || '',
+            last_name: user.user_metadata?.last_name || '',
+            roles: [],
+            action: 'password_change',
+            password,
+          },
+        }).catch(() => {});
+      }
+
       // Refresh profile in the background — don't block navigation.
-      // Awaiting refreshProfile() here could stall indefinitely when the
-      // session token is being rotated after the password change.
       refreshProfile().catch(() => {});
 
       setTimeout(() => {

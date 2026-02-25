@@ -19,6 +19,7 @@ import {
   Send,
   UsersRound,
   Mail,
+  Headphones,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -33,6 +34,7 @@ import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
+import { useSupportSSO } from '../hooks/useSupportSSO';
 import { GlobalSearch } from '../components/GlobalSearch';
 
 // Icon mapping for dynamic icons from CMS
@@ -94,6 +96,7 @@ const fallbackNavigation: NavItem[] = [
   },
   { name: 'Video Library', href: '/videos', icon: Video },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
+  { name: 'Support Tickets', href: '/tickets', icon: Headphones },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
 
@@ -142,6 +145,7 @@ export default function MainLayout() {
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
+  const { openSupport, loading: ssoLoading } = useSupportSSO();
 
   // Dynamic navigation from CMS with caching
   const [cmsNavItems, setCmsNavItems] = useState<NavItem[]>(cachedNavItems || []);
@@ -221,9 +225,12 @@ export default function MainLayout() {
     if (!base.some((item) => item.href === '/videos' || item.name === 'Video Library')) {
       base.push({ name: 'Video Library', href: '/videos', icon: Video });
     }
+    if (!base.some((item) => item.href === '/tickets' || item.name === 'Support Tickets')) {
+      base.push({ name: 'Support Tickets', href: '/tickets', icon: Headphones });
+    }
 
     // Enforce sidebar order
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'SOPs & Playbooks', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Contact'];
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'SOPs & Playbooks', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Contact'];
     base = [...base].sort((a, b) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);
@@ -351,6 +358,15 @@ export default function MainLayout() {
           </p>
         </div>
       </NavLink>
+
+      <button
+        onClick={openSupport}
+        disabled={ssoLoading}
+        className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.08] transition-all duration-150 disabled:opacity-50"
+      >
+        <Headphones className="w-[18px] h-[18px]" />
+        <span>{ssoLoading ? 'Opening...' : 'Support Portal'}</span>
+      </button>
 
       <button
         onClick={logout}

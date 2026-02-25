@@ -45,7 +45,7 @@ export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export type NotificationChannel = 'in_app' | 'email' | 'sms' | 'push';
 
-export type NotificationCategory = 'lead' | 'message' | 'task' | 'compliance' | 'meeting' | 'team' | 'system';
+export type NotificationCategory = 'lead' | 'message' | 'task' | 'compliance' | 'meeting' | 'team' | 'system' | 'support';
 
 // ============================================================================
 // Activity

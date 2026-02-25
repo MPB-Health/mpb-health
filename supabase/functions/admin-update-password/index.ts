@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
+import { syncUserToItsts } from '../_shared/itsts-sync.ts';
 const log = createLogger('admin-update-password');
 
 interface UpdatePasswordRequest {
@@ -122,6 +123,16 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
+
+    // Sync password to ITSTS (fire-and-forget)
+    syncUserToItsts({
+      email: targetUser.user.email || '',
+      first_name: targetUser.user.user_metadata?.first_name || '',
+      last_name: targetUser.user.user_metadata?.last_name || '',
+      roles: [],
+      action: 'password_change',
+      password,
+    }).catch((e) => log.warn('ITSTS password sync failed (non-blocking)', e));
 
     return new Response(
       JSON.stringify({ 

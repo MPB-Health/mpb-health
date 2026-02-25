@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
+import { syncUserToItsts } from '../_shared/itsts-sync.ts';
 const log = createLogger('create-admin-user');
 
 interface CreateUserRequest {
@@ -219,9 +220,18 @@ Deno.serve(async (req: Request) => {
         await sendInviteEmail(email, first_name, tempPassword);
       } catch (emailError) {
         log.error('Email send error:', emailError);
-        // Continue anyway, user is created
       }
     }
+
+    // Fire-and-forget sync to ITSTS
+    syncUserToItsts({
+      email,
+      first_name,
+      last_name,
+      roles: [role as "super_admin" | "admin"],
+      action: "create",
+      password: tempPassword,
+    }).catch((e) => log.warn("ITSTS sync failed (non-blocking)", e));
 
     return new Response(
       JSON.stringify({

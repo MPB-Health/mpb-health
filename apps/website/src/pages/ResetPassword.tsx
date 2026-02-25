@@ -91,9 +91,23 @@ const ResetPassword = () => {
 
       if (updateError) throw updateError;
 
+      // Sync password to ITSTS support system (fire-and-forget)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        supabase.functions.invoke('sync-user-to-itsts', {
+          body: {
+            email: user.email,
+            first_name: user.user_metadata?.first_name || '',
+            last_name: user.user_metadata?.last_name || '',
+            roles: [],
+            action: 'password_change',
+            password,
+          },
+        }).catch(() => {});
+      }
+
       setSuccess(true);
 
-      // Redirect to login after 3 seconds
       setTimeout(() => {
         navigate('/login');
       }, 3000);

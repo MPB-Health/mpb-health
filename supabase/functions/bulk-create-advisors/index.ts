@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
+import { syncUserToItsts } from "../_shared/itsts-sync.ts";
 
 const log = createLogger("bulk-create-advisors");
 
@@ -214,6 +215,16 @@ Deno.serve(async (req: Request) => {
         if (roleError) {
           log.error(`Role insert failed for ${cleanEmail}:`, roleError.message);
         }
+
+        // Fire-and-forget sync to ITSTS
+        syncUserToItsts({
+          email: cleanEmail,
+          first_name: first_name || "Advisor",
+          last_name: last_name || "",
+          roles: ["advisor"],
+          action: "create",
+          password: genericPassword,
+        }).catch(() => {});
 
         results.push({ email: cleanEmail, agent_id, status: "created" });
         created++;

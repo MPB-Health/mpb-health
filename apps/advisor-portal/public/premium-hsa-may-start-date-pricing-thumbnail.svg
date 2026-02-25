@@ -6,6 +6,6 @@
     </linearGradient>
   </defs>
   <rect width="400" height="250" fill="url(#bg2)"/>
-  <text x="200" y="125" text-anchor="middle" dominant-baseline="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="bold" fill="white" style="line-height:1.2">Premium HSA May Start</text>
+  <text x="200" y="125" text-anchor="middle" dominant-baseline="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="bold" fill="white" style="line-height:1.2">Premium HSA June 1 Start</text>
   <text x="200" y="155" text-anchor="middle" dominant-baseline="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="bold" fill="white">Date Pricing</text>
 </svg>

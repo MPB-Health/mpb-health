@@ -181,6 +181,7 @@ export function UnifiedLoginPage({
       onSubmit={handleSubmit}
       accentVariant={accentMap[portalType]}
       showForgotPassword={true}
+      onForgotPassword={() => navigate('/forgot-password')}
       showRememberMe={true}
       emailPlaceholder={`${portalType}@mympb.com`}
       tagline="Empowering Health, Securing Futures"

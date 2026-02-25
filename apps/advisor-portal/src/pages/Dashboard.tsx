@@ -643,8 +643,8 @@ export default function Dashboard() {
           </div>
         </button>
 
-        {/* My Landing Page */}
-        <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
+        {/* My Landing Page - commented out per request */}
+        {/* <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
           <div className="bg-gradient-to-r from-[#0A4E8E] to-[#0C71C3] p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -695,7 +695,7 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Training */}
         <button onClick={() => navigate('/training')} className="text-left h-full w-full group">

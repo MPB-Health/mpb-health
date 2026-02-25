@@ -621,15 +621,13 @@ export default function Dashboard() {
                   You're all caught up — no new notifications.
                 </p>
               )}
-              <div className="flex items-center gap-2 mt-3">
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-md">
-                  {unreadBulletinCount > 0 ? (
-                    <><Bell className="w-3 h-3" /> View Bulletins</>
-                  ) : (
-                    <><CheckCheck className="w-3 h-3" /> All Read</>
-                  )}
-                </span>
-              </div>
+              {unreadBulletinCount > 0 && (
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-md">
+                    <Bell className="w-3 h-3" /> View Bulletins
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </button>

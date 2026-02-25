@@ -20,9 +20,11 @@ import {
   UsersRound,
   Mail,
   Headphones,
+  ShieldCheck,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
+import { isAdmin as checkIsAdmin } from '@mpbhealth/auth';
 import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { NotificationCenter } from '../components/notifications';
@@ -147,6 +149,14 @@ export default function MainLayout() {
   const { preferences: userPreferences } = useUserPreferences();
   const { openSupport, loading: ssoLoading } = useSupportSSO();
 
+  // Admin role check for conditional nav items
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  useEffect(() => {
+    if (profile?.user_id) {
+      checkIsAdmin(profile.user_id).then(setIsAdminUser);
+    }
+  }, [profile?.user_id]);
+
   // Dynamic navigation from CMS with caching
   const [cmsNavItems, setCmsNavItems] = useState<NavItem[]>(cachedNavItems || []);
   const [navLoading, setNavLoading] = useState(!cachedNavItems);
@@ -229,8 +239,17 @@ export default function MainLayout() {
       base.push({ name: 'Support Tickets', href: '/tickets', icon: Headphones });
     }
 
+    // Admin-only: Ticket Management
+    if (isAdminUser) {
+      if (!base.some((item) => item.href === '/admin/tickets' || item.name === 'Ticket Management')) {
+        base.push({ name: 'Ticket Management', href: '/admin/tickets', icon: ShieldCheck });
+      }
+    } else {
+      base = base.filter((item) => item.name !== 'Ticket Management');
+    }
+
     // Enforce sidebar order
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'SOPs & Playbooks', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Contact'];
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'SOPs & Playbooks', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Ticket Management', 'Contact'];
     base = [...base].sort((a, b) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);
@@ -238,7 +257,7 @@ export default function MainLayout() {
     });
 
     return base;
-  }, [cmsNavItems]);
+  }, [cmsNavItems, isAdminUser]);
 
   // Determine if today is a meeting day (2nd or 4th Tuesday)
   // NOTE: This useMemo MUST be above the early returns to satisfy React's Rules of Hooks.

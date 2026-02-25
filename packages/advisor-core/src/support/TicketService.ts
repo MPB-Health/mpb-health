@@ -52,6 +52,27 @@ export interface ListTicketsOptions {
   perPage?: number;
 }
 
+export interface AdminTicket extends Ticket {
+  requester_name: string;
+  requester_email: string;
+}
+
+export interface AdminTicketDetail {
+  ticket: Ticket & { requester_name: string; requester_email: string };
+  comments: TicketComment[];
+}
+
+export interface AdminTicketListResult {
+  tickets: AdminTicket[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface AdminListTicketsOptions extends ListTicketsOptions {
+  search?: string;
+}
+
 export class TicketService {
   async getMyTickets(opts: ListTicketsOptions = {}): Promise<TicketListResult> {
     const { data, error } = await supabase.functions.invoke<TicketListResult & { success: boolean }>('ticket-proxy', {
@@ -105,6 +126,64 @@ export class TicketService {
       resolved: data.resolved,
       closed: data.closed,
     };
+  }
+
+  // ── Admin methods ──────────────────────────────────────────────────────
+
+  async getAllTickets(opts: AdminListTicketsOptions = {}): Promise<AdminTicketListResult> {
+    const { data, error } = await supabase.functions.invoke<AdminTicketListResult & { success: boolean }>('ticket-proxy', {
+      body: {
+        action: 'list_all',
+        status: opts.status,
+        priority: opts.priority,
+        search: opts.search,
+        page: opts.page || 1,
+        per_page: opts.perPage || 20,
+      },
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error('Failed to fetch tickets');
+
+    return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
+  }
+
+  async getTicketDetailAdmin(ticketId: string): Promise<AdminTicketDetail> {
+    const { data, error } = await supabase.functions.invoke<AdminTicketDetail & { success: boolean }>('ticket-proxy', {
+      body: { action: 'detail_admin', ticket_id: ticketId },
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error('Failed to fetch ticket details');
+
+    return { ticket: data.ticket, comments: data.comments };
+  }
+
+  async getAllTicketStats(): Promise<TicketStats> {
+    const { data, error } = await supabase.functions.invoke<TicketStats & { success: boolean }>('ticket-proxy', {
+      body: { action: 'stats_all' },
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error('Failed to fetch ticket stats');
+
+    return {
+      total: data.total,
+      new: data.new,
+      open: data.open,
+      pending: data.pending,
+      resolved: data.resolved,
+      closed: data.closed,
+    };
+  }
+
+  async addComment(ticketId: string, content: string): Promise<void> {
+    const { data, error } = await supabase.functions.invoke<{ success: boolean }>('ticket-proxy', {
+      body: { action: 'add_comment', ticket_id: ticketId, content },
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error('Failed to add comment');
   }
 }
 

@@ -362,7 +362,8 @@ const UserManagement: React.FC = () => {
   };
 
   const handleToggleRole = async (userId: string, role: UserRole) => {
-    if (saving) return;
+    const saveKey = `${userId}-${role}`;
+    if (saving === saveKey) return;
 
     // Prevent removing your own super_admin role
     if (userId === user?.id && role === 'super_admin') {
@@ -370,19 +371,31 @@ const UserManagement: React.FC = () => {
       return;
     }
 
-    setSaving(`${userId}-${role}`);
+    setSaving(saveKey);
     try {
-      const result = await userRolesService.toggleRole(userId, role, user?.id);
-      if (result.success) {
-        const wasGranted = result.data;
+      // Use edge function with service role to bypass RLS and ensure role changes persist
+      const { data, error } = await invokeEdgeFunction<{ success: boolean; granted: boolean }>(
+        'admin-toggle-role',
+        { userId, role },
+      );
+
+      if (error) {
+        toast.error(error.message || 'Failed to update role');
+        return;
+      }
+
+      if (data?.success) {
+        const wasGranted = data.granted ?? false;
         toast.success(wasGranted ? `${ROLE_LABELS[role]} granted` : `${ROLE_LABELS[role]} revoked`);
+
+        // Invalidate roles cache so subsequent reads are fresh
+        userRolesService.invalidateCache(userId);
 
         // Sync org_memberships when crm_user role is toggled
         if (role === 'crm_user') {
           try {
             if (wasGranted) {
-              // Grant: add user to default org with advisor role
-              await supabase
+              const { error: orgError } = await supabase
                 .from('org_memberships')
                 .upsert(
                   {
@@ -394,8 +407,11 @@ const UserManagement: React.FC = () => {
                   },
                   { onConflict: 'user_id,org_id' }
                 );
+              if (orgError) {
+                console.error('Error syncing org membership:', orgError);
+                toast.error('CRM role granted but org membership sync failed');
+              }
             } else {
-              // Revoke: remove user from default org
               await supabase
                 .from('org_memberships')
                 .update({ status: 'left' })
@@ -421,7 +437,7 @@ const UserManagement: React.FC = () => {
           })
         );
       } else {
-        toast.error(result.error || 'Failed to update role');
+        toast.error('Failed to update role');
       }
     } catch (error) {
       console.error('Error toggling role:', error);
@@ -1219,7 +1235,14 @@ interface RoleToggleProps {
 const RoleToggle: React.FC<RoleToggleProps> = ({ hasRole, isSaving, disabled, onToggle }) => {
   return (
     <button
-      onClick={onToggle}
+      type="button"
+      role="switch"
+      aria-checked={hasRole}
+      aria-disabled={isSaving || disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
       disabled={isSaving || disabled}
       className={cn(
         'w-12 h-6 rounded-full transition-colors relative',

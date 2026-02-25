@@ -5,15 +5,19 @@ import { createLogger } from "../_shared/logger.ts";
 
 const log = createLogger("ticket-proxy");
 
-type ProxyAction = "list" | "detail" | "stats";
+type ProxyAction = "list" | "detail" | "stats" | "list_all" | "detail_admin" | "stats_all" | "add_comment";
+
+const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment"];
 
 interface ProxyRequest {
   action: ProxyAction;
   ticket_id?: string;
   status?: string;
   priority?: string;
+  search?: string;
   page?: number;
   per_page?: number;
+  content?: string;
 }
 
 function getItstsClient() {
@@ -124,6 +128,164 @@ async function getTicketStats(
   return stats;
 }
 
+// ── Admin helpers ──────────────────────────────────────────────────────────
+
+async function checkAdminRole(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  const roles = (data || []).map((r: { role: string }) => r.role);
+  return roles.includes("admin") || roles.includes("super_admin");
+}
+
+async function listAllTickets(
+  itstsAdmin: ReturnType<typeof createClient>,
+  opts: { status?: string; priority?: string; search?: string; page: number; perPage: number },
+) {
+  let query = itstsAdmin
+    .from("tickets")
+    .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at, requester_id", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
+
+  if (opts.status) query = query.eq("status", opts.status);
+  if (opts.priority) query = query.eq("priority", opts.priority);
+  if (opts.search) {
+    query = query.or(`subject.ilike.%${opts.search}%,ticket_number.eq.${parseInt(opts.search) || 0}`);
+  }
+
+  const { data: tickets, count, error } = await query;
+  if (error) throw error;
+
+  // Enrich with requester info
+  const requesterIds = [...new Set((tickets || []).map((t: { requester_id: string }) => t.requester_id).filter(Boolean))];
+  let requesterMap: Record<string, { full_name: string; email: string }> = {};
+  if (requesterIds.length > 0) {
+    const { data: profiles } = await itstsAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", requesterIds);
+    requesterMap = Object.fromEntries(
+      (profiles || []).map((p: { id: string; full_name: string; email: string }) => [p.id, { full_name: p.full_name, email: p.email }]),
+    );
+  }
+
+  const enriched = (tickets || []).map((t: Record<string, unknown>) => ({
+    ...t,
+    requester_name: (requesterMap[t.requester_id as string]?.full_name) || "Unknown",
+    requester_email: (requesterMap[t.requester_id as string]?.email) || "",
+  }));
+
+  return { tickets: enriched, total: count || 0, page: opts.page, per_page: opts.perPage };
+}
+
+async function getTicketDetailAdmin(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketId: string,
+) {
+  const { data: ticket, error } = await itstsAdmin
+    .from("tickets")
+    .select("*")
+    .eq("id", ticketId)
+    .single();
+
+  if (error) throw error;
+
+  // Requester info
+  let requesterName = "Unknown";
+  let requesterEmail = "";
+  if (ticket.requester_id) {
+    const { data: profile } = await itstsAdmin
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", ticket.requester_id)
+      .maybeSingle();
+    if (profile) {
+      requesterName = profile.full_name;
+      requesterEmail = profile.email;
+    }
+  }
+
+  // Comments (non-internal)
+  const { data: comments } = await itstsAdmin
+    .from("ticket_comments")
+    .select("id, content, is_internal, created_at, author_id")
+    .eq("ticket_id", ticketId)
+    .eq("is_internal", false)
+    .order("created_at", { ascending: true });
+
+  const authorIds = [...new Set((comments || []).map((c: { author_id: string }) => c.author_id).filter(Boolean))];
+  let authorMap: Record<string, string> = {};
+  if (authorIds.length > 0) {
+    const { data: profiles } = await itstsAdmin
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", authorIds);
+    authorMap = Object.fromEntries((profiles || []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+  }
+
+  const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
+    ...c,
+    author_name: authorMap[c.author_id as string] || "Support Agent",
+  }));
+
+  return {
+    ticket: { ...ticket, requester_name: requesterName, requester_email: requesterEmail },
+    comments: enrichedComments,
+  };
+}
+
+async function getAllTicketStats(
+  itstsAdmin: ReturnType<typeof createClient>,
+) {
+  const { data: tickets, error } = await itstsAdmin
+    .from("tickets")
+    .select("status");
+
+  if (error) throw error;
+
+  const stats = { total: tickets?.length || 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 };
+  for (const t of tickets || []) {
+    const s = t.status as keyof typeof stats;
+    if (s in stats) stats[s]++;
+  }
+  return stats;
+}
+
+async function addComment(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketId: string,
+  content: string,
+  authorEmail: string,
+) {
+  // Find admin's ITSTS profile
+  const authorId = await getItstsUserId(itstsAdmin, authorEmail);
+  if (!authorId) throw new Error("Admin profile not found in support system");
+
+  const { error: commentError } = await itstsAdmin
+    .from("ticket_comments")
+    .insert({
+      ticket_id: ticketId,
+      content,
+      author_id: authorId,
+      is_internal: false,
+    });
+
+  if (commentError) throw commentError;
+
+  // Touch ticket updated_at
+  await itstsAdmin
+    .from("tickets")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", ticketId);
+
+  return { ok: true };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
@@ -161,19 +323,33 @@ Deno.serve(async (req: Request) => {
 
     const itstsAdmin = getItstsClient();
 
-    // Find the user's ITSTS profile
-    const itstsUserId = await getItstsUserId(itstsAdmin, user.email);
-    if (!itstsUserId) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Support account not found" }),
-        { status: 404, headers },
-      );
+    // Admin actions require role check against monorepo user_roles
+    if (ADMIN_ACTIONS.includes(action)) {
+      const isAdmin = await checkAdminRole(supabaseAdmin, user.id);
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Admin access required" }),
+          { status: 403, headers },
+        );
+      }
+    }
+
+    // Non-admin actions need the user's ITSTS profile
+    let itstsUserId: string | null = null;
+    if (!ADMIN_ACTIONS.includes(action)) {
+      itstsUserId = await getItstsUserId(itstsAdmin, user.email);
+      if (!itstsUserId) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Support account not found" }),
+          { status: 404, headers },
+        );
+      }
     }
 
     let result;
     switch (action) {
       case "list":
-        result = await listTickets(itstsAdmin, itstsUserId, {
+        result = await listTickets(itstsAdmin, itstsUserId!, {
           status: body.status,
           priority: body.priority,
           page: body.page || 1,
@@ -187,11 +363,44 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers },
           );
         }
-        result = await getTicketDetail(itstsAdmin, itstsUserId, body.ticket_id);
+        result = await getTicketDetail(itstsAdmin, itstsUserId!, body.ticket_id);
         break;
       case "stats":
-        result = await getTicketStats(itstsAdmin, itstsUserId);
+        result = await getTicketStats(itstsAdmin, itstsUserId!);
         break;
+
+      // ── Admin actions ──
+      case "list_all":
+        result = await listAllTickets(itstsAdmin, {
+          status: body.status,
+          priority: body.priority,
+          search: body.search,
+          page: body.page || 1,
+          perPage: body.per_page || 20,
+        });
+        break;
+      case "detail_admin":
+        if (!body.ticket_id) {
+          return new Response(
+            JSON.stringify({ success: false, error: "ticket_id required" }),
+            { status: 400, headers },
+          );
+        }
+        result = await getTicketDetailAdmin(itstsAdmin, body.ticket_id);
+        break;
+      case "stats_all":
+        result = await getAllTicketStats(itstsAdmin);
+        break;
+      case "add_comment":
+        if (!body.ticket_id || !body.content) {
+          return new Response(
+            JSON.stringify({ success: false, error: "ticket_id and content required" }),
+            { status: 400, headers },
+          );
+        }
+        result = await addComment(itstsAdmin, body.ticket_id, body.content, user.email);
+        break;
+
       default:
         return new Response(
           JSON.stringify({ success: false, error: `Unknown action: ${action}` }),

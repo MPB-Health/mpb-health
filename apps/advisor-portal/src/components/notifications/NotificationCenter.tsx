@@ -19,6 +19,7 @@ import {
   Calendar,
   AlertTriangle,
   Settings,
+  Headphones,
 } from 'lucide-react';
 import { useNotifications, useUnreadNotificationCount } from '../../hooks/useActivity';
 import type { Notification, NotificationCategory } from '@mpbhealth/champion-core';
@@ -31,6 +32,7 @@ const CATEGORY_ICONS: Record<NotificationCategory | 'default', typeof Bell> = {
   meeting: Calendar,
   team: Users,
   system: Bell,
+  support: Headphones,
   default: Bell,
 };
 
@@ -42,6 +44,7 @@ const CATEGORY_COLORS: Record<NotificationCategory | 'default', string> = {
   meeting: 'bg-orange-100 text-orange-600',
   team: 'bg-pink-100 text-pink-600',
   system: 'bg-gray-100 text-gray-600',
+  support: 'bg-purple-100 text-purple-600',
   default: 'bg-gray-100 text-gray-600',
 };
 

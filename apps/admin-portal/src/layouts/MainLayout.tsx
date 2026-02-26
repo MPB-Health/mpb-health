@@ -10,10 +10,11 @@ import {
   Bell,
   Package,
 } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { supabase } from '@mpbhealth/database';
+import { usePortalAccess } from '@mpbhealth/auth';
 import { useAdmin } from '../contexts/AdminContext';
 
 const navigation: NavItem[] = [
@@ -56,6 +57,15 @@ const navigation: NavItem[] = [
 export default function MainLayout() {
   const navigate = useNavigate();
   const { user, logout, pendingEnrollments, loading } = useAdmin();
+
+  // Load portal access from global user_roles table
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthUserId(session?.user?.id ?? null);
+    });
+  }, []);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(authUserId);
 
   // Redirect to login if not authenticated
   if (!loading && !user) {
@@ -105,9 +115,9 @@ export default function MainLayout() {
       portalSwitcher={
         <PortalSwitcher
           currentPortal="admin"
-          canAccessAdmin={true}
-          canAccessCRM={true}
-          canAccessAdvisor={true}
+          canAccessAdmin={canAccessAdmin}
+          canAccessCRM={canAccessCrm}
+          canAccessAdvisor={canAccessAdvisor}
           getPortalUrl={getPortalUrl}
           getPortalUrlWithSSO={getPortalUrlWithSSO}
         />

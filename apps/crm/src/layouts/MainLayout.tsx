@@ -38,7 +38,7 @@ import {
   Command,
   Download,
 } from 'lucide-react';
-import { OrgSwitcher } from '@mpbhealth/auth';
+import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { useCRM } from '../contexts/CRMContext';
@@ -170,6 +170,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks, zohoConfigured } = useCRM();
+
+  // Portal access from global user_roles table
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(user?.id);
 
   const handleSignOut = async () => {
     await signOut();
@@ -339,9 +342,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         portalSwitcher={
           <PortalSwitcher
             currentPortal="crm"
-            canAccessAdmin={true}
-            canAccessCRM={true}
-            canAccessAdvisor={true}
+            canAccessAdmin={canAccessAdmin}
+            canAccessCRM={canAccessCrm}
+            canAccessAdvisor={canAccessAdvisor}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />

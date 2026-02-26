@@ -391,6 +391,94 @@ const UserManagement: React.FC = () => {
         // Invalidate roles cache so subsequent reads are fresh
         userRolesService.invalidateCache(userId);
 
+        // ----------------------------------------------------------------
+        // Sync app-specific tables when roles are toggled so the user can
+        // actually access the corresponding portal after the role grant.
+        // ----------------------------------------------------------------
+
+        // Find the user object so we can read email / full_name
+        const targetUser = users.find((u) => u.id === userId);
+
+        // Sync admin_users when admin role is toggled
+        if (role === 'admin') {
+          try {
+            if (wasGranted) {
+              const nameParts = (targetUser?.full_name || '').split(' ');
+              const firstName = nameParts[0] || targetUser?.email?.split('@')[0] || 'Admin';
+              const lastName = nameParts.slice(1).join(' ') || '';
+
+              const { error: adminError } = await supabase
+                .from('admin_users')
+                .upsert(
+                  {
+                    id: userId,
+                    email: targetUser?.email || '',
+                    first_name: firstName,
+                    last_name: lastName,
+                    role: 'staff',
+                    status: 'active',
+                    permissions: [],
+                    org_id: DEFAULT_ORG_ID,
+                  },
+                  { onConflict: 'id' }
+                );
+              if (adminError) {
+                console.error('Error syncing admin_users:', adminError);
+                toast.error('Admin role granted but admin portal profile sync failed');
+              }
+            } else {
+              await supabase
+                .from('admin_users')
+                .update({ status: 'inactive' })
+                .eq('id', userId);
+            }
+          } catch (adminError) {
+            console.error('Error syncing admin_users:', adminError);
+            toast.error('Admin role updated but admin portal profile sync failed');
+          }
+        }
+
+        // Sync advisor_profiles when advisor role is toggled
+        if (role === 'advisor') {
+          try {
+            if (wasGranted) {
+              const nameParts = (targetUser?.full_name || '').split(' ');
+              const firstName = nameParts[0] || targetUser?.email?.split('@')[0] || 'Advisor';
+              const lastName = nameParts.slice(1).join(' ') || '';
+
+              const { error: advisorError } = await supabase
+                .from('advisor_profiles')
+                .upsert(
+                  {
+                    id: userId,
+                    user_id: userId,
+                    email: targetUser?.email || '',
+                    first_name: firstName,
+                    last_name: lastName,
+                    specialization: 'General',
+                    status: 'active',
+                    must_change_password: false,
+                    onboarding_completed: false,
+                    org_id: DEFAULT_ORG_ID,
+                  },
+                  { onConflict: 'id' }
+                );
+              if (advisorError) {
+                console.error('Error syncing advisor_profiles:', advisorError);
+                toast.error('Advisor role granted but advisor portal profile sync failed');
+              }
+            } else {
+              await supabase
+                .from('advisor_profiles')
+                .update({ status: 'inactive' })
+                .eq('id', userId);
+            }
+          } catch (advisorError) {
+            console.error('Error syncing advisor_profiles:', advisorError);
+            toast.error('Advisor role updated but advisor portal profile sync failed');
+          }
+        }
+
         // Sync org_memberships when crm_user role is toggled
         if (role === 'crm_user') {
           try {
@@ -421,6 +509,75 @@ const UserManagement: React.FC = () => {
           } catch (orgError) {
             console.error('Error syncing org membership:', orgError);
             toast.error('CRM role updated but org membership sync failed');
+          }
+        }
+
+        // Sync ALL app tables when super_admin role is granted (full access)
+        if (role === 'super_admin' && wasGranted) {
+          const nameParts = (targetUser?.full_name || '').split(' ');
+          const firstName = nameParts[0] || targetUser?.email?.split('@')[0] || 'Admin';
+          const lastName = nameParts.slice(1).join(' ') || '';
+
+          // Provision admin_users
+          try {
+            await supabase
+              .from('admin_users')
+              .upsert(
+                {
+                  id: userId,
+                  email: targetUser?.email || '',
+                  first_name: firstName,
+                  last_name: lastName,
+                  role: 'super_admin',
+                  status: 'active',
+                  permissions: [],
+                  org_id: DEFAULT_ORG_ID,
+                },
+                { onConflict: 'id' }
+              );
+          } catch (e) {
+            console.error('Error provisioning admin_users for super_admin:', e);
+          }
+
+          // Provision advisor_profiles
+          try {
+            await supabase
+              .from('advisor_profiles')
+              .upsert(
+                {
+                  id: userId,
+                  user_id: userId,
+                  email: targetUser?.email || '',
+                  first_name: firstName,
+                  last_name: lastName,
+                  specialization: 'General',
+                  status: 'active',
+                  must_change_password: false,
+                  onboarding_completed: false,
+                  org_id: DEFAULT_ORG_ID,
+                },
+                { onConflict: 'id' }
+              );
+          } catch (e) {
+            console.error('Error provisioning advisor_profiles for super_admin:', e);
+          }
+
+          // Provision org_memberships
+          try {
+            await supabase
+              .from('org_memberships')
+              .upsert(
+                {
+                  user_id: userId,
+                  org_id: DEFAULT_ORG_ID,
+                  role: 'owner',
+                  status: 'active',
+                  joined_at: new Date().toISOString(),
+                },
+                { onConflict: 'user_id,org_id' }
+              );
+          } catch (e) {
+            console.error('Error provisioning org_memberships for super_admin:', e);
           }
         }
 

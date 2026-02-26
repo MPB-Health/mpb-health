@@ -22,9 +22,10 @@ import {
   Headphones,
   ShieldCheck,
 } from 'lucide-react';
-import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
+import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { isAdmin as checkIsAdmin } from '@mpbhealth/auth';
+import { isAdmin as checkIsAdmin, usePortalAccess } from '@mpbhealth/auth';
+import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { NotificationCenter } from '../components/notifications';
@@ -156,6 +157,22 @@ export default function MainLayout() {
       checkIsAdmin(profile.user_id).then(setIsAdminUser);
     }
   }, [profile?.user_id]);
+
+  // Portal access from global user_roles table
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
+
+  // SSO-aware portal navigation
+  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke<{ url: string }>('portal-sso', {
+        body: { portal },
+      });
+      if (error || !data?.url) return null;
+      return data.url;
+    } catch {
+      return null;
+    }
+  }, []);
 
   // Dynamic navigation from CMS with caching
   const [cmsNavItems, setCmsNavItems] = useState<NavItem[]>(cachedNavItems || []);
@@ -460,6 +477,16 @@ export default function MainLayout() {
         logoSrc="/assets/MPB-Health-No-background.png"
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
+        portalSwitcher={
+          <PortalSwitcher
+            currentPortal="advisor"
+            canAccessAdmin={canAccessAdmin}
+            canAccessCRM={canAccessCrm}
+            canAccessAdvisor={canAccessAdvisor}
+            getPortalUrl={getPortalUrl}
+            getPortalUrlWithSSO={getPortalUrlWithSSO}
+          />
+        }
         userSection={userSection}
         topBarCenter={<GlobalSearch />}
         topBarActions={topBarActions}

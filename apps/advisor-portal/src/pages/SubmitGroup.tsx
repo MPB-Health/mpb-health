@@ -15,7 +15,18 @@ import { sanitizeHtml } from '@mpbhealth/utils';
 
 const WEBSITE_BASE_URL = 'https://mpb.health';
 
+/** Extract the direct Cognito form URL from cognito_embed HTML (iframe src) */
+function getCognitoFormUrl(form: AdvisorForm): string | null {
+  if (!form.cognito_embed || !form.cognito_embed.includes('cognitoforms.com')) return null;
+  const match = form.cognito_embed.match(/src="(https:\/\/[^"]*cognitoforms\.com[^"]+)"/);
+  return match ? match[1] : null;
+}
+
+/** Returns the best URL to copy/share. Prefers direct Cognito form URL for external use. */
 function getShareableUrl(form: AdvisorForm): string | null {
+  const cognitoUrl = getCognitoFormUrl(form);
+  if (cognitoUrl) return cognitoUrl;
+
   if (form.slug) {
     if (form.slug.startsWith('http')) return form.slug;
     return `${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`;
@@ -291,16 +302,18 @@ export default function SubmitGroup() {
                           {copied ? <CheckCheck className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
                           {copied ? 'Copied!' : 'Copy Link'}
                         </button>
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-tertiary transition-colors"
-                          title="Open in new tab"
+                          title="Open Cognito form in new tab"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                           Open
-                        </a>
+                        </button>
                       </>
                     );
                   })()}

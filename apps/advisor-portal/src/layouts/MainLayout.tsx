@@ -75,7 +75,7 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Resource Center', href: '/quick-links', icon: Link },
-  { name: 'SOPs & Playbooks', href: '/sops', icon: BookOpen },
+  { name: 'Resources', href: '/sops', icon: BookOpen },
   { 
     name: 'Forms', 
     href: '/forms', 
@@ -249,7 +249,7 @@ export default function MainLayout() {
     }
 
     // Enforce sidebar order
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'SOPs & Playbooks', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Ticket Management', 'Contact'];
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Ticket Management', 'Contact'];
     base = [...base].sort((a, b) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);

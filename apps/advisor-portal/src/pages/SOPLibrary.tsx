@@ -211,7 +211,7 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
   }
 
   // Dynamic title and description based on section
-  const pageTitle = currentSection?.title || 'SOPs & Playbooks';
+  const pageTitle = currentSection?.title || 'Resources';
   const pageDescription = currentSection?.description || 'Standard operating procedures and reference documents';
   const PageIcon = currentSection?.icon || BookOpen;
 

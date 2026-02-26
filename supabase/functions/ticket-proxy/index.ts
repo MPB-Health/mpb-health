@@ -354,8 +354,22 @@ Deno.serve(async (req: Request) => {
     if (!ADMIN_ACTIONS.includes(action)) {
       itstsUserId = await getItstsUserId(itstsAdmin, user.email);
       if (!itstsUserId) {
+        // For read-only actions, return empty results instead of blocking
+        if (action === "list") {
+          return new Response(
+            JSON.stringify({ success: true, tickets: [], total: 0, page: 1, per_page: body.per_page || 20 }),
+            { status: 200, headers },
+          );
+        }
+        if (action === "stats") {
+          return new Response(
+            JSON.stringify({ success: true, total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 }),
+            { status: 200, headers },
+          );
+        }
+        // For detail/write actions the user must exist in ITSTS
         return new Response(
-          JSON.stringify({ success: false, error: "Support account not found" }),
+          JSON.stringify({ success: false, error: "Support account not found. Your account has not been synced to the support system yet." }),
           { status: 404, headers },
         );
       }

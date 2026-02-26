@@ -7,6 +7,25 @@ interface SSOResult {
   redirect_path: string;
 }
 
+/**
+ * Extract the real error message from a Supabase Functions error.
+ * The SDK returns a generic message; the actual error is in the Response body.
+ */
+async function extractError(error: unknown): Promise<string> {
+  if (error && typeof error === 'object' && 'context' in error) {
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.json === 'function') {
+        const body = await ctx.json();
+        if (body?.error) return body.error;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return error instanceof Error ? error.message : 'Failed to open support portal';
+}
+
 export function useSupportSSO() {
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +34,10 @@ export function useSupportSSO() {
     try {
       const { data, error } = await supabase.functions.invoke<SSOResult>('sso-itsts-login');
 
-      if (error) throw error;
+      if (error) {
+        const msg = await extractError(error);
+        throw new Error(msg);
+      }
       if (!data?.url) throw new Error('No SSO URL returned');
 
       window.open(data.url, '_blank', 'noopener,noreferrer');

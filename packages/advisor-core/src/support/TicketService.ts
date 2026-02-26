@@ -1,4 +1,35 @@
 import { supabase } from '@mpbhealth/database';
+import { FunctionsHttpError } from '@supabase/supabase-js';
+
+/**
+ * Extract the real error message from a Supabase Functions error.
+ * The SDK wraps non-2xx responses in a generic "Edge Function returned a non-2xx status code"
+ * but the actual response body (with the real error) is accessible via context.json().
+ */
+async function extractFunctionError(error: unknown): Promise<string> {
+  // FunctionsHttpError stores the raw Response in .context
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const body = await error.context.json();
+      if (body?.error) return body.error;
+    } catch {
+      // context already consumed or not JSON
+    }
+  }
+  // Fallback: check if error has a context property (in case instanceof fails due to module duplication)
+  if (error && typeof error === 'object' && 'context' in error) {
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.json === 'function') {
+        const body = await ctx.json();
+        if (body?.error) return body.error;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return error instanceof Error ? error.message : 'Unknown error';
+}
 
 export type TicketStatus = 'new' | 'open' | 'pending' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -85,8 +116,8 @@ export class TicketService {
       },
     });
 
-    if (error) throw error;
-    if (!data?.success) throw new Error('Failed to fetch tickets');
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to fetch tickets');
 
     return {
       tickets: data.tickets,
@@ -104,8 +135,8 @@ export class TicketService {
       },
     });
 
-    if (error) throw error;
-    if (!data?.success) throw new Error('Failed to fetch ticket details');
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to fetch ticket details');
 
     return { ticket: data.ticket, comments: data.comments };
   }
@@ -115,8 +146,8 @@ export class TicketService {
       body: { action: 'stats' },
     });
 
-    if (error) throw error;
-    if (!data?.success) throw new Error('Failed to fetch ticket stats');
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to fetch ticket stats');
 
     return {
       total: data.total,
@@ -142,8 +173,8 @@ export class TicketService {
       },
     });
 
-    if (error) throw error;
-    if (!data?.success) throw new Error('Failed to fetch tickets');
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to fetch tickets');
 
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
@@ -153,8 +184,8 @@ export class TicketService {
       body: { action: 'detail_admin', ticket_id: ticketId },
     });
 
-    if (error) throw error;
-    if (!data?.success) throw new Error('Failed to fetch ticket details');
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to fetch ticket details');
 
     return { ticket: data.ticket, comments: data.comments };
   }
@@ -164,8 +195,8 @@ export class TicketService {
       body: { action: 'stats_all' },
     });
 
-    if (error) throw error;
-    if (!data?.success) throw new Error('Failed to fetch ticket stats');
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to fetch ticket stats');
 
     return {
       total: data.total,
@@ -182,8 +213,8 @@ export class TicketService {
       body: { action: 'add_comment', ticket_id: ticketId, content },
     });
 
-    if (error) throw error;
-    if (!data?.success) throw new Error('Failed to add comment');
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to add comment');
   }
 }
 

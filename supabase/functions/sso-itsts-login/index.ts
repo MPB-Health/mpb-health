@@ -7,13 +7,13 @@ const log = createLogger("sso-itsts-login");
 
 type MonorepoRole = "super_admin" | "admin" | "advisor" | "member" | "crm_user";
 
-// Redirect paths after SSO login - advisors go to tickets to submit/view support requests
+// Redirect paths after SSO login - everyone lands on the dashboard
 const DEFAULT_ROLE_REDIRECTS: Record<string, string> = {
-  advisor: "/tickets",
+  advisor: "/dashboard",
   super_admin: "/dashboard",
   admin: "/dashboard",
-  crm_user: "/support/member",
-  member: "/support/member",
+  crm_user: "/dashboard",
+  member: "/dashboard",
 };
 
 const ITSTS_BASE_URL = Deno.env.get("ITSTS_BASE_URL") ?? "https://support.mpb.health";
@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
     // Determine redirect path based on highest-priority role
     const advisorPath = Deno.env.get("ITSTS_ADVISOR_REDIRECT_PATH") ?? DEFAULT_ROLE_REDIRECTS.advisor;
     const roleRedirects = { ...DEFAULT_ROLE_REDIRECTS, advisor: advisorPath };
-    let redirectPath = roleRedirects[primaryRole] ?? "/support/member";
+    let redirectPath = roleRedirects[primaryRole] ?? "/dashboard";
     for (const role of roles) {
       if (role === "advisor") { redirectPath = roleRedirects.advisor; break; }
       if (role === "super_admin" || role === "admin") { redirectPath = roleRedirects.admin; break; }

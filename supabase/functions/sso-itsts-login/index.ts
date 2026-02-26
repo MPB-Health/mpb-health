@@ -85,22 +85,94 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Find user in ITSTS by email
-    const { data: itstsProfile } = await itstsAdmin
-      .from("profiles")
-      .select("id, email")
-      .eq("email", user.email)
-      .maybeSingle();
+    // Find user in ITSTS by email — auto-provision if not found
+    let itstsProfile = null;
+    {
+      const { data } = await itstsAdmin
+        .from("profiles")
+        .select("id, email")
+        .eq("email", user.email)
+        .maybeSingle();
+      itstsProfile = data;
+    }
 
     if (!itstsProfile) {
-      log.warn("User not found in ITSTS, cannot generate magic link", { email: user.email });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Support account not provisioned. Please contact your administrator.",
-        }),
-        { status: 404, headers },
-      );
+      log.info("User not found in ITSTS, auto-provisioning", { email: user.email });
+
+      // Get user metadata from monorepo for provisioning
+      const { data: { user: fullUser } } = await supabaseAdmin.auth.admin.getUserById(user.id);
+      const firstName = fullUser?.user_metadata?.first_name || user.email!.split("@")[0];
+      const lastName = fullUser?.user_metadata?.last_name || "";
+      const fullName = `${firstName} ${lastName}`.trim();
+
+      // Map monorepo role to ITSTS role
+      const roleMap: Record<string, string> = {
+        super_admin: "admin", admin: "staff", advisor: "advisor", crm_user: "member", member: "member",
+      };
+      const itstsRole = roleMap[primaryRole] || "member";
+
+      // Create auth user in ITSTS
+      const tempPassword = crypto.randomUUID().slice(0, 16) + "!A1";
+      const { data: authUser, error: createError } = await itstsAdmin.auth.admin.createUser({
+        email: user.email!,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          first_name: firstName,
+          last_name: lastName,
+          source: "mpb_monorepo_sso_auto",
+        },
+      });
+
+      let itstsUserId: string | null = null;
+
+      if (createError) {
+        if (createError.message?.includes("already been registered")) {
+          // Auth user exists but no profile — find and create profile
+          const { data: users } = await itstsAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+          const existingAuth = users?.users?.find((u: any) => u.email === user.email);
+          if (existingAuth) {
+            itstsUserId = existingAuth.id;
+          } else {
+            log.error("Could not find ITSTS auth user after 'already registered' error", { email: user.email });
+            return new Response(
+              JSON.stringify({ success: false, error: "Failed to provision support account. Please contact your administrator." }),
+              { status: 500, headers },
+            );
+          }
+        } else {
+          log.error("Failed to create ITSTS auth user", createError);
+          return new Response(
+            JSON.stringify({ success: false, error: "Failed to provision support account." }),
+            { status: 500, headers },
+          );
+        }
+      } else {
+        itstsUserId = authUser.user.id;
+      }
+
+      // Create/upsert profile in ITSTS
+      const { error: profileError } = await itstsAdmin
+        .from("profiles")
+        .upsert({
+          id: itstsUserId,
+          email: user.email,
+          full_name: fullName,
+          role: itstsRole,
+          is_active: true,
+        }, { onConflict: "id" });
+
+      if (profileError) {
+        log.warn("Failed to create ITSTS profile", profileError);
+        return new Response(
+          JSON.stringify({ success: false, error: "Failed to provision support account." }),
+          { status: 500, headers },
+        );
+      }
+
+      itstsProfile = { id: itstsUserId, email: user.email };
+      log.info("Auto-provisioned user in ITSTS", { email: user.email, itstsUserId });
     }
 
     // Generate a magic link for the ITSTS user

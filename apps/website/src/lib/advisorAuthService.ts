@@ -94,18 +94,19 @@ export interface OnboardingProgress {
 
 export const advisorAuthService = {
   async getAdvisorProfile(userId: string): Promise<AdvisorProfile | null> {
+    // Use limit(1) instead of maybeSingle() to avoid HTTP 406 when no row exists
     const { data, error } = await supabase
       .from('advisor_profiles')
       .select('*')
       .eq('id', userId)
-      .maybeSingle();
+      .limit(1);
 
     if (error) {
       console.error('Error fetching advisor profile:', error);
       return null;
     }
 
-    return data;
+    return data?.[0] ?? null;
   },
 
   async createAdvisorProfile(profile: Omit<AdvisorProfile, 'id' | 'created_at' | 'updated_at' | 'onboarding_completed' | 'onboarding_completed_at' | 'metadata'>): Promise<AdvisorProfile | null> {

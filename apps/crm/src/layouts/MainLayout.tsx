@@ -1,7 +1,9 @@
+import { useCallback } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
-import type { NavItem, NavLinkRenderProps } from '@mpbhealth/ui';
+import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
+import { supabase } from '../lib/supabase';
 import {
   LayoutDashboard,
   Users,
@@ -235,6 +237,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   };
 
+  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke<{ url: string }>('portal-sso', {
+        body: { portal },
+      });
+      if (error || !data?.url) return null;
+      return data.url;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const userSection = (
     <div className="space-y-3">
       {/* Org Switcher */}
@@ -329,6 +343,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessCRM={true}
             canAccessAdvisor={true}
             getPortalUrl={getPortalUrl}
+            getPortalUrlWithSSO={getPortalUrlWithSSO}
           />
         }
         userSection={userSection}

@@ -10,8 +10,10 @@ import {
   Bell,
   Package,
 } from 'lucide-react';
-import { AppLayout, PortalSwitcher, type NavItem } from '@mpbhealth/ui';
+import { useCallback } from 'react';
+import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
+import { supabase } from '@mpbhealth/database';
 import { useAdmin } from '../contexts/AdminContext';
 
 const navigation: NavItem[] = [
@@ -83,6 +85,18 @@ export default function MainLayout() {
     return item;
   });
 
+  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke<{ url: string }>('portal-sso', {
+        body: { portal },
+      });
+      if (error || !data?.url) return null;
+      return data.url;
+    } catch {
+      return null;
+    }
+  }, []);
+
   return (
     <AppLayout
       appName="Admin Portal"
@@ -95,6 +109,7 @@ export default function MainLayout() {
           canAccessCRM={true}
           canAccessAdvisor={true}
           getPortalUrl={getPortalUrl}
+          getPortalUrlWithSSO={getPortalUrlWithSSO}
         />
       }
       renderNavLink={(item, props) => (

@@ -11,6 +11,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { getPortalUrl } from '@mpbhealth/config';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
 
@@ -18,11 +19,17 @@ import { cn } from '../../lib/utils';
  * DashboardToggle - Floating toolbar for admins to quickly switch between portals
  * Only shows for users with admin or super_admin roles
  */
+interface SSOResult {
+  url: string;
+  redirect_to: string;
+}
+
 const DashboardToggle: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isSuperAdmin, isAdmin, isAdvisor, isCrmUser, rolesLoading } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState<string | null>(null);
 
   // Don't show if user is not logged in or has no elevated roles
   if (!user || rolesLoading) return null;
@@ -54,6 +61,7 @@ const DashboardToggle: React.FC = () => {
       color: 'bg-blue-600 hover:bg-blue-700',
       activeColor: 'bg-blue-700',
       external: false,
+      ssoPortal: null as string | null,
     },
     {
       id: 'advisor',
@@ -65,6 +73,7 @@ const DashboardToggle: React.FC = () => {
       color: 'bg-green-600 hover:bg-green-700',
       activeColor: 'bg-green-700',
       external: true,
+      ssoPortal: 'advisors',
     },
     {
       id: 'crm',
@@ -76,6 +85,7 @@ const DashboardToggle: React.FC = () => {
       color: 'bg-indigo-600 hover:bg-indigo-700',
       activeColor: 'bg-indigo-700',
       external: true,
+      ssoPortal: 'crm',
     },
     {
       id: 'member',
@@ -87,6 +97,7 @@ const DashboardToggle: React.FC = () => {
       color: 'bg-purple-600 hover:bg-purple-700',
       activeColor: 'bg-purple-700',
       external: true,
+      ssoPortal: 'app',
     },
   ];
 
@@ -95,12 +106,34 @@ const DashboardToggle: React.FC = () => {
   // Don't show if only one portal accessible
   if (accessiblePortals.length <= 1) return null;
 
-  const handleNavigate = (path: string, external?: boolean) => {
-    if (external) {
-      window.location.href = path;
+  const handleNavigate = async (portal: (typeof portals)[number]) => {
+    if (!portal.external) {
+      navigate(portal.path);
+      setIsExpanded(false);
       return;
     }
-    navigate(path);
+
+    // Use SSO for external portals so user lands logged in (no second login)
+    if (portal.ssoPortal) {
+      setSsoLoading(portal.id);
+      try {
+        const { data, error } = await supabase.functions.invoke<SSOResult>('portal-sso', {
+          body: { portal: portal.ssoPortal },
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+          return;
+        }
+      } catch (err) {
+        console.error('[DashboardToggle] Portal SSO failed, falling back to direct link:', err);
+        // Fall through to direct navigation
+      } finally {
+        setSsoLoading(null);
+      }
+    }
+
+    window.location.href = portal.path;
     setIsExpanded(false);
   };
 
@@ -119,10 +152,12 @@ const DashboardToggle: React.FC = () => {
             {accessiblePortals.map((portal) => {
               const Icon = portal.icon;
               const isActive = currentPortal === portal.id;
+              const isLoading = ssoLoading === portal.id;
               return (
                 <button
                   key={portal.id}
-                  onClick={() => handleNavigate(portal.path, portal.external)}
+                  onClick={() => handleNavigate(portal)}
+                  disabled={isLoading}
                   className={cn(
                     'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left',
                     isActive
@@ -144,8 +179,11 @@ const DashboardToggle: React.FC = () => {
                     {isActive && (
                       <div className="text-xs text-blue-500">Currently viewing</div>
                     )}
+                    {isLoading && (
+                      <div className="text-xs text-neutral-500">Opening...</div>
+                    )}
                   </div>
-                  {!isActive && <ExternalLink className="h-4 w-4 text-neutral-400" />}
+                  {!isActive && !isLoading && <ExternalLink className="h-4 w-4 text-neutral-400" />}
                 </button>
               );
             })}

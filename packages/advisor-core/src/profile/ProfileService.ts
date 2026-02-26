@@ -13,27 +13,29 @@ export class ProfileService {
   }
 
   // Get advisor profile
+  // Uses limit(1) instead of single() to avoid HTTP 406 when no row exists
   async getProfile(advisorId: string): Promise<AdvisorProfile | null> {
     const { data, error } = await supabase
       .from('advisor_profiles')
       .select('*')
       .eq('id', advisorId)
-      .single();
+      .limit(1);
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return this.normalizeProfile(data);
+    if (error) throw error;
+    return this.normalizeProfile(data?.[0] ?? null);
   }
 
   // Get profile by email
+  // Uses limit(1) instead of single() to avoid HTTP 406 when no row exists
   async getProfileByEmail(email: string): Promise<AdvisorProfile | null> {
     const { data, error } = await supabase
       .from('advisor_profiles')
       .select('*')
       .eq('email', email)
-      .single();
+      .limit(1);
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return this.normalizeProfile(data);
+    if (error) throw error;
+    return this.normalizeProfile(data?.[0] ?? null);
   }
 
   // Update profile

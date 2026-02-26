@@ -157,6 +157,12 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSuccess 
 
       if (data.temp_password) {
         setResult({ userId: data.user_id, tempPassword: data.temp_password });
+      } else if (form.send_invite && data.email_sent === false) {
+        toast.error(
+          data.email_error || 'User created but invitation email failed. Check RESEND_API_KEY in Supabase.'
+        );
+        onSuccess();
+        resetAndClose();
       } else {
         toast.success(
           form.send_invite

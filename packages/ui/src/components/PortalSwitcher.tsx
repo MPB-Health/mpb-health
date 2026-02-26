@@ -15,6 +15,8 @@ export interface PortalSwitcherProps {
   canAccessAdvisor: boolean;
   /** Function to get the URL for a portal */
   getPortalUrl: (portal: PortalKey) => string;
+  /** Optional: async SSO URL for cross-portal nav. If provided and returns URL, use it; else fall back to getPortalUrl */
+  getPortalUrlWithSSO?: (portal: PortalKey) => Promise<string | null>;
   /** Optional className for the container */
   className?: string;
 }
@@ -53,9 +55,11 @@ export function PortalSwitcher({
   canAccessCRM,
   canAccessAdvisor,
   getPortalUrl,
+  getPortalUrlWithSSO,
   className,
 }: PortalSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [loadingPortal, setLoadingPortal] = useState<PortalKey | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -86,13 +90,27 @@ export function PortalSwitcher({
   const currentPortalInfo = PORTAL_OPTIONS.find((p) => p.key === currentPortal);
   const CurrentIcon = currentPortalInfo?.icon || LayoutDashboard;
 
-  const handlePortalSwitch = (portal: PortalKey) => {
+  const handlePortalSwitch = async (portal: PortalKey) => {
     if (portal === currentPortal) {
       setIsOpen(false);
       return;
     }
-    
-    // Navigate to the selected portal
+
+    setLoadingPortal(portal);
+    try {
+      if (getPortalUrlWithSSO) {
+        const ssoUrl = await getPortalUrlWithSSO(portal);
+        if (ssoUrl) {
+          window.location.href = ssoUrl;
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('[PortalSwitcher] SSO failed, using direct link:', err);
+    } finally {
+      setLoadingPortal(null);
+    }
+
     window.location.href = getPortalUrl(portal);
   };
 
@@ -128,12 +146,14 @@ export function PortalSwitcher({
           <div className="py-1">
             {availablePortals.map((portal) => {
               const isActive = portal.key === currentPortal;
+              const isLoading = loadingPortal === portal.key;
               const Icon = portal.icon;
 
               return (
                 <button
                   key={portal.key}
                   onClick={() => handlePortalSwitch(portal.key)}
+                  disabled={isLoading}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all duration-150',
                     isActive

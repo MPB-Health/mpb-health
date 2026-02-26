@@ -92,11 +92,17 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
         throw new Error(createResult?.error || 'Failed to create user');
       }
 
-      toast.success(
-        form.send_invite
-          ? 'User created and invitation sent!'
-          : 'User created successfully!'
-      );
+      if (form.send_invite && createResult?.email_sent === false) {
+        toast.error(
+          createResult?.email_error || 'User created but invitation email failed. Check Supabase logs and RESEND_API_KEY.'
+        );
+      } else {
+        toast.success(
+          form.send_invite
+            ? 'User created and invitation sent!'
+            : 'User created successfully!'
+        );
+      }
       onSuccess();
       onClose();
     } catch (err) {

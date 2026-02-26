@@ -18,8 +18,8 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 async function sendInviteEmail(email: string, firstName: string, tempPassword: string): Promise<void> {
   if (!RESEND_API_KEY) {
-    log.info('Resend API key not configured, skipping invite email');
-    return;
+    log.error('Resend API key not configured, cannot send invite email');
+    throw new Error("RESEND_API_KEY is not configured in Supabase. Add it in Project Settings → Edge Functions → Secrets.");
   }
 
   const loginUrl = "https://admin.mpb.health/login";
@@ -71,19 +71,25 @@ async function sendInviteEmail(email: string, firstName: string, tempPassword: s
     </html>
   `;
 
-  await fetch("https://api.resend.com/emails", {
+  const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "MPB Health <notifications@mympb.com>",
+      from: Deno.env.get("RESEND_FROM_EMAIL") || "MPB Health <notifications@mpb.health>",
       to: [email],
       subject: "Welcome to MPB Health Admin Portal",
       html,
     }),
   });
+
+  if (!res.ok) {
+    const body = await res.text();
+    log.error("Failed to send invite email", { status: res.status, body, email });
+    throw new Error(`Resend API error: ${res.status} - ${body}`);
+  }
 }
 
 function generateTempPassword(): string {
@@ -214,12 +220,15 @@ Deno.serve(async (req: Request) => {
       // Continue anyway, user is created
     }
 
-    // Send invite email if requested
+    let emailSent = false;
+    let emailError: string | undefined;
     if (send_invite) {
       try {
         await sendInviteEmail(email, first_name, tempPassword);
-      } catch (emailError) {
-        log.error('Email send error:', emailError);
+        emailSent = true;
+      } catch (emailErr) {
+        log.error('Email send error:', emailErr);
+        emailError = emailErr instanceof Error ? emailErr.message : String(emailErr);
       }
     }
 
@@ -238,8 +247,10 @@ Deno.serve(async (req: Request) => {
         success: true,
         user_id: userId,
         message: send_invite
-          ? "User created and invitation email sent"
+          ? (emailSent ? "User created and invitation email sent" : "User created but invitation email failed")
           : "User created successfully",
+        email_sent: send_invite ? emailSent : undefined,
+        email_error: emailError,
       }),
       { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );

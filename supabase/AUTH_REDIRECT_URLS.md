@@ -19,6 +19,9 @@ https://www.mpb.health/reset-password
 https://www.mpb.health/**
 https://admin.mpb.health/reset-password
 https://admin.mpb.health/**
+https://advisor.mpb.health/**
+https://crm.mpb.health/**
+https://app.mpb.health/**
 https://crm.mpbhealth.com/reset-password
 https://crm.mpbhealth.com/**
 https://app.mpbhealth.com/reset-password

@@ -31,8 +31,8 @@ async function sendInviteEmail(
   roles: UserRole[],
 ): Promise<void> {
   if (!RESEND_API_KEY) {
-    log.info("Resend API key not configured, skipping invite email");
-    return;
+    log.error("Resend API key not configured, cannot send invite email");
+    throw new Error("RESEND_API_KEY is not configured in Supabase. Add it in Project Settings → Edge Functions → Secrets.");
   }
 
   const portalUrl = roles.includes("advisor")
@@ -88,7 +88,7 @@ async function sendInviteEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "MPB Health <notifications@mympb.com>",
+      from: Deno.env.get("RESEND_FROM_EMAIL") || "MPB Health <notifications@mpb.health>",
       to: [email],
       subject: "Welcome to MPB Health – Your Account Is Ready",
       html,
@@ -97,7 +97,8 @@ async function sendInviteEmail(
 
   if (!res.ok) {
     const body = await res.text();
-    log.warn("Failed to send invite email", { status: res.status, body });
+    log.error("Failed to send invite email", { status: res.status, body, email });
+    throw new Error(`Resend API error: ${res.status} - ${body}`);
   }
 }
 
@@ -217,11 +218,15 @@ Deno.serve(async (req: Request) => {
       log.error("User roles insert error:", roleError);
     }
 
+    let emailSent = false;
+    let emailError: string | undefined;
     if (send_invite) {
       try {
         await sendInviteEmail(email, first_name, tempPassword, roles);
-      } catch (emailError) {
-        log.error("Email send error:", emailError);
+        emailSent = true;
+      } catch (emailErr) {
+        log.error("Email send error:", emailErr);
+        emailError = emailErr instanceof Error ? emailErr.message : String(emailErr);
       }
     }
 
@@ -246,8 +251,10 @@ Deno.serve(async (req: Request) => {
         user_id: userId,
         temp_password: send_invite ? undefined : tempPassword,
         message: send_invite
-          ? "User created and invitation email sent"
+          ? (emailSent ? "User created and invitation email sent" : "User created but invitation email failed")
           : "User created successfully",
+        email_sent: send_invite ? emailSent : undefined,
+        email_error: emailError,
       }),
       { status: 200, headers },
     );

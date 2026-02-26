@@ -3,8 +3,10 @@ import { supabase } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 
 interface SSOResult {
-  url: string;
-  redirect_path: string;
+  success?: boolean;
+  url?: string;
+  redirect_path?: string;
+  error?: string;
 }
 
 /**
@@ -15,9 +17,21 @@ async function extractError(error: unknown): Promise<string> {
   if (error && typeof error === 'object' && 'context' in error) {
     try {
       const ctx = (error as any).context;
-      if (ctx && typeof ctx.json === 'function') {
-        const body = await ctx.json();
-        if (body?.error) return body.error;
+      const status = typeof ctx?.status === 'number' ? ctx.status : undefined;
+      if (ctx && typeof ctx.clone === 'function') {
+        const cloned = ctx.clone();
+        if (typeof cloned.json === 'function') {
+          const body = await cloned.json();
+          if (body?.error) {
+            return status ? `Support SSO failed (${status}): ${body.error}` : body.error;
+          }
+        }
+      }
+      if (ctx && typeof ctx.text === 'function') {
+        const raw = (await ctx.text())?.trim();
+        if (raw) {
+          return status ? `Support SSO failed (${status}): ${raw}` : raw;
+        }
       }
     } catch {
       // ignore
@@ -37,6 +51,9 @@ export function useSupportSSO() {
       if (error) {
         const msg = await extractError(error);
         throw new Error(msg);
+      }
+      if (data?.success === false) {
+        throw new Error(data.error || 'Failed to open support portal');
       }
       if (!data?.url) throw new Error('No SSO URL returned');
 

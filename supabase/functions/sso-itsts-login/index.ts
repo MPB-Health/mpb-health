@@ -18,6 +18,16 @@ const DEFAULT_ROLE_REDIRECTS: Record<string, string> = {
 
 const ITSTS_BASE_URL = Deno.env.get("ITSTS_BASE_URL") ?? "https://support.mpb.health";
 
+function buildRedirectUrl(baseUrl: string, path: string): string | null {
+  try {
+    const base = new URL(baseUrl);
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    return new URL(normalizedPath, base.origin).toString();
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
@@ -50,6 +60,12 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid authorization" }),
         { status: 401, headers },
+      );
+    }
+    if (!user.email) {
+      return new Response(
+        JSON.stringify({ success: false, error: "User email is required for support SSO" }),
+        { status: 400, headers },
       );
     }
 
@@ -88,11 +104,18 @@ Deno.serve(async (req: Request) => {
     // Find user in ITSTS by email — auto-provision if not found
     let itstsProfile = null;
     {
-      const { data } = await itstsAdmin
+      const { data, error: profileLookupError } = await itstsAdmin
         .from("profiles")
         .select("id, email")
         .eq("email", user.email)
         .maybeSingle();
+      if (profileLookupError) {
+        log.error("Failed to lookup ITSTS profile", profileLookupError);
+        return new Response(
+          JSON.stringify({ success: false, error: "Failed to lookup support profile." }),
+          { status: 500, headers },
+        );
+      }
       itstsProfile = data;
     }
 
@@ -100,7 +123,10 @@ Deno.serve(async (req: Request) => {
       log.info("User not found in ITSTS, auto-provisioning", { email: user.email });
 
       // Get user metadata from monorepo for provisioning
-      const { data: { user: fullUser } } = await supabaseAdmin.auth.admin.getUserById(user.id);
+      const { data: { user: fullUser }, error: fullUserError } = await supabaseAdmin.auth.admin.getUserById(user.id);
+      if (fullUserError) {
+        log.warn("Failed to load full user metadata, using fallback names", fullUserError);
+      }
       const firstName = fullUser?.user_metadata?.first_name || user.email!.split("@")[0];
       const lastName = fullUser?.user_metadata?.last_name || "";
       const fullName = `${firstName} ${lastName}`.trim();
@@ -144,7 +170,7 @@ Deno.serve(async (req: Request) => {
         } else {
           log.error("Failed to create ITSTS auth user", createError);
           return new Response(
-            JSON.stringify({ success: false, error: "Failed to provision support account." }),
+            JSON.stringify({ success: false, error: `Failed to provision support account: ${createError.message}` }),
             { status: 500, headers },
           );
         }
@@ -166,7 +192,7 @@ Deno.serve(async (req: Request) => {
       if (profileError) {
         log.warn("Failed to create ITSTS profile", profileError);
         return new Response(
-          JSON.stringify({ success: false, error: "Failed to provision support account." }),
+          JSON.stringify({ success: false, error: `Failed to provision support profile: ${profileError.message}` }),
           { status: 500, headers },
         );
       }
@@ -176,9 +202,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // Generate a magic link for the ITSTS user
-    const redirectTo = `${ITSTS_BASE_URL}${redirectPath}`;
+    const redirectTo = buildRedirectUrl(ITSTS_BASE_URL, redirectPath);
+    if (!redirectTo) {
+      log.error("Invalid ITSTS_BASE_URL or redirectPath", { ITSTS_BASE_URL, redirectPath });
+      return new Response(
+        JSON.stringify({ success: false, error: "Support SSO is misconfigured: invalid redirect URL." }),
+        { status: 500, headers },
+      );
+    }
 
-    const { data: linkData, error: linkError } = await itstsAdmin.auth.admin.generateLink({
+    let { data: linkData, error: linkError } = await itstsAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: user.email!,
       options: {
@@ -186,10 +219,25 @@ Deno.serve(async (req: Request) => {
       },
     });
 
+    // Fallback: some environments reject redirectTo when URL allowlist is incomplete.
+    if (linkError) {
+      log.warn("Magic link with redirectTo failed, retrying without redirectTo", {
+        email: user.email,
+        redirectTo,
+        message: linkError.message,
+      });
+      const retry = await itstsAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: user.email!,
+      });
+      linkData = retry.data;
+      linkError = retry.error;
+    }
+
     if (linkError) {
       log.error("Failed to generate magic link", linkError);
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to generate login link" }),
+        JSON.stringify({ success: false, error: `Failed to generate login link: ${linkError.message}` }),
         { status: 500, headers },
       );
     }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, UserPlus, LogIn } from 'lucide-react';
+import { ArrowRight, UserPlus, LogIn, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { LoginLayout } from '@mpbhealth/ui';
@@ -61,6 +61,37 @@ export function UnifiedLoginPage({
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [mode, setMode] = useState<'signin' | 'onboarding'>('signin');
+
+  // Show config error state when Supabase env vars are missing (often due to cached build)
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white via-white to-slate-50 px-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-left">
+            <h2 className="text-lg font-semibold text-amber-800 mb-2">Authentication service is not configured</h2>
+            <p className="text-sm text-amber-700 mb-4">
+              This usually happens when your browser is showing a cached version of the site. Try these steps:
+            </p>
+            <ol className="text-sm text-amber-700 space-y-2 list-decimal list-inside mb-6">
+              <li>Hard refresh: <kbd className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">Ctrl+Shift+R</kbd> (Windows) or <kbd className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">Cmd+Shift+R</kbd> (Mac)</li>
+              <li>Or open the page in a private/incognito window</li>
+              <li>Or try a different browser (Chrome, Firefox, Safari)</li>
+            </ol>
+            <Button
+              onClick={() => window.location.reload()}
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="h-5 w-5" />
+              Reload page
+            </Button>
+          </div>
+          <Link to="/" className="text-sm text-neutral-500 hover:text-primary-600">
+            &larr; Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {

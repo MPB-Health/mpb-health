@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Card } from '../components/ui/Card';
 import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter';
-import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, CheckCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -161,19 +161,38 @@ const ResetPassword = () => {
   }
 
   if (isValidToken === false) {
+    const isConfigError = error.includes('not configured');
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-neutral-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8">
           <div className="flex flex-col items-center text-center space-y-4">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertCircle className="w-8 h-8 text-red-600" />
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isConfigError ? 'bg-amber-100' : 'bg-red-100'}`}>
+              <AlertCircle className={`w-8 h-8 ${isConfigError ? 'text-amber-600' : 'text-red-600'}`} />
             </div>
-            <h1 className="text-2xl font-bold text-neutral-900">Invalid Reset Link</h1>
-            <p className="text-neutral-600 text-sm">{error}</p>
+            <h1 className="text-2xl font-bold text-neutral-900">
+              {isConfigError ? 'Authentication service is not configured' : 'Invalid Reset Link'}
+            </h1>
+            <p className="text-neutral-600 text-sm text-left">
+              {isConfigError ? (
+                <>
+                  This usually happens when your browser is showing a cached version. Try a hard refresh (
+                  <kbd className="px-1 py-0.5 bg-neutral-100 rounded text-xs">Ctrl+Shift+R</kbd>) or open in a private window.
+                </>
+              ) : (
+                error
+              )}
+            </p>
             <div className="flex flex-col gap-2 w-full mt-4">
-              <Button onClick={() => navigate('/forgot-password')} variant="default" className="w-full">
-                Request New Reset Link
-              </Button>
+              {isConfigError ? (
+                <Button onClick={() => window.location.reload()} variant="default" className="w-full flex items-center justify-center gap-2">
+                  <RefreshCw className="w-5 h-5" />
+                  Reload page
+                </Button>
+              ) : (
+                <Button onClick={() => navigate('/forgot-password')} variant="default" className="w-full">
+                  Request New Reset Link
+                </Button>
+              )}
               <Button onClick={() => navigate('/login')} variant="outline" className="w-full">
                 Back to Login
               </Button>

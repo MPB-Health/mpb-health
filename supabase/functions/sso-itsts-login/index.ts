@@ -7,15 +7,16 @@ const log = createLogger("sso-itsts-login");
 
 type MonorepoRole = "super_admin" | "admin" | "advisor" | "member" | "crm_user";
 
-const ROLE_REDIRECTS: Record<string, string> = {
-  advisor: "/advisor/dashboard",
+// Redirect paths after SSO login - advisors go to tickets to submit/view support requests
+const DEFAULT_ROLE_REDIRECTS: Record<string, string> = {
+  advisor: "/tickets",
   super_admin: "/dashboard",
   admin: "/dashboard",
   crm_user: "/support/member",
   member: "/support/member",
 };
 
-const ITSTS_BASE_URL = "https://support.mpb.health";
+const ITSTS_BASE_URL = Deno.env.get("ITSTS_BASE_URL") ?? "https://support.mpb.health";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -62,10 +63,12 @@ Deno.serve(async (req: Request) => {
     const primaryRole = roles[0] || "member";
 
     // Determine redirect path based on highest-priority role
-    let redirectPath = ROLE_REDIRECTS[primaryRole] || "/support/member";
+    const advisorPath = Deno.env.get("ITSTS_ADVISOR_REDIRECT_PATH") ?? DEFAULT_ROLE_REDIRECTS.advisor;
+    const roleRedirects = { ...DEFAULT_ROLE_REDIRECTS, advisor: advisorPath };
+    let redirectPath = roleRedirects[primaryRole] ?? "/support/member";
     for (const role of roles) {
-      if (role === "advisor") { redirectPath = ROLE_REDIRECTS.advisor; break; }
-      if (role === "super_admin" || role === "admin") { redirectPath = ROLE_REDIRECTS.admin; break; }
+      if (role === "advisor") { redirectPath = roleRedirects.advisor; break; }
+      if (role === "super_admin" || role === "admin") { redirectPath = roleRedirects.admin; break; }
     }
 
     // Connect to the ITSTS project

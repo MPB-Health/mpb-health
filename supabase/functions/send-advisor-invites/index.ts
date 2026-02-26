@@ -5,7 +5,7 @@ import { createLogger } from "../_shared/logger.ts";
 
 const log = createLogger("send-advisor-invites");
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const RESEND_FROM = Deno.env.get("RESEND_FROM_EMAIL") || "MPB Health <onboarding@resend.dev>";
+const RESEND_FROM = Deno.env.get("RESEND_FROM_EMAIL") || "MPB Health <onboarding@mpb.health>";
 
 interface InviteRequest {
   advisor_ids?: string[];

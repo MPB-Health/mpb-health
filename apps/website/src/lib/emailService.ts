@@ -16,7 +16,7 @@ export interface EmailResponse {
   error?: string;
 }
 
-const DEFAULT_FROM = 'MPB Health <notifications@mympb.com>';
+const DEFAULT_FROM = 'MPB Health <notifications@mpb.health>';
 
 export async function sendEmail(options: EmailOptions): Promise<EmailResponse> {
   if (!RESEND_API_KEY) {

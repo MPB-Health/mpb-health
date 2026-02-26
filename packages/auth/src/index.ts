@@ -125,6 +125,10 @@ export {
   type RateLimitConfig,
   type UseClientRateLimitReturn,
 } from './hooks/useClientRateLimit';
+export {
+  usePortalAccess,
+  type PortalAccessState,
+} from './hooks/usePortalAccess';
 
 // Org & Permission Services
 export {

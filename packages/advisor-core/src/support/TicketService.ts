@@ -1,5 +1,4 @@
 import { supabase } from '@mpbhealth/database';
-import { FunctionsHttpError } from '@supabase/supabase-js';
 
 /**
  * Extract the real error message from a Supabase Functions error.
@@ -7,25 +6,16 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
  * but the actual response body (with the real error) is accessible via context.json().
  */
 async function extractFunctionError(error: unknown): Promise<string> {
-  // FunctionsHttpError stores the raw Response in .context
-  if (error instanceof FunctionsHttpError) {
-    try {
-      const body = await error.context.json();
-      if (body?.error) return body.error;
-    } catch {
-      // context already consumed or not JSON
-    }
-  }
-  // Fallback: check if error has a context property (in case instanceof fails due to module duplication)
+  // Check if error has a context property (FunctionsHttpError stores the raw Response in .context)
   if (error && typeof error === 'object' && 'context' in error) {
     try {
-      const ctx = (error as any).context;
-      if (ctx && typeof ctx.json === 'function') {
-        const body = await ctx.json();
+      const ctx = (error as Record<string, unknown>).context;
+      if (ctx && typeof ctx === 'object' && 'json' in ctx && typeof (ctx as any).json === 'function') {
+        const body = await (ctx as any).json();
         if (body?.error) return body.error;
       }
     } catch {
-      // ignore
+      // context already consumed or not JSON
     }
   }
   return error instanceof Error ? error.message : 'Unknown error';

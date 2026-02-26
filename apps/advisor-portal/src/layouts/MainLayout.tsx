@@ -479,7 +479,7 @@ export default function MainLayout() {
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
         portalSwitcher={
           <PortalSwitcher
-            currentPortal="advisor"
+            currentPortal="advisors"
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}

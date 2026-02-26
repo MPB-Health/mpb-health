@@ -125,29 +125,31 @@ CREATE POLICY "advisor_documents_admin_delete"
   );
 
 -- ============================================================================
--- PART 2: Conversion Tracking
+-- PART 2: Conversion Tracking (guarded — tables may not exist on all envs)
 -- ============================================================================
 
-DROP POLICY IF EXISTS "Admins can read conversion events" ON conversion_events;
-CREATE POLICY "Admins can read conversion events"
-  ON conversion_events FOR SELECT TO authenticated
-  USING (current_user_has_admin_access());
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'conversion_events') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Admins can read conversion events" ON conversion_events';
+    EXECUTE 'CREATE POLICY "Admins can read conversion events" ON conversion_events FOR SELECT TO authenticated USING (current_user_has_admin_access())';
+  END IF;
 
-DROP POLICY IF EXISTS "Admins can read funnel data" ON conversion_funnel;
-CREATE POLICY "Admins can read funnel data"
-  ON conversion_funnel FOR SELECT TO authenticated
-  USING (current_user_has_admin_access());
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'conversion_funnel') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Admins can read funnel data" ON conversion_funnel';
+    EXECUTE 'CREATE POLICY "Admins can read funnel data" ON conversion_funnel FOR SELECT TO authenticated USING (current_user_has_admin_access())';
+  END IF;
 
-DROP POLICY IF EXISTS "Admins can manage tests" ON ab_test_variants;
-CREATE POLICY "Admins can manage tests"
-  ON ab_test_variants FOR ALL TO authenticated
-  USING (current_user_has_admin_access())
-  WITH CHECK (current_user_has_admin_access());
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'ab_test_variants') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Admins can manage tests" ON ab_test_variants';
+    EXECUTE 'CREATE POLICY "Admins can manage tests" ON ab_test_variants FOR ALL TO authenticated USING (current_user_has_admin_access()) WITH CHECK (current_user_has_admin_access())';
+  END IF;
 
-DROP POLICY IF EXISTS "Admins can read all test results" ON ab_test_results;
-CREATE POLICY "Admins can read all test results"
-  ON ab_test_results FOR SELECT TO authenticated
-  USING (current_user_has_admin_access());
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'ab_test_results') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Admins can read all test results" ON ab_test_results';
+    EXECUTE 'CREATE POLICY "Admins can read all test results" ON ab_test_results FOR SELECT TO authenticated USING (current_user_has_admin_access())';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- PART 3: Admin Analytics Tables
@@ -691,15 +693,15 @@ CREATE POLICY "Admins can manage content analytics"
   USING (current_user_has_admin_access())
   WITH CHECK (current_user_has_admin_access());
 
-DROP POLICY IF EXISTS "Admins can view action logs" ON admin_actions_log;
-CREATE POLICY "Admins can view action logs"
-  ON admin_actions_log FOR SELECT TO authenticated
-  USING (current_user_has_admin_access());
-
-DROP POLICY IF EXISTS "Admins can insert action logs" ON admin_actions_log;
-CREATE POLICY "Admins can insert action logs"
-  ON admin_actions_log FOR INSERT TO authenticated
-  WITH CHECK (current_user_has_admin_access());
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'admin_actions_log') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Admins can view action logs" ON admin_actions_log';
+    EXECUTE 'CREATE POLICY "Admins can view action logs" ON admin_actions_log FOR SELECT TO authenticated USING (current_user_has_admin_access())';
+    EXECUTE 'DROP POLICY IF EXISTS "Admins can insert action logs" ON admin_actions_log';
+    EXECUTE 'CREATE POLICY "Admins can insert action logs" ON admin_actions_log FOR INSERT TO authenticated WITH CHECK (current_user_has_admin_access())';
+  END IF;
+END $$;
 
 DROP POLICY IF EXISTS "Admins can view site settings" ON site_settings;
 CREATE POLICY "Admins can view site settings"
@@ -734,13 +736,12 @@ CREATE POLICY "Admins can manage email templates"
   USING (current_user_has_admin_access())
   WITH CHECK (current_user_has_admin_access());
 
-DROP POLICY IF EXISTS "Admins can view redirects" ON site_redirects;
-CREATE POLICY "Admins can view redirects"
-  ON site_redirects FOR SELECT TO authenticated
-  USING (current_user_has_admin_access());
-
-DROP POLICY IF EXISTS "Admins can manage redirects" ON site_redirects;
-CREATE POLICY "Admins can manage redirects"
-  ON site_redirects FOR ALL TO authenticated
-  USING (current_user_has_admin_access())
-  WITH CHECK (current_user_has_admin_access());
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'site_redirects') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Admins can view redirects" ON site_redirects';
+    EXECUTE 'CREATE POLICY "Admins can view redirects" ON site_redirects FOR SELECT TO authenticated USING (current_user_has_admin_access())';
+    EXECUTE 'DROP POLICY IF EXISTS "Admins can manage redirects" ON site_redirects';
+    EXECUTE 'CREATE POLICY "Admins can manage redirects" ON site_redirects FOR ALL TO authenticated USING (current_user_has_admin_access()) WITH CHECK (current_user_has_admin_access())';
+  END IF;
+END $$;

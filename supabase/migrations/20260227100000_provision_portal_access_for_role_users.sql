@@ -27,11 +27,11 @@ FROM (
     ) AS first_name,
     COALESCE(
       ap.last_name,
-      COALESCE((u.raw_user_meta_data->>'last_name')::text,
-        CASE WHEN (u.raw_user_meta_data->>'full_name')::text IS NOT NULL AND position(' ' in (u.raw_user_meta_data->>'full_name')::text) > 0
-          THEN trim(substring((u.raw_user_meta_data->>'full_name')::text from position(' ' in (u.raw_user_meta_data->>'full_name')::text) + 1))
-          ELSE ''
-        END,
+      (u.raw_user_meta_data->>'last_name')::text,
+      CASE WHEN (u.raw_user_meta_data->>'full_name')::text IS NOT NULL AND position(' ' in (u.raw_user_meta_data->>'full_name')::text) > 0
+        THEN trim(substring((u.raw_user_meta_data->>'full_name')::text from position(' ' in (u.raw_user_meta_data->>'full_name')::text) + 1))
+        ELSE ''
+      END,
       ''
     ) AS last_name,
     CASE
@@ -53,14 +53,14 @@ ON CONFLICT (id) DO NOTHING;
 -- Add to the first organization in the system (MPB Health default org)
 INSERT INTO org_memberships (org_id, user_id, role, status, joined_at)
 SELECT DISTINCT ON (ur.user_id)
-  (SELECT id FROM organizations ORDER BY created_at ASC LIMIT 1),
+  (SELECT id FROM orgs ORDER BY created_at ASC LIMIT 1),
   ur.user_id,
   'admin',
   'active',
   now()
 FROM user_roles ur
 WHERE ur.role IN ('super_admin', 'admin', 'crm_user')
-  AND EXISTS (SELECT 1 FROM organizations LIMIT 1)
+  AND EXISTS (SELECT 1 FROM orgs LIMIT 1)
   AND NOT EXISTS (
     SELECT 1 FROM org_memberships om
     WHERE om.user_id = ur.user_id AND om.status = 'active'

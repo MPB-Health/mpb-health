@@ -11,6 +11,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { getPortalUrl } from '@mpbhealth/config';
+import { buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
@@ -19,10 +20,6 @@ import { cn } from '../../lib/utils';
  * DashboardToggle - Floating toolbar for admins to quickly switch between portals
  * Only shows for users with admin or super_admin roles
  */
-interface SSOResult {
-  url: string;
-  redirect_to: string;
-}
 
 const DashboardToggle: React.FC = () => {
   const navigate = useNavigate();
@@ -113,16 +110,13 @@ const DashboardToggle: React.FC = () => {
       return;
     }
 
-    // Use SSO for external portals so user lands logged in (no second login)
+    // Use client-side session transfer so user lands logged in (no second login)
     if (portal.ssoPortal) {
       setSsoLoading(portal.id);
       try {
-        const { data, error } = await supabase.functions.invoke<SSOResult>('portal-sso', {
-          body: { portal: portal.ssoPortal },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
+        const ssoUrl = await buildPortalSSOUrl(portal.path, supabase);
+        if (ssoUrl) {
+          window.location.href = ssoUrl;
           return;
         }
       } catch (err) {

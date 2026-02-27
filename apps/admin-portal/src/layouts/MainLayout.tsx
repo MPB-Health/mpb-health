@@ -14,7 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { supabase } from '@mpbhealth/database';
-import { usePortalAccess } from '@mpbhealth/auth';
+import { usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
 import { useAdmin } from '../contexts/AdminContext';
 
 const navigation: NavItem[] = [
@@ -96,15 +96,7 @@ export default function MainLayout() {
   });
 
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase.functions.invoke<{ url: string }>('portal-sso', {
-        body: { portal },
-      });
-      if (error || !data?.url) return null;
-      return data.url;
-    } catch {
-      return null;
-    }
+    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
   }, []);
 
   return (

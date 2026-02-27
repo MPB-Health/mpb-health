@@ -186,6 +186,9 @@ export {
   type AuditAction,
 } from './services/auditService';
 
+// Portal SSO (client-side cross-portal session transfer)
+export { buildPortalSSOUrl } from './services/portalSSO';
+
 // Org Switcher Component
 export { OrgSwitcher, type OrgSwitcherProps } from './components/OrgSwitcher';
 

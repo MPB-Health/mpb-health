@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { isAdmin as checkIsAdmin, usePortalAccess } from '@mpbhealth/auth';
+import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -161,17 +161,9 @@ export default function MainLayout() {
   // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
 
-  // SSO-aware portal navigation
+  // SSO-aware portal navigation (client-side session transfer)
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase.functions.invoke<{ url: string }>('portal-sso', {
-        body: { portal },
-      });
-      if (error || !data?.url) return null;
-      return data.url;
-    } catch {
-      return null;
-    }
+    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
   }, []);
 
   // Dynamic navigation from CMS with caching

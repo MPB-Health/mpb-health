@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
 import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
+import { buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
 import {
   LayoutDashboard,
@@ -176,7 +177,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    // Hard reload to /login to fully clear in-memory state
+    window.location.href = '/login';
   };
 
   const totalPendingTasks = tasksDueToday.length + overdueTasks.length;
@@ -241,15 +243,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase.functions.invoke<{ url: string }>('portal-sso', {
-        body: { portal },
-      });
-      if (error || !data?.url) return null;
-      return data.url;
-    } catch {
-      return null;
-    }
+    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
   }, []);
 
   const userSection = (

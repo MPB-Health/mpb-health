@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("ticket-proxy");
 
@@ -308,6 +309,15 @@ Deno.serve(async (req: Request) => {
 
   const headers = { ...getCorsHeaders(req), "Content-Type": "application/json" };
 
+  // Rate limit: proxy endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 60,
+    windowSeconds: 60,
+    keyPrefix: 'ticket-proxy',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     // Verify caller from monorepo
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -452,7 +462,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: "Internal server error",
       }),
       { status: 500, headers },
     );

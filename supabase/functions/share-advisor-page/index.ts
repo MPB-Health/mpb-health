@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { checkRateLimit, getClientIdentifier, isValidEmail, sanitizeInput } from '../_shared/security.ts';
 
 interface RequestBody {
   recipientName: string;
@@ -14,6 +15,15 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Strict rate limiting to prevent email spam (5 per minute per IP)
+    const clientIp = getClientIdentifier(req);
+    const rateLimitResponse = checkRateLimit(clientIp, {
+      maxRequests: 5,
+      windowSeconds: 60,
+      keyPrefix: 'share-advisor',
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     if (!RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY is not configured');
@@ -28,8 +38,21 @@ serve(async (req) => {
     if (!recipientEmail?.trim()) {
       return jsonResponse(req, 400, { success: false, error: 'Recipient email is required' });
     }
+    // SECURITY: Validate email format
+    if (!isValidEmail(recipientEmail.trim())) {
+      return jsonResponse(req, 400, { success: false, error: 'Invalid recipient email format' });
+    }
     if (!advisorUrl?.trim()) {
       return jsonResponse(req, 400, { success: false, error: 'Advisor URL is required' });
+    }
+    // SECURITY: Validate advisor URL against allowed domains
+    try {
+      const parsedUrl = new URL(advisorUrl);
+      if (!['mpbhealth.com', 'www.mpbhealth.com', 'mpb.health', 'www.mpb.health', 'advisor.mpb.health'].some(d => parsedUrl.hostname === d)) {
+        return jsonResponse(req, 400, { success: false, error: 'Invalid advisor URL' });
+      }
+    } catch {
+      return jsonResponse(req, 400, { success: false, error: 'Invalid advisor URL format' });
     }
 
     const html = buildEmailHtml(recipientName, advisorName, advisorUrl);
@@ -61,9 +84,10 @@ serve(async (req) => {
     return jsonResponse(req, 200, { success: true, resend_id: result.id });
   } catch (error) {
     console.error('Unhandled error:', error);
+    // SECURITY: Don't leak internal error details
     return jsonResponse(req, 500, {
       success: false,
-      error: error.message || 'Unknown error',
+      error: 'Failed to process sharing request',
     });
   }
 });

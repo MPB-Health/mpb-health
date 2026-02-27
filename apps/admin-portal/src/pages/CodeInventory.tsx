@@ -242,8 +242,9 @@ export default function CodeInventory() {
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-th-border grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-th-text-secondary mb-1">Status</label>
+              <label htmlFor="code-status-filter" className="block text-sm font-medium text-th-text-secondary mb-1">Status</label>
               <select
+                id="code-status-filter"
                 value={filters.status || ''}
                 onChange={(e) => setFilters({ ...filters, status: (e.target.value as CodeStatus) || undefined })}
                 className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg text-th-text-primary"
@@ -257,8 +258,9 @@ export default function CodeInventory() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-th-text-secondary mb-1">Type</label>
+              <label htmlFor="code-type-filter" className="block text-sm font-medium text-th-text-secondary mb-1">Type</label>
               <select
+                id="code-type-filter"
                 value={filters.code_type || ''}
                 onChange={(e) => setFilters({ ...filters, code_type: (e.target.value as CodeType) || undefined })}
                 className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg text-th-text-primary"
@@ -306,6 +308,7 @@ export default function CodeInventory() {
                         <span className="font-mono text-sm text-th-text-primary">{code.code}</span>
                         <button
                           onClick={() => copyCode(code.code)}
+                          aria-label="Copy code"
                           className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded"
                         >
                           <Copy className="w-3 h-3" />
@@ -356,15 +359,16 @@ export default function CodeInventory() {
           <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-md">
             <div className="border-b border-th-border px-6 py-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-th-text-primary">Generate Code Batch</h2>
-              <button onClick={() => setShowBatchModal(false)} className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
+              <button onClick={() => setShowBatchModal(false)} aria-label="Close" className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleCreateBatch} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Code Type</label>
+                <label htmlFor="batch-code-type" className="block text-sm font-medium text-th-text-secondary mb-1">Code Type</label>
                 <select
+                  id="batch-code-type"
                   value={batchForm.code_type}
                   onChange={(e) => setBatchForm({ ...batchForm, code_type: e.target.value as CodeType })}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -376,8 +380,9 @@ export default function CodeInventory() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Prefix (optional)</label>
+                <label htmlFor="batch-prefix" className="block text-sm font-medium text-th-text-secondary mb-1">Prefix (optional)</label>
                 <input
+                  id="batch-prefix"
                   type="text"
                   value={batchForm.prefix}
                   onChange={(e) => setBatchForm({ ...batchForm, prefix: e.target.value.toUpperCase() })}
@@ -388,8 +393,9 @@ export default function CodeInventory() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Quantity</label>
+                <label htmlFor="batch-quantity" className="block text-sm font-medium text-th-text-secondary mb-1">Quantity</label>
                 <input
+                  id="batch-quantity"
                   type="number"
                   value={batchForm.count}
                   onChange={(e) => setBatchForm({ ...batchForm, count: parseInt(e.target.value) || 1 })}

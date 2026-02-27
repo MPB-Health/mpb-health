@@ -141,6 +141,7 @@ export default function BlogPosts() {
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-th-text-tertiary" />
           <select
+            aria-label="Filter by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -151,6 +152,7 @@ export default function BlogPosts() {
             <option value="archived">Archived</option>
           </select>
           <select
+            aria-label="Filter by category"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -252,6 +254,7 @@ export default function BlogPosts() {
                         onClick={() =>
                           setActiveMenu(activeMenu === post.id ? null : post.id)
                         }
+                        aria-label="Post actions"
                         className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
                       >
                         <MoreVertical className="w-5 h-5" />

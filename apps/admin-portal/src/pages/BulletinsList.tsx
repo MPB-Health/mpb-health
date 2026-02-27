@@ -194,6 +194,7 @@ export default function BulletinsList() {
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary pointer-events-none" />
             <select
+              aria-label="Filter by category"
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
               className="pl-10 pr-8 py-2.5 bg-surface-primary border border-th-border rounded-xl text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500 appearance-none"

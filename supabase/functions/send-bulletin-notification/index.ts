@@ -5,6 +5,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('send-bulletin-notification');
 
 interface Recipient {
@@ -28,6 +29,15 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: authenticated CRUD endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 30,
+    windowSeconds: 60,
+    keyPrefix: 'send-bulletin-notification',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
@@ -256,7 +266,7 @@ Manage notification preferences: ${unsubscribeUrl}
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Unknown error'
+        error: 'Internal server error'
       }),
       {
         headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },

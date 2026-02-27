@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
 import { syncUserToItsts } from '../_shared/itsts-sync.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('admin-update-password');
 
 interface UpdatePasswordRequest {
@@ -15,6 +16,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: authenticated admin CRUD endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 30,
+    windowSeconds: 60,
+    keyPrefix: 'admin-update-password',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     // Only allow POST

@@ -18,8 +18,6 @@ import {
   Database,
   Search,
   MapPin,
-  Users,
-  DollarSign,
   AlertCircle,
   Shield,
   UserCheck,
@@ -59,9 +57,7 @@ interface AdminSidebarProps {
   activeView: string;
   onViewChange: (view: string) => void;
   stats: {
-    pending_claims: number;
     pending_support_tickets: number;
-    total_members: number;
     total_blog_articles: number;
   };
   collapsed?: boolean;
@@ -130,9 +126,6 @@ const navGroups: { title: string; items: NavItem[] }[] = [
   {
     title: 'Operations',
     items: [
-      { id: 'members', label: 'Member Management', icon: Users, href: '/admin/members' },
-      { id: 'claims', label: 'Needs Processing', icon: FileText, href: '/admin/claims' },
-      { id: 'transactions', label: 'Transactions', icon: DollarSign, href: '/admin/transactions' },
       { id: 'support', label: 'Support Tickets', icon: AlertCircle, href: '/admin/support' },
       { id: 'documents', label: 'Document Review', icon: Shield, href: '/admin/documents' },
       { id: 'providers', label: 'Provider Directory', icon: UserCheck, href: '/admin/providers' },
@@ -290,12 +283,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const getBadgeForItem = (item: NavItem) => {
     switch (item.id) {
-      case 'claims':
-        return stats.pending_claims > 0 ? stats.pending_claims : undefined;
       case 'support':
         return stats.pending_support_tickets > 0 ? stats.pending_support_tickets : undefined;
-      case 'members':
-        return stats.total_members > 0 ? stats.total_members : undefined;
       case 'blog':
         return stats.total_blog_articles > 0 ? stats.total_blog_articles : undefined;
       default:
@@ -304,8 +293,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   };
 
   const isUrgent = (item: NavItem) => {
-    return (item.id === 'claims' && stats.pending_claims > 0) ||
-           (item.id === 'support' && stats.pending_support_tickets > 0);
+    return (item.id === 'support' && stats.pending_support_tickets > 0);
   };
 
   const renderNavItem = (item: NavItem) => {

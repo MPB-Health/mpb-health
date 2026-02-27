@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('advisor-terminal-agent');
 
 interface CommandRequest {
@@ -24,6 +25,15 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: AI/generation endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 20,
+    windowSeconds: 60,
+    keyPrefix: 'advisor-terminal-agent',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   const startTime = Date.now();
 

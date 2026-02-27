@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('verify-captcha');
 
 interface TurnstileVerifyResponse {
@@ -24,6 +25,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: public-facing endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 10,
+    windowSeconds: 60,
+    keyPrefix: 'verify-captcha',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   if (req.method !== "POST") {
     return new Response(

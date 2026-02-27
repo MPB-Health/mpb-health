@@ -134,8 +134,6 @@ const AdvisorPlanDetail = lazyAuto(() => import('./pages/advisor/AdvisorPlanDeta
 // Admin Portal
 const AdminLogin = lazyAuto(() => import('./pages/admin/AdminLogin'));
 const AdminDashboard = lazyAuto(() => import('./pages/admin/AdminDashboard'));
-const MemberManagement = lazyAuto(() => import('./pages/admin/MemberManagement'));
-const ClaimsProcessing = lazyAuto(() => import('./pages/admin/ClaimsProcessing'));
 const BlogAdmin = lazyAuto(() => import('./pages/BlogAdmin'));
 const ResourceAdmin = lazyAuto(() => import('./pages/ResourceAdmin'));
 const NewsletterSubscribers = lazyAuto(() => import('./pages/admin/NewsletterSubscribers'));
@@ -151,7 +149,6 @@ const AdvisorContentAdmin = lazyAuto(() => import('./pages/admin/AdvisorContentA
 const ZohoSalesIQDashboard = lazyAuto(() => import('./pages/ZohoSalesIQDashboard'));
 
 // New Admin Pages
-const TransactionsManagement = lazyAuto(() => import('./pages/admin/TransactionsManagement'));
 const SupportTickets = lazyAuto(() => import('./pages/admin/SupportTickets'));
 const ReportsAnalytics = lazyAuto(() => import('./pages/admin/ReportsAnalytics'));
 const DocumentReview = lazyAuto(() => import('./pages/admin/DocumentReview'));
@@ -383,22 +380,7 @@ const App = () => {
                     }
                   />
                   <Route
-                    path="/admin/members"
-                    element={
-                      <ProtectedRoute>
-                        <MemberManagement />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/claims"
-                    element={
-                      <ProtectedRoute>
-                        <ClaimsProcessing />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
+
                     path="/admin/newsletter-subscribers"
                     element={
                       <ProtectedRoute>
@@ -486,14 +468,6 @@ const App = () => {
                   />
 
                   {/* New Admin Routes */}
-                  <Route
-                    path="/admin/transactions"
-                    element={
-                      <ProtectedRoute>
-                        <TransactionsManagement />
-                      </ProtectedRoute>
-                    }
-                  />
                   <Route
                     path="/admin/support"
                     element={

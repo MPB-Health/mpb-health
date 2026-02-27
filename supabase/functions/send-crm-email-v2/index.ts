@@ -7,6 +7,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { checkRateLimit, getClientIdentifier, requireAuth } from '../_shared/security.ts';
 
 // ============================================================================
 // Types
@@ -97,17 +98,25 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get calling user from auth header
-    const authHeader = req.headers.get('Authorization');
-    let sentBy: string | null = null;
-    let userEmail: string | null = null;
+    // SECURITY: Rate limit email sending (10 per minute per IP)
+    const clientIp = getClientIdentifier(req);
+    const rateLimitResponse = checkRateLimit(clientIp, {
+      maxRequests: 10,
+      windowSeconds: 60,
+      keyPrefix: 'send-crm-email-v2',
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      sentBy = user?.id || null;
-      userEmail = user?.email || null;
+    // SECURITY: Require authentication - no unauthenticated email sending
+    const { user: authUser, errorResponse } = await requireAuth(req, supabase);
+    if (errorResponse) {
+      return new Response(errorResponse.body, {
+        status: errorResponse.status,
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
     }
+    const sentBy = authUser.userId || null;
+    const userEmail = authUser.email || null;
 
     // Parse request body
     const body: RequestBody = await req.json();
@@ -349,10 +358,11 @@ serve(async (req) => {
     );
   } catch (error) {
     log.error('Unhandled error:', error);
+    // SECURITY: Don't leak internal error details to client
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Unknown error',
+        error: 'Failed to process email request',
       }),
       {
         headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },

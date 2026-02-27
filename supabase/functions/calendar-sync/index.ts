@@ -8,6 +8,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('calendar-sync');
 
 // ============================================================================
@@ -658,6 +659,15 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: authenticated CRUD endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 60,
+    windowSeconds: 60,
+    keyPrefix: 'calendar-sync',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const url = new URL(req.url);

@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { syncUserToItsts } from "../_shared/itsts-sync.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("create-user");
 
@@ -121,6 +122,15 @@ Deno.serve(async (req: Request) => {
     ...getCorsHeaders(req),
     "Content-Type": "application/json",
   };
+
+  // Rate limit: admin user creation endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 30,
+    windowSeconds: 60,
+    keyPrefix: 'create-user',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

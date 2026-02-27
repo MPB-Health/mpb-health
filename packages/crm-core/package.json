@@ -132,6 +132,6 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@supabase/supabase-js": "^2.x"
+    "@supabase/supabase-js": "catalog:"
   }
 }

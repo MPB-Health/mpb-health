@@ -189,6 +189,24 @@ export {
 // Portal SSO (client-side cross-portal session transfer)
 export { buildPortalSSOUrl } from './services/portalSSO';
 
+// PHI Security Service (HIPAA §164.312 Compliance)
+export {
+  logPhiAccess,
+  logPhiExport,
+  isPhiTable,
+  getPhiFields,
+  maskSSN,
+  maskEmail,
+  maskPhone,
+  maskDOB,
+  maskName,
+  stripPhiFields,
+  maskPhiFields,
+  PHI_REGISTRY,
+  type PhiAccessType,
+  type PhiAccessLogEntry,
+} from './services/phiSecurityService';
+
 // Org Switcher Component
 export { OrgSwitcher, type OrgSwitcherProps } from './components/OrgSwitcher';
 

@@ -5,6 +5,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier, requireAuth, isValidEmail, logAuditEvent } from '../_shared/security.ts';
 const log = createLogger('send-crm-email');
 
 interface RequestBody {
@@ -35,22 +36,40 @@ serve(async (req) => {
       throw new Error('Supabase configuration is missing');
     }
 
-    // Get the calling user from the auth header
-    const authHeader = req.headers.get('Authorization');
-    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    let sentBy: string | null = null;
+    // SECURITY: Rate limit email sending (10 per minute per IP)
+    const clientIp = getClientIdentifier(req);
+    const rateLimitResponse = checkRateLimit(clientIp, {
+      maxRequests: 10,
+      windowSeconds: 60,
+      keyPrefix: 'send-crm-email',
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabaseAuth.auth.getUser(token);
-      sentBy = user?.id || null;
+    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // SECURITY: Require authentication - no unauthenticated email sending
+    const { user, errorResponse } = await requireAuth(req, supabaseAuth);
+    if (errorResponse) {
+      return new Response(errorResponse.body, {
+        status: errorResponse.status,
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
     }
+    const sentBy = user.userId || null;
 
     const body: RequestBody = await req.json();
     const { to, subject, html, text, template_id, lead_id } = body;
 
     if (!to || !subject || !html) {
       throw new Error('Missing required fields: to, subject, html');
+    }
+
+    // SECURITY: Validate email format
+    if (!isValidEmail(to)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid email address' }),
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
     // Send via Resend
@@ -112,8 +131,9 @@ serve(async (req) => {
     );
   } catch (error) {
     log.error('Error sending CRM email:', error);
+    // SECURITY: Don't leak internal error details to client
     return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Unknown error' }),
+      JSON.stringify({ success: false, error: 'Failed to process email request' }),
       { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 500 }
     );
   }

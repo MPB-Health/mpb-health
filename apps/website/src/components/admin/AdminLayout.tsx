@@ -22,14 +22,8 @@ export interface AdminStats {
   total_newsletter_subscribers: number;
   new_subscribers_this_month: number;
   // Legacy stats (still used by sidebar and other components)
-  total_members: number;
-  active_members: number;
-  pending_claims: number;
-  total_claims_this_month: number;
   pending_support_tickets: number;
   unresolved_tickets: number;
-  total_revenue_this_month: number;
-  pending_transactions: number;
   total_blog_articles: number;
   published_articles: number;
   draft_articles: number;
@@ -77,14 +71,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     total_newsletter_subscribers: 0,
     new_subscribers_this_month: 0,
     // Legacy stats
-    total_members: 0,
-    active_members: 0,
-    pending_claims: 0,
-    total_claims_this_month: 0,
     pending_support_tickets: 0,
     unresolved_tickets: 0,
-    total_revenue_this_month: 0,
-    pending_transactions: 0,
     total_blog_articles: 0,
     published_articles: 0,
     draft_articles: 0
@@ -146,14 +134,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         totalNewsletterSubscribersResult,
         newSubscribersThisMonthResult,
         // Legacy stats (for sidebar and other components)
-        membersResult,
-        activeMembersResult,
-        pendingClaimsResult,
-        monthlyClaimsResult,
         pendingTicketsResult,
         unresolvedTicketsResult,
-        revenueResult,
-        pendingTransactionsResult,
         blogArticlesResult,
         publishedArticlesResult,
         draftArticlesResult
@@ -172,14 +154,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         safeQuery(supabase.from('newsletter_subscribers').select('id', { count: 'exact', head: true }).eq('status', 'active')),
         safeQuery(supabase.from('newsletter_subscribers').select('id', { count: 'exact', head: true }).gte('created_at', `${currentMonth}-01`)),
         // Legacy queries
-        safeQuery(supabase.from('member_profiles').select('id', { count: 'exact', head: true })),
-        safeQuery(supabase.from('member_profiles').select('id', { count: 'exact', head: true }).eq('membership_status', 'active')),
-        safeQuery(supabase.from('claims').select('id', { count: 'exact', head: true }).in('status', ['submitted', 'under_review', 'pending_info'])),
-        safeQuery(supabase.from('claims').select('id', { count: 'exact', head: true }).gte('created_at', `${currentMonth}-01`)),
         safeQuery(supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'open')),
         safeQuery(supabase.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_progress'])),
-        safeQuery(supabase.from('transactions').select('amount').eq('transaction_type', 'membership_fee').eq('status', 'completed').gte('created_at', `${currentMonth}-01`)),
-        safeQuery(supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('status', 'pending')),
         safeQuery(supabase.from('blog_articles').select('id', { count: 'exact', head: true })),
         safeQuery(supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('is_published', true)),
         safeQuery(supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('is_published', false))
@@ -193,8 +169,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       const topTrafficSource = topSource 
         ? { name: topSource.sourceType.charAt(0).toUpperCase() + topSource.sourceType.slice(1), sessions: topSource.sessions }
         : { name: 'Direct', sessions: 0 };
-
-      const totalRevenue = (revenueResult.data as { amount?: number }[] | null)?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
 
       setStats({
         // Web Analytics Stats
@@ -211,14 +185,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         total_newsletter_subscribers: totalNewsletterSubscribersResult.count || 0,
         new_subscribers_this_month: newSubscribersThisMonthResult.count || 0,
         // Legacy stats
-        total_members: membersResult.count || 0,
-        active_members: activeMembersResult.count || 0,
-        pending_claims: pendingClaimsResult.count || 0,
-        total_claims_this_month: monthlyClaimsResult.count || 0,
         pending_support_tickets: pendingTicketsResult.count || 0,
         unresolved_tickets: unresolvedTicketsResult.count || 0,
-        total_revenue_this_month: totalRevenue,
-        pending_transactions: pendingTransactionsResult.count || 0,
         total_blog_articles: blogArticlesResult.count || 0,
         published_articles: publishedArticlesResult.count || 0,
         draft_articles: draftArticlesResult.count || 0
@@ -250,9 +218,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           activeView={activeView}
           onViewChange={onViewChange}
           stats={{
-            pending_claims: stats.pending_claims,
             pending_support_tickets: stats.pending_support_tickets,
-            total_members: stats.total_members,
             total_blog_articles: stats.total_blog_articles
           }}
           collapsed={sidebarCollapsed}

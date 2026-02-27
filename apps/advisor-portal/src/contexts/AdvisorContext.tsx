@@ -118,7 +118,15 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
 
   // Logout
   const logout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e) {
+      console.warn('Sign out API error (session cleared locally):', e);
+    }
+    // Safety net: forcibly remove persisted session from storage
+    try {
+      localStorage.removeItem('mpb-auth-token');
+    } catch (_) { /* storage may not be available */ }
     setProfile(null);
     window.location.href = 'https://mpb.health/';
   };

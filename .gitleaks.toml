@@ -1,0 +1,50 @@
+# Gitleaks configuration for MPB Health monorepo
+# SOC 2 CC6.1: Secret detection to prevent credential leakage
+
+title = "MPB Health Secret Detection"
+
+[extend]
+# Use default gitleaks rules as baseline
+useDefault = true
+
+# Additional custom rules for health-tech specific patterns
+[[rules]]
+id = "supabase-service-role-key"
+description = "Supabase Service Role Key"
+regex = '''sbp_[a-zA-Z0-9]{40,}'''
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "supabase-anon-key"
+description = "Supabase Anon Key"
+regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZS'''
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "resend-api-key"
+description = "Resend API Key"
+regex = '''re_[a-zA-Z0-9]{20,}'''
+tags = ["key", "resend"]
+
+[[rules]]
+id = "phi-ssn-pattern"
+description = "Potential SSN in code"
+regex = '''\b\d{3}-\d{2}-\d{4}\b'''
+tags = ["phi", "hipaa"]
+
+[[rules]]
+id = "phi-dob-pattern"
+description = "Potential hardcoded date of birth"
+regex = '''(?i)(date.?of.?birth|dob)\s*[:=]\s*["']\d{2}[/-]\d{2}[/-]\d{4}["']'''
+tags = ["phi", "hipaa"]
+
+# Allowlist for false positives
+[allowlist]
+paths = [
+  '''pnpm-lock\.yaml''',
+  '''\.test\.(ts|tsx|js|jsx)$''',
+  '''\.spec\.(ts|tsx|js|jsx)$''',
+  '''__tests__/''',
+  '''__mocks__/''',
+  '''\.md$''',
+]

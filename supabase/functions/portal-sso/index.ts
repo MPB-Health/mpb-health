@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("portal-sso");
 
@@ -30,6 +31,15 @@ Deno.serve(async (req: Request) => {
     ...getCorsHeaders(req),
     "Content-Type": "application/json",
   };
+
+  // Rate limit: SSO/login endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 10,
+    windowSeconds: 60,
+    keyPrefix: 'portal-sso',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const authHeader = req.headers.get("Authorization");

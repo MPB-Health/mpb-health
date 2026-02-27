@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("ticket-webhook-receiver");
 
@@ -20,10 +21,26 @@ interface TicketWebhookPayload {
 
 const WEBHOOK_SECRET = Deno.env.get("ITSTS_WEBHOOK_SECRET");
 
+/**
+ * Constant-time comparison to prevent timing attacks on webhook signatures.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+  return result === 0;
+}
+
 function verifyWebhookSignature(req: Request): boolean {
-  if (!WEBHOOK_SECRET) return true;
+  if (!WEBHOOK_SECRET) return false; // SECURITY: Fail closed - reject if secret not configured
   const sig = req.headers.get("x-webhook-signature");
-  return sig === WEBHOOK_SECRET;
+  if (!sig) return false;
+  return timingSafeEqual(sig, WEBHOOK_SECRET);
 }
 
 function getNotificationTitle(payload: TicketWebhookPayload): string {
@@ -75,6 +92,15 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+
+  // Rate limit: webhook receiver (server-to-server)
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 200,
+    windowSeconds: 60,
+    keyPrefix: 'ticket-webhook-receiver',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   if (!verifyWebhookSignature(req)) {
     return new Response("Invalid signature", { status: 401 });
@@ -154,7 +180,7 @@ Deno.serve(async (req: Request) => {
     if (notifError) {
       log.error("Failed to create notification", notifError);
       return new Response(
-        JSON.stringify({ success: false, error: notifError.message }),
+        JSON.stringify({ success: false, error: "Failed to create notification" }),
         { status: 500, headers: { "Content-Type": "application/json" } },
       );
     }
@@ -170,7 +196,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: "Internal server error",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } },
     );

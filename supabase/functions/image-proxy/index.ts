@@ -1,12 +1,22 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('image-proxy');
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
   }
+
+  // SECURITY: Rate limit to prevent abuse as open proxy (100 per minute per IP)
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 100,
+    windowSeconds: 60,
+    keyPrefix: 'image-proxy',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const url = new URL(req.url);
@@ -84,8 +94,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(
       JSON.stringify({
-        error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error"
+        error: "Internal server error"
       }),
       {
         status: 500,

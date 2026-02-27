@@ -268,12 +268,14 @@ export default function EnrollmentDetail() {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleVerifyDocument(doc.id, 'verified')}
+                        aria-label="Verify document"
                         className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                       >
                         <CheckCircle2 className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleVerifyDocument(doc.id, 'rejected')}
+                        aria-label="Reject document"
                         className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                       >
                         <XCircle className="w-5 h-5" />
@@ -289,6 +291,7 @@ export default function EnrollmentDetail() {
                     href={doc.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Download document"
                     className="p-2 text-th-text-tertiary hover:text-th-text-secondary hover:bg-surface-tertiary rounded"
                   >
                     <Download className="w-5 h-5" />

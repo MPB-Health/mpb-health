@@ -8,6 +8,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('email-tracking');
 
 // 1x1 transparent GIF
@@ -45,6 +46,15 @@ serve(async (req) => {
 
   const url = new URL(req.url);
   const pathParts = url.pathname.split('/').filter(Boolean);
+
+  // SECURITY: Rate limit tracking requests (200 per minute per IP)
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 200,
+    windowSeconds: 60,
+    keyPrefix: 'email-tracking',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   // Expected paths:
   // /email-tracking/open/{tracking_id}
@@ -116,6 +126,23 @@ serve(async (req) => {
 
       const decodedUrl = decodeURIComponent(redirectUrl);
 
+      // SECURITY: Prevent open redirect attacks - only allow HTTPS URLs to trusted domains
+      const ALLOWED_REDIRECT_DOMAINS = [
+        'mpbhealth.com', 'www.mpbhealth.com', 'app.mpbhealth.com',
+        'mpb.health', 'www.mpb.health', 'app.mpb.health',
+        'crm.mpb.health', 'admin.mpb.health', 'advisor.mpb.health',
+        'support.mpb.health',
+      ];
+      try {
+        const parsedUrl = new URL(decodedUrl);
+        if (parsedUrl.protocol !== 'https:' || !ALLOWED_REDIRECT_DOMAINS.some(d => parsedUrl.hostname === d || parsedUrl.hostname.endsWith('.' + d))) {
+          log.warn('Blocked open redirect attempt', { url: decodedUrl, tracking_id: trackingId });
+          return new Response('Redirect URL not allowed', { status: 403 });
+        }
+      } catch {
+        return new Response('Invalid redirect URL', { status: 400 });
+      }
+
       // Track click
       await trackClick(supabase, {
         tracking_id: trackingId,
@@ -148,13 +175,27 @@ serve(async (req) => {
       });
     }
 
-    // For click tracking, redirect anyway
+    // For click tracking, redirect only to validated URLs
     const redirectUrl = url.searchParams.get('url');
     if (redirectUrl) {
-      return new Response(null, {
-        status: 302,
-        headers: { 'Location': decodeURIComponent(redirectUrl) },
-      });
+      const decoded = decodeURIComponent(redirectUrl);
+      try {
+        const parsedUrl = new URL(decoded);
+        const ALLOWED_REDIRECT_DOMAINS = [
+          'mpbhealth.com', 'www.mpbhealth.com', 'app.mpbhealth.com',
+          'mpb.health', 'www.mpb.health', 'app.mpb.health',
+          'crm.mpb.health', 'admin.mpb.health', 'advisor.mpb.health',
+          'support.mpb.health',
+        ];
+        if (parsedUrl.protocol === 'https:' && ALLOWED_REDIRECT_DOMAINS.some(d => parsedUrl.hostname === d || parsedUrl.hostname.endsWith('.' + d))) {
+          return new Response(null, {
+            status: 302,
+            headers: { 'Location': decoded },
+          });
+        }
+      } catch {
+        // Invalid URL - fall through to error
+      }
     }
 
     return new Response('Error', { status: 500 });

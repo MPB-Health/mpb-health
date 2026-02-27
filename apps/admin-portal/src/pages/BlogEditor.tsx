@@ -176,12 +176,13 @@ export default function BlogEditor() {
 
         {/* Slug */}
         <div>
-          <label className="block text-sm font-medium text-th-text-secondary mb-1">
+          <label htmlFor="blog-slug" className="block text-sm font-medium text-th-text-secondary mb-1">
             URL Slug
           </label>
           <div className="flex items-center">
             <span className="text-th-text-tertiary text-sm">/blog/</span>
             <input
+              id="blog-slug"
               type="text"
               value={formData.slug}
               onChange={(e) =>

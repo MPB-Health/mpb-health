@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("sso-itsts-login");
 
@@ -37,6 +38,15 @@ Deno.serve(async (req: Request) => {
     ...getCorsHeaders(req),
     "Content-Type": "application/json",
   };
+
+  // Rate limit: SSO/login endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 10,
+    windowSeconds: 60,
+    keyPrefix: 'sso-itsts-login',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     // Verify the caller is authenticated on the monorepo project
@@ -170,7 +180,7 @@ Deno.serve(async (req: Request) => {
         } else {
           log.error("Failed to create ITSTS auth user", createError);
           return new Response(
-            JSON.stringify({ success: false, error: `Failed to provision support account: ${createError.message}` }),
+            JSON.stringify({ success: false, error: "Failed to provision support account. Please contact your administrator." }),
             { status: 500, headers },
           );
         }
@@ -192,7 +202,7 @@ Deno.serve(async (req: Request) => {
       if (profileError) {
         log.warn("Failed to create ITSTS profile", profileError);
         return new Response(
-          JSON.stringify({ success: false, error: `Failed to provision support profile: ${profileError.message}` }),
+          JSON.stringify({ success: false, error: "Failed to provision support profile. Please contact your administrator." }),
           { status: 500, headers },
         );
       }
@@ -237,7 +247,7 @@ Deno.serve(async (req: Request) => {
     if (linkError) {
       log.error("Failed to generate magic link", linkError);
       return new Response(
-        JSON.stringify({ success: false, error: `Failed to generate login link: ${linkError.message}` }),
+        JSON.stringify({ success: false, error: "Failed to generate login link. Please try again later." }),
         { status: 500, headers },
       );
     }
@@ -267,7 +277,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: "Internal server error",
       }),
       { status: 500, headers },
     );

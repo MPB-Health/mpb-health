@@ -407,11 +407,12 @@ export default function BulletinEditor() {
 
               {/* Published Date */}
               <div>
-                <label className="block text-sm text-th-text-secondary mb-1 flex items-center gap-1">
+                <label htmlFor="bulletin-publish-date" className="block text-sm text-th-text-secondary mb-1 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
                   Publish Date
                 </label>
                 <input
+                  id="bulletin-publish-date"
                   type="datetime-local"
                   value={formData.published_date ? format(new Date(formData.published_date), "yyyy-MM-dd'T'HH:mm") : ''}
                   onChange={(e) => setFormData({ ...formData, published_date: e.target.value ? new Date(e.target.value).toISOString() : '' })}
@@ -428,6 +429,7 @@ export default function BulletinEditor() {
               Category
             </h3>
             <select
+              aria-label="Category"
               value={formData.category_id}
               onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
               className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
@@ -454,6 +456,7 @@ export default function BulletinEditor() {
                 />
                 <button
                   onClick={() => setFormData({ ...formData, featured_image_url: '' })}
+                  aria-label="Remove featured image"
                   className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="w-4 h-4" />
@@ -485,6 +488,7 @@ export default function BulletinEditor() {
             {/* Manual URL input */}
             <div className="mt-3">
               <input
+                aria-label="Featured image URL"
                 type="url"
                 value={formData.featured_image_url}
                 onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}

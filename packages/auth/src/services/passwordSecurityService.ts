@@ -464,7 +464,15 @@ class PasswordSecurityService {
       password += allChars[array[i] % allChars.length];
     }
 
-    return password.split('').sort(() => Math.random() - 0.5).join('');
+    // Fisher-Yates shuffle with crypto.getRandomValues (CSPRNG)
+    const chars = password.split('');
+    const randomBytes = new Uint32Array(chars.length);
+    crypto.getRandomValues(randomBytes);
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = randomBytes[i] % (i + 1);
+      [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    return chars.join('');
   }
 
   async enforcePasswordPolicy(userId: string, newPassword: string): Promise<{

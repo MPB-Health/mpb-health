@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('mailchimp');
 
 const MAILCHIMP_API_KEY = Deno.env.get("MAILCHIMP_API_KEY");
@@ -441,6 +442,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: integration proxy endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 60,
+    windowSeconds: 60,
+    keyPrefix: 'mailchimp',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     // Check configuration

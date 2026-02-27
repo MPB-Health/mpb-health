@@ -58,7 +58,8 @@ export function isValidDate(dateString: string): boolean {
 }
 
 /**
- * Validates password strength
+ * Validates password strength.
+ * HIPAA/SOC 2: Minimum 12 characters with complexity requirements.
  */
 export function isStrongPassword(password: string): {
   valid: boolean;
@@ -66,8 +67,8 @@ export function isStrongPassword(password: string): {
 } {
   const errors: string[] = [];
 
-  if (password.length < 8) {
-    errors.push('Password must be at least 8 characters');
+  if (password.length < 12) {
+    errors.push('Password must be at least 12 characters');
   }
   if (!/[A-Z]/.test(password)) {
     errors.push('Password must contain an uppercase letter');

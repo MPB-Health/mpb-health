@@ -280,6 +280,7 @@ export default function AdminResources() {
               <div>
                 <label className="block text-sm font-medium text-th-text-secondary mb-1">Category</label>
                 <select
+                  aria-label="Filter by category"
                   value={filters.category || ''}
                   onChange={(e) => setFilters({ ...filters, category: (e.target.value as ResourceCategory) || undefined })}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg text-th-text-primary"
@@ -436,15 +437,16 @@ export default function AdminResources() {
               <h2 className="text-lg font-semibold text-th-text-primary">
                 {editing ? 'Edit Resource' : 'Add Resource'}
               </h2>
-              <button onClick={closeModal} className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
+              <button onClick={closeModal} aria-label="Close" className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Category</label>
+                <label htmlFor="resource-category" className="block text-sm font-medium text-th-text-secondary mb-1">Category</label>
                 <select
+                  id="resource-category"
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value as ResourceCategory })}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -456,8 +458,9 @@ export default function AdminResources() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
+                <label htmlFor="resource-name" className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
                 <input
+                  id="resource-name"
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -467,8 +470,9 @@ export default function AdminResources() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Description</label>
+                <label htmlFor="resource-description" className="block text-sm font-medium text-th-text-secondary mb-1">Description</label>
                 <textarea
+                  id="resource-description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
@@ -495,7 +499,7 @@ export default function AdminResources() {
                   {form.tags.map((tag) => (
                     <span key={tag} className="flex items-center gap-1 px-2 py-1 bg-th-accent-100 text-th-accent-700 rounded text-sm">
                       {tag}
-                      <button type="button" onClick={() => removeTag(tag)} className="hover:text-th-accent-900">
+                      <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`} className="hover:text-th-accent-900">
                         <X className="w-3 h-3" />
                       </button>
                     </span>

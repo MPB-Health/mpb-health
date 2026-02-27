@@ -60,12 +60,17 @@ export class AnalyticsService {
 
   // Get enrollment stats
   private async getEnrollmentStats(): Promise<{ pending: number }> {
-    const { count: pending } = await supabase
-      .from('enrollments')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'pending');
+    try {
+      const { count: pending, error } = await supabase
+        .from('enrollments')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
 
-    return { pending: pending || 0 };
+      if (error) return { pending: 0 };
+      return { pending: pending || 0 };
+    } catch {
+      return { pending: 0 };
+    }
   }
 
   // Get lead stats
@@ -84,28 +89,28 @@ export class AnalyticsService {
 
     const [total, today, thisWeek, thisMonth, converted] = await Promise.all([
       supabase
-        .from('crm_leads')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .then((r) => r.count || 0),
       supabase
-        .from('crm_leads')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfDay.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('crm_leads')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfWeek.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('crm_leads')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfMonth.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('crm_leads')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
-        .eq('stage', 'closed_won')
+        .eq('pipeline_stage', 'closed_won')
         .then((r) => r.count || 0),
     ]);
 
@@ -127,7 +132,7 @@ export class AnalyticsService {
     fromDate.setDate(fromDate.getDate() - days);
 
     const table = {
-      leads: 'crm_leads',
+      leads: 'zoho_lead_submissions',
       users: 'admin_users',
       enrollments: 'enrollments',
     }[metric];
@@ -137,7 +142,7 @@ export class AnalyticsService {
       .select('created_at')
       .gte('created_at', fromDate.toISOString());
 
-    if (error) throw error;
+    if (error) return [];
 
     // Group by date
     const countByDate: Record<string, number> = {};
@@ -164,11 +169,11 @@ export class AnalyticsService {
   // Get top performers (advisors with most conversions)
   async getTopPerformers(limit = 5): Promise<TopPerformer[]> {
     const { data, error } = await supabase
-      .from('crm_leads')
-      .select('assigned_to, stage')
+      .from('zoho_lead_submissions')
+      .select('assigned_to, pipeline_stage')
       .not('assigned_to', 'is', null);
 
-    if (error) throw error;
+    if (error) return [];
 
     // Count conversions per advisor
     const advisorStats: Record<string, { total: number; converted: number }> = {};
@@ -178,7 +183,7 @@ export class AnalyticsService {
         advisorStats[lead.assigned_to] = { total: 0, converted: 0 };
       }
       advisorStats[lead.assigned_to].total++;
-      if (lead.stage === 'closed_won') {
+      if (lead.pipeline_stage === 'closed_won') {
         advisorStats[lead.assigned_to].converted++;
       }
     });
@@ -211,14 +216,14 @@ export class AnalyticsService {
   // Get lead sources breakdown
   async getLeadSources(): Promise<{ source: string; count: number }[]> {
     const { data, error } = await supabase
-      .from('crm_leads')
-      .select('source');
+      .from('zoho_lead_submissions')
+      .select('utm_source');
 
-    if (error) throw error;
+    if (error) return [];
 
     const sourceCount: Record<string, number> = {};
     (data || []).forEach((lead) => {
-      const source = lead.source || 'Unknown';
+      const source = lead.utm_source || 'Unknown';
       sourceCount[source] = (sourceCount[source] || 0) + 1;
     });
 
@@ -230,14 +235,14 @@ export class AnalyticsService {
   // Get pipeline breakdown
   async getPipelineBreakdown(): Promise<{ stage: string; count: number }[]> {
     const { data, error } = await supabase
-      .from('crm_leads')
-      .select('stage');
+      .from('zoho_lead_submissions')
+      .select('pipeline_stage');
 
-    if (error) throw error;
+    if (error) return [];
 
     const stageCount: Record<string, number> = {};
     (data || []).forEach((lead) => {
-      const stage = lead.stage || 'Unknown';
+      const stage = lead.pipeline_stage || 'Unknown';
       stageCount[stage] = (stageCount[stage] || 0) + 1;
     });
 
@@ -253,7 +258,7 @@ export class AnalyticsService {
     toDate: string
   ): Promise<string> {
     const table = {
-      leads: 'crm_leads',
+      leads: 'zoho_lead_submissions',
       users: 'admin_users',
       enrollments: 'enrollments',
     }[type];
@@ -264,7 +269,7 @@ export class AnalyticsService {
       .gte('created_at', fromDate)
       .lte('created_at', toDate);
 
-    if (error) throw error;
+    if (error) return '';
 
     // Convert to CSV
     if (!data || data.length === 0) return '';

@@ -310,12 +310,13 @@ export default function AcceptInvite() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="accept-first-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   First Name
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
+                    id="accept-first-name"
                     type="text"
                     value={form.first_name}
                     onChange={(e) => setForm({ ...form, first_name: e.target.value })}
@@ -325,10 +326,11 @@ export default function AcceptInvite() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="accept-last-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Last Name
                 </label>
                 <input
+                  id="accept-last-name"
                   type="text"
                   value={form.last_name}
                   onChange={(e) => setForm({ ...form, last_name: e.target.value })}

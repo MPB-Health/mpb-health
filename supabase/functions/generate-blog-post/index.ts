@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('generate-blog-post');
 
 interface GenerateBlogRequest {
@@ -22,6 +23,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: AI generation endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 10,
+    windowSeconds: 60,
+    keyPrefix: 'generate-blog-post',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -55,6 +65,20 @@ Deno.serve(async (req: Request) => {
 
     if (!geminiEndpoint) {
       throw new Error("Gemini endpoint is required");
+    }
+
+    // SECURITY: Prevent SSRF by validating geminiEndpoint against allowlist
+    const ALLOWED_AI_ENDPOINTS = [
+      'https://generativelanguage.googleapis.com/',
+      'https://aiplatform.googleapis.com/',
+    ];
+    try {
+      const endpointUrl = new URL(geminiEndpoint);
+      if (!ALLOWED_AI_ENDPOINTS.some(allowed => geminiEndpoint.startsWith(allowed))) {
+        throw new Error(`Endpoint not in allowlist: ${endpointUrl.hostname}`);
+      }
+    } catch (e) {
+      throw new Error("Invalid or disallowed Gemini endpoint");
     }
 
     let finalPrompt = customPrompt || "";

@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
 import { syncUserToItsts } from '../_shared/itsts-sync.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('create-admin-user');
 
 interface CreateUserRequest {
@@ -105,6 +106,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: admin user creation endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 30,
+    windowSeconds: 60,
+    keyPrefix: 'create-admin-user',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     // Initialize Supabase admin client

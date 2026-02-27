@@ -95,6 +95,7 @@ export default function InviteUserModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary"
           >
             <X className="w-5 h-5" />

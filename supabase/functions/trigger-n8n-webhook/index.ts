@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('trigger-n8n-webhook');
 
 interface WebhookPayload {
@@ -20,6 +21,15 @@ Deno.serve(async (req: Request) => {
   }
 
   const corsHeaders = { ...getCorsHeaders(req), "Content-Type": "application/json" };
+
+  // Rate limit: webhook proxy endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 100,
+    windowSeconds: 60,
+    keyPrefix: 'trigger-n8n-webhook',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -158,7 +168,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "Internal server error",
       }),
       { status: 500, headers: corsHeaders },
     );

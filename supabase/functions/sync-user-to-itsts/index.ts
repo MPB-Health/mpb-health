@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("sync-user-to-itsts");
 
@@ -227,6 +228,15 @@ Deno.serve(async (req: Request) => {
     "Content-Type": "application/json",
   };
 
+  // Rate limit: internal service sync endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 60,
+    windowSeconds: 60,
+    keyPrefix: 'sync-user-to-itsts',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const body: SyncRequest = await req.json();
     const { email, action } = body;
@@ -271,7 +281,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: "Internal server error",
       }),
       { status: 500, headers },
     );

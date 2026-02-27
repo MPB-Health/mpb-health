@@ -12,6 +12,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { verifySvixSignature } from '../_shared/svix.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('receive-crm-email');
 
 // ============================================================================
@@ -63,6 +64,15 @@ serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+
+  // Rate limit: webhook receiver (server-to-server)
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 200,
+    windowSeconds: 60,
+    keyPrefix: 'receive-crm-email',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   const corsHeaders = { ...getCorsHeaders(req, { allowHeaders: RESEND_INBOUND_EXTRA_HEADERS }), 'Content-Type': 'application/json' };
 

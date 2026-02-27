@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("admin-toggle-role");
 
@@ -23,6 +24,15 @@ Deno.serve(async (req: Request) => {
       },
     });
   }
+
+  // Rate limit: authenticated admin CRUD endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 30,
+    windowSeconds: 60,
+    keyPrefix: 'admin-toggle-role',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     if (req.method !== "POST") {

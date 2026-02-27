@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("send-advisor-invites");
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -91,6 +92,15 @@ Deno.serve(async (req: Request) => {
   }
 
   const headers = { ...getCorsHeaders(req), "Content-Type": "application/json" };
+
+  // Rate limit: admin CRUD endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 30,
+    windowSeconds: 60,
+    keyPrefix: 'send-advisor-invites',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     if (!RESEND_API_KEY) {

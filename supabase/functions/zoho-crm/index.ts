@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('zoho-crm');
 
 interface ZohoLead {
@@ -127,7 +128,7 @@ async function createLead(leadData: ZohoLead): Promise<{ success: boolean; leadI
     log.error("Create lead error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to create lead in Zoho CRM",
+      error: "Failed to create lead",
     };
   }
 }
@@ -173,7 +174,7 @@ async function updateLead(leadId: string, updates: Partial<ZohoLead>): Promise<{
     log.error("Update lead error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update lead in Zoho CRM",
+      error: "Failed to update lead",
     };
   }
 }
@@ -259,7 +260,7 @@ async function listLeads(params: {
     log.error("List leads error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to list leads from Zoho CRM",
+      error: "Failed to list leads",
     };
   }
 }
@@ -292,7 +293,7 @@ async function getLead(leadId: string): Promise<{ success: boolean; lead?: any; 
     log.error("Get lead error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to get lead from Zoho CRM",
+      error: "Failed to retrieve lead",
     };
   }
 }
@@ -339,7 +340,7 @@ async function healthCheck(): Promise<{ success: boolean; configured: boolean; c
       success: false,
       configured: true,
       connected: false,
-      error: error instanceof Error ? error.message : "Connection test failed",
+      error: "Connection test failed",
     };
   }
 }
@@ -348,6 +349,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: integration proxy endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 60,
+    windowSeconds: 60,
+    keyPrefix: 'zoho-crm',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const url = new URL(req.url);
@@ -501,7 +511,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: "Internal server error",
       }),
       {
         status: 500,

@@ -34,7 +34,10 @@ export class EnrollmentService {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.warn('Enrollments table query failed:', error.message);
+      return [];
+    }
     return data || [];
   }
 
@@ -51,7 +54,10 @@ export class EnrollmentService {
       .eq('id', enrollmentId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== 'PGRST116') {
+      console.warn('Enrollment lookup failed:', error.message);
+      return null;
+    }
     return data;
   }
 

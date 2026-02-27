@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { syncUserToItsts } from "../_shared/itsts-sync.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("bulk-create-advisors");
 
@@ -31,6 +32,15 @@ Deno.serve(async (req: Request) => {
   }
 
   const headers = { ...getCorsHeaders(req), "Content-Type": "application/json" };
+
+  // Rate limit: bulk admin operation
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 10,
+    windowSeconds: 60,
+    keyPrefix: 'bulk-create-advisors',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

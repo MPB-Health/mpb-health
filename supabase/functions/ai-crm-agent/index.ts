@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 const log = createLogger('ai-crm-agent');
 
 interface ConversationSummaryRequest {
@@ -61,6 +62,15 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return handleCorsPreflightRequest(req);
   }
+
+  // Rate limit: AI/generation endpoint
+  const clientIp = getClientIdentifier(req);
+  const rateLimitResponse = checkRateLimit(clientIp, {
+    maxRequests: 20,
+    windowSeconds: 60,
+    keyPrefix: 'ai-crm-agent',
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     // Verify authentication
@@ -124,10 +134,13 @@ serve(async (req) => {
 
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {

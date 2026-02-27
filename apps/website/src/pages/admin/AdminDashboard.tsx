@@ -4,7 +4,6 @@ import { Helmet } from 'react-helmet-async';
 import {
   Users,
   FileText,
-  DollarSign,
   AlertCircle,
   TrendingUp,
   Activity,
@@ -46,31 +45,6 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
   const { stats } = useAdminStats();
 
   const adminSections = [
-    {
-      title: 'Member Management',
-      icon: Users,
-      description: 'View and manage member profiles',
-      href: '/admin/members',
-      color: 'blue',
-      badge: stats.total_members
-    },
-    {
-      title: 'Needs Processing',
-      icon: FileText,
-      description: 'Review and approve sharing requests',
-      href: '/admin/claims',
-      color: 'purple',
-      badge: stats.pending_claims,
-      urgent: stats.pending_claims > 0
-    },
-    {
-      title: 'Transactions',
-      icon: DollarSign,
-      description: 'Manage payments and billing',
-      href: '/admin/transactions',
-      color: 'green',
-      badge: stats.pending_transactions
-    },
     {
       title: 'Support Tickets',
       icon: AlertCircle,
@@ -214,7 +188,7 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
       </div>
 
       {/* Urgent Actions Alert */}
-      {(stats.pending_claims > 0 || stats.pending_support_tickets > 0) && (
+      {stats.pending_support_tickets > 0 && (
         <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-2xl p-6 mb-8 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
@@ -225,40 +199,21 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-neutral-900 mb-3">Action Required</h3>
               <div className="space-y-2">
-                {stats.pending_claims > 0 && (
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-neutral-700">
-                        <strong>{stats.pending_claims}</strong> claims awaiting review
-                      </span>
-                    </div>
-                    <Link 
-                      to="/admin/claims" 
-                      className="text-sm font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
-                    >
-                      Review Now
-                      <span aria-hidden="true">→</span>
-                    </Link>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-neutral-700">
+                      <strong>{stats.pending_support_tickets}</strong> support tickets need attention
+                    </span>
                   </div>
-                )}
-                {stats.pending_support_tickets > 0 && (
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-neutral-700">
-                        <strong>{stats.pending_support_tickets}</strong> support tickets need attention
-                      </span>
-                    </div>
-                    <Link 
-                      to="/admin/support" 
-                      className="text-sm font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
-                    >
-                      View Tickets
-                      <span aria-hidden="true">→</span>
-                    </Link>
-                  </div>
-                )}
+                  <Link 
+                    to="/admin/support" 
+                    className="text-sm font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
+                  >
+                    View Tickets
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

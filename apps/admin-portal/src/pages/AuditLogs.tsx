@@ -111,10 +111,11 @@ export default function AuditLogs() {
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+            <label htmlFor="audit-action-filter" className="block text-sm font-medium text-th-text-secondary mb-1">
               Action
             </label>
             <select
+              id="audit-action-filter"
               value={actionFilter}
               onChange={(e) => {
                 setActionFilter(e.target.value);
@@ -131,10 +132,11 @@ export default function AuditLogs() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+            <label htmlFor="audit-entity-filter" className="block text-sm font-medium text-th-text-secondary mb-1">
               Entity Type
             </label>
             <select
+              id="audit-entity-filter"
               value={entityFilter}
               onChange={(e) => {
                 setEntityFilter(e.target.value);
@@ -152,10 +154,11 @@ export default function AuditLogs() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+            <label htmlFor="audit-from-date" className="block text-sm font-medium text-th-text-secondary mb-1">
               From Date
             </label>
             <input
+              id="audit-from-date"
               type="date"
               value={fromDate}
               onChange={(e) => {
@@ -166,10 +169,11 @@ export default function AuditLogs() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-1">
+            <label htmlFor="audit-to-date" className="block text-sm font-medium text-th-text-secondary mb-1">
               To Date
             </label>
             <input
+              id="audit-to-date"
               type="date"
               value={toDate}
               onChange={(e) => {
@@ -268,6 +272,7 @@ export default function AuditLogs() {
                 <button
                   onClick={() => setPage(page - 1)}
                   disabled={page === 0}
+                  aria-label="Previous page"
                   className="p-2 border border-th-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-tertiary text-th-text-secondary"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -278,6 +283,7 @@ export default function AuditLogs() {
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={page >= totalPages - 1}
+                  aria-label="Next page"
                   className="p-2 border border-th-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-tertiary text-th-text-secondary"
                 >
                   <ChevronRight className="w-5 h-5" />

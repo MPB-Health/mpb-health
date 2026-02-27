@@ -154,12 +154,7 @@ export function UnifiedLoginPage({
     if (portalType !== 'member') {
       links.push({ label: 'Member Login', path: '/login' });
     }
-    if (portalType !== 'advisor') {
-      links.push({ label: 'Advisor Login', path: '/advisor/login' });
-    }
-    if (portalType !== 'admin') {
-      links.push({ label: 'Admin Login', path: '/admin/login' });
-    }
+
     return links;
   };
 

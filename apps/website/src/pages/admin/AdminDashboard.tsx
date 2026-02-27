@@ -7,7 +7,6 @@ import {
   AlertCircle,
   TrendingUp,
   Activity,
-  Shield,
   Bell,
   Settings,
   Database,
@@ -46,27 +45,11 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
 
   const adminSections = [
     {
-      title: 'Support Tickets',
-      icon: AlertCircle,
-      description: 'Handle member support requests',
-      href: '/admin/support',
-      color: 'red',
-      badge: stats.unresolved_tickets,
-      urgent: stats.pending_support_tickets > 0
-    },
-    {
       title: 'Reports & Analytics',
       icon: BarChart3,
       description: 'View insights and generate reports',
       href: '/admin/reports',
       color: 'cyan'
-    },
-    {
-      title: 'Document Review',
-      icon: Shield,
-      description: 'Review uploaded documents',
-      href: '/admin/documents',
-      color: 'orange'
     },
     {
       title: 'Membership Management',

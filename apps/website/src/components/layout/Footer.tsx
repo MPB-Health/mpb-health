@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, Mail, MapPin, UserCircle, Shield, CheckCircle, AlertCircle } from 'lucide-react';
+import { Phone, Mail, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { subscribeToNewsletter } from '../../lib/newsletterService';
 
@@ -151,24 +151,7 @@ const Footer = () => {
                   App Download
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/advisor/dashboard"
-                  className="text-neutral-300 hover:text-[#0a4d90] transition-colors flex items-center gap-2"
-                >
-                  <UserCircle className="w-4 h-4" />
-                  Advisor Login
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/admin"
-                  className="text-neutral-300 hover:text-[#0a4d90] transition-colors flex items-center gap-2"
-                >
-                  <Shield className="w-4 h-4" />
-                  Admin Login
-                </Link>
-              </li>
+
             </ul>
           </div>
 

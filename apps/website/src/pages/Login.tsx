@@ -8,9 +8,7 @@ import {
   Heart,
   Sparkles,
   CheckCircle2,
-  HelpCircle,
-  Briefcase,
-  Settings
+  HelpCircle
 } from 'lucide-react';
 
 export default function Login() {
@@ -154,27 +152,6 @@ export default function Login() {
               info@mympb.com
             </a>
           </p>
-        </div>
-
-        {/* Portal Access Links */}
-        <div className="mt-8 w-full max-w-md">
-          <p className="text-center text-sm text-gray-500 mb-4">Other portal access:</p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link 
-              to="/advisor/login" 
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 hover:border-blue-500 text-gray-700 hover:text-blue-600 font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              <Briefcase className="w-5 h-5" />
-              Advisor Login
-            </Link>
-            <Link 
-              to="/admin/login" 
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 hover:border-blue-500 text-gray-700 hover:text-blue-600 font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              <Settings className="w-5 h-5" />
-              Admin Login
-            </Link>
-          </div>
         </div>
 
         {/* Back to Home */}

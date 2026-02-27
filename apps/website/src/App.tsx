@@ -149,9 +149,7 @@ const AdvisorContentAdmin = lazyAuto(() => import('./pages/admin/AdvisorContentA
 const ZohoSalesIQDashboard = lazyAuto(() => import('./pages/ZohoSalesIQDashboard'));
 
 // New Admin Pages
-const SupportTickets = lazyAuto(() => import('./pages/admin/SupportTickets'));
 const ReportsAnalytics = lazyAuto(() => import('./pages/admin/ReportsAnalytics'));
-const DocumentReview = lazyAuto(() => import('./pages/admin/DocumentReview'));
 const MembershipManagement = lazyAuto(() => import('./pages/admin/MembershipManagement'));
 const ProviderDirectory = lazyAuto(() => import('./pages/admin/ProviderDirectory'));
 const NotificationsAdmin = lazyAuto(() => import('./pages/admin/NotificationsAdmin'));
@@ -469,26 +467,10 @@ const App = () => {
 
                   {/* New Admin Routes */}
                   <Route
-                    path="/admin/support"
-                    element={
-                      <ProtectedRoute>
-                        <SupportTickets />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
                     path="/admin/reports"
                     element={
                       <ProtectedRoute>
                         <ReportsAnalytics />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/documents"
-                    element={
-                      <ProtectedRoute>
-                        <DocumentReview />
                       </ProtectedRoute>
                     }
                   />

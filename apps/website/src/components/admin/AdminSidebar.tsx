@@ -18,8 +18,6 @@ import {
   Database,
   Search,
   MapPin,
-  AlertCircle,
-  Shield,
   UserCheck,
   Settings,
   Code,
@@ -126,8 +124,6 @@ const navGroups: { title: string; items: NavItem[] }[] = [
   {
     title: 'Operations',
     items: [
-      { id: 'support', label: 'Support Tickets', icon: AlertCircle, href: '/admin/support' },
-      { id: 'documents', label: 'Document Review', icon: Shield, href: '/admin/documents' },
       { id: 'providers', label: 'Provider Directory', icon: UserCheck, href: '/admin/providers' },
       { id: 'coverage', label: 'Membership Plans', icon: Activity, href: '/admin/coverage' },
       { id: 'notifications', label: 'Notifications', icon: Bell, href: '/admin/notifications' },

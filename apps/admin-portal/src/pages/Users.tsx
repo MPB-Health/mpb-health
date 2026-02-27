@@ -110,6 +110,7 @@ export default function Users() {
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-th-text-tertiary" />
           <select
+            aria-label="Filter by role"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -121,6 +122,7 @@ export default function Users() {
             <option value="staff">Staff</option>
           </select>
           <select
+            aria-label="Filter by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -222,6 +224,7 @@ export default function Users() {
                         e.stopPropagation();
                         // Handle menu
                       }}
+                      aria-label="User actions"
                       className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
                     >
                       <MoreVertical className="w-5 h-5" />

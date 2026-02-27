@@ -125,7 +125,7 @@ Deno.serve(async (req: Request) => {
       if (deleteError) {
         log.error("Error revoking role:", deleteError);
         return new Response(
-          JSON.stringify({ error: deleteError.message }),
+          JSON.stringify({ error: "Failed to update role" }),
           { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
         );
       }
@@ -151,7 +151,7 @@ Deno.serve(async (req: Request) => {
         }
         log.error("Error granting role:", insertError);
         return new Response(
-          JSON.stringify({ error: insertError.message }),
+          JSON.stringify({ error: "Failed to update role" }),
           { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
         );
       }

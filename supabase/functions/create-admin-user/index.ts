@@ -191,7 +191,7 @@ Deno.serve(async (req: Request) => {
     if (createUserError) {
       log.error('Create user error:', createUserError);
       return new Response(
-        JSON.stringify({ success: false, error: createUserError.message }),
+        JSON.stringify({ success: false, error: "Failed to create user" }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
@@ -269,7 +269,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: "Internal server error",
       }),
       { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );

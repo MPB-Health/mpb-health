@@ -455,7 +455,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <p className="text-sm font-medium text-white truncate">Admin User</p>
               <p className="text-xs text-slate-400 truncate">Super Admin</p>
             </div>
-            <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+            <button aria-label="Log out" className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
               <LogOut className="h-4 w-4" />
             </button>
           </div>
@@ -507,6 +507,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Collapse Toggle (Desktop) */}
       <button
         onClick={() => onCollapsedChange?.(!collapsed)}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         className="hidden lg:flex absolute left-[calc(var(--sidebar-width)-12px)] top-1/2 -translate-y-1/2 z-30 items-center justify-center w-6 h-6 rounded-full bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors shadow-lg"
         style={{ '--sidebar-width': collapsed ? '72px' : '256px' } as React.CSSProperties}
       >

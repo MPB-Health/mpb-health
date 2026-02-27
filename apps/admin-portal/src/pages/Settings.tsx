@@ -193,6 +193,7 @@ export default function Settings() {
                   </label>
                 ) : (
                   <input
+                    aria-label={setting.key}
                     type={setting.is_sensitive ? 'password' : 'text'}
                     value={String(editedSettings[setting.key] || '')}
                     onChange={(e) =>

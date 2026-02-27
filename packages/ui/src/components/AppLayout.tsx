@@ -140,6 +140,7 @@ export function AppLayout({
                 {isMobile ? (
                   <button
                     onClick={closeSidebar}
+                    aria-label="Close sidebar"
                     className="p-1.5 rounded-lg text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors"
                   >
                     <X className="w-5 h-5" />
@@ -147,6 +148,7 @@ export function AppLayout({
                 ) : (
                   <button
                     onClick={() => setCollapsed(true)}
+                    aria-label="Collapse sidebar"
                     className="p-1.5 rounded-lg text-[rgb(var(--sidebar-text)_/_0.6)] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors hidden lg:flex"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -254,6 +256,7 @@ export function AppLayout({
           {collapsed && !isMobile && (
             <button
               onClick={() => setCollapsed(false)}
+              aria-label="Expand sidebar"
               className="w-full flex items-center justify-center p-2.5 rounded-xl text-[rgb(var(--sidebar-text)_/_0.6)] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors mb-2"
             >
               <ChevronLeft className="w-4 h-4 rotate-180" />
@@ -286,6 +289,7 @@ export function AppLayout({
               {/* Mobile menu button */}
               <button
                 onClick={() => setSidebarOpen(true)}
+                aria-label="Open menu"
                 className="p-2 rounded-lg text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary transition-colors lg:hidden"
               >
                 <Menu className="w-5 h-5" />

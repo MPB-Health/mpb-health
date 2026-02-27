@@ -368,7 +368,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Unknown error',
+        error: 'Internal server error',
       }),
       {
         headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_INBOUND_EXTRA_HEADERS }), 'Content-Type': 'application/json' },

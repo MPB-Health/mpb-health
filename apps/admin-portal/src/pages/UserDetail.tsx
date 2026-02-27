@@ -263,10 +263,11 @@ export default function UserDetail() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-2">
+            <label htmlFor="user-first-name" className="block text-sm font-medium text-th-text-secondary mb-2">
               First Name
             </label>
             <input
+              id="user-first-name"
               type="text"
               value={formData.first_name}
               onChange={(e) =>
@@ -277,10 +278,11 @@ export default function UserDetail() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-2">
+            <label htmlFor="user-last-name" className="block text-sm font-medium text-th-text-secondary mb-2">
               Last Name
             </label>
             <input
+              id="user-last-name"
               type="text"
               value={formData.last_name}
               onChange={(e) =>
@@ -291,10 +293,11 @@ export default function UserDetail() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-2">
+            <label htmlFor="user-role" className="block text-sm font-medium text-th-text-secondary mb-2">
               Role
             </label>
             <select
+              id="user-role"
               value={formData.role}
               onChange={(e) =>
                 setFormData({ ...formData, role: e.target.value as AdminUser['role'] })

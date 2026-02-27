@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
 
     if (fetchError) {
       return new Response(
-        JSON.stringify({ success: false, error: fetchError.message }),
+        JSON.stringify({ success: false, error: "Failed to fetch advisors" }),
         { status: 500, headers },
       );
     }
@@ -249,9 +249,8 @@ Deno.serve(async (req: Request) => {
           await new Promise((r) => setTimeout(r, 1100));
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
         log.error(`Failed to send invite to ${advisor.email}:`, err);
-        results.push({ email: advisor.email, first_name: advisor.first_name, status: "error", reason: message });
+        results.push({ email: advisor.email, first_name: advisor.first_name, status: "error", reason: "Failed to send invite" });
         errors++;
       }
     }
@@ -271,7 +270,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: "Internal server error",
       }),
       { status: 500, headers },
     );

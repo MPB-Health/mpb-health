@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
     if (updateError) {
       log.error("Error updating user:", updateError);
       return new Response(
-        JSON.stringify({ error: updateError.message }),
+        JSON.stringify({ error: "Failed to update user" }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }

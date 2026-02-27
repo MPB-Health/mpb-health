@@ -126,7 +126,7 @@ serve(async (req) => {
   } catch (error) {
     log.error('AI CRM Agent error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }

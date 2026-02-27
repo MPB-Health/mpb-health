@@ -205,7 +205,7 @@ serve(async (req) => {
   } catch (error) {
     log.error('Unhandled error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Unknown error' }),
+      JSON.stringify({ error: 'Internal server error' }),
       {
         headers: { ...getCorsHeaders(req, { allowHeaders: RESEND_WEBHOOK_EXTRA_HEADERS }), 'Content-Type': 'application/json' },
         status: 500,

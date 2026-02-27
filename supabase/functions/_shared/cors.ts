@@ -43,8 +43,8 @@ function isOriginAllowed(origin: string): boolean {
     return true;
   }
 
-  // Allow any Vercel preview deploy for the mpbhealth project
-  if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
+  // Allow Vercel preview deploys for mpbhealth projects only
+  if (/^https:\/\/mpbhealth[a-z0-9-]*\.vercel\.app$/.test(origin)) {
     return true;
   }
 

@@ -163,7 +163,7 @@ const setAffiliateCookie = (referralCode: string): void => {
   };
 
   const expires = new Date(Date.now() + COOKIE_DURATION);
-  document.cookie = `${COOKIE_NAME}=${JSON.stringify(data)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+  document.cookie = `${COOKIE_NAME}=${JSON.stringify(data)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax; Secure`;
 };
 
 const getAffiliateCookie = (): { referralCode: string; affiliateId: string } | null => {

@@ -288,7 +288,7 @@ async function addSubscriber(data: SubscriberRequest): Promise<MailchimpResponse
     log.error("Mailchimp subscription error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: "Internal server error",
     };
   }
 }
@@ -335,7 +335,7 @@ async function unsubscribe(email: string): Promise<MailchimpResponse> {
       log.error("Mailchimp unsubscribe error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: "Internal server error",
     };
   }
 }
@@ -385,7 +385,7 @@ async function updateTags(data: TagUpdateRequest): Promise<MailchimpResponse> {
     log.error("Mailchimp tag update error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: "Internal server error",
     };
   }
 }
@@ -432,7 +432,7 @@ async function getSubscriberInfo(email: string): Promise<{ success: boolean; sub
     log.error("Error fetching subscriber info:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: "Internal server error",
     };
   }
 }
@@ -556,7 +556,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: "Internal server error",
       }),
       {
         status: 500,

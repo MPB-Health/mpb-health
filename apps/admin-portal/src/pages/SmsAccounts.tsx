@@ -342,15 +342,16 @@ export default function SmsAccounts() {
               <h2 className="text-lg font-semibold text-th-text-primary">
                 {editing ? 'Edit Account' : 'Add Account'}
               </h2>
-              <button onClick={closeModal} className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
+              <button onClick={closeModal} aria-label="Close" className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
+                <label htmlFor="sms-name" className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
                 <input
+                  id="sms-name"
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -360,8 +361,9 @@ export default function SmsAccounts() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Provider</label>
+                <label htmlFor="sms-provider" className="block text-sm font-medium text-th-text-secondary mb-1">Provider</label>
                 <select
+                  id="sms-provider"
                   value={form.provider}
                   onChange={(e) => setForm({ ...form, provider: e.target.value as SmsProvider })}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -443,7 +445,7 @@ export default function SmsAccounts() {
           <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="border-b border-th-border px-6 py-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-th-text-primary">SMS Logs</h2>
-              <button onClick={() => setShowLogs(false)} className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
+              <button onClick={() => setShowLogs(false)} aria-label="Close" className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -452,6 +454,7 @@ export default function SmsAccounts() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
                 <input
+                  aria-label="Search SMS logs"
                   type="text"
                   value={logSearch}
                   onChange={(e) => setLogSearch(e.target.value)}

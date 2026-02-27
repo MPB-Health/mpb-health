@@ -300,6 +300,7 @@ const NotificationsAdmin: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Filter className="h-5 w-5 text-neutral-600" />
                 <select
+                  aria-label="Filter by status"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -311,6 +312,7 @@ const NotificationsAdmin: React.FC = () => {
                   <option value="failed">Failed</option>
                 </select>
                 <select
+                  aria-label="Filter by type"
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
                   className="px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -460,8 +462,9 @@ const NotificationsAdmin: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Type</label>
+                  <label htmlFor="notif-type" className="block text-sm font-medium text-neutral-700 mb-1">Type</label>
                   <select
+                    id="notif-type"
                     value={newNotification.type}
                     onChange={(e) => setNewNotification({...newNotification, type: e.target.value as any})}
                     className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -475,8 +478,9 @@ const NotificationsAdmin: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Channel</label>
+                  <label htmlFor="notif-channel" className="block text-sm font-medium text-neutral-700 mb-1">Channel</label>
                   <select
+                    id="notif-channel"
                     value={newNotification.channel}
                     onChange={(e) => setNewNotification({...newNotification, channel: e.target.value as any})}
                     className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -489,8 +493,9 @@ const NotificationsAdmin: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Audience</label>
+                  <label htmlFor="notif-audience" className="block text-sm font-medium text-neutral-700 mb-1">Audience</label>
                   <select
+                    id="notif-audience"
                     value={newNotification.audience}
                     onChange={(e) => setNewNotification({...newNotification, audience: e.target.value as any})}
                     className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

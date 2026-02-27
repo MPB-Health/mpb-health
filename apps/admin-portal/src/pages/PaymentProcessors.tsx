@@ -321,15 +321,16 @@ export default function PaymentProcessors() {
               <h2 className="text-lg font-semibold text-th-text-primary">
                 {editing ? 'Edit Processor' : 'Add Processor'}
               </h2>
-              <button onClick={closeModal} className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
+              <button onClick={closeModal} aria-label="Close" className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
+                <label htmlFor="payment-name" className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
                 <input
+                  id="payment-name"
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -339,8 +340,9 @@ export default function PaymentProcessors() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Provider</label>
+                <label htmlFor="payment-provider" className="block text-sm font-medium text-th-text-secondary mb-1">Provider</label>
                 <select
+                  id="payment-provider"
                   value={form.provider}
                   onChange={(e) => setForm({ ...form, provider: e.target.value as PaymentProvider })}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"

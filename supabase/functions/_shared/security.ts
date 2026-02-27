@@ -6,7 +6,9 @@
  * HIPAA: §164.312(a)(1) Access Control, §164.312(b) Audit Controls
  */
 
-import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
+// deno-lint-ignore-file
+// @ts-types="npm:@supabase/supabase-js@2"
+import { type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 // ============================================================================
 // Rate Limiter (in-memory, per-instance)

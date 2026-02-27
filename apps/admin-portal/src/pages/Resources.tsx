@@ -157,6 +157,7 @@ export default function Resources() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-tertiary" />
           <input
+            aria-label="Search resources"
             type="text"
             placeholder="Search resources..."
             value={searchQuery}
@@ -167,6 +168,7 @@ export default function Resources() {
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-th-text-tertiary" />
           <select
+            aria-label="Filter by category"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -230,12 +232,14 @@ export default function Resources() {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleDownload(resource)}
+                      aria-label="Download resource"
                       className="p-2 text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 rounded-lg"
                     >
                       <Download className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(resource.id)}
+                      aria-label="Delete resource"
                       className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -288,10 +292,11 @@ export default function Resources() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                  <label htmlFor="resource-title" className="block text-sm font-medium text-th-text-secondary mb-1">
                     Title *
                   </label>
                   <input
+                    id="resource-title"
                     type="text"
                     value={uploadData.title}
                     onChange={(e) =>
@@ -301,10 +306,11 @@ export default function Resources() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                  <label htmlFor="resource-description" className="block text-sm font-medium text-th-text-secondary mb-1">
                     Description
                   </label>
                   <textarea
+                    id="resource-description"
                     value={uploadData.description}
                     onChange={(e) =>
                       setUploadData({ ...uploadData, description: e.target.value })

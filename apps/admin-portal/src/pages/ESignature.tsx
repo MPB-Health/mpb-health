@@ -559,15 +559,16 @@ export default function ESignature() {
               <h2 className="text-lg font-semibold text-th-text-primary">
                 {editingProvider ? 'Edit Provider' : 'Add Provider'}
               </h2>
-              <button onClick={() => setShowProviderModal(false)} className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
+              <button onClick={() => setShowProviderModal(false)} aria-label="Close" className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleProviderSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
+                <label htmlFor="esig-provider-name" className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
                 <input
+                  id="esig-provider-name"
                   type="text"
                   value={providerForm.name}
                   onChange={(e) => setProviderForm({ ...providerForm, name: e.target.value })}
@@ -577,8 +578,9 @@ export default function ESignature() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Provider</label>
+                <label htmlFor="esig-provider-type" className="block text-sm font-medium text-th-text-secondary mb-1">Provider</label>
                 <select
+                  id="esig-provider-type"
                   value={providerForm.provider}
                   onChange={(e) => setProviderForm({ ...providerForm, provider: e.target.value as ESignatureProvider })}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -644,15 +646,16 @@ export default function ESignature() {
           <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-surface-primary border-b border-th-border px-6 py-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-th-text-primary">Create Document</h2>
-              <button onClick={() => setShowDocModal(false)} className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
+              <button onClick={() => setShowDocModal(false)} aria-label="Close" className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleDocSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Document Name *</label>
+                <label htmlFor="esig-doc-name" className="block text-sm font-medium text-th-text-secondary mb-1">Document Name *</label>
                 <input
+                  id="esig-doc-name"
                   type="text"
                   value={docForm.name}
                   onChange={(e) => setDocForm({ ...docForm, name: e.target.value })}
@@ -662,8 +665,9 @@ export default function ESignature() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Document Type</label>
+                <label htmlFor="esig-doc-type" className="block text-sm font-medium text-th-text-secondary mb-1">Document Type</label>
                 <select
+                  id="esig-doc-type"
                   value={docForm.document_type}
                   onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value as DocumentType })}
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -676,8 +680,9 @@ export default function ESignature() {
 
               {providers.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Provider</label>
+                  <label htmlFor="esig-doc-provider" className="block text-sm font-medium text-th-text-secondary mb-1">Provider</label>
                   <select
+                    id="esig-doc-provider"
                     value={docForm.provider_id}
                     onChange={(e) => setDocForm({ ...docForm, provider_id: e.target.value })}
                     className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -723,6 +728,7 @@ export default function ESignature() {
                         <button
                           type="button"
                           onClick={() => removeSigner(index)}
+                          aria-label={`Remove signer ${signer.name || index + 1}`}
                           className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
                         >
                           <X className="w-4 h-4" />

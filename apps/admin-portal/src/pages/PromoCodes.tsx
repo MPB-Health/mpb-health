@@ -269,6 +269,7 @@ export default function PromoCodes() {
                         <span className="font-mono font-semibold text-th-text-primary">{code.code}</span>
                         <button
                           onClick={() => copyCode(code.code)}
+                          aria-label="Copy promo code"
                           className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded"
                         >
                           <Copy className="w-4 h-4" />
@@ -357,16 +358,17 @@ export default function PromoCodes() {
               <h2 className="text-lg font-semibold text-th-text-primary">
                 {editing ? 'Edit Promo Code' : 'Create Promo Code'}
               </h2>
-              <button onClick={closeModal} className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
+              <button onClick={closeModal} aria-label="Close" className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Code *</label>
+                <label htmlFor="promo-code" className="block text-sm font-medium text-th-text-secondary mb-1">Code *</label>
                 <div className="flex gap-2">
                   <input
+                    id="promo-code"
                     type="text"
                     value={form.code}
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
@@ -388,8 +390,9 @@ export default function PromoCodes() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
+                <label htmlFor="promo-name" className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
                 <input
+                  id="promo-name"
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -400,8 +403,9 @@ export default function PromoCodes() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Description</label>
+                <label htmlFor="promo-description" className="block text-sm font-medium text-th-text-secondary mb-1">Description</label>
                 <textarea
+                  id="promo-description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
@@ -411,8 +415,9 @@ export default function PromoCodes() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Discount Type</label>
+                  <label htmlFor="promo-discount-type" className="block text-sm font-medium text-th-text-secondary mb-1">Discount Type</label>
                   <select
+                    id="promo-discount-type"
                     value={form.discount_type}
                     onChange={(e) => setForm({ ...form, discount_type: e.target.value as DiscountType })}
                     className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
@@ -423,10 +428,11 @@ export default function PromoCodes() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                  <label htmlFor="promo-discount-value" className="block text-sm font-medium text-th-text-secondary mb-1">
                     Value {form.discount_type === 'percentage' ? '(%)' : form.discount_type === 'fixed' ? '($)' : '(months)'}
                   </label>
                   <input
+                    id="promo-discount-value"
                     type="number"
                     value={form.discount_value}
                     onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })}
@@ -440,8 +446,9 @@ export default function PromoCodes() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Usage Limit (0 = unlimited)</label>
+                  <label htmlFor="promo-usage-limit" className="block text-sm font-medium text-th-text-secondary mb-1">Usage Limit (0 = unlimited)</label>
                   <input
+                    id="promo-usage-limit"
                     type="number"
                     value={form.usage_limit}
                     onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })}
@@ -450,8 +457,9 @@ export default function PromoCodes() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Per User Limit</label>
+                  <label htmlFor="promo-per-user-limit" className="block text-sm font-medium text-th-text-secondary mb-1">Per User Limit</label>
                   <input
+                    id="promo-per-user-limit"
                     type="number"
                     value={form.per_user_limit}
                     onChange={(e) => setForm({ ...form, per_user_limit: parseInt(e.target.value) || 1 })}
@@ -463,8 +471,9 @@ export default function PromoCodes() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Valid From</label>
+                  <label htmlFor="promo-valid-from" className="block text-sm font-medium text-th-text-secondary mb-1">Valid From</label>
                   <input
+                    id="promo-valid-from"
                     type="date"
                     value={form.valid_from}
                     onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
@@ -472,8 +481,9 @@ export default function PromoCodes() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Valid Until</label>
+                  <label htmlFor="promo-valid-until" className="block text-sm font-medium text-th-text-secondary mb-1">Valid Until</label>
                   <input
+                    id="promo-valid-until"
                     type="date"
                     value={form.valid_until}
                     onChange={(e) => setForm({ ...form, valid_until: e.target.value })}

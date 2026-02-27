@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ChevronDown, LogIn, LogOut, UserCircle } from 'lucide-react';
+import { Menu, X, ChevronDown, LogOut, UserCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { TopBar } from '../layout/TopBar';
 import { MegaMenuV2 } from '../layout/MegaMenuV2';
@@ -217,13 +217,6 @@ export const OptimizedHeader: React.FC = () => {
               ) : (
                 <>
                   <Link
-                    to="/login"
-                    className="hidden lg:flex items-center gap-2 px-4 py-2 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors rounded-lg hover:bg-neutral-50 border border-neutral-300"
-                  >
-                    <LogIn className="h-4 w-4" />
-                    <span>Sign In</span>
-                  </Link>
-                  <Link
                     to="/get-started"
                     className="hidden lg:block flex-shrink-0"
                   >
@@ -336,12 +329,6 @@ export const OptimizedHeader: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                        <button className="w-full flex items-center justify-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all">
-                          <LogIn className="h-4 w-4" />
-                          Sign In
-                        </button>
-                      </Link>
                       <Link to="/get-started" onClick={() => setIsMenuOpen(false)}>
                         <button className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg">
                           Get Free Quote

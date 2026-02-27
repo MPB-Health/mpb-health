@@ -14,6 +14,8 @@ import {
   Pill,
   DollarSign,
   Briefcase,
+  Library,
+  ExternalLink,
 } from 'lucide-react';
 import {
   contentService,
@@ -103,7 +105,41 @@ const fallbackSectionConfig: Record<string, SectionEntry> = {
     description: 'Prescription and pharmacy resources',
     icon: Pill,
   },
+  'handbooks': {
+    title: 'Handbooks',
+    description: 'Interactive flip-book handbooks for MPB Health plans',
+    icon: Library,
+  },
 };
+
+// Hardcoded handbook links (external 3D flip-book URLs, not CMS documents)
+const HANDBOOK_LINKS: { title: string; url: string; description: string }[] = [
+  {
+    title: 'Care+ Handbook',
+    url: 'https://mpb.health/3d-flip-book/careplus',
+    description: 'Interactive handbook for the Care+ health sharing plan.',
+  },
+  {
+    title: 'Direct Handbook',
+    url: 'https://mpb.health/3d-flip-book/direct-handbook',
+    description: 'Interactive handbook for the Direct health sharing plan.',
+  },
+  {
+    title: 'Secure HSA Handbook',
+    url: 'https://mpb.health/3d-flip-book/secure-hsa',
+    description: 'Interactive handbook for the Secure HSA plan.',
+  },
+  {
+    title: 'Essentials Handbook',
+    url: 'https://mpb.health/3d-flip-book/essentials',
+    description: 'Interactive handbook for the Essentials health sharing plan.',
+  },
+  {
+    title: 'MEC Essentials Handbook',
+    url: 'https://mpb.health/3d-flip-book/mecessentials-handbook',
+    description: 'Interactive handbook for the MEC Essentials plan.',
+  },
+];
 
 /** Build section config dynamically from CMS categories, falling back to hardcoded defaults */
 function buildSectionConfig(categories: SOPCategory[]): Record<string, SectionEntry> {
@@ -201,6 +237,58 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       doc.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
+
+  // Render hardcoded handbook links for the /sops/handbooks section
+  if (section === 'handbooks') {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-th-accent-100 dark:bg-th-accent-900/30">
+            <Library className="w-6 h-6 text-th-accent-600 dark:text-th-accent-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-th-text-primary">Handbooks</h1>
+            <p className="text-th-text-tertiary text-sm mt-1">
+              Interactive flip-book handbooks for MPB Health plans
+            </p>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '1rem',
+          }}
+        >
+          {HANDBOOK_LINKS.map((book) => (
+            <a
+              key={book.url}
+              href={book.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all flex flex-col p-5 gap-3"
+            >
+              <div className="w-10 h-10 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Library className="w-5 h-5 text-th-accent-600 dark:text-th-accent-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
+                  {book.title}
+                </h3>
+                <p className="text-sm text-th-text-tertiary mt-1">{book.description}</p>
+              </div>
+              <div className="flex items-center gap-1 text-sm text-th-accent-600 font-medium mt-auto pt-3 border-t border-th-border-subtle">
+                <ExternalLink className="w-3.5 h-3.5" />
+                Open Handbook
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

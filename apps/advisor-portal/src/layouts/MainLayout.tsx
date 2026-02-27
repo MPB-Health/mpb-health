@@ -76,7 +76,14 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Bulletins', href: '/bulletins', icon: Bell },
   { name: 'Resource Center', href: '/quick-links', icon: Link },
-  { name: 'Resources', href: '/sops', icon: BookOpen },
+  {
+    name: 'Resources',
+    href: '/sops',
+    icon: BookOpen,
+    children: [
+      { name: 'Handbooks', href: '/sops/handbooks' },
+    ],
+  },
   { 
     name: 'Forms', 
     href: '/forms', 

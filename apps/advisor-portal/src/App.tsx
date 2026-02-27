@@ -152,6 +152,7 @@ export default function App() {
                 <Route path="sops/zion" element={<SOPLibrary section="zion" />} />
                 <Route path="sops/arm" element={<SOPLibrary section="arm" />} />
                 <Route path="sops/rx" element={<SOPLibrary section="rx" />} />
+                <Route path="sops/handbooks" element={<SOPLibrary section="handbooks" />} />
                 <Route path="sops/:documentId" element={<SOPDocument />} />
                 <Route path="bulletins" element={<Bulletins />} />
                 <Route path="bulletins/:slug" element={<BulletinDetail />} />

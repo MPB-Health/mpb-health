@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@mpbhealth/database": "workspace:*",
-    "@mpbhealth/utils": "workspace:*",
-    "@supabase/supabase-js": "^2.57.0"
+    "@mpbhealth/utils": "workspace:*"
   },
   "devDependencies": {
     "@mpbhealth/eslint-config": "workspace:*",

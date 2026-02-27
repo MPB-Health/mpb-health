@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import * as LucideIcons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   GraduationCap,
@@ -21,6 +21,34 @@ import {
   Mail,
   Headphones,
   ShieldCheck,
+  // Additional icons that may come from CMS nav items
+  Home,
+  Phone,
+  Calendar,
+  BarChart2,
+  Shield,
+  FileSearch,
+  ClipboardList,
+  AlertCircle,
+  CheckCircle,
+  Download,
+  Eye,
+  ChevronRight,
+  ExternalLink,
+  ArrowRight,
+  Briefcase,
+  Heart,
+  Star,
+  Globe,
+  MessageSquare,
+  HelpCircle,
+  Zap,
+  Lock,
+  Users,
+  Building2,
+  CreditCard,
+  Activity,
+  Pill,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -41,7 +69,9 @@ import { useSupportSSO } from '../hooks/useSupportSSO';
 import { GlobalSearch } from '../components/GlobalSearch';
 
 // Icon mapping for dynamic icons from CMS
-const iconMap: Record<string, LucideIcons.LucideIcon> = {
+// NOTE: Keep this as named imports only — never use `import * as LucideIcons`
+// as it defeats tree-shaking and bloats the bundle by ~500 KB.
+const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
   GraduationCap,
   FileText,
@@ -54,21 +84,45 @@ const iconMap: Record<string, LucideIcons.LucideIcon> = {
   Send,
   UsersRound,
   Mail,
+  // Extended set for CMS nav
+  Home,
+  Phone,
+  Calendar,
+  BarChart2,
+  Shield,
+  ShieldCheck,
+  FileSearch,
+  ClipboardList,
+  AlertCircle,
+  CheckCircle,
+  Download,
+  Eye,
+  ChevronRight,
+  ExternalLink,
+  ArrowRight,
+  Briefcase,
+  Heart,
+  Star,
+  Globe,
+  MessageSquare,
+  HelpCircle,
+  Zap,
+  Lock,
+  Users,
+  Building2,
+  CreditCard,
+  Activity,
+  Pill,
+  Video,
+  Radio,
+  Headphones,
+  Search,
+  LogOut,
 };
 
 // Get icon component from string name
-function getIconComponent(iconName: string): LucideIcons.LucideIcon {
-  // Try direct mapping first
-  if (iconMap[iconName]) {
-    return iconMap[iconName];
-  }
-  // Try to get from LucideIcons dynamically
-  const lucideModule = LucideIcons as Record<string, unknown>;
-  if (lucideModule[iconName] && typeof lucideModule[iconName] === 'function') {
-    return lucideModule[iconName] as LucideIcons.LucideIcon;
-  }
-  // Fallback to Link icon
-  return Link;
+function getIconComponent(iconName: string): LucideIcon {
+  return iconMap[iconName] ?? Link;
 }
 
 // Fallback navigation for when CMS data isn't available

@@ -153,12 +153,17 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load data when profile is available
+  // Load data when profile is available — deferred so the initial render
+  // (profile + auth check) completes first before firing secondary requests.
   useEffect(() => {
-    if (profile) {
+    if (!profile) return;
+    // Use setTimeout(0) to yield to the browser paint before hitting Supabase
+    // for non-critical data (training stats, bulletin count).
+    const timer = setTimeout(() => {
       refreshTraining();
       loadBulletinCount();
-    }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [profile?.id]);
 
   // Subscribe to bulletins

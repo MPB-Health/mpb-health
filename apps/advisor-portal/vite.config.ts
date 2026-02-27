@@ -20,28 +20,51 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: !isProd,
-      minify: isProd ? 'terser' : false,
-      terserOptions: isProd ? {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        },
-        mangle: true,
-      } : undefined,
-      chunkSizeWarningLimit: 500,
+      sourcemap: false,
+      // esbuild minification is ~20x faster than terser and equally effective
+      minify: isProd ? 'esbuild' : false,
+      cssMinify: isProd,
+      // Raise warning threshold — we're actively splitting chunks
+      chunkSizeWarningLimit: 400,
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Core React
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            // UI libraries
-            'ui-vendor': ['lucide-react'],
-            // Toast notifications
-            'toast': ['react-hot-toast'],
-            // Date utilities
-            'date-utils': ['date-fns'],
+          manualChunks(id) {
+            // 1. Core React runtime — tiny, cached forever
+            if (id.includes('node_modules/react/') ||
+                id.includes('node_modules/react-dom/') ||
+                id.includes('node_modules/react-router-dom/') ||
+                id.includes('node_modules/react-router/')) {
+              return 'react-vendor';
+            }
+            // 2. lucide-react — tree-shaken named imports; keep in its own chunk
+            //    so it caches independently from app code
+            if (id.includes('node_modules/lucide-react')) {
+              return 'lucide';
+            }
+            // 3. Supabase client — large, rarely changes
+            if (id.includes('node_modules/@supabase')) {
+              return 'supabase';
+            }
+            // 4. Internal monorepo UI package
+            if (id.includes('packages/ui/src') || id.includes('@mpbhealth/ui')) {
+              return 'mpb-ui';
+            }
+            // 5. Internal advisor-core service layer
+            if (id.includes('packages/advisor-core') || id.includes('@mpbhealth/advisor-core')) {
+              return 'advisor-core';
+            }
+            // 6. Date utilities
+            if (id.includes('node_modules/date-fns')) {
+              return 'date-utils';
+            }
+            // 7. Toast notifications
+            if (id.includes('node_modules/react-hot-toast')) {
+              return 'toast';
+            }
+            // 8. Remaining node_modules → vendor catch-all
+            if (id.includes('node_modules/')) {
+              return 'vendor';
+            }
           },
         },
       },

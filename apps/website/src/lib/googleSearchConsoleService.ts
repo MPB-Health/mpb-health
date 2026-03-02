@@ -56,7 +56,8 @@ export interface PageData {
 // ============================================================================
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '';
+// GOOGLE_CLIENT_SECRET is server-side only — stored in Supabase Edge Function secrets.
+// Do NOT reference VITE_GOOGLE_CLIENT_SECRET here.
 const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/admin/seo/callback`;
 
 const SCOPES = [
@@ -99,26 +100,15 @@ export const exchangeCodeForTokens = async (
   expires_in: number;
   token_type: string;
 }> => {
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri: GOOGLE_REDIRECT_URI,
-    }),
+  const { data, error } = await supabase.functions.invoke('google-oauth-exchange', {
+    body: { action: 'exchange_code', code, redirect_uri: GOOGLE_REDIRECT_URI },
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error_description || 'Failed to exchange code for tokens');
+  if (error || !data?.access_token) {
+    throw new Error(error?.message || data?.error || 'Failed to exchange code for tokens');
   }
 
-  return response.json();
+  return data;
 };
 
 /**
@@ -127,25 +117,15 @@ export const exchangeCodeForTokens = async (
 export const refreshAccessToken = async (
   refreshToken: string
 ): Promise<{ access_token: string; expires_in: number }> => {
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
+  const { data, error } = await supabase.functions.invoke('google-oauth-exchange', {
+    body: { action: 'refresh_token', refresh_token: refreshToken },
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error_description || 'Failed to refresh token');
+  if (error || !data?.access_token) {
+    throw new Error(error?.message || data?.error || 'Failed to refresh token');
   }
 
-  return response.json();
+  return data;
 };
 
 // ============================================================================
@@ -553,7 +533,8 @@ export const logSyncOperation = async (
  * Check if Google API is configured
  */
 export const isGoogleApiConfigured = (): boolean => {
-  return Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+  // Client secret is server-side; only check for client ID here
+  return Boolean(GOOGLE_CLIENT_ID);
 };
 
 /**

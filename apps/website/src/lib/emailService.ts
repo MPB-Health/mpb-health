@@ -1,5 +1,6 @@
-const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY;
-const RESEND_API_URL = 'https://api.resend.com/emails';
+// Email is sent server-side via the send-website-email Supabase Edge Function.
+// VITE_RESEND_API_KEY must NOT be used here — the key lives only in Supabase secrets.
+import { supabase } from './supabase';
 
 export interface EmailOptions {
   to: string | string[];
@@ -8,6 +9,8 @@ export interface EmailOptions {
   html: string;
   text?: string;
   replyTo?: string;
+  /** Optional label forwarded to the edge function for Resend log tagging */
+  emailType?: string;
 }
 
 export interface EmailResponse {
@@ -16,53 +19,30 @@ export interface EmailResponse {
   error?: string;
 }
 
-const DEFAULT_FROM = 'MPB Health <notifications@mpb.health>';
-
 export async function sendEmail(options: EmailOptions): Promise<EmailResponse> {
-  if (!RESEND_API_KEY) {
-    console.error('Resend API key is not configured');
-    return {
-      success: false,
-      error: 'Email service not configured'
-    };
-  }
-
   try {
-    const response = await fetch(RESEND_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: options.from || DEFAULT_FROM,
-        to: Array.isArray(options.to) ? options.to : [options.to],
+    const { data, error } = await supabase.functions.invoke('send-website-email', {
+      body: {
+        to: options.to,
         subject: options.subject,
         html: options.html,
         text: options.text,
-        reply_to: options.replyTo,
-      }),
+        replyTo: options.replyTo,
+        emailType: options.emailType,
+      },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Resend API error:', errorData);
-      return {
-        success: false,
-        error: errorData.message || 'Failed to send email'
-      };
+    if (error) {
+      console.error('send-website-email edge function error:', error);
+      return { success: false, error: error.message || 'Failed to send email' };
     }
 
-    const data = await response.json();
-    return {
-      success: true,
-      id: data.id
-    };
+    return { success: data?.success ?? true, id: data?.id };
   } catch (error) {
     console.error('Email send error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }

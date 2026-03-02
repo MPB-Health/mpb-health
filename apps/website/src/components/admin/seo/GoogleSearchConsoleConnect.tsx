@@ -122,14 +122,17 @@ export const GoogleSearchConsoleConnect: React.FC<GoogleSearchConsoleConnectProp
               Google API Not Configured
             </h3>
             <p className="text-sm text-amber-700 mb-3">
-              To connect Google Search Console, add the following environment variables:
+              To connect Google Search Console, configure the following:
             </p>
-            <code className="block text-xs bg-amber-100 p-3 rounded text-amber-800 font-mono">
+            <p className="text-xs text-amber-800 font-semibold mb-1">Vercel environment variable:</p>
+            <code className="block text-xs bg-amber-100 p-3 rounded text-amber-800 font-mono mb-2">
               VITE_GOOGLE_CLIENT_ID=your_client_id
               <br />
-              VITE_GOOGLE_CLIENT_SECRET=your_client_secret
-              <br />
               VITE_GOOGLE_REDIRECT_URI=your_redirect_uri
+            </code>
+            <p className="text-xs text-amber-800 font-semibold mb-1">Supabase Edge Function secret (never in Vercel env):</p>
+            <code className="block text-xs bg-amber-100 p-3 rounded text-amber-800 font-mono">
+              supabase secrets set GOOGLE_CLIENT_SECRET=your_client_secret
             </code>
             <a
               href="https://console.cloud.google.com/apis/credentials"

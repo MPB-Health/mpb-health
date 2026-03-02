@@ -7,6 +7,35 @@ import { copyFileSync, existsSync } from 'fs';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
+  // ── SECURITY GUARD ────────────────────────────────────────────────────────
+  // Vite bundles ALL VITE_* env vars into the browser JS bundle.
+  // The vars below are server-side secrets — giving them a VITE_ prefix
+  // exposes them to every visitor. Abort the build if any are detected.
+  const FORBIDDEN_VITE_VARS = [
+    'VITE_SUPABASE_SERVICE_ROLE_KEY',
+    'VITE_MAILCHIMP_API_KEY',
+    'VITE_RESEND_API_KEY',
+    'VITE_GOOGLE_CLIENT_SECRET',
+  ];
+  const illegalVars = FORBIDDEN_VITE_VARS.filter((v) => env[v]);
+  if (illegalVars.length > 0) {
+    const msg =
+      `\n🚨 SECURITY ERROR: The following secrets MUST NOT have the VITE_ prefix` +
+      ` — they would be bundled into the browser JS bundle and exposed to all visitors:\n` +
+      illegalVars.map((v) => `  - ${v}`).join('\n') +
+      `\n\nAction required:\n` +
+      `  1. Remove these env vars from Vercel project settings.\n` +
+      `  2. Add the values (without VITE_ prefix) to Supabase Edge Function secrets:\n` +
+      `     supabase secrets set RESEND_API_KEY=... GOOGLE_CLIENT_SECRET=...\n` +
+      `  3. Rotate any keys that were already deployed with the VITE_ prefix.\n`;
+    if (mode === 'production') {
+      throw new Error(msg);
+    } else {
+      console.error(msg);
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const hasSupabaseConfig = Boolean(
     env.VITE_SUPABASE_URL &&
     env.VITE_SUPABASE_ANON_KEY

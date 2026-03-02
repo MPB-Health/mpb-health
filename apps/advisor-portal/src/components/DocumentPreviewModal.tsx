@@ -32,6 +32,15 @@ export default function DocumentPreviewModal({
       lowerUrl.endsWith('.webp')
     ) {
       return { viewerUrl: fileUrl, fileType: 'image' as const };
+    } else if (
+      (lowerUrl.includes('sharepoint') || lowerUrl.includes('onedrive')) &&
+      (lowerUrl.includes('/:p:/') || lowerUrl.includes('%3ap%3a'))
+    ) {
+      // SharePoint/OneDrive presentation links - use Office Online embed viewer
+      return {
+        viewerUrl: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`,
+        fileType: 'office' as const,
+      };
     } else {
       // Use Microsoft Office Online viewer for Office files (PPTX, DOCX, XLSX)
       return {

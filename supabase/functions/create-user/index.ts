@@ -23,6 +23,56 @@ interface CreateUserRequest {
   avatar_url?: string;
 }
 
+const ADVISOR_PROFILE_ROLES: UserRole[] = ["advisor", "admin", "super_admin"];
+
+function shouldProvisionAdvisorProfile(roles: UserRole[]): boolean {
+  return roles.some((role) => ADVISOR_PROFILE_ROLES.includes(role));
+}
+
+async function provisionAdvisorProfile(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  input: {
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    specialization?: string;
+    agentId?: string;
+    companyName?: string;
+    avatarUrl?: string;
+  },
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("advisor_profiles")
+    .upsert(
+      {
+        id: input.userId,
+        email: input.email,
+        first_name: input.firstName,
+        last_name: input.lastName,
+        phone: input.phone || null,
+        specialization: input.specialization || "Health Share",
+        agent_id: input.agentId || null,
+        company_name: input.companyName || null,
+        avatar_url: input.avatarUrl || null,
+        status: "active",
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
+        metadata: {
+          provisioned_by: "create-user",
+          source: "edge-function",
+        },
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    throw error;
+  }
+}
+
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 async function sendInviteEmail(
@@ -226,6 +276,35 @@ Deno.serve(async (req: Request) => {
 
     if (roleError) {
       log.error("User roles insert error:", roleError);
+    }
+
+    if (shouldProvisionAdvisorProfile(roles)) {
+      try {
+        await provisionAdvisorProfile(supabaseAdmin, {
+          userId,
+          email,
+          firstName: first_name,
+          lastName: last_name,
+          phone,
+          specialization,
+          agentId: agent_id,
+          companyName: company_name,
+          avatarUrl: avatar_url,
+        });
+      } catch (profileError) {
+        log.error("Advisor profile provisioning failed", profileError);
+        const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (rollbackError) {
+          log.error("Rollback delete user failed", rollbackError);
+        }
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to provision advisor profile",
+          }),
+          { status: 500, headers },
+        );
+      }
     }
 
     let emailSent = false;

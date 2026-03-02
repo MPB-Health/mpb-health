@@ -50,7 +50,21 @@ interface ProxyRequest {
 function getItstsClient() {
   const url = Deno.env.get("ITSTS_SUPABASE_URL");
   const key = Deno.env.get("ITSTS_SERVICE_ROLE_KEY");
-  if (!url || !key) throw new Error("ITSTS not configured");
+  if (!url || !key) {
+    log.warn("ITSTS configuration missing - falling back to main Supabase project");
+    // Fall back to using the main Supabase project for ticket management
+    const fallbackUrl = Deno.env.get("SUPABASE_URL");
+    const fallbackKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!fallbackUrl || !fallbackKey) {
+      log.error("No Supabase configuration available - ITSTS and fallback both missing");
+      throw new Error("ITSTS not configured and no fallback Supabase configuration available");
+    }
+    log.info("Using fallback Supabase configuration for ticket management");
+    return createClient(fallbackUrl, fallbackKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  }
+  log.info("Using ITSTS Supabase configuration");
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
   });

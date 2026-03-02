@@ -9,6 +9,7 @@ import {
   type TrainingProgress,
   type Bulletin,
 } from '@mpbhealth/advisor-core';
+import { secureAuthService } from '@mpbhealth/auth';
 
 interface AdvisorContextType {
   // Profile
@@ -119,7 +120,13 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   // Logout
   const logout = async () => {
     try {
-      await supabase.auth.signOut({ scope: 'local' });
+      // Use secure logout service for proper session cleanup and security logging
+      if (profile?.user_id) {
+        await secureAuthService.secureLogout(profile.user_id);
+      } else {
+        // Fallback to basic logout if profile is not available
+        await supabase.auth.signOut({ scope: 'local' });
+      }
     } catch (e) {
       console.warn('Sign out API error (session cleared locally):', e);
     }
@@ -128,7 +135,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('mpb-auth-token');
     } catch (_) { /* storage may not be available */ }
     setProfile(null);
-    window.location.href = 'https://mpb.health/';
+    // Redirect to login page within the advisor portal
+    window.location.href = '/login';
   };
 
   // Initial load

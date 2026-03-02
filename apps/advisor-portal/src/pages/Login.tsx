@@ -6,12 +6,30 @@ import { LoginLayout } from '@mpbhealth/ui';
 export default function Login() {
   const navigate = useNavigate();
 
+  const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('Login request timed out. Please try again.'));
+      }, ms);
+    });
+
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
+
   const handleSubmit = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
       throw new Error('Authentication service is not configured. Please contact support.');
     }
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        15000,
+      );
       if (error) {
         throw new Error(error.message || 'Invalid email or password');
       }

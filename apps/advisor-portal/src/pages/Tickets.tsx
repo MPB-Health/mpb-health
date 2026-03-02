@@ -86,6 +86,13 @@ export default function Tickets() {
     }
   }, []);
 
+  // Clear the loading spinner when auth is resolved but there is no profile
+  // (user is not logged in). Without this, loading stays true forever because
+  // loadTickets() — which calls setLoading(false) — never runs.
+  useEffect(() => {
+    if (!authLoading && !profile) setLoading(false);
+  }, [authLoading, profile]);
+
   useEffect(() => {
     if (!authLoading && profile) loadTickets();
   }, [authLoading, profile, loadTickets]);

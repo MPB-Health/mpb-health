@@ -1,6 +1,36 @@
 import { supabase } from '@mpbhealth/database';
 
 /**
+ * Ensure the current session has a non-expired access token before calling
+ * an Edge Function. With the noOpLock bypass in the Supabase client, two
+ * concurrent functions.invoke() calls that both hit an expiring token can
+ * race on the internal refresh and one ends up sending a stale token → 401.
+ *
+ * By fetching the session once here (which triggers a refresh if needed) and
+ * returning the resolved access_token, we avoid that race condition: callers
+ * can then pass the already-resolved token explicitly so no further refresh
+ * is attempted inside invoke().
+ *
+ * Returns null when there is no session (user is not authenticated).
+ */
+async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
+  // getSession() auto-refreshes when the token is within 60 s of expiry.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return null;
+
+  // Belt-and-suspenders: if the token is already past its expiry (clock skew
+  // or a failed silent-refresh), force an explicit refresh before proceeding.
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (session.expires_at && session.expires_at < nowSec) {
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    if (!refreshed.session?.access_token) return null;
+    return { Authorization: `Bearer ${refreshed.session.access_token}` };
+  }
+
+  return { Authorization: `Bearer ${session.access_token}` };
+}
+
+/**
  * Extract the real error message from a Supabase Functions error.
  * The SDK wraps non-2xx responses in a generic "Edge Function returned a non-2xx status code"
  * but the actual response body (with the real error) is accessible via context.json().
@@ -96,6 +126,11 @@ export interface AdminListTicketsOptions extends ListTicketsOptions {
 
 export class TicketService {
   async getMyTickets(opts: ListTicketsOptions = {}): Promise<TicketListResult> {
+    const authHeader = await getResolvedAuthHeader();
+    // Not authenticated — return empty list instead of hitting the edge function
+    // with a missing/invalid token (which would produce a noisy 401).
+    if (!authHeader) return { tickets: [], total: 0, page: opts.page || 1, per_page: opts.perPage || 20 };
+
     const { data, error } = await supabase.functions.invoke<TicketListResult & { success: boolean }>('ticket-proxy', {
       body: {
         action: 'list',
@@ -104,6 +139,7 @@ export class TicketService {
         page: opts.page || 1,
         per_page: opts.perPage || 20,
       },
+      headers: authHeader,
     });
 
     if (error) throw new Error(await extractFunctionError(error));
@@ -118,11 +154,15 @@ export class TicketService {
   }
 
   async getTicketDetail(ticketId: string): Promise<TicketDetail> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
     const { data, error } = await supabase.functions.invoke<TicketDetail & { success: boolean }>('ticket-proxy', {
       body: {
         action: 'detail',
         ticket_id: ticketId,
       },
+      headers: authHeader,
     });
 
     if (error) throw new Error(await extractFunctionError(error));
@@ -132,8 +172,13 @@ export class TicketService {
   }
 
   async getTicketStats(): Promise<TicketStats> {
+    const authHeader = await getResolvedAuthHeader();
+    // Not authenticated — return zeroed stats silently.
+    if (!authHeader) return { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 };
+
     const { data, error } = await supabase.functions.invoke<TicketStats & { success: boolean }>('ticket-proxy', {
       body: { action: 'stats' },
+      headers: authHeader,
     });
 
     if (error) throw new Error(await extractFunctionError(error));
@@ -152,6 +197,9 @@ export class TicketService {
   // ── Admin methods ──────────────────────────────────────────────────────
 
   async getAllTickets(opts: AdminListTicketsOptions = {}): Promise<AdminTicketListResult> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
     const { data, error } = await supabase.functions.invoke<AdminTicketListResult & { success: boolean }>('ticket-proxy', {
       body: {
         action: 'list_all',
@@ -161,6 +209,7 @@ export class TicketService {
         page: opts.page || 1,
         per_page: opts.perPage || 20,
       },
+      headers: authHeader,
     });
 
     if (error) throw new Error(await extractFunctionError(error));
@@ -170,8 +219,12 @@ export class TicketService {
   }
 
   async getTicketDetailAdmin(ticketId: string): Promise<AdminTicketDetail> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
     const { data, error } = await supabase.functions.invoke<AdminTicketDetail & { success: boolean }>('ticket-proxy', {
       body: { action: 'detail_admin', ticket_id: ticketId },
+      headers: authHeader,
     });
 
     if (error) throw new Error(await extractFunctionError(error));
@@ -181,8 +234,12 @@ export class TicketService {
   }
 
   async getAllTicketStats(): Promise<TicketStats> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
     const { data, error } = await supabase.functions.invoke<TicketStats & { success: boolean }>('ticket-proxy', {
       body: { action: 'stats_all' },
+      headers: authHeader,
     });
 
     if (error) throw new Error(await extractFunctionError(error));
@@ -199,8 +256,12 @@ export class TicketService {
   }
 
   async addComment(ticketId: string, content: string): Promise<void> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
     const { data, error } = await supabase.functions.invoke<{ success: boolean }>('ticket-proxy', {
       body: { action: 'add_comment', ticket_id: ticketId, content },
+      headers: authHeader,
     });
 
     if (error) throw new Error(await extractFunctionError(error));

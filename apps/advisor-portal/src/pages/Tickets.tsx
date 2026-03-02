@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
+import { useAdvisor } from '../contexts/AdvisorContext';
 import {
   Headphones,
   Search,
@@ -42,6 +43,7 @@ const PRIORITY_CONFIG: Record<TicketPriority, { label: string; color: string }> 
 };
 
 export default function Tickets() {
+  const { profile, loading: authLoading } = useAdvisor();
   const { openSupport, loading: ssoLoading } = useSupportSSO();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<TicketStats | null>(null);
@@ -85,12 +87,12 @@ export default function Tickets() {
   }, []);
 
   useEffect(() => {
-    loadTickets();
-  }, [loadTickets]);
+    if (!authLoading && profile) loadTickets();
+  }, [authLoading, profile, loadTickets]);
 
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+    if (!authLoading && profile) loadStats();
+  }, [authLoading, profile, loadStats]);
 
   const openTicketDetail = async (ticketId: string) => {
     setDetailLoading(true);

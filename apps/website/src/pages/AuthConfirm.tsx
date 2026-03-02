@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { AUTH_SAFE_REDIRECT_DESTINATIONS } from '@mpbhealth/config';
 
 /**
  * Auth Confirmation Bridge Page — /auth/confirm
@@ -53,6 +54,14 @@ const AuthConfirm = () => {
 
   const routeToRecoveryDestination = async () => {
     const destination = await getRecoveryDestination();
+    // Open-redirect guard: destination is always hardcoded in getRecoveryDestination(),
+    // but we validate anyway so future changes can't accidentally introduce a dynamic
+    // redirect from user-controlled input.
+    if (destination.startsWith('http') && !AUTH_SAFE_REDIRECT_DESTINATIONS.has(destination)) {
+      console.error('[AuthConfirm] Blocked unsafe redirect destination:', destination);
+      navigate('/reset-password', { replace: true });
+      return;
+    }
     if (destination.startsWith('http')) {
       window.location.replace(destination);
       return;

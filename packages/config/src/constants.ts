@@ -75,6 +75,56 @@ export function getPortalUrl(portal: keyof typeof DOMAINS): string {
   return `https://${DOMAINS[portal]}`;
 }
 
+/**
+ * Canonical auth redirect URLs — single source of truth for all password recovery flows.
+ *
+ * Rules:
+ * - NEVER construct redirectTo with window.location.origin in auth forms; use these constants.
+ * - All values must be listed in AUTH_SAFE_REDIRECT_DESTINATIONS to pass the allowlist guard.
+ * - Production URLs only. Dev/localhost flows use window.location.origin as a fallback
+ *   (must be allowlisted separately in the Supabase dashboard for local development).
+ */
+export const AUTH_URLS = {
+  advisor: {
+    origin: 'https://advisor.mpb.health',
+    resetPassword: 'https://advisor.mpb.health/reset-password',
+    login: 'https://advisor.mpb.health/login',
+  },
+  admin: {
+    origin: 'https://admin.mpb.health',
+    resetPassword: 'https://admin.mpb.health/reset-password',
+    login: 'https://admin.mpb.health/login',
+  },
+  crm: {
+    origin: 'https://crm.mpbhealth.com',
+    resetPassword: 'https://crm.mpbhealth.com/reset-password',
+    login: 'https://crm.mpbhealth.com/login',
+  },
+  member: {
+    origin: 'https://mpb.health',
+    resetPassword: 'https://mpb.health/reset-password',
+    login: 'https://mpb.health/login',
+    authConfirm: 'https://mpb.health/auth/confirm',
+  },
+} as const;
+
+/**
+ * Open-redirect allowlist.
+ * AuthConfirm and any code that acts on a redirectTo/next parameter must verify
+ * the destination is in this set before issuing a window.location.replace() or router redirect.
+ */
+export const AUTH_SAFE_REDIRECT_DESTINATIONS: ReadonlySet<string> = new Set([
+  AUTH_URLS.advisor.resetPassword,
+  AUTH_URLS.advisor.login,
+  AUTH_URLS.admin.resetPassword,
+  AUTH_URLS.admin.login,
+  AUTH_URLS.crm.resetPassword,
+  AUTH_URLS.crm.login,
+  AUTH_URLS.member.resetPassword,
+  AUTH_URLS.member.login,
+  AUTH_URLS.member.authConfirm,
+]);
+
 export const FEATURES = {
   // CRM Features
   CRM_AI_INSIGHTS: 'crm_ai_insights',

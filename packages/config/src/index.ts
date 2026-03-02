@@ -8,6 +8,8 @@ export {
   FEATURES, 
   DEV_PORTS, 
   PORTALS, 
+  AUTH_URLS,
+  AUTH_SAFE_REDIRECT_DESTINATIONS,
   getPortalUrl,
   type PortalKey,
   type PortalInfo,

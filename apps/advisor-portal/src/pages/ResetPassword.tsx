@@ -112,8 +112,14 @@ export default function ResetPassword() {
       setSuccess(true);
       toast.success('Password updated successfully!');
 
+      // Sign out to clear the PASSWORD_RECOVERY session so the user must
+      // re-authenticate via the login page. Without this, active session guards
+      // may silently redirect the user past /login after the password change.
+      await supabase.auth.signOut();
+
+      // Replace history entry so back-button cannot return to the reset form.
       setTimeout(() => {
-        navigate('/login');
+        navigate('/login?reset=1', { replace: true });
       }, 2000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to reset password';

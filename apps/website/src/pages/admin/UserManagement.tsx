@@ -35,6 +35,7 @@ import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { AUTH_URLS } from '@mpbhealth/config';
 import {
   userRolesService,
   type UserWithRoles,
@@ -201,10 +202,10 @@ const UserManagement: React.FC = () => {
   // exchange client-side. This prevents email security scanners (Defender, Proofpoint,
   // etc.) from consuming single-use tokens before the member clicks.
   const getResetRedirectUrl = (roles: UserRole[]): string => {
-    if (roles.includes('super_admin') || roles.includes('admin')) return 'https://admin.mpb.health/reset-password';
-    if (roles.includes('advisor')) return 'https://advisor.mpb.health/reset-password';
-    if (roles.includes('crm_user')) return 'https://crm.mpbhealth.com/reset-password';
-    return 'https://mpb.health/auth/confirm'; // member
+    if (roles.includes('super_admin') || roles.includes('admin')) return AUTH_URLS.admin.resetPassword;
+    if (roles.includes('advisor')) return AUTH_URLS.advisor.resetPassword;
+    if (roles.includes('crm_user')) return AUTH_URLS.crm.resetPassword;
+    return AUTH_URLS.member.authConfirm; // member
   };
 
   // Send password reset email

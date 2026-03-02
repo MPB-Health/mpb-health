@@ -8,7 +8,11 @@
    Advisor Portal - MPB Health Brand Blue Accent
    Brand palette: #0A4E8E, #0C71C3, #A4CC43, #E2EAF0, #0E2D41
    ============================================================================ */
-:root {
+
+/* Use `html` (same specificity as :root but declared later) so these values
+   always beat the dark --sidebar-bg from the imported theme-tokens.css,
+   regardless of whether dark mode is active. */
+html {
   --accent-50: 232 244 253;
   --accent-100: 209 233 251;
   --accent-200: 163 211 247;
@@ -20,6 +24,7 @@
   --accent-800: 10 78 142;
   --accent-900: 8 61 113;
 
+  /* Sidebar — always white with dark readable text */
   --sidebar-bg: 255 255 255;
   --sidebar-hover: 241 245 249;
   --sidebar-text: 51 65 85;
@@ -35,9 +40,9 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.dark {
-  /* Sidebar stays white in dark mode — the advisor portal always uses a
-     light sidebar so all nav text remains legible on a white background. */
+/* Dark mode: keep sidebar white — the advisor portal uses a light sidebar
+   in all themes so text always stays visible. */
+html.dark {
   --sidebar-bg: 255 255 255;
   --sidebar-hover: 241 245 249;
   --sidebar-text: 51 65 85;

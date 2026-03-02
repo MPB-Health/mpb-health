@@ -383,7 +383,7 @@ export default function Tickets() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
         </div>
-      ) : filteredTickets.length === 0 ? (
+      ) : tickets.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-neutral-200">
           <Headphones className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-neutral-900 mb-1">No tickets found</h3>

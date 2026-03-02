@@ -346,10 +346,16 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       >
         {filteredDocuments.length > 0 ? (
           filteredDocuments.map((doc) => {
-            const isPPTX = doc.file_url?.toLowerCase().match(/\.pptx?$/) !== null;
-            const isPDF = doc.file_url?.toLowerCase().endsWith('.pdf') === true;
+            const url = doc.file_url?.toLowerCase() || '';
+            const isPPTX = url.match(/\.pptx?$/) !== null;
+            const isPDF = url.endsWith('.pdf') === true;
             const isImage = /\.(png|jpe?g|gif|webp)$/i.test(doc.file_url || '');
-            const canPreview = isPPTX || isPDF || isImage;
+            const isSharePointPresentation =
+              (url.includes('sharepoint') || url.includes('onedrive')) &&
+              (url.includes('/:p:/') || url.includes('%3ap%3a'));
+            const isPresentationType = doc.content_type === 'presentation';
+            const canPreview =
+              isPPTX || isPDF || isImage || isSharePointPresentation || (isPresentationType && !!doc.file_url);
             const isExternalLink = !!doc.file_url;
 
             const handleClick = () => {

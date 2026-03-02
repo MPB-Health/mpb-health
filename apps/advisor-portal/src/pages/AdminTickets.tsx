@@ -327,13 +327,27 @@ export default function AdminTickets() {
             )}
 
             {/* Requester info */}
-            <div className="mt-3 flex items-center gap-2 text-sm text-neutral-500">
-              <User className="w-4 h-4" />
+            <div className="mt-3 flex items-center gap-2 flex-wrap text-sm text-neutral-500">
+              <User className="w-4 h-4 flex-shrink-0" />
               <span className="font-medium text-neutral-700">{ticket.requester_name}</span>
               {ticket.requester_email && (
                 <>
                   <span className="text-neutral-300">·</span>
                   <span>{ticket.requester_email}</span>
+                </>
+              )}
+              {ticket.requester_agent_id && (
+                <>
+                  <span className="text-neutral-300">·</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded">
+                    Agent ID: {ticket.requester_agent_id}
+                  </span>
+                </>
+              )}
+              {ticket.requester_company && (
+                <>
+                  <span className="text-neutral-300">·</span>
+                  <span className="text-neutral-600">{ticket.requester_company}</span>
                 </>
               )}
             </div>
@@ -557,7 +571,7 @@ export default function AdminTickets() {
                     )}
                   </div>
                   <h4 className="text-sm font-medium text-neutral-900 truncate">{ticket.subject}</h4>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className="text-xs text-neutral-500">
                       {ticket.requester_name}
                     </span>
@@ -565,6 +579,20 @@ export default function AdminTickets() {
                       <>
                         <span className="text-xs text-neutral-300">·</span>
                         <span className="text-xs text-neutral-400">{ticket.requester_email}</span>
+                      </>
+                    )}
+                    {ticket.requester_agent_id && (
+                      <>
+                        <span className="text-xs text-neutral-300">·</span>
+                        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                          ID: {ticket.requester_agent_id}
+                        </span>
+                      </>
+                    )}
+                    {ticket.requester_company && (
+                      <>
+                        <span className="text-xs text-neutral-300">·</span>
+                        <span className="text-xs text-neutral-500">{ticket.requester_company}</span>
                       </>
                     )}
                     <span className="text-xs text-neutral-300">·</span>

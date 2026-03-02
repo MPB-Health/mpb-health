@@ -2,8 +2,8 @@
 // Service Worker for MPB Health Advisor Portal PWA
 // ============================================================================
 
-const CACHE_NAME = 'advisor-portal-v3';
-const RUNTIME_CACHE = 'advisor-runtime-v3';
+const CACHE_NAME = 'advisor-portal-v4';
+const RUNTIME_CACHE = 'advisor-runtime-v4';
 let hasBroadcastedReload = false;
 
 // Files to cache on install (app shell)

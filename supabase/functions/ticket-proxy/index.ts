@@ -185,10 +185,13 @@ async function listAllTickets(
   if (requesterIds.length > 0) {
     const { data: profiles } = await itstsAdmin
       .from("profiles")
-      .select("id, full_name, email")
+      .select("id, full_name, email, agent_id, company_name")
       .in("id", requesterIds);
     requesterMap = Object.fromEntries(
-      (profiles || []).map((p: { id: string; full_name: string; email: string }) => [p.id, { full_name: p.full_name, email: p.email }]),
+      (profiles || []).map((p: { id: string; full_name: string; email: string; agent_id?: string; company_name?: string }) => [
+        p.id,
+        { full_name: p.full_name, email: p.email, agent_id: p.agent_id || null, company_name: p.company_name || null },
+      ]),
     );
   }
 
@@ -196,6 +199,8 @@ async function listAllTickets(
     ...t,
     requester_name: (requesterMap[t.requester_id as string]?.full_name) || "Unknown",
     requester_email: (requesterMap[t.requester_id as string]?.email) || "",
+    requester_agent_id: (requesterMap[t.requester_id as string]?.agent_id) ?? null,
+    requester_company: (requesterMap[t.requester_id as string]?.company_name) ?? null,
   }));
 
   return { tickets: enriched, total: count || 0, page: opts.page, per_page: opts.perPage };
@@ -216,15 +221,19 @@ async function getTicketDetailAdmin(
   // Requester info
   let requesterName = "Unknown";
   let requesterEmail = "";
+  let requesterAgentId: string | null = null;
+  let requesterCompany: string | null = null;
   if (ticket.requester_id) {
     const { data: profile } = await itstsAdmin
       .from("profiles")
-      .select("full_name, email")
+      .select("full_name, email, agent_id, company_name")
       .eq("id", ticket.requester_id)
       .maybeSingle();
     if (profile) {
       requesterName = profile.full_name;
       requesterEmail = profile.email;
+      requesterAgentId = profile.agent_id || null;
+      requesterCompany = profile.company_name || null;
     }
   }
 
@@ -251,7 +260,7 @@ async function getTicketDetailAdmin(
   }));
 
   return {
-    ticket: { ...ticket, requester_name: requesterName, requester_email: requesterEmail },
+    ticket: { ...ticket, requester_name: requesterName, requester_email: requesterEmail, requester_agent_id: requesterAgentId, requester_company: requesterCompany },
     comments: enrichedComments,
   };
 }
@@ -304,7 +313,35 @@ async function addComment(
     .update({ updated_at: new Date().toISOString() })
     .eq("id", ticketId);
 
-  return { ok: true };
+  // Fetch requester info so ticket-proxy can fire a notification
+  const { data: ticketMeta } = await itstsAdmin
+    .from("tickets")
+    .select("requester_id, ticket_number, subject, priority, status")
+    .eq("id", ticketId)
+    .maybeSingle();
+  let notifEmail: string | null = null;
+  let notifName = "Advisor";
+  if (ticketMeta?.requester_id) {
+    const { data: rp } = await itstsAdmin
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", ticketMeta.requester_id)
+      .maybeSingle();
+    notifEmail = rp?.email || null;
+    notifName = rp?.full_name || "Advisor";
+  }
+
+  return {
+    ok: true,
+    _notif: {
+      requester_email: notifEmail,
+      requester_name: notifName,
+      ticket_number: ticketMeta?.ticket_number,
+      subject: ticketMeta?.subject,
+      priority: ticketMeta?.priority,
+      status: ticketMeta?.status,
+    },
+  };
 }
 
 async function createTicket(
@@ -372,6 +409,13 @@ async function updateTicket(
 ) {
   if (!opts.status && !opts.priority) throw new Error("At least one of status or priority is required");
 
+  // Fetch current state before updating (captures old status/priority + requester for notification)
+  const { data: existing } = await itstsAdmin
+    .from("tickets")
+    .select("status, priority, requester_id, ticket_number, subject")
+    .eq("id", ticketId)
+    .maybeSingle();
+
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (opts.status) updates.status = opts.status;
   if (opts.priority) updates.priority = opts.priority;
@@ -382,7 +426,31 @@ async function updateTicket(
     .eq("id", ticketId);
 
   if (error) throw error;
-  return { ok: true };
+
+  // Fetch requester for notification
+  let notifEmail: string | null = null;
+  let notifName = "Advisor";
+  if (existing?.requester_id) {
+    const { data: rp } = await itstsAdmin
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", existing.requester_id)
+      .maybeSingle();
+    notifEmail = rp?.email || null;
+    notifName = rp?.full_name || "Advisor";
+  }
+
+  return {
+    ok: true,
+    _notif: {
+      old_status: existing?.status || null,
+      old_priority: existing?.priority || null,
+      requester_email: notifEmail,
+      requester_name: notifName,
+      ticket_number: existing?.ticket_number,
+      subject: existing?.subject,
+    },
+  };
 }
 
 async function getCategories(itstsAdmin: ReturnType<typeof createClient>) {
@@ -398,6 +466,21 @@ async function getCategories(itstsAdmin: ReturnType<typeof createClient>) {
   )].sort() as string[];
 
   return { categories };
+}
+
+// ── Email notification (fire-and-forget) ──────────────────────────────────────
+function fireNotification(payload: Record<string, unknown>): void {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey) return;
+  fetch(`${supabaseUrl}/functions/v1/send-ticket-notification`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${serviceRoleKey}`,
+    },
+    body: JSON.stringify(payload),
+  }).catch(() => { /* fire-and-forget — never block the response */ });
 }
 
 Deno.serve(async (req: Request) => {
@@ -543,6 +626,22 @@ Deno.serve(async (req: Request) => {
           );
         }
         result = await addComment(itstsAdmin, body.ticket_id, body.content.trim(), user.email);
+        if (result._notif?.requester_email) {
+          fireNotification({
+            event: "staff_replied",
+            ticket_id: body.ticket_id!,
+            ticket_number: result._notif.ticket_number,
+            subject: result._notif.subject,
+            priority: result._notif.priority,
+            status: result._notif.status,
+            advisor_email: result._notif.requester_email,
+            advisor_name: result._notif.requester_name,
+            agent_id: null,
+            company_name: null,
+            comment: body.content?.slice(0, 500),
+            actor_name: user.email,
+          });
+        }
         break;
 
       // ── Advisor write actions ──
@@ -559,6 +658,26 @@ Deno.serve(async (req: Request) => {
           category: body.category,
           priority: body.priority,
         });
+        {
+          const { data: ap } = await itstsAdmin
+            .from("profiles")
+            .select("full_name, agent_id, company_name")
+            .eq("id", itstsUserId!)
+            .maybeSingle();
+          fireNotification({
+            event: "created",
+            ticket_id: result.ticket_id,
+            ticket_number: result.ticket_number,
+            subject: body.subject,
+            priority: body.priority || "medium",
+            status: "new",
+            category: body.category || null,
+            advisor_email: user.email,
+            advisor_name: ap?.full_name || user.email,
+            agent_id: ap?.agent_id || null,
+            company_name: ap?.company_name || null,
+          });
+        }
         break;
       case "reply":
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
@@ -574,6 +693,25 @@ Deno.serve(async (req: Request) => {
           );
         }
         result = await replyToTicket(itstsAdmin, itstsUserId!, body.ticket_id, body.content);
+        {
+          const [{ data: rTicket }, { data: rAp }] = await Promise.all([
+            itstsAdmin.from("tickets").select("ticket_number, subject, priority, status").eq("id", body.ticket_id!).maybeSingle(),
+            itstsAdmin.from("profiles").select("full_name, agent_id, company_name").eq("id", itstsUserId!).maybeSingle(),
+          ]);
+          fireNotification({
+            event: "advisor_replied",
+            ticket_id: body.ticket_id!,
+            ticket_number: rTicket?.ticket_number,
+            subject: rTicket?.subject,
+            priority: rTicket?.priority,
+            status: rTicket?.status,
+            advisor_email: user.email,
+            advisor_name: rAp?.full_name || user.email,
+            agent_id: rAp?.agent_id || null,
+            company_name: rAp?.company_name || null,
+            comment: body.content?.slice(0, 500),
+          });
+        }
         break;
       case "get_categories":
         result = await getCategories(itstsAdmin);
@@ -591,6 +729,23 @@ Deno.serve(async (req: Request) => {
           status: body.status,
           priority: body.priority,
         });
+        if (result._notif?.requester_email) {
+          fireNotification({
+            event: "status_changed",
+            ticket_id: body.ticket_id!,
+            ticket_number: result._notif.ticket_number,
+            subject: result._notif.subject,
+            advisor_email: result._notif.requester_email,
+            advisor_name: result._notif.requester_name,
+            agent_id: null,
+            company_name: null,
+            old_status: result._notif.old_status,
+            new_status: body.status || null,
+            old_priority: result._notif.old_priority,
+            new_priority: body.priority || null,
+            actor_name: user.email,
+          });
+        }
         break;
       case "create_for_advisor": {
         if (!body.advisor_email) {
@@ -618,6 +773,27 @@ Deno.serve(async (req: Request) => {
           category: body.category,
           priority: body.priority,
         });
+        {
+          const { data: caAp } = await itstsAdmin
+            .from("profiles")
+            .select("full_name, agent_id, company_name")
+            .eq("id", advisorId)
+            .maybeSingle();
+          fireNotification({
+            event: "created_for_advisor",
+            ticket_id: result.ticket_id,
+            ticket_number: result.ticket_number,
+            subject: body.subject!,
+            priority: body.priority || "medium",
+            status: "new",
+            category: body.category || null,
+            advisor_email: body.advisor_email!,
+            advisor_name: caAp?.full_name || body.advisor_email!,
+            agent_id: caAp?.agent_id || null,
+            company_name: caAp?.company_name || null,
+            actor_name: user.email,
+          });
+        }
         break;
       }
       default:

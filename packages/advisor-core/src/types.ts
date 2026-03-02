@@ -139,7 +139,7 @@ export interface SOPDocument {
   description: string | null;
   category: string;
   content: string;
-  content_type: 'markdown' | 'html' | 'pdf';
+  content_type: 'markdown' | 'html' | 'pdf' | 'presentation';
   file_url: string | null;
   image_url: string | null;
   version: string;

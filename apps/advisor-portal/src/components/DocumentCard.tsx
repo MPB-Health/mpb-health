@@ -19,7 +19,6 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
   const isSharePointPresentation =
     (url.includes('sharepoint') || url.includes('onedrive')) &&
     (url.includes('/:p:/') || url.includes('%3ap%3a'));
-  const isPresentationType = doc.content_type === 'presentation';
   const isExternalLink = !!doc.file_url;
 
   return (
@@ -68,7 +67,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
         <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
           <span className="text-sm text-th-text-tertiary">{doc.category}</span>
           <span className="text-sm text-th-accent-600 font-medium flex items-center gap-1">
-            {isPPTX || isSharePointPresentation || (isPresentationType && isExternalLink) ? (
+            {isPPTX || isSharePointPresentation ? (
               <>
                 Preview <Presentation className="w-3.5 h-3.5" />
               </>

@@ -107,10 +107,12 @@ export interface ListTicketsOptions {
 export interface AdminTicket extends Ticket {
   requester_name: string;
   requester_email: string;
+  requester_agent_id?: string | null;
+  requester_company?: string | null;
 }
 
 export interface AdminTicketDetail {
-  ticket: Ticket & { requester_name: string; requester_email: string };
+  ticket: Ticket & { requester_name: string; requester_email: string; requester_agent_id?: string | null; requester_company?: string | null };
   comments: TicketComment[];
 }
 

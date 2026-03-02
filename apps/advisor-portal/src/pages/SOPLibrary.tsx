@@ -353,9 +353,8 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
             const isSharePointPresentation =
               (url.includes('sharepoint') || url.includes('onedrive')) &&
               (url.includes('/:p:/') || url.includes('%3ap%3a'));
-            const isPresentationType = doc.content_type === 'presentation';
             const canPreview =
-              isPPTX || isPDF || isImage || isSharePointPresentation || (isPresentationType && !!doc.file_url);
+              isPPTX || isPDF || isImage || isSharePointPresentation;
             const isExternalLink = !!doc.file_url;
 
             const handleClick = () => {

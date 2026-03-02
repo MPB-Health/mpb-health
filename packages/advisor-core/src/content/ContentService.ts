@@ -47,13 +47,45 @@ export class ContentService {
 
   // Get SOP categories
   async getSOPCategories(): Promise<SOPCategory[]> {
-    const { data, error } = await supabase
+    const { data: categories, error: categoryError } = await supabase
       .from('sop_categories')
-      .select('*, document_count:sop_documents(count)')
+      .select('*')
       .order('order_index', { ascending: true });
 
-    if (error) throw error;
-    return data || [];
+    if (categoryError) throw categoryError;
+    if (!categories || categories.length === 0) return [];
+
+    // Some environments do not have a PostgREST relationship between
+    // sop_categories and sop_documents, which makes relation-count selects
+    // fail with 400. Compute counts client-side from published SOPs instead.
+    const { data: documents, error: docsError } = await supabase
+      .from('sop_documents')
+      .select('category')
+      .eq('is_published', true);
+
+    if (docsError) {
+      return categories.map((category) => ({ ...category, document_count: 0 }));
+    }
+
+    const countsBySlug: Record<string, number> = {};
+    const normalize = (value: string) =>
+      value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    for (const doc of documents || []) {
+      const category = (doc as { category?: string | null }).category;
+      if (!category) continue;
+      const key = normalize(category);
+      countsBySlug[key] = (countsBySlug[key] || 0) + 1;
+    }
+
+    return categories.map((category) => ({
+      ...category,
+      document_count: countsBySlug[category.slug] || 0,
+    }));
   }
 
   // Track document view

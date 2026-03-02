@@ -6,9 +6,19 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "build/**"],
       "env": [
+        "ENABLE_EXPERIMENTAL_COREPACK",
+        "TURBO_FORCE",
         "VITE_SUPABASE_URL",
         "VITE_SUPABASE_ANON_KEY",
-        "VITE_GA_MEASUREMENT_ID"
+        "VITE_GA_MEASUREMENT_ID",
+        "VITE_COGNITO_FORMS_API_KEY",
+        "VITE_COGNITO_QUOTE_FORM_ID",
+        "VITE_OPEN_ENROLLMENT_START",
+        "VITE_OPEN_ENROLLMENT_END",
+        "VITE_OPEN_ENROLLMENT_ENABLED",
+        "VITE_HOTJAR_VERSION",
+        "VITE_MAILCHIMP_AUDIENCE_ID",
+        "VITE_MAILCHIMP_SERVER_PREFIX"
       ]
     },
     "dev": {

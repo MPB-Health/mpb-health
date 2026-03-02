@@ -6,12 +6,26 @@ import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("ticket-proxy");
 
-type ProxyAction = "list" | "detail" | "stats" | "list_all" | "detail_admin" | "stats_all" | "add_comment";
+type ProxyAction =
+  | "list"
+  | "detail"
+  | "stats"
+  | "list_all"
+  | "detail_admin"
+  | "stats_all"
+  | "add_comment"
+  | "create"
+  | "reply"
+  | "update_ticket"
+  | "get_categories"
+  | "create_for_advisor";
 
-const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment"];
+const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor"];
+const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_COMMENT_LENGTH = 10_000;
+const MAX_SUBJECT_LENGTH = 255;
 
 /** Strip characters that could manipulate PostgREST filter syntax */
 function sanitizeSearch(raw: string): string {
@@ -21,6 +35,10 @@ function sanitizeSearch(raw: string): string {
 interface ProxyRequest {
   action: ProxyAction;
   ticket_id?: string;
+  subject?: string;
+  description?: string;
+  category?: string;
+  advisor_email?: string;
   status?: string;
   priority?: string;
   search?: string;

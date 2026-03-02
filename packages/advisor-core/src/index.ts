@@ -14,4 +14,4 @@ export { EnrollmentService, enrollmentService, type EnrollmentLink } from './enr
 export { PortalSettingsService, portalSettingsService, type PortalSetting } from './settings/PortalSettingsService';
 export { AnnouncementService, announcementService, type Announcement } from './announcements/AnnouncementService';
 export type { AssignedLeadView, LeadDetail, LeadActivity } from './leads/types';
-export { TicketService, ticketService, type Ticket, type TicketDetail, type TicketStats, type TicketComment, type TicketStatus, type TicketPriority, type TicketListResult, type ListTicketsOptions, type AdminTicket, type AdminTicketDetail, type AdminTicketListResult, type AdminListTicketsOptions } from './support/TicketService';
+export { TicketService, ticketService, type Ticket, type TicketDetail, type TicketStats, type TicketComment, type TicketStatus, type TicketPriority, type TicketListResult, type ListTicketsOptions, type AdminTicket, type AdminTicketDetail, type AdminTicketListResult, type AdminListTicketsOptions, type CreateTicketOptions, type CreateTicketResult, type UpdateTicketOptions } from './support/TicketService';

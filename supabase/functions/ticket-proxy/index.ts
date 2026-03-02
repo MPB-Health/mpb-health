@@ -50,7 +50,7 @@ async function getItstsUserId(itstsAdmin: ReturnType<typeof createClient>, email
 async function listTickets(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
-  opts: { status?: string; priority?: string; page: number; perPage: number },
+  opts: { status?: string; priority?: string; search?: string; page: number; perPage: number },
 ) {
   let query = itstsAdmin
     .from("tickets")
@@ -61,6 +61,12 @@ async function listTickets(
 
   if (opts.status) query = query.eq("status", opts.status);
   if (opts.priority) query = query.eq("priority", opts.priority);
+  if (opts.search) {
+    const safe = sanitizeSearch(opts.search);
+    if (safe) {
+      query = query.or(`subject.ilike.%${safe}%,ticket_number.eq.${parseInt(safe) || 0}`);
+    }
+  }
 
   const { data, count, error } = await query;
   if (error) throw error;
@@ -222,12 +228,11 @@ async function getTicketDetailAdmin(
     }
   }
 
-  // Comments (non-internal)
+  // All comments including internal notes (admin sees everything)
   const { data: comments } = await itstsAdmin
     .from("ticket_comments")
     .select("id, content, is_internal, created_at, author_id")
     .eq("ticket_id", ticketId)
-    .eq("is_internal", false)
     .order("created_at", { ascending: true });
 
   const authorIds = [...new Set((comments || []).map((c: { author_id: string }) => c.author_id).filter(Boolean))];
@@ -302,6 +307,99 @@ async function addComment(
   return { ok: true };
 }
 
+async function createTicket(
+  itstsAdmin: ReturnType<typeof createClient>,
+  requesterId: string,
+  opts: { subject: string; description?: string; category?: string; priority?: string },
+) {
+  if (!opts.subject?.trim()) throw new Error("Subject is required");
+  const { data, error } = await itstsAdmin
+    .from("tickets")
+    .insert({
+      subject: opts.subject.trim().slice(0, MAX_SUBJECT_LENGTH),
+      description: opts.description?.trim() || null,
+      category: opts.category?.trim() || null,
+      priority: opts.priority || "medium",
+      status: "new",
+      requester_id: requesterId,
+    })
+    .select("id, ticket_number")
+    .single();
+
+  if (error) throw error;
+  return { ticket_id: data.id, ticket_number: data.ticket_number };
+}
+
+async function replyToTicket(
+  itstsAdmin: ReturnType<typeof createClient>,
+  advisorId: string,
+  ticketId: string,
+  content: string,
+) {
+  // Verify the ticket belongs to this advisor before allowing a reply
+  const { data: ticket, error: ticketErr } = await itstsAdmin
+    .from("tickets")
+    .select("id")
+    .eq("id", ticketId)
+    .eq("requester_id", advisorId)
+    .maybeSingle();
+
+  if (ticketErr || !ticket) throw new Error("Ticket not found or access denied");
+
+  const { error } = await itstsAdmin
+    .from("ticket_comments")
+    .insert({
+      ticket_id: ticketId,
+      content: content.trim(),
+      author_id: advisorId,
+      is_internal: false,
+    });
+
+  if (error) throw error;
+
+  await itstsAdmin
+    .from("tickets")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", ticketId);
+
+  return { ok: true };
+}
+
+async function updateTicket(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketId: string,
+  opts: { status?: string; priority?: string },
+) {
+  if (!opts.status && !opts.priority) throw new Error("At least one of status or priority is required");
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (opts.status) updates.status = opts.status;
+  if (opts.priority) updates.priority = opts.priority;
+
+  const { error } = await itstsAdmin
+    .from("tickets")
+    .update(updates)
+    .eq("id", ticketId);
+
+  if (error) throw error;
+  return { ok: true };
+}
+
+async function getCategories(itstsAdmin: ReturnType<typeof createClient>) {
+  const { data, error } = await itstsAdmin
+    .from("tickets")
+    .select("category")
+    .not("category", "is", null);
+
+  if (error) throw error;
+
+  const categories = [...new Set(
+    (data || []).map((t: { category: string }) => t.category).filter((c: string) => c?.trim()),
+  )].sort() as string[];
+
+  return { categories };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
@@ -359,9 +457,9 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Non-admin actions need the user's ITSTS profile
+    // Non-admin actions need the user's ITSTS profile (except category lookup)
     let itstsUserId: string | null = null;
-    if (!ADMIN_ACTIONS.includes(action)) {
+    if (!ADMIN_ACTIONS.includes(action) && !NO_USER_LOOKUP_ACTIONS.includes(action)) {
       itstsUserId = await getItstsUserId(itstsAdmin, user.email);
       if (!itstsUserId) {
         // For read-only actions, return empty results instead of blocking
@@ -391,6 +489,7 @@ Deno.serve(async (req: Request) => {
         result = await listTickets(itstsAdmin, itstsUserId!, {
           status: body.status,
           priority: body.priority,
+          search: body.search,
           page: body.page || 1,
           perPage: body.per_page || 20,
         });
@@ -446,6 +545,81 @@ Deno.serve(async (req: Request) => {
         result = await addComment(itstsAdmin, body.ticket_id, body.content.trim(), user.email);
         break;
 
+      // ── Advisor write actions ──
+      case "create":
+        if (!body.subject?.trim()) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Subject is required" }),
+            { status: 400, headers },
+          );
+        }
+        result = await createTicket(itstsAdmin, itstsUserId!, {
+          subject: body.subject,
+          description: body.description,
+          category: body.category,
+          priority: body.priority,
+        });
+        break;
+      case "reply":
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Valid ticket_id required" }),
+            { status: 400, headers },
+          );
+        }
+        if (!body.content || body.content.trim().length === 0 || body.content.length > MAX_COMMENT_LENGTH) {
+          return new Response(
+            JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            { status: 400, headers },
+          );
+        }
+        result = await replyToTicket(itstsAdmin, itstsUserId!, body.ticket_id, body.content);
+        break;
+      case "get_categories":
+        result = await getCategories(itstsAdmin);
+        break;
+
+      // ── Admin write actions ──
+      case "update_ticket":
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Valid ticket_id required" }),
+            { status: 400, headers },
+          );
+        }
+        result = await updateTicket(itstsAdmin, body.ticket_id, {
+          status: body.status,
+          priority: body.priority,
+        });
+        break;
+      case "create_for_advisor": {
+        if (!body.advisor_email) {
+          return new Response(
+            JSON.stringify({ success: false, error: "advisor_email is required" }),
+            { status: 400, headers },
+          );
+        }
+        if (!body.subject?.trim()) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Subject is required" }),
+            { status: 400, headers },
+          );
+        }
+        const advisorId = await getItstsUserId(itstsAdmin, body.advisor_email);
+        if (!advisorId) {
+          return new Response(
+            JSON.stringify({ success: false, error: `No support account found for ${body.advisor_email}` }),
+            { status: 404, headers },
+          );
+        }
+        result = await createTicket(itstsAdmin, advisorId, {
+          subject: body.subject,
+          description: body.description,
+          category: body.category,
+          priority: body.priority,
+        });
+        break;
+      }
       default:
         return new Response(
           JSON.stringify({ success: false, error: `Unknown action: ${action}` }),

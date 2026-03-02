@@ -16,6 +16,9 @@ import {
   XCircle,
   Send,
   User,
+  PlusCircle,
+  X,
+  Lock,
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import {
@@ -28,6 +31,7 @@ import {
 } from '@mpbhealth/advisor-core';
 import { isAdmin } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import toast from 'react-hot-toast';
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
@@ -71,6 +75,21 @@ export default function AdminTickets() {
   const [replyContent, setReplyContent] = useState('');
   const [replySending, setReplySending] = useState(false);
   const [replyError, setReplyError] = useState('');
+
+  // Ticket status / priority update
+  const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+
+  // Create ticket on behalf of advisor
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createEmail, setCreateEmail] = useState('');
+  const [createSubject, setCreateSubject] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
+  const [createCategory, setCreateCategory] = useState('');
+  const [createPriority, setCreatePriority] = useState<TicketPriority>('medium');
+  const [createCategories, setCreateCategories] = useState<string[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   // Role check
   useEffect(() => {
@@ -125,6 +144,13 @@ export default function AdminTickets() {
     if (adminCheck) loadStats();
   }, [adminCheck, loadStats]);
 
+  // Pre-load categories for the create modal
+  useEffect(() => {
+    if (adminCheck) {
+      ticketService.getCategories().then(setCreateCategories).catch(() => {});
+    }
+  }, [adminCheck]);
+
   const openTicketDetail = async (ticketId: string) => {
     setDetailLoading(true);
     try {
@@ -153,6 +179,70 @@ export default function AdminTickets() {
       setReplyError(msg);
     } finally {
       setReplySending(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: TicketStatus) => {
+    if (!selectedTicket) return;
+    setUpdating(true);
+    setUpdateError('');
+    try {
+      await ticketService.updateTicket(selectedTicket.ticket.id, { status: newStatus });
+      const detail = await ticketService.getTicketDetailAdmin(selectedTicket.ticket.id);
+      setSelectedTicket(detail);
+      loadTickets();
+      toast.success('Status updated');
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : 'Failed to update status');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handlePriorityChange = async (newPriority: TicketPriority) => {
+    if (!selectedTicket) return;
+    setUpdating(true);
+    setUpdateError('');
+    try {
+      await ticketService.updateTicket(selectedTicket.ticket.id, { priority: newPriority });
+      const detail = await ticketService.getTicketDetailAdmin(selectedTicket.ticket.id);
+      setSelectedTicket(detail);
+      loadTickets();
+      toast.success('Priority updated');
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : 'Failed to update priority');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleCreateTicket = async () => {
+    if (!createEmail.trim() || !createSubject.trim() || !createDescription.trim()) {
+      setCreateError('Email, subject, and description are required.');
+      return;
+    }
+    setCreating(true);
+    setCreateError('');
+    try {
+      const result = await ticketService.createTicketForAdvisor(createEmail.trim(), {
+        subject: createSubject.trim(),
+        description: createDescription.trim(),
+        category: createCategory || undefined,
+        priority: createPriority,
+      });
+      toast.success(`Ticket #${result.ticket_number} created!`);
+      setShowCreateModal(false);
+      setCreateEmail('');
+      setCreateSubject('');
+      setCreateDescription('');
+      setCreateCategory('');
+      setCreatePriority('medium');
+      loadTickets();
+      loadStats();
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Failed to create ticket');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -190,16 +280,10 @@ export default function AdminTickets() {
 
         <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
           <div className="p-6 border-b border-neutral-100">
-            <div className="flex items-start justify-between gap-4">
-              <div>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-neutral-500">#{ticket.ticket_number}</span>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>
-                    {sc.icon} {sc.label}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${pc.color}`}>
-                    {pc.label}
-                  </span>
                 </div>
                 <h2 className="text-xl font-semibold text-neutral-900">{ticket.subject}</h2>
                 {ticket.category && (
@@ -208,7 +292,39 @@ export default function AdminTickets() {
                   </span>
                 )}
               </div>
+              {/* Status & Priority controls */}
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={ticket.status}
+                  onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
+                  disabled={updating}
+                  className="px-3 py-1.5 border border-neutral-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                >
+                  <option value="new">New</option>
+                  <option value="open">Open</option>
+                  <option value="pending">Pending</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <select
+                  value={ticket.priority}
+                  onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
+                  disabled={updating}
+                  className="px-3 py-1.5 border border-neutral-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+                {updating && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+              </div>
             </div>
+            {updateError && (
+              <div className="flex items-center gap-2 mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" /><span>{updateError}</span>
+              </div>
+            )}
 
             {/* Requester info */}
             <div className="mt-3 flex items-center gap-2 text-sm text-neutral-500">
@@ -241,15 +357,22 @@ export default function AdminTickets() {
             ) : (
               <div className="space-y-4">
                 {comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium text-neutral-600">
-                        {comment.author_name.charAt(0).toUpperCase()}
-                      </span>
+                  <div
+                    key={comment.id}
+                    className={`flex gap-3 rounded-lg p-2 -mx-2 ${comment.is_internal ? 'bg-amber-50 border border-amber-200' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${comment.is_internal ? 'bg-amber-200' : 'bg-neutral-200'}`}>
+                      {comment.is_internal
+                        ? <Lock className="w-3.5 h-3.5 text-amber-700" />
+                        : <span className="text-xs font-medium text-neutral-600">{comment.author_name.charAt(0).toUpperCase()}</span>
+                      }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-sm font-medium text-neutral-900">{comment.author_name}</span>
+                        {comment.is_internal && (
+                          <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">Internal Note</span>
+                        )}
                         <span className="text-xs text-neutral-400">
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </span>
@@ -310,6 +433,15 @@ export default function AdminTickets() {
         title="Ticket Management"
         subtitle="View and manage all support tickets across the system"
         icon={<ShieldCheck className="w-6 h-6" />}
+        actions={
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Create Ticket
+          </button>
+        }
       />
 
       {/* Stats */}
@@ -472,6 +604,109 @@ export default function AdminTickets() {
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Create Ticket Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-neutral-100">
+              <h2 className="text-lg font-semibold text-neutral-900">Create Ticket for Advisor</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-neutral-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Advisor Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  placeholder="advisor@example.com"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Subject <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={createSubject}
+                  onChange={(e) => setCreateSubject(e.target.value.slice(0, 255))}
+                  placeholder="Brief summary of the issue"
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Category</label>
+                  <select
+                    value={createCategory}
+                    onChange={(e) => setCreateCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {createCategories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
+                  <select
+                    value={createPriority}
+                    onChange={(e) => setCreatePriority(e.target.value as 'low' | 'medium' | 'high' | 'urgent')}
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={createDescription}
+                  onChange={(e) => setCreateDescription(e.target.value)}
+                  placeholder="Detailed description of the issue..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                />
+              </div>
+              {createError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {createError}
+                </p>
+              )}
+            </div>
+            <div className="p-6 border-t border-neutral-100 flex justify-end gap-3">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateTicket}
+                disabled={creating}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              >
+                {creating ? 'Creating…' : 'Create Ticket'}
+              </button>
+            </div>
           </div>
         </div>
       )}

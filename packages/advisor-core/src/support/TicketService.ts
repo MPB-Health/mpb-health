@@ -99,6 +99,7 @@ export interface TicketListResult {
 export interface ListTicketsOptions {
   status?: TicketStatus;
   priority?: TicketPriority;
+  search?: string;
   page?: number;
   perPage?: number;
 }
@@ -124,6 +125,23 @@ export interface AdminListTicketsOptions extends ListTicketsOptions {
   search?: string;
 }
 
+export interface CreateTicketOptions {
+  subject: string;
+  description?: string;
+  category?: string;
+  priority?: TicketPriority;
+}
+
+export interface CreateTicketResult {
+  ticket_id: string;
+  ticket_number: number;
+}
+
+export interface UpdateTicketOptions {
+  status?: TicketStatus;
+  priority?: TicketPriority;
+}
+
 export class TicketService {
   async getMyTickets(opts: ListTicketsOptions = {}): Promise<TicketListResult> {
     const authHeader = await getResolvedAuthHeader();
@@ -136,6 +154,7 @@ export class TicketService {
         action: 'list',
         status: opts.status,
         priority: opts.priority,
+        search: opts.search,
         page: opts.page || 1,
         per_page: opts.perPage || 20,
       },
@@ -266,6 +285,90 @@ export class TicketService {
 
     if (error) throw new Error(await extractFunctionError(error));
     if (!data?.success) throw new Error((data as any)?.error || 'Failed to add comment');
+  }
+
+  // ── Advisor write methods ──────────────────────────────────────────────────────
+
+  async getCategories(): Promise<string[]> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) return [];
+
+    const { data, error } = await supabase.functions.invoke<{ success: boolean; categories: string[] }>('ticket-proxy', {
+      body: { action: 'get_categories' },
+      headers: authHeader,
+    });
+
+    if (error) return [];
+    return data?.categories ?? [];
+  }
+
+  async createTicket(opts: CreateTicketOptions): Promise<CreateTicketResult> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase.functions.invoke<CreateTicketResult & { success: boolean }>('ticket-proxy', {
+      body: {
+        action: 'create',
+        subject: opts.subject,
+        description: opts.description,
+        category: opts.category,
+        priority: opts.priority,
+      },
+      headers: authHeader,
+    });
+
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to create ticket');
+    return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
+  }
+
+  async replyToTicket(ticketId: string, content: string): Promise<void> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase.functions.invoke<{ success: boolean }>('ticket-proxy', {
+      body: { action: 'reply', ticket_id: ticketId, content },
+      headers: authHeader,
+    });
+
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to send reply');
+  }
+
+  // ── Admin write methods ────────────────────────────────────────────────────
+
+  async updateTicket(ticketId: string, opts: UpdateTicketOptions): Promise<void> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase.functions.invoke<{ success: boolean }>('ticket-proxy', {
+      body: { action: 'update_ticket', ticket_id: ticketId, status: opts.status, priority: opts.priority },
+      headers: authHeader,
+    });
+
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to update ticket');
+  }
+
+  async createTicketForAdvisor(advisorEmail: string, opts: CreateTicketOptions): Promise<CreateTicketResult> {
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase.functions.invoke<CreateTicketResult & { success: boolean }>('ticket-proxy', {
+      body: {
+        action: 'create_for_advisor',
+        advisor_email: advisorEmail,
+        subject: opts.subject,
+        description: opts.description,
+        category: opts.category,
+        priority: opts.priority,
+      },
+      headers: authHeader,
+    });
+
+    if (error) throw new Error(await extractFunctionError(error));
+    if (!data?.success) throw new Error((data as any)?.error || 'Failed to create ticket');
+    return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
   }
 }
 

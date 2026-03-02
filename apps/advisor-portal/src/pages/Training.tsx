@@ -19,7 +19,6 @@ import {
   Users,
   Briefcase,
   Heart,
-  Globe,
   ClipboardList,
   ArrowRight,
   Download,
@@ -69,15 +68,6 @@ const mpbCourseTopics: Topic[] = [
           'At MPB Health, we believe in a different approach to healthcare. As part of MPowering Benefits Inc., we\'re on a mission to improve lives by offering innovative alternatives to traditional health insurance.\n\nOur dedicated team is passionate about helping individuals achieve their unique health goals. We provide a diverse range of services to address your specific needs, whether it\'s physical health, or mental well-being, we are here to empower you to lead a healthier and happier life.\n\n**More than just solutions, we offer knowledge and support.**\n\nWe go beyond simply providing services. Our commitment extends to offering educational resources and ongoing support for our members. Our goal is to equip you with the knowledge and tools you need to make informed decisions about your health journey. By empowering you with this knowledge, we hope to foster long-term well-being and a healthier you.',
       },
       {
-        id: 'mission',
-        title: 'Mission',
-        type: 'video',
-        duration: '00:38',
-        vimeoId: '1042339977',
-        content:
-          'Our mission is to empower people to live healthier and happier lives with innovative, comprehensive healthcare solutions. We help our members make informed decisions about their healthcare by providing accessible, affordable, and personalized options.',
-      },
-      {
         id: 'vision-values',
         title: 'Vision & Values',
         type: 'text',
@@ -111,12 +101,6 @@ const mpbCourseTopics: Topic[] = [
         type: 'text',
         content:
           'As a Healthcare Advisor, you can assist potential members in selecting the ideal plan by employing a series of pre-qualifying questions. For instance:\n\n\u2022 What type of plan are you currently enrolled in?\n\u2022 What aspects of your current plan do you find favorable?\n\u2022 Are there any aspects you are dissatisfied with?\n\u2022 How much are you currently paying for your plan?\n\u2022 Do you have any pre-existing medical conditions?\n\u2022 Are you taking any prescription medications?\n\u2022 Who do you intend to include in your coverage?\n\nBy actively listening to their responses, you can discern their unique needs and preferences, and recommend the most suitable plan. This approach eliminates confusion, simplifies the sales process, and enhances customer satisfaction.',
-      },
-      {
-        id: 'sales-tips',
-        title: 'Watch Video: Sales Tips',
-        type: 'video',
-        vimeoId: '1042341241',
       },
     ],
   },
@@ -203,22 +187,6 @@ const mpbCourseTopics: Topic[] = [
         type: 'video',
         duration: '05:12',
         vimeoId: '1115561411',
-      },
-    ],
-  },
-  {
-    id: 'advisor-landing-page',
-    title: 'Understanding Your Advisor Landing Page',
-    icon: Globe,
-    lessons: [
-      {
-        id: 'mastering-landing-page',
-        title: 'Mastering Your Advisor Landing Page',
-        type: 'video',
-        duration: '12:59',
-        videoUrl: 'https://training.mpb.health/wp-content/uploads/2025/07/Advisor-Landing-Page-Training-20250424_144214-Meeting-Recording.mp4',
-        content:
-          'Your advisor landing page is a personalized marketing and enrollment tool. It acts as your digital storefront, allowing prospects to:\n\n\u2022 Learn about MPB Health\u2019s memberships\n\u2022 Understand the benefits of medical cost sharing\n\u2022 Schedule a consultation with you directly\n\u2022 Start their enrollment process with your guidance',
       },
     ],
   },

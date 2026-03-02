@@ -61,6 +61,8 @@ class RouteErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
 > {
+  private readonly chunkReloadKey = 'advisor-route-chunk-reload-ts';
+
   constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -72,6 +74,24 @@ class RouteErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('Advisor route error:', error, info.componentStack);
+
+    const isChunkError =
+      error.message.includes('Failed to fetch dynamically imported module') ||
+      error.message.includes('ChunkLoadError') ||
+      error.message.includes('Loading chunk') ||
+      error.message.includes('error loading dynamically imported module');
+
+    if (isChunkError) {
+      try {
+        const last = Number(sessionStorage.getItem(this.chunkReloadKey) || '0');
+        if (Date.now() - last > 30000) {
+          sessionStorage.setItem(this.chunkReloadKey, String(Date.now()));
+          window.location.reload();
+        }
+      } catch (_) {
+        window.location.reload();
+      }
+    }
   }
 
   render() {

@@ -2,8 +2,9 @@
 // Service Worker for MPB Health Advisor Portal PWA
 // ============================================================================
 
-const CACHE_NAME = 'advisor-portal-v2';
-const RUNTIME_CACHE = 'advisor-runtime-v2';
+const CACHE_NAME = 'advisor-portal-v3';
+const RUNTIME_CACHE = 'advisor-runtime-v3';
+let hasBroadcastedReload = false;
 
 // Files to cache on install (app shell)
 const APP_SHELL = [
@@ -156,9 +157,7 @@ async function cacheFirstStrategy(request) {
       const url = new URL(request.url);
       const isHashedAsset = /\-[A-Za-z0-9_-]{6,}\.\w+$/.test(url.pathname);
       if (isHashedAsset) {
-        console.log('[SW] Hashed asset missing, notifying clients to reload:', url.pathname);
-        const clients = await self.clients.matchAll({ type: 'window' });
-        clients.forEach((client) => client.postMessage({ type: 'RELOAD_PAGE' }));
+        await handleMissingHashedAsset(url.pathname);
       }
     }
 
@@ -166,6 +165,40 @@ async function cacheFirstStrategy(request) {
   } catch (error) {
     console.log('[SW] Cache-first failed:', error);
     return new Response('Offline', { status: 503 });
+  }
+}
+
+/**
+ * If a hashed chunk no longer exists (after deploy), clear caches and force
+ * clients to reload exactly once so they fetch the latest index + chunk map.
+ */
+async function handleMissingHashedAsset(pathname) {
+  if (hasBroadcastedReload) return;
+  hasBroadcastedReload = true;
+
+  console.log('[SW] Hashed asset missing, notifying clients to reload:', pathname);
+
+  await Promise.allSettled([
+    caches.delete(CACHE_NAME),
+    caches.delete(RUNTIME_CACHE),
+  ]);
+
+  const windowClients = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
+
+  for (const client of windowClients) {
+    client.postMessage({ type: 'RELOAD_PAGE', reason: 'missing_hashed_asset', pathname });
+
+    // Trigger navigation as a fallback if app-level listener is not mounted.
+    if (typeof client.navigate === 'function') {
+      try {
+        await client.navigate(client.url);
+      } catch (_) {
+        // Ignore navigation errors; message-based reload still applies.
+      }
+    }
   }
 }
 

@@ -8,6 +8,25 @@ import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 
+const SW_RELOAD_GUARD_KEY = 'advisor-sw-reload-ts';
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type !== 'RELOAD_PAGE') return;
+
+    try {
+      const last = Number(sessionStorage.getItem(SW_RELOAD_GUARD_KEY) || '0');
+      if (Date.now() - last < 10000) return;
+      sessionStorage.setItem(SW_RELOAD_GUARD_KEY, String(Date.now()));
+    } catch (_) {
+      // Ignore sessionStorage errors and continue with reload.
+    }
+
+    console.log('[PWA] Service worker requested reload:', event.data);
+    window.location.reload();
+  });
+}
+
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }

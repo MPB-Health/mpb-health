@@ -47,6 +47,7 @@ const PRIORITY_CONFIG: Record<TicketPriority, { label: string; color: string }> 
 
 export default function Tickets() {
   const { profile, loading: authLoading } = useAdvisor();
+  const { executeWithAuth } = useTicketAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<TicketStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -456,6 +457,8 @@ export default function Tickets() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Previous page"
+              aria-label="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -466,6 +469,8 @@ export default function Tickets() {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className="p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Next page"
+              aria-label="Next page"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

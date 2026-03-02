@@ -67,6 +67,10 @@ export default function MainLayout() {
   }, []);
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(authUserId);
 
+  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
+    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
+  }, []);
+
   // Redirect to login if not authenticated
   if (!loading && !user) {
     return <Navigate to="/login" replace />;
@@ -94,10 +98,6 @@ export default function MainLayout() {
     }
     return item;
   });
-
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
-  }, []);
 
   return (
     <AppLayout

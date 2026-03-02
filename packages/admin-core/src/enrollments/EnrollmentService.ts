@@ -2,6 +2,25 @@ import { supabase } from '@mpbhealth/database';
 import type { Enrollment, EnrollmentDocument } from '../types';
 
 export class EnrollmentService {
+  private enrollmentsTableUnavailable = false;
+  private warnedUnavailable = false;
+
+  private isMissingEnrollmentsTable(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false;
+    const e = error as { code?: string; message?: string; details?: string; hint?: string };
+    const msg = `${e.message || ''} ${e.details || ''} ${e.hint || ''}`.toLowerCase();
+    return e.code === 'PGRST205' || msg.includes('could not find the table') || msg.includes('relation "enrollments" does not exist');
+  }
+
+  private markTableUnavailable(error: unknown): void {
+    this.enrollmentsTableUnavailable = true;
+    if (!this.warnedUnavailable) {
+      this.warnedUnavailable = true;
+      const message = error instanceof Error ? error.message : 'unknown error';
+      console.warn(`Enrollments feature unavailable (table missing): ${message}`);
+    }
+  }
+
   // Get all enrollments with filters
   async getEnrollments(filters?: {
     status?: string;
@@ -10,6 +29,10 @@ export class EnrollmentService {
     fromDate?: string;
     toDate?: string;
   }): Promise<Enrollment[]> {
+    if (this.enrollmentsTableUnavailable) {
+      return [];
+    }
+
     let query = supabase
       .from('enrollments')
       .select('*')
@@ -35,6 +58,10 @@ export class EnrollmentService {
 
     const { data, error } = await query;
     if (error) {
+      if (this.isMissingEnrollmentsTable(error)) {
+        this.markTableUnavailable(error);
+        return [];
+      }
       console.warn('Enrollments table query failed:', error.message);
       return [];
     }
@@ -48,11 +75,20 @@ export class EnrollmentService {
 
   // Get enrollment by ID
   async getEnrollment(enrollmentId: string): Promise<Enrollment | null> {
+    if (this.enrollmentsTableUnavailable) {
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('enrollments')
       .select('*')
       .eq('id', enrollmentId)
       .single();
+
+    if (error && this.isMissingEnrollmentsTable(error)) {
+      this.markTableUnavailable(error);
+      return null;
+    }
 
     if (error && error.code !== 'PGRST116') {
       console.warn('Enrollment lookup failed:', error.message);

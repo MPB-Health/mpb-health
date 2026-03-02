@@ -52,6 +52,38 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
 
   const [unreadBulletinCount, setUnreadBulletinCount] = useState(0);
 
+  const buildSessionFallbackProfile = (sessionUser: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }): AdvisorProfile => {
+    const fullName = String(sessionUser.user_metadata?.full_name || '').trim();
+    const firstFromFull = fullName ? fullName.split(' ')[0] : '';
+    const lastFromFull = fullName && fullName.includes(' ')
+      ? fullName.slice(fullName.indexOf(' ') + 1).trim()
+      : '';
+    const firstName = String(sessionUser.user_metadata?.first_name || firstFromFull || 'Advisor').trim();
+    const lastName = String(sessionUser.user_metadata?.last_name || lastFromFull || '').trim();
+    const nowIso = new Date().toISOString();
+
+    return {
+      id: sessionUser.id,
+      user_id: sessionUser.id,
+      org_id: '',
+      first_name: firstName,
+      last_name: lastName,
+      email: sessionUser.email || '',
+      phone: null,
+      specialization: 'Health Share',
+      bio: null,
+      avatar_url: null,
+      agent_id: null,
+      company_name: null,
+      must_change_password: false,
+      status: 'active',
+      onboarding_completed: true,
+      onboarding_completed_at: nowIso,
+      created_at: sessionUser.created_at || nowIso,
+      updated_at: nowIso,
+    };
+  };
+
   // Load profile
   const loadProfile = async () => {
     try {
@@ -63,7 +95,12 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       }
 
       const advisorProfile = await profileService.getProfile(session.user.id);
-      setProfile(advisorProfile);
+      if (advisorProfile) {
+        setProfile(advisorProfile);
+      } else {
+        console.warn('[AdvisorContext] advisor_profiles row missing; using session fallback profile');
+        setProfile(buildSessionFallbackProfile(session.user));
+      }
     } catch (err) {
       // Ignore AbortError from Web Locks API - these are benign and occur during navigation
       if (err instanceof Error && err.name === 'AbortError') {

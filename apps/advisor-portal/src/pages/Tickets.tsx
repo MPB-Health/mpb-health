@@ -155,6 +155,10 @@ export default function Tickets() {
   };
 
   const totalPages = Math.ceil(total / perPage);
+  const filteredTickets = tickets.filter((ticket) => {
+    if (!categoryFilter) return true;
+    return (ticket.category || '').toLowerCase() === categoryFilter.toLowerCase();
+  });
 
   if (selectedTicket) {
     const { ticket, comments } = selectedTicket;
@@ -384,7 +388,7 @@ export default function Tickets() {
           <Headphones className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-neutral-900 mb-1">No tickets found</h3>
           <p className="text-sm text-neutral-500 mb-4">
-            {statusFilter || priorityFilter || searchInput
+            {statusFilter || priorityFilter || categoryFilter || searchInput
               ? 'Try adjusting your filters.'
               : 'You haven\'t submitted any support tickets yet.'}
           </p>
@@ -398,7 +402,7 @@ export default function Tickets() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
-          {tickets.map((ticket) => {
+          {filteredTickets.map((ticket) => {
             const sc = STATUS_CONFIG[ticket.status];
             const pc = PRIORITY_CONFIG[ticket.priority];
 

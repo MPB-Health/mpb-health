@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { lazyAuto } from './utils/lazyUtils';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { NavigationProvider } from './contexts/NavigationContext';
@@ -227,6 +227,27 @@ const ConditionalFooter: React.FC = () => {
   );
 };
 
+// If Supabase falls back to Site URL, recovery links can land on /#access_token=...
+// Route those immediately to /auth/confirm so token exchange still completes.
+const RecoveryHashRedirector: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!location.hash) return;
+    const hash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
+    const hashParams = new URLSearchParams(hash);
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+
+    if (accessToken && type === 'recovery' && location.pathname !== '/auth/confirm') {
+      navigate(`/auth/confirm${location.hash}`, { replace: true });
+    }
+  }, [location.hash, location.pathname, navigate]);
+
+  return null;
+};
+
 const App = () => {
   React.useEffect(() => {
     // Initialize Google Analytics and other tracking scripts
@@ -244,6 +265,7 @@ const App = () => {
             <Router>
             <LeadNotificationWrapper>
             <AnalyticsTracker>
+            <RecoveryHashRedirector />
             <ScrollToTop />
             <StateEligibilityBanner />
             <div className="min-h-screen flex flex-col">

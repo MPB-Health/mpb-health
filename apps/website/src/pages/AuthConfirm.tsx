@@ -31,6 +31,35 @@ const AuthConfirm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  const getRecoveryDestination = async (): Promise<string> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) return '/reset-password';
+
+      const { data: roleRows } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      const roles = (roleRows || []).map((r: { role: string }) => r.role);
+      if (roles.includes('advisor')) return 'https://advisor.mpb.health/reset-password';
+      if (roles.includes('super_admin') || roles.includes('admin')) return 'https://admin.mpb.health/reset-password';
+      if (roles.includes('crm_user')) return 'https://crm.mpbhealth.com/reset-password';
+      return '/reset-password';
+    } catch {
+      return '/reset-password';
+    }
+  };
+
+  const routeToRecoveryDestination = async () => {
+    const destination = await getRecoveryDestination();
+    if (destination.startsWith('http')) {
+      window.location.replace(destination);
+      return;
+    }
+    navigate(destination, { replace: true });
+  };
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
       navigate('/forgot-password', { replace: true });
@@ -61,7 +90,7 @@ const AuthConfirm = () => {
           return;
         }
 
-        navigate('/reset-password', { replace: true });
+        await routeToRecoveryDestination();
         return;
       }
 
@@ -99,7 +128,7 @@ const AuthConfirm = () => {
             return;
           }
 
-          navigate('/reset-password', { replace: true });
+          await routeToRecoveryDestination();
           return;
         }
       }
@@ -113,7 +142,7 @@ const AuthConfirm = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          navigate('/reset-password', { replace: true });
+          await routeToRecoveryDestination();
           return;
         }
       } catch {
@@ -135,7 +164,7 @@ const AuthConfirm = () => {
     // Also listen for PASSWORD_RECOVERY event as a fallback
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
-        navigate('/reset-password', { replace: true });
+        routeToRecoveryDestination();
       }
     });
 

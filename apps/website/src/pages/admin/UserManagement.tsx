@@ -622,6 +622,11 @@ const UserManagement: React.FC = () => {
         return;
       }
 
+      if (!data) {
+        toast.error('No response from invite function');
+        return;
+      }
+
       setMassInviteResult(data.summary);
 
       if (data.summary.total === 0) {

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useTicketAuth } from '../components/TicketAuthWrapper';
 import {
   Headphones,
   Search,
@@ -107,9 +108,9 @@ export default function Tickets() {
   // Load distinct categories from ITSTS for the filter dropdown
   useEffect(() => {
     if (!authLoading && profile) {
-      ticketService.getCategories().then(setCategories).catch(() => {});
+      executeWithAuth(() => ticketService.getCategories()).then(setCategories).catch(() => {});
     }
-  }, [authLoading, profile]);
+  }, [authLoading, profile, executeWithAuth]);
 
   // Clear the loading spinner when auth is resolved but there is no profile
   // (user is not logged in). Without this, loading stays true forever because
@@ -129,7 +130,7 @@ export default function Tickets() {
   const openTicketDetail = async (ticketId: string) => {
     setDetailLoading(true);
     try {
-      const detail = await ticketService.getTicketDetail(ticketId);
+      const detail = await executeWithAuth(() => ticketService.getTicketDetail(ticketId));
       setSelectedTicket(detail);
     } catch (err) {
       console.error('Failed to load ticket detail:', err);
@@ -143,8 +144,8 @@ export default function Tickets() {
     setReplySending(true);
     setReplyError('');
     try {
-      await ticketService.replyToTicket(selectedTicket.ticket.id, replyContent.trim());
-      const detail = await ticketService.getTicketDetail(selectedTicket.ticket.id);
+      await executeWithAuth(() => ticketService.replyToTicket(selectedTicket.ticket.id, replyContent.trim()));
+      const detail = await executeWithAuth(() => ticketService.getTicketDetail(selectedTicket.ticket.id));
       setSelectedTicket(detail);
       setReplyContent('');
     } catch (err) {
@@ -171,6 +172,7 @@ export default function Tickets() {
           <button
             onClick={() => { setSelectedTicket(null); setReplyContent(''); setReplyError(''); }}
             className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+            aria-label="Back to tickets"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to tickets
@@ -323,43 +325,46 @@ export default function Tickets() {
 
         <div className="flex flex-wrap items-center gap-2">
           <Filter className="w-4 h-4 text-neutral-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value as TicketStatus | ''); setPage(1); }}
-            className="px-3 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          >
-            <option value="">All statuses</option>
-            <option value="new">New</option>
-            <option value="open">Open</option>
-            <option value="pending">Pending</option>
-            <option value="resolved">Resolved</option>
-            <option value="closed">Closed</option>
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => { setPriorityFilter(e.target.value as TicketPriority | ''); setPage(1); }}
-            className="px-3 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          >
-            <option value="">All priorities</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
-
-          {categories.length > 0 && (
             <select
-              value={categoryFilter}
-              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value as TicketStatus | ''); setPage(1); }}
               className="px-3 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              aria-label="Filter by status"
             >
-              <option value="">All categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
+              <option value="">All statuses</option>
+              <option value="new">New</option>
+              <option value="open">Open</option>
+              <option value="pending">Pending</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
             </select>
-          )}
+
+            <select
+              value={priorityFilter}
+              onChange={(e) => { setPriorityFilter(e.target.value as TicketPriority | ''); setPage(1); }}
+              className="px-3 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              aria-label="Filter by priority"
+            >
+              <option value="">All priorities</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+
+            {categories.length > 0 && (
+              <select
+                value={categoryFilter}
+                onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+                className="px-3 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                aria-label="Filter by category"
+              >
+                <option value="">All categories</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            )}
         </div>
 
         <button

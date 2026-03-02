@@ -16,9 +16,33 @@ import { supabase } from '@mpbhealth/database';
 const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
 
 /**
+ * Singleton refresh promise — prevents multiple simultaneous calls from each
+ * triggering their own `refreshSession()`. With Supabase's `noOpLock`, the
+ * refresh token is single-use; a second concurrent refresh races and whichever
+ * call is second gets a token that has already been rotated, causing a 401.
+ *
+ * By sharing one pending Promise, concurrent callers all await the same
+ * in-flight refresh and receive the same fresh session.
+ */
+let _pendingRefresh: Promise<Awaited<ReturnType<typeof supabase.auth.refreshSession>>> | null = null;
+
+async function refreshOnce() {
+  if (!_pendingRefresh) {
+    _pendingRefresh = supabase.auth.refreshSession().finally(() => {
+      _pendingRefresh = null;
+    });
+  }
+  return _pendingRefresh;
+}
+
+/**
  * Ensure the current session has a non-expired access token before calling
  * an Edge Function. Returns null when there is no session (user is not
  * authenticated).
+ *
+ * Uses a singleton refresh promise so that concurrent callers (e.g. loadTickets
+ * + loadStats + getCategories firing at the same time) share one refresh round-
+ * trip instead of each consuming the single-use refresh token and racing.
  */
 async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
   // getSession() will attempt a background refresh when the token is within
@@ -26,12 +50,14 @@ async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) return null;
 
-  // Force a SYNCHRONOUS refresh if the token has already expired OR expires
-  // within the next TOKEN_EXPIRY_BUFFER_SECONDS seconds. This guarantees the
-  // token won't expire mid-flight on slow connections or under load.
+  // Force a SYNCHRONOUS refresh if:
+  //  - expires_at is absent (defensive — treat as unknown/stale), OR
+  //  - token has already expired or expires within TOKEN_EXPIRY_BUFFER_SECONDS.
   const nowSec = Math.floor(Date.now() / 1000);
-  if (session.expires_at && session.expires_at < nowSec + TOKEN_EXPIRY_BUFFER_SECONDS) {
-    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+  const needsRefresh = !session.expires_at || session.expires_at < nowSec + TOKEN_EXPIRY_BUFFER_SECONDS;
+
+  if (needsRefresh) {
+    const { data: refreshed, error: refreshError } = await refreshOnce();
     if (refreshError || !refreshed.session?.access_token) {
       // Refresh failed — session is invalid. Return null to trigger re-auth
       // in the caller rather than firing a request with a bad token.

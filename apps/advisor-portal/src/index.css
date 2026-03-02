@@ -36,11 +36,13 @@
 }
 
 .dark {
-  --sidebar-bg: 14 45 65;
-  --sidebar-hover: 10 78 142;
-  --sidebar-text: 203 213 225;
-  --sidebar-text-active: 255 255 255;
-  --sidebar-active-bg: 255 255 255;
+  /* Sidebar stays white in dark mode — the advisor portal always uses a
+     light sidebar so all nav text remains legible on a white background. */
+  --sidebar-bg: 255 255 255;
+  --sidebar-hover: 241 245 249;
+  --sidebar-text: 51 65 85;
+  --sidebar-text-active: 15 23 42;
+  --sidebar-active-bg: 12 113 195;
 }
 
 body {

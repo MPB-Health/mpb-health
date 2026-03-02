@@ -74,7 +74,8 @@ export function getCorsHeaders(
   const allowedOrigin = isOriginAllowed(origin) ? origin : ALLOWED_ORIGINS[0];
   const requestedHeaders = req.headers.get("Access-Control-Request-Headers");
   const defaultAllowHeaders =
-    "Content-Type, Authorization, X-Client-Info, X-Supabase-Client-Platform, Apikey, authorization, x-client-info, x-supabase-client-platform, apikey, content-type";
+    "Content-Type, Authorization, X-Client-Info, X-Supabase-Client-Platform, Apikey, x-request-id, " +
+    "authorization, x-client-info, x-supabase-client-platform, apikey, content-type";
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
@@ -82,6 +83,9 @@ export function getCorsHeaders(
       opts?.methods ?? "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
       opts?.allowHeaders ?? requestedHeaders ?? defaultAllowHeaders,
+    // Expose x-request-id so the browser JS (or Supabase SDK) can read it
+    // from the response for correlation / debugging.
+    "Access-Control-Expose-Headers": "x-request-id",
     "Vary": "Origin",
   };
 }

@@ -520,7 +520,20 @@ Deno.serve(async (req: Request) => {
     return handleCorsPreflightRequest(req);
   }
 
-  const headers = { ...getCorsHeaders(req), "Content-Type": "application/json" };
+  // ── Correlation ID ──────────────────────────────────────────────────────
+  // Accept x-request-id from the client (TicketService sends one for every
+  // call) or generate a fallback. Echoed back in the response so clients can
+  // match request ↔ log entry.
+  const correlationId =
+    req.headers.get("x-request-id") ??
+    `sf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+
+  const corsHeaders = getCorsHeaders(req);
+  const headers: Record<string, string> = {
+    ...corsHeaders,
+    "Content-Type": "application/json",
+    "x-request-id": correlationId,
+  };
 
   // Rate limit: proxy endpoint
   const clientIp = getClientIdentifier(req);
@@ -540,24 +553,36 @@ Deno.serve(async (req: Request) => {
     });
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
+      log.warn("Missing or malformed Authorization header", { correlationId });
       return new Response(
-        JSON.stringify({ success: false, error: "Missing authorization" }),
+        JSON.stringify({ success: false, error: "Missing authorization", correlationId }),
         { status: 401, headers },
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.slice(7); // strip "Bearer " prefix
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user?.email) {
+      log.warn("JWT verification failed", { correlationId, error: authError?.message });
       return new Response(
-        JSON.stringify({ success: false, error: "Invalid authorization" }),
+        JSON.stringify({ success: false, error: "Invalid or expired authorization", correlationId }),
         { status: 401, headers },
       );
     }
 
     const body: ProxyRequest = await req.json();
     const { action } = body;
+
+    // ── Health-check ping (no DB access required) ────────────────────────
+    if ((action as string) === "ping") {
+      return new Response(
+        JSON.stringify({ success: true, pong: true, userId: user.id, correlationId }),
+        { status: 200, headers },
+      );
+    }
+
+    log.info("Handling action", { action, userId: user.id, correlationId });
 
     const itstsAdmin = getItstsClient();
 
@@ -836,15 +861,16 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, ...result }),
+      JSON.stringify({ success: true, ...result, correlationId }),
       { status: 200, headers },
     );
   } catch (error) {
-    log.error("Ticket proxy error", error);
+    log.error("Ticket proxy error", { correlationId, error });
     return new Response(
       JSON.stringify({
         success: false,
         error: "Internal server error",
+        correlationId,
       }),
       { status: 500, headers },
     );

@@ -364,6 +364,20 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+# ── Per-function configuration ────────────────────────────────────────────────
+# Explicitly declare verify_jwt for ticket-proxy so the intent is clear:
+# true  = Supabase API Gateway validates the JWT before the function runs
+#         (default behavior, provides a first line of defence).
+# The function also does its own auth check internally (defence-in-depth).
+[functions.ticket-proxy]
+verify_jwt = true
+
+# send-ticket-notification is called server-side (via service role) so its
+# requests never carry a user JWT. Disable gateway JWT verification and rely
+# on the function's own secret/signature check instead.
+[functions.send-ticket-notification]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

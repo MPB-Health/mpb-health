@@ -154,6 +154,35 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     await loadProfile();
   };
 
+  // Handle authentication errors by refreshing session
+  const handleAuthError = async () => {
+    try {
+      setLoading(true);
+      // Try to refresh the session
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      if (error) {
+        throw error;
+      }
+      
+      if (!session?.user) {
+        // No valid session, redirect to login
+        setProfile(null);
+        window.location.href = '/login';
+        return;
+      }
+
+      // Session refreshed successfully, reload profile
+      await loadProfile();
+    } catch (err) {
+      console.error('Auth error handling failed:', err);
+      // Force logout if refresh fails
+      setProfile(null);
+      window.location.href = '/login';
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Logout
   const logout = async () => {
     try {

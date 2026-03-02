@@ -298,14 +298,6 @@ export default function MainLayout() {
       return item;
     });
 
-    // Normalize SOPs & Playbooks → Resources (in case DB migration not yet applied)
-    base = base.map(item => {
-      if (item.href === '/sops' && (item.name === 'SOPs & Playbooks' || item.name === 'SOPs')) {
-        return { ...item, name: 'Resources' };
-      }
-      return item;
-    });
-
     // Inject items that may not exist in CMS nav
     if (!base.some((item) => item.href === '/quick-links' || item.name === 'Resource Center')) {
       base.push({ name: 'Resource Center', href: '/quick-links', icon: Link });

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ExternalLink, X, Smartphone, ArrowRight, Video, Calendar } from 'lucide-react';
+import { supabaseUrl } from '@mpbhealth/database';
 
-const STORAGE_BASE = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents';
+const STORAGE_BASE = `${supabaseUrl}/storage/v1/object/public/advisor-documents`;
 
 interface QuickLinkItem {
   label: string;

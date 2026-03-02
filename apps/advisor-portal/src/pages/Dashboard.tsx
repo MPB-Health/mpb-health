@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm } from '@mpbhealth/advisor-core';
-import { supabase } from '@mpbhealth/database';
+import { supabase, supabaseUrl } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 interface FallbackQuickLink {
@@ -47,7 +47,7 @@ interface FallbackQuickLink {
   popup?: boolean;
 }
 
-const STORAGE_BASE = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents';
+const STORAGE_BASE = `${supabaseUrl}/storage/v1/object/public/advisor-documents`;
 
 const APP_STORE_URL = 'https://apps.apple.com/us/app/mpb-health/id6747984750';
 const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=com.mpb.health&utm_source=na_Med';

@@ -33,6 +33,7 @@ interface AdvisorContextType {
   refreshProfile: () => Promise<void>;
   refreshTraining: () => Promise<void>;
   logout: () => Promise<void>;
+  handleAuthError: () => Promise<void>;
 }
 
 const AdvisorContext = createContext<AdvisorContextType | undefined>(undefined);
@@ -266,6 +267,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         refreshProfile,
         refreshTraining,
         logout,
+        handleAuthError,
       }}
     >
       {children}

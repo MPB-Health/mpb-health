@@ -1,5 +1,5 @@
-import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AdminProvider } from './contexts/AdminContext';
 import MainLayout from './layouts/MainLayout';
 
@@ -39,6 +39,19 @@ const VideoLibraryList = React.lazy(() => import('./pages/VideoLibraryList'));
 const FormsList = React.lazy(() => import('./pages/FormsList'));
 const ContactDirectory = React.lazy(() => import('./pages/ContactDirectory'));
 const NavigationManager = React.lazy(() => import('./pages/NavigationManager'));
+
+// ── GA4 page-view tracker ─────────────────────────────────────────────────────
+function GAPageTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    if (typeof (window as any).gtag === 'function') {
+      (window as any).gtag('event', 'page_view', {
+        page_path: location.pathname + location.search,
+      });
+    }
+  }, [location]);
+  return null;
+}
 
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function LoadingSpinner() {
@@ -122,6 +135,7 @@ class RouteErrorBoundary extends React.Component<
 export default function App() {
   return (
     <AdminProvider>
+      <GAPageTracker />
       <RouteErrorBoundary>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>

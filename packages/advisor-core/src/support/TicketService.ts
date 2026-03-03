@@ -461,6 +461,12 @@ export class TicketService {
     });
     return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
   }
+
+  /** Fire-and-forget warm-up ping to keep the ticket-proxy edge function warm.
+   *  Silently no-ops when the user is not authenticated. */
+  async ping(): Promise<void> {
+    await this.call<{ success: boolean }>('ping', {}, { allowUnauthenticated: true });
+  }
 }
 
 export const ticketService = new TicketService();

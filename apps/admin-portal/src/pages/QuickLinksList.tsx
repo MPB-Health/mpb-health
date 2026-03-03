@@ -30,14 +30,15 @@ const CATEGORIES: { value: QuickLinkCategory; label: string }[] = [
 ];
 
 const EMPTY_FORM: QuickLinkCreateInput = {
-  title: '',
+  label: '',
   url: '',
-  description: '',
+  description: null,
   category: 'resources',
   icon: '',
   order_index: 0,
   is_active: true,
-  open_in_new_tab: true,
+  is_external: false,
+  requires_auth: false,
 };
 
 export default function QuickLinksList() {
@@ -100,14 +101,15 @@ export default function QuickLinksList() {
   const openEdit = (link: QuickLink) => {
     setEditingLink(link);
     setModalForm({
-      title: link.title,
+      label: link.label,
       url: link.url,
-      description: link.description || '',
+      description: link.description,
       category: link.category as QuickLinkCategory,
       icon: link.icon || '',
       order_index: link.order_index,
       is_active: link.is_active,
-      open_in_new_tab: link.open_in_new_tab ?? true,
+      is_external: link.is_external ?? false,
+      requires_auth: link.requires_auth ?? false,
     });
     setShowAddModal(true);
   };
@@ -119,8 +121,8 @@ export default function QuickLinksList() {
   };
 
   const handleModalSave = async () => {
-    if (!modalForm.title.trim() || !modalForm.url.trim()) {
-      toast.error('Title and URL are required');
+    if (!modalForm.label.trim() || !modalForm.url.trim()) {
+      toast.error('Label and URL are required');
       return;
     }
     setModalSaving(true);
@@ -144,7 +146,7 @@ export default function QuickLinksList() {
   const filtered = links.filter((l) => {
     const matchesSearch =
       !searchQuery ||
-      l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      l.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
       l.url.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCat = !filterCategory || l.category === filterCategory;
     return matchesSearch && matchesCat;
@@ -239,7 +241,7 @@ export default function QuickLinksList() {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <h3 className="font-medium text-th-text-primary truncate">{link.title}</h3>
+                    <h3 className="font-medium text-th-text-primary truncate">{link.label}</h3>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       link.is_active
                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -297,12 +299,12 @@ export default function QuickLinksList() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Title *</label>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1">Label *</label>
                 <input
                   type="text"
-                  value={modalForm.title}
-                  onChange={(e) => setModalForm((p) => ({ ...p, title: e.target.value }))}
-                  placeholder="Link title"
+                  value={modalForm.label}
+                  onChange={(e) => setModalForm((p) => ({ ...p, label: e.target.value }))}
+                  placeholder="Link label"
                   className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                 />
               </div>
@@ -320,8 +322,8 @@ export default function QuickLinksList() {
                 <label className="block text-sm font-medium text-th-text-secondary mb-1">Description</label>
                 <input
                   type="text"
-                  value={modalForm.description}
-                  onChange={(e) => setModalForm((p) => ({ ...p, description: e.target.value }))}
+                  value={modalForm.description || ''}
+                  onChange={(e) => setModalForm((p) => ({ ...p, description: e.target.value || null }))}
                   placeholder="Optional description"
                   className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                 />
@@ -364,11 +366,11 @@ export default function QuickLinksList() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={modalForm.open_in_new_tab}
-                    onChange={(e) => setModalForm((p) => ({ ...p, open_in_new_tab: e.target.checked }))}
+                    checked={modalForm.is_external ?? false}
+                    onChange={(e) => setModalForm((p) => ({ ...p, is_external: e.target.checked }))}
                     className="rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                   />
-                  <span className="text-sm text-th-text-secondary">Open in new tab</span>
+                  <span className="text-sm text-th-text-secondary">External link</span>
                 </label>
               </div>
             </div>

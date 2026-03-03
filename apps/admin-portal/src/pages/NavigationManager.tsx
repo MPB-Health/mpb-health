@@ -126,15 +126,15 @@ export default function NavigationManager() {
     setEditingItem(item);
     setModalForm({
       label: item.label,
-      path: item.path || '',
+      url: item.url,
       icon: item.icon || '',
       parent_id: item.parent_id,
       order_index: item.order_index,
       is_active: item.is_active,
       is_external: item.is_external ?? false,
-      open_in_new_tab: item.open_in_new_tab ?? false,
+      requires_auth: item.requires_auth ?? true,
       badge_text: item.badge_text || null,
-      badge_color: item.badge_color || null,
+      badge_color: item.badge_color || '',
     });
     setShowModal(true);
   };
@@ -156,10 +156,10 @@ export default function NavigationManager() {
       const payload = {
         ...modalForm,
         label: modalForm.label.trim(),
-        path: modalForm.path?.trim() || null,
-        icon: modalForm.icon?.trim() || null,
+        url: modalForm.url?.trim() || null,
+        icon: modalForm.icon?.trim() || '',
         badge_text: modalForm.badge_text?.trim() || null,
-        badge_color: modalForm.badge_color?.trim() || null,
+        badge_color: modalForm.badge_color?.trim() || '',
       };
 
       if (editingItem) {
@@ -399,19 +399,21 @@ export default function NavigationManager() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Path / URL</label>
+                <label htmlFor="nav-url" className="block text-sm font-medium text-th-text-secondary mb-1">Path / URL</label>
                 <input
+                  id="nav-url"
                   type="text"
-                  value={modalForm.path || ''}
-                  onChange={(e) => setModalForm((p) => ({ ...p, path: e.target.value }))}
+                  value={modalForm.url || ''}
+                  onChange={(e) => setModalForm((p) => ({ ...p, url: e.target.value || null }))}
                   placeholder="/path or https://..."
                   className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Icon (lucide name)</label>
+                  <label htmlFor="nav-icon" className="block text-sm font-medium text-th-text-secondary mb-1">Icon (lucide name)</label>
                   <input
+                    id="nav-icon"
                     type="text"
                     value={modalForm.icon || ''}
                     onChange={(e) => setModalForm((p) => ({ ...p, icon: e.target.value }))}
@@ -420,8 +422,9 @@ export default function NavigationManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Order</label>
+                  <label htmlFor="nav-order" className="block text-sm font-medium text-th-text-secondary mb-1">Order</label>
                   <input
+                    id="nav-order"
                     type="number"
                     min="0"
                     value={modalForm.order_index}
@@ -491,22 +494,24 @@ export default function NavigationManager() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={modalForm.open_in_new_tab ?? false}
-                    onChange={(e) => setModalForm((p) => ({ ...p, open_in_new_tab: e.target.checked }))}
+                    checked={modalForm.requires_auth ?? true}
+                    onChange={(e) => setModalForm((p) => ({ ...p, requires_auth: e.target.checked }))}
                     className="rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                   />
-                  <span className="text-sm text-th-text-secondary">New tab</span>
+                  <span className="text-sm text-th-text-secondary">Requires auth</span>
                 </label>
               </div>
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-th-border">
               <button
+                type="button"
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 border border-th-border rounded-xl text-th-text-secondary hover:bg-surface-tertiary transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleModalSave}
                 disabled={modalSaving}
                 className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-xl font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"

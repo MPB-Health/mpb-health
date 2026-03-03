@@ -44,10 +44,10 @@ begin
     _roles := ARRAY['advisor'];
   end if;
 
-  -- Build the edge function URL
+  -- Build the edge function URL (sync-user-to-itsts lives on THIS project)
   _edge_fn_url := coalesce(
     current_setting('app.settings.supabase_url', true),
-    'https://hhikjgrttgnvojtunmla.supabase.co'
+    'https://dtmnkzllidaiqyheguhl.supabase.co'
   ) || '/functions/v1/sync-user-to-itsts';
 
   _service_key := coalesce(

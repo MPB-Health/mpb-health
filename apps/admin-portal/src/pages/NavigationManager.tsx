@@ -244,6 +244,7 @@ export default function NavigationManager() {
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
             {depth === 0 && (
               <button
+                type="button"
                 onClick={() => openCreate(node.id)}
                 title="Add child item"
                 className="p-1.5 rounded-lg text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-accent-600 transition-colors"
@@ -252,6 +253,7 @@ export default function NavigationManager() {
               </button>
             )}
             <button
+              type="button"
               onClick={() => handleToggleActive(node)}
               title={node.is_active ? 'Hide' : 'Show'}
               className="p-1.5 rounded-lg text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary transition-colors"
@@ -259,6 +261,7 @@ export default function NavigationManager() {
               {node.is_active ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
             <button
+              type="button"
               onClick={() => openEdit(node)}
               title="Edit"
               className="p-1.5 rounded-lg text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary transition-colors"
@@ -266,6 +269,7 @@ export default function NavigationManager() {
               <Edit2 className="w-3.5 h-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => handleDelete(node.id)}
               disabled={deleting === node.id}
               title="Delete"
@@ -305,6 +309,7 @@ export default function NavigationManager() {
           <p className="text-th-text-tertiary text-sm mt-1">Manage the advisor portal navigation menu</p>
         </div>
         <button
+          type="button"
           onClick={() => openCreate(null)}
           className="flex items-center space-x-2 px-4 py-2.5 bg-th-accent-600 text-white rounded-xl font-medium hover:bg-th-accent-700 transition-colors"
         >
@@ -345,6 +350,7 @@ export default function NavigationManager() {
             <h3 className="text-lg font-semibold text-th-text-primary mb-1">No navigation items</h3>
             <p className="text-th-text-tertiary mb-6">Create your first top-level navigation item</p>
             <button
+              type="button"
               onClick={() => openCreate(null)}
               className="inline-flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-xl font-medium hover:bg-th-accent-700 transition-colors"
             >
@@ -371,7 +377,13 @@ export default function NavigationManager() {
                   ? 'Add Child Item'
                   : 'Add Top-Level Item'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-2 text-th-text-tertiary hover:text-th-text-primary transition-colors">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                title="Close"
+                aria-label="Close modal"
+                className="p-2 text-th-text-tertiary hover:text-th-text-primary transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>

@@ -24,7 +24,9 @@
       "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
       "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations\" -name \"*.sql\")",
       "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/admin-core/src\" -type f -name \"*.ts\" -o -name \"*.tsx\")",
-      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core/src/support\" -type f -name \"*.ts\" -o -name \"*.tsx\")"
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core/src/support\" -type f -name \"*.ts\" -o -name \"*.tsx\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations/\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/itsts-migrations/\")"
     ]
   }
 }

@@ -70,6 +70,57 @@ async function getItstsUserId(itstsAdmin: ReturnType<typeof createClient>, email
   return data?.id || null;
 }
 
+/**
+ * Returns the ITSTS profile ID for the given email, creating a staff profile
+ * automatically if none exists. This lets admin-portal staff reply to tickets
+ * without needing a manual ITSTS account setup.
+ */
+async function getOrCreateItstsUserId(
+  itstsAdmin: ReturnType<typeof createClient>,
+  email: string,
+  fullName: string,
+): Promise<string> {
+  // 1. Fast path — profile already exists
+  const existing = await getItstsUserId(itstsAdmin, email);
+  if (existing) return existing;
+
+  // 2. Try to create a new auth user in the ITSTS instance
+  const { data: created, error: createErr } = await itstsAdmin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    // Random password — staff will never log in via ITSTS directly
+    password: Array.from(
+      (globalThis.crypto ?? crypto).getRandomValues(new Uint8Array(20)),
+    ).map((b) => b.toString(16).padStart(2, "0")).join(""),
+    user_metadata: { full_name: fullName },
+  });
+
+  let uid: string | null = null;
+
+  if (!createErr && created?.user?.id) {
+    uid = created.user.id;
+  } else {
+    // User may already exist in auth but the profile row is missing.
+    // Scan the first page of auth users to find them.
+    const { data: list } = await itstsAdmin.auth.admin.listUsers({ perPage: 1000 });
+    uid = list?.users?.find((u: { email?: string; id: string }) => u.email === email)?.id ?? null;
+  }
+
+  if (!uid) {
+    throw new Error(
+      `Unable to provision a support account for ${email}. Please ask an administrator to create the account manually in ITSTS.`,
+    );
+  }
+
+  // 3. Upsert the profile row (handles both trigger-created and missing rows)
+  await itstsAdmin.from("profiles").upsert(
+    { id: uid, email, full_name: fullName },
+    { onConflict: "id", ignoreDuplicates: false },
+  );
+
+  return uid;
+}
+
 async function listTickets(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
@@ -310,15 +361,11 @@ async function addComment(
   ticketId: string,
   content: string,
   authorEmail: string,
+  authorFullName: string,
   isInternal = false,
 ) {
-  // Find admin's ITSTS profile
-  const authorId = await getItstsUserId(itstsAdmin, authorEmail);
-  if (!authorId) {
-    throw new Error(
-      "Your admin account has not been set up in the support system. Please contact a super admin to create your support profile.",
-    );
-  }
+  // Find or auto-provision admin's ITSTS profile
+  const authorId = await getOrCreateItstsUserId(itstsAdmin, authorEmail, authorFullName);
 
   const { error: commentError } = await itstsAdmin
     .from("ticket_comments")
@@ -689,7 +736,7 @@ Deno.serve(async (req: Request) => {
       case "stats_all":
         result = await getAllTicketStats(itstsAdmin);
         break;
-      case "add_comment":
+      case "add_comment": {
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
           return new Response(
             JSON.stringify({ success: false, error: "Valid ticket_id required" }),
@@ -702,7 +749,16 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers },
           );
         }
-        result = await addComment(itstsAdmin, body.ticket_id, body.content.trim(), user.email, Boolean(body.is_internal));
+        // Resolve admin's display name for auto-provisioning their ITSTS profile
+        const { data: adminRow } = await supabaseAdmin
+          .from("admin_users")
+          .select("first_name, last_name")
+          .eq("email", user.email)
+          .maybeSingle();
+        const adminFullName = adminRow
+          ? `${adminRow.first_name} ${adminRow.last_name}`.trim()
+          : user.email;
+        result = await addComment(itstsAdmin, body.ticket_id, body.content.trim(), user.email, adminFullName, Boolean(body.is_internal));
         // Internal notes are never sent to the advisor — skip notification
         if (!body.is_internal && result._notif?.requester_email) {
           fireNotification({
@@ -721,6 +777,7 @@ Deno.serve(async (req: Request) => {
           });
         }
         break;
+      }
 
       // ── Advisor write actions ──
       case "create":

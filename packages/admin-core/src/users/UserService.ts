@@ -287,6 +287,41 @@ export class UserService {
     if (error) throw error;
   }
 
+  /** Single cross-portal user by ID (from users_with_roles view) */
+  async getCrossPortalUser(userId: string): Promise<CrossPortalUser | null> {
+    const { data, error } = await supabase
+      .from('users_with_roles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return (data as CrossPortalUser) ?? null;
+  }
+
+  /** Send a password reset email via Supabase Auth */
+  async sendPasswordReset(email: string): Promise<void> {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  }
+
+  /** Directly set a new password for a user (super_admin only — calls admin-update-password edge function) */
+  async setUserPassword(userId: string, password: string): Promise<void> {
+    const { error } = await supabase.functions.invoke('admin-update-password', {
+      body: { userId, password },
+    });
+    if (error) throw error;
+  }
+
+  /** Update advisor profile status */
+  async updateAdvisorProfileStatus(userId: string, status: AdvisorProfileSummary['status']): Promise<void> {
+    const { error } = await supabase
+      .from('advisor_profiles')
+      .update({ status })
+      .or(`id.eq.${userId},user_id.eq.${userId}`);
+    if (error) throw error;
+  }
+
   /** Bulk status update on admin_users */
   async bulkUpdateStatus(userIds: string[], status: AdminUser['status']): Promise<void> {
     const { error } = await supabase

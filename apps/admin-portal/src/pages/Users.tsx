@@ -294,11 +294,16 @@ export default function Users() {
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Portal Roles</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Joined</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Last Login</th>
+              <th className="text-right py-3 px-4 text-sm font-medium text-th-text-tertiary">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-th-border-subtle">
             {crossUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-surface-tertiary">
+              <tr
+                key={user.id}
+                className="hover:bg-surface-tertiary cursor-pointer"
+                onClick={() => navigate(`/users/${user.id}`)}
+              >
                 <td className="py-3 px-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-surface-tertiary rounded-full flex items-center justify-center">
@@ -333,6 +338,16 @@ export default function Users() {
                 </td>
                 <td className="py-3 px-4 text-sm text-th-text-tertiary">
                   {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
+                </td>
+                <td className="py-3 px-4 text-right">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}`); }}
+                    aria-label="View user details"
+                    className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
                 </td>
               </tr>
             ))}

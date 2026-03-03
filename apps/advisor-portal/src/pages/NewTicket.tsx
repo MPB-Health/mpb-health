@@ -143,7 +143,7 @@ export default function NewTicket() {
         }
       />
 
-      <div className="max-w-2xl">
+      <div>
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-xl border border-neutral-200 divide-y divide-neutral-100"
@@ -163,6 +163,20 @@ export default function NewTicket() {
             />
             <p className="text-xs text-neutral-400 mt-1">{subject.length}/255</p>
           </div>
+
+          {/* Advisor ID */}
+          {profile?.agent_id && (
+            <div className="p-6">
+              <label className="block text-sm font-medium text-neutral-900 mb-1.5">Advisor ID</label>
+              <input
+                type="text"
+                value={profile.agent_id}
+                readOnly
+                title="Advisor ID"
+                className="w-full px-4 py-2.5 border border-neutral-200 rounded-lg text-sm text-neutral-500 bg-neutral-50 cursor-default"
+              />
+            </div>
+          )}
 
           {/* Category & Priority */}
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">

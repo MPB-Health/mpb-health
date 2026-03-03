@@ -15,7 +15,16 @@
       "mcp__plugin_supabase_supabase__get_logs",
       "mcp__plugin_supabase_supabase__list_migrations",
       "mcp__plugin_supabase_supabase__execute_sql",
-      "mcp__plugin_supabase_supabase__apply_migration"
+      "mcp__plugin_supabase_supabase__apply_migration",
+      "Bash(head -20 \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/config.toml\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/\")",
+      "mcp__plugin_supabase_supabase__list_edge_functions",
+      "mcp__plugin_supabase_supabase__deploy_edge_function",
+      "Bash(xargs grep -l \"CMS\\\\|Blog\\\\|Content\")",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations\" -name \"*.sql\")",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/admin-core/src\" -type f -name \"*.ts\" -o -name \"*.tsx\")",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core/src/support\" -type f -name \"*.ts\" -o -name \"*.tsx\")"
     ]
   }
 }

@@ -369,7 +369,7 @@ async function addComment(
 async function createTicket(
   itstsAdmin: ReturnType<typeof createClient>,
   requesterId: string,
-  opts: { subject: string; description?: string; category?: string; priority?: string },
+  opts: { subject: string; description?: string; category?: string; priority?: string; origin?: string; agentId?: string | null },
 ) {
   if (!opts.subject?.trim()) throw new Error("Subject is required");
   const { data, error } = await itstsAdmin
@@ -381,6 +381,8 @@ async function createTicket(
       priority: opts.priority || "medium",
       status: "new",
       requester_id: requesterId,
+      origin: (opts.origin ?? "advisor") as "member" | "advisor" | "staff" | "concierge",
+      ...(opts.agentId ? { agent_id: opts.agentId } : {}),
     })
     .select("id, ticket_number")
     .single();
@@ -725,18 +727,21 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers },
           );
         }
-        result = await createTicket(itstsAdmin, itstsUserId!, {
-          subject: body.subject,
-          description: body.description,
-          category: body.category,
-          priority: body.priority,
-        });
         {
+          // Fetch advisor profile first to tag ticket with correct origin + agent_id
           const { data: ap } = await itstsAdmin
             .from("profiles")
             .select("full_name, agent_id, company_name")
             .eq("id", itstsUserId!)
             .maybeSingle();
+          result = await createTicket(itstsAdmin, itstsUserId!, {
+            subject: body.subject,
+            description: body.description,
+            category: body.category,
+            priority: body.priority,
+            origin: "advisor",
+            agentId: ap?.agent_id || null,
+          });
           fireNotification({
             event: "created",
             ticket_id: result.ticket_id,
@@ -840,18 +845,20 @@ Deno.serve(async (req: Request) => {
             { status: 404, headers },
           );
         }
-        result = await createTicket(itstsAdmin, advisorId, {
-          subject: body.subject,
-          description: body.description,
-          category: body.category,
-          priority: body.priority,
-        });
         {
           const { data: caAp } = await itstsAdmin
             .from("profiles")
             .select("full_name, agent_id, company_name")
             .eq("id", advisorId)
             .maybeSingle();
+          result = await createTicket(itstsAdmin, advisorId, {
+            subject: body.subject,
+            description: body.description,
+            category: body.category,
+            priority: body.priority,
+            origin: "staff",
+            agentId: caAp?.agent_id || null,
+          });
           fireNotification({
             event: "created_for_advisor",
             ticket_id: result.ticket_id,

@@ -2,7 +2,13 @@
 export * from './types';
 
 // Services
-export { UserService, userService } from './users/UserService';
+export {
+  UserService,
+  userService,
+  type CrossPortalUser,
+  type AdvisorProfileSummary,
+  type PortalRole,
+} from './users/UserService';
 export { EnrollmentService, enrollmentService } from './enrollments/EnrollmentService';
 export { ContentService, contentService } from './content/ContentService';
 export {

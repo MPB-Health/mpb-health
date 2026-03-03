@@ -11,9 +11,35 @@ import {
   Save,
   UserX,
   UserCheck,
+  Globe,
+  Plus,
+  Trash2,
+  Briefcase,
 } from 'lucide-react';
-import { userService, type AdminUser, type Permission } from '@mpbhealth/admin-core';
+import {
+  userService,
+  type AdminUser,
+  type Permission,
+  type PortalRole,
+  type AdvisorProfileSummary,
+} from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
+
+const ALL_PORTAL_ROLES: PortalRole[] = ['super_admin', 'admin', 'advisor', 'member'];
+
+const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
+  super_admin: 'Super Admin',
+  admin: 'Admin',
+  advisor: 'Advisor',
+  member: 'Member',
+};
+
+const PORTAL_ROLE_COLORS: Record<PortalRole, string> = {
+  super_admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  admin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  advisor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  member: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+};
 
 export default function UserDetail() {
   const { userId } = useParams<{ userId: string }>();
@@ -31,17 +57,27 @@ export default function UserDetail() {
     permissions: [] as string[],
   });
 
+  // Portal access state
+  const [portalRoles, setPortalRoles] = useState<{ id: string; role: PortalRole; created_at: string }[]>([]);
+  const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfileSummary | null>(null);
+  const [addingRole, setAddingRole] = useState(false);
+  const [roleToAdd, setRoleToAdd] = useState<PortalRole>('advisor');
+
   useEffect(() => {
     const loadData = async () => {
       if (!userId) return;
 
       try {
-        const [userData, permsData] = await Promise.all([
+        const [userData, permsData, rolesData, advisorData] = await Promise.all([
           userService.getUser(userId),
           userService.getPermissionsByCategory(),
+          userService.getUserRoles(userId),
+          userService.getAdvisorProfile(userId),
         ]);
         setUser(userData);
         setPermissions(permsData);
+        setPortalRoles(rolesData);
+        setAdvisorProfile(advisorData);
         if (userData) {
           setFormData({
             first_name: userData.first_name,
@@ -108,6 +144,36 @@ export default function UserDetail() {
         ? prev.permissions.filter((p) => p !== permission)
         : [...prev.permissions, permission],
     }));
+  };
+
+  const handleAssignRole = async () => {
+    if (!userId) return;
+    const alreadyHas = portalRoles.some((r) => r.role === roleToAdd);
+    if (alreadyHas) {
+      toast.error(`User already has the ${roleToAdd} role`);
+      return;
+    }
+    try {
+      await userService.assignRole(userId, roleToAdd);
+      const updated = await userService.getUserRoles(userId);
+      setPortalRoles(updated);
+      setAddingRole(false);
+      toast.success(`Role "${roleToAdd}" assigned`);
+    } catch {
+      toast.error('Failed to assign role');
+    }
+  };
+
+  const handleRemoveRole = async (role: PortalRole) => {
+    if (!userId) return;
+    if (!confirm(`Remove the "${role}" role from this user?`)) return;
+    try {
+      await userService.removeRole(userId, role);
+      setPortalRoles((prev) => prev.filter((r) => r.role !== role));
+      toast.success(`Role "${role}" removed`);
+    } catch {
+      toast.error('Failed to remove role');
+    }
   };
 
   if (loading) {
@@ -359,6 +425,160 @@ export default function UserDetail() {
           </div>
         )}
       </div>
+
+      {/* Portal Access */}
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-2">
+            <Globe className="w-5 h-5 text-th-text-tertiary" />
+            <h2 className="text-lg font-semibold text-th-text-primary">Portal Access</h2>
+          </div>
+          {isSuperAdmin && !addingRole && (
+            <button
+              type="button"
+              onClick={() => setAddingRole(true)}
+              className="flex items-center space-x-1 px-3 py-1.5 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Role</span>
+            </button>
+          )}
+        </div>
+
+        {portalRoles.length === 0 && !addingRole ? (
+          <p className="text-th-text-tertiary text-sm">No portal roles assigned.</p>
+        ) : (
+          <div className="space-y-2">
+            {portalRoles.map((pr) => (
+              <div
+                key={pr.id}
+                className="flex items-center justify-between py-2 border-b border-th-border-subtle last:border-0"
+              >
+                <div className="flex items-center space-x-3">
+                  <span
+                    className={`px-2.5 py-1 text-xs rounded-full capitalize font-medium ${PORTAL_ROLE_COLORS[pr.role]}`}
+                  >
+                    {PORTAL_ROLE_LABELS[pr.role]}
+                  </span>
+                  <span className="text-xs text-th-text-tertiary">
+                    Since {new Date(pr.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                {isSuperAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveRole(pr.role)}
+                    aria-label={`Remove ${pr.role} role`}
+                    className="p-1.5 text-th-text-tertiary hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {addingRole && (
+          <div className="mt-4 flex items-center space-x-2">
+            <label htmlFor="role-to-add" className="sr-only">Role to assign</label>
+            <select
+              id="role-to-add"
+              value={roleToAdd}
+              onChange={(e) => setRoleToAdd(e.target.value as PortalRole)}
+              className="flex-1 px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-sm text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            >
+              {ALL_PORTAL_ROLES.map((r) => (
+                <option key={r} value={r}>{PORTAL_ROLE_LABELS[r]}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={handleAssignRole}
+              className="px-3 py-2 bg-th-accent-600 text-white text-sm rounded-lg hover:bg-th-accent-700 transition-colors"
+            >
+              Assign
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddingRole(false)}
+              className="px-3 py-2 border border-th-border text-th-text-secondary text-sm rounded-lg hover:bg-surface-secondary transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Advisor Profile (shown if advisor role exists) */}
+      {advisorProfile && (
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <div className="flex items-center space-x-2 mb-6">
+            <Briefcase className="w-5 h-5 text-th-text-tertiary" />
+            <h2 className="text-lg font-semibold text-th-text-primary">Advisor Profile</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-th-text-tertiary mb-0.5">Full Name</p>
+              <p className="font-medium text-th-text-primary">
+                {advisorProfile.first_name} {advisorProfile.last_name}
+              </p>
+            </div>
+            <div>
+              <p className="text-th-text-tertiary mb-0.5">Email</p>
+              <p className="font-medium text-th-text-primary">{advisorProfile.email}</p>
+            </div>
+            {advisorProfile.agent_id && (
+              <div>
+                <p className="text-th-text-tertiary mb-0.5">Agent ID</p>
+                <p className="font-medium text-th-text-primary font-mono">{advisorProfile.agent_id}</p>
+              </div>
+            )}
+            {advisorProfile.company_name && (
+              <div>
+                <p className="text-th-text-tertiary mb-0.5">Company</p>
+                <p className="font-medium text-th-text-primary">{advisorProfile.company_name}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-th-text-tertiary mb-0.5">Specialization</p>
+              <p className="font-medium text-th-text-primary capitalize">{advisorProfile.specialization}</p>
+            </div>
+            <div>
+              <p className="text-th-text-tertiary mb-0.5">Advisor Status</p>
+              <span
+                className={`inline-block px-2 py-0.5 text-xs rounded-full capitalize ${
+                  advisorProfile.status === 'active'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    : advisorProfile.status === 'suspended'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                    : 'bg-surface-tertiary text-th-text-secondary'
+                }`}
+              >
+                {advisorProfile.status}
+              </span>
+            </div>
+            <div>
+              <p className="text-th-text-tertiary mb-0.5">Onboarding</p>
+              <span
+                className={`inline-block px-2 py-0.5 text-xs rounded-full ${
+                  advisorProfile.onboarding_completed
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                }`}
+              >
+                {advisorProfile.onboarding_completed ? 'Complete' : 'In Progress'}
+              </span>
+            </div>
+            <div>
+              <p className="text-th-text-tertiary mb-0.5">Joined</p>
+              <p className="font-medium text-th-text-primary">
+                {new Date(advisorProfile.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

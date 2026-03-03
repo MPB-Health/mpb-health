@@ -1,6 +1,32 @@
 import { supabase } from '@mpbhealth/database';
 import type { AdminUser, Role, Permission } from '../types';
 
+export interface CrossPortalUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  user_created_at: string;
+  last_sign_in_at: string | null;
+  roles: string[];
+}
+
+export interface AdvisorProfileSummary {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  agent_id: string | null;
+  company_name: string | null;
+  status: 'pending' | 'active' | 'suspended' | 'inactive';
+  specialization: string;
+  onboarding_completed: boolean;
+  onboarding_completed_at: string | null;
+  created_at: string;
+}
+
+export type PortalRole = 'super_admin' | 'admin' | 'advisor' | 'member';
+
 export class UserService {
   // Get all users with optional filters
   async getUsers(filters?: {
@@ -184,6 +210,91 @@ export class UserService {
       .from('admin_users')
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', userId);
+  }
+
+  // ── Cross-portal user management ────────────────────────────────────────────
+
+  /** All auth users with their roles across portals (uses users_with_roles view) */
+  async getCrossPortalUsers(filters?: {
+    role?: PortalRole;
+    search?: string;
+  }): Promise<CrossPortalUser[]> {
+    let query = supabase
+      .from('users_with_roles')
+      .select('*')
+      .order('user_created_at', { ascending: false });
+
+    if (filters?.search) {
+      query = query.or(
+        `email.ilike.%${filters.search}%,full_name.ilike.%${filters.search}%`
+      );
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    let users = (data || []) as CrossPortalUser[];
+
+    // Filter by role client-side (array contains)
+    if (filters?.role) {
+      users = users.filter((u) => u.roles.includes(filters.role!));
+    }
+
+    return users;
+  }
+
+  /** All roles assigned to a user */
+  async getUserRoles(userId: string): Promise<{ id: string; role: PortalRole; created_at: string }[]> {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('id, role, created_at')
+      .eq('user_id', userId)
+      .order('role', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  /** Advisor profile for a given auth user ID */
+  async getAdvisorProfile(userId: string): Promise<AdvisorProfileSummary | null> {
+    const { data, error } = await supabase
+      .from('advisor_profiles')
+      .select('id, user_id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
+      .or(`id.eq.${userId},user_id.eq.${userId}`)
+      .limit(1);
+
+    if (error) throw error;
+    return data?.[0] ?? null;
+  }
+
+  /** Assign a portal role to a user (super_admin only) */
+  async assignRole(userId: string, role: PortalRole): Promise<void> {
+    const { error } = await supabase
+      .from('user_roles')
+      .insert({ user_id: userId, role });
+
+    if (error) throw error;
+  }
+
+  /** Remove a portal role from a user (super_admin only) */
+  async removeRole(userId: string, role: PortalRole): Promise<void> {
+    const { error } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId)
+      .eq('role', role);
+
+    if (error) throw error;
+  }
+
+  /** Bulk status update on admin_users */
+  async bulkUpdateStatus(userIds: string[], status: AdminUser['status']): Promise<void> {
+    const { error } = await supabase
+      .from('admin_users')
+      .update({ status })
+      .in('id', userIds);
+
+    if (error) throw error;
   }
 }
 

@@ -465,7 +465,7 @@ export default function NavigationManager() {
                   <input
                     type="text"
                     value={modalForm.badge_color || ''}
-                    onChange={(e) => setModalForm((p) => ({ ...p, badge_color: e.target.value || null }))}
+                    onChange={(e) => setModalForm((p) => ({ ...p, badge_color: e.target.value }))}
                     placeholder="#ef4444"
                     className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
                   />

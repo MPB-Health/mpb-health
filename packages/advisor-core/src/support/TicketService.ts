@@ -179,11 +179,18 @@ export interface CreateTicketOptions {
   description?: string;
   category?: string;
   priority?: TicketPriority;
+  attachments?: File[];
 }
 
 export interface CreateTicketResult {
   ticket_id: string;
   ticket_number: number;
+}
+
+interface TicketAttachmentUploadResult {
+  fileName: string;
+  accessUrl: string;
+  size: number;
 }
 
 export interface UpdateTicketOptions {
@@ -192,6 +199,99 @@ export interface UpdateTicketOptions {
 }
 
 export class TicketService {
+  private static ATTACHMENTS_BUCKET = 'ticket-attachments';
+  private static ATTACHMENT_MAX_SIZE = 15 * 1024 * 1024; // 15 MB per file
+  private static ATTACHMENT_MAX_COUNT = 10;
+
+  private sanitizeFileName(fileName: string): string {
+    const dotIdx = fileName.lastIndexOf('.');
+    const base = (dotIdx > 0 ? fileName.slice(0, dotIdx) : fileName)
+      .replace(/[^a-zA-Z0-9-_]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 80) || 'file';
+    const ext = dotIdx > 0 ? fileName.slice(dotIdx + 1).toLowerCase().replace(/[^a-z0-9]+/g, '') : '';
+    return ext ? `${base}.${ext.slice(0, 10)}` : base;
+  }
+
+  private formatAttachmentComment(uploads: TicketAttachmentUploadResult[]): string {
+    const lines = uploads.map((upload) => {
+      const kb = Math.max(1, Math.round(upload.size / 1024));
+      return `- ${upload.fileName} (${kb} KB): ${upload.accessUrl}`;
+    });
+    return ['Attachments uploaded by advisor:', ...lines].join('\n');
+  }
+
+  private async uploadAttachments(ticketId: string, attachments: File[]): Promise<TicketAttachmentUploadResult[]> {
+    if (!attachments.length) return [];
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) throw new Error('Authentication required to upload attachments. Please sign in again.');
+
+    if (attachments.length > TicketService.ATTACHMENT_MAX_COUNT) {
+      throw new Error(`You can upload up to ${TicketService.ATTACHMENT_MAX_COUNT} attachments per ticket.`);
+    }
+
+    const uploaded: TicketAttachmentUploadResult[] = [];
+    const uploadedPaths: string[] = [];
+
+    try {
+      for (const file of attachments) {
+        if (file.size > TicketService.ATTACHMENT_MAX_SIZE) {
+          throw new Error(`File \"${file.name}\" exceeds the 15 MB limit.`);
+        }
+
+        const safeName = this.sanitizeFileName(file.name);
+        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const path = `${user.id}/${ticketId}/${uniqueSuffix}-${safeName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(TicketService.ATTACHMENTS_BUCKET)
+          .upload(path, file, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: false,
+          });
+
+        if (uploadError) {
+          if (uploadError.message?.includes('Bucket not found')) {
+            throw new Error('Ticket attachment storage is not configured. Please contact support.');
+          }
+          throw uploadError;
+        }
+
+        uploadedPaths.push(path);
+
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from(TicketService.ATTACHMENTS_BUCKET)
+          .createSignedUrl(path, 60 * 60 * 24 * 365);
+
+        if (signedError || !signedData?.signedUrl) {
+          throw signedError || new Error('Failed to create secure attachment URL.');
+        }
+
+        uploaded.push({
+          fileName: file.name,
+          accessUrl: signedData.signedUrl,
+          size: file.size,
+        });
+      }
+
+      return uploaded;
+    } catch (error) {
+      if (uploadedPaths.length > 0) {
+        await Promise.all(
+          uploadedPaths.map((path) =>
+            supabase.storage
+              .from(TicketService.ATTACHMENTS_BUCKET)
+              .remove([path])
+              .catch(() => undefined),
+          ),
+        );
+      }
+      throw error;
+    }
+  }
+
   /**
    * Central invocation wrapper for all ticket-proxy calls.
    *
@@ -298,6 +398,14 @@ export class TicketService {
       category: opts.category,
       priority: opts.priority,
     });
+
+    if (opts.attachments?.length) {
+      const uploads = await this.uploadAttachments(data.ticket_id, opts.attachments);
+      if (uploads.length) {
+        await this.replyToTicket(data.ticket_id, this.formatAttachmentComment(uploads));
+      }
+    }
+
     return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
   }
 

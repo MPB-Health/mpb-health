@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Headphones, ArrowLeft, Loader2, AlertCircle, PlusCircle } from 'lucide-react';
+import { Headphones, ArrowLeft, Loader2, AlertCircle, PlusCircle, Paperclip, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GradientHeader } from '@mpbhealth/ui';
 import { ticketService, type TicketPriority } from '@mpbhealth/advisor-core';
@@ -22,6 +22,16 @@ const PRIORITIES: { value: TicketPriority; label: string; desc: string }[] = [
   { value: 'urgent', label: 'Urgent', desc: 'Critical issue' },
 ];
 
+const MAX_ATTACHMENT_SIZE = 15 * 1024 * 1024; // 15 MB
+const MAX_ATTACHMENT_COUNT = 10;
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
 export default function NewTicket() {
   const navigate = useNavigate();
   const { profile, loading: authLoading } = useAdvisor();
@@ -31,8 +41,38 @@ export default function NewTicket() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [priority, setPriority] = useState<TicketPriority>('medium');
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const handleFilesSelected = (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+
+    const incoming = Array.from(list);
+    const combined = [...attachments, ...incoming];
+
+    if (combined.length > MAX_ATTACHMENT_COUNT) {
+      setError(`You can upload up to ${MAX_ATTACHMENT_COUNT} files.`);
+      return;
+    }
+
+    const tooLarge = incoming.find((file) => file.size > MAX_ATTACHMENT_SIZE);
+    if (tooLarge) {
+      setError(`\"${tooLarge.name}\" is too large. Maximum size is 15 MB.`);
+      return;
+    }
+
+    const deduped = combined.filter(
+      (file, idx, arr) => arr.findIndex((f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified) === idx,
+    );
+
+    setAttachments(deduped);
+    setError('');
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -67,6 +107,7 @@ export default function NewTicket() {
         description: description.trim(),
         category: category || undefined,
         priority,
+        attachments,
       });
       toast.success(`Ticket #${result.ticket_number} submitted! Our team will be in touch shortly.`);
       navigate('/tickets', { replace: true });
@@ -131,6 +172,7 @@ export default function NewTicket() {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 disabled={catLoading}
+                title="Category"
                 className="w-full px-3 py-2.5 border border-neutral-300 rounded-lg text-sm text-neutral-900 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-60"
               >
                 <option value="">Select a category...</option>
@@ -146,6 +188,7 @@ export default function NewTicket() {
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as TicketPriority)}
+                title="Priority"
                 className="w-full px-3 py-2.5 border border-neutral-300 rounded-lg text-sm text-neutral-900 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               >
                 {PRIORITIES.map((p) => (
@@ -171,6 +214,51 @@ export default function NewTicket() {
               className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-y"
             />
             <p className="text-xs text-neutral-400 mt-1">{description.length.toLocaleString()}/10,000</p>
+          </div>
+
+          {/* Attachments */}
+          <div className="p-6 space-y-3">
+            <label className="block text-sm font-medium text-neutral-900 mb-1.5">Attachments</label>
+            <label className="flex items-center justify-center gap-2 px-4 py-3 border border-dashed border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 cursor-pointer transition-colors">
+              <Paperclip className="w-4 h-4" />
+              <span>Upload images or files</span>
+              <input
+                type="file"
+                multiple
+                onChange={(e) => {
+                  handleFilesSelected(e.target.files);
+                  e.currentTarget.value = '';
+                }}
+                className="sr-only"
+              />
+            </label>
+            <p className="text-xs text-neutral-400">
+              Up to {MAX_ATTACHMENT_COUNT} files, {formatBytes(MAX_ATTACHMENT_SIZE)} max each.
+            </p>
+
+            {attachments.length > 0 && (
+              <ul className="space-y-2">
+                {attachments.map((file, idx) => (
+                  <li
+                    key={`${file.name}-${file.size}-${file.lastModified}-${idx}`}
+                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-neutral-200"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-neutral-800 truncate">{file.name}</p>
+                      <p className="text-xs text-neutral-500">{formatBytes(file.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(idx)}
+                      className="p-1 text-neutral-500 hover:text-neutral-800 rounded transition-colors"
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Error */}

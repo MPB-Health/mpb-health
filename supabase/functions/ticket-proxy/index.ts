@@ -47,22 +47,12 @@ interface ProxyRequest {
   content?: string;
 }
 
-function getItstsClient() {
+function getItstsClient(): ReturnType<typeof createClient> | null {
   const url = Deno.env.get("ITSTS_SUPABASE_URL");
   const key = Deno.env.get("ITSTS_SERVICE_ROLE_KEY");
   if (!url || !key) {
-    log.warn("ITSTS configuration missing - falling back to main Supabase project");
-    // Fall back to using the main Supabase project for ticket management
-    const fallbackUrl = Deno.env.get("SUPABASE_URL");
-    const fallbackKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!fallbackUrl || !fallbackKey) {
-      log.error("No Supabase configuration available - ITSTS and fallback both missing");
-      throw new Error("ITSTS not configured and no fallback Supabase configuration available");
-    }
-    log.info("Using fallback Supabase configuration for ticket management");
-    return createClient(fallbackUrl, fallbackKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    log.warn("ITSTS_SUPABASE_URL / ITSTS_SERVICE_ROLE_KEY not set — support system not configured");
+    return null;
   }
   log.info("Using ITSTS Supabase configuration");
   return createClient(url, key, {
@@ -585,6 +575,32 @@ Deno.serve(async (req: Request) => {
     log.info("Handling action", { action, userId: user.id, correlationId });
 
     const itstsAdmin = getItstsClient();
+
+    // ── ITSTS not configured → return graceful stubs for read actions ──────
+    if (!itstsAdmin) {
+      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all"];
+      if (READ_STUB_ACTIONS.includes(action as string)) {
+        const stubs: Record<string, unknown> = {
+          list:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+          stats:         { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+          get_categories:{ categories: [] },
+          list_all:      { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+          stats_all:     { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+        };
+        return new Response(
+          JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId }),
+          { status: 200, headers },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Support system is not yet configured. Please contact an administrator.",
+          correlationId,
+        }),
+        { status: 503, headers },
+      );
+    }
 
     // Admin actions require role check against monorepo user_roles
     if (ADMIN_ACTIONS.includes(action)) {

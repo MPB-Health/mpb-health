@@ -666,6 +666,9 @@ importers:
 
   packages/admin-core:
     dependencies:
+      '@mpbhealth/advisor-core':
+        specifier: workspace:*
+        version: link:../advisor-core
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../database

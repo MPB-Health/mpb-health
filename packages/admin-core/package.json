@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mpbhealth/advisor-core": "workspace:*",
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/utils": "workspace:*"
   },

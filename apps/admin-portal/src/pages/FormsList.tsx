@@ -334,7 +334,7 @@ export default function FormsList() {
                 <label className="block text-sm font-medium text-th-text-secondary mb-1">Slug</label>
                 <input
                   type="text"
-                  value={modalForm.slug}
+                  value={modalForm.slug ?? ''}
                   onChange={(e) => setModalForm((p) => ({ ...p, slug: e.target.value }))}
                   placeholder="auto-generated"
                   className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
@@ -344,7 +344,7 @@ export default function FormsList() {
                 <label className="block text-sm font-medium text-th-text-secondary mb-1">Category</label>
                 <input
                   type="text"
-                  value={modalForm.category}
+                  value={modalForm.category ?? ''}
                   onChange={(e) => setModalForm((p) => ({ ...p, category: e.target.value }))}
                   placeholder="e.g. Enrollment, HR"
                   className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
@@ -353,7 +353,7 @@ export default function FormsList() {
               <div>
                 <label className="block text-sm font-medium text-th-text-secondary mb-1">Cognito Embed Code</label>
                 <textarea
-                  value={modalForm.cognito_embed}
+                  value={modalForm.cognito_embed ?? ''}
                   onChange={(e) => setModalForm((p) => ({ ...p, cognito_embed: e.target.value }))}
                   placeholder="<script ...></script>"
                   rows={4}
@@ -374,7 +374,7 @@ export default function FormsList() {
                   <label className="block text-sm font-medium text-th-text-secondary mb-1">Menu Section</label>
                   <input
                     type="text"
-                    value={modalForm.menu_section}
+                    value={modalForm.menu_section ?? ''}
                     onChange={(e) => setModalForm((p) => ({ ...p, menu_section: e.target.value }))}
                     placeholder="e.g. Employer"
                     className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"

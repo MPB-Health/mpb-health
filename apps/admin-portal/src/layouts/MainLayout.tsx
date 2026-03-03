@@ -9,6 +9,7 @@ import {
   LogOut,
   Bell,
   Package,
+  LifeBuoy,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
@@ -27,6 +28,14 @@ const navigation: NavItem[] = [
     // badge is set dynamically below
   },
   { name: 'Plan Management', href: '/plans', icon: Package },
+  {
+    name: 'Support',
+    href: '#',
+    icon: LifeBuoy,
+    children: [
+      { name: 'Tickets', href: '/support/tickets' },
+    ],
+  },
   {
     name: 'Content',
     href: '#',
@@ -50,6 +59,7 @@ const navigation: NavItem[] = [
       { name: 'Code Inventory', href: '/settings/code-inventory' },
       { name: 'Resources', href: '/settings/resources' },
       { name: 'E-Signature', href: '/settings/esignature' },
+      { name: 'Ticket Categories', href: '/settings/ticket-categories' },
     ],
   },
 ];

@@ -26,6 +26,9 @@ const AdminResources = React.lazy(() => import('./pages/AdminResources'));
 const ESignature = React.lazy(() => import('./pages/ESignature'));
 const PlansList = React.lazy(() => import('./pages/PlansList'));
 const PlanEditor = React.lazy(() => import('./pages/PlanEditor'));
+const TicketsList = React.lazy(() => import('./pages/TicketsList'));
+const TicketDetail = React.lazy(() => import('./pages/TicketDetail'));
+const TicketCategoriesSettings = React.lazy(() => import('./pages/TicketCategoriesSettings'));
 
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function LoadingSpinner() {
@@ -137,6 +140,9 @@ export default function App() {
               <Route path="settings/code-inventory" element={<CodeInventory />} />
               <Route path="settings/resources" element={<AdminResources />} />
               <Route path="settings/esignature" element={<ESignature />} />
+              <Route path="settings/ticket-categories" element={<TicketCategoriesSettings />} />
+              <Route path="support/tickets" element={<TicketsList />} />
+              <Route path="support/tickets/:ticketId" element={<TicketDetail />} />
               <Route path="audit-logs" element={<AuditLogs />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

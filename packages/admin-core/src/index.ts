@@ -89,3 +89,76 @@ export {
   type DocumentStatus,
   type DocumentType,
 } from './settings/ESignatureService';
+
+// CMS services for advisor portal content management
+export {
+  TrainingAdminService,
+  trainingAdminService,
+  type AdminTrainingModule,
+  type TrainingModuleCreateInput,
+  type TrainingModuleUpdateInput,
+  type TrainingAdminStats,
+} from './content/TrainingAdminService';
+
+export {
+  SOPAdminService,
+  sopAdminService,
+  type AdminSOPDocument,
+  type SOPCategory,
+  type SOPCreateInput,
+  type SOPUpdateInput,
+  type SOPAdminStats,
+} from './content/SOPAdminService';
+
+export {
+  QuickLinksAdminService,
+  quickLinksAdminService,
+  type QuickLink,
+  type QuickLinkCategory,
+  type QuickLinkCreateInput,
+  type QuickLinkUpdateInput,
+} from './content/QuickLinksAdminService';
+
+export {
+  FormsAdminService,
+  formsAdminService,
+  type AdminForm,
+  type FormCreateInput,
+  type FormUpdateInput,
+} from './content/FormsAdminService';
+
+export {
+  ContactDirectoryService,
+  contactDirectoryService,
+  type ContactEntry,
+  type ContactCreateInput,
+  type ContactUpdateInput,
+} from './content/ContactDirectoryService';
+
+export {
+  NavigationAdminService,
+  navigationAdminService,
+  type NavMenuItem,
+  type NavItemCreateInput,
+  type NavItemUpdateInput,
+} from './content/NavigationAdminService';
+
+// Video library (re-export from advisor-core — already has full CRUD)
+export { VideoService, videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
+
+// Support / Ticket management (re-exports from advisor-core via thin wrapper)
+export {
+  TicketService,
+  ticketService,
+  type AdminTicket,
+  type AdminTicketDetail,
+  type AdminTicketListResult,
+  type AdminListTicketsOptions,
+  type TicketStats,
+  type TicketStatus,
+  type TicketPriority,
+  type TicketComment,
+  type UpdateTicketOptions,
+  type CreateTicketOptions,
+  type CreateTicketResult,
+} from './support/AdminTicketService';

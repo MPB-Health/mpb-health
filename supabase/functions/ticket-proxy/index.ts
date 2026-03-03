@@ -45,6 +45,7 @@ interface ProxyRequest {
   page?: number;
   per_page?: number;
   content?: string;
+  is_internal?: boolean;
 }
 
 function getItstsClient(): ReturnType<typeof createClient> | null {
@@ -309,6 +310,7 @@ async function addComment(
   ticketId: string,
   content: string,
   authorEmail: string,
+  isInternal = false,
 ) {
   // Find admin's ITSTS profile
   const authorId = await getItstsUserId(itstsAdmin, authorEmail);
@@ -324,7 +326,7 @@ async function addComment(
       ticket_id: ticketId,
       content,
       author_id: authorId,
-      is_internal: false,
+      is_internal: isInternal,
     });
 
   if (commentError) throw commentError;
@@ -700,8 +702,9 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers },
           );
         }
-        result = await addComment(itstsAdmin, body.ticket_id, body.content.trim(), user.email);
-        if (result._notif?.requester_email) {
+        result = await addComment(itstsAdmin, body.ticket_id, body.content.trim(), user.email, Boolean(body.is_internal));
+        // Internal notes are never sent to the advisor — skip notification
+        if (!body.is_internal && result._notif?.requester_email) {
           fireNotification({
             event: "staff_replied",
             ticket_id: body.ticket_id!,

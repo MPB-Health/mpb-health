@@ -438,8 +438,8 @@ export class TicketService {
 
   // ── Admin write methods ────────────────────────────────────────────────
 
-  async addComment(ticketId: string, content: string): Promise<void> {
-    await this.call<{ success: boolean }>('add_comment', { ticket_id: ticketId, content });
+  async addComment(ticketId: string, content: string, isInternal = false): Promise<void> {
+    await this.call<{ success: boolean }>('add_comment', { ticket_id: ticketId, content, is_internal: isInternal });
   }
 
   async updateTicket(ticketId: string, opts: UpdateTicketOptions): Promise<void> {

@@ -29,6 +29,16 @@ const PlanEditor = React.lazy(() => import('./pages/PlanEditor'));
 const TicketsList = React.lazy(() => import('./pages/TicketsList'));
 const TicketDetail = React.lazy(() => import('./pages/TicketDetail'));
 const TicketCategoriesSettings = React.lazy(() => import('./pages/TicketCategoriesSettings'));
+// Phase 2 — CMS pages
+const TrainingModulesList = React.lazy(() => import('./pages/TrainingModulesList'));
+const TrainingModuleEditor = React.lazy(() => import('./pages/TrainingModuleEditor'));
+const SOPsList = React.lazy(() => import('./pages/SOPsList'));
+const SOPEditor = React.lazy(() => import('./pages/SOPEditor'));
+const QuickLinksList = React.lazy(() => import('./pages/QuickLinksList'));
+const VideoLibraryList = React.lazy(() => import('./pages/VideoLibraryList'));
+const FormsList = React.lazy(() => import('./pages/FormsList'));
+const ContactDirectory = React.lazy(() => import('./pages/ContactDirectory'));
+const NavigationManager = React.lazy(() => import('./pages/NavigationManager'));
 
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function LoadingSpinner() {
@@ -133,6 +143,18 @@ export default function App() {
               <Route path="content/bulletins/new" element={<BulletinEditor />} />
               <Route path="content/bulletins/:bulletinId" element={<BulletinEditor />} />
               <Route path="content/resources" element={<Resources />} />
+              {/* Phase 2 — CMS routes */}
+              <Route path="content/training" element={<TrainingModulesList />} />
+              <Route path="content/training/new" element={<TrainingModuleEditor />} />
+              <Route path="content/training/:moduleId" element={<TrainingModuleEditor />} />
+              <Route path="content/sops" element={<SOPsList />} />
+              <Route path="content/sops/new" element={<SOPEditor />} />
+              <Route path="content/sops/:sopId" element={<SOPEditor />} />
+              <Route path="content/quick-links" element={<QuickLinksList />} />
+              <Route path="content/videos" element={<VideoLibraryList />} />
+              <Route path="content/forms" element={<FormsList />} />
+              <Route path="content/contacts" element={<ContactDirectory />} />
+              <Route path="content/navigation" element={<NavigationManager />} />
               <Route path="settings" element={<Settings />} />
               <Route path="settings/payments" element={<PaymentProcessors />} />
               <Route path="settings/sms" element={<SmsAccounts />} />

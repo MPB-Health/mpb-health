@@ -21,11 +21,12 @@ import { useAdmin } from '../contexts/AdminContext';
 import AddUserModal from '../components/AddUserModal';
 import InviteUserModal from '../components/InviteUserModal';
 
-type PortalTab = 'admin' | 'advisor' | 'member' | 'all';
+type PortalTab = 'admin' | 'advisor' | 'crm' | 'member' | 'all';
 
 const PORTAL_TABS: { id: PortalTab; label: string }[] = [
   { id: 'admin', label: 'Admin' },
   { id: 'advisor', label: 'Advisor' },
+  { id: 'crm', label: 'CRM' },
   { id: 'member', label: 'Member' },
   { id: 'all', label: 'All Portals' },
 ];
@@ -123,6 +124,8 @@ export default function Users() {
       loadAdminUsers();
     } else if (activeTab === 'advisor') {
       loadCrossPortalUsers('advisor');
+    } else if (activeTab === 'crm') {
+      loadCrossPortalUsers('crm_user');
     } else if (activeTab === 'member') {
       loadCrossPortalUsers('member');
     } else {

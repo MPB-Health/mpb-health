@@ -25,7 +25,7 @@ export interface AdvisorProfileSummary {
   created_at: string;
 }
 
-export type PortalRole = 'super_admin' | 'admin' | 'advisor' | 'member';
+export type PortalRole = 'super_admin' | 'admin' | 'advisor' | 'member' | 'crm_user';
 
 export class UserService {
   // Get all users with optional filters
@@ -214,23 +214,20 @@ export class UserService {
 
   // ── Cross-portal user management ────────────────────────────────────────────
 
-  /** All auth users with their roles across portals (uses users_with_roles view) */
+  /** All auth users with their roles across portals (uses SECURITY DEFINER RPC) */
   async getCrossPortalUsers(filters?: {
     role?: PortalRole;
     search?: string;
   }): Promise<CrossPortalUser[]> {
-    let query = supabase
-      .from('users_with_roles')
-      .select('*')
-      .order('user_created_at', { ascending: false });
+    // Use search RPC when a search term is provided, otherwise get all
+    const rpcName = filters?.search
+      ? 'search_users_with_roles'
+      : 'get_all_users_with_roles';
+    const rpcArgs = filters?.search
+      ? { search_email: filters.search }
+      : {};
 
-    if (filters?.search) {
-      query = query.or(
-        `email.ilike.%${filters.search}%,full_name.ilike.%${filters.search}%`
-      );
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.rpc(rpcName, rpcArgs);
     if (error) throw error;
 
     let users = (data || []) as CrossPortalUser[];
@@ -267,36 +264,36 @@ export class UserService {
     return data?.[0] ?? null;
   }
 
-  /** Assign a portal role to a user (super_admin only) */
+  /** Assign a portal role to a user (super_admin only, via SECURITY DEFINER RPC) */
   async assignRole(userId: string, role: PortalRole): Promise<void> {
-    const { error } = await supabase
-      .from('user_roles')
-      .insert({ user_id: userId, role });
+    const { data, error } = await supabase.rpc('assign_user_role', {
+      target_user_id: userId,
+      target_role: role,
+    });
 
     if (error) throw error;
+    if (data && !data.success) throw new Error(data.message || 'Failed to assign role');
   }
 
-  /** Remove a portal role from a user (super_admin only) */
+  /** Remove a portal role from a user (super_admin only, via SECURITY DEFINER RPC) */
   async removeRole(userId: string, role: PortalRole): Promise<void> {
-    const { error } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId)
-      .eq('role', role);
+    const { data, error } = await supabase.rpc('remove_user_role', {
+      target_user_id: userId,
+      target_role: role,
+    });
 
     if (error) throw error;
+    if (data && !data.success) throw new Error(data.message || 'Failed to remove role');
   }
 
-  /** Single cross-portal user by ID (from users_with_roles view) */
+  /** Single cross-portal user by ID (via SECURITY DEFINER RPC) */
   async getCrossPortalUser(userId: string): Promise<CrossPortalUser | null> {
-    const { data, error } = await supabase
-      .from('users_with_roles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    // get_all_users_with_roles returns all users; filter client-side for single user
+    const { data, error } = await supabase.rpc('get_all_users_with_roles');
+    if (error) throw error;
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return (data as CrossPortalUser) ?? null;
+    const users = (data || []) as CrossPortalUser[];
+    return users.find((u) => u.id === userId) ?? null;
   }
 
   /** Send a password reset email via Supabase Auth */

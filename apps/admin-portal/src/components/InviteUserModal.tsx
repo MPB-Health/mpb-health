@@ -13,7 +13,7 @@ interface InviteUserModalProps {
 
 interface FormData {
   email: string;
-  role: 'admin' | 'manager' | 'advisor';
+  role: 'admin' | 'manager' | 'advisor' | 'crm_user';
 }
 
 const DEFAULT_FORM: FormData = {
@@ -22,7 +22,8 @@ const DEFAULT_FORM: FormData = {
 };
 
 const ROLES = [
-  { value: 'advisor', label: 'Advisor', description: 'Standard advisor access' },
+  { value: 'advisor', label: 'Advisor', description: 'Standard advisor portal access' },
+  { value: 'crm_user', label: 'CRM User', description: 'Access to the CRM portal' },
   { value: 'manager', label: 'Manager', description: 'Can manage templates and view reports' },
   { value: 'admin', label: 'Admin', description: 'Full admin access' },
 ] as const;

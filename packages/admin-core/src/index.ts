@@ -22,7 +22,16 @@ export {
 export { SettingsService, settingsService } from './settings/SettingsService';
 export { AuditService, auditService } from './audit/AuditService';
 export { AnalyticsService, analyticsService } from './analytics/AnalyticsService';
-export { CRMBridgeService, crmBridgeService, type CRMSummary } from './analytics/CRMBridgeService';
+export {
+  CRMBridgeService,
+  crmBridgeService,
+  type CRMSummary,
+  type CRMLead,
+  type CRMLeadDetail,
+  type CRMLeadFilters,
+  type CRMActivity,
+  type CRMTask,
+} from './analytics/CRMBridgeService';
 
 // Specialized Settings Services
 export {
@@ -151,6 +160,42 @@ export {
 
 // Video library (re-export from advisor-core — already has full CRUD)
 export { VideoService, videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
+
+// Member management
+export {
+  MemberService,
+  memberService,
+  type MemberProfile,
+  type MemberDependent,
+  type MemberClaim,
+  type MemberStats,
+  type MemberFilters,
+} from './members/MemberService';
+
+// System health
+export {
+  SystemHealthService,
+  systemHealthService,
+  type EdgeFunctionStatus,
+  type SystemHealthSummary,
+} from './system/SystemHealthService';
+
+// Messaging admin
+export {
+  ChatAdminService,
+  chatAdminService,
+  type ChatConversationAdmin,
+  type ChatMessageAdmin,
+  type ChatAdminStats,
+} from './messaging/ChatAdminService';
+
+export {
+  PushAdminService,
+  pushAdminService,
+  type PushDevice,
+  type NotificationEvent,
+  type PushAdminStats,
+} from './messaging/PushAdminService';
 
 // Support / Ticket management (re-exports from advisor-core via thin wrapper)
 export {

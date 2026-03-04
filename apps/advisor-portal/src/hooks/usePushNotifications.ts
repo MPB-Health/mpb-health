@@ -72,7 +72,7 @@ export function usePushNotifications() {
     const vapidPublicKey = await pushService.getVapidPublicKey();
 
     // Convert VAPID key to Uint8Array
-    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey).buffer as ArrayBuffer;
 
     // Get service worker registration
     const registration = await navigator.serviceWorker.ready;

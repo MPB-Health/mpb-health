@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import {
   profileService,
@@ -206,21 +206,51 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     window.location.href = '/login';
   };
 
-  // Initial load
+  // Track whether the initial session has been handled to prevent duplicate loads.
+  const initialHandled = useRef(false);
+
+  // Single auth listener — handles initial session + subsequent changes.
+  // Replaces the old pattern of calling getSession() + onAuthStateChange separately,
+  // which caused loadProfile() to fire twice on mount.
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setLoading(false);
       return;
     }
 
-    loadProfile();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event) => {
-        if (event === 'SIGNED_IN') {
+      async (event, session) => {
+        if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && !initialHandled.current)) {
+          initialHandled.current = true;
+          if (session?.user) {
+            try {
+              const advisorProfile = await profileService.getProfile(session.user.id);
+              if (advisorProfile) {
+                setProfile(advisorProfile);
+              } else {
+                console.warn('[AdvisorContext] advisor_profiles row missing; using session fallback profile');
+                setProfile(buildSessionFallbackProfile(session.user));
+              }
+            } catch (err) {
+              if (err instanceof Error && err.name === 'AbortError') {
+                console.debug('[AdvisorContext] Session check aborted (likely due to navigation)');
+                return;
+              }
+              setError(err instanceof Error ? err.message : 'Failed to load profile');
+            } finally {
+              setLoading(false);
+            }
+          } else {
+            setProfile(null);
+            setLoading(false);
+          }
+        } else if (event === 'SIGNED_IN') {
+          // Subsequent sign-ins (e.g. token refresh that triggers SIGNED_IN)
           await loadProfile();
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Session refreshed — no need to reload profile
         }
       }
     );

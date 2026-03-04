@@ -13,7 +13,7 @@ import type {
 // ============================================================================
 
 const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
-let _pendingRefresh: Promise<ReturnType<typeof supabase.auth.refreshSession>> | null = null;
+let _pendingRefresh: ReturnType<typeof supabase.auth.refreshSession> | null = null;
 
 function refreshOnce() {
   if (!_pendingRefresh) {
@@ -123,7 +123,7 @@ export class ChatService {
   async createChannel(opts: CreateChannelOptions): Promise<{ channel: ChatConversation; members_added: number }> {
     return this.call<{ success: boolean; channel: ChatConversation; members_added: number }>(
       'create_channel',
-      opts,
+      opts as unknown as Record<string, unknown>,
     );
   }
 

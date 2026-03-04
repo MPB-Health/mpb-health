@@ -383,7 +383,7 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (only after auth check completes)
   if (!loading && !profile) {
     return <Navigate to="/login" replace />;
   }
@@ -391,14 +391,6 @@ export default function MainLayout() {
   // Force password change for newly imported accounts
   if (!loading && profile?.must_change_password) {
     return <Navigate to="/change-password" replace />;
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-surface-secondary">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
-      </div>
-    );
   }
 
   // Add badges to nav items
@@ -602,7 +594,13 @@ export default function MainLayout() {
           )
         }
       >
-        <Outlet />
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-th-accent-600" />
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </AppLayout>
       </div>
     </>

@@ -5,7 +5,7 @@ import { supabase } from '@mpbhealth/database';
 // ============================================================================
 
 const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
-let _pendingRefresh: Promise<ReturnType<typeof supabase.auth.refreshSession>> | null = null;
+let _pendingRefresh: ReturnType<typeof supabase.auth.refreshSession> | null = null;
 
 function refreshOnce() {
   if (!_pendingRefresh) {
@@ -107,7 +107,7 @@ export class PushService {
   // =========================================================================
 
   async registerDevice(subscription: PushSubscriptionData): Promise<void> {
-    await this.call('register_device', subscription);
+    await this.call('register_device', { ...subscription });
   }
 
   async unregisterDevice(endpoint: string): Promise<void> {

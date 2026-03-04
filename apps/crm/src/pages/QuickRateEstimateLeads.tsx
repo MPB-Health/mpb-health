@@ -25,7 +25,7 @@ const PAGE_SIZE = 20;
 
 export default function QuickRateEstimateLeads() {
   const navigate = useNavigate();
-  const { importService, zohoConfigured } = useCRM();
+  const { importService } = useCRM();
 
   const [submissions, setSubmissions] = useState<QuoteSubmission[]>([]);
   const [total, setTotal] = useState(0);
@@ -175,21 +175,6 @@ export default function QuickRateEstimateLeads() {
               className="w-full pl-9 pr-3 py-2 border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
             />
           </div>
-
-          {/* Sync Status Filter — only when Zoho is configured */}
-          {zohoConfigured && (
-          <select
-            value={syncFilter}
-            onChange={(e) => setSyncFilter(e.target.value)}
-            aria-label="Filter by sync status"
-            className="border border-th-border rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="success">Synced</option>
-            <option value="failed">Failed</option>
-          </select>
-          )}
 
           {/* Refresh */}
           <button

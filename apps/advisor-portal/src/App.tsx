@@ -139,6 +139,24 @@ class RouteErrorBoundary extends React.Component<
   }
 }
 
+// Content-area spinner for lazy route chunks (rendered inside the layout shell)
+function RouteSpinner() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          border: '4px solid #e2e8f0',
+          borderTopColor: '#3b82f6',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }}
+      />
+    </div>
+  );
+}
+
 export default function App() {
   // Warm up the ticket-proxy edge function on app mount so the first ticket
   // page load doesn't pay the cold-start penalty (~5-13 s).
@@ -150,65 +168,65 @@ export default function App() {
     <AdvisorProvider>
       <TourProvider>
         <RouteErrorBoundary>
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              {/* Auth routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/change-password" element={<ChangePassword />} />
-              <Route path="/" element={<MainLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="training" element={<Training />} />
-                <Route path="training/mpb" element={<Training section="mpb" />} />
-                <Route path="training/sedera" element={<Training section="sedera" />} />
-                <Route path="training/zion" element={<Training section="zion" />} />
-                <Route path="training/:moduleId" element={<TrainingModule />} />
-                <Route path="forms" element={<Forms />} />
-                <Route path="forms/advisor" element={<Forms section="advisor" />} />
-                <Route path="forms/employer" element={<Forms section="employer" />} />
-                <Route path="forms/member" element={<Forms section="member" />} />
-                <Route path="quick-links" element={<QuickLinks />} />
-                <Route path="sops" element={<SOPLibrary />} />
-                <Route path="sops/advisor-toolkit" element={<SOPLibrary section="advisor-toolkit" />} />
-                <Route path="sops/pricing-charts" element={<SOPLibrary section="pricing-charts" />} />
-                <Route path="sops/reference-materials" element={<SOPLibrary section="reference-materials" />} />
-                <Route path="sops/quick-reference" element={<SOPLibrary section="quick-reference" />} />
-                <Route path="sops/flyers-sedera" element={<SOPLibrary section="flyers-sedera" />} />
-                <Route path="sops/flyers" element={<SOPLibrary section="flyers" />} />
-                <Route path="sops/sharing-guidelines" element={<SOPLibrary section="sharing-guidelines" />} />
-                <Route path="sops/healthsharing-zion" element={<SOPLibrary section="healthsharing-zion" />} />
-                <Route path="sops/zion" element={<SOPLibrary section="zion" />} />
-                <Route path="sops/arm" element={<SOPLibrary section="arm" />} />
-                <Route path="sops/rx" element={<SOPLibrary section="rx" />} />
-                <Route path="sops/handbooks" element={<SOPLibrary section="handbooks" />} />
-                <Route path="sops/:documentId" element={<SOPDocument />} />
-                <Route path="bulletins" element={<Bulletins />} />
-                <Route path="bulletins/:slug" element={<BulletinDetail />} />
-                <Route path="videos" element={<VideoLibrary />} />
-                <Route path="submit-group" element={<SubmitGroup />} />
-                <Route path="contact" element={<Contact />} />
-                <Route path="tickets" element={<Tickets />} />
-                <Route path="tickets/new" element={<NewTicket />} />
-                <Route path="admin/tickets" element={<AdminTickets />} />
-                <Route path="chat" element={<ChatPage />} />
-                <Route path="chat/:conversationId" element={<ChatPage />} />
-                <Route path="inbox" element={<Inbox />} />
-                <Route path="inbox/:conversationId" element={<ConversationThread />} />
-                <Route path="audit-log" element={<AuditLog />} />
-                <Route path="profile" element={<Profile />} />
-                {/* Settings Routes */}
-                <Route path="settings" element={<SettingsHub />} />
-                <Route path="settings/organization" element={<OrganizationSettings />} />
-                <Route path="settings/team" element={<TeamManagement />} />
-                <Route path="settings/notifications" element={<NotificationPreferences />} />
-                <Route path="settings/preferences" element={<UserPreferences />} />
-                <Route path="settings/api-keys" element={<ApiKeys />} />
-                <Route path="settings/integrations" element={<Integrations />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+          <Routes>
+            {/* Auth routes — own Suspense so they don't depend on MainLayout */}
+            <Route path="/login" element={<Suspense fallback={<LoadingSpinner />}><Login /></Suspense>} />
+            <Route path="/forgot-password" element={<Suspense fallback={<LoadingSpinner />}><ForgotPassword /></Suspense>} />
+            <Route path="/reset-password" element={<Suspense fallback={<LoadingSpinner />}><ResetPassword /></Suspense>} />
+            <Route path="/change-password" element={<Suspense fallback={<LoadingSpinner />}><ChangePassword /></Suspense>} />
+
+            {/* Authenticated routes — Suspense renders inside the layout shell */}
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<Suspense fallback={<RouteSpinner />}><Dashboard /></Suspense>} />
+              <Route path="training" element={<Suspense fallback={<RouteSpinner />}><Training /></Suspense>} />
+              <Route path="training/mpb" element={<Suspense fallback={<RouteSpinner />}><Training section="mpb" /></Suspense>} />
+              <Route path="training/sedera" element={<Suspense fallback={<RouteSpinner />}><Training section="sedera" /></Suspense>} />
+              <Route path="training/zion" element={<Suspense fallback={<RouteSpinner />}><Training section="zion" /></Suspense>} />
+              <Route path="training/:moduleId" element={<Suspense fallback={<RouteSpinner />}><TrainingModule /></Suspense>} />
+              <Route path="forms" element={<Suspense fallback={<RouteSpinner />}><Forms /></Suspense>} />
+              <Route path="forms/advisor" element={<Suspense fallback={<RouteSpinner />}><Forms section="advisor" /></Suspense>} />
+              <Route path="forms/employer" element={<Suspense fallback={<RouteSpinner />}><Forms section="employer" /></Suspense>} />
+              <Route path="forms/member" element={<Suspense fallback={<RouteSpinner />}><Forms section="member" /></Suspense>} />
+              <Route path="quick-links" element={<Suspense fallback={<RouteSpinner />}><QuickLinks /></Suspense>} />
+              <Route path="sops" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary /></Suspense>} />
+              <Route path="sops/advisor-toolkit" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="advisor-toolkit" /></Suspense>} />
+              <Route path="sops/pricing-charts" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="pricing-charts" /></Suspense>} />
+              <Route path="sops/reference-materials" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="reference-materials" /></Suspense>} />
+              <Route path="sops/quick-reference" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="quick-reference" /></Suspense>} />
+              <Route path="sops/flyers-sedera" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="flyers-sedera" /></Suspense>} />
+              <Route path="sops/flyers" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="flyers" /></Suspense>} />
+              <Route path="sops/sharing-guidelines" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="sharing-guidelines" /></Suspense>} />
+              <Route path="sops/healthsharing-zion" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="healthsharing-zion" /></Suspense>} />
+              <Route path="sops/zion" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="zion" /></Suspense>} />
+              <Route path="sops/arm" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="arm" /></Suspense>} />
+              <Route path="sops/rx" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="rx" /></Suspense>} />
+              <Route path="sops/handbooks" element={<Suspense fallback={<RouteSpinner />}><SOPLibrary section="handbooks" /></Suspense>} />
+              <Route path="sops/:documentId" element={<Suspense fallback={<RouteSpinner />}><SOPDocument /></Suspense>} />
+              <Route path="bulletins" element={<Suspense fallback={<RouteSpinner />}><Bulletins /></Suspense>} />
+              <Route path="bulletins/:slug" element={<Suspense fallback={<RouteSpinner />}><BulletinDetail /></Suspense>} />
+              <Route path="videos" element={<Suspense fallback={<RouteSpinner />}><VideoLibrary /></Suspense>} />
+              <Route path="submit-group" element={<Suspense fallback={<RouteSpinner />}><SubmitGroup /></Suspense>} />
+              <Route path="contact" element={<Suspense fallback={<RouteSpinner />}><Contact /></Suspense>} />
+              <Route path="tickets" element={<Suspense fallback={<RouteSpinner />}><Tickets /></Suspense>} />
+              <Route path="tickets/new" element={<Suspense fallback={<RouteSpinner />}><NewTicket /></Suspense>} />
+              <Route path="admin/tickets" element={<Suspense fallback={<RouteSpinner />}><AdminTickets /></Suspense>} />
+              <Route path="chat" element={<Suspense fallback={<RouteSpinner />}><ChatPage /></Suspense>} />
+              <Route path="chat/:conversationId" element={<Suspense fallback={<RouteSpinner />}><ChatPage /></Suspense>} />
+              <Route path="inbox" element={<Suspense fallback={<RouteSpinner />}><Inbox /></Suspense>} />
+              <Route path="inbox/:conversationId" element={<Suspense fallback={<RouteSpinner />}><ConversationThread /></Suspense>} />
+              <Route path="audit-log" element={<Suspense fallback={<RouteSpinner />}><AuditLog /></Suspense>} />
+              <Route path="profile" element={<Suspense fallback={<RouteSpinner />}><Profile /></Suspense>} />
+              {/* Settings Routes */}
+              <Route path="settings" element={<Suspense fallback={<RouteSpinner />}><SettingsHub /></Suspense>} />
+              <Route path="settings/organization" element={<Suspense fallback={<RouteSpinner />}><OrganizationSettings /></Suspense>} />
+              <Route path="settings/team" element={<Suspense fallback={<RouteSpinner />}><TeamManagement /></Suspense>} />
+              <Route path="settings/notifications" element={<Suspense fallback={<RouteSpinner />}><NotificationPreferences /></Suspense>} />
+              <Route path="settings/preferences" element={<Suspense fallback={<RouteSpinner />}><UserPreferences /></Suspense>} />
+              <Route path="settings/api-keys" element={<Suspense fallback={<RouteSpinner />}><ApiKeys /></Suspense>} />
+              <Route path="settings/integrations" element={<Suspense fallback={<RouteSpinner />}><Integrations /></Suspense>} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </RouteErrorBoundary>
       </TourProvider>
     </AdvisorProvider>

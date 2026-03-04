@@ -1,9 +1,9 @@
 // ============================================================================
-// Notification Center — Dropdown panel for notifications
+// Notification Center — Dropdown panel for notifications + events
 // ============================================================================
 
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
   Check,
@@ -20,9 +20,14 @@ import {
   AlertTriangle,
   Settings,
   Headphones,
+  Ticket,
+  Megaphone,
+  AtSign,
 } from 'lucide-react';
 import { useNotifications, useUnreadNotificationCount } from '../../hooks/useActivity';
+import { useNotificationEvents, useUnreadEventCount } from '../../hooks/useNotificationEvents';
 import type { Notification, NotificationCategory } from '@mpbhealth/champion-core';
+import type { NotificationEventType } from '@mpbhealth/champion-core';
 
 const CATEGORY_ICONS: Record<NotificationCategory | 'default', typeof Bell> = {
   lead: Users,
@@ -53,6 +58,25 @@ const PRIORITY_INDICATORS: Record<string, string> = {
   high: 'border-l-4 border-orange-500',
   normal: '',
   low: '',
+};
+
+// ── Event type mappings ─────────────────────────────────────────────────────
+const EVENT_TYPE_ICONS: Record<string, typeof Bell> = {
+  chat_message: MessageSquare,
+  chat_mention: AtSign,
+  ticket_update: Ticket,
+  ticket_reply: Ticket,
+  bulletin: Megaphone,
+  system: Bell,
+};
+
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  chat_message: 'bg-blue-100 text-blue-600',
+  chat_mention: 'bg-violet-100 text-violet-600',
+  ticket_update: 'bg-orange-100 text-orange-600',
+  ticket_reply: 'bg-orange-100 text-orange-600',
+  bulletin: 'bg-emerald-100 text-emerald-600',
+  system: 'bg-gray-100 text-gray-600',
 };
 
 function formatRelativeTime(dateString: string): string {
@@ -150,14 +174,70 @@ function NotificationItem({ notification, onMarkRead, onDismiss }: NotificationI
   );
 }
 
+// ── Event Item ──────────────────────────────────────────────────────────────
+interface EventItemProps {
+  event: { id: string; event_type: string; title: string; body: string | null; action_url: string | null; is_read: boolean; created_at: string; actor_name?: string | null };
+  onMarkRead: (id: string) => void;
+  onNavigate: (url: string) => void;
+}
+
+function EventItem({ event, onMarkRead, onNavigate }: EventItemProps) {
+  const Icon = EVENT_TYPE_ICONS[event.event_type] || Bell;
+  const colorClass = EVENT_TYPE_COLORS[event.event_type] || 'bg-gray-100 text-gray-600';
+
+  return (
+    <div
+      className={`p-3 hover:bg-surface-secondary transition-colors cursor-pointer ${
+        !event.is_read ? 'bg-th-accent-50/50' : ''
+      }`}
+      onClick={() => {
+        if (!event.is_read) onMarkRead(event.id);
+        if (event.action_url) onNavigate(event.action_url);
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`p-2 rounded-lg flex-shrink-0 ${colorClass}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <p className={`text-sm ${!event.is_read ? 'font-semibold' : 'font-medium'} text-th-text-primary line-clamp-2`}>
+              {event.title}
+            </p>
+            {!event.is_read && (
+              <span className="w-2 h-2 bg-th-accent-600 rounded-full flex-shrink-0 mt-1.5" />
+            )}
+          </div>
+          {event.body && (
+            <p className="text-xs text-th-text-secondary mt-0.5 line-clamp-2">{event.body}</p>
+          )}
+          <span className="text-xs text-th-text-muted mt-1 block">
+            {formatRelativeTime(event.created_at)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type Tab = 'notifications' | 'events';
+
 export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('notifications');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const { count, decrement, reset } = useUnreadNotificationCount();
   const { notifications, loading, markAsRead, dismiss, dismissAll } = useNotifications({
     limit: 20,
   });
+
+  // Events tab data
+  const { events, loading: eventsLoading, markAsRead: markEventRead, markAllRead: markAllEventsRead } = useNotificationEvents({ limit: 30 });
+  const { count: eventCount, decrement: decrementEvent, reset: resetEvents } = useUnreadEventCount();
+
+  const totalBadge = count + eventCount;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -206,9 +286,9 @@ export default function NotificationCenter() {
         className="relative p-2 text-th-text-secondary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary transition-colors"
       >
         <Bell className="w-5 h-5" />
-        {count > 0 && (
+        {totalBadge > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
-            {count > 99 ? '99+' : count}
+            {totalBadge > 99 ? '99+' : totalBadge}
           </span>
         )}
       </button>
@@ -216,90 +296,164 @@ export default function NotificationCenter() {
       {/* Dropdown Panel */}
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-96 bg-surface-primary rounded-xl border border-th-border-primary shadow-xl z-50">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-th-border-primary">
-            <h3 className="font-semibold text-th-text-primary">Notifications</h3>
-            <div className="flex items-center gap-2">
-              {unreadNotifications.length > 0 && (
+          {/* Header with Tabs */}
+          <div className="border-b border-th-border-primary">
+            <div className="flex items-center justify-between px-4 pt-3 pb-0">
+              <div className="flex gap-1">
                 <button
-                  onClick={handleMarkAllRead}
-                  className="text-xs text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
+                  onClick={() => setActiveTab('notifications')}
+                  className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors relative ${
+                    activeTab === 'notifications'
+                      ? 'text-th-accent-600 bg-surface-secondary'
+                      : 'text-th-text-muted hover:text-th-text-primary'
+                  }`}
                 >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  Mark all read
+                  Alerts
+                  {count > 0 && (
+                    <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+                      {count > 99 ? '99+' : count}
+                    </span>
+                  )}
                 </button>
-              )}
-              <Link
-                to="/settings/notifications"
-                className="p-1 text-th-text-muted hover:text-th-text-primary rounded transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <Settings className="w-4 h-4" />
-              </Link>
+                <button
+                  onClick={() => setActiveTab('events')}
+                  className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors relative ${
+                    activeTab === 'events'
+                      ? 'text-th-accent-600 bg-surface-secondary'
+                      : 'text-th-text-muted hover:text-th-text-primary'
+                  }`}
+                >
+                  Activity
+                  {eventCount > 0 && (
+                    <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] bg-blue-500 text-white text-[10px] font-bold rounded-full px-1">
+                      {eventCount > 99 ? '99+' : eventCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+              <div className="flex items-center gap-2 pb-2">
+                {activeTab === 'notifications' && unreadNotifications.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="text-xs text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
+                    title="Mark all as read"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {activeTab === 'events' && eventCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={async () => { await markAllEventsRead(); resetEvents(); }}
+                    className="text-xs text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
+                    title="Mark all events as read"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <Link
+                  to="/settings/notifications"
+                  className="p-1 text-th-text-muted hover:text-th-text-primary rounded transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Settings className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </div>
 
           {/* Content */}
           <div className="max-h-96 overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-th-accent-600" />
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="py-12 text-center">
-                <Bell className="w-10 h-10 text-th-text-muted mx-auto mb-3" />
-                <p className="text-th-text-secondary">No notifications</p>
-                <p className="text-xs text-th-text-muted mt-1">You're all caught up!</p>
-              </div>
+            {activeTab === 'notifications' ? (
+              /* ── Notifications Tab ──────────────────────────────────── */
+              loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-th-accent-600" />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Bell className="w-10 h-10 text-th-text-muted mx-auto mb-3" />
+                  <p className="text-th-text-secondary">No notifications</p>
+                  <p className="text-xs text-th-text-muted mt-1">You're all caught up!</p>
+                </div>
+              ) : (
+                <>
+                  {unreadNotifications.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2 bg-surface-secondary">
+                        <span className="text-xs font-medium text-th-text-muted uppercase tracking-wider">
+                          New ({unreadNotifications.length})
+                        </span>
+                      </div>
+                      <div className="divide-y divide-th-border-primary">
+                        {unreadNotifications.map((notification) => (
+                          <NotificationItem
+                            key={notification.id}
+                            notification={notification}
+                            onMarkRead={handleMarkRead}
+                            onDismiss={handleDismiss}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {readNotifications.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2 bg-surface-secondary">
+                        <span className="text-xs font-medium text-th-text-muted uppercase tracking-wider">
+                          Earlier
+                        </span>
+                      </div>
+                      <div className="divide-y divide-th-border-primary">
+                        {readNotifications.slice(0, 10).map((notification) => (
+                          <NotificationItem
+                            key={notification.id}
+                            notification={notification}
+                            onMarkRead={handleMarkRead}
+                            onDismiss={handleDismiss}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
             ) : (
-              <>
-                {/* Unread Section */}
-                {unreadNotifications.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 bg-surface-secondary">
-                      <span className="text-xs font-medium text-th-text-muted uppercase tracking-wider">
-                        New ({unreadNotifications.length})
-                      </span>
-                    </div>
-                    <div className="divide-y divide-th-border-primary">
-                      {unreadNotifications.map((notification) => (
-                        <NotificationItem
-                          key={notification.id}
-                          notification={notification}
-                          onMarkRead={handleMarkRead}
-                          onDismiss={handleDismiss}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Read Section */}
-                {readNotifications.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 bg-surface-secondary">
-                      <span className="text-xs font-medium text-th-text-muted uppercase tracking-wider">
-                        Earlier
-                      </span>
-                    </div>
-                    <div className="divide-y divide-th-border-primary">
-                      {readNotifications.slice(0, 10).map((notification) => (
-                        <NotificationItem
-                          key={notification.id}
-                          notification={notification}
-                          onMarkRead={handleMarkRead}
-                          onDismiss={handleDismiss}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
+              /* ── Events Tab ─────────────────────────────────────────── */
+              eventsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-th-accent-600" />
+                </div>
+              ) : events.length === 0 ? (
+                <div className="py-12 text-center">
+                  <MessageSquare className="w-10 h-10 text-th-text-muted mx-auto mb-3" />
+                  <p className="text-th-text-secondary">No activity yet</p>
+                  <p className="text-xs text-th-text-muted mt-1">Chat messages and ticket updates will appear here</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-th-border-primary">
+                  {events.map((event) => (
+                    <EventItem
+                      key={event.id}
+                      event={event}
+                      onMarkRead={(id) => {
+                        markEventRead([id]);
+                        decrementEvent(1);
+                      }}
+                      onNavigate={(url) => {
+                        setIsOpen(false);
+                        navigate(url);
+                      }}
+                    />
+                  ))}
+                </div>
+              )
             )}
           </div>
 
           {/* Footer */}
-          {notifications.length > 0 && (
+          {activeTab === 'notifications' && notifications.length > 0 && (
             <div className="flex items-center justify-end px-4 py-3 border-t border-th-border-primary">
               <button
                 onClick={handleDismissAll}

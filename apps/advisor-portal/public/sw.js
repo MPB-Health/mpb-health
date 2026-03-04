@@ -333,54 +333,74 @@ async function syncMessages() {
 }
 
 // ============================================================================
-// Push Notifications
+// Push Notifications (HIPAA-safe — no PHI in payloads)
 // ============================================================================
+
+// Tag-based grouping so multiple notifications of the same type collapse
+// into one (e.g., "3 new messages" instead of 3 separate notifications).
+const TAG_LABELS = {
+  'mpb-chat':       { title: 'New message',       body: 'You have a new chat message' },
+  'mpb-ticket':     { title: 'Ticket update',     body: 'A support ticket was updated' },
+  'mpb-bulletin':   { title: 'New bulletin',      body: 'A new bulletin has been posted' },
+  'mpb-notification': { title: 'Advisor Portal', body: 'You have a new notification' },
+};
+
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push received:', event);
+  console.log('[SW] Push received');
 
   let data = {
     title: 'Advisor Portal',
     body: 'You have a new notification',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    tag: 'default',
-    data: { url: '/' }
+    icon: '/logo.png',
+    badge: '/favicon.svg',
+    tag: 'mpb-notification',
+    url: '/',
   };
 
   if (event.data) {
     try {
-      data = { ...data, ...event.data.json() };
+      const payload = event.data.json();
+      // Only accept safe fields — never render user-generated content
+      data.title = payload.title || data.title;
+      data.body  = payload.body  || data.body;
+      data.tag   = payload.tag   || data.tag;
+      data.url   = payload.url   || data.url;
     } catch (error) {
       console.log('[SW] Failed to parse push data:', error);
     }
   }
+
+  // Deep-link URL always stays within the portal
+  const notificationUrl = data.url.startsWith('/') ? data.url : '/';
 
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: data.icon,
       badge: data.badge,
-      tag: data.tag,
-      data: data.data,
-      requireInteraction: data.requireInteraction || false,
-      actions: data.actions || [],
+      tag: data.tag,               // Same tag = replace previous notification
+      renotify: true,              // Vibrate even when replacing same tag
+      data: { url: notificationUrl },
+      requireInteraction: false,
       vibrate: [200, 100, 200],
     })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event);
+  console.log('[SW] Notification clicked:', event.notification.tag);
 
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/';
+  // Build full URL from deep-link path
+  const path = event.notification.data?.url || '/';
+  const urlToOpen = new URL(path, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Check if there's already a window open
+      // Focus existing window and navigate to the deep link
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
+        if (new URL(client.url).origin === self.location.origin && 'focus' in client) {
           client.navigate(urlToOpen);
           return client.focus();
         }
@@ -392,6 +412,11 @@ self.addEventListener('notificationclick', (event) => {
       }
     })
   );
+});
+
+self.addEventListener('notificationclose', (event) => {
+  // Analytics hook — track dismissals if needed
+  console.log('[SW] Notification dismissed:', event.notification.tag);
 });
 
 // ============================================================================

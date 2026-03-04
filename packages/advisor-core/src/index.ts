@@ -15,3 +15,6 @@ export { PortalSettingsService, portalSettingsService, type PortalSetting } from
 export { AnnouncementService, announcementService, type Announcement } from './announcements/AnnouncementService';
 export type { AssignedLeadView, LeadDetail, LeadActivity } from './leads/types';
 export { TicketService, ticketService, type Ticket, type TicketDetail, type TicketStats, type TicketComment, type TicketStatus, type TicketPriority, type TicketListResult, type ListTicketsOptions, type AdminTicket, type AdminTicketDetail, type AdminTicketListResult, type AdminListTicketsOptions, type CreateTicketOptions, type CreateTicketResult, type UpdateTicketOptions } from './support/TicketService';
+export { ChatService, chatService } from './chat/ChatService';
+export type { ChatConversation, ChatConversationType, ChatMember, ChatMemberRole, ChatMessage, ChatSearchResult, ListMessagesResult, CreateChannelOptions } from './chat/types';
+export { PushService, pushService, type PushSubscriptionData, type PushSettings } from './push/PushService';

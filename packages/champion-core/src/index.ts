@@ -185,6 +185,8 @@ export {
   activityService,
   NotificationService,
   notificationService,
+  NotificationEventsService,
+  notificationEventsService,
   ACTIVITY_CONFIG,
 } from './activity';
 export type {
@@ -203,6 +205,9 @@ export type {
   NotificationPreferencesOverride,
   UpdatePreferencesOverrideInput,
   ActivitySubscription,
+  NotificationEvent,
+  NotificationEventType,
+  NotificationEventsListOptions,
 } from './activity';
 
 // Search & Command Palette

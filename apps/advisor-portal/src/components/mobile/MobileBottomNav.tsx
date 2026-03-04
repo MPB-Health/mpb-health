@@ -3,30 +3,37 @@ import {
   LayoutDashboard,
   Zap,
   Inbox,
-  Users,
+  MessageSquare,
   Menu,
 } from 'lucide-react';
 import { cn } from '@mpbhealth/ui';
+import { useChat } from '../../hooks/useChat';
 
 interface NavItem {
   name: string;
   href: string;
   icon: React.ElementType;
+  badge?: number;
 }
 
-const mobileNavItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Power List', href: '/power-list', icon: Zap },
+  { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'Inbox', href: '/inbox', icon: Inbox },
-  { name: 'Leads', href: '/leads', icon: Users },
   { name: 'More', href: '/more', icon: Menu },
 ];
 
 export function MobileBottomNav() {
   const location = useLocation();
+  const { totalUnread } = useChat();
+
+  // Inject live badge count into Chat nav item
+  const mobileNavItems = baseNavItems.map((item) =>
+    item.name === 'Chat' ? { ...item, badge: totalUnread } : item,
+  );
 
   // Hide on certain pages (like conversation threads)
-  const hiddenPaths = ['/inbox/'];
+  const hiddenPaths = ['/inbox/', '/chat/'];
   const shouldHide = hiddenPaths.some((path) => location.pathname.startsWith(path) && location.pathname !== path.slice(0, -1));
 
   if (shouldHide) {
@@ -74,6 +81,11 @@ export function MobileBottomNav() {
                 )}
               >
                 <item.icon className="w-5 h-5" />
+                {item.badge != null && item.badge > 0 && (
+                  <span className="absolute -top-1 -right-0.5 min-w-[16px] h-[16px] flex items-center justify-center bg-red-500 text-white text-[9px] font-bold rounded-full px-0.5">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
               </div>
               <span className={cn(
                 'text-[10px] font-medium mt-0.5',

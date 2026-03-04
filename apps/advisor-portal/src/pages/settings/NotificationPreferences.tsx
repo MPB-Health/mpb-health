@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useNotificationSettings } from '../../hooks/useSettings';
 import type { UpdateNotificationSettingsInput } from '@mpbhealth/champion-core';
+import PushNotificationOptIn from '../../components/notifications/PushNotificationOptIn';
 
 interface ToggleSwitchProps {
   enabled: boolean;
@@ -305,24 +306,62 @@ export default function NotificationPreferences() {
 
             {formData.push_enabled && (
               <div className="border-t border-th-border-primary pt-4 space-y-1">
-                <NotificationOption
-                  label="New Lead Assigned"
-                  enabled={formData.push_new_lead ?? false}
-                  onChange={(v) => updateField('push_new_lead', v)}
-                  indent
-                />
-                <NotificationOption
-                  label="New Messages"
-                  enabled={formData.push_new_message ?? false}
-                  onChange={(v) => updateField('push_new_message', v)}
-                  indent
-                />
-                <NotificationOption
-                  label="Task Reminders"
-                  enabled={formData.push_task_reminder ?? false}
-                  onChange={(v) => updateField('push_task_reminder', v)}
-                  indent
-                />
+                {/* Device subscription opt-in */}
+                <div className="mb-4">
+                  <PushNotificationOptIn />
+                </div>
+
+                <div className="border-t border-th-border-primary pt-3 space-y-1">
+                  <p className="text-xs font-medium text-th-text-muted uppercase tracking-wider mb-2 pl-6">
+                    Notification types
+                  </p>
+                  <NotificationOption
+                    label="Chat Messages"
+                    description="New messages in your conversations"
+                    enabled={(formData as any).push_chat_messages ?? true}
+                    onChange={(v) => updateField('push_chat_messages' as any, v)}
+                    indent
+                  />
+                  <NotificationOption
+                    label="Chat Mentions"
+                    description="When someone mentions you in a channel"
+                    enabled={(formData as any).push_chat_mentions ?? true}
+                    onChange={(v) => updateField('push_chat_mentions' as any, v)}
+                    indent
+                  />
+                  <NotificationOption
+                    label="Ticket Updates"
+                    description="Status changes and replies on your tickets"
+                    enabled={(formData as any).push_ticket_updates ?? true}
+                    onChange={(v) => updateField('push_ticket_updates' as any, v)}
+                    indent
+                  />
+                  <NotificationOption
+                    label="Bulletins"
+                    description="New bulletins and announcements"
+                    enabled={(formData as any).push_bulletins ?? true}
+                    onChange={(v) => updateField('push_bulletins' as any, v)}
+                    indent
+                  />
+                  <NotificationOption
+                    label="New Lead Assigned"
+                    enabled={formData.push_new_lead ?? false}
+                    onChange={(v) => updateField('push_new_lead', v)}
+                    indent
+                  />
+                  <NotificationOption
+                    label="New Messages"
+                    enabled={formData.push_new_message ?? false}
+                    onChange={(v) => updateField('push_new_message', v)}
+                    indent
+                  />
+                  <NotificationOption
+                    label="Task Reminders"
+                    enabled={formData.push_task_reminder ?? false}
+                    onChange={(v) => updateField('push_task_reminder', v)}
+                    indent
+                  />
+                </div>
               </div>
             )}
           </div>

@@ -64,6 +64,7 @@ import { OnboardingWizard } from '../components/onboarding';
 import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useChat } from '../hooks/useChat';
 import { useUserPreferences } from '../hooks/useSettings';
 import { useSupportSSO } from '../hooks/useSupportSSO';
 import { GlobalSearch } from '../components/GlobalSearch';
@@ -160,6 +161,7 @@ const fallbackNavigation: NavItem[] = [
   },
   { name: 'Video Library', href: '/videos', icon: Video },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
+  { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'Support Tickets', href: '/tickets', icon: Headphones },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
@@ -206,6 +208,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 export default function MainLayout() {
   const navigate = useNavigate();
   const { profile, unreadBulletinCount, logout, loading } = useAdvisor();
+  const { totalUnread: chatUnreadCount } = useChat();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
@@ -319,7 +322,7 @@ export default function MainLayout() {
     }
 
     // Enforce sidebar order
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Ticket Management', 'Contact'];
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Chat', 'Support Tickets', 'Ticket Management', 'Contact'];
     base = [...base].sort((a, b) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);
@@ -398,7 +401,7 @@ export default function MainLayout() {
     );
   }
 
-  // Add badge to Bulletins nav item
+  // Add badges to nav items
   const navWithBadges: NavItem[] = navigation.map((item) => {
     if (item.name === 'Bulletins' && unreadBulletinCount > 0) {
       return {
@@ -406,6 +409,16 @@ export default function MainLayout() {
         badge: (
           <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
             {unreadBulletinCount}
+          </span>
+        ),
+      };
+    }
+    if (item.name === 'Chat' && chatUnreadCount > 0) {
+      return {
+        ...item,
+        badge: (
+          <span className="ml-auto bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">
+            {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
           </span>
         ),
       };

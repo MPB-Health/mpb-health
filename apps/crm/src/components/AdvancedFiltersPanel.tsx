@@ -4,7 +4,6 @@ import type { LeadFilters } from '@mpbhealth/crm-core';
 interface AdvancedFiltersPanelProps {
   filters: LeadFilters;
   onChange: (filters: LeadFilters) => void;
-  zohoConfigured?: boolean;
 }
 
 const PRIORITY_OPTIONS = [
@@ -15,14 +14,7 @@ const PRIORITY_OPTIONS = [
   { value: 'urgent', label: 'Urgent' },
 ];
 
-const ZOHO_STATUS_OPTIONS = [
-  { value: '', label: 'All Sync Status' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'synced', label: 'Synced' },
-  { value: 'failed', label: 'Failed' },
-];
-
-export function AdvancedFiltersPanel({ filters, onChange, zohoConfigured = false }: AdvancedFiltersPanelProps) {
+export function AdvancedFiltersPanel({ filters, onChange }: AdvancedFiltersPanelProps) {
   const update = (key: string, value: string) => {
     if (key === 'tags') {
       const tagArray = value ? value.split(',').map(t => t.trim()).filter(Boolean) : undefined;
@@ -34,7 +26,6 @@ export function AdvancedFiltersPanel({ filters, onChange, zohoConfigured = false
 
   const activeCount = [
     filters.priority,
-    filters.zohoSyncStatus,
     filters.dateFrom,
     filters.dateTo,
     filters.tags?.length,
@@ -62,16 +53,6 @@ export function AdvancedFiltersPanel({ filters, onChange, zohoConfigured = false
           onChange={(e) => update('priority', e.target.value)}
           options={PRIORITY_OPTIONS}
         />
-
-        {zohoConfigured && (
-        <SelectField
-          label="Zoho Sync"
-          name="zohoSyncStatus"
-          value={(filters.zohoSyncStatus as string) || ''}
-          onChange={(e) => update('zohoSyncStatus', e.target.value)}
-          options={ZOHO_STATUS_OPTIONS}
-        />
-        )}
 
         <InputField
           label="From Date"

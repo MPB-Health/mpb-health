@@ -120,6 +120,10 @@ export interface NotificationSettings {
   push_new_lead: boolean;
   push_new_message: boolean;
   push_task_reminder: boolean;
+  push_chat_messages: boolean;
+  push_chat_mentions: boolean;
+  push_ticket_updates: boolean;
+  push_bulletins: boolean;
 
   // In-app
   in_app_enabled: boolean;
@@ -301,6 +305,10 @@ export interface UpdateNotificationSettingsInput {
   push_new_lead?: boolean;
   push_new_message?: boolean;
   push_task_reminder?: boolean;
+  push_chat_messages?: boolean;
+  push_chat_mentions?: boolean;
+  push_ticket_updates?: boolean;
+  push_bulletins?: boolean;
   in_app_enabled?: boolean;
   in_app_sound?: boolean;
   in_app_desktop?: boolean;

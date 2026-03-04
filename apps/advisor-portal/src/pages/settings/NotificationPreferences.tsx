@@ -113,6 +113,10 @@ export default function NotificationPreferences() {
         push_new_lead: settings.push_new_lead,
         push_new_message: settings.push_new_message,
         push_task_reminder: settings.push_task_reminder,
+        push_chat_messages: settings.push_chat_messages,
+        push_chat_mentions: settings.push_chat_mentions,
+        push_ticket_updates: settings.push_ticket_updates,
+        push_bulletins: settings.push_bulletins,
         in_app_enabled: settings.in_app_enabled,
         in_app_sound: settings.in_app_sound,
         in_app_desktop: settings.in_app_desktop,
@@ -350,29 +354,29 @@ export default function NotificationPreferences() {
                   <NotificationOption
                     label="Chat Messages"
                     description="New messages in your conversations"
-                    enabled={(formData as any).push_chat_messages ?? true}
-                    onChange={(v) => updateField('push_chat_messages' as any, v)}
+                    enabled={formData.push_chat_messages ?? true}
+                    onChange={(v) => updateField('push_chat_messages', v)}
                     indent
                   />
                   <NotificationOption
                     label="Chat Mentions"
                     description="When someone mentions you in a channel"
-                    enabled={(formData as any).push_chat_mentions ?? true}
-                    onChange={(v) => updateField('push_chat_mentions' as any, v)}
+                    enabled={formData.push_chat_mentions ?? true}
+                    onChange={(v) => updateField('push_chat_mentions', v)}
                     indent
                   />
                   <NotificationOption
                     label="Ticket Updates"
                     description="Status changes and replies on your tickets"
-                    enabled={(formData as any).push_ticket_updates ?? true}
-                    onChange={(v) => updateField('push_ticket_updates' as any, v)}
+                    enabled={formData.push_ticket_updates ?? true}
+                    onChange={(v) => updateField('push_ticket_updates', v)}
                     indent
                   />
                   <NotificationOption
                     label="Bulletins"
                     description="New bulletins and announcements"
-                    enabled={(formData as any).push_bulletins ?? true}
-                    onChange={(v) => updateField('push_bulletins' as any, v)}
+                    enabled={formData.push_bulletins ?? true}
+                    onChange={(v) => updateField('push_bulletins', v)}
                     indent
                   />
                   <NotificationOption

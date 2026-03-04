@@ -193,11 +193,12 @@ export function useNotificationSettings() {
 
   const updateSettings = useCallback(
     async (input: UpdateNotificationSettingsInput) => {
-      if (!userId || !orgId) return;
+      if (!userId) throw new Error('User not loaded');
+      const effectiveOrgId = orgId || '';
 
       try {
         setSaving(true);
-        const updated = await settingsService.updateNotificationSettings(userId, orgId, input);
+        const updated = await settingsService.updateNotificationSettings(userId, effectiveOrgId, input);
         setSettings(updated);
         return updated;
       } catch (err) {

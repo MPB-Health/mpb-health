@@ -28,7 +28,6 @@ const EDGE_FUNCTIONS_TO_MONITOR = [
   'portal-sso',
   'admin-update-password',
   'create-user',
-  'zoho-crm',
 ];
 
 export class SystemHealthService {

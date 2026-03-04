@@ -135,7 +135,6 @@ export class LeadService {
           pipeline_stage: 'new',
           priority: 'medium',
           lead_score: 0,
-          zoho_sync_status: 'pending',
           tags: input.tags || [],
         })
         .select('id')

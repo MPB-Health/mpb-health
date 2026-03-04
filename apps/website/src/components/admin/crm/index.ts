@@ -5,4 +5,3 @@ export { LeadFilters } from './LeadFilters';
 export { BulkActionsBar } from './BulkActionsBar';
 export { LeadQuickActions } from './LeadQuickActions';
 export { ExportModal } from './ExportModal';
-export { ZohoSettingsPanel } from './ZohoSettingsPanel';

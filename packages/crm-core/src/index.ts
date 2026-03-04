@@ -5,7 +5,6 @@ export type {
   Lead,
   LeadFilters,
   LeadPriority,
-  ZohoSyncStatus,
   PipelineStage,
   CRMDashboardStats,
   BulkUpdateResult,
@@ -34,16 +33,6 @@ export type {
   TaskCreateInput,
   TaskUpdateInput,
 } from './tasks/types';
-
-// Zoho Integration
-export { ZohoService, createZohoService } from './zoho/zohoService';
-export type {
-  ZohoLead,
-  ZohoSyncResult,
-  ZohoBulkSyncResult,
-  ZohoSyncStats,
-} from './zoho/types';
-export { STAGE_TO_ZOHO_STATUS } from './zoho/types';
 
 // Priority Classification
 export {
@@ -190,7 +179,6 @@ export type {
 export * from './leads';
 export * from './activities';
 export * from './tasks';
-export * from './zoho';
 export * from './priority';
 export * from './notifications';
 export * from './calendar';

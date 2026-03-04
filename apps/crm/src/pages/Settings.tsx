@@ -1,23 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw, Check, X, AlertCircle, Upload, FileText, CheckCircle2, XCircle, BarChart3 } from 'lucide-react';
+import { RefreshCw, Upload, FileText, CheckCircle2, XCircle, BarChart3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import type { NotificationPreferences, ScoringWeightConfig } from '@mpbhealth/crm-core';
 import { importContactsFromCSV, type ImportResult } from '../utils/csvImporter';
 
 export default function Settings() {
-  const { zohoService, pipelineStages, preferencesService, leadService, scoringService, refreshLeads, refreshDashboard, zohoConfigured } = useCRM();
-  const [zohoStatus, setZohoStatus] = useState<{
-    configured: boolean;
-    error?: string;
-  } | null>(null);
-  const [syncStats, setSyncStats] = useState<{
-    pending: number;
-    failed: number;
-    synced: number;
-  } | null>(null);
-  const [checking, setChecking] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  const { pipelineStages, preferencesService, leadService, scoringService, refreshLeads, refreshDashboard } = useCRM();
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   
@@ -96,34 +85,6 @@ export default function Settings() {
       }
     }, 800);
   }, [preferencesService]);
-
-  const checkZohoConnection = async () => {
-    setChecking(true);
-    const status = await zohoService.checkConfiguration();
-    setZohoStatus(status);
-    const stats = await zohoService.getSyncStats();
-    setSyncStats(stats);
-    setChecking(false);
-  };
-
-  const retryFailedSyncs = async () => {
-    setSyncing(true);
-    const result = await zohoService.retryFailedSyncs();
-    if (result.synced > 0) {
-      toast.success(`Synced ${result.synced} leads`);
-    }
-    if (result.failed > 0) {
-      toast.error(`${result.failed} leads failed to sync`);
-    }
-    await checkZohoConnection();
-    setSyncing(false);
-  };
-
-  useEffect(() => {
-    if (zohoConfigured) {
-      checkZohoConnection();
-    }
-  }, [zohoConfigured]);
 
   // CSV Import handlers
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,88 +174,6 @@ export default function Settings() {
           Configure your CRM settings and integrations
         </p>
       </div>
-
-      {/* Zoho CRM Integration — only show when configured */}
-      {zohoConfigured && (
-      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-semibold text-th-text-primary">
-              Zoho CRM Integration
-            </h2>
-            <p className="text-sm text-th-text-tertiary mt-1">
-              Sync leads with your Zoho CRM account
-            </p>
-          </div>
-          <button
-            onClick={checkZohoConnection}
-            disabled={checking}
-            className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
-            <span>Check Connection</span>
-          </button>
-        </div>
-
-        {/* Connection status */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-surface-secondary rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <Check className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="font-medium text-th-text-primary">Connection Status</p>
-                <p className="text-sm text-th-text-tertiary">Connected to Zoho CRM</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Sync stats */}
-          {syncStats && (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-green-700">Synced</p>
-                <p className="text-2xl font-bold text-green-800">
-                  {syncStats.synced}
-                </p>
-              </div>
-              <div className="p-4 bg-yellow-50 rounded-lg">
-                <p className="text-sm text-yellow-700">Pending</p>
-                <p className="text-2xl font-bold text-yellow-800">
-                  {syncStats.pending}
-                </p>
-              </div>
-              <div className="p-4 bg-red-50 rounded-lg">
-                <p className="text-sm text-red-700">Failed</p>
-                <p className="text-2xl font-bold text-red-800">
-                  {syncStats.failed}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Retry failed syncs */}
-          {syncStats && syncStats.failed > 0 && (
-            <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <p className="text-sm text-red-700">
-                  {syncStats.failed} leads failed to sync to Zoho
-                </p>
-              </div>
-              <button
-                onClick={retryFailedSyncs}
-                disabled={syncing}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-              >
-                {syncing ? 'Retrying...' : 'Retry Failed'}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-      )}
 
       {/* CSV Import */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-6">
@@ -579,23 +458,6 @@ export default function Settings() {
                 className="w-5 h-5 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
               />
             </label>
-
-            {zohoConfigured && (
-            <label className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-th-text-primary">Auto-sync to Zoho</p>
-                <p className="text-sm text-th-text-tertiary">
-                  Automatically sync new leads to Zoho CRM
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={prefs.auto_sync_zoho}
-                onChange={(e) => updatePref('auto_sync_zoho', e.target.checked)}
-                className="w-5 h-5 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
-              />
-            </label>
-            )}
 
             <hr className="border-th-border" />
 

@@ -5,7 +5,6 @@ import {
   createPipelineService,
   createActivityService,
   createTaskService,
-  createZohoService,
   createNotificationService,
   createCalendarService,
   createInsightsService,
@@ -47,7 +46,6 @@ import {
   type PipelineService,
   type ActivityService,
   type TaskService,
-  type ZohoService,
   type NotificationService,
   type CalendarService,
   type InsightsService,
@@ -96,7 +94,6 @@ interface CRMContextType {
   pipelineService: PipelineService;
   activityService: ActivityService;
   taskService: TaskService;
-  zohoService: ZohoService;
   notificationService: NotificationService;
   calendarService: CalendarService;
   insightsService: InsightsService;
@@ -139,9 +136,6 @@ interface CRMContextType {
   recentActivities: LeadActivity[];
   calendarEvents: CalendarEvent[];
 
-  // Integration status
-  zohoConfigured: boolean;
-
   // Loading states
   loading: boolean;
   refreshing: boolean;
@@ -165,7 +159,6 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     pipelineService: createPipelineService(supabase),
     activityService: createActivityService(supabase),
     taskService: createTaskService(supabase),
-    zohoService: createZohoService(supabase, supabaseUrl),
     notificationService: createNotificationService(supabase),
     calendarService: createCalendarService(supabase),
     insightsService: createInsightsService(supabase, supabaseUrl),
@@ -209,8 +202,6 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [zohoConfigured, setZohoConfigured] = useState(false);
-
   // Refresh functions
   const refreshDashboard = useCallback(async () => {
     setRefreshing(true);
@@ -275,10 +266,6 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         refreshLeads(),
         refreshTasks(),
         refreshCalendar(),
-        // Check Zoho configuration (non-blocking — failure just means unconfigured)
-        services.zohoService.checkConfiguration()
-          .then((status) => setZohoConfigured(status?.configured === true))
-          .catch(() => setZohoConfigured(false)),
       ]);
       setLoading(false);
     };
@@ -315,7 +302,6 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         overdueTasks,
         recentActivities,
         calendarEvents,
-        zohoConfigured,
         loading,
         refreshing,
         refreshDashboard,

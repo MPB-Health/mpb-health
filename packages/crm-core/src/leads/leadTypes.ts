@@ -1,9 +1,6 @@
 // Lead priority levels
 export type LeadPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-// Zoho sync status
-export type ZohoSyncStatus = 'pending' | 'synced' | 'failed' | 'error';
-
 // Main Lead interface matching database schema
 export interface Lead {
   id: string;
@@ -29,7 +26,7 @@ export interface Lead {
   utm_medium?: string;
   utm_campaign?: string;
   zoho_lead_id?: string;
-  zoho_sync_status: ZohoSyncStatus;
+  zoho_sync_status?: string;
   created_at: string;
   updated_at?: string;
   stage_changed_at?: string;
@@ -49,7 +46,7 @@ export interface LeadFilters {
   dateFrom?: string;
   dateTo?: string;
   tags?: string[];
-  zohoSyncStatus?: ZohoSyncStatus;
+  zohoSyncStatus?: string;
 }
 
 // Pipeline stage configuration

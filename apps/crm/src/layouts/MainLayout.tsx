@@ -37,7 +37,6 @@ import {
   Settings2,
   Calculator,
   Command,
-  Download,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -84,7 +83,6 @@ const navigationSections: NavSection[] = [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
       { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
-      { name: 'Import from Zoho', href: '/import/zoho', icon: Download, permission: 'settings.manage' },
     ],
   },
   {
@@ -170,7 +168,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
-  const { dashboardStats, tasksDueToday, overdueTasks, zohoConfigured } = useCRM();
+  const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
 
   // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(user?.id);
@@ -186,8 +184,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Filter nav items based on permissions and feature flags
   const visibleNav: NavItem[] = navigation
     .filter((item) => {
-      // Hide Zoho-specific items when Zoho is not configured
-      if (item.href === '/import/zoho' && !zohoConfigured) return false;
       if (!item.permission) return true;
       return can(item.permission);
     })

@@ -15,7 +15,6 @@ import {
   ChevronRight,
   Target,
   Activity,
-  Settings
 } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import { AdminLayout } from '../../components/admin/AdminLayout';
@@ -24,7 +23,6 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { LeadCard } from '../../components/admin/crm/LeadCard';
 import { ExportModal } from '../../components/admin/crm/ExportModal';
-import { ZohoSettingsPanel } from '../../components/admin/crm/ZohoSettingsPanel';
 import { crmService, type Lead, type CRMDashboardStats, type LeadActivity, type LeadTask, type PipelineStage } from '../../lib/crmService';
 import { cn } from '../../lib/utils';
 
@@ -39,7 +37,6 @@ const CRMDashboard: React.FC = () => {
   const [leadsByStage, setLeadsByStage] = useState<Record<string, Lead[]>>({});
   const [loading, setLoading] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [showZohoSettings, setShowZohoSettings] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -124,10 +121,6 @@ const CRMDashboard: React.FC = () => {
             <p className="text-neutral-500">Manage your leads and track conversions</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setShowZohoSettings(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Zoho Settings
-            </Button>
             <Button variant="outline" onClick={() => setShowExportModal(true)}>
               <Download className="h-4 w-4 mr-2" />
               Export Report
@@ -419,11 +412,6 @@ const CRMDashboard: React.FC = () => {
         />
       )}
 
-      {/* Zoho Settings Modal */}
-      <ZohoSettingsPanel
-        isOpen={showZohoSettings}
-        onClose={() => setShowZohoSettings(false)}
-      />
     </AdminLayout>
   );
 };

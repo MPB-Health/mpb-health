@@ -8,7 +8,6 @@ import {
   Calendar,
   Edit2,
   Trash2,
-  RefreshCw,
   Plus,
   MessageSquare,
   PhoneCall,
@@ -31,14 +30,13 @@ import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/cr
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { leadService, activityService, taskService, zohoService, automationService, pipelineStages, zohoConfigured } = useCRM();
+  const { leadService, activityService, taskService, automationService, pipelineStages } = useCRM();
   const { activeOrgId } = useOrg();
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<LeadActivity[]>([]);
   const [tasks, setTasks] = useState<LeadTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<'activities' | 'tasks' | 'timeline'>('activities');
   const [showEditLead, setShowEditLead] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
@@ -89,21 +87,6 @@ export default function LeadDetail() {
       loadLead();
     } else {
       toast.error('Failed to update stage');
-    }
-  };
-
-  const handleSyncToZoho = async () => {
-    if (!lead) return;
-
-    setSyncing(true);
-    const result = await zohoService.syncLeadToZoho(lead.id);
-    setSyncing(false);
-
-    if (result.success) {
-      toast.success('Synced to Zoho CRM');
-      loadLead();
-    } else {
-      toast.error(result.error || 'Failed to sync');
     }
   };
 
@@ -165,16 +148,6 @@ export default function LeadDetail() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          {zohoConfigured && (
-          <button
-            onClick={handleSyncToZoho}
-            disabled={syncing}
-            className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-            <span>Sync to Zoho</span>
-          </button>
-          )}
           <PermissionGate permission="leads.update">
             <button
               onClick={() => setShowEditLead(true)}
@@ -250,22 +223,6 @@ export default function LeadDetail() {
                   {getPriorityLabel(lead.priority as any || 'normal')}
                 </span>
               </div>
-              {zohoConfigured && (
-              <div>
-                <label className="block text-sm text-th-text-tertiary mb-2">Zoho Status</label>
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    lead.zoho_sync_status === 'synced'
-                      ? 'bg-green-100 text-green-700'
-                      : lead.zoho_sync_status === 'failed'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}
-                >
-                  {lead.zoho_sync_status}
-                </span>
-              </div>
-              )}
             </div>
           </div>
 

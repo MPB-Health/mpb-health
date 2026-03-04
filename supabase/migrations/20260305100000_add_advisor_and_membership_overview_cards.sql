@@ -35,7 +35,7 @@ SELECT
   true,
   true,
   0,
-  '{"thumbnail_title": "Advisor Overview", "image_position": "8px center"}'::jsonb
+  '{"thumbnail_title": "Advisor Overview", "image_position": "-8px center"}'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM public.sop_documents WHERE slug = 'advisor-overview');
 
 -- 2. Membership Overview - Agent Resource
@@ -69,5 +69,5 @@ SELECT
   true,
   true,
   0,
-  '{"thumbnail_title": "Membership Overview - Agent Resource"}'::jsonb
+  '{"thumbnail_title": "Membership Overview - Agent Resource", "image_position": "-8px center"}'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM public.sop_documents WHERE slug = 'membership-overview-agent-resource');

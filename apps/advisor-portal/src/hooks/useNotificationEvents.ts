@@ -12,7 +12,7 @@ export function useNotificationEvents(options: {
   eventType?: NotificationEventType;
   limit?: number;
 } = {}) {
-  const { profile } = useAdvisor();
+  const { profile, loading: profileLoading } = useAdvisor();
   const userId = profile?.id;
 
   const [events, setEvents] = useState<NotificationEvent[]>([]);
@@ -20,7 +20,10 @@ export function useNotificationEvents(options: {
   const [error, setError] = useState<string | null>(null);
 
   const fetchEvents = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      if (!profileLoading) setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await notificationEventsService.getEvents(userId, options);
@@ -32,7 +35,7 @@ export function useNotificationEvents(options: {
     } finally {
       setLoading(false);
     }
-  }, [userId, options.unreadOnly, options.eventType, options.limit]);
+  }, [userId, profileLoading, options.unreadOnly, options.eventType, options.limit]);
 
   // Initial fetch
   useEffect(() => {

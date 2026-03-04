@@ -154,7 +154,7 @@ export function useUserPreferences() {
 // =============================================================================
 
 export function useNotificationSettings() {
-  const { profile } = useAdvisor();
+  const { profile, loading: profileLoading } = useAdvisor();
   const userId = profile?.user_id;
   const orgId = profile?.org_id;
 
@@ -164,11 +164,19 @@ export function useNotificationSettings() {
   const [saving, setSaving] = useState(false);
 
   const fetchSettings = useCallback(async () => {
-    if (!userId || !orgId) return;
+    if (!userId) {
+      // Profile not loaded yet or no user — stop loading once profile settles
+      if (!profileLoading) setLoading(false);
+      return;
+    }
+
+    // If org_id is missing, still fetch with a fallback empty string.
+    // The RPC will auto-create a row for the user regardless.
+    const effectiveOrgId = orgId || '';
 
     try {
       setLoading(true);
-      const data = await settingsService.getNotificationSettings(userId, orgId);
+      const data = await settingsService.getNotificationSettings(userId, effectiveOrgId);
       setSettings(data);
       setError(null);
     } catch (err) {
@@ -177,7 +185,7 @@ export function useNotificationSettings() {
     } finally {
       setLoading(false);
     }
-  }, [userId, orgId]);
+  }, [userId, orgId, profileLoading]);
 
   useEffect(() => {
     fetchSettings();

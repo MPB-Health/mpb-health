@@ -770,6 +770,30 @@ const courses: CourseCard[] = [
     available: true,
     external: true,
   },
+  {
+    id: 'secure-hsa',
+    title: 'Secure HSA Training',
+    description:
+      'Learn about the Secure HSA product, health savings account integration, and how to present HSA-compatible health sharing solutions to your clients.',
+    topicCount: 0,
+    lessonCount: 0,
+    href: '/training/secure-hsa',
+    gradient: 'from-emerald-600 via-emerald-500 to-teal-500',
+    icon: Shield,
+    available: false,
+  },
+  {
+    id: 'care-plus',
+    title: 'CARE+ Training',
+    description:
+      'Master the CARE+ membership program including full medical cost sharing benefits, provider networks, and CARE+ plan options.',
+    topicCount: 0,
+    lessonCount: 0,
+    href: '/training/care-plus',
+    gradient: 'from-rose-600 via-pink-500 to-fuchsia-500',
+    icon: Heart,
+    available: false,
+  },
 ];
 
 /* ------------------------------------------------------------------ */

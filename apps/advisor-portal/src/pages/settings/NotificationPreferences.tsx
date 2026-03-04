@@ -79,10 +79,21 @@ function NotificationOption({
 }
 
 export default function NotificationPreferences() {
-  const { settings, loading, error, saving, updateSettings } = useNotificationSettings();
+  const { settings, loading, error, saving, updateSettings, refresh } = useNotificationSettings();
   const [formData, setFormData] = useState<UpdateNotificationSettingsInput>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
+
+  // Timeout: if loading takes > 8s, show retry UI
+  useEffect(() => {
+    if (!loading) {
+      setTimedOut(false);
+      return;
+    }
+    const timer = setTimeout(() => setTimedOut(true), 8000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   // Initialize form when settings load
   useEffect(() => {
@@ -118,7 +129,21 @@ export default function NotificationPreferences() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-th-accent-600" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-th-accent-600 mx-auto" />
+          {timedOut && (
+            <div className="mt-4">
+              <p className="text-sm text-th-text-secondary mb-3">Taking longer than expected...</p>
+              <button
+                type="button"
+                onClick={refresh}
+                className="px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -128,7 +153,14 @@ export default function NotificationPreferences() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-th-text-secondary">{error}</p>
+          <p className="text-th-text-secondary mb-4">{error}</p>
+          <button
+            type="button"
+            onClick={refresh}
+            className="px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );

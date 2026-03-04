@@ -649,11 +649,28 @@ export default function Settings() {
                 aria-label="Timezone"
                 className="w-full border border-th-border rounded-lg px-3 py-2 text-sm"
               >
-                {Intl.supportedValuesOf?.('timeZone')?.slice(0, 50).map((tz) => (
-                  <option key={tz} value={tz}>{tz}</option>
-                )) || (
-                  <option value={prefs.timezone}>{prefs.timezone}</option>
-                )}
+                {(() => {
+                  const allZones = Intl.supportedValuesOf?.('timeZone') ?? [prefs.timezone];
+                  const groups: Record<string, string[]> = {};
+                  for (const tz of allZones) {
+                    const region = tz.split('/')[0];
+                    if (!groups[region]) groups[region] = [];
+                    groups[region].push(tz);
+                  }
+                  // Put America first since this is a US-focused app
+                  const regionOrder = ['America', 'US', ...Object.keys(groups).filter((r) => r !== 'America' && r !== 'US').sort()];
+                  return regionOrder
+                    .filter((r) => groups[r]?.length)
+                    .map((region) => (
+                      <optgroup key={region} label={region}>
+                        {groups[region].map((tz) => (
+                          <option key={tz} value={tz}>
+                            {tz.replace(`${region}/`, '').replace(/_/g, ' ')}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ));
+                })()}
               </select>
             </div>
           </div>

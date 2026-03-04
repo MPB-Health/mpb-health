@@ -319,6 +319,22 @@ export class UserService {
     if (error) throw error;
   }
 
+  /** Update advisor profile fields */
+  async updateAdvisorProfile(
+    userId: string,
+    updates: Partial<Pick<AdvisorProfileSummary, 'first_name' | 'last_name' | 'email' | 'agent_id' | 'company_name' | 'specialization'>>
+  ): Promise<AdvisorProfileSummary> {
+    const { data, error } = await supabase
+      .from('advisor_profiles')
+      .update(updates)
+      .or(`id.eq.${userId},user_id.eq.${userId}`)
+      .select('id, user_id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   /** Bulk status update on admin_users */
   async bulkUpdateStatus(userIds: string[], status: AdminUser['status']): Promise<void> {
     const { error } = await supabase

@@ -83,6 +83,18 @@ export default function UserDetail() {
   const [editAdvisorStatus, setEditAdvisorStatus] = useState<AdvisorProfileSummary['status'] | ''>('');
   const [savingAdvisorStatus, setSavingAdvisorStatus] = useState(false);
 
+  // Advisor profile editing
+  const [editAdvisorMode, setEditAdvisorMode] = useState(false);
+  const [advisorForm, setAdvisorForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    agent_id: '',
+    company_name: '',
+    specialization: '',
+  });
+  const [savingAdvisor, setSavingAdvisor] = useState(false);
+
   // Password management
   const [passwordNew, setPasswordNew] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -109,6 +121,14 @@ export default function UserDetail() {
         setAdvisorProfile(advisorData);
         if (advisorData) {
           setEditAdvisorStatus(advisorData.status);
+          setAdvisorForm({
+            first_name: advisorData.first_name || '',
+            last_name: advisorData.last_name || '',
+            email: advisorData.email || '',
+            agent_id: advisorData.agent_id || '',
+            company_name: advisorData.company_name || '',
+            specialization: advisorData.specialization || '',
+          });
         }
         if (adminData) {
           setFormData({
@@ -227,6 +247,28 @@ export default function UserDetail() {
       toast.error('Failed to update advisor status');
     } finally {
       setSavingAdvisorStatus(false);
+    }
+  };
+
+  const handleAdvisorProfileSave = async () => {
+    if (!userId) return;
+    setSavingAdvisor(true);
+    try {
+      const updated = await userService.updateAdvisorProfile(userId, {
+        first_name: advisorForm.first_name,
+        last_name: advisorForm.last_name,
+        email: advisorForm.email,
+        agent_id: advisorForm.agent_id || null,
+        company_name: advisorForm.company_name || null,
+        specialization: advisorForm.specialization,
+      });
+      setAdvisorProfile(updated);
+      setEditAdvisorMode(false);
+      toast.success('Advisor profile updated');
+    } catch {
+      toast.error('Failed to update advisor profile');
+    } finally {
+      setSavingAdvisor(false);
     }
   };
 
@@ -432,37 +474,140 @@ export default function UserDetail() {
     if (!advisorProfile) return null;
     return (
       <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-        <div className="flex items-center space-x-2 mb-6">
-          <Briefcase className="w-5 h-5 text-th-text-tertiary" />
-          <h2 className="text-lg font-semibold text-th-text-primary">Advisor Profile</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-2">
+            <Briefcase className="w-5 h-5 text-th-text-tertiary" />
+            <h2 className="text-lg font-semibold text-th-text-primary">Advisor Profile</h2>
+          </div>
+          {isSuperAdmin && !editAdvisorMode && (
+            <button
+              type="button"
+              onClick={() => setEditAdvisorMode(true)}
+              className="px-3 py-1.5 text-sm bg-surface-tertiary text-th-text-secondary rounded-lg hover:bg-surface-secondary transition-colors"
+            >
+              Edit
+            </button>
+          )}
+          {editAdvisorMode && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleAdvisorProfileSave}
+                disabled={savingAdvisor}
+                className="px-3 py-1.5 text-sm bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+              >
+                {savingAdvisor ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditAdvisorMode(false);
+                  setAdvisorForm({
+                    first_name: advisorProfile.first_name || '',
+                    last_name: advisorProfile.last_name || '',
+                    email: advisorProfile.email || '',
+                    agent_id: advisorProfile.agent_id || '',
+                    company_name: advisorProfile.company_name || '',
+                    specialization: advisorProfile.specialization || '',
+                  });
+                }}
+                className="px-3 py-1.5 text-sm border border-th-border text-th-text-secondary rounded-lg hover:bg-surface-secondary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-th-text-tertiary mb-0.5">Full Name</p>
-            <p className="font-medium text-th-text-primary">
-              {advisorProfile.first_name} {advisorProfile.last_name}
-            </p>
-          </div>
-          <div>
-            <p className="text-th-text-tertiary mb-0.5">Email</p>
-            <p className="font-medium text-th-text-primary">{advisorProfile.email}</p>
-          </div>
-          {advisorProfile.agent_id && (
-            <div>
-              <p className="text-th-text-tertiary mb-0.5">Agent ID</p>
-              <p className="font-medium text-th-text-primary font-mono">{advisorProfile.agent_id}</p>
-            </div>
+          {editAdvisorMode ? (
+            <>
+              <div>
+                <label htmlFor="adv-first-name" className="text-th-text-tertiary mb-0.5 block">First Name</label>
+                <input
+                  id="adv-first-name"
+                  type="text"
+                  value={advisorForm.first_name}
+                  onChange={(e) => setAdvisorForm((f) => ({ ...f, first_name: e.target.value }))}
+                  className="w-full px-3 py-1.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="adv-last-name" className="text-th-text-tertiary mb-0.5 block">Last Name</label>
+                <input
+                  id="adv-last-name"
+                  type="text"
+                  value={advisorForm.last_name}
+                  onChange={(e) => setAdvisorForm((f) => ({ ...f, last_name: e.target.value }))}
+                  className="w-full px-3 py-1.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="adv-email" className="text-th-text-tertiary mb-0.5 block">Email</label>
+                <input
+                  id="adv-email"
+                  type="email"
+                  value={advisorForm.email}
+                  onChange={(e) => setAdvisorForm((f) => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-1.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="adv-agent-id" className="text-th-text-tertiary mb-0.5 block">Agent ID</label>
+                <input
+                  id="adv-agent-id"
+                  type="text"
+                  value={advisorForm.agent_id}
+                  onChange={(e) => setAdvisorForm((f) => ({ ...f, agent_id: e.target.value }))}
+                  className="w-full px-3 py-1.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500 font-mono"
+                />
+              </div>
+              <div>
+                <label htmlFor="adv-company" className="text-th-text-tertiary mb-0.5 block">Company</label>
+                <input
+                  id="adv-company"
+                  type="text"
+                  value={advisorForm.company_name}
+                  onChange={(e) => setAdvisorForm((f) => ({ ...f, company_name: e.target.value }))}
+                  className="w-full px-3 py-1.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="adv-specialization" className="text-th-text-tertiary mb-0.5 block">Specialization</label>
+                <input
+                  id="adv-specialization"
+                  type="text"
+                  value={advisorForm.specialization}
+                  onChange={(e) => setAdvisorForm((f) => ({ ...f, specialization: e.target.value }))}
+                  className="w-full px-3 py-1.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <p className="text-th-text-tertiary mb-0.5">Full Name</p>
+                <p className="font-medium text-th-text-primary">
+                  {advisorProfile.first_name} {advisorProfile.last_name}
+                </p>
+              </div>
+              <div>
+                <p className="text-th-text-tertiary mb-0.5">Email</p>
+                <p className="font-medium text-th-text-primary">{advisorProfile.email}</p>
+              </div>
+              <div>
+                <p className="text-th-text-tertiary mb-0.5">Agent ID</p>
+                <p className="font-medium text-th-text-primary font-mono">{advisorProfile.agent_id || '-'}</p>
+              </div>
+              <div>
+                <p className="text-th-text-tertiary mb-0.5">Company</p>
+                <p className="font-medium text-th-text-primary">{advisorProfile.company_name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-th-text-tertiary mb-0.5">Specialization</p>
+                <p className="font-medium text-th-text-primary capitalize">{advisorProfile.specialization}</p>
+              </div>
+            </>
           )}
-          {advisorProfile.company_name && (
-            <div>
-              <p className="text-th-text-tertiary mb-0.5">Company</p>
-              <p className="font-medium text-th-text-primary">{advisorProfile.company_name}</p>
-            </div>
-          )}
-          <div>
-            <p className="text-th-text-tertiary mb-0.5">Specialization</p>
-            <p className="font-medium text-th-text-primary capitalize">{advisorProfile.specialization}</p>
-          </div>
           <div>
             <p className="text-th-text-tertiary mb-0.5">Advisor Status</p>
             {isSuperAdmin ? (

@@ -222,7 +222,7 @@ Deno.serve(async (req: Request) => {
 
       const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY") || "";
       const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") || "";
-      const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:support@mpbhealth.com";
+      const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:support@mpb.health";
 
       let sent = 0;
       let failed = 0;

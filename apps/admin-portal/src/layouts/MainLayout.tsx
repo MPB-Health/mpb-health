@@ -10,6 +10,11 @@ import {
   Bell,
   Package,
   LifeBuoy,
+  Heart,
+  TrendingUp,
+  Server,
+  MessageSquare,
+  BarChart3,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
@@ -27,13 +32,32 @@ const navigation: NavItem[] = [
     icon: UserPlus,
     // badge is set dynamically below
   },
+  { name: 'Members', href: '/members', icon: Heart },
   { name: 'Plan Management', href: '/plans', icon: Package },
+  {
+    name: 'CRM',
+    href: '#',
+    icon: TrendingUp,
+    children: [
+      { name: 'Dashboard', href: '/crm/dashboard' },
+      { name: 'Leads', href: '/crm/leads' },
+    ],
+  },
   {
     name: 'Support',
     href: '#',
     icon: LifeBuoy,
     children: [
       { name: 'Tickets', href: '/support/tickets' },
+    ],
+  },
+  {
+    name: 'Messaging',
+    href: '#',
+    icon: MessageSquare,
+    children: [
+      { name: 'Chat Moderation', href: '/messaging/chat' },
+      { name: 'Push Notifications', href: '/messaging/push' },
     ],
   },
   {
@@ -53,6 +77,8 @@ const navigation: NavItem[] = [
       { name: 'Navigation', href: '/content/navigation' },
     ],
   },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'System Health', href: '/system/health', icon: Server },
   { name: 'Audit Logs', href: '/audit-logs', icon: ClipboardList },
   {
     name: 'Settings',

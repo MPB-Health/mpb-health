@@ -39,6 +39,16 @@ const VideoLibraryList = React.lazy(() => import('./pages/VideoLibraryList'));
 const FormsList = React.lazy(() => import('./pages/FormsList'));
 const ContactDirectory = React.lazy(() => import('./pages/ContactDirectory'));
 const NavigationManager = React.lazy(() => import('./pages/NavigationManager'));
+// Command center pages
+const Members = React.lazy(() => import('./pages/Members'));
+const MemberDetail = React.lazy(() => import('./pages/MemberDetail'));
+const CRMDashboard = React.lazy(() => import('./pages/CRMDashboard'));
+const CRMLeads = React.lazy(() => import('./pages/CRMLeads'));
+const CRMLeadDetail = React.lazy(() => import('./pages/CRMLeadDetail'));
+const SystemHealth = React.lazy(() => import('./pages/SystemHealth'));
+const ChatModeration = React.lazy(() => import('./pages/ChatModeration'));
+const PushNotifications = React.lazy(() => import('./pages/PushNotifications'));
+const Reports = React.lazy(() => import('./pages/Reports'));
 
 // ── GA4 page-view tracker ─────────────────────────────────────────────────────
 function GAPageTracker() {
@@ -180,6 +190,16 @@ export default function App() {
               <Route path="support/tickets" element={<TicketsList />} />
               <Route path="support/tickets/:ticketId" element={<TicketDetail />} />
               <Route path="audit-logs" element={<AuditLogs />} />
+              {/* Command center routes */}
+              <Route path="members" element={<Members />} />
+              <Route path="members/:memberId" element={<MemberDetail />} />
+              <Route path="crm/dashboard" element={<CRMDashboard />} />
+              <Route path="crm/leads" element={<CRMLeads />} />
+              <Route path="crm/leads/:leadId" element={<CRMLeadDetail />} />
+              <Route path="system/health" element={<SystemHealth />} />
+              <Route path="messaging/chat" element={<ChatModeration />} />
+              <Route path="messaging/push" element={<PushNotifications />} />
+              <Route path="reports" element={<Reports />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

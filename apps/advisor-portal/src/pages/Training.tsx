@@ -729,9 +729,23 @@ interface CourseCard {
   icon: React.ElementType;
   available: boolean;
   external?: boolean;
+  thumbnailUrl?: string;
 }
 
 const courses: CourseCard[] = [
+  {
+    id: 'mpb-training',
+    title: 'MPB Training',
+    description:
+      'Complete this comprehensive course to learn about MPB Health programs, membership benefits, and everything you need to become a certified advisor.',
+    topicCount: 8,
+    lessonCount: 24,
+    href: '/training/mpb',
+    thumbnailUrl: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/advisor%20overview.jpg',
+    gradient: 'from-blue-600 via-blue-600 to-blue-700',
+    icon: GraduationCap,
+    available: true,
+  },
   {
     id: 'mpb',
     title: 'Become an MPB Healthcare Advisor',
@@ -1139,15 +1153,28 @@ export default function Training({ section }: TrainingProps) {
                     : 'opacity-60'
                 }`}
               >
-                <div className={`bg-gradient-to-br ${course.gradient} p-5 text-white relative overflow-hidden`}>
-                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
-                  <div className="relative">
-                    <div className="p-2 rounded-lg bg-white/15 w-fit mb-3">
-                      <CourseIcon className="w-6 h-6" />
+                {course.thumbnailUrl ? (
+                  <div
+                    className="aspect-[16/9] bg-surface-tertiary bg-cover bg-center bg-no-repeat"
+                    style={{ backgroundImage: `url(${course.thumbnailUrl})` }}
+                    role="img"
+                    aria-label={course.title}
+                  >
+                    <div className="h-full flex items-end p-5 bg-gradient-to-t from-black/60 to-transparent">
+                      <h3 className="font-bold text-lg text-white">{course.title}</h3>
                     </div>
-                    <h3 className="font-bold text-lg">{course.title}</h3>
                   </div>
-                </div>
+                ) : (
+                  <div className={`bg-gradient-to-br ${course.gradient} p-5 text-white relative overflow-hidden`}>
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
+                    <div className="relative">
+                      <div className="p-2 rounded-lg bg-white/15 w-fit mb-3">
+                        <CourseIcon className="w-6 h-6" />
+                      </div>
+                      <h3 className="font-bold text-lg">{course.title}</h3>
+                    </div>
+                  </div>
+                )}
 
                 <div className="p-5 bg-surface-primary flex-1 flex flex-col">
                   <p className="text-sm text-th-text-secondary leading-relaxed line-clamp-3 mb-4">

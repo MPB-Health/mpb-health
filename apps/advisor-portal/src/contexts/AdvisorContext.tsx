@@ -10,6 +10,7 @@ import {
   type Bulletin,
 } from '@mpbhealth/advisor-core';
 import { secureAuthService } from '@mpbhealth/auth';
+import { clearNavCache } from '../layouts/MainLayout';
 
 interface AdvisorContextType {
   // Profile
@@ -201,6 +202,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('mpb-auth-token');
     } catch (_) { /* storage may not be available */ }
+    clearNavCache();
     setProfile(null);
     // Redirect to login page within the advisor portal
     window.location.href = '/login';

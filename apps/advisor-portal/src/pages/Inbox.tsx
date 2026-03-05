@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -26,13 +26,20 @@ export default function Inbox() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Debounce search input to avoid API calls on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const { conversations, loading, refresh } = useConversations({
     status: statusFilter,
     channel: channelFilter === 'all' ? undefined : channelFilter,
     unreadOnly,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
   });
 
   const { summary } = useInboxSummary();

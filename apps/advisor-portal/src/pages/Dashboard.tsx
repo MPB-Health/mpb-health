@@ -245,21 +245,31 @@ export default function Dashboard() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set(announcementService.getDismissedIds()));
 
-  // Fetch announcements on mount and subscribe to real-time changes
+  // Fetch all independent dashboard data in parallel on mount
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      try {
-        const active = await announcementService.getActiveAnnouncements();
-        if (!cancelled) setAnnouncements(active);
-      } catch (err) {
-        console.error('Failed to load announcements:', err);
-      }
-    })();
-
     const channel = announcementService.subscribeToAnnouncements((updated) => {
       if (!cancelled) setAnnouncements(updated);
+    });
+
+    Promise.allSettled([
+      announcementService.getActiveAnnouncements(),
+      portalSettingsService.getMultipleSettings([
+        'affiliate_form_url',
+        'schedule_call_url',
+        'affiliate_phone',
+        'advisor_landing_page_url',
+      ]),
+      enrollmentService.getLinks(),
+      formsService.getForms('member'),
+    ]).then(([annResult, settingsResult, linksResult, formsResult]) => {
+      if (cancelled) return;
+      if (annResult.status === 'fulfilled') setAnnouncements(annResult.value);
+      if (settingsResult.status === 'fulfilled') setPortalSettings(settingsResult.value);
+      if (linksResult.status === 'fulfilled') setCmsEnrollLinks(linksResult.value);
+      if (formsResult.status === 'fulfilled') setMemberForms(formsResult.value);
+      setMemberFormsLoading(false);
     });
 
     return () => {
@@ -275,25 +285,6 @@ export default function Dashboard() {
 
   const visibleAnnouncements = announcements.filter((a) => !dismissedIds.has(a.id));
 
-  // Fetch portal settings on mount
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const settings = await portalSettingsService.getMultipleSettings([
-          'affiliate_form_url',
-          'schedule_call_url',
-          'affiliate_phone',
-          'advisor_landing_page_url',
-        ]);
-        if (!cancelled) setPortalSettings(settings);
-      } catch (err) {
-        console.error('Failed to load portal settings:', err);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
   // Derive URLs from settings with hardcoded fallbacks
   const affiliateFormUrl = portalSettings.affiliate_form_url || 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/448';
   const scheduleCallUrl = portalSettings.schedule_call_url || 'https://calendly.com/rebalarney-mympb/time-with-reba';
@@ -303,37 +294,6 @@ export default function Dashboard() {
   const advisorLandingPageUrl = advisorSlug
     ? `${advisorLandingPageBase.replace(/\/+$/, '')}/${advisorSlug}`
     : advisorLandingPageBase;
-
-
-  // Fetch CMS enrollment links on mount
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const links = await enrollmentService.getLinks();
-        if (!cancelled) setCmsEnrollLinks(links);
-      } catch (err) {
-        console.error('Failed to load enrollment links:', err);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  // Fetch member forms for the membership forms section
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const forms = await formsService.getForms('member');
-        if (!cancelled) setMemberForms(forms);
-      } catch (err) {
-        console.error('Failed to load member forms:', err);
-      } finally {
-        if (!cancelled) setMemberFormsLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
 
   // Fetch CMS meetings when profile is available
   useEffect(() => {
@@ -631,60 +591,6 @@ export default function Dashboard() {
             </div>
           </div>
         </button>
-
-        {/* My Landing Page - commented out per request */}
-        {/* <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 h-full">
-          <div className="bg-gradient-to-r from-[#0A4E8E] to-[#0C71C3] p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
-                  <Link2 className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-white font-semibold">My Landing Page</p>
-                  <p className="text-white/70 text-xs">Share your page</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="p-4 space-y-3">
-            <div className="flex items-center gap-2 p-2.5 bg-surface-tertiary rounded-lg">
-              <Link2 className="w-4 h-4 text-th-text-tertiary flex-shrink-0" />
-              <span className="text-xs text-th-text-secondary truncate flex-1 font-mono">{advisorLandingPageUrl}</span>
-              <button
-                onClick={() => navigator.clipboard.writeText(advisorLandingPageUrl)}
-                className="p-1 hover:bg-surface-primary rounded transition-colors flex-shrink-0"
-                title="Copy link"
-              >
-                <Copy className="w-3.5 h-3.5 text-th-text-tertiary" />
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <a
-                href={advisorLandingPageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Visit
-              </a>
-              <button
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({ title: 'MPB Health Advisor', url: advisorLandingPageUrl });
-                  } else {
-                    navigator.clipboard.writeText(advisorLandingPageUrl);
-                  }
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-th-accent-600 border border-th-accent-200 rounded-lg hover:bg-th-accent-50 transition-colors"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                Share
-              </button>
-            </div>
-          </div>
-        </div> */}
 
         {/* Training */}
         <button onClick={() => navigate('/training')} className="text-left h-full w-full group">

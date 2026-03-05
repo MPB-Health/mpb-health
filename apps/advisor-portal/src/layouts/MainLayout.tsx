@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
@@ -57,11 +57,13 @@ import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { NotificationCenter } from '../components/notifications';
-import { CommandPalette } from '../components/command-palette';
-import { MobileBottomNav } from '../components/mobile';
-import { PWAInstallPrompt } from '../components/pwa';
-import { OnboardingWizard } from '../components/onboarding';
-import { KeyboardShortcutsModal } from '../components/command-palette';
+
+// Lazy-load shell components that are conditionally/rarely used
+const CommandPalette = lazy(() => import('../components/command-palette').then(m => ({ default: m.CommandPalette })));
+const MobileBottomNav = lazy(() => import('../components/mobile').then(m => ({ default: m.MobileBottomNav })));
+const PWAInstallPrompt = lazy(() => import('../components/pwa').then(m => ({ default: m.PWAInstallPrompt })));
+const OnboardingWizard = lazy(() => import('../components/onboarding').then(m => ({ default: m.OnboardingWizard })));
+const KeyboardShortcutsModal = lazy(() => import('../components/command-palette').then(m => ({ default: m.KeyboardShortcutsModal })));
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useChat } from '../hooks/useChat';
@@ -208,6 +210,12 @@ let cachedNavItems: NavItem[] | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+/** Clear the navigation cache — call on logout to prevent stale nav across sessions. */
+export function clearNavCache() {
+  cachedNavItems = null;
+  cacheTimestamp = 0;
+}
+
 export default function MainLayout() {
   const navigate = useNavigate();
   const { profile, unreadBulletinCount, logout, loading } = useAdvisor();
@@ -217,10 +225,12 @@ export default function MainLayout() {
   const { preferences: userPreferences } = useUserPreferences();
   const { openSupport, loading: ssoLoading } = useSupportSSO();
 
-  // Admin role check for conditional nav items
+  // Admin role check for conditional nav items (memoized to avoid redundant calls)
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const lastAdminCheckId = useRef<string | null>(null);
   useEffect(() => {
-    if (profile?.user_id) {
+    if (profile?.user_id && profile.user_id !== lastAdminCheckId.current) {
+      lastAdminCheckId.current = profile.user_id;
       checkIsAdmin(profile.user_id).then(setIsAdminUser);
     }
   }, [profile?.user_id]);
@@ -516,23 +526,29 @@ export default function MainLayout() {
 
   return (
     <>
-      {/* Command Palette (Cmd+K) */}
-      <CommandPalette />
+      {/* Lazy-loaded shell components — only parsed when needed */}
+      <Suspense fallback={null}>
+        <CommandPalette />
+      </Suspense>
 
-      {/* Onboarding Wizard for new users */}
-      <OnboardingWizard />
+      <Suspense fallback={null}>
+        <OnboardingWizard />
+      </Suspense>
 
-      {/* Keyboard Shortcuts Modal (press ?) */}
-      <KeyboardShortcutsModal
-        isOpen={showShortcutsModal}
-        onClose={() => setShowShortcutsModal(false)}
-      />
+      <Suspense fallback={null}>
+        <KeyboardShortcutsModal
+          isOpen={showShortcutsModal}
+          onClose={() => setShowShortcutsModal(false)}
+        />
+      </Suspense>
 
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
+      <Suspense fallback={null}>
+        <MobileBottomNav />
+      </Suspense>
 
-      {/* PWA Install Prompt */}
-      <PWAInstallPrompt />
+      <Suspense fallback={null}>
+        <PWAInstallPrompt />
+      </Suspense>
 
       {/* Add padding for mobile bottom nav */}
       <div className="pb-16 lg:pb-0">

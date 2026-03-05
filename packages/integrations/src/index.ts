@@ -1,6 +1,3 @@
-// Zoho CRM Integration
-export * from './zoho';
-
 // Mailchimp
 export { mailchimpService } from './mailchimp/mailchimpService';
 

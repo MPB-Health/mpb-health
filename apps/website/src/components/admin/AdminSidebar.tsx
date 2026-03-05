@@ -103,6 +103,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     items: [
       { id: 'content-panel', label: 'Content Analytics', icon: BarChart3, viewId: 'content' },
       { id: 'blog', label: 'Blog Management', icon: BookOpen, href: '/admin/blog' },
+      { id: 'events', label: 'Events Management', icon: Calendar, href: '/admin/events' },
       { id: 'ai-blog', label: 'AI Blog Generator', icon: Sparkles, href: '/admin/gemini-blog-generator' },
       { id: 'newsletter-subs', label: 'Newsletter Subscribers', icon: Mail, href: '/admin/newsletter-subscribers' },
       { id: 'newsletter-camp', label: 'Newsletter Campaigns', icon: Send, href: '/admin/newsletter-campaigns' },

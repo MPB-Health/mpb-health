@@ -135,6 +135,7 @@ const AdvisorPlanDetail = lazyAuto(() => import('./pages/advisor/AdvisorPlanDeta
 const AdminLogin = lazyAuto(() => import('./pages/admin/AdminLogin'));
 const AdminDashboard = lazyAuto(() => import('./pages/admin/AdminDashboard'));
 const BlogAdmin = lazyAuto(() => import('./pages/BlogAdmin'));
+const EventsAdmin = lazyAuto(() => import('./pages/EventsAdmin'));
 const ResourceAdmin = lazyAuto(() => import('./pages/ResourceAdmin'));
 const NewsletterSubscribers = lazyAuto(() => import('./pages/admin/NewsletterSubscribers'));
 const GeminiBlogGenerator = lazyAuto(() => import('./pages/admin/GeminiBlogGenerator'));
@@ -450,6 +451,14 @@ const App = () => {
                     element={
                       <ProtectedRoute>
                         <BlogAdmin />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/events"
+                    element={
+                      <ProtectedRoute>
+                        <EventsAdmin />
                       </ProtectedRoute>
                     }
                   />

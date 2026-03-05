@@ -22,6 +22,7 @@ import { useCRM } from '../contexts/CRMContext';
 import type { QuoteSubmission } from '@mpbhealth/crm-core';
 
 const PAGE_SIZE = 20;
+const zohoConfigured = !!import.meta.env.VITE_ZOHO_API_KEY;
 
 export default function QuickRateEstimateLeads() {
   const navigate = useNavigate();

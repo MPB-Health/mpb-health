@@ -277,8 +277,9 @@ export default function MainLayout() {
     };
   }, [loadNavigation]);
 
-  // External training links that override CMS/fallback values
-  const EXTERNAL_TRAINING_LINKS: Record<string, { href: string; external: true }> = {
+  // Training link overrides: ensure correct URLs regardless of CMS
+  const TRAINING_LINK_OVERRIDES: Record<string, { href: string; external?: true }> = {
+    'MPB Training': { href: '/training/mpb-cards' },
     'Sedera Training': { href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
     'Zion Training': { href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
   };
@@ -287,13 +288,13 @@ export default function MainLayout() {
   const navigation = useMemo(() => {
     let base = cmsNavItems.length > 0 ? cmsNavItems : fallbackNavigation;
 
-    // Override Sedera/Zion training links to external URLs
+    // Override training links (MPB → mpb-cards page; Sedera/Zion → external)
     base = base.map(item => {
       if (item.children) {
         return {
           ...item,
           children: item.children.map(child => {
-            const override = EXTERNAL_TRAINING_LINKS[child.name];
+            const override = TRAINING_LINK_OVERRIDES[child.name];
             return override ? { ...child, ...override } : child;
           }),
         };

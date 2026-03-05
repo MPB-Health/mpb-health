@@ -154,10 +154,7 @@ const fallbackNavigation: NavItem[] = [
     href: '/training', 
     icon: GraduationCap,
     children: [
-      { name: 'MPB Training', href: '/training/mpb' },
-      { name: 'Become an MPB Healthcare Advisor', href: '/training/mpb' },
-      { name: 'Secure HSA Training', href: '/training/secure-hsa' },
-      { name: 'CARE+ Training', href: '/training/care-plus' },
+      { name: 'MPB Training', href: '/training/mpb-cards' },
       { name: 'Sedera Training', href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
       { name: 'Zion Training', href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
     ],

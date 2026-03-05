@@ -31,7 +31,7 @@ import { trainingService } from '@mpbhealth/advisor-core';
 import { generateCertificate } from '../utils/generateCertificate';
 
 interface TrainingProps {
-  section?: 'mpb' | 'sedera' | 'zion';
+  section?: 'mpb' | 'sedera' | 'zion' | 'mpb-cards';
 }
 
 interface Lesson {
@@ -1117,6 +1117,97 @@ export default function Training({ section }: TrainingProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
           {courses.map((course) => {
+            const CourseIcon = course.icon;
+            return (
+              <div
+                key={course.id}
+                onClick={() => {
+                  if (!course.available) return;
+                  if (course.external) { window.open(course.href, '_blank', 'noopener,noreferrer'); }
+                  else { navigate(course.href); }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter' || !course.available) return;
+                  if (course.external) { window.open(course.href, '_blank', 'noopener,noreferrer'); }
+                  else { navigate(course.href); }
+                }}
+                role={course.available ? 'button' : undefined}
+                tabIndex={course.available ? 0 : undefined}
+                className={`rounded-xl border border-th-border overflow-hidden flex flex-col transition-all ${
+                  course.available
+                    ? 'cursor-pointer hover:shadow-lg hover:border-th-accent-300'
+                    : 'opacity-60'
+                }`}
+              >
+                <div className={`bg-gradient-to-br ${course.gradient} p-5 text-white relative overflow-hidden`}>
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
+                  <div className="relative">
+                    <div className="p-2 rounded-lg bg-white/15 w-fit mb-3">
+                      <CourseIcon className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-lg">{course.title}</h3>
+                  </div>
+                </div>
+
+                <div className="p-5 bg-surface-primary flex-1 flex flex-col">
+                  <p className="text-sm text-th-text-secondary leading-relaxed line-clamp-3 mb-4">
+                    {course.description}
+                  </p>
+                  <div className="mt-auto flex items-center justify-between">
+                    {course.available ? (
+                      <>
+                        {course.external ? (
+                          <span className="text-xs text-th-text-tertiary">External training</span>
+                        ) : (
+                          <div className="flex items-center gap-4 text-xs text-th-text-tertiary">
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              {course.topicCount} Topics
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <FileText className="w-3.5 h-3.5" />
+                              {course.lessonCount} Lessons
+                            </span>
+                          </div>
+                        )}
+                        <span className="flex items-center gap-1 text-sm text-th-accent-600 font-medium">
+                          {course.external ? 'Open' : 'Start'} {course.external ? <ExternalLink className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-th-text-tertiary bg-surface-tertiary px-2 py-1 rounded-full">
+                        Coming Soon
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  /* -------------------- MPB Cards Page (3 MPB courses only) -------------------- */
+  if (section === 'mpb-cards') {
+    const mpbCards = courses.filter((c) => ['mpb', 'secure-hsa', 'care-plus'].includes(c.id));
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-surface-tertiary">
+            <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-th-text-primary">MPB Training</h1>
+            <p className="text-th-text-tertiary text-sm mt-1">
+              Choose a course to get started
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+          {mpbCards.map((course) => {
             const CourseIcon = course.icon;
             return (
               <div

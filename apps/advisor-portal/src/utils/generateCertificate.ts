@@ -1,4 +1,21 @@
-export function generateCertificate(name: string, date: string): Promise<Blob> {
+export interface CertificateOptions {
+  courseTitle?: string;
+  subtitle?: string;
+  badgeText?: string;
+  quizDescription?: string;
+}
+
+export function generateCertificate(
+  name: string,
+  date: string,
+  options?: CertificateOptions
+): Promise<Blob> {
+  const courseTitle = options?.courseTitle ?? 'Become an MPB Healthcare Advisor';
+  const subtitle =
+    options?.subtitle ??
+    'and has demonstrated proficiency in MPB Health programs, membership benefits,\ncompliance guidelines, and healthcare advisory best practices.';
+  const badgeText = options?.badgeText ?? 'MPB Health Certified Healthcare Advisor';
+  const quizDescription = options?.quizDescription ?? 'Healthcare Advisor Certification Quiz';
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     const W = 1400;
@@ -52,12 +69,12 @@ export function generateCertificate(name: string, date: string): Promise<Blob> {
 
     ctx.fillStyle = '#1e3a5f';
     ctx.font = 'bold 28px Georgia, serif';
-    ctx.fillText('Become an MPB Healthcare Advisor', W / 2, 520);
+    ctx.fillText(courseTitle, W / 2, 520);
 
     ctx.fillStyle = '#475569';
     ctx.font = '16px Georgia, serif';
-    ctx.fillText('and has demonstrated proficiency in MPB Health programs, membership benefits,', W / 2, 570);
-    ctx.fillText('compliance guidelines, and healthcare advisory best practices.', W / 2, 595);
+    const subLines = subtitle.includes('\n') ? subtitle.split('\n') : [subtitle];
+    subLines.forEach((line, i) => ctx.fillText(line, W / 2, 570 + i * 25));
 
     ctx.fillStyle = '#3b82f6';
     ctx.fillRect(100, 650, W - 200, 3);
@@ -67,7 +84,7 @@ export function generateCertificate(name: string, date: string): Promise<Blob> {
     ctx.fillText(`Certification Date: ${date}`, W / 2, 700);
 
     ctx.font = '14px Georgia, serif';
-    ctx.fillText('Passed with 80% or higher on the Healthcare Advisor Certification Quiz', W / 2, 730);
+    ctx.fillText(`Passed with 80% or higher on the ${quizDescription}`, W / 2, 730);
 
     ctx.fillStyle = '#3b82f6';
     ctx.fillRect(100, 780, W - 200, 3);
@@ -78,7 +95,7 @@ export function generateCertificate(name: string, date: string): Promise<Blob> {
 
     ctx.fillStyle = '#1e3a5f';
     ctx.font = 'bold 14px Georgia, serif';
-    ctx.fillText('MPB Health Certified Healthcare Advisor', W / 2, 890);
+    ctx.fillText(badgeText, W / 2, 890);
 
     const corners = [
       [70, 70],

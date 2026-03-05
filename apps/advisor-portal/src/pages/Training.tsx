@@ -28,10 +28,10 @@ import {
 } from 'lucide-react';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { trainingService } from '@mpbhealth/advisor-core';
-import { generateCertificate } from '../utils/generateCertificate';
+import { generateCertificate, type CertificateOptions } from '../utils/generateCertificate';
 
 interface TrainingProps {
-  section?: 'mpb' | 'sedera' | 'zion' | 'mpb-cards';
+  section?: 'mpb' | 'sedera' | 'zion' | 'mpb-cards' | 'secure-hsa';
 }
 
 interface Lesson {
@@ -227,26 +227,139 @@ const mpbCourseTopics: Topic[] = [
   },
 ];
 
-const COMPLETED_KEY = 'mpb-training-completed';
+/* ------------------------------------------------------------------ */
+/*  Secure HSA Course                                                  */
+/* ------------------------------------------------------------------ */
 
-function loadCompleted(): Set<string> {
+const secureHsaCourseTopics: Topic[] = [
+  {
+    id: 'introduction',
+    title: 'Introduction to Secure HSA',
+    icon: BookOpen,
+    lessons: [
+      {
+        id: 'what-is-secure-hsa',
+        title: 'What is Secure HSA?',
+        type: 'text',
+        content:
+          'Secure HSA is a medical cost-sharing membership that combines three key components:\n\n**1. Minimum Essential Coverage (MEC)**\nACA-mandated preventive services at 100% with no waiting period.\n\n**2. Medical Cost Sharing**\nCommunity-based sharing of eligible medical expenses with no network restrictions, no lifetime limits, and a 2-year lookback on pre-existing conditions.\n\n**3. HSA Compatibility**\nMembers can open a Health Savings Account and use pre-tax dollars for qualified medical expenses, combining cost sharing with tax-advantaged savings.\n\nSecure HSA is NOT traditional health insurance. It is a medical cost-sharing membership designed for self-employed individuals, 1099 contractors, and gig workers.',
+      },
+      {
+        id: 'who-its-for',
+        title: 'Who is Secure HSA Best For?',
+        type: 'text',
+        content:
+          'Secure HSA is best suited for:\n\n\u2022 Self-employed individuals\n\u2022 1099 contractors\n\u2022 Gig workers\n\u2022 Small business owners\n\u2022 Those who want to combine cost sharing with HSA tax advantages\n\nIt is NOT ideal for W-2 employees with employer-sponsored insurance, Medicare recipients, or individuals seeking traditional ACA insurance.',
+      },
+    ],
+  },
+  {
+    id: 'whats-included',
+    title: "What's Included",
+    icon: Shield,
+    lessons: [
+      {
+        id: 'components',
+        title: 'Secure HSA Components',
+        type: 'text',
+        content:
+          'Secure HSA includes:\n\n**Medical Cost Sharing**\nCommunity-based sharing of eligible medical needs with no network restrictions and no lifetime limits or annual caps.\n\n**Minimum Essential Coverage (MEC)**\nACA-mandated preventive services at 100%.\n\n**HSA Compatibility**\nMembers can open an HSA and use pre-tax dollars for qualified medical expenses.\n\n**$0 Unlimited Virtual Care**\nAccess to virtual health services at no additional cost.\n\nNote: Hospital Debt Relief is a separate program and is not included in Secure HSA.',
+      },
+      {
+        id: 'mec-details',
+        title: 'MEC and Preventive Services',
+        type: 'text',
+        content:
+          '**What MEC Provides**\n\nMEC provides ACA-mandated preventive services only. It does NOT provide hospital cost sharing, prescription-only coverage, or dental coverage.\n\n**Network Requirement**\n\nPreventive services under MEC must be completed in-network with PHCS/MultiPlan. They cannot be out-of-network, cash-pay only, or require concierge approval first.\n\n**Services Include**\n\n\u2022 Annual Wellness Visit\n\u2022 Health Screenings\n\u2022 Immunizations\n\u2022 Cancer Screenings\n\u2022 Child\'s Vision Acuity Screening',
+      },
+    ],
+  },
+  {
+    id: 'hsa-compatibility',
+    title: 'HSA Compatibility',
+    icon: Briefcase,
+    lessons: [
+      {
+        id: 'hsa-benefits',
+        title: 'HSA Benefits Under Secure HSA',
+        type: 'text',
+        content:
+          'Secure HSA allows members to:\n\n\u2022 Open a Health Savings Account\n\u2022 Use pre-tax dollars for qualified medical expenses\n\u2022 Combine cost sharing with tax-advantaged savings\n\n**Important Compliance Note**\n\nMPB Health cannot guide members on how much to contribute to their HSA for tax purposes. Members should consult a tax professional for contribution limits and tax advice.',
+      },
+    ],
+  },
+  {
+    id: 'cost-sharing',
+    title: 'Cost Sharing Features',
+    icon: Heart,
+    lessons: [
+      {
+        id: 'sharing-features',
+        title: 'Cost Sharing Features',
+        type: 'text',
+        content:
+          'Secure HSA cost sharing includes:\n\n\u2022 No network restrictions for sharing\n\u2022 No lifetime limits or annual caps\n\u2022 2-year lookback on pre-existing conditions\n\nMedical expenses are NOT guaranteed approval. Each need is evaluated against eligibility guidelines. Pre-existing conditions have a 2-year lookback period.',
+      },
+      {
+        id: 'maternity',
+        title: 'Maternity Sharing',
+        type: 'text',
+        content:
+          'Maternity needs are shareable under Secure HSA after 6 months of membership before conception. They are not shareable immediately upon joining or after only 3 months.',
+      },
+    ],
+  },
+  {
+    id: 'compliance',
+    title: 'Compliance & How to Explain',
+    icon: HelpCircle,
+    lessons: [
+      {
+        id: 'not-insurance',
+        title: 'Secure HSA is Not Insurance',
+        type: 'text',
+        content:
+          '**Critical Compliance Point**\n\nSecure HSA is a medical cost-sharing membership, NOT traditional health insurance. Never represent it as ACA insurance.\n\n**When a prospect asks: "Is this ACA insurance?"**\n\nThe correct response is: "No, it is a medical cost-sharing membership, not insurance."\n\n**Best Explanation for Self-Employed Business Owners**\n\n"Secure HSA is a medical cost-sharing membership that includes Minimum Essential Coverage for preventive care, medical cost sharing for eligible needs, and HSA compatibility so you can use pre-tax dollars for qualified expenses."',
+      },
+    ],
+  },
+  {
+    id: 'quiz',
+    title: 'Quiz',
+    icon: HelpCircle,
+    lessons: [
+      {
+        id: 'secure-hsa-quiz',
+        title: 'Secure HSA Certification Quiz',
+        type: 'quiz',
+        content:
+          'After completing all training topics, take the Secure HSA Certification Quiz to test your knowledge and earn your certification.\n\nYou must score 80% or higher to pass and receive your certificate.',
+      },
+    ],
+  },
+];
+
+const COMPLETED_KEY = 'mpb-training-completed';
+const SECURE_HSA_COMPLETED_KEY = 'secure-hsa-training-completed';
+
+function loadCompleted(key: string): Set<string> {
   try {
-    const raw = localStorage.getItem(COMPLETED_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) return new Set(JSON.parse(raw));
   } catch { /* ignore */ }
   return new Set();
 }
 
-function saveCompleted(set: Set<string>) {
-  localStorage.setItem(COMPLETED_KEY, JSON.stringify([...set]));
+function saveCompleted(key: string, set: Set<string>) {
+  localStorage.setItem(key, JSON.stringify([...set]));
 }
 
-function allLessonsFlat(): Lesson[] {
-  return mpbCourseTopics.flatMap((t) => t.lessons);
+function allLessonsFlat(topics: Topic[]): Lesson[] {
+  return topics.flatMap((t) => t.lessons);
 }
 
-function findTopicForLesson(lessonId: string): Topic | undefined {
-  return mpbCourseTopics.find((t) => t.lessons.some((l) => l.id === lessonId));
+function findTopicForLesson(topics: Topic[], lessonId: string): Topic | undefined {
+  return topics.find((t) => t.lessons.some((l) => l.id === lessonId));
 }
 
 /* ------------------------------------------------------------------ */
@@ -257,7 +370,9 @@ interface QuizQuestion {
   id: number;
   question: string;
   options: string[];
-  correctIndex: number;
+  correctIndex?: number;
+  multiSelect?: boolean;
+  correctIndices?: number[];
 }
 
 const quizQuestions: QuizQuestion[] = [
@@ -443,33 +558,170 @@ const quizQuestions: QuizQuestion[] = [
   },
 ];
 
+const secureHsaQuizQuestions: QuizQuestion[] = [
+  {
+    id: 1,
+    question: 'Secure HSA includes which of the following? (Select all that apply)',
+    options: [
+      'Medical Cost Sharing',
+      'Minimum Essential Coverage (MEC)',
+      'HSA Compatibility',
+      'Hospital Debt Relief',
+      '$0 Unlimited Virtual Care',
+    ],
+    multiSelect: true,
+    correctIndices: [0, 1, 2, 4],
+  },
+  {
+    id: 2,
+    question: 'What does MEC provide under Secure HSA?',
+    options: [
+      'Hospital cost sharing',
+      'ACA-mandated preventive services',
+      'Prescription-only coverage',
+      'Dental coverage',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 3,
+    question: 'Preventive services under MEC must be:',
+    options: [
+      'Out-of-network',
+      'In-network with PHCS/MultiPlan',
+      'Cash-pay only',
+      'Approved by the concierge first',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 4,
+    question: 'Secure HSA allows members to: (Select all that apply)',
+    options: [
+      'Open a Health Savings Account',
+      'Use pre-tax dollars for qualified medical expenses',
+      'Receive tax advice from MPB Health',
+      'Combine cost sharing with tax-advantaged savings',
+    ],
+    multiSelect: true,
+    correctIndices: [0, 1, 3],
+  },
+  {
+    id: 5,
+    question: 'True or False: MPB Health can guide members on how much to contribute to their HSA for tax purposes.',
+    options: ['True', 'False'],
+    correctIndex: 1,
+  },
+  {
+    id: 6,
+    question: 'Secure HSA includes which of the following cost-sharing features? (Select all that apply)',
+    options: [
+      'No network restrictions for sharing',
+      'No lifetime limits or annual caps',
+      '2-year lookback on pre-existing conditions',
+      'Guaranteed approval of all medical expenses',
+    ],
+    multiSelect: true,
+    correctIndices: [0, 1, 2],
+  },
+  {
+    id: 7,
+    question: 'Maternity needs are shareable under Secure HSA when:',
+    options: [
+      'Immediately upon joining',
+      'After 3 months',
+      'After 6 months of membership before conception',
+      'Never',
+    ],
+    correctIndex: 2,
+  },
+  {
+    id: 8,
+    question: 'Secure HSA is BEST suited for:',
+    options: [
+      'W-2 employees with employer-sponsored insurance',
+      'Self-employed individuals, 1099 contractors, gig workers',
+      'Medicare recipients',
+      'Individuals wanting ACA insurance',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 9,
+    question: 'True or False: Secure HSA is traditional health insurance.',
+    options: ['True', 'False'],
+    correctIndex: 1,
+  },
+  {
+    id: 10,
+    question: 'Which explanation BEST describes Secure HSA to a self-employed business owner?',
+    options: [
+      'Secure HSA is traditional health insurance that works like a PPO but with lower premiums and full coverage for medical expenses.',
+      'Secure HSA is a medical cost-sharing membership that includes Minimum Essential Coverage for preventive care, medical cost sharing for eligible needs, and HSA compatibility so you can use pre-tax dollars for qualified expenses.',
+      'Secure HSA is a catastrophic-only plan that does not include preventive care but allows unlimited specialist visits without eligibility guidelines.',
+      'Secure HSA is an ACA-compliant insurance alternative that guarantees payment of all hospital and surgical bills.',
+    ],
+    correctIndex: 1,
+  },
+  {
+    id: 11,
+    question: 'Scenario: A prospect says, "Is this ACA insurance?" What is the correct response?',
+    options: [
+      'Yes',
+      'It depends on the state',
+      'No, it is a medical cost-sharing membership, not insurance',
+      'Only for businesses',
+    ],
+    correctIndex: 2,
+  },
+];
+
 const PASS_THRESHOLD = 0.8;
 const QUIZ_RESULT_KEY = 'mpb-quiz-result';
+const SECURE_HSA_QUIZ_RESULT_KEY = 'secure-hsa-quiz-result';
 
-function loadQuizResult(): { passed: boolean; score: number; date: string } | null {
+function loadQuizResult(key: string): { passed: boolean; score: number; date: string } | null {
   try {
-    const raw = localStorage.getItem(QUIZ_RESULT_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
   return null;
 }
 
-function saveQuizResult(result: { passed: boolean; score: number; date: string }) {
-  localStorage.setItem(QUIZ_RESULT_KEY, JSON.stringify(result));
+function saveQuizResult(key: string, result: { passed: boolean; score: number; date: string }) {
+  localStorage.setItem(key, JSON.stringify(result));
+}
+
+function isMultiSelectCorrect(q: QuizQuestion, selected: number[]): boolean {
+  if (!q.multiSelect || !q.correctIndices) return false;
+  if (selected.length !== q.correctIndices.length) return false;
+  const sortedSelected = [...selected].sort((a, b) => a - b);
+  const sortedCorrect = [...q.correctIndices].sort((a, b) => a - b);
+  return sortedSelected.every((v, i) => v === sortedCorrect[i]);
 }
 
 function QuizViewer({
+  questions,
+  resultKey,
+  certificateTitle,
+  certificateFilename,
+  certificateOptions,
   advisorName,
   advisorId,
   onMarkComplete,
   completed,
 }: {
+  questions: QuizQuestion[];
+  resultKey: string;
+  certificateTitle: string;
+  certificateFilename: string;
+  certificateOptions?: CertificateOptions;
   advisorName: string;
   advisorId: string | null;
   onMarkComplete: () => void;
   completed: boolean;
 }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [answers, setAnswers] = useState<Record<number, number | number[]>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [passed, setPassed] = useState(false);
@@ -477,25 +729,41 @@ function QuizViewer({
   const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const saved = loadQuizResult();
+    const saved = loadQuizResult(resultKey);
     if (saved && saved.passed) {
       setSubmitted(true);
       setScore(saved.score);
       setPassed(true);
     }
-  }, []);
+  }, [resultKey]);
 
-  const handleSelect = (questionId: number, optionIndex: number) => {
+  const handleSelect = (questionId: number, optionIndex: number, multiSelect?: boolean) => {
     if (submitted) return;
-    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+    if (multiSelect) {
+      setAnswers((prev) => {
+        const current = (prev[questionId] as number[] | undefined) ?? [];
+        const next = current.includes(optionIndex)
+          ? current.filter((i) => i !== optionIndex)
+          : [...current, optionIndex].sort((a, b) => a - b);
+        return { ...prev, [questionId]: next };
+      });
+    } else {
+      setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+    }
   };
 
   const handleSubmit = () => {
     let correct = 0;
-    for (const q of quizQuestions) {
-      if (answers[q.id] === q.correctIndex) correct++;
+    for (const q of questions) {
+      const ans = answers[q.id];
+      if (q.multiSelect && q.correctIndices) {
+        const selected = Array.isArray(ans) ? ans : [];
+        if (isMultiSelectCorrect(q, selected)) correct++;
+      } else if (q.correctIndex !== undefined) {
+        if (ans === q.correctIndex) correct++;
+      }
     }
-    const pct = correct / quizQuestions.length;
+    const pct = correct / questions.length;
     const didPass = pct >= PASS_THRESHOLD;
     setScore(correct);
     setPassed(didPass);
@@ -503,8 +771,8 @@ function QuizViewer({
 
     if (didPass) {
       const result = { passed: true, score: correct, date: new Date().toLocaleDateString() };
-      saveQuizResult(result);
-      if (advisorId) {
+      saveQuizResult(resultKey, result);
+      if (advisorId && resultKey === QUIZ_RESULT_KEY) {
         trainingService.saveQuizCertification(advisorId, correct);
       }
       if (!completed) onMarkComplete();
@@ -529,11 +797,17 @@ function QuizViewer({
         month: 'long',
         day: 'numeric',
       });
-      const blob = await generateCertificate(advisorName, date);
+      const opts = certificateOptions ?? {
+        courseTitle: certificateTitle,
+        subtitle: `and has demonstrated proficiency in ${certificateTitle}.`,
+        badgeText: `MPB Health Certified - ${certificateTitle}`,
+        quizDescription: `${certificateTitle} Certification Quiz`,
+      };
+      const blob = await generateCertificate(advisorName, date, opts);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'MPB_Healthcare_Advisor_Certificate.png';
+      a.download = certificateFilename;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -541,14 +815,26 @@ function QuizViewer({
     }
   };
 
-  const allAnswered = quizQuestions.every((q) => answers[q.id] !== undefined);
+  const allAnswered = questions.every((q) => {
+    const ans = answers[q.id];
+    if (q.multiSelect) return Array.isArray(ans) && ans.length > 0;
+    return ans !== undefined;
+  });
+
+  const answeredCount = questions.filter((q) => {
+    const ans = answers[q.id];
+    if (q.multiSelect) return Array.isArray(ans) && ans.length > 0;
+    return ans !== undefined;
+  }).length;
+
+  const passCount = Math.ceil(questions.length * PASS_THRESHOLD);
 
   return (
     <div className="flex-1 overflow-y-auto">
       <div ref={topRef} className="px-8 pt-8 pb-4">
-        <h2 className="text-2xl font-bold text-th-text-primary">Healthcare Advisor Certification Quiz</h2>
+        <h2 className="text-2xl font-bold text-th-text-primary">{certificateTitle} Certification Quiz</h2>
         <p className="text-th-text-secondary text-sm mt-2">
-          Answer all 10 questions below. You need at least 80% (8 out of 10) to pass and earn your certificate.
+          Answer all {questions.length} questions below. You need at least 80% ({passCount} out of {questions.length}) to pass and earn your certificate.
         </p>
       </div>
 
@@ -589,7 +875,7 @@ function QuizViewer({
                 >
                   You scored {score} out of {quizQuestions.length} ({Math.round((score / quizQuestions.length) * 100)}%)
                   {passed
-                    ? ' — You are now a certified MPB Healthcare Advisor!'
+                    ? ` — You are now certified in ${certificateTitle}!`
                     : ` — You need at least ${Math.round(PASS_THRESHOLD * 100)}% to pass. Review the lessons and try again.`}
                 </p>
               </div>
@@ -625,10 +911,13 @@ function QuizViewer({
 
       {/* Questions */}
       <div className="px-8 pb-8 space-y-6">
-        {quizQuestions.map((q, qi) => {
+        {questions.map((q, qi) => {
           const selected = answers[q.id];
-          const isCorrect = submitted && selected === q.correctIndex;
-          const isWrong = submitted && selected !== undefined && selected !== q.correctIndex;
+          const isMulti = q.multiSelect;
+          const selectedArr = isMulti ? (Array.isArray(selected) ? selected : []) : [];
+          const selectedSingle = !isMulti ? (selected as number | undefined) : undefined;
+          const isCorrect = submitted && (isMulti ? isMultiSelectCorrect(q, selectedArr) : selectedSingle === q.correctIndex);
+          const isWrong = submitted && (isMulti ? !isMultiSelectCorrect(q, selectedArr) && selectedArr.length > 0 : selectedSingle !== undefined && selectedSingle !== q.correctIndex);
 
           return (
             <div
@@ -652,14 +941,14 @@ function QuizViewer({
 
               <div className="space-y-2 ml-11">
                 {q.options.map((opt, oi) => {
-                  const isSelected = selected === oi;
-                  const isThisCorrect = submitted && oi === q.correctIndex;
-                  const isThisWrong = submitted && isSelected && oi !== q.correctIndex;
+                  const isSelected = isMulti ? selectedArr.includes(oi) : selectedSingle === oi;
+                  const isThisCorrect = submitted && (isMulti ? (q.correctIndices?.includes(oi) ?? false) : oi === q.correctIndex);
+                  const isThisWrong = submitted && isSelected && (isMulti ? !(q.correctIndices?.includes(oi) ?? false) : oi !== q.correctIndex);
 
                   return (
                     <button
                       key={oi}
-                      onClick={() => handleSelect(q.id, oi)}
+                      onClick={() => handleSelect(q.id, oi, isMulti)}
                       disabled={submitted}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm transition-all ${
                         submitted
@@ -688,8 +977,8 @@ function QuizViewer({
                       >
                         {submitted && isThisCorrect && '✓'}
                         {submitted && isThisWrong && '✗'}
-                        {!submitted && isSelected && '●'}
-                        {!submitted && !isSelected && String.fromCharCode(65 + oi)}
+                        {!submitted && isSelected && (isMulti ? '✓' : '●')}
+                        {!submitted && !isSelected && (isMulti ? '⬜' : String.fromCharCode(65 + oi))}
                       </span>
                       <span>{opt}</span>
                     </button>
@@ -709,7 +998,7 @@ function QuizViewer({
               className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl text-base font-semibold transition-colors shadow-lg shadow-blue-600/20"
             >
               <CheckCircle2 className="w-5 h-5" />
-              Submit Quiz ({Object.keys(answers).length}/{quizQuestions.length} answered)
+              Submit Quiz ({answeredCount}/{questions.length} answered)
             </button>
           </div>
         )}
@@ -775,12 +1064,12 @@ const courses: CourseCard[] = [
     title: 'Secure HSA Training',
     description:
       'Learn about the Secure HSA product, health savings account integration, and how to present HSA-compatible health sharing solutions to your clients.',
-    topicCount: 0,
-    lessonCount: 0,
+    topicCount: 6,
+    lessonCount: 9,
     href: '/training/secure-hsa',
     gradient: 'from-emerald-600 via-emerald-500 to-teal-500',
     icon: Shield,
-    available: false,
+    available: true,
   },
   {
     id: 'care-plus',
@@ -1037,6 +1326,36 @@ function LessonViewer({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Course Config                                                      */
+/* ------------------------------------------------------------------ */
+
+const courseConfigs = {
+  mpb: {
+    topics: mpbCourseTopics,
+    completedKey: COMPLETED_KEY,
+    quizQuestions,
+    quizResultKey: QUIZ_RESULT_KEY,
+    title: 'Become an MPB Healthcare Advisor',
+    certificateFilename: 'MPB_Healthcare_Advisor_Certificate.png',
+    certificateOptions: {
+      courseTitle: 'Become an MPB Healthcare Advisor',
+      subtitle: 'and has demonstrated proficiency in MPB Health programs, membership benefits,\ncompliance guidelines, and healthcare advisory best practices.',
+      badgeText: 'MPB Health Certified Healthcare Advisor',
+      quizDescription: 'Healthcare Advisor Certification Quiz',
+    },
+  },
+  'secure-hsa': {
+    topics: secureHsaCourseTopics,
+    completedKey: SECURE_HSA_COMPLETED_KEY,
+    quizQuestions: secureHsaQuizQuestions,
+    quizResultKey: SECURE_HSA_QUIZ_RESULT_KEY,
+    title: 'Secure HSA Training',
+    certificateFilename: 'Secure_HSA_Certificate.png',
+    certificateOptions: undefined,
+  },
+} as const;
+
+/* ------------------------------------------------------------------ */
 /*  Main Component                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -1045,10 +1364,14 @@ export default function Training({ section }: TrainingProps) {
   const { profile } = useAdvisor();
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['introduction']));
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [completedLessons, setCompletedLessons] = useState<Set<string>>(loadCompleted);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const flat = allLessonsFlat();
+  const courseKey = section === 'secure-hsa' ? 'secure-hsa' : 'mpb';
+  const config = courseConfigs[courseKey];
+  const completedKey = config.completedKey;
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(() => loadCompleted(completedKey));
+
+  const flat = allLessonsFlat(config.topics);
   const totalLessons = flat.length;
   const completedCount = [...completedLessons].filter((id) => flat.some((l) => l.id === id)).length;
   const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -1058,7 +1381,7 @@ export default function Training({ section }: TrainingProps) {
 
   const navigateLesson = useCallback((lessonId: string) => {
     setActiveLessonId(lessonId);
-    const topic = findTopicForLesson(lessonId);
+    const topic = findTopicForLesson(config.topics, lessonId);
     if (topic) {
       setExpandedTopics((prev) => {
         const next = new Set(prev);
@@ -1066,7 +1389,7 @@ export default function Training({ section }: TrainingProps) {
         return next;
       });
     }
-  }, []);
+  }, [config.topics]);
 
   const handlePrev = useCallback(() => {
     if (activeIndex > 0) navigateLesson(flat[activeIndex - 1].id);
@@ -1085,10 +1408,10 @@ export default function Training({ section }: TrainingProps) {
       } else {
         next.add(activeLessonId);
       }
-      saveCompleted(next);
+      saveCompleted(completedKey, next);
       return next;
     });
-  }, [activeLessonId]);
+  }, [activeLessonId, completedKey]);
 
   const toggleTopic = (topicId: string) => {
     setExpandedTopics((prev) => {
@@ -1291,19 +1614,19 @@ export default function Training({ section }: TrainingProps) {
     return null;
   }
 
-  /* -------------------- MPB Course Detail (Sidebar + Content) ---- */
+  /* -------------------- MPB or Secure HSA Course Detail (Sidebar + Content) ---- */
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       {/* Top Bar */}
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white flex-shrink-0 rounded-t-xl">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/training')}
+            onClick={() => navigate(section === 'secure-hsa' ? '/training/mpb-cards' : '/training')}
             className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <span className="font-semibold text-sm md:text-base">Become an MPB Healthcare Advisor</span>
+          <span className="font-semibold text-sm md:text-base">{config.title}</span>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-white/80 hidden sm:block">
@@ -1340,7 +1663,7 @@ export default function Training({ section }: TrainingProps) {
 
             {/* Scrollable sidebar content */}
             <div className="flex-1 overflow-y-auto">
-              {mpbCourseTopics.map((topic) => {
+              {config.topics.map((topic) => {
                 const isExpanded = expandedTopics.has(topic.id);
                 const topicCompleted = topic.lessons.filter((l) => completedLessons.has(l.id)).length;
 
@@ -1427,6 +1750,11 @@ export default function Training({ section }: TrainingProps) {
           activeLesson.type === 'quiz' ? (
             <QuizViewer
               key={activeLesson.id}
+              questions={config.quizQuestions}
+              resultKey={config.quizResultKey}
+              certificateTitle={config.title}
+              certificateFilename={config.certificateFilename}
+              certificateOptions={config.certificateOptions}
               advisorName={
                 profile
                   ? `${profile.first_name} ${profile.last_name}`
@@ -1455,10 +1783,10 @@ export default function Training({ section }: TrainingProps) {
                 <GraduationCap className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-xl font-bold text-th-text-primary mb-2">
-                Become an MPB Healthcare Advisor
+                {config.title}
               </h2>
               <p className="text-th-text-secondary text-sm mb-2">
-                {totalLessons} lessons &middot; {mpbCourseTopics.length} topics &middot; Certificate
+                {totalLessons} lessons &middot; {config.topics.length} topics &middot; Certificate
               </p>
               <div className="flex items-center gap-2 justify-center mb-6">
                 <div className="flex-1 max-w-48 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

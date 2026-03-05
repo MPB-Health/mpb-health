@@ -280,6 +280,7 @@ export interface CmsEvent {
   is_published: boolean;
   is_featured: boolean;
   tags: string[];
+  gallery_images: string[];
   created_by: string | null;
   created_at: string;
   updated_at: string;

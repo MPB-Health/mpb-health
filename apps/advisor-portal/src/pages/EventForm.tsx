@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Upload, X, ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { eventsService } from '@mpbhealth/advisor-core';
 import { supabase } from '@mpbhealth/database';
 import { RichTextEditor } from '../components/cms/RichTextEditor';
 import { ImageUploader } from '../components/cms/ImageUploader';
+import { uploadEventImage, validateImageFile } from '../components/cms/imageUploadService';
 
 interface EventFormData {
   title: string;
@@ -24,6 +25,7 @@ interface EventFormData {
   is_published: boolean;
   is_featured: boolean;
   tags: string;
+  gallery_images: string[];
 }
 
 const EMPTY_FORM: EventFormData = {
@@ -43,6 +45,7 @@ const EMPTY_FORM: EventFormData = {
   is_published: false,
   is_featured: false,
   tags: '',
+  gallery_images: [],
 };
 
 function slugify(text: string): string {
@@ -86,6 +89,7 @@ export default function EventForm() {
         is_published: event.is_published,
         is_featured: event.is_featured,
         tags: (event.tags || []).join(', '),
+        gallery_images: event.gallery_images || [],
       });
       setSlugManuallyEdited(true);
     }).catch((err) => {
@@ -134,6 +138,7 @@ export default function EventForm() {
         is_published: form.is_published,
         is_featured: form.is_featured,
         tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        gallery_images: form.gallery_images,
         created_by: user?.id || null,
       };
 
@@ -337,6 +342,13 @@ export default function EventForm() {
           />
         </div>
 
+        {/* Photo Gallery */}
+        <EventGallerySection
+          images={form.gallery_images}
+          onChange={(images) => setForm(prev => ({ ...prev, gallery_images: images }))}
+          slug={form.slug}
+        />
+
         {/* Publish Settings */}
         <div className="bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-semibold text-neutral-900">Publishing</h2>
@@ -384,6 +396,140 @@ export default function EventForm() {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function EventGallerySection({
+  images,
+  onChange,
+  slug,
+}: {
+  images: string[];
+  onChange: (images: string[]) => void;
+  slug: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [urlInput, setUrlInput] = useState('');
+
+  const handleFilesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    const newUrls: string[] = [];
+
+    for (const file of files) {
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(`${file.name}: ${validation.error}`);
+        continue;
+      }
+      const result = await uploadEventImage(file, { slug: `${slug}-gallery` });
+      if (result.success && result.url) {
+        newUrls.push(result.url);
+      } else {
+        toast.error(`${file.name}: ${result.error || 'Upload failed'}`);
+      }
+    }
+
+    if (newUrls.length > 0) {
+      onChange([...images, ...newUrls]);
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    onChange(images.filter((_, i) => i !== index));
+  };
+
+  const addUrl = () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    onChange([...images, trimmed]);
+    setUrlInput('');
+  };
+
+  return (
+    <div className="bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-neutral-900">Photo Gallery</h2>
+        <span className="text-sm text-neutral-400">{images.length} photo{images.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* Image grid */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {images.map((url, i) => (
+            <div key={`${url}-${i}`} className="relative group aspect-square">
+              <img
+                src={url}
+                alt={`Gallery ${i + 1}`}
+                className="w-full h-full object-cover rounded-lg border border-neutral-200"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                title="Remove photo"
+                className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload area */}
+      <div
+        onClick={() => !uploading && fileInputRef.current?.click()}
+        className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-neutral-50 transition-all"
+      >
+        {uploading ? (
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+            <span className="text-sm text-neutral-600">Uploading...</span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <ImageIcon className="h-6 w-6 text-neutral-400" />
+            <span className="text-sm text-neutral-600">Click to add photos</span>
+            <span className="text-xs text-neutral-400">PNG, JPG, WebP up to 5MB each — select multiple</span>
+          </div>
+        )}
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        multiple
+        onChange={handleFilesSelect}
+        className="hidden"
+        aria-label="Upload gallery photos"
+      />
+
+      {/* URL input */}
+      <div className="flex gap-2">
+        <input
+          type="url"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addUrl())}
+          placeholder="Or paste image URL..."
+          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          type="button"
+          onClick={addUrl}
+          disabled={!urlInput.trim()}
+          className="px-3 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          Add
+        </button>
+      </div>
     </div>
   );
 }

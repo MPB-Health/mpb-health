@@ -32,7 +32,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
         <div
           className="document-card__thumbnail bg-surface-tertiary"
           style={{
-            backgroundImage: `url(${doc.image_url})`,
+            backgroundImage: `url("${doc.image_url}")`,
             backgroundSize: 'cover',
             backgroundPosition: (doc.metadata?.image_position as string) || 'center top',
             backgroundRepeat: 'no-repeat',

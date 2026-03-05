@@ -29,6 +29,9 @@ import {
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { trainingService } from '@mpbhealth/advisor-core';
 import { generateCertificate, type CertificateOptions } from '../utils/generateCertificate';
+import DocumentPreviewModal from '../components/DocumentPreviewModal';
+import DocumentCard from '../components/DocumentCard';
+import type { SOPDocument } from '@mpbhealth/advisor-core';
 
 interface TrainingProps {
   section?: 'mpb' | 'sedera' | 'zion' | 'mpb-cards' | 'secure-hsa' | 'care-plus';
@@ -1306,6 +1309,44 @@ const courses: CourseCard[] = [
   },
 ];
 
+// Resource cards from Resources (Reference Materials) - same popup behavior
+const MPB_TRAINING_RESOURCE_CARDS: SOPDocument[] = [
+  {
+    id: 'advisor-overview',
+    title: 'Advisor Overview',
+    description: 'Advisor Overview presentation for MPB Health.',
+    category: 'Reference Materials',
+    content: 'Advisor Overview - MPB Health presentation.',
+    content_type: 'presentation',
+    file_url: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/Advisor%20overview.pptx',
+    image_url: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/advisor%20overview.jpg',
+    version: '1.0',
+    is_published: true,
+    tags: ['advisor', 'reference materials', 'overview', 'presentation'],
+    view_count: 0,
+    metadata: { image_position: '-8px center' },
+    created_at: '',
+    updated_at: '',
+  },
+  {
+    id: 'membership-overview-agent',
+    title: 'Membership Overview - Agent Resource',
+    description: 'Membership overview presentation for agents - MPB Health.',
+    category: 'Reference Materials',
+    content: 'Membership Overview - Agent Resource - MPB Health presentation.',
+    content_type: 'presentation',
+    file_url: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/Membership%20Overview%20-%20Agent%20Resource.pptx',
+    image_url: 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/member%20overview.jpg',
+    version: '1.0',
+    is_published: true,
+    tags: ['membership', 'reference materials', 'overview', 'agent', 'presentation'],
+    view_count: 0,
+    metadata: { image_position: '-8px center' },
+    created_at: '',
+    updated_at: '',
+  },
+];
+
 /* ------------------------------------------------------------------ */
 /*  Lesson Viewer (main content area)                                   */
 /* ------------------------------------------------------------------ */
@@ -1595,6 +1636,7 @@ export default function Training({ section }: TrainingProps) {
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['introduction']));
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [previewDoc, setPreviewDoc] = useState<SOPDocument | null>(null);
 
   const courseKey = section === 'secure-hsa' ? 'secure-hsa' : section === 'care-plus' ? 'care-plus' : 'mpb';
   const config = courseConfigs[courseKey];
@@ -1742,7 +1784,7 @@ export default function Training({ section }: TrainingProps) {
     );
   }
 
-  /* -------------------- MPB Cards Page (3 MPB courses only) -------------------- */
+  /* -------------------- MPB Cards Page (3 MPB courses + 2 resource cards) -------------------- */
   if (section === 'mpb-cards') {
     const mpbCards = courses.filter((c) => ['mpb', 'secure-hsa', 'care-plus'].includes(c.id));
     return (
@@ -1828,7 +1870,21 @@ export default function Training({ section }: TrainingProps) {
               </div>
             );
           })}
+          {MPB_TRAINING_RESOURCE_CARDS.map((doc) => (
+            <DocumentCard
+              key={doc.id}
+              doc={doc}
+              onClick={() => setPreviewDoc(doc)}
+            />
+          ))}
         </div>
+
+        <DocumentPreviewModal
+          isOpen={!!previewDoc}
+          onClose={() => setPreviewDoc(null)}
+          title={previewDoc?.title || ''}
+          fileUrl={previewDoc?.file_url || ''}
+        />
       </div>
     );
   }

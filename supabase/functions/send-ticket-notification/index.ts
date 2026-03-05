@@ -2,15 +2,21 @@
  * send-ticket-notification
  * ─────────────────────────────────────────────────────────────────────────────
  * Internal edge function called (fire-and-forget) by ticket-proxy after every
- * write action. Sends branded notification emails via Resend to:
+ * write action. Sends:
  *
+ *   1. Email notifications via Resend
+ *   2. In-app notification events (notification_events table)
+ *   3. Browser/PWA push notifications via push-service
+ *
+ * Recipients:
  *   • advisor_email  — on: created, created_for_advisor, staff_replied, status_changed
- *   • SUPPORT_TEAM_EMAIL — on: created, advisor_replied
+ *   • SUPPORT_TEAM_EMAIL / admin users — on: created, advisor_replied
  *
  * Auth: verified against SUPABASE_SERVICE_ROLE_KEY (server-to-server only).
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger } from "../_shared/logger.ts";
 
 const log = createLogger("send-ticket-notification");
@@ -400,6 +406,233 @@ async function sendEmail(
   }
 }
 
+// ── In-app + Push notification helpers ────────────────────────────────────────
+
+// Default org_id for notification_events (single-org setup)
+const DEFAULT_ORG_ID = "00000000-0000-4000-a000-000000000001";
+
+interface PushTarget {
+  user_id: string;
+  title: string;
+  body: string;
+  action_url: string;
+  tag: string;
+  event_type: string;
+}
+
+/**
+ * Build the list of push/in-app notification targets for a given ticket event.
+ * HIPAA-safe: titles and bodies contain no PHI — only ticket number and generic text.
+ */
+function buildPushTargets(
+  p: TicketNotificationPayload,
+  advisorUserId: string | null,
+  adminUserIds: string[],
+): PushTarget[] {
+  const targets: PushTarget[] = [];
+
+  switch (p.event) {
+    case "created": {
+      // Advisor gets confirmation
+      if (advisorUserId) {
+        targets.push({
+          user_id: advisorUserId,
+          title: "Ticket received",
+          body: `Ticket #${p.ticket_number} has been submitted`,
+          action_url: "/tickets",
+          tag: "mpb-ticket",
+          event_type: "ticket_status_change",
+        });
+      }
+      // All admins get alert about new ticket
+      for (const adminId of adminUserIds) {
+        targets.push({
+          user_id: adminId,
+          title: "New support ticket",
+          body: `Ticket #${p.ticket_number} submitted by an advisor`,
+          action_url: "/admin/tickets",
+          tag: "mpb-ticket",
+          event_type: "ticket_reply",
+        });
+      }
+      break;
+    }
+
+    case "created_for_advisor": {
+      // Advisor gets notified
+      if (advisorUserId) {
+        targets.push({
+          user_id: advisorUserId,
+          title: "Ticket opened for you",
+          body: `Support ticket #${p.ticket_number} was opened on your behalf`,
+          action_url: "/tickets",
+          tag: "mpb-ticket",
+          event_type: "ticket_status_change",
+        });
+      }
+      break;
+    }
+
+    case "advisor_replied": {
+      // All admins get notified
+      for (const adminId of adminUserIds) {
+        targets.push({
+          user_id: adminId,
+          title: "New ticket reply",
+          body: `Advisor replied to ticket #${p.ticket_number}`,
+          action_url: "/admin/tickets",
+          tag: "mpb-ticket",
+          event_type: "ticket_reply",
+        });
+      }
+      break;
+    }
+
+    case "staff_replied": {
+      // Advisor gets notified
+      if (advisorUserId) {
+        targets.push({
+          user_id: advisorUserId,
+          title: "New reply on your ticket",
+          body: `Support team replied to ticket #${p.ticket_number}`,
+          action_url: "/tickets",
+          tag: "mpb-ticket",
+          event_type: "ticket_reply",
+        });
+      }
+      break;
+    }
+
+    case "status_changed": {
+      // Advisor gets notified
+      if (advisorUserId) {
+        const statusText = p.new_status ? STATUS_LABELS[p.new_status] || p.new_status : "updated";
+        targets.push({
+          user_id: advisorUserId,
+          title: "Ticket updated",
+          body: `Ticket #${p.ticket_number} is now ${statusText}`,
+          action_url: "/tickets",
+          tag: "mpb-ticket",
+          event_type: "ticket_status_change",
+        });
+      }
+      break;
+    }
+  }
+
+  return targets;
+}
+
+/**
+ * Look up the main-project auth user_id for an email address.
+ * advisor_profiles.id = auth.users.id and has email column.
+ */
+async function getUserIdByEmail(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  email: string,
+): Promise<string | null> {
+  // advisor_profiles has (id, email) where id references auth.users
+  const { data: ap } = await supabaseAdmin
+    .from("advisor_profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+  if (ap?.id) return ap.id;
+
+  // Fallback: admin_users table for staff lookups
+  const { data: au } = await supabaseAdmin
+    .from("admin_users")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+  return au?.id || null;
+}
+
+/**
+ * Get all admin user auth IDs for staff-facing notifications.
+ */
+async function getAdminUserIds(
+  supabaseAdmin: ReturnType<typeof createClient>,
+): Promise<string[]> {
+  const { data } = await supabaseAdmin
+    .from("user_roles")
+    .select("user_id")
+    .in("role", ["admin", "super_admin"]);
+  return (data || []).map((r: { user_id: string }) => r.user_id);
+}
+
+/**
+ * Check if a user has push_ticket_updates enabled.
+ * Returns true by default if no settings row exists (opt-out model).
+ */
+async function isPushEnabledForTickets(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from("notification_settings")
+    .select("push_enabled, push_ticket_updates")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!data) return true; // Default: enabled
+  return data.push_enabled !== false && data.push_ticket_updates !== false;
+}
+
+/**
+ * Create in-app notification event and trigger browser/PWA push for a target user.
+ */
+async function sendInAppAndPush(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  target: PushTarget,
+  ticketId: string,
+  supabaseUrl: string,
+  serviceRoleKey: string,
+): Promise<void> {
+  // 1. Check user's notification preferences
+  const pushEnabled = await isPushEnabledForTickets(supabaseAdmin, target.user_id);
+
+  // 2. Insert in-app notification event (always — respects in-app bell icon)
+  const { error: eventErr } = await supabaseAdmin
+    .from("notification_events")
+    .insert({
+      user_id: target.user_id,
+      org_id: DEFAULT_ORG_ID,
+      event_type: target.event_type,
+      title: target.title,
+      body: target.body,
+      action_url: target.action_url,
+      source_type: "ticket",
+      source_id: ticketId,
+      metadata: { tag: target.tag },
+    });
+
+  if (eventErr) {
+    log.error("Failed to create notification event", { userId: target.user_id, error: eventErr.message });
+  }
+
+  // 3. Trigger push notification if user has it enabled
+  if (pushEnabled) {
+    fetch(`${supabaseUrl}/functions/v1/push-service`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        action: "send_push",
+        user_id: target.user_id,
+        title: target.title,
+        body: target.body,
+        action_url: target.action_url,
+        tag: target.tag,
+      }),
+    }).catch((err) => {
+      log.error("Push notification call failed", { userId: target.user_id, error: String(err) });
+    });
+  }
+}
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -408,21 +641,18 @@ Deno.serve(async (req: Request) => {
   }
 
   // Verify this is an internal call — must supply the service role key as Bearer
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const provided = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
   if (!expectedKey || provided !== expectedKey) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-  if (!RESEND_API_KEY) {
-    log.warn("RESEND_API_KEY not configured — skipping notification");
-    return new Response(JSON.stringify({ skipped: true, reason: "no_resend_key" }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  const supabaseAdmin = createClient(supabaseUrl, expectedKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   const APP_URL = Deno.env.get("APP_URL") || "https://advisor.mpb.health";
   const SUPPORT_TEAM_EMAIL = Deno.env.get("SUPPORT_TEAM_EMAIL") || "support@mpb.health";
   const FROM_EMAIL = Deno.env.get("TICKET_FROM_EMAIL") || "noreply@mpb.health";
@@ -444,26 +674,70 @@ Deno.serve(async (req: Request) => {
       advisor: payload.advisor_email,
     });
 
-    const messages = buildMessages(payload, APP_URL, SUPPORT_TEAM_EMAIL);
-    const results = await Promise.allSettled(
-      messages.map((msg) => sendEmail(RESEND_API_KEY, FROM_EMAIL, FROM_NAME, msg)),
-    );
+    // ── 1. Email notifications ───────────────────────────────────────────────
+    let emailSent = 0;
+    let emailFailed = 0;
 
-    const errors = results
-      .filter((r): r is PromiseRejectedResult => r.status === "rejected")
-      .map((r) => r.reason?.message || String(r.reason));
+    if (RESEND_API_KEY) {
+      const messages = buildMessages(payload, APP_URL, SUPPORT_TEAM_EMAIL);
+      const results = await Promise.allSettled(
+        messages.map((msg) => sendEmail(RESEND_API_KEY, FROM_EMAIL, FROM_NAME, msg)),
+      );
+      emailSent = results.filter((r) => r.status === "fulfilled").length;
+      emailFailed = results.filter((r) => r.status === "rejected").length;
 
-    if (errors.length > 0) {
-      log.error("Some emails failed", { errors, event: payload.event });
+      if (emailFailed > 0) {
+        const errors = results
+          .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+          .map((r) => r.reason?.message || String(r.reason));
+        log.error("Some emails failed", { errors, event: payload.event });
+      }
+    } else {
+      log.warn("RESEND_API_KEY not configured — skipping email notification");
+    }
+
+    // ── 2. In-app + Push notifications ───────────────────────────────────────
+    let pushSent = 0;
+
+    try {
+      // Resolve advisor user_id
+      const advisorUserId = await getUserIdByEmail(supabaseAdmin, payload.advisor_email);
+
+      // Resolve admin user_ids for staff-facing events
+      const staffEvents: NotificationEvent[] = ["created", "advisor_replied"];
+      const adminUserIds = staffEvents.includes(payload.event)
+        ? await getAdminUserIds(supabaseAdmin)
+        : [];
+
+      const targets = buildPushTargets(payload, advisorUserId, adminUserIds);
+
+      // Fire all push + in-app notifications concurrently
+      await Promise.allSettled(
+        targets.map((target) =>
+          sendInAppAndPush(supabaseAdmin, target, payload.ticket_id, supabaseUrl, expectedKey!)
+        ),
+      );
+
+      pushSent = targets.length;
+
+      log.info("In-app + push notifications sent", {
+        targets: targets.length,
+        advisorResolved: !!advisorUserId,
+        adminCount: adminUserIds.length,
+      });
+    } catch (pushErr) {
+      // Push failures should never block the response
+      log.error("In-app/push notification error", pushErr);
     }
 
     log.info("Notification complete", {
-      sent: results.filter((r) => r.status === "fulfilled").length,
-      failed: errors.length,
+      emailSent,
+      emailFailed,
+      pushTargets: pushSent,
     });
 
     return new Response(
-      JSON.stringify({ success: true, sent: messages.length - errors.length, failed: errors.length }),
+      JSON.stringify({ success: true, emailSent, emailFailed, pushTargets: pushSent }),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {

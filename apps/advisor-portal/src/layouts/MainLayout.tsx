@@ -155,6 +155,7 @@ const fallbackNavigation: NavItem[] = [
     icon: GraduationCap,
     children: [
       { name: 'MPB Training', href: '/training/mpb-cards' },
+      { name: 'Secure HSA Training', href: '/training/secure-hsa' },
       { name: 'Sedera Training', href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
       { name: 'Zion Training', href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
     ],
@@ -280,6 +281,7 @@ export default function MainLayout() {
   // Training link overrides: ensure correct URLs regardless of CMS
   const TRAINING_LINK_OVERRIDES: Record<string, { href: string; external?: true }> = {
     'MPB Training': { href: '/training/mpb-cards' },
+    'Secure HSA Training': { href: '/training/secure-hsa' },
     'Sedera Training': { href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
     'Zion Training': { href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
   };

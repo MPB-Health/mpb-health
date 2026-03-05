@@ -31,7 +31,7 @@ import { trainingService } from '@mpbhealth/advisor-core';
 import { generateCertificate, type CertificateOptions } from '../utils/generateCertificate';
 
 interface TrainingProps {
-  section?: 'mpb' | 'sedera' | 'zion' | 'mpb-cards' | 'secure-hsa';
+  section?: 'mpb' | 'sedera' | 'zion' | 'mpb-cards' | 'secure-hsa' | 'care-plus';
 }
 
 interface Lesson {
@@ -339,8 +339,107 @@ const secureHsaCourseTopics: Topic[] = [
   },
 ];
 
+/* ------------------------------------------------------------------ */
+/*  CARE+ Course                                                       */
+/* ------------------------------------------------------------------ */
+
+const carePlusCourseTopics: Topic[] = [
+  {
+    id: 'introduction',
+    title: 'Introduction to CARE+',
+    icon: BookOpen,
+    lessons: [
+      {
+        id: 'what-is-care-plus',
+        title: 'What is CARE+?',
+        type: 'text',
+        content:
+          'CARE+ is a community-based medical cost-sharing membership. It is NOT ACA-compliant insurance, a PPO alternative, or a government health plan.\n\n**Key Distinction**\n\nCARE+ focuses on medical cost sharing and virtual care—without the MEC or HSA structure found in Secure HSA. It is best suited for individuals who want medical cost sharing without MEC or HSA.',
+      },
+      {
+        id: 'who-its-for',
+        title: 'Who is CARE+ Best For?',
+        type: 'text',
+        content:
+          'CARE+ is best suited for individuals who:\n\n\u2022 Want medical cost sharing for eligible medical needs\n\u2022 Want $0 unlimited virtual care\n\u2022 Do NOT need preventive services through MEC\n\u2022 Do NOT need HSA compatibility\n\nIt is NOT ideal for those seeking employer-sponsored ACA insurance, MEC preventive care, or HSA tax advantages.',
+      },
+    ],
+  },
+  {
+    id: 'whats-included',
+    title: "What's Included",
+    icon: Shield,
+    lessons: [
+      {
+        id: 'components',
+        title: 'CARE+ Components',
+        type: 'text',
+        content:
+          'CARE+ includes:\n\n**Medical Cost Sharing**\nCommunity-based sharing for eligible medical needs—not preventive care only, dental cleanings, or ACA-mandated screenings.\n\n**$0 Unlimited Virtual Care**\nAccess to Virtual Urgent Care, Virtual Primary Care, Virtual Behavioral Health, Virtual Dermatology, and Pet Telehealth—all at $0 with no visit limits or copays.\n\n**What CARE+ Does NOT Include**\n\n\u2022 Minimum Essential Coverage (MEC)\n\u2022 HSA compatibility\n\u2022 Hospital Debt Relief (separate program)',
+      },
+      {
+        id: 'virtual-care',
+        title: 'Virtual Care Details',
+        type: 'text',
+        content:
+          '**Virtual Urgent Care**\n\n$0 visits with no limits. No copays per visit, no visit limits, and no in-network restrictions only.\n\n**Included Virtual Services**\n\n\u2022 Virtual Urgent Care\n\u2022 Virtual Primary Care\n\u2022 Virtual Behavioral Health\n\u2022 Virtual Dermatology\n\u2022 Pet Telehealth\n\nAll of these are included at no additional cost.',
+      },
+    ],
+  },
+  {
+    id: 'cost-sharing',
+    title: 'Cost Sharing Features',
+    icon: Heart,
+    lessons: [
+      {
+        id: 'sharing-features',
+        title: 'Medical Cost Sharing Features',
+        type: 'text',
+        content:
+          'CARE+ medical cost sharing includes:\n\n\u2022 No network restrictions for sharing\n\u2022 No lifetime limits or annual caps on qualifying medical expenses\n\u2022 2-year lookback on pre-existing conditions\n\u2022 Shareable maternity needs (after 6 months of membership before conception)\n\nMedical expenses are NOT guaranteed approval. Each need is evaluated against eligibility guidelines.',
+      },
+      {
+        id: 'maternity',
+        title: 'Maternity Sharing',
+        type: 'text',
+        content:
+          'Maternity needs under CARE+ are shareable after 6 months of membership before conception. They are not shareable immediately upon joining, after only 3 months, or never.',
+      },
+    ],
+  },
+  {
+    id: 'compliance',
+    title: 'Compliance',
+    icon: HelpCircle,
+    lessons: [
+      {
+        id: 'agent-guidelines',
+        title: 'Agent Compliance Guidelines',
+        type: 'text',
+        content:
+          '**Agents should NEVER:**\n\n\u2022 Guarantee all medical expenses will be paid\n\u2022 Call CARE+ insurance\n\n**Agents SHOULD:**\n\n\u2022 Explain eligibility guidelines\n\u2022 Clarify that CARE+ is not traditional insurance\n\u2022 Describe CARE+ as a community-based medical cost-sharing membership',
+      },
+    ],
+  },
+  {
+    id: 'quiz',
+    title: 'Quiz',
+    icon: HelpCircle,
+    lessons: [
+      {
+        id: 'care-plus-quiz',
+        title: 'CARE+ Certification Quiz',
+        type: 'quiz',
+        content:
+          'After completing all training topics, take the CARE+ Certification Quiz to test your knowledge and earn your certification.\n\nYou must score 80% or higher to pass and receive your certificate.',
+      },
+    ],
+  },
+];
+
 const COMPLETED_KEY = 'mpb-training-completed';
 const SECURE_HSA_COMPLETED_KEY = 'secure-hsa-training-completed';
+const CARE_PLUS_COMPLETED_KEY = 'care-plus-training-completed';
 
 function loadCompleted(key: string): Set<string> {
   try {
@@ -676,9 +775,131 @@ const secureHsaQuizQuestions: QuizQuestion[] = [
   },
 ];
 
+const carePlusQuizQuestions: QuizQuestion[] = [
+  {
+    id: 1,
+    question: 'Care+ includes which of the following? (Select all that apply)',
+    options: [
+      'Medical Cost Sharing',
+      'Minimum Essential Coverage (MEC)',
+      'HSA Compatibility',
+      '$0 Unlimited Virtual Care',
+      'Hospital Debt Relief',
+    ],
+    multiSelect: true,
+    correctIndices: [0, 3],
+  },
+  {
+    id: 2,
+    question: 'Care+ includes medical cost sharing for:',
+    options: [
+      'Eligible medical needs',
+      'Preventive care only',
+      'Dental cleanings',
+      'ACA-mandated screenings',
+    ],
+    correctIndex: 0,
+  },
+  {
+    id: 3,
+    question: 'True or False: Care+ includes Minimum Essential Coverage (MEC).',
+    options: ['True', 'False'],
+    correctIndex: 1,
+  },
+  {
+    id: 4,
+    question: 'True or False: Care+ is HSA-compatible.',
+    options: ['True', 'False'],
+    correctIndex: 1,
+  },
+  {
+    id: 5,
+    question: 'Which of the following are features of Care+ medical cost sharing? (Select all that apply)',
+    options: [
+      'No network restrictions for sharing',
+      'No lifetime limits or annual caps on qualifying medical expenses',
+      '2-year lookback on pre-existing conditions',
+      'Guaranteed approval of all medical expenses',
+      'Shareable maternity needs (6 months before conception)',
+    ],
+    multiSelect: true,
+    correctIndices: [0, 1, 2, 4],
+  },
+  {
+    id: 6,
+    question: 'Maternity needs under Care+ are shareable when:',
+    options: [
+      'Immediately upon joining',
+      'After 3 months of membership',
+      'After 6 months of membership before conception',
+      'Never',
+    ],
+    correctIndex: 2,
+  },
+  {
+    id: 7,
+    question: 'Care+ members receive access to: (Select all that apply)',
+    options: [
+      'Virtual Urgent Care',
+      'Virtual Primary Care',
+      'Virtual Behavioral Health',
+      'Virtual Dermatology',
+      'Pet Telehealth',
+    ],
+    multiSelect: true,
+    correctIndices: [0, 1, 2, 3, 4],
+  },
+  {
+    id: 8,
+    question: 'Virtual Urgent Care under Care+ includes:',
+    options: [
+      'Copays per visit',
+      'Visit limits',
+      '$0 visits with no limits',
+      'In-network restrictions only',
+    ],
+    correctIndex: 2,
+  },
+  {
+    id: 9,
+    question: 'Care+ should be described as:',
+    options: [
+      'ACA-compliant insurance',
+      'A PPO insurance alternative',
+      'A community-based medical cost-sharing membership',
+      'A government health plan',
+    ],
+    correctIndex: 2,
+  },
+  {
+    id: 10,
+    question: 'Agents should NEVER: (Select all that apply)',
+    options: [
+      'Guarantee all medical expenses will be paid',
+      'Call Care+ insurance',
+      'Explain eligibility guidelines',
+      'Clarify it is not traditional insurance',
+    ],
+    multiSelect: true,
+    correctIndices: [0, 1],
+  },
+  {
+    id: 11,
+    question: 'Care+ is BEST suited for individuals who:',
+    options: [
+      'Want preventive services through MEC',
+      'Want HSA compatibility',
+      'Want medical cost sharing without MEC or HSA structure',
+      'Need employer-sponsored ACA insurance',
+    ],
+    correctIndex: 2,
+  },
+];
+
 const PASS_THRESHOLD = 0.8;
 const QUIZ_RESULT_KEY = 'mpb-quiz-result';
 const SECURE_HSA_QUIZ_RESULT_KEY = 'secure-hsa-quiz-result';
+const CARE_PLUS_QUIZ_RESULT_KEY = 'care-plus-quiz-result';
 
 function loadQuizResult(key: string): { passed: boolean; score: number; date: string } | null {
   try {
@@ -1076,12 +1297,12 @@ const courses: CourseCard[] = [
     title: 'CARE+ Training',
     description:
       'Master the CARE+ membership program including full medical cost sharing benefits, provider networks, and CARE+ plan options.',
-    topicCount: 0,
-    lessonCount: 0,
+    topicCount: 5,
+    lessonCount: 8,
     href: '/training/care-plus',
     gradient: 'from-rose-600 via-pink-500 to-fuchsia-500',
     icon: Heart,
-    available: false,
+    available: true,
   },
 ];
 
@@ -1353,6 +1574,15 @@ const courseConfigs = {
     certificateFilename: 'Secure_HSA_Certificate.png',
     certificateOptions: undefined,
   },
+  'care-plus': {
+    topics: carePlusCourseTopics,
+    completedKey: CARE_PLUS_COMPLETED_KEY,
+    quizQuestions: carePlusQuizQuestions,
+    quizResultKey: CARE_PLUS_QUIZ_RESULT_KEY,
+    title: 'CARE+ Training',
+    certificateFilename: 'CARE_Plus_Certificate.png',
+    certificateOptions: undefined,
+  },
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -1366,7 +1596,7 @@ export default function Training({ section }: TrainingProps) {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const courseKey = section === 'secure-hsa' ? 'secure-hsa' : 'mpb';
+  const courseKey = section === 'secure-hsa' ? 'secure-hsa' : section === 'care-plus' ? 'care-plus' : 'mpb';
   const config = courseConfigs[courseKey];
   const completedKey = config.completedKey;
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(() => loadCompleted(completedKey));
@@ -1621,7 +1851,7 @@ export default function Training({ section }: TrainingProps) {
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white flex-shrink-0 rounded-t-xl">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(section === 'secure-hsa' ? '/training/mpb-cards' : '/training')}
+            onClick={() => navigate(section === 'secure-hsa' || section === 'care-plus' ? '/training/mpb-cards' : '/training')}
             className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />

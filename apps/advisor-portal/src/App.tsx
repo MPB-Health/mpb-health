@@ -184,6 +184,7 @@ export default function App() {
               <Route path="training/zion" element={<Suspense fallback={<RouteSpinner />}><Training section="zion" /></Suspense>} />
               <Route path="training/mpb-cards" element={<Suspense fallback={<RouteSpinner />}><Training section="mpb-cards" /></Suspense>} />
               <Route path="training/secure-hsa" element={<Suspense fallback={<RouteSpinner />}><Training section="secure-hsa" /></Suspense>} />
+              <Route path="training/care-plus" element={<Suspense fallback={<RouteSpinner />}><Training section="care-plus" /></Suspense>} />
               <Route path="training/:moduleId" element={<Suspense fallback={<RouteSpinner />}><TrainingModule /></Suspense>} />
               <Route path="forms" element={<Suspense fallback={<RouteSpinner />}><Forms /></Suspense>} />
               <Route path="forms/advisor" element={<Suspense fallback={<RouteSpinner />}><Forms section="advisor" /></Suspense>} />

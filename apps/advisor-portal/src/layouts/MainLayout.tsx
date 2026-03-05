@@ -162,6 +162,7 @@ const fallbackNavigation: NavItem[] = [
     ],
   },
   { name: 'Video Library', href: '/videos', icon: Video },
+  { name: 'Events', href: '/events/manage', icon: Calendar },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'Support Tickets', href: '/tickets', icon: Headphones },
@@ -327,7 +328,7 @@ export default function MainLayout() {
     }
 
     // Enforce sidebar order
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Chat', 'Support Tickets', 'Ticket Management', 'Contact'];
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Events', 'Submit Group', 'Chat', 'Support Tickets', 'Ticket Management', 'Contact'];
     base = [...base].sort((a, b) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);

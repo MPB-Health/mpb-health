@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Calendar, Users, Award } from 'lucide-react';
-import { supabase, isSupabaseConfigured, BlogArticle } from '../lib/supabase';
+import { Calendar, Users, Award, MapPin } from 'lucide-react';
+import { supabase, isSupabaseConfigured, CmsEvent } from '../lib/supabase';
+
+const LOCATION_TYPE_LABEL: Record<string, string> = {
+  in_person: 'In Person',
+  virtual: 'Virtual',
+  hybrid: 'Hybrid',
+};
 
 const Events: React.FC = () => {
-  const [events, setEvents] = useState<BlogArticle[]>([]);
+  const [events, setEvents] = useState<CmsEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,11 +23,10 @@ const Events: React.FC = () => {
     const fetchEvents = async () => {
       try {
         const { data, error } = await supabase
-          .from('blog_articles')
+          .from('events')
           .select('*')
           .eq('is_published', true)
-          .eq('category', 'Event')
-          .order('published_date', { ascending: false });
+          .order('event_date', { ascending: false });
 
         if (error) throw error;
         if (data) setEvents(data);
@@ -148,19 +153,33 @@ const Events: React.FC = () => {
                     className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-neutral-200"
                   >
                     <div className="relative h-48 overflow-hidden bg-neutral-100">
-                      <img
-                        src={event.featured_image_url.startsWith('https') ? event.featured_image_url : `/${event.featured_image_url.replace(/^\//, '')}`}
-                        alt={event.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
+                      {event.featured_image_url ? (
+                        <img
+                          src={event.featured_image_url.startsWith('https') ? event.featured_image_url : `/${event.featured_image_url.replace(/^\//, '')}`}
+                          alt={event.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Calendar className="h-12 w-12 text-neutral-300" />
+                        </div>
+                      )}
                     </div>
                     <div className="p-5">
-                      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(event.published_date).toLocaleDateString()}</span>
+                      <div className="flex items-center gap-3 text-sm text-neutral-500 mb-3">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-4 w-4" />
+                          <span>{new Date(event.event_date).toLocaleDateString()}</span>
+                        </div>
+                        {event.location && (
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span className="truncate max-w-[120px]">{event.location}</span>
+                          </div>
+                        )}
                       </div>
                       <h3 className="text-lg font-bold text-neutral-900 mb-2 group-hover:text-primary transition-colors line-clamp-2">
                         {event.title}
@@ -168,6 +187,11 @@ const Events: React.FC = () => {
                       <p className="text-neutral-600 text-sm line-clamp-2">
                         {event.excerpt}
                       </p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-neutral-100 text-neutral-600">
+                          {LOCATION_TYPE_LABEL[event.location_type] || event.location_type}
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 ))}

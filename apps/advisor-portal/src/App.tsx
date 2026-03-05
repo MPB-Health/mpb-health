@@ -26,6 +26,8 @@ const Tickets = React.lazy(() => import('./pages/Tickets'));
 const NewTicket = React.lazy(() => import('./pages/NewTicket'));
 const ChatPage = React.lazy(() => import('./pages/Chat'));
 const AdminTickets = React.lazy(() => import('./pages/AdminTickets'));
+const EventsManager = React.lazy(() => import('./pages/EventsManager'));
+const EventForm = React.lazy(() => import('./pages/EventForm'));
 const Login = React.lazy(() => import('./pages/Login'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
@@ -207,6 +209,9 @@ export default function App() {
               <Route path="sops/:documentId" element={<Suspense fallback={<RouteSpinner />}><SOPDocument /></Suspense>} />
               <Route path="bulletins" element={<Suspense fallback={<RouteSpinner />}><Bulletins /></Suspense>} />
               <Route path="bulletins/:slug" element={<Suspense fallback={<RouteSpinner />}><BulletinDetail /></Suspense>} />
+              <Route path="events/manage" element={<Suspense fallback={<RouteSpinner />}><EventsManager /></Suspense>} />
+              <Route path="events/manage/new" element={<Suspense fallback={<RouteSpinner />}><EventForm /></Suspense>} />
+              <Route path="events/manage/:id/edit" element={<Suspense fallback={<RouteSpinner />}><EventForm /></Suspense>} />
               <Route path="videos" element={<Suspense fallback={<RouteSpinner />}><VideoLibrary /></Suspense>} />
               <Route path="submit-group" element={<Suspense fallback={<RouteSpinner />}><SubmitGroup /></Suspense>} />
               <Route path="contact" element={<Suspense fallback={<RouteSpinner />}><Contact /></Suspense>} />

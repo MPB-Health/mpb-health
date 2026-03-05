@@ -137,6 +137,30 @@ export interface HealthcarePlanCategoryWithDetails extends HealthcarePlanCategor
   excluded_features: PlanCategoryFeature[];
 }
 
+// Event Types
+export interface CmsEvent {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featured_image_url: string;
+  event_date: string;
+  event_end_date: string | null;
+  location: string;
+  location_type: 'in_person' | 'virtual' | 'hybrid';
+  registration_url: string | null;
+  event_type: 'conference' | 'webinar' | 'training' | 'networking' | 'celebration' | 'community' | 'other';
+  organizer: string;
+  max_attendees: number | null;
+  is_published: boolean;
+  is_featured: boolean;
+  tags: string[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Profile Types
 export interface Profile {
   id: string;

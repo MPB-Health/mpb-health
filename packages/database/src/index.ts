@@ -28,6 +28,7 @@ export type {
   PlanCategoryProfile,
   PlanCategoryFeature,
   HealthcarePlanCategoryWithDetails,
+  CmsEvent,
   Profile,
   UserSession,
 } from './types/database';

@@ -23,4 +23,5 @@ export type {
   PlanCategoryProfile,
   PlanCategoryFeature,
   HealthcarePlanCategoryWithDetails,
+  CmsEvent,
 } from '@mpbhealth/database';

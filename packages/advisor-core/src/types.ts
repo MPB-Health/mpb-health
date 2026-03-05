@@ -261,6 +261,30 @@ export interface OnboardingProgress {
   notes: string | null;
 }
 
+// Event Types (from events table - CMS managed)
+export interface CmsEvent {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featured_image_url: string;
+  event_date: string;
+  event_end_date: string | null;
+  location: string;
+  location_type: 'in_person' | 'virtual' | 'hybrid';
+  registration_url: string | null;
+  event_type: 'conference' | 'webinar' | 'training' | 'networking' | 'celebration' | 'community' | 'other';
+  organizer: string;
+  max_attendees: number | null;
+  is_published: boolean;
+  is_featured: boolean;
+  tags: string[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Jitsi Configuration
 export const JITSI_CONFIG = {
   domain: 'meet.jit.si',

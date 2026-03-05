@@ -18,3 +18,4 @@ export { TicketService, ticketService, type Ticket, type TicketDetail, type Tick
 export { ChatService, chatService } from './chat/ChatService';
 export type { ChatConversation, ChatConversationType, ChatMember, ChatMemberRole, ChatMessage, ChatSearchResult, ListMessagesResult, CreateChannelOptions } from './chat/types';
 export { PushService, pushService, type PushSubscriptionData, type PushSettings } from './push/PushService';
+export { EventsService, eventsService, type EventFilters } from './events/EventsService';

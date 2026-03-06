@@ -261,12 +261,27 @@ export interface LeadWelcomeEmailPlanData {
   traditional_cost_estimate?: number;
   best_match_plan?: string | null;
   best_match_percentage?: number;
+  household_size?: number;
+  household_type?: string;
+  membership_priorities?: string[];
 }
+
+// Priority ID → short label for email personalization
+const PRIORITY_LABELS: Record<string, string> = {
+  'medical-cost-sharing': 'hospital & surgery coverage',
+  'hsa-tax-benefits': 'HSA & tax savings',
+  'aca-compliance': 'small business / employer coverage',
+  'preventive-care': 'checkups & wellness',
+  'prescriptions': 'prescription savings',
+  'budget-friendly': 'lowest monthly cost',
+};
 
 export async function sendLeadWelcomeEmail(data: {
   firstName: string;
   email: string;
   planData?: LeadWelcomeEmailPlanData;
+  householdSize?: number;
+  membershipPriorities?: string[];
 }): Promise<EmailResponse> {
   const welcomePageUrl = `https://mpb.health/welcome?name=${encodeURIComponent(data.firstName)}`;
   const resultsUrl = 'https://mpb.health/quote/results';
@@ -274,25 +289,41 @@ export async function sendLeadWelcomeEmail(data: {
 
   const planData = data.planData;
   const hasPlanData = planData?.all_plan_rates && Object.keys(planData.all_plan_rates).length > 0;
+  const householdSize = planData?.household_size ?? data.householdSize;
+  const membershipPriorities = planData?.membership_priorities ?? data.membershipPriorities ?? [];
+  const traditionalCost = planData?.traditional_cost_estimate;
 
-  // Plan details for email (tagline + bullets) — no pricing, pure value
-  const PLAN_EMAIL_DETAILS: Record<string, { tagline: string; bullets: string[] }> = {
-    'secure-hsa': { tagline: 'Medical sharing + MEC + HSA + RX Valet', bullets: ['Pre-tax HSA savings', 'Full hospital & surgery sharing', '$0 unlimited virtual care'] },
-    'mec-essentials': { tagline: 'ACA MEC + Debt Dismissal + HSA', bullets: ['Employer mandate satisfied', 'Debt Dismissal Program', 'HSA + RX Valet'] },
-    'essentials': { tagline: 'Essential protection without the overwhelm', bullets: ['Hospital Debt Relief', 'Pharmacy & supplement discounts', '$0 unlimited virtual care'] },
-    'care-plus': { tagline: 'Complete peace of mind for families', bullets: ['Full medical cost sharing', 'Maternity sharing', 'Any doctor, any hospital'] },
-    'direct': { tagline: 'Wellness-first + real protection', bullets: ['Preventive care included', 'Medical cost sharing', 'Best of both worlds'] },
+  // Personalization strings
+  const householdLabel = householdSize ? (householdSize === 1 ? 'For an individual' : householdSize === 2 ? 'For a couple' : `For a family of ${householdSize}`) : '';
+  const priorityLabels = membershipPriorities.slice(0, 2).map(id => PRIORITY_LABELS[id] || id).filter(Boolean);
+  const priorityPhrase = priorityLabels.length > 0 ? `, since you care about ${priorityLabels.join(' and ')}` : '';
+  const bestPlanId = planData?.best_match_plan;
+  const bestPlanLabel = bestPlanId && hasPlanData ? planData.all_plan_rates![bestPlanId]?.planLabel : '';
+
+  // Plan details with bestFor (for "Best for you" line)
+  const PLAN_EMAIL_DETAILS: Record<string, { tagline: string; bullets: string[]; bestFor: string }> = {
+    'secure-hsa': { tagline: 'Medical sharing + MEC + HSA + RX Valet', bullets: ['Pre-tax HSA savings', 'Full hospital & surgery sharing', '$0 unlimited virtual care'], bestFor: 'HSA + tax savings + full protection — ideal for self-employed and 1099' },
+    'mec-essentials': { tagline: 'ACA MEC + Debt Dismissal + HSA', bullets: ['Employer mandate satisfied', 'Debt Dismissal Program', 'HSA + RX Valet'], bestFor: 'Small businesses + ACA compliance + debt relief' },
+    'essentials': { tagline: 'Essential protection without the overwhelm', bullets: ['Hospital Debt Relief', 'Pharmacy & supplement discounts', '$0 unlimited virtual care'], bestFor: 'Essential protection + virtual care' },
+    'care-plus': { tagline: 'Complete peace of mind for families', bullets: ['Full medical cost sharing', 'Maternity sharing', 'Any doctor, any hospital'], bestFor: 'Families wanting hospital/surgery sharing' },
+    'direct': { tagline: 'Wellness-first + real protection', bullets: ['Preventive care included', 'Medical cost sharing', 'Best of both worlds'], bestFor: 'Wellness-focused + budget-conscious' },
   };
 
-  // Build plan detail cards (benefits only — no pricing)
+  // Concrete savings (when we have traditional cost)
+  const savingsPhrase = traditionalCost != null && traditionalCost > 0
+    ? `Traditional insurance often runs $${Math.round(traditionalCost)}/mo or more for similar coverage. Health sharing can cut that significantly — families like yours typically save $300–500/month.`
+    : `Families like yours typically save $300–500/month compared to traditional insurance.`;
+
+  // Build plan detail cards (benefits + "Best for you" on top match)
   let planDetailsHtml = '';
   let planDetailsText = '';
   if (hasPlanData && planData.all_plan_rates) {
     const planCards = Object.entries(planData.all_plan_rates)
       .map(([id, p]) => {
-        const details = PLAN_EMAIL_DETAILS[id] || { tagline: '', bullets: [] };
-        const isBest = id === planData.best_match_plan;
+        const details = PLAN_EMAIL_DETAILS[id] || { tagline: '', bullets: [], bestFor: '' };
+        const isBest = id === bestPlanId;
         const bulletsHtml = details.bullets.slice(0, 3).map(b => `<li style="margin: 0 0 4px 0; color: #475569; font-size: 14px;">${b}</li>`).join('');
+        const bestForLine = isBest && details.bestFor ? `<p style="margin: 10px 0 0 0; font-size: 13px; color: #047857; font-weight: 600;">Best for you: ${details.bestFor}</p>` : '';
         return `
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 16px 0; border: 1px solid ${isBest ? '#0ea5e9' : '#e2e8f0'}; border-radius: 8px; overflow: hidden; background-color: ${isBest ? '#f0f9ff' : '#ffffff'};">
             <tr>
@@ -300,6 +331,7 @@ export async function sendLeadWelcomeEmail(data: {
                 <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #0f172a;">${p.planLabel}${isBest && planData.best_match_percentage ? ` <span style="background-color: #0284c7; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px;">${planData.best_match_percentage}% match</span>` : ''}</p>
                 <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;">${details.tagline}</p>
                 <ul style="margin: 0; padding-left: 18px;">${bulletsHtml}</ul>
+                ${bestForLine}
               </td>
             </tr>
           </table>`;
@@ -310,9 +342,10 @@ export async function sendLeadWelcomeEmail(data: {
       ${planCards}`;
     planDetailsText = Object.entries(planData.all_plan_rates)
       .map(([id, p]) => {
-        const details = PLAN_EMAIL_DETAILS[id] || { tagline: '', bullets: [] };
-        const suffix = id === planData.best_match_plan && planData.best_match_percentage ? ` (${planData.best_match_percentage}% match)` : '';
-        return `${p.planLabel}${suffix}: ${details.tagline}. ${details.bullets.slice(0, 2).join(', ')}.`;
+        const details = PLAN_EMAIL_DETAILS[id] || { tagline: '', bullets: [], bestFor: '' };
+        const suffix = id === bestPlanId && planData.best_match_percentage ? ` (${planData.best_match_percentage}% match)` : '';
+        const bestFor = id === bestPlanId && details.bestFor ? ` Best for you: ${details.bestFor}.` : '';
+        return `${p.planLabel}${suffix}: ${details.tagline}. ${details.bullets.slice(0, 2).join(', ')}.${bestFor}`;
       })
       .join('\n');
   } else {
@@ -322,6 +355,12 @@ export async function sendLeadWelcomeEmail(data: {
     planDetailsText = 'Secure HSA, MEC+ Essentials, Care+, Direct, and Essentials. Each includes $0 unlimited virtual care. Call to find the one that fits you.';
   }
 
+
+  // Personalized opening line
+  const openingLine = householdLabel && priorityPhrase
+    ? `${data.firstName}, ${householdLabel.toLowerCase()}${priorityPhrase}${bestPlanLabel ? `, ${bestPlanLabel} is your best fit.` : " — here's why 50,000+ families chose health sharing."}`
+    : `${data.firstName}, here's why 50,000+ families chose health sharing.`;
+  const openingSub = bestPlanLabel ? `We've matched you with ${bestPlanLabel} — here's why it fits.` : 'And why you should too.';
 
   const html = `
     <!DOCTYPE html>
@@ -333,11 +372,11 @@ export async function sendLeadWelcomeEmail(data: {
         <title>Why 50,000+ families chose health sharing</title>
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9; -webkit-font-smoothing: antialiased;">
+        <span style="display:none;max-height:0;overflow:hidden;mso-hide:all;">Traditional insurance? Premiums that climb every year. Health sharing is different — real people, real savings.</span>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f1f5f9; padding: 32px 16px;">
           <tr>
             <td align="center">
               <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden;">
-                <!-- Header: Logo on solid white so brand colors are visible -->
                 <tr>
                   <td style="background-color: #ffffff; padding: 32px 40px 24px; text-align: center; border-bottom: 3px solid #0ea5e9;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -349,34 +388,41 @@ export async function sendLeadWelcomeEmail(data: {
                     </table>
                   </td>
                 </tr>
-                <!-- Greeting -->
                 <tr>
                   <td style="padding: 32px 40px 0;">
-                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.02em;">${data.firstName}, here's why 50,000+ families chose health sharing.</h1>
-                    <p style="color: #64748b; font-size: 14px; margin: 0 0 24px 0;">And why you should too.</p>
+                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.02em;">${openingLine}</h1>
+                    <p style="color: #64748b; font-size: 14px; margin: 0 0 24px 0;">${openingSub}</p>
                   </td>
                 </tr>
-                <!-- Content -->
                 <tr>
                   <td style="padding: 0 40px 32px;">
+                    <p style="color: #334155; font-size: 16px; line-height: 1.65; margin: 0 0 16px 0;">
+                      Traditional insurance? Premiums that climb. Deductibles you'll never hit. Claim denials. You're paying for a system that works against you.
+                    </p>
                     <p style="color: #334155; font-size: 16px; line-height: 1.65; margin: 0 0 20px 0;">
-                      Traditional insurance? Premiums that climb every year. Deductibles you'll never hit. Claim denials. Endless paperwork. You're paying for a system that works against you.
+                      <strong style="color: #0f172a;">Health sharing is different.</strong> Real people. Real savings. No middleman. Hospital, surgery, virtual care, prescriptions — without the insurance game. ${savingsPhrase}
                     </p>
-                    <p style="color: #334155; font-size: 16px; line-height: 1.65; margin: 0 0 24px 0;">
-                      <strong style="color: #0f172a;">Health sharing is different.</strong> Real people. Real savings. No middleman deciding what you can and can't have. You get the care you need — hospital, surgery, virtual care, prescriptions — without the insurance game. That's why families save hundreds every month and never look back.
-                    </p>
-                    <!-- Why MPB callout -->
+                    <!-- Objection handler: How it works -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 20px 0; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                      <tr>
+                        <td style="padding: 16px 20px;">
+                          <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">How it works</p>
+                          <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #334155;">Real healthcare. Real sharing. Hospital, surgery, virtual care — all covered. No claim denials. No network restrictions. You choose your doctor.</p>
+                        </td>
+                      </tr>
+                    </table>
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px 0; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 8px; border: 1px solid #6ee7b7;">
                       <tr>
                         <td style="padding: 20px 24px;">
                           <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.05em;">Why MPB?</p>
-                          <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #064e3b;">We're not a call center. We're advisors who actually care. One call. A real person. They'll walk you through every option, answer every question, and get you into the plan that fits — no pressure, no runaround. That's the MPB way.</p>
+                          <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #064e3b;">We're not a call center. We're advisors who care. One call. A real person. They'll walk you through every option and get you into the plan that fits — no pressure, no runaround.</p>
                         </td>
                       </tr>
                     </table>
                     ${planDetailsHtml}
-                    <!-- CTA Section -->
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 28px 0;">
+                    <!-- Urgency -->
+                    <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 20px 0 24px 0;">Rates are locked in when you enroll — and they tend to rise with age, so acting now protects your rate.</p>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 28px 0;">
                       <tr>
                         <td style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 8px; padding: 24px; text-align: center;">
                           <p style="color: #ffffff; font-size: 17px; font-weight: 700; margin: 0 0 8px 0;">Ready to see what you could save?</p>
@@ -385,7 +431,6 @@ export async function sendLeadWelcomeEmail(data: {
                         </td>
                       </tr>
                     </table>
-                    <!-- Secondary links -->
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="padding: 16px 0; border-top: 1px solid #e2e8f0;">
@@ -398,14 +443,12 @@ export async function sendLeadWelcomeEmail(data: {
                         </td>
                       </tr>
                     </table>
+                    <p style="color: #64748b; font-size: 13px; margin: 24px 0 0 0; line-height: 1.5;"><strong>P.S.</strong> $0 unlimited virtual care is included in every plan — talk to a doctor 24/7 from your phone.</p>
                   </td>
                 </tr>
-                <!-- Footer -->
                 <tr>
                   <td style="padding: 24px 40px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 8px 0; line-height: 1.5;">
-                      You're receiving this because you requested a quote from MPB Health.
-                    </p>
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 8px 0; line-height: 1.5;">You're receiving this because you requested a quote from MPB Health.</p>
                     <p style="margin: 0;">
                       <a href="https://mpb.health/privacy-policy" style="color: #64748b; font-size: 12px; text-decoration: underline;">Privacy Policy</a>
                       <span style="color: #cbd5e1; margin: 0 8px;">|</span>
@@ -421,21 +464,29 @@ export async function sendLeadWelcomeEmail(data: {
     </html>
   `;
 
-  const textContent = `${data.firstName}, here's why 50,000+ families chose health sharing — and why you should too.
+  const textContent = `${openingLine}
 
-Traditional insurance? Premiums that climb every year. Deductibles you'll never hit. Claim denials. Endless paperwork. You're paying for a system that works against you.
+${openingSub}
 
-Health sharing is different. Real people. Real savings. No middleman deciding what you can and can't have. You get the care you need — hospital, surgery, virtual care, prescriptions — without the insurance game. That's why families save hundreds every month and never look back.
+Traditional insurance? Premiums that climb. Deductibles you'll never hit. Claim denials. You're paying for a system that works against you.
 
-Why MPB? We're not a call center. We're advisors who actually care. One call. A real person. They'll walk you through every option, answer every question, and get you into the plan that fits — no pressure, no runaround.
+Health sharing is different. Real people. Real savings. No middleman. Hospital, surgery, virtual care, prescriptions — without the insurance game. ${savingsPhrase}
+
+How it works: Real healthcare. Real sharing. Hospital, surgery, virtual care — all covered. No claim denials. No network restrictions. You choose your doctor.
+
+Why MPB? We're not a call center. We're advisors who care. One call. A real person. They'll walk you through every option and get you into the plan that fits — no pressure, no runaround.
 
 ${planDetailsText}
+
+Rates are locked in when you enroll — and they tend to rise with age, so acting now protects your rate.
 
 Ready to see what you could save? Call now — a Senior Advisor will give you your exact rate and find your perfect plan: ${QUOTE_PHONE_DISPLAY} ext 1 (press 1 when prompted)
 
 Watch how our programs work: ${videoUrl}
 
-View your comparison: ${hasPlanData ? resultsUrl : welcomePageUrl}`;
+View your comparison: ${hasPlanData ? resultsUrl : welcomePageUrl}
+
+P.S. $0 unlimited virtual care is included in every plan — talk to a doctor 24/7 from your phone.`;
 
   return sendEmail({
     to: data.email,

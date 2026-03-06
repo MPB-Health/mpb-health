@@ -179,11 +179,10 @@ export function QuoteResults() {
                   Your Plan Comparison
                 </h1>
                 <p className="mt-4 text-lg md:text-xl text-slate-600 max-w-2xl leading-relaxed">
-                  Based on your priorities and household, we've matched you with the best plans. 
-                  See how each option fits your needs — then call to get your exact rate and enroll.
+                  Your comparison is ready. Call now — a Senior Advisor will give you your exact rate and find your perfect plan. Takes about 5 minutes.
                 </p>
                 <p className="mt-2 text-sm font-medium text-amber-700">
-                  Rates based on today&apos;s info — call to lock in your rate
+                  Rates are based on today&apos;s info — call now to lock in your rate before it changes
                 </p>
               </div>
               <div className="flex-shrink-0 w-full sm:w-auto">
@@ -226,6 +225,41 @@ export function QuoteResults() {
                 </div>
               </div>
             )}
+
+            {/* What happens when you call — reduces call anxiety */}
+            <div className="mt-8 rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm p-6 shadow-sm">
+              <h3 className="font-bold text-slate-900 text-sm uppercase tracking-wider mb-4">What happens when you call</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center">1</span>
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">Press 1 for quotes</p>
+                    <p className="text-xs text-slate-600 mt-0.5">Quick menu — no long hold</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center">2</span>
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">Share your info</p>
+                    <p className="text-xs text-slate-600 mt-0.5">Confirm household & preferences</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center">3</span>
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">Get your exact rate</p>
+                    <p className="text-xs text-slate-600 mt-0.5">Takes about 5 minutes</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center">4</span>
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">Enroll if it fits</p>
+                    <p className="text-xs text-slate-600 mt-0.5">No pressure — just answers</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -265,7 +299,7 @@ export function QuoteResults() {
                     className="flex-shrink-0 inline-flex items-center justify-center gap-3 px-8 py-5 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl text-lg"
                   >
                     <Phone className="h-6 w-6" />
-                    Get Your Rate — Call Now
+                    Get Your Exact Rate — Call Now
                   </a>
                 </div>
               </div>
@@ -319,14 +353,13 @@ export function QuoteResults() {
                 <span className="text-sm font-medium text-white">Trusted by 50,000+ families</span>
               </div>
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4">
-                Ready to get your personalized rate?
+                Ready to see what you could save?
               </h2>
               <p className="text-slate-300 max-w-2xl mx-auto mb-10 text-lg leading-relaxed">
-                Speak with a licensed health advisor to finalize your plan, get your exact rate, 
-                and enroll with confidence. No pressure — just answers.
+                Your advisor is standing by. Call now to get your exact rate and enroll — takes about 5 minutes. No pressure, no runaround.
               </p>
               <p className="text-amber-300/90 text-sm font-medium mb-6">
-                Rates based on today&apos;s info — call now to lock in your rate
+                Rates are locked in when you enroll — call now to secure yours before it changes
               </p>
               <a
                 href={QUOTE_PHONE_TEL}

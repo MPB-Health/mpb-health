@@ -131,18 +131,26 @@ class LeadSubmissionService {
 
     // Send welcome email to the lead (with plan comparison when from hero calculator)
     try {
-      const planData = formData.formData?.all_plan_rates
+      const fd = formData.formData;
+      const householdSize = formData.householdSize ?? (fd?.household_type === 'member-only' ? 1 : fd?.household_type === 'member-spouse' ? 2 : fd?.household_type === 'member-child' ? 1 + (fd?.dependents_count || 0) : fd?.household_type === 'member-family' ? 2 + (fd?.dependents_count || 0) : undefined);
+      const membershipPriorities = fd?.membership_priorities ?? fd?.priorities_matched ?? [];
+      const planData = fd?.all_plan_rates
         ? {
-            all_plan_rates: formData.formData.all_plan_rates,
-            traditional_cost_estimate: formData.formData.traditional_cost_estimate,
-            best_match_plan: formData.formData.best_match_plan ?? null,
-            best_match_percentage: formData.formData.best_match_percentage,
+            all_plan_rates: fd.all_plan_rates,
+            traditional_cost_estimate: fd.traditional_cost_estimate,
+            best_match_plan: fd.best_match_plan ?? null,
+            best_match_percentage: fd.best_match_percentage,
+            household_size: householdSize,
+            household_type: fd.household_type,
+            membership_priorities: membershipPriorities,
           }
         : undefined;
       await sendLeadWelcomeEmail({
         firstName: formData.firstName,
         email: formData.email,
         planData,
+        householdSize: planData?.household_size ?? householdSize,
+        membershipPriorities: planData?.membership_priorities ?? membershipPriorities,
       });
       log.info(`[LeadSubmission] Welcome email sent to ${formData.email}`);
     } catch (error) {

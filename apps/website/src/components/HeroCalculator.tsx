@@ -135,6 +135,38 @@ export default function HeroCalculator() {
 
   const canProceedStep2 = () => selectedPriorities.length > 0;
 
+  // Step 3 preview: best match + estimated price (show value before contact)
+  const step3Preview = (() => {
+    if (step !== 3 || !canProceedStep1() || !watchedState || !watchedAge) return null;
+    try {
+      const comparisonInput = {
+        householdType: watchedHouseholdType,
+        state: watchedState,
+        primaryAge: watchedAge,
+        spouseAge: watchedSpouseAge ?? null,
+        dependentsCount: watchedDependentsCount || 0,
+        primaryTobacco: false,
+        spouseTobacco: false,
+        currentMonthly: undefined,
+      };
+      const estimates = estimateAllMemberships(comparisonInput);
+      const recs = recommendPlans(selectedPriorities);
+      const traditional = estimateTraditionalInsurance(watchedHouseholdType, watchedAge);
+      const best = recs[0];
+      const bestPlan = best ? estimates.plans.find(p => p.planId === best.planId) : null;
+      const savings = bestPlan && traditional > 0 ? traditional - (bestPlan.flatRate ?? bestPlan.lowestPrice) : 0;
+      return {
+        bestPlanLabel: bestPlan?.planLabel ?? 'Secure HSA',
+        bestPrice: bestPlan ? (bestPlan.flatRate ?? bestPlan.lowestPrice) : 0,
+        matchPct: best?.matchPercentage ?? 85,
+        savings: Math.max(0, savings),
+        traditional,
+      };
+    } catch {
+      return null;
+    }
+  })();
+
   // Pre-fill form when returning from "Edit your quote"
   useEffect(() => {
     const state = location.state as { editQuote?: boolean; formData?: Record<string, unknown> } | undefined;
@@ -326,7 +358,7 @@ export default function HeroCalculator() {
               <div>
                 <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 1 of 3</p>
                 <h4 className="text-base font-bold text-gray-900">Who&apos;s covered?</h4>
-                <p className="text-sm text-gray-500 mt-0.5">Tell us about your household</p>
+                <p className="text-sm text-gray-500 mt-0.5">30 seconds to your comparison</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -411,9 +443,9 @@ export default function HeroCalculator() {
           {step === 2 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
               <div>
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 2 of 3</p>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 2 of 3 — one more step</p>
                 <h4 className="text-base font-bold text-gray-900">What matters most?</h4>
-                <p className="text-sm text-gray-500 mt-0.5">We&apos;ll match you to the best plan</p>
+                <p className="text-sm text-gray-500 mt-0.5">We&apos;ll match you to your best plan</p>
               </div>
 
               <CompactMembershipPrioritySelector
@@ -430,26 +462,41 @@ export default function HeroCalculator() {
             </div>
           )}
 
-          {/* Step 3: Contact */}
+          {/* Step 3: Contact — show value first, then form */}
           {step === 3 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
               <div>
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 3 of 3</p>
-                <h4 className="text-base font-bold text-gray-900">Get your personalized comparison</h4>
-                <p className="text-sm text-gray-500 mt-0.5">A health advisor will send your results and reach out to discuss options</p>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 3 of 3 — almost there</p>
+                <h4 className="text-base font-bold text-gray-900">Your best match is ready</h4>
+                <p className="text-sm text-gray-500 mt-0.5">Enter your details below to see the full comparison and get your exact rate</p>
               </div>
 
-              {/* Savings preview */}
-              {canProceedStep1() && watchedState && watchedAge && (
-                <div className="p-4 bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-xl border-2 border-emerald-200">
-                  <p className="text-sm font-semibold text-emerald-900">Your estimated savings</p>
-                  <p className="text-emerald-800 mt-1 text-sm">
-                    Families like yours typically save{' '}
-                    <strong>{fmtMoney(Math.round(estimateTraditionalInsurance(watchedHouseholdType, watchedAge) * 0.4))}–{fmtMoney(Math.round(estimateTraditionalInsurance(watchedHouseholdType, watchedAge) * 0.6))}</strong>
-                    {' '}/mo vs traditional insurance
+              {/* Best match preview — show value BEFORE asking for contact */}
+              {step3Preview && (
+                <div className="p-4 rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-cyan-50/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">Your best match</span>
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">{step3Preview.bestPlanLabel}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    Starting around <strong className="text-blue-700">{fmtMoney(step3Preview.bestPrice)}/mo</strong>
+                    {step3Preview.savings > 0 && (
+                      <span className="ml-2 text-emerald-700 font-semibold">
+                        — save {fmtMoney(step3Preview.savings)}/mo vs traditional
+                      </span>
+                    )}
                   </p>
+                  <p className="text-xs text-gray-500 mt-2">Call to get your exact rate and enroll — takes about 5 minutes.</p>
                 </div>
               )}
+
+              {/* Urgency */}
+              <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Rates are based on today&apos;s info — call now to lock in your rate before it changes.
+              </p>
+
+              <p className="text-sm font-medium text-gray-700">Enter your details to get your full comparison</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -468,12 +515,12 @@ export default function HeroCalculator() {
                 <Label htmlFor="hero-email" className="text-sm font-semibold text-gray-700">Email</Label>
                 <Input id="hero-email" type="email" placeholder="your@email.com" className="h-11 text-sm" {...register('email')} />
                 {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
-                <p className="text-xs text-gray-500">We&apos;ll send your comparison here</p>
+                <p className="text-xs text-gray-500">We&apos;ll send your full comparison here in 30 seconds</p>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
                 <Label htmlFor="hero-phone" className="text-sm font-semibold text-gray-700">
-                  Phone <span className="font-normal text-gray-500">(optional)</span>
+                  Phone <span className="font-normal text-gray-500">(optional but recommended)</span>
                 </Label>
                 <Input
                   id="hero-phone"
@@ -483,7 +530,7 @@ export default function HeroCalculator() {
                   {...register('phone')}
                 />
                 <p className="text-xs text-gray-600 mt-1.5">
-                  A healthcare advisor will call to see if the plan fits you and walk you through your options.
+                  Add your phone for a faster callback — advisors often call within 2 hours. No need to wait on hold.
                 </p>
               </div>
             </div>
@@ -520,7 +567,7 @@ export default function HeroCalculator() {
                 }
                 className={cn('flex-1 h-11', step === 1 ? '' : 'flex-[2]')}
               >
-                Continue
+                {step === 2 ? 'See my best match' : 'Continue'}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (

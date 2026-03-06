@@ -72,6 +72,14 @@ const SalesOrderDetail = lazy(() => import('./pages/SalesOrderDetail'));
 const PriceBooks = lazy(() => import('./pages/PriceBooks'));
 const PriceBookDetail = lazy(() => import('./pages/PriceBookDetail'));
 
+// Cases / Support
+const Cases = lazy(() => import('./pages/Cases'));
+const CaseDetail = lazy(() => import('./pages/CaseDetail'));
+
+// Documents & Calls
+const Documents = lazy(() => import('./pages/Documents'));
+const Calls = lazy(() => import('./pages/Calls'));
+
 // Sales Forecasting
 const Forecasting = lazy(() => import('./pages/Forecasting'));
 const DealVelocity = lazy(() => import('./pages/DealVelocity'));
@@ -640,6 +648,49 @@ export default function App() {
                     <Guarded permission="campaigns.read">
                       <Suspense fallback={<PageLoader />}>
                         <CampaignDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Cases / Support */}
+                <Route
+                  path="/cases"
+                  element={
+                    <Guarded permission="cases.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Cases />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/cases/:id"
+                  element={
+                    <Guarded permission="cases.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <CaseDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Documents */}
+                <Route
+                  path="/documents"
+                  element={
+                    <Guarded permission="documents.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Documents />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Calls */}
+                <Route
+                  path="/calls"
+                  element={
+                    <Guarded permission="leads.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Calls />
                       </Suspense>
                     </Guarded>
                   }

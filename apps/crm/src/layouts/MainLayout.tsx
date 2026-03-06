@@ -45,6 +45,9 @@ import {
   ClipboardList,
   ShoppingCart,
   BookOpen,
+  Briefcase,
+  FolderOpen,
+  PhoneCall,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -116,6 +119,15 @@ const navigationSections: NavSection[] = [
       { name: 'Sales Orders', href: '/sales-orders', icon: ShoppingCart, permission: 'sales_orders.read' },
       { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
       { name: 'Purchase Orders', href: '/purchase-orders', icon: ClipboardList, permission: 'purchase_orders.read' },
+    ],
+  },
+  {
+    id: 'support',
+    label: 'Service & Support',
+    items: [
+      { name: 'Cases', href: '/cases', icon: Briefcase, permission: 'cases.read' },
+      { name: 'Documents', href: '/documents', icon: FolderOpen, permission: 'documents.read' },
+      { name: 'Calls', href: '/calls', icon: PhoneCall, permission: 'leads.read' },
     ],
   },
   {

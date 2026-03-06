@@ -62,75 +62,10 @@ export default function GoalsWidget({ config, size }: BaseWidgetProps) {
       setGoals(updatedGoals);
     } catch (error) {
       console.error('Failed to load goals:', error);
-      // Show some example goals if none exist
-      setGoals(getDefaultGoals());
+      setGoals([]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getDefaultGoals = (): UserGoal[] => {
-    const stats = (dashboardStats as unknown) as Record<string, unknown>;
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    return [
-      {
-        id: 'default-1',
-        user_id: '',
-        org_id: activeOrgId || '',
-        name: 'Monthly Leads',
-        target_value: 50,
-        current_value: (stats.total_leads as number) || 0,
-        metric_type: 'leads_created' as const,
-        period: 'monthly' as const,
-        start_date: startOfMonth.toISOString(),
-        end_date: endOfMonth.toISOString(),
-        is_personal: true,
-        status: 'active' as const,
-        icon: 'flag',
-        color: 'blue',
-        created_at: now.toISOString(),
-        updated_at: now.toISOString(),
-      },
-      {
-        id: 'default-2',
-        user_id: '',
-        org_id: activeOrgId || '',
-        name: 'Conversions',
-        target_value: 10,
-        current_value: (stats.leads_converted as number) || 0,
-        metric_type: 'leads_converted' as const,
-        period: 'monthly' as const,
-        start_date: startOfMonth.toISOString(),
-        end_date: endOfMonth.toISOString(),
-        is_personal: true,
-        status: 'active' as const,
-        icon: 'trophy',
-        color: 'green',
-        created_at: now.toISOString(),
-        updated_at: now.toISOString(),
-      },
-      {
-        id: 'default-3',
-        user_id: '',
-        org_id: activeOrgId || '',
-        name: 'Daily Calls',
-        target_value: 20,
-        current_value: Math.floor(Math.random() * 25),
-        metric_type: 'calls_made' as const,
-        period: 'daily' as const,
-        start_date: now.toISOString(),
-        end_date: now.toISOString(),
-        is_personal: true,
-        status: 'active' as const,
-        icon: 'phone',
-        color: 'cyan',
-        created_at: now.toISOString(),
-        updated_at: now.toISOString(),
-      },
-    ];
   };
 
   if (isLoading) {

@@ -56,6 +56,26 @@ const MeetingScheduler = lazy(() => import('./pages/MeetingScheduler'));
 const SalesActivityDashboard = lazy(() => import('./pages/SalesActivityDashboard'));
 const EmailDeliverability = lazy(() => import('./pages/EmailDeliverability'));
 
+// Connected Inbox (Outlook-class)
+const MailAccounts = lazy(() => import('./pages/MailAccounts'));
+const MailRules = lazy(() => import('./pages/MailRules'));
+const DomainAddons = lazy(() => import('./pages/DomainAddons'));
+const ConnectedInbox = lazy(() => import('./pages/ConnectedInbox'));
+
+// Sales Forecasting
+const Forecasting = lazy(() => import('./pages/Forecasting'));
+const DealVelocity = lazy(() => import('./pages/DealVelocity'));
+
+// Approval Workflows
+const Approvals = lazy(() => import('./pages/Approvals'));
+const ApprovalProcesses = lazy(() => import('./pages/ApprovalProcesses'));
+
+// Web Form Builder
+const WebForms = lazy(() => import('./pages/WebForms'));
+const FormBuilder = lazy(() => import('./pages/FormBuilder'));
+const FormSubmissions = lazy(() => import('./pages/FormSubmissions'));
+const PublicForm = lazy(() => import('./pages/PublicForm'));
+
 // Loading component for Suspense
 function PageLoader() {
   return (
@@ -113,6 +133,16 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+
+      {/* Public form renderer - no auth required */}
+      <Route
+        path="/forms/:slug"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <PublicForm />
+          </Suspense>
+        }
+      />
 
       {/* Print views - standalone routes without MainLayout */}
       <Route
@@ -281,6 +311,47 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                {/* Connected Inbox routes */}
+                <Route
+                  path="/email/connected"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <ConnectedInbox />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/accounts"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <MailAccounts />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/rules"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <MailRules />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/domains"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <DomainAddons />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
                 <Route
                   path="/meetings"
                   element={
@@ -370,6 +441,27 @@ export default function App() {
                     <Guarded permission="deals.read">
                       <Suspense fallback={<PageLoader />}>
                         <DealPipeline />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Forecasting */}
+                <Route
+                  path="/forecasting"
+                  element={
+                    <Guarded permission="deals.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Forecasting />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/forecasting/velocity"
+                  element={
+                    <Guarded permission="deals.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <DealVelocity />
                       </Suspense>
                     </Guarded>
                   }
@@ -485,6 +577,66 @@ export default function App() {
                     <Guarded permission="settings.manage">
                       <Suspense fallback={<PageLoader />}>
                         <StudioHome />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Approvals */}
+                <Route
+                  path="/approvals"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <Approvals />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/settings/approval-processes"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <ApprovalProcesses />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Web Forms */}
+                <Route
+                  path="/web-forms"
+                  element={
+                    <Guarded permission="campaigns.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <WebForms />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/web-forms/new"
+                  element={
+                    <Guarded permission="campaigns.write">
+                      <Suspense fallback={<PageLoader />}>
+                        <FormBuilder />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/web-forms/:id/edit"
+                  element={
+                    <Guarded permission="campaigns.write">
+                      <Suspense fallback={<PageLoader />}>
+                        <FormBuilder />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/web-forms/:id/submissions"
+                  element={
+                    <Guarded permission="campaigns.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <FormSubmissions />
                       </Suspense>
                     </Guarded>
                   }

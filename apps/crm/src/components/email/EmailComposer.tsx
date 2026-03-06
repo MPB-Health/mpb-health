@@ -504,7 +504,7 @@ export function EmailComposer({
   onDiscard,
   onClose,
 }: EmailComposerProps) {
-  const { templateService, composerService, signatureService, draftService } = useCRM();
+  const { templateService, composerService, signatureService, draftService, mailAccountService, mailSyncService } = useCRM();
   const { activeOrgId } = useOrg();
 
   // Form state
@@ -513,6 +513,10 @@ export function EmailComposer({
   const [bcc, setBcc] = useState<string[]>([]);
   const [subject, setSubject] = useState(initialSubject);
   const [showCcBcc, setShowCcBcc] = useState(false);
+
+  // Connected account selector
+  const [connectedAccounts, setConnectedAccounts] = useState<Array<{ id: string; email_address: string; display_name: string | null; provider: string }>>([]);
+  const [sendViaAccountId, setSendViaAccountId] = useState<string>('crm'); // 'crm' = Resend, or account UUID
 
   // Signature & Template
   const [signatures, setSignatures] = useState<EmailSignature[]>([]);
@@ -598,12 +602,32 @@ export function EmailComposer({
         if (defaultSig) {
           setSelectedSignatureId(defaultSig.id);
         }
+
+        // Load connected mail accounts
+        if (activeOrgId) {
+          try {
+            const accounts = await mailAccountService.getAccounts(activeOrgId);
+            setConnectedAccounts(accounts.map(a => ({
+              id: a.id,
+              email_address: a.email_address,
+              display_name: a.display_name,
+              provider: a.provider,
+            })));
+            // Default to default connected account if available
+            const defaultAcct = accounts.find(a => a.is_default);
+            if (defaultAcct) {
+              setSendViaAccountId(defaultAcct.id);
+            }
+          } catch {
+            // Connected accounts not available - use CRM sender
+          }
+        }
       } catch (error) {
         console.error('Failed to load composer data:', error);
       }
     };
     load();
-  }, [templateService, signatureService, activeOrgId]);
+  }, [templateService, signatureService, mailAccountService, activeOrgId]);
 
   // Track current draft ID for auto-save
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null);
@@ -676,7 +700,22 @@ export function EmailComposer({
         track_clicks: true,
       };
 
-      const result = await composerService.sendEmail(activeOrgId, input);
+      // Route through connected account or CRM Resend sender
+      let result;
+      if (sendViaAccountId && sendViaAccountId !== 'crm') {
+        // Send via connected M365/Gmail account
+        const sendResult = await mailSyncService.sendViaProvider(sendViaAccountId, {
+          to,
+          cc: cc.length > 0 ? cc : undefined,
+          bcc: bcc.length > 0 ? bcc : undefined,
+          subject,
+          html_body: html,
+        });
+        result = { success: true, email_id: sendResult.provider_message_id };
+      } else {
+        // Send via CRM Resend sender (existing flow)
+        result = await composerService.sendEmail(activeOrgId, input);
+      }
 
       if (result.success) {
         toast.success('Email sent successfully');
@@ -834,6 +873,27 @@ export function EmailComposer({
           </button>
         </div>
       </div>
+
+      {/* Send From (Connected Account Selector) */}
+      {connectedAccounts.length > 0 && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-th-border">
+          <label htmlFor="send-from-account" className="w-12 text-sm font-medium text-th-text-tertiary shrink-0">From:</label>
+          <select
+            id="send-from-account"
+            value={sendViaAccountId}
+            onChange={e => setSendViaAccountId(e.target.value)}
+            className="flex-1 text-sm px-2 py-1 border border-th-border rounded bg-surface-primary text-th-text-primary"
+          >
+            <option value="crm">CRM Sender (Resend)</option>
+            {connectedAccounts.map(a => (
+              <option key={a.id} value={a.id}>
+                {a.display_name ? `${a.display_name} <${a.email_address}>` : a.email_address}
+                {' '}({a.provider === 'microsoft365' ? 'M365' : 'Gmail'})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Recipients */}
       <div className="px-4">

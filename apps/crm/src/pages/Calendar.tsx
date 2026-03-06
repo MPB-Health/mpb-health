@@ -1274,6 +1274,7 @@ export default function Calendar() {
 
   // Modals & popovers
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ExtendedCalendarEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | undefined>();
   const [popoverEvent, setPopoverEvent] = useState<ExtendedCalendarEvent | null>(null);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
@@ -1420,11 +1421,13 @@ export default function Calendar() {
 
   // ── Handlers ──────────────────────────────────────────────────
   const handleDayClick = (date: Date) => {
+    setEditingEvent(null);
     setSelectedDate(formatDate(date));
     setShowAddEvent(true);
   };
 
   const handleTimeSlotClick = (date: Date, hour: number) => {
+    setEditingEvent(null);
     setSelectedDate(formatDate(date));
     setShowAddEvent(true);
   };
@@ -1437,8 +1440,7 @@ export default function Calendar() {
 
   const handleEdit = (event: ExtendedCalendarEvent) => {
     setPopoverEvent(null);
-    // Open add event modal in "edit" mode — for now just open to create
-    // The AddEventModal can be extended for editing later
+    setEditingEvent(event);
     setSelectedDate(formatDate(new Date(event.start_time)));
     setShowAddEvent(true);
   };
@@ -1652,8 +1654,9 @@ export default function Calendar() {
       {/* ─── Add Event Modal ─────────────────────────────────── */}
       <AddEventModal
         open={showAddEvent}
-        onClose={() => setShowAddEvent(false)}
+        onClose={() => { setShowAddEvent(false); setEditingEvent(null); }}
         defaultDate={selectedDate}
+        editEvent={editingEvent}
         onSuccess={handleEventCreated}
       />
     </div>

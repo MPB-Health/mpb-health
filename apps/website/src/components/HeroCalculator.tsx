@@ -32,6 +32,7 @@ const heroCalculatorSchema = z.object({
   firstName: z.string().min(2, 'First name is required'),
   lastName: z.string().min(2, 'Last name is required'),
   email: z.string().email('Please enter a valid email address').min(1, 'Email is required'),
+  phone: z.string().optional(),
 }).refine(
   (data) => {
     // Spouse age required for member-spouse and member-family
@@ -195,7 +196,7 @@ export default function HeroCalculator() {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
-        phone: 'Not provided',
+        phone: data.phone?.trim() || 'Not provided',
         householdSize,
         zipCode: '',
         sourcePage: window.location.pathname,
@@ -519,6 +520,22 @@ export default function HeroCalculator() {
                 )}
                 <p className="text-[9px] text-gray-500 leading-relaxed">
                   We'll send your personalized rate comparison to this email
+                </p>
+              </div>
+
+              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <Label htmlFor="hero-phone" className="text-xs font-semibold text-gray-700">
+                  Phone Number <span className="text-[10px] font-normal text-gray-400">(optional)</span>
+                </Label>
+                <Input
+                  id="hero-phone"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  className="h-9 text-sm"
+                  {...register('phone')}
+                />
+                <p className="text-[9px] text-gray-500 leading-relaxed">
+                  Want a call from our team? Add your number and we'll reach out
                 </p>
               </div>
             </>

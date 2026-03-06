@@ -78,6 +78,24 @@ import {
   type DynamicRecordService,
   // Import types
   type ImportService,
+  // Forecasting
+  createForecastingService,
+  type ForecastingService,
+  // Approvals
+  createApprovalService,
+  type ApprovalService,
+  // Web Forms
+  createFormService,
+  type FormService,
+  // Connected Inbox (Outlook-class)
+  createMailAccountService,
+  createMailSyncService,
+  createMailRulesService,
+  createDomainService,
+  type MailAccountService,
+  type MailSyncService,
+  type MailRulesService,
+  type DomainService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -125,6 +143,17 @@ interface CRMContextType {
   dynamicRecordService: DynamicRecordService;
   // Import service
   importService: ImportService;
+  // Forecasting service
+  forecastingService: ForecastingService;
+  // Approval service
+  approvalService: ApprovalService;
+  // Web Form service
+  formService: FormService;
+  // Connected Inbox services
+  mailAccountService: MailAccountService;
+  mailSyncService: MailSyncService;
+  mailRulesService: MailRulesService;
+  domainService: DomainService;
 
   // State
   dashboardStats: CRMDashboardStats | null;
@@ -189,6 +218,14 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     validationService: createValidationService(supabase),
     dynamicRecordService: createDynamicRecordService(supabase),
     importService: createImportService(supabase),
+    forecastingService: createForecastingService(supabase),
+    approvalService: createApprovalService(supabase),
+    formService: createFormService(supabase),
+    // Connected Inbox services
+    mailAccountService: createMailAccountService(supabase, supabaseUrl),
+    mailSyncService: createMailSyncService(supabase, supabaseUrl),
+    mailRulesService: createMailRulesService(supabase),
+    domainService: createDomainService(supabase, supabaseUrl),
   }));
 
   // State

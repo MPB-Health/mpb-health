@@ -6,11 +6,26 @@ import { useForm } from '../hooks/useForm';
 import { useCRM } from '../contexts/CRMContext';
 import type { Lead } from '@mpbhealth/crm-core';
 
+interface EditableEvent {
+  id: string;
+  title: string;
+  event_type: string;
+  start_time: string;
+  end_time: string;
+  all_day?: boolean;
+  location?: string;
+  meeting_link?: string;
+  lead_id?: string;
+  reminder_minutes?: number;
+  description?: string;
+}
+
 interface AddEventModalProps {
   open: boolean;
   onClose: () => void;
   defaultDate?: string; // YYYY-MM-DD
   leadId?: string;
+  editEvent?: EditableEvent | null;
   onSuccess?: () => void;
 }
 
@@ -47,16 +62,40 @@ const REMINDER_OPTIONS = [
   { value: '1440', label: '1 day before' },
 ];
 
-export function AddEventModal({ open, onClose, defaultDate, leadId, onSuccess }: AddEventModalProps) {
+export function AddEventModal({ open, onClose, defaultDate, leadId, editEvent, onSuccess }: AddEventModalProps) {
   const { calendarService, leadService } = useCRM();
   const [leadSearch, setLeadSearch] = useState('');
   const [leadResults, setLeadResults] = useState<Lead[]>([]);
   const [showLeadDropdown, setShowLeadDropdown] = useState(false);
 
+  const isEditing = !!editEvent;
   const today = defaultDate || new Date().toISOString().split('T')[0];
 
-  const { values, errors, loading, handleChange, handleSubmit, setFieldValue } = useForm<EventFormValues>({
-    initialValues: {
+  function getInitialValues(): EventFormValues {
+    if (editEvent) {
+      const start = new Date(editEvent.start_time);
+      const end = new Date(editEvent.end_time);
+      const startDate = start.toISOString().split('T')[0];
+      const endDate = end.toISOString().split('T')[0];
+      const startTime = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
+      const endTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+
+      return {
+        title: editEvent.title || '',
+        event_type: editEvent.event_type || 'meeting',
+        start_date: startDate,
+        start_time: startTime,
+        end_date: endDate,
+        end_time: endTime,
+        all_day: editEvent.all_day ? 'true' : 'false',
+        location: editEvent.location || '',
+        meeting_link: editEvent.meeting_link || '',
+        lead_id: editEvent.lead_id || leadId || '',
+        reminder_minutes: editEvent.reminder_minutes?.toString() || '15',
+        description: editEvent.description || '',
+      };
+    }
+    return {
       title: '',
       event_type: 'meeting',
       start_date: today,
@@ -69,7 +108,11 @@ export function AddEventModal({ open, onClose, defaultDate, leadId, onSuccess }:
       lead_id: leadId || '',
       reminder_minutes: '15',
       description: '',
-    },
+    };
+  }
+
+  const { values, errors, loading, handleChange, handleSubmit, setFieldValue, reset } = useForm<EventFormValues>({
+    initialValues: getInitialValues(),
     validate: (vals) => {
       const errs: Partial<Record<keyof EventFormValues, string>> = {};
       if (!vals.title.trim()) errs.title = 'Title is required';
@@ -90,7 +133,7 @@ export function AddEventModal({ open, onClose, defaultDate, leadId, onSuccess }:
         ? `${vals.end_date}T23:59:59`
         : `${vals.end_date}T${vals.end_time}`;
 
-      const result = await calendarService.createEvent({
+      const eventData = {
         title: vals.title,
         event_type: vals.event_type as any,
         start_time: startTime,
@@ -101,18 +144,29 @@ export function AddEventModal({ open, onClose, defaultDate, leadId, onSuccess }:
         lead_id: vals.lead_id || undefined,
         reminder_minutes: vals.reminder_minutes ? Number(vals.reminder_minutes) : undefined,
         description: vals.description || undefined,
-      });
+      };
+
+      const result = isEditing
+        ? await calendarService.updateEvent(editEvent!.id, eventData)
+        : await calendarService.createEvent(eventData);
 
       if (!result.success) {
-        toast.error(result.error || 'Failed to create event');
+        toast.error(result.error || `Failed to ${isEditing ? 'update' : 'create'} event`);
         return;
       }
 
-      toast.success('Event created');
+      toast.success(isEditing ? 'Event updated' : 'Event created');
       onSuccess?.();
       onClose();
     },
   });
+
+  // Reset form when editEvent changes
+  useEffect(() => {
+    if (open) {
+      reset(getInitialValues());
+    }
+  }, [editEvent, open]);
 
   // Lead search with debounce
   const searchLeads = useCallback(async (query: string) => {
@@ -139,7 +193,7 @@ export function AddEventModal({ open, onClose, defaultDate, leadId, onSuccess }:
   const isAllDay = values.all_day === 'true';
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Event" size="lg">
+    <Modal open={open} onClose={onClose} title={isEditing ? 'Edit Event' : 'Add Event'} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         <InputField
           label="Title"
@@ -287,7 +341,7 @@ export function AddEventModal({ open, onClose, defaultDate, leadId, onSuccess }:
         />
 
         <div className="flex items-center gap-3 pt-2">
-          <SubmitButton loading={loading} label="Create Event" />
+          <SubmitButton loading={loading} label={isEditing ? 'Update Event' : 'Create Event'} />
           <button
             type="button"
             onClick={onClose}

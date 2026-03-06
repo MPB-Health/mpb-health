@@ -3,10 +3,12 @@
 // Shows team member activity and presence
 // ============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Users, Circle, Clock, MessageSquare, Phone, FileText, CheckSquare } from 'lucide-react';
 import { useOrg } from '../../../contexts/OrgContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { usePresence } from '@mpbhealth/database';
 import type { BaseWidgetProps } from '../types';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
@@ -40,17 +42,41 @@ interface TeamActivity {
 
 export default function TeamWidget({ config, size }: BaseWidgetProps) {
   const { activeOrgId } = useOrg();
+  const { user } = useAuth();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [activities, setActivities] = useState<TeamActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const view = (config.view as string) || 'activity';
 
+  // Track presence via Supabase Realtime
+  const presenceMeta = useMemo(() => ({ org_id: activeOrgId }), [activeOrgId]);
+  const { presenceState } = usePresence({
+    channelName: `crm-presence:${activeOrgId || 'default'}`,
+    userId: user?.id || 'anon',
+    metadata: presenceMeta,
+  });
+
+  // Derive online user IDs from presence state
+  const onlineUserIds = useMemo(() => new Set(Object.keys(presenceState)), [presenceState]);
+
   useEffect(() => {
     if (activeOrgId) {
       loadTeamData();
     }
   }, [activeOrgId]);
+
+  // Update member presence status when realtime presence changes
+  useEffect(() => {
+    if (members.length > 0) {
+      setMembers((prev) =>
+        prev.map((m) => ({
+          ...m,
+          status: onlineUserIds.has(m.id) ? 'online' as const : 'offline' as const,
+        }))
+      );
+    }
+  }, [onlineUserIds]);
 
   const loadTeamData = async () => {
     setIsLoading(true);
@@ -62,53 +88,57 @@ export default function TeamWidget({ config, size }: BaseWidgetProps) {
         .limit(10);
 
       if (profiles) {
-        // Simulate presence data (in production, use realtime presence)
-        const membersWithStatus: TeamMember[] = profiles.map((p, index) => ({
+        // Look up org membership roles for each profile
+        const { data: memberships } = await supabase
+          .from('org_memberships')
+          .select('user_id, role')
+          .eq('org_id', activeOrgId!)
+          .in('user_id', profiles.map((p) => p.id));
+
+        const roleMap = new Map(memberships?.map((m) => [m.user_id, m.role]) ?? []);
+
+        const membersWithStatus: TeamMember[] = profiles.map((p) => ({
           id: p.id,
           full_name: p.full_name || 'Team Member',
           avatar_url: p.avatar_url,
-          status: index === 0 ? 'online' : index < 3 ? 'away' : 'offline',
-          last_active: new Date(Date.now() - Math.random() * 3600000).toISOString(),
-          role: index === 0 ? 'Admin' : 'Agent',
+          status: onlineUserIds.has(p.id) ? 'online' as const : 'offline' as const,
+          role: (roleMap.get(p.id) || 'agent').replace(/^\w/, (c: string) => c.toUpperCase()),
         }));
         setMembers(membersWithStatus);
 
-        // Generate mock activity
-        const mockActivities: TeamActivity[] = [
-          {
-            id: '1',
-            user_id: profiles[0]?.id || '',
-            user_name: profiles[0]?.full_name || 'Team Member',
-            action: 'call',
-            description: 'Completed call with John Smith',
-            timestamp: new Date(Date.now() - 300000).toISOString(),
-          },
-          {
-            id: '2',
-            user_id: profiles[1]?.id || '',
-            user_name: profiles[1]?.full_name || 'Team Member',
-            action: 'lead',
-            description: 'Added new lead: Sarah Johnson',
-            timestamp: new Date(Date.now() - 900000).toISOString(),
-          },
-          {
-            id: '3',
-            user_id: profiles[0]?.id || '',
-            user_name: profiles[0]?.full_name || 'Team Member',
-            action: 'task',
-            description: 'Completed task: Follow up with prospect',
-            timestamp: new Date(Date.now() - 1800000).toISOString(),
-          },
-          {
-            id: '4',
-            user_id: profiles[2]?.id || '',
-            user_name: profiles[2]?.full_name || 'Team Member',
-            action: 'note',
-            description: 'Added note to lead: Michael Brown',
-            timestamp: new Date(Date.now() - 3600000).toISOString(),
-          },
-        ];
-        setActivities(mockActivities);
+        // Load real recent activity from lead_activities
+        const { data: recentActivities } = await supabase
+          .from('lead_activities')
+          .select('id, activity_type, title, description, created_at, created_by')
+          .order('created_at', { ascending: false })
+          .limit(8);
+
+        if (recentActivities && recentActivities.length > 0) {
+          const profileMap = new Map(profiles.map((p) => [p.id, p.full_name || 'Team Member']));
+
+          const ACTION_TYPE_MAP: Record<string, TeamActivity['action']> = {
+            call: 'call',
+            note: 'note',
+            email: 'message',
+            meeting: 'call',
+            status_change: 'lead',
+            assignment: 'lead',
+            task_created: 'task',
+            task_completed: 'task',
+          };
+
+          const realActivities: TeamActivity[] = recentActivities.map((a) => ({
+            id: a.id,
+            user_id: a.created_by || '',
+            user_name: profileMap.get(a.created_by || '') || 'Team Member',
+            action: ACTION_TYPE_MAP[a.activity_type] || 'note',
+            description: a.title || a.description || a.activity_type,
+            timestamp: a.created_at,
+          }));
+          setActivities(realActivities);
+        } else {
+          setActivities([]);
+        }
       }
     } catch (error) {
       console.error('Failed to load team data:', error);

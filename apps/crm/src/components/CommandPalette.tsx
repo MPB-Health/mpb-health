@@ -340,7 +340,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
           break;
         case 'toggle':
           if (action.action_data.modal === 'shortcuts') {
-            toast('Keyboard shortcuts coming soon!');
+            toast('Press Cmd+K for search, Tab to switch modes, arrow keys to navigate, Enter to select.');
           }
           break;
         case 'custom':
@@ -361,7 +361,9 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
         toast.success('URL copied to clipboard');
         break;
       case 'export-view':
-        toast('Export coming soon!');
+        // Trigger CSV export of the current page's data
+        window.dispatchEvent(new CustomEvent('crm:export-view'));
+        toast.success('Export initiated');
         break;
       case 'open-docs':
         window.open('https://docs.mpbhealth.com', '_blank');

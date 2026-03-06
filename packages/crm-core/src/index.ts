@@ -490,3 +490,65 @@ export type {
 } from './plan-interests';
 export { FAMILY_SIZE_LABELS, INTEREST_LEVEL_LABELS, HOUSEHOLD_TYPE_LABELS } from './plan-interests';
 export * from './plan-interests';
+
+// Forecasting
+export { ForecastingService, createForecastingService } from './forecasting/forecastingService';
+export type {
+  Forecast,
+  ForecastEntry,
+  ForecastEntryWithDeal,
+  ForecastSummary,
+  ForecastFilters,
+  ForecastCreateInput,
+  ForecastEntryUpdateInput,
+  ForecastType,
+  ForecastStatus,
+  ForecastCategory,
+  DealStageMetrics,
+  PipelineHealth,
+  RepForecast,
+} from './forecasting/types';
+export * from './forecasting';
+
+// Web Forms
+export { FormService, createFormService } from './forms/formService';
+export type {
+  WebForm,
+  WebFormCreateInput,
+  WebFormUpdateInput,
+  WebFormSubmission,
+  FormField,
+  FormFieldType,
+  FormSettings,
+  FormStyling,
+  FormStatus,
+  FormEntityType,
+  SubmissionStatus,
+  SubmissionFilters,
+  FormAnalytics,
+  DuplicateHandling,
+  FieldWidth,
+  FormFieldValidation,
+} from './forms/types';
+export * from './forms';
+
+// Approvals
+export { ApprovalService, createApprovalService } from './approvals/approvalService';
+export type {
+  ApprovalProcess,
+  ApprovalProcessWithSteps,
+  ApprovalProcessCreateInput,
+  ApprovalProcessUpdateInput,
+  ApprovalStep,
+  ApprovalStepCreateInput,
+  ApprovalRequest,
+  ApprovalRequestWithRelations,
+  ApprovalAction,
+  ApprovalStatus,
+  ApprovalEntityType,
+  ApproverType,
+  RejectAction,
+  ApprovalActionType,
+  TriggerCondition,
+} from './approvals/types';
+export * from './approvals';

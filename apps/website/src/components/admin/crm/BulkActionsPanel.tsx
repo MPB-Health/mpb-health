@@ -436,8 +436,7 @@ export const BulkActionsPanel: React.FC<BulkActionsPanelProps> = ({
                 size="sm"
                 className="gap-2"
                 onClick={() => {
-                  // TODO: Open email campaign modal
-                  log.info('Email campaign', leadIds);
+                  window.open(`https://crm.mpb.health/email/inbox?compose=bulk&leads=${leadIds.join(',')}`, '_blank');
                 }}
               >
                 <Mail className="h-4 w-4" />
@@ -448,9 +447,10 @@ export const BulkActionsPanel: React.FC<BulkActionsPanelProps> = ({
                 variant="outline"
                 size="sm"
                 className="gap-2"
+                disabled
+                title="SMS campaigns available in CRM portal"
                 onClick={() => {
-                  // TODO: Open SMS campaign modal
-                  log.info('SMS campaign', leadIds);
+                  log.info('SMS campaign not yet available', leadIds);
                 }}
               >
                 <MessageSquare className="h-4 w-4" />

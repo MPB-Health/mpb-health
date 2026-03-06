@@ -13,7 +13,7 @@ interface UseFormReturn<T> {
   handleChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   handleSubmit: (e: FormEvent) => void;
   setFieldValue: (field: keyof T, value: unknown) => void;
-  reset: () => void;
+  reset: (newValues?: T) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,8 +86,8 @@ export function useForm<T extends Record<string, any>>(
     [values, loading, validate, onSubmit]
   );
 
-  const reset = useCallback(() => {
-    setValues(initialValues);
+  const reset = useCallback((newValues?: T) => {
+    setValues(newValues ?? initialValues);
     setErrors({});
     setLoading(false);
   }, [initialValues]);

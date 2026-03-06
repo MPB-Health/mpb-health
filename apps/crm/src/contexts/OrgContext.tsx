@@ -146,9 +146,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [loadPermissions]);
 
   // --- Permission checks ---
-  // TEMPORARY: Grant full access to all authenticated users until role_permissions is populated
-  // TODO: Remove `|| !!activeOrgId` once role_permissions table has data
-  const isOrgOwnerOrAdmin = orgRole === 'owner' || orgRole === 'admin' || !!activeOrgId;
+  const isOrgOwnerOrAdmin = orgRole === 'owner' || orgRole === 'admin';
 
   const can = useCallback(
     (permissionKey: string): boolean => {

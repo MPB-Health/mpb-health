@@ -37,6 +37,10 @@ import {
   Settings2,
   Calculator,
   Command,
+  TrendingUp,
+  Gauge,
+  CheckCircle2,
+  FileInput,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -99,6 +103,8 @@ const navigationSections: NavSection[] = [
     id: 'sales',
     label: 'Sales & Billing',
     items: [
+      { name: 'Forecasting', href: '/forecasting', icon: TrendingUp, permission: 'deals.read' },
+      { name: 'Deal Velocity', href: '/forecasting/velocity', icon: Gauge, permission: 'deals.read' },
       { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
       { name: 'Quotes', href: '/quotes', icon: FileCheck, permission: 'quotes.read' },
       { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
@@ -109,6 +115,7 @@ const navigationSections: NavSection[] = [
     label: 'Marketing',
     items: [
       { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
+      { name: 'Web Forms', href: '/web-forms', icon: FileInput, permission: 'campaigns.read' },
     ],
   },
   {
@@ -118,6 +125,7 @@ const navigationSections: NavSection[] = [
       { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
       { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
       { name: 'Meetings', href: '/meetings', icon: Video, permission: 'tasks.read' },
+      { name: 'Approvals', href: '/approvals', icon: CheckCircle2 },
     ],
   },
   {
@@ -132,7 +140,8 @@ const navigationSections: NavSection[] = [
     id: 'email',
     label: 'Email',
     items: [
-      { name: 'Inbox', href: '/email/inbox', icon: Inbox, permission: 'email.read' },
+      { name: 'Connected Inbox', href: '/email/connected', icon: Inbox, permission: 'email.read' },
+      { name: 'CRM Inbox', href: '/email/inbox', icon: Inbox, permission: 'email.read' },
       {
         name: 'Email',
         href: '#',
@@ -143,6 +152,9 @@ const navigationSections: NavSection[] = [
           { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
           { name: 'Sequences', href: '/email/sequences', permission: 'email.read' },
           { name: 'Deliverability', href: '/email/deliverability', permission: 'email.read' },
+          { name: 'Accounts', href: '/email/accounts', permission: 'email.read' },
+          { name: 'Rules', href: '/email/rules', permission: 'email.read' },
+          { name: 'Domains', href: '/email/domains', permission: 'settings.manage' },
         ],
       },
       { name: 'Signatures', href: '/email/signatures', icon: PenTool, permission: 'email.read' },
@@ -154,6 +166,7 @@ const navigationSections: NavSection[] = [
     items: [
       { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
       { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
+      { name: 'Approval Processes', href: '/settings/approval-processes', icon: CheckCircle2, permission: 'settings.manage' },
       { name: 'Studio', href: '/studio', icon: Settings2, permission: 'settings.manage' },
       { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
     ],

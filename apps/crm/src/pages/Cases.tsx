@@ -156,12 +156,12 @@ export default function Cases() {
   };
 
   const handleStatusFilter = (status: string) => {
-    setFilters((prev) => ({ ...prev, status: status || undefined }));
+    setFilters((prev) => ({ ...prev, status: (status || undefined) as CaseStatus | undefined }));
     setPage(0);
   };
 
   const handlePriorityFilter = (priority: string) => {
-    setFilters((prev) => ({ ...prev, priority: priority || undefined }));
+    setFilters((prev) => ({ ...prev, priority: (priority || undefined) as CasePriority | undefined }));
     setPage(0);
   };
 

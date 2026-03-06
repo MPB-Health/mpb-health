@@ -28,12 +28,12 @@ export const FeatureDetail: React.FC = () => {
             <meta name="keywords" content="medical weight loss, GLP-1 medications, semaglutide, tirzepatide, virtual care, weight loss prescriptions, MPB Health, Rx Valet, telehealth weight loss" />
             <meta property="og:title" content="Medical Weight Loss Support | MPB Health" />
             <meta property="og:description" content={feature.shortDescription} />
-            <meta property="og:image" content="/assets/diabetic-patient-using-insulin-pen-making-insulin-injection-home-young-woman-control-diabetes-diabetic-lifestyle.jpg" />
+            <meta property="og:image" content="/assets/BLOG IMAGES (29).png" />
             <meta property="og:type" content="website" />
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:title" content="Medical Weight Loss Support | MPB Health" />
             <meta name="twitter:description" content={feature.shortDescription} />
-            <meta name="twitter:image" content="/assets/diabetic-patient-using-insulin-pen-making-insulin-injection-home-young-woman-control-diabetes-diabetic-lifestyle.jpg" />
+            <meta name="twitter:image" content="/assets/BLOG IMAGES (29).png" />
           </>
         )}
       </Helmet>

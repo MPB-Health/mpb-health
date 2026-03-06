@@ -804,7 +804,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Scale,
     tagline: 'Provider-guided prescriptions for GLP-1 medications',
     shortDescription: 'MPB Health members can access medical weight loss support including GLP-1 medication prescriptions through virtual care visits with licensed providers. Secure HSA members get additional Rx Valet access.',
-    heroImage: '/assets/diabetic-patient-using-insulin-pen-making-insulin-injection-home-young-woman-control-diabetes-diabetic-lifestyle.jpg',
+    heroImage: '/assets/BLOG IMAGES (29).png',
     detailedDescription: 'MPB Health members have access to medical weight loss support, including provider-guided prescriptions for GLP-1 medications. Schedule a virtual visit with a licensed provider who can evaluate your health and determine whether weight loss medications are right for you — all from the MPB Health app.',
     keyPoints: [
       {

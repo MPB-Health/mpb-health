@@ -41,6 +41,10 @@ import {
   Gauge,
   CheckCircle2,
   FileInput,
+  Truck,
+  ClipboardList,
+  ShoppingCart,
+  BookOpen,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -97,6 +101,7 @@ const navigationSections: NavSection[] = [
       { name: 'Contacts', href: '/contacts', icon: UserCircle, permission: 'contacts.read' },
       { name: 'Deals', href: '/deals', icon: DollarSign, permission: 'deals.read' },
       { name: 'Deal Pipeline', href: '/deal-pipeline', icon: GitBranch, permission: 'deals.read' },
+      { name: 'Vendors', href: '/vendors', icon: Truck, permission: 'vendors.read' },
     ],
   },
   {
@@ -106,8 +111,11 @@ const navigationSections: NavSection[] = [
       { name: 'Forecasting', href: '/forecasting', icon: TrendingUp, permission: 'deals.read' },
       { name: 'Deal Velocity', href: '/forecasting/velocity', icon: Gauge, permission: 'deals.read' },
       { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
+      { name: 'Price Books', href: '/price-books', icon: BookOpen, permission: 'products.read' },
       { name: 'Quotes', href: '/quotes', icon: FileCheck, permission: 'quotes.read' },
+      { name: 'Sales Orders', href: '/sales-orders', icon: ShoppingCart, permission: 'sales_orders.read' },
       { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
+      { name: 'Purchase Orders', href: '/purchase-orders', icon: ClipboardList, permission: 'purchase_orders.read' },
     ],
   },
   {

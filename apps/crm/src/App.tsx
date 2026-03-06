@@ -62,6 +62,16 @@ const MailRules = lazy(() => import('./pages/MailRules'));
 const DomainAddons = lazy(() => import('./pages/DomainAddons'));
 const ConnectedInbox = lazy(() => import('./pages/ConnectedInbox'));
 
+// Vendors & Orders
+const Vendors = lazy(() => import('./pages/Vendors'));
+const VendorDetail = lazy(() => import('./pages/VendorDetail'));
+const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
+const PurchaseOrderDetail = lazy(() => import('./pages/PurchaseOrderDetail'));
+const SalesOrders = lazy(() => import('./pages/SalesOrders'));
+const SalesOrderDetail = lazy(() => import('./pages/SalesOrderDetail'));
+const PriceBooks = lazy(() => import('./pages/PriceBooks'));
+const PriceBookDetail = lazy(() => import('./pages/PriceBookDetail'));
+
 // Sales Forecasting
 const Forecasting = lazy(() => import('./pages/Forecasting'));
 const DealVelocity = lazy(() => import('./pages/DealVelocity'));
@@ -483,6 +493,90 @@ export default function App() {
                     <Guarded permission="products.read">
                       <Suspense fallback={<PageLoader />}>
                         <ProductDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Vendors */}
+                <Route
+                  path="/vendors"
+                  element={
+                    <Guarded permission="vendors.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Vendors />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/vendors/:id"
+                  element={
+                    <Guarded permission="vendors.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <VendorDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Purchase Orders */}
+                <Route
+                  path="/purchase-orders"
+                  element={
+                    <Guarded permission="purchase_orders.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <PurchaseOrders />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/purchase-orders/:id"
+                  element={
+                    <Guarded permission="purchase_orders.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <PurchaseOrderDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Sales Orders */}
+                <Route
+                  path="/sales-orders"
+                  element={
+                    <Guarded permission="sales_orders.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <SalesOrders />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/sales-orders/:id"
+                  element={
+                    <Guarded permission="sales_orders.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <SalesOrderDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Price Books */}
+                <Route
+                  path="/price-books"
+                  element={
+                    <Guarded permission="products.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <PriceBooks />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/price-books/:id"
+                  element={
+                    <Guarded permission="products.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <PriceBookDetail />
                       </Suspense>
                     </Guarded>
                   }

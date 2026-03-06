@@ -12,37 +12,15 @@ import {
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
 import { useOrg } from '../contexts/OrgContext';
-import { createCaseService, formatTimeAgo } from '@mpbhealth/crm-core';
+import {
+  createCaseService,
+  formatTimeAgo,
+  type CaseWithRelations,
+  type CaseFilters,
+  type CaseStatus,
+  type CasePriority,
+} from '@mpbhealth/crm-core';
 import { supabase } from '../lib/supabase';
-
-// Inline types (may not be exported from crm-core yet)
-type CaseStatus = 'new' | 'assigned' | 'in_progress' | 'on_hold' | 'escalated' | 'resolved' | 'closed';
-type CasePriority = 'low' | 'medium' | 'high' | 'urgent';
-
-interface CaseRecord {
-  id: string;
-  case_number: string;
-  subject: string;
-  status: CaseStatus;
-  priority: CasePriority;
-  origin: string | null;
-  category: string | null;
-  assigned_to: string | null;
-  owner_id: string | null;
-  account_id: string | null;
-  contact_id: string | null;
-  created_at: string;
-  updated_at: string;
-  account?: { id: string; name: string } | null;
-  contact?: { id: string; first_name: string; last_name: string } | null;
-  assigned_user?: { id: string; full_name: string; email: string } | null;
-}
-
-interface CaseFilters {
-  search?: string;
-  status?: string;
-  priority?: string;
-}
 
 // Filter options
 const STATUS_OPTIONS = [
@@ -111,7 +89,7 @@ function formatStatusLabel(status: string): string {
 }
 
 // Generate CSV from cases
-function generateCaseCSV(data: CaseRecord[]) {
+function generateCaseCSV(data: CaseWithRelations[]) {
   const headers = ['Case #', 'Subject', 'Priority', 'Status', 'Account', 'Contact', 'Assigned To', 'Created'];
   const rows = data.map((c) => [
     c.case_number,
@@ -133,7 +111,7 @@ export default function Cases() {
   // Initialize case service
   const [caseService] = useState(() => createCaseService(supabase));
 
-  const [cases, setCases] = useState<CaseRecord[]>([]);
+  const [cases, setCases] = useState<CaseWithRelations[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<CaseFilters>({});

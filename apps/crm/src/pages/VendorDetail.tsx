@@ -189,7 +189,7 @@ export default function VendorDetail() {
   }
 
   const typeColors = getVendorTypeColors(vendor.vendor_type || '');
-  const addressStr = formatAddress(vendor.address);
+  const addressStr = formatAddress(vendor.address as Record<string, string>);
   const totalPOValue = purchaseOrders.reduce((sum, po) => sum + (po.total || 0), 0);
 
   return (

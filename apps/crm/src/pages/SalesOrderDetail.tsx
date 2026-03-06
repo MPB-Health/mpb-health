@@ -242,10 +242,10 @@ export default function SalesOrderDetail() {
   const approvalColors = getApprovalColors(salesOrder.approval_status);
   const lineItems = salesOrder.line_items || [];
   const subtotal = salesOrder.subtotal ?? 0;
-  const tax = salesOrder.tax ?? 0;
+  const tax = salesOrder.tax_amount ?? 0;
   const totalAmount = salesOrder.total ?? 0;
-  const billingAddressStr = formatAddress(salesOrder.billing_address);
-  const shippingAddressStr = formatAddress(salesOrder.shipping_address);
+  const billingAddressStr = formatAddress(salesOrder.billing_address as Record<string, string>);
+  const shippingAddressStr = formatAddress(salesOrder.shipping_address as Record<string, string>);
 
   return (
     <div className="space-y-6">

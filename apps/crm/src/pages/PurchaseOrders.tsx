@@ -156,12 +156,12 @@ export default function PurchaseOrders() {
   };
 
   const handleStatusFilter = (status: string) => {
-    setFilters((prev) => ({ ...prev, status: status || undefined }));
+    setFilters((prev) => ({ ...prev, status: (status || undefined) as POFilters['status'] }));
     setPage(0);
   };
 
   const handleApprovalFilter = (approval_status: string) => {
-    setFilters((prev) => ({ ...prev, approval_status: approval_status || undefined }));
+    setFilters((prev) => ({ ...prev, approval_status: (approval_status || undefined) as POFilters['approval_status'] }));
     setPage(0);
   };
 

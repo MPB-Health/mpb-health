@@ -69,7 +69,7 @@ export default function PriceBookDetail() {
   const handleSetDefault = async () => {
     if (!priceBook) return;
     try {
-      await priceBookService.setDefault(priceBook.id);
+      await priceBookService.updatePriceBook(priceBook.id, { is_default: true });
       toast.success('Price book set as default');
       loadPriceBook();
     } catch (error) {
@@ -81,7 +81,7 @@ export default function PriceBookDetail() {
   const handleToggleActive = async () => {
     if (!priceBook) return;
     try {
-      await priceBookService.toggleActive(priceBook.id, !priceBook.is_active);
+      await priceBookService.updatePriceBook(priceBook.id, { is_active: !priceBook.is_active });
       toast.success(priceBook.is_active ? 'Price book deactivated' : 'Price book activated');
       loadPriceBook();
     } catch (error) {
@@ -441,7 +441,7 @@ export default function PriceBookDetail() {
                             </td>
                             <td className="px-6 py-4">
                               <span className="text-sm text-th-text-secondary">
-                                {item.product?.product_code || '-'}
+                                {item.product?.code || '-'}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">

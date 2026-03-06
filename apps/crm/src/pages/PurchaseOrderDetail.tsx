@@ -224,7 +224,7 @@ export default function PurchaseOrderDetail() {
   const approvalColors = getApprovalColors(po.approval_status);
   const lineItems = po.line_items || [];
   const subtotal = lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
-  const taxTotal = lineItems.reduce((sum, item) => sum + (item.tax || 0), 0);
+  const taxTotal = lineItems.reduce((sum, item) => sum + ((item.tax_rate || 0) * item.subtotal / 100), 0);
 
   return (
     <div className="space-y-6">
@@ -594,7 +594,7 @@ export default function PurchaseOrderDetail() {
                         return (
                           <tr key={item.id} className="hover:bg-surface-secondary">
                             <td className="px-6 py-4">
-                              <p className="text-sm font-medium text-th-text-primary">{item.item_name}</p>
+                              <p className="text-sm font-medium text-th-text-primary">{item.name}</p>
                             </td>
                             <td className="px-6 py-4">
                               <span className="text-sm text-th-text-secondary">{item.sku || '-'}</span>
@@ -623,10 +623,10 @@ export default function PurchaseOrderDetail() {
                               <span className="text-sm text-th-text-primary">{formatCurrency(item.unit_cost)}</span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <span className="text-sm text-th-text-secondary">{formatCurrency(item.discount)}</span>
+                              <span className="text-sm text-th-text-secondary">{formatCurrency(item.discount_amount ?? 0)}</span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <span className="text-sm text-th-text-secondary">{formatCurrency(item.tax)}</span>
+                              <span className="text-sm text-th-text-secondary">{formatCurrency((item.tax_rate || 0) * item.subtotal / 100)}</span>
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className="text-sm font-medium text-th-text-primary">{formatCurrency(item.total)}</span>

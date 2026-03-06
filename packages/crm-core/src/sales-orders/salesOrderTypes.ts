@@ -132,6 +132,9 @@ export interface SOCreateInput {
 }
 
 export interface SOUpdateInput extends Partial<SOCreateInput> {
+  approval_status?: ApprovalStatus;
+  shipped_date?: string;
+  delivered_date?: string;
   discount_percent?: number;
   discount_amount?: number;
   shipping_amount?: number;

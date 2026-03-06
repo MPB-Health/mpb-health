@@ -6,65 +6,79 @@ import {
   Download,
   Plus,
   ChevronDown,
-  ShoppingCart,
-  DollarSign,
+  Briefcase,
+  AlertCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
 import { useOrg } from '../contexts/OrgContext';
-import {
-  createSalesOrderService,
-  formatTimeAgo,
-  type SalesOrderWithRelations,
-  type SOFilters,
-} from '@mpbhealth/crm-core';
+import { createCaseService, formatTimeAgo } from '@mpbhealth/crm-core';
 import { supabase } from '../lib/supabase';
 
-// Status options
+// Inline types (may not be exported from crm-core yet)
+type CaseStatus = 'new' | 'assigned' | 'in_progress' | 'on_hold' | 'escalated' | 'resolved' | 'closed';
+type CasePriority = 'low' | 'medium' | 'high' | 'urgent';
+
+interface CaseRecord {
+  id: string;
+  case_number: string;
+  subject: string;
+  status: CaseStatus;
+  priority: CasePriority;
+  origin: string | null;
+  category: string | null;
+  assigned_to: string | null;
+  owner_id: string | null;
+  account_id: string | null;
+  contact_id: string | null;
+  created_at: string;
+  updated_at: string;
+  account?: { id: string; name: string } | null;
+  contact?: { id: string; first_name: string; last_name: string } | null;
+  assigned_user?: { id: string; full_name: string; email: string } | null;
+}
+
+interface CaseFilters {
+  search?: string;
+  status?: string;
+  priority?: string;
+}
+
+// Filter options
 const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'pending_approval', label: 'Pending Approval' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'confirmed', label: 'Confirmed' },
-  { value: 'processing', label: 'Processing' },
-  { value: 'shipped', label: 'Shipped' },
-  { value: 'partially_delivered', label: 'Partially Delivered' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'new', label: 'New' },
+  { value: 'assigned', label: 'Assigned' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'on_hold', label: 'On Hold' },
+  { value: 'escalated', label: 'Escalated' },
+  { value: 'resolved', label: 'Resolved' },
   { value: 'closed', label: 'Closed' },
 ];
 
-// Approval options
-const APPROVAL_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: 'not_required', label: 'Not Required' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
+const PRIORITY_OPTIONS = [
+  { value: '', label: 'All Priorities' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' },
 ];
 
-// Get status badge colors
-function getStatusColors(status: string) {
+// Status badge colors
+function getStatusColors(status: CaseStatus) {
   switch (status) {
-    case 'draft':
-      return { bg: 'bg-gray-100', text: 'text-gray-700' };
-    case 'pending_approval':
-      return { bg: 'bg-amber-100', text: 'text-amber-700' };
-    case 'approved':
-      return { bg: 'bg-green-100', text: 'text-green-700' };
-    case 'confirmed':
+    case 'new':
       return { bg: 'bg-blue-100', text: 'text-blue-700' };
-    case 'processing':
+    case 'assigned':
       return { bg: 'bg-cyan-100', text: 'text-cyan-700' };
-    case 'shipped':
+    case 'in_progress':
       return { bg: 'bg-indigo-100', text: 'text-indigo-700' };
-    case 'partially_delivered':
-      return { bg: 'bg-orange-100', text: 'text-orange-700' };
-    case 'delivered':
-      return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
-    case 'cancelled':
+    case 'on_hold':
+      return { bg: 'bg-amber-100', text: 'text-amber-700' };
+    case 'escalated':
       return { bg: 'bg-red-100', text: 'text-red-700' };
+    case 'resolved':
+      return { bg: 'bg-green-100', text: 'text-green-700' };
     case 'closed':
       return { bg: 'bg-gray-100', text: 'text-gray-700' };
     default:
@@ -72,85 +86,90 @@ function getStatusColors(status: string) {
   }
 }
 
-// Get approval badge colors
-function getApprovalColors(approval: string | null) {
-  switch (approval) {
-    case 'not_required':
+// Priority badge colors
+function getPriorityColors(priority: CasePriority) {
+  switch (priority) {
+    case 'low':
       return { bg: 'bg-gray-100', text: 'text-gray-700' };
-    case 'pending':
-      return { bg: 'bg-amber-100', text: 'text-amber-700' };
-    case 'approved':
-      return { bg: 'bg-green-100', text: 'text-green-700' };
-    case 'rejected':
+    case 'medium':
+      return { bg: 'bg-blue-100', text: 'text-blue-700' };
+    case 'high':
+      return { bg: 'bg-orange-100', text: 'text-orange-700' };
+    case 'urgent':
       return { bg: 'bg-red-100', text: 'text-red-700' };
     default:
       return { bg: 'bg-gray-100', text: 'text-gray-700' };
   }
 }
 
-// Format currency
-function formatCurrency(amount: number | null): string {
-  if (amount === null || amount === undefined) return '-';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
-// Format status label
+// Format status label: replace underscores with spaces, capitalize
 function formatStatusLabel(status: string): string {
   return status
     .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
 
-export default function SalesOrders() {
+// Generate CSV from cases
+function generateCaseCSV(data: CaseRecord[]) {
+  const headers = ['Case #', 'Subject', 'Priority', 'Status', 'Account', 'Contact', 'Assigned To', 'Created'];
+  const rows = data.map((c) => [
+    c.case_number,
+    c.subject,
+    c.priority,
+    c.status,
+    c.account?.name || '',
+    c.contact ? `${c.contact.first_name} ${c.contact.last_name}` : '',
+    c.assigned_user?.full_name || c.assigned_user?.email || '',
+    new Date(c.created_at).toLocaleDateString(),
+  ]);
+  return [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join('\n');
+}
+
+export default function Cases() {
   const navigate = useNavigate();
   const { activeOrgId } = useOrg();
 
-  // Initialize sales order service
-  const [salesOrderService] = useState(() => createSalesOrderService(supabase));
+  // Initialize case service
+  const [caseService] = useState(() => createCaseService(supabase));
 
-  const [salesOrders, setSalesOrders] = useState<SalesOrderWithRelations[]>([]);
+  const [cases, setCases] = useState<CaseRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<SOFilters>({});
+  const [filters, setFilters] = useState<CaseFilters>({});
   const [page, setPage] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const pageSize = 20;
 
   // Bulk selection state
-  const [selectedSOs, setSelectedSOs] = useState<Set<string>>(new Set());
+  const [selectedCases, setSelectedCases] = useState<Set<string>>(new Set());
 
-  // Load sales orders
-  const loadSalesOrders = useCallback(async () => {
+  // Load cases
+  const loadCases = useCallback(async () => {
     setLoading(true);
     try {
-      const { salesOrders: data, total: count } = await salesOrderService.getSalesOrders(
+      const { cases: data, total: count } = await caseService.getCases(
         filters,
         pageSize,
         page * pageSize
       );
-      setSalesOrders(data);
+      setCases(data);
       setTotal(count);
     } catch (error) {
-      console.error('Failed to load sales orders:', error);
-      toast.error('Failed to load sales orders');
+      console.error('Failed to load cases:', error);
+      toast.error('Failed to load cases');
     } finally {
       setLoading(false);
     }
-  }, [salesOrderService, filters, page]);
+  }, [caseService, filters, page]);
 
   useEffect(() => {
-    loadSalesOrders();
-  }, [loadSalesOrders]);
+    loadCases();
+  }, [loadCases]);
 
   // Clear selection when filters or page change
   useEffect(() => {
-    setSelectedSOs(new Set());
+    setSelectedCases(new Set());
   }, [filters, page]);
 
   const handleSearch = (search: string) => {
@@ -159,88 +178,73 @@ export default function SalesOrders() {
   };
 
   const handleStatusFilter = (status: string) => {
-    setFilters((prev) => ({ ...prev, status: (status || undefined) as SOFilters['status'] }));
+    setFilters((prev) => ({ ...prev, status: status || undefined }));
     setPage(0);
   };
 
-  const handleApprovalFilter = (approval_status: string) => {
-    setFilters((prev) => ({ ...prev, approval_status: (approval_status || undefined) as SOFilters['approval_status'] }));
+  const handlePriorityFilter = (priority: string) => {
+    setFilters((prev) => ({ ...prev, priority: priority || undefined }));
     setPage(0);
   };
 
   const handleExport = async () => {
     try {
-      const csv = generateSOCSV(salesOrders);
+      const { cases: exportCases } = await caseService.getCases(filters, 10000, 0);
+      const csv = generateCaseCSV(exportCases);
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `sales-orders-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `cases-export-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Export started');
     } catch (error) {
       console.error('Export failed:', error);
-      toast.error('Failed to export sales orders');
+      toast.error('Failed to export cases');
     }
   };
 
   const handleExportSelected = async () => {
     try {
-      const selected = salesOrders.filter((so) => selectedSOs.has(so.id));
-      const csv = generateSOCSV(selected);
+      const selected = cases.filter((c) => selectedCases.has(c.id));
+      const csv = generateCaseCSV(selected);
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `sales-orders-selected-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `cases-selected-export-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Export started');
     } catch (error) {
       console.error('Export failed:', error);
-      toast.error('Failed to export sales orders');
+      toast.error('Failed to export cases');
     }
   };
 
-  // Generate CSV from sales orders
-  function generateSOCSV(data: SalesOrderWithRelations[]) {
-    const headers = ['SO Number', 'Name', 'Account', 'Status', 'Approval', 'Total', 'Order Date', 'Created'];
-    const rows = data.map((so) => [
-      so.so_number || '',
-      so.name || '',
-      so.account?.name || '',
-      so.status || '',
-      so.approval_status || '',
-      so.total != null ? so.total.toString() : '',
-      so.order_date ? new Date(so.order_date).toLocaleDateString() : '',
-      new Date(so.created_at).toLocaleDateString(),
-    ]);
-    return [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join('\n');
-  }
-
   const toggleSelectAll = useCallback(() => {
-    if (selectedSOs.size === salesOrders.length) {
-      setSelectedSOs(new Set());
+    if (selectedCases.size === cases.length) {
+      setSelectedCases(new Set());
     } else {
-      setSelectedSOs(new Set(salesOrders.map((so) => so.id)));
+      setSelectedCases(new Set(cases.map((c) => c.id)));
     }
-  }, [salesOrders, selectedSOs.size]);
+  }, [cases, selectedCases.size]);
 
-  const toggleSelectSO = useCallback((soId: string) => {
-    setSelectedSOs((prev) => {
+  const toggleSelectCase = useCallback((caseId: string) => {
+    setSelectedCases((prev) => {
       const next = new Set(prev);
-      if (next.has(soId)) {
-        next.delete(soId);
+      if (next.has(caseId)) {
+        next.delete(caseId);
       } else {
-        next.add(soId);
+        next.add(caseId);
       }
       return next;
     });
   }, []);
 
-  const handleRowClick = (soId: string) => {
-    navigate(`/sales-orders/${soId}`);
+  const handleRowClick = (caseId: string) => {
+    navigate(`/cases/${caseId}`);
   };
 
   const totalPages = Math.ceil(total / pageSize);
@@ -248,13 +252,13 @@ export default function SalesOrders() {
   return (
     <div className="space-y-6">
       {/* Bulk Actions Toolbar */}
-      {selectedSOs.size > 0 && (
+      {selectedCases.size > 0 && (
         <div className="bg-th-accent-50 border border-th-accent-200 rounded-lg px-4 py-3 flex items-center justify-between">
           <span className="text-sm font-medium text-th-accent-700">
-            {selectedSOs.size} sales order{selectedSOs.size > 1 ? 's' : ''} selected
+            {selectedCases.size} case{selectedCases.size > 1 ? 's' : ''} selected
           </span>
           <div className="flex items-center space-x-3">
-            <PermissionGate permission="sales_orders.read">
+            <PermissionGate permission="cases.read">
               <button
                 onClick={handleExportSelected}
                 className="text-sm text-th-accent-600 hover:text-th-accent-700 font-medium"
@@ -263,7 +267,7 @@ export default function SalesOrders() {
               </button>
             </PermissionGate>
             <button
-              onClick={() => setSelectedSOs(new Set())}
+              onClick={() => setSelectedCases(new Set())}
               className="text-sm text-th-text-tertiary hover:text-th-text-secondary"
             >
               Clear
@@ -275,11 +279,11 @@ export default function SalesOrders() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Sales Orders</h1>
-          <p className="text-th-text-tertiary text-sm mt-1">{total} total sales orders</p>
+          <h1 className="text-2xl font-bold text-th-text-primary">Cases</h1>
+          <p className="text-th-text-tertiary text-sm mt-1">{total} total cases</p>
         </div>
         <div className="flex items-center space-x-3">
-          <PermissionGate permission="sales_orders.read">
+          <PermissionGate permission="cases.read">
             <button
               onClick={handleExport}
               className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
@@ -288,13 +292,13 @@ export default function SalesOrders() {
               <span>Export</span>
             </button>
           </PermissionGate>
-          <PermissionGate permission="sales_orders.write">
+          <PermissionGate permission="cases.write">
             <button
-              onClick={() => navigate('/sales-orders/new')}
+              onClick={() => navigate('/cases/new')}
               className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
             >
               <Plus className="w-4 h-4" />
-              <span>New Sales Order</span>
+              <span>New Case</span>
             </button>
           </PermissionGate>
         </div>
@@ -308,7 +312,7 @@ export default function SalesOrders() {
             <Search className="w-4 h-4 text-th-text-tertiary mr-2" />
             <input
               type="text"
-              placeholder="Search by SO number, name, or account..."
+              placeholder="Search by case number, subject, or account..."
               value={filters.search || ''}
               onChange={(e) => handleSearch(e.target.value)}
               className="bg-transparent border-none outline-none text-sm w-full text-th-text-secondary placeholder-th-text-tertiary"
@@ -331,14 +335,14 @@ export default function SalesOrders() {
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary pointer-events-none" />
           </div>
 
-          {/* Approval filter */}
+          {/* Priority filter */}
           <div className="relative">
             <select
-              value={filters.approval_status || ''}
-              onChange={(e) => handleApprovalFilter(e.target.value)}
+              value={filters.priority || ''}
+              onChange={(e) => handlePriorityFilter(e.target.value)}
               className="appearance-none bg-surface-primary border border-th-border rounded-lg px-4 py-2 pr-10 text-sm text-th-text-secondary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
             >
-              {APPROVAL_OPTIONS.map((opt) => (
+              {PRIORITY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -362,17 +366,17 @@ export default function SalesOrders() {
         </div>
       </div>
 
-      {/* Sales Orders table */}
+      {/* Cases table */}
       <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
           </div>
-        ) : salesOrders.length === 0 ? (
+        ) : cases.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-th-text-tertiary">
-            <ShoppingCart className="w-12 h-12 mb-4 opacity-50" />
-            <p>No sales orders found</p>
-            <p className="text-sm mt-1">Try adjusting your filters or create a new sales order</p>
+            <Briefcase className="w-12 h-12 mb-4 opacity-50" />
+            <p>No cases found</p>
+            <p className="text-sm mt-1">Try adjusting your filters or create a new case</p>
           </div>
         ) : (
           <>
@@ -382,28 +386,28 @@ export default function SalesOrders() {
                   <th className="w-12 px-4 py-3">
                     <input
                       type="checkbox"
-                      checked={selectedSOs.size === salesOrders.length && salesOrders.length > 0}
+                      checked={selectedCases.size === cases.length && cases.length > 0}
                       onChange={toggleSelectAll}
                       className="w-4 h-4 rounded border-th-border"
                     />
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    SO Number
+                    Case
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Account
+                    Priority
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                     Status
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Approval
-                  </th>
-                  <th className="text-right px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Total
+                    Account
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Order Date
+                    Contact
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
+                    Assigned To
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                     Created
@@ -411,18 +415,18 @@ export default function SalesOrders() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-th-border">
-                {salesOrders.map((so) => {
-                  const statusColors = getStatusColors(so.status);
-                  const approvalColors = getApprovalColors(so.approval_status);
-                  const isSelected = selectedSOs.has(so.id);
+                {cases.map((caseItem) => {
+                  const statusColors = getStatusColors(caseItem.status);
+                  const priorityColors = getPriorityColors(caseItem.priority);
+                  const isSelected = selectedCases.has(caseItem.id);
 
                   return (
                     <tr
-                      key={so.id}
+                      key={caseItem.id}
                       className={`hover:bg-surface-secondary cursor-pointer ${
                         isSelected ? 'bg-th-accent-50' : ''
                       }`}
-                      onClick={() => handleRowClick(so.id)}
+                      onClick={() => handleRowClick(caseItem.id)}
                     >
                       <td
                         className="w-12 px-4 py-4"
@@ -431,58 +435,53 @@ export default function SalesOrders() {
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleSelectSO(so.id)}
+                          onChange={() => toggleSelectCase(caseItem.id)}
                           className="w-4 h-4 rounded border-th-border"
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-th-accent-100 rounded-lg flex items-center justify-center">
-                            <ShoppingCart className="w-5 h-5 text-th-accent-700" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-th-text-primary hover:text-th-accent-600">
-                              {so.so_number || '-'}
-                            </p>
-                            {so.name && (
-                              <p className="text-xs text-th-text-tertiary">{so.name}</p>
-                            )}
-                          </div>
+                        <div>
+                          <p className="text-sm font-medium text-th-text-primary">
+                            {caseItem.case_number}
+                          </p>
+                          <p className="text-xs text-th-text-tertiary truncate max-w-[200px]">
+                            {caseItem.subject}
+                          </p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-th-text-secondary">
-                          {so.account?.name || '-'}
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColors.bg} ${priorityColors.text}`}
+                        >
+                          {formatStatusLabel(caseItem.priority)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text}`}
                         >
-                          {formatStatusLabel(so.status)}
+                          {formatStatusLabel(caseItem.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {so.approval_status && (
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${approvalColors.bg} ${approvalColors.text}`}
-                          >
-                            {formatStatusLabel(so.approval_status)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm font-medium text-th-text-primary">
-                          {formatCurrency(so.total)}
+                        <span className="text-sm text-th-text-secondary">
+                          {caseItem.account?.name || '-'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-th-text-secondary">
-                        {so.order_date
-                          ? new Date(so.order_date).toLocaleDateString()
-                          : '-'}
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-th-text-secondary">
+                          {caseItem.contact
+                            ? `${caseItem.contact.first_name} ${caseItem.contact.last_name}`
+                            : '-'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-th-text-secondary">
+                          {caseItem.assigned_user?.full_name || caseItem.assigned_user?.email || '-'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-th-text-tertiary">
-                        {formatTimeAgo(so.created_at)}
+                        {formatTimeAgo(caseItem.created_at)}
                       </td>
                     </tr>
                   );

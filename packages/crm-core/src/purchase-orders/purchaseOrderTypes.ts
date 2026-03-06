@@ -103,6 +103,8 @@ export interface POCreateInput {
 }
 
 export interface POUpdateInput extends Partial<POCreateInput> {
+  approval_status?: ApprovalStatus;
+  received_date?: string;
   discount_percent?: number;
   discount_amount?: number;
   shipping_amount?: number;

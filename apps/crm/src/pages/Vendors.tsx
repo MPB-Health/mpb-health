@@ -126,7 +126,7 @@ export default function Vendors() {
   };
 
   const handleTypeFilter = (vendor_type: string) => {
-    setFilters((prev) => ({ ...prev, vendor_type: vendor_type || undefined }));
+    setFilters((prev) => ({ ...prev, vendor_type: (vendor_type || undefined) as VendorFilters['vendor_type'] }));
     setPage(0);
   };
 

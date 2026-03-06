@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, CheckCircle2, Phone, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Phone, ArrowRight, Sparkles, ChevronRight } from 'lucide-react';
 import { healthcareFeatures } from '../data/healthcareFeaturesData';
 import { Button } from '../components/ui/button';
 import { FlowShell } from '../components/onboarding/FlowShell';
@@ -10,6 +10,7 @@ export const FeatureDetail: React.FC = () => {
   const { featureId } = useParams<{ featureId: string }>();
   const feature = healthcareFeatures.find((f) => f.id === featureId);
   const [showLemonadeEngine, setShowLemonadeEngine] = React.useState(false);
+  const [activePathway, setActivePathway] = React.useState<'all' | 'hsa'>('all');
 
   if (!feature) {
     return <Navigate to="/features" replace />;
@@ -22,6 +23,19 @@ export const FeatureDetail: React.FC = () => {
       <Helmet>
         <title>{feature.name} - Healthcare Features | MPB Health</title>
         <meta name="description" content={feature.shortDescription} />
+        {feature.id === 'medical-weight-loss-support' && (
+          <>
+            <meta name="keywords" content="medical weight loss, GLP-1 medications, semaglutide, tirzepatide, virtual care, weight loss prescriptions, MPB Health, Rx Valet, telehealth weight loss" />
+            <meta property="og:title" content="Medical Weight Loss Support | MPB Health" />
+            <meta property="og:description" content={feature.shortDescription} />
+            <meta property="og:image" content="/assets/medical-weight-loss-feature.png" />
+            <meta property="og:type" content="website" />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content="Medical Weight Loss Support | MPB Health" />
+            <meta name="twitter:description" content={feature.shortDescription} />
+            <meta name="twitter:image" content="/assets/medical-weight-loss-feature.png" />
+          </>
+        )}
       </Helmet>
 
       <div className="min-h-screen bg-white">
@@ -30,13 +44,23 @@ export const FeatureDetail: React.FC = () => {
 
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mb-6">
-              <Link
-                to="/features"
-                className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to All Features
-              </Link>
+              {feature.id === 'medical-weight-loss-support' ? (
+                <nav className="flex items-center gap-1.5 text-sm text-white/80">
+                  <Link to="/" className="hover:text-white transition-colors">Home</Link>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  <Link to="/features" className="hover:text-white transition-colors">Features</Link>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  <span className="text-white font-medium">Medical Weight Loss Support</span>
+                </nav>
+              ) : (
+                <Link
+                  to="/features"
+                  className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to All Features
+                </Link>
+              )}
             </div>
 
             <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -66,7 +90,7 @@ export const FeatureDetail: React.FC = () => {
                     }}
                   >
                     <Sparkles className="w-5 h-5 mr-2" />
-                    Find My Perfect Plan
+                    {feature.id === 'medical-weight-loss-support' ? 'Get Started' : 'Find My Perfect Plan'}
                   </Button>
                   <Button
                     size="lg"
@@ -121,6 +145,166 @@ export const FeatureDetail: React.FC = () => {
           </div>
         </section>
 
+        {feature.id === 'medical-weight-loss-support' ? (
+          <>
+            <section className="py-16 bg-white">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 text-center">
+                  How It Works
+                </h2>
+                <p className="text-center text-neutral-600 mb-10 max-w-2xl mx-auto">
+                  Choose your pathway based on your membership type.
+                </p>
+
+                <div className="flex justify-center mb-10">
+                  <div className="inline-flex rounded-xl bg-neutral-100 p-1">
+                    <button
+                      onClick={() => setActivePathway('all')}
+                      className={`px-6 py-3 rounded-lg text-sm font-semibold transition-all ${
+                        activePathway === 'all'
+                          ? 'bg-white text-neutral-900 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-900'
+                      }`}
+                    >
+                      All Memberships
+                    </button>
+                    <button
+                      onClick={() => setActivePathway('hsa')}
+                      className={`px-6 py-3 rounded-lg text-sm font-semibold transition-all ${
+                        activePathway === 'hsa'
+                          ? 'bg-white text-neutral-900 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-900'
+                      }`}
+                    >
+                      Secure HSA Members
+                    </button>
+                  </div>
+                </div>
+
+                {activePathway === 'all' ? (
+                  <div className="max-w-3xl mx-auto">
+                    <div className="bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl p-8 border border-teal-100">
+                      <h3 className="text-xl font-bold text-neutral-900 mb-2">
+                        MPB Health Virtual Care Access
+                      </h3>
+                      <p className="text-sm text-neutral-500 mb-6">Available to all memberships</p>
+                      <div className="space-y-4">
+                        {[
+                          'Schedule a Virtual Primary Care appointment in the MPB Health app',
+                          'Meet with a licensed provider for evaluation, and if appropriate receive a prescription',
+                          'Fill your prescription at the pharmacy of your choice',
+                          'Manage follow-ups directly with your provider'
+                        ].map((step, index) => (
+                          <div key={index} className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
+                              <span className="text-sm font-bold text-teal-700">{index + 1}</span>
+                            </div>
+                            <p className="text-neutral-700 pt-1">{step}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-sm text-neutral-500 italic mt-6 pt-4 border-t border-teal-200">
+                        Virtual Care provides access to a prescription. It does not include Rx Valet discounted pricing.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="max-w-3xl mx-auto">
+                    <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-8 border border-emerald-100">
+                      <h3 className="text-xl font-bold text-neutral-900 mb-2">
+                        Rx Valet Program
+                      </h3>
+                      <p className="text-sm text-neutral-500 mb-6">Exclusive to Secure HSA members</p>
+                      <div className="space-y-4">
+                        {[
+                          'Select Rx Valet inside the MPB Health App',
+                          'Choose Mail Order — Order Here',
+                          'Click Weight Loss Program at the top of the screen',
+                          'Select either: "I have a prescription" or "I need a prescription"',
+                          'If needed, complete the Qualifying Questionnaire',
+                          'If approved, your prescription for compounded Semaglutide or compounded Tirzepatide is sent to the Rx Valet mail-order pharmacy',
+                          'Your medication is cold shipped via 2-day delivery'
+                        ].map((step, index) => (
+                          <div key={index} className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                              <span className="text-sm font-bold text-emerald-700">{index + 1}</span>
+                            </div>
+                            <p className="text-neutral-700 pt-1">{step}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-sm text-neutral-500 italic mt-6 pt-4 border-t border-emerald-200">
+                        Rx Valet provides member pricing and mail-order fulfillment.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className="py-16 bg-neutral-50">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 text-center">
+                  What's Included
+                </h2>
+                <p className="text-center text-neutral-600 mb-12 max-w-2xl mx-auto">
+                  See what's available with your membership — and what Secure HSA members get in addition.
+                </p>
+                <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                  <div className="bg-white rounded-2xl p-8 border-2 border-neutral-200 shadow-sm">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
+                        <CheckCircle2 className="w-6 h-6 text-teal-600" />
+                      </div>
+                      <h3 className="text-lg font-bold text-neutral-900">For All Memberships</h3>
+                    </div>
+                    <ul className="space-y-3">
+                      {[
+                        'Virtual provider evaluation',
+                        'Prescription eligibility determination',
+                        'Ongoing medication management',
+                        'Follow-up consultations',
+                        'App-based scheduling and access'
+                      ].map((item, index) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                          <span className="text-neutral-700">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-8 border-2 border-emerald-300 shadow-sm relative">
+                    <div className="absolute -top-3 right-6">
+                      <span className="bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                        Secure HSA
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <h3 className="text-lg font-bold text-neutral-900">Additional Benefits</h3>
+                    </div>
+                    <ul className="space-y-3">
+                      {[
+                        'Access to Rx Valet',
+                        'Mail-order pharmacy fulfillment',
+                        'Monthly dosage verification',
+                        'Member pricing'
+                      ].map((item, index) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                          <span className="text-neutral-700">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </>
+        ) : (
         <section className="py-16 bg-white">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12">
@@ -164,6 +348,7 @@ export const FeatureDetail: React.FC = () => {
             </div>
           </div>
         </section>
+        )}
 
         <section className="py-16 bg-neutral-50">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -395,13 +580,27 @@ export const FeatureDetail: React.FC = () => {
           </div>
         </section>
 
+        {feature.id === 'medical-weight-loss-support' && feature.disclaimer && (
+          <section className="py-8 bg-white">
+            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+              <p className="text-xs text-neutral-400 leading-relaxed text-center">
+                {feature.disclaimer}
+              </p>
+            </div>
+          </section>
+        )}
+
         <section className="py-16 bg-white border-t border-neutral-200">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-6">
-              Have Questions?
+              {feature.id === 'medical-weight-loss-support'
+                ? 'Ready to Take Control of Your Weight Loss Journey?'
+                : 'Have Questions?'}
             </h2>
             <p className="text-lg text-neutral-600 mb-8 max-w-2xl mx-auto">
-              Our healthcare specialists are here to help you understand your options and find the right coverage for your needs.
+              {feature.id === 'medical-weight-loss-support'
+                ? 'Schedule a virtual visit with a licensed provider today — right from the MPB Health app.'
+                : 'Our healthcare specialists are here to help you understand your options and find the right coverage for your needs.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
@@ -419,8 +618,8 @@ export const FeatureDetail: React.FC = () => {
                 className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
                 asChild
               >
-                <Link to="/contact">
-                  Schedule a Consultation
+                <Link to={feature.id === 'medical-weight-loss-support' ? '/plans' : '/contact'}>
+                  {feature.id === 'medical-weight-loss-support' ? 'Get Started' : 'Schedule a Consultation'}
                 </Link>
               </Button>
             </div>

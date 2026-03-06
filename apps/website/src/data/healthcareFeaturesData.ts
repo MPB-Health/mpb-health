@@ -1,4 +1,4 @@
-import { Stethoscope, Ambulance, Brain, Baby, Pill, Wallet, ShieldCheck, Headphones, PawPrint, Heart, Video } from 'lucide-react';
+import { Stethoscope, Ambulance, Brain, Baby, Pill, Wallet, ShieldCheck, Headphones, PawPrint, Heart, Video, Scale } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface FeatureKeyPoint {
@@ -797,6 +797,72 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Guidance on senior dog\'s mobility issues and pain management'
     ],
     disclaimer: 'Pet telehealth is NOT FOR EMERGENCIES. If you believe your pet has an emergency, call your vet immediately or contact the nearest Animal Hospital. Pet telehealth should not be considered veterinary care advice and is not a substitute for professional veterinary care advice, diagnosis, or treatment. It is NOT a replacement for regular in-office visits or vaccinations for your pet.'
+  },
+  {
+    id: 'medical-weight-loss-support',
+    name: 'Medical Weight Loss Support',
+    icon: Scale,
+    tagline: 'Provider-guided prescriptions for GLP-1 medications',
+    shortDescription: 'MPB Health members can access medical weight loss support including GLP-1 medication prescriptions through virtual care visits with licensed providers. Secure HSA members get additional Rx Valet access.',
+    heroImage: '/assets/medical-weight-loss-feature.png',
+    detailedDescription: 'MPB Health members have access to medical weight loss support, including provider-guided prescriptions for GLP-1 medications. Schedule a virtual visit with a licensed provider who can evaluate your health and determine whether weight loss medications are right for you — all from the MPB Health app.',
+    keyPoints: [
+      {
+        title: 'Licensed Provider Evaluation',
+        description: 'Meet virtually with a licensed medical provider who can assess your health and determine whether GLP-1 medications or other weight loss prescriptions are appropriate.'
+      },
+      {
+        title: 'Convenient Virtual Access',
+        description: 'Schedule and attend appointments directly through the MPB Health app — no waiting rooms, no long delays.'
+      },
+      {
+        title: 'Ongoing Clinical Support',
+        description: 'Virtual providers can manage dosing, monitor progress, and provide follow-up care throughout your treatment plan.'
+      },
+      {
+        title: 'Two Ways to Access Weight Loss Medications',
+        description: 'All members can access prescriptions through Virtual Care. Secure HSA members receive additional access to discounted medication fulfillment through Rx Valet.'
+      }
+    ],
+    howItWorks: [
+      'Schedule a Virtual Primary Care appointment in the MPB Health app',
+      'Meet with a licensed provider for evaluation, and if appropriate receive a prescription',
+      'Fill your prescription at the pharmacy of your choice',
+      'Manage follow-ups directly with your provider'
+    ],
+    eligiblePlans: ['Essentials', 'MEC+Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
+    membership: [
+      'Virtual provider evaluation',
+      'Prescription eligibility determination',
+      'Ongoing medication management',
+      'Follow-up consultations',
+      'App-based scheduling and access'
+    ],
+    faqs: [
+      {
+        question: 'What are weight loss medications?',
+        answer: 'Weight loss medications are a class of medications used to treat type 2 diabetes and obesity. Brand name medications like Ozempic, Rybelsus, Mounjaro, and Wegovy are patented medications that have become in demand for treating type 2 diabetes and assisting people in losing weight.'
+      },
+      {
+        question: 'Who can access weight loss medication support?',
+        answer: 'All MPB Health members can schedule a Virtual Care visit to discuss weight loss medications. If medically appropriate, a provider may prescribe GLP-1 medications. Secure HSA members receive additional access to discounted medication fulfillment through Rx Valet.'
+      },
+      {
+        question: 'Does MPB Health Virtual Care include discounted medication pricing?',
+        answer: 'No. Virtual Care provides prescription access only. Discounted pricing and mail-order fulfillment are available to Secure HSA members through Rx Valet.'
+      }
+    ],
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-50',
+    gradientFrom: 'from-teal-600',
+    gradientTo: 'to-emerald-600',
+    examples: [
+      'Initial medical evaluation to determine candidacy for GLP-1 weight loss medications',
+      'Ongoing prescription management',
+      'Virtual follow-up visits to assess tolerance, side effects, and effectiveness',
+      'Coordination of prescription fulfillment through Rx Valet (Secure HSA members)'
+    ],
+    disclaimer: 'Weight loss medications are prescribed at the discretion of a licensed provider based on medical appropriateness. Prescription must be written for compounded Semaglutide or compounded Tirzepatide to qualify for the Rx Valet program. Rx Valet access available to Secure HSA members only.'
   }
 ];
 

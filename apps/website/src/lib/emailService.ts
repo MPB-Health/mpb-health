@@ -283,20 +283,28 @@ export async function sendLeadWelcomeEmail(data: {
     const minPrice = Math.min(...plans.map(([, p]) => p.flatRate ?? p.lowestPrice));
     const maxPrice = Math.max(...plans.map(([, p]) => p.highestPrice ?? p.flatRate ?? p.lowestPrice));
     pricingHtml = `
-      <div style="background: linear-gradient(to right, #eff6ff, #ecfeff); border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 25px 0;">
-        <p style="color: #1e40af; font-size: 16px; line-height: 1.7; margin: 0;">
-          <strong>Your personalized rates</strong> — Plans start at <strong style="color: #0f172a;">${fmtMoney(minPrice)}/mo</strong>${maxPrice > minPrice ? ` and go up to <strong style="color: #0f172a;">${fmtMoney(maxPrice)}/mo</strong>` : ''} based on your household and preferences.
-          ${planData.traditional_cost_estimate ? ` Traditional insurance averages <strong>${fmtMoney(planData.traditional_cost_estimate)}/mo</strong> for similar coverage.` : ''}
-        </p>
-      </div>`;
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; margin: 0 0 24px 0;">
+        <tr>
+          <td style="padding: 20px 24px;">
+            <p style="color: #0c4a6e; font-size: 15px; line-height: 1.6; margin: 0;">
+              <strong style="color: #0f172a;">Your personalized rates</strong> — Plans start at <strong style="color: #0369a1;">${fmtMoney(minPrice)}/mo</strong>${maxPrice > minPrice ? ` and go up to <strong style="color: #0369a1;">${fmtMoney(maxPrice)}/mo</strong>` : ''} based on your household and preferences.
+              ${planData.traditional_cost_estimate ? ` Traditional insurance averages <strong>${fmtMoney(planData.traditional_cost_estimate)}/mo</strong> for similar coverage.` : ''}
+            </p>
+          </td>
+        </tr>
+      </table>`;
     pricingText = `Your personalized rates: Plans start at ${fmtMoney(minPrice)}/mo${maxPrice > minPrice ? ` up to ${fmtMoney(maxPrice)}/mo` : ''}.${planData.traditional_cost_estimate ? ` Traditional insurance averages ${fmtMoney(planData.traditional_cost_estimate)}/mo.` : ''}`;
   } else {
     pricingHtml = `
-      <div style="background: linear-gradient(to right, #eff6ff, #ecfeff); border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 25px 0;">
-        <p style="color: #1e40af; font-size: 16px; line-height: 1.7; margin: 0;">
-          <strong>Individual programs</strong> typically range from <strong style="color: #0f172a;">$160 to $350 per month</strong>, while <strong>family plans</strong> range from <strong style="color: #0f172a;">$400 to $1,050 monthly</strong>, depending on your specific medical needs.
-        </p>
-      </div>`;
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; margin: 0 0 24px 0;">
+        <tr>
+          <td style="padding: 20px 24px;">
+            <p style="color: #0c4a6e; font-size: 15px; line-height: 1.6; margin: 0;">
+              <strong style="color: #0f172a;">Individual programs</strong> typically range from <strong style="color: #0369a1;">$160 to $350 per month</strong>, while <strong>family plans</strong> range from <strong style="color: #0369a1;">$400 to $1,050 monthly</strong>, depending on your specific medical needs.
+            </p>
+          </td>
+        </tr>
+      </table>`;
     pricingText = 'Individual programs typically range from $160 to $350 per month, while family plans range from $400 to $1,050 monthly.';
   }
 
@@ -309,31 +317,35 @@ export async function sendLeadWelcomeEmail(data: {
       .map(([id, p]) => {
         const price = p.flatRate ?? p.lowestPrice;
         const isBest = id === planData.best_match_plan;
-        return `<tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px 0; color: #1f2937; font-weight: ${isBest ? '600' : '500'};">
-            ${p.planLabel}${isBest && planData.best_match_percentage ? ` <span style="background: #2563eb; color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px;">${planData.best_match_percentage}% match</span>` : ''}
+        return `<tr style="background-color: ${isBest ? '#f0f9ff' : '#ffffff'}; border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 14px 20px; color: #1e293b; font-size: 15px; font-weight: ${isBest ? '600' : '500'};">
+            ${p.planLabel}${isBest && planData.best_match_percentage ? ` <span style="background-color: #0284c7; color: #ffffff; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px;">${planData.best_match_percentage}% match</span>` : ''}
           </td>
-          <td style="padding: 12px 0; text-align: right; color: #0f172a; font-weight: 600;">${fmtMoney(price)}/mo</td>
+          <td style="padding: 14px 20px; text-align: right; color: #0369a1; font-size: 15px; font-weight: 600;">${fmtMoney(price)}/mo</td>
         </tr>`;
       })
       .join('');
 
     planComparisonHtml = `
-      <div style="margin: 30px 0;">
-        <h3 style="color: #0f172a; font-size: 18px; margin: 0 0 15px 0;">${bestPlan ? 'Your recommended plan' : 'Plan comparison'}</h3>
-        ${bestPlan ? `<p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;"><strong>${bestPlan.planLabel}</strong> — Start at ${fmtMoney(bestPlan.flatRate ?? bestPlan.lowestPrice)}/mo</p>` : ''}
-        <table width="100%" style="border-collapse: collapse; background: #f8fafc; border-radius: 8px; overflow: hidden;">
-          <thead>
-            <tr style="background: #e2e8f0;">
-              <th style="padding: 12px 16px; text-align: left; font-size: 13px; color: #475569;">Plan</th>
-              <th style="padding: 12px 16px; text-align: right; font-size: 13px; color: #475569;">Start at</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${planRows}
-          </tbody>
-        </table>
-      </div>`;
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 28px 0;">
+        <tr>
+          <td>
+            <h2 style="color: #0f172a; font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">${bestPlan ? 'Your recommended plan' : 'Plan comparison'}</h2>
+            ${bestPlan ? `<p style="color: #64748b; font-size: 14px; margin: 0 0 16px 0;"><strong style="color: #0f172a;">${bestPlan.planLabel}</strong> — Start at <strong style="color: #0369a1;">${fmtMoney(bestPlan.flatRate ?? bestPlan.lowestPrice)}/mo</strong></p>` : ''}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+              <thead>
+                <tr style="background-color: #f1f5f9;">
+                  <th style="padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Plan</th>
+                  <th style="padding: 14px 20px; text-align: right; font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Start at</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${planRows}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </table>`;
 
     planComparisonText = Object.entries(planData.all_plan_rates)
       .map(([id, p]) => {
@@ -350,53 +362,79 @@ export async function sendLeadWelcomeEmail(data: {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to MPB Health</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Your MPB Health Plan Comparison</title>
       </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 0;">
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9; -webkit-font-smoothing: antialiased;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f1f5f9; padding: 32px 16px;">
           <tr>
             <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+              <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden;">
+                <!-- Header: Logo on solid white so brand colors are visible -->
                 <tr>
-                  <td style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px 40px; border-radius: 12px 12px 0 0; text-align: center;">
-                    <img src="https://mpb.health/assets/MPB-Health-No-background.png" alt="MPB Health" style="max-width: 180px; height: auto; margin-bottom: 15px;">
-                    <h1 style="color: #ffffff; font-size: 28px; margin: 0;">Dear ${data.firstName},</h1>
+                  <td style="background-color: #ffffff; padding: 32px 40px 24px; text-align: center; border-bottom: 3px solid #0ea5e9;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center">
+                          <img src="https://mpb.health/assets/MPB-Health-No-background.png" alt="MPB Health" width="200" style="display: block; max-width: 200px; height: auto; margin: 0 auto;" />
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
+                <!-- Greeting -->
                 <tr>
-                  <td style="padding: 40px;">
-                    <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 20px 0;">
-                      Thank you for visiting MPB Health to explore your health-share options.
+                  <td style="padding: 32px 40px 0;">
+                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.02em;">Dear ${data.firstName},</h1>
+                    <p style="color: #64748b; font-size: 14px; margin: 0 0 24px 0;">Your personalized plan comparison is ready.</p>
+                  </td>
+                </tr>
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 0 40px 32px;">
+                    <p style="color: #334155; font-size: 16px; line-height: 1.65; margin: 0 0 24px 0;">
+                      Thank you for exploring MPB Health. Based on your household and preferences, we've prepared the following rates and plan options for you.
                     </p>
                     ${pricingHtml}
-                    <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 20px 0;">
-                      Health-share programs offer a great solution for unexpected medical bills. Our ability to custom tailor a program to your needs makes our health-share particularly beneficial for those looking to avoid pre-paying for benefits they'll never use.
+                    <p style="color: #334155; font-size: 16px; line-height: 1.65; margin: 0 0 28px 0;">
+                      Health sharing offers a practical alternative to traditional insurance — community-based, transparent, and tailored to what you actually need.
                     </p>
                     ${planComparisonHtml}
-                    <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
-                      Call our Senior Advisor line to get your exact rate and find the best plan that fits you.
-                    </p>
-                    <div style="text-align: center; margin: 30px 0;">
-                      <a href="${QUOTE_PHONE_TEL}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                        📞 Call ${QUOTE_PHONE_DISPLAY} ext 1
-                      </a>
-                    </div>
-                    <div style="text-align: center; margin: 25px 0;">
-                      <a href="${videoUrl}" style="color: #2563eb; font-size: 14px;">Watch: How MPB Health Works →</a>
-                    </div>
-                    <div style="text-align: center; margin: 15px 0;">
-                      <a href="${hasPlanData ? resultsUrl : welcomePageUrl}" style="color: #64748b; font-size: 13px;">View your comparison on our website →</a>
-                    </div>
+                    <!-- CTA Section -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 28px 0;">
+                      <tr>
+                        <td style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 8px; padding: 24px; text-align: center;">
+                          <p style="color: #ffffff; font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">Get your exact rate and find the best plan for you</p>
+                          <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 0 0 20px 0;">Call our Senior Advisor line — press 1 when prompted</p>
+                          <a href="${QUOTE_PHONE_TEL}" style="display: inline-block; background-color: #ffffff; color: #0284c7; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 700; font-size: 16px;">${QUOTE_PHONE_DISPLAY} ext 1</a>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- Secondary links -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 16px 0; border-top: 1px solid #e2e8f0;">
+                          <p style="margin: 0 0 8px 0;">
+                            <a href="${videoUrl}" style="color: #0ea5e9; font-size: 14px; text-decoration: none; font-weight: 500;">Watch: How MPB Health Works</a>
+                          </p>
+                          <p style="margin: 0;">
+                            <a href="${hasPlanData ? resultsUrl : welcomePageUrl}" style="color: #64748b; font-size: 14px; text-decoration: none;">View your comparison online →</a>
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
+                <!-- Footer -->
                 <tr>
-                  <td style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center; border-radius: 0 0 12px 12px;">
-                    <p style="color: #999; font-size: 12px; margin: 0 0 10px 0;">
-                      You're receiving this email because you requested a quote from MPB Health.
+                  <td style="padding: 24px 40px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 8px 0; line-height: 1.5;">
+                      You're receiving this because you requested a quote from MPB Health.
                     </p>
-                    <p style="color: #999; font-size: 12px; margin: 0;">
-                      <a href="https://mpb.health/privacy-policy" style="color: #666; text-decoration: underline;">Privacy Policy</a> |
-                      <a href="https://mpb.health" style="color: #666; text-decoration: underline;">Visit Our Website</a>
+                    <p style="margin: 0;">
+                      <a href="https://mpb.health/privacy-policy" style="color: #64748b; font-size: 12px; text-decoration: underline;">Privacy Policy</a>
+                      <span style="color: #cbd5e1; margin: 0 8px;">|</span>
+                      <a href="https://mpb.health" style="color: #64748b; font-size: 12px; text-decoration: underline;">mpb.health</a>
                     </p>
                   </td>
                 </tr>

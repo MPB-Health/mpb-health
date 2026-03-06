@@ -1,4 +1,4 @@
-import { Heart, Shield, Building2, Pill, Wallet, Stethoscope, LucideIcon } from 'lucide-react';
+import { Heart, Shield, Building2, Pill, Stethoscope, LucideIcon } from 'lucide-react';
 
 /**
  * Membership Priorities — aligned with Membership Overview (Agent Resource) PDF.
@@ -34,14 +34,6 @@ export const membershipPriorities: MembershipPriority[] = [
     icon: Shield,
     description: 'Hospital, surgery, major medical — community shares eligible expenses',
     keywords: ['hospital', 'surgery', 'major medical', 'catastrophic', 'medical cost sharing'],
-  },
-  {
-    id: 'hospital-debt-relief',
-    label: 'Hospital Debt Relief',
-    shortLabel: 'Help with existing medical bills',
-    icon: Wallet,
-    description: 'Reduce or eliminate existing medical debt (Debt Dismissal Program)',
-    keywords: ['medical debt', 'hospital bills', 'debt relief', 'debt dismissal'],
   },
   {
     id: 'hsa-tax-benefits',
@@ -207,7 +199,21 @@ export function recommendPlans(selectedPriorities: string[]): PlanRecommendation
     });
   });
 
-  recommendations.sort((a, b) => b.score - a.score);
+  // Sort by score, but always rank Secure HSA first (primary recommendation)
+  recommendations.sort((a, b) => {
+    if (a.planId === 'secure-hsa') return -1;
+    if (b.planId === 'secure-hsa') return 1;
+    return b.score - a.score;
+  });
+
+  // Ensure Secure HSA (when first) has a strong match % and reason
+  const secureHsa = recommendations.find((r) => r.planId === 'secure-hsa');
+  if (secureHsa && recommendations[0]?.planId === 'secure-hsa') {
+    secureHsa.matchPercentage = Math.max(secureHsa.matchPercentage, 85);
+    if (secureHsa.reasons.length === 0) {
+      secureHsa.reasons.push('HSA + medical sharing + MEC');
+    }
+  }
 
   recommendations.forEach((rec, index) => {
     if (rec.reasons.length === 0 && index < 2) {

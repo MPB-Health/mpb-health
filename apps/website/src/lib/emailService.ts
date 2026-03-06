@@ -275,86 +275,53 @@ export async function sendLeadWelcomeEmail(data: {
   const planData = data.planData;
   const hasPlanData = planData?.all_plan_rates && Object.keys(planData.all_plan_rates).length > 0;
 
-  // Build personalized pricing section
-  let pricingHtml = '';
-  let pricingText = '';
-  if (hasPlanData && planData.all_plan_rates) {
-    const plans = Object.entries(planData.all_plan_rates);
-    const minPrice = Math.min(...plans.map(([, p]) => p.flatRate ?? p.lowestPrice));
-    const maxPrice = Math.max(...plans.map(([, p]) => p.highestPrice ?? p.flatRate ?? p.lowestPrice));
-    pricingHtml = `
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; margin: 0 0 24px 0;">
-        <tr>
-          <td style="padding: 20px 24px;">
-            <p style="color: #0c4a6e; font-size: 15px; line-height: 1.6; margin: 0;">
-              <strong style="color: #0f172a;">Your personalized rates</strong> — Plans start at <strong style="color: #0369a1;">${fmtMoney(minPrice)}/mo</strong>${maxPrice > minPrice ? ` and go up to <strong style="color: #0369a1;">${fmtMoney(maxPrice)}/mo</strong>` : ''} based on your household and preferences.
-              ${planData.traditional_cost_estimate ? ` Traditional insurance averages <strong>${fmtMoney(planData.traditional_cost_estimate)}/mo</strong> for similar coverage.` : ''}
-            </p>
-          </td>
-        </tr>
-      </table>`;
-    pricingText = `Your personalized rates: Plans start at ${fmtMoney(minPrice)}/mo${maxPrice > minPrice ? ` up to ${fmtMoney(maxPrice)}/mo` : ''}.${planData.traditional_cost_estimate ? ` Traditional insurance averages ${fmtMoney(planData.traditional_cost_estimate)}/mo.` : ''}`;
-  } else {
-    pricingHtml = `
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; margin: 0 0 24px 0;">
-        <tr>
-          <td style="padding: 20px 24px;">
-            <p style="color: #0c4a6e; font-size: 15px; line-height: 1.6; margin: 0;">
-              <strong style="color: #0f172a;">Individual programs</strong> typically range from <strong style="color: #0369a1;">$160 to $350 per month</strong>, while <strong>family plans</strong> range from <strong style="color: #0369a1;">$400 to $1,050 monthly</strong>, depending on your specific medical needs.
-            </p>
-          </td>
-        </tr>
-      </table>`;
-    pricingText = 'Individual programs typically range from $160 to $350 per month, while family plans range from $400 to $1,050 monthly.';
-  }
+  // Plan details for email (tagline + bullets) — no pricing, pure value
+  const PLAN_EMAIL_DETAILS: Record<string, { tagline: string; bullets: string[] }> = {
+    'secure-hsa': { tagline: 'Medical sharing + MEC + HSA + RX Valet', bullets: ['Pre-tax HSA savings', 'Full hospital & surgery sharing', '$0 unlimited virtual care'] },
+    'mec-essentials': { tagline: 'ACA MEC + Debt Dismissal + HSA', bullets: ['Employer mandate satisfied', 'Debt Dismissal Program', 'HSA + RX Valet'] },
+    'essentials': { tagline: 'Essential protection without the overwhelm', bullets: ['Hospital Debt Relief', 'Pharmacy & supplement discounts', '$0 unlimited virtual care'] },
+    'care-plus': { tagline: 'Complete peace of mind for families', bullets: ['Full medical cost sharing', 'Maternity sharing', 'Any doctor, any hospital'] },
+    'direct': { tagline: 'Wellness-first + real protection', bullets: ['Preventive care included', 'Medical cost sharing', 'Best of both worlds'] },
+  };
 
-  // Build recommended plan + comparison table
-  let planComparisonHtml = '';
-  let planComparisonText = '';
+  // Build plan detail cards (benefits only — no pricing)
+  let planDetailsHtml = '';
+  let planDetailsText = '';
   if (hasPlanData && planData.all_plan_rates) {
-    const bestPlan = planData.best_match_plan ? planData.all_plan_rates[planData.best_match_plan] : null;
-    const planRows = Object.entries(planData.all_plan_rates)
+    const planCards = Object.entries(planData.all_plan_rates)
       .map(([id, p]) => {
-        const price = p.flatRate ?? p.lowestPrice;
+        const details = PLAN_EMAIL_DETAILS[id] || { tagline: '', bullets: [] };
         const isBest = id === planData.best_match_plan;
-        return `<tr style="background-color: ${isBest ? '#f0f9ff' : '#ffffff'}; border-bottom: 1px solid #e2e8f0;">
-          <td style="padding: 14px 20px; color: #1e293b; font-size: 15px; font-weight: ${isBest ? '600' : '500'};">
-            ${p.planLabel}${isBest && planData.best_match_percentage ? ` <span style="background-color: #0284c7; color: #ffffff; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px;">${planData.best_match_percentage}% match</span>` : ''}
-          </td>
-          <td style="padding: 14px 20px; text-align: right; color: #0369a1; font-size: 15px; font-weight: 600;">${fmtMoney(price)}/mo</td>
-        </tr>`;
+        const bulletsHtml = details.bullets.slice(0, 3).map(b => `<li style="margin: 0 0 4px 0; color: #475569; font-size: 14px;">${b}</li>`).join('');
+        return `
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 16px 0; border: 1px solid ${isBest ? '#0ea5e9' : '#e2e8f0'}; border-radius: 8px; overflow: hidden; background-color: ${isBest ? '#f0f9ff' : '#ffffff'};">
+            <tr>
+              <td style="padding: 16px 20px;">
+                <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #0f172a;">${p.planLabel}${isBest && planData.best_match_percentage ? ` <span style="background-color: #0284c7; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px;">${planData.best_match_percentage}% match</span>` : ''}</p>
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;">${details.tagline}</p>
+                <ul style="margin: 0; padding-left: 18px;">${bulletsHtml}</ul>
+              </td>
+            </tr>
+          </table>`;
       })
       .join('');
-
-    planComparisonHtml = `
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 28px 0;">
-        <tr>
-          <td>
-            <h2 style="color: #0f172a; font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">${bestPlan ? 'Your recommended plan' : 'Plan comparison'}</h2>
-            ${bestPlan ? `<p style="color: #64748b; font-size: 14px; margin: 0 0 16px 0;"><strong style="color: #0f172a;">${bestPlan.planLabel}</strong> — Start at <strong style="color: #0369a1;">${fmtMoney(bestPlan.flatRate ?? bestPlan.lowestPrice)}/mo</strong></p>` : ''}
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
-              <thead>
-                <tr style="background-color: #f1f5f9;">
-                  <th style="padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Plan</th>
-                  <th style="padding: 14px 20px; text-align: right; font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Start at</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${planRows}
-              </tbody>
-            </table>
-          </td>
-        </tr>
-      </table>`;
-
-    planComparisonText = Object.entries(planData.all_plan_rates)
+    planDetailsHtml = `
+      <h2 style="color: #0f172a; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">Your plan options</h2>
+      ${planCards}`;
+    planDetailsText = Object.entries(planData.all_plan_rates)
       .map(([id, p]) => {
-        const price = p.flatRate ?? p.lowestPrice;
+        const details = PLAN_EMAIL_DETAILS[id] || { tagline: '', bullets: [] };
         const suffix = id === planData.best_match_plan && planData.best_match_percentage ? ` (${planData.best_match_percentage}% match)` : '';
-        return `${p.planLabel}${suffix}: ${fmtMoney(price)}/mo`;
+        return `${p.planLabel}${suffix}: ${details.tagline}. ${details.bullets.slice(0, 2).join(', ')}.`;
       })
       .join('\n');
+  } else {
+    planDetailsHtml = `
+      <h2 style="color: #0f172a; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">Your plan options</h2>
+      <p style="color: #64748b; font-size: 14px; margin: 0 0 20px 0;">Secure HSA, MEC+ Essentials, Care+, Direct, and Essentials — each with $0 unlimited virtual care. Call to find the one that fits you.</p>`;
+    planDetailsText = 'Secure HSA, MEC+ Essentials, Care+, Direct, and Essentials. Each includes $0 unlimited virtual care. Call to find the one that fits you.';
   }
+
 
   const html = `
     <!DOCTYPE html>
@@ -363,7 +330,7 @@ export async function sendLeadWelcomeEmail(data: {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>Your MPB Health Plan Comparison</title>
+        <title>Why 50,000+ families chose health sharing</title>
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9; -webkit-font-smoothing: antialiased;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f1f5f9; padding: 32px 16px;">
@@ -385,27 +352,35 @@ export async function sendLeadWelcomeEmail(data: {
                 <!-- Greeting -->
                 <tr>
                   <td style="padding: 32px 40px 0;">
-                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.02em;">Dear ${data.firstName},</h1>
-                    <p style="color: #64748b; font-size: 14px; margin: 0 0 24px 0;">Your personalized plan comparison is ready.</p>
+                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.02em;">${data.firstName}, here's why 50,000+ families chose health sharing.</h1>
+                    <p style="color: #64748b; font-size: 14px; margin: 0 0 24px 0;">And why you should too.</p>
                   </td>
                 </tr>
                 <!-- Content -->
                 <tr>
                   <td style="padding: 0 40px 32px;">
+                    <p style="color: #334155; font-size: 16px; line-height: 1.65; margin: 0 0 20px 0;">
+                      Traditional insurance? Premiums that climb every year. Deductibles you'll never hit. Claim denials. Endless paperwork. You're paying for a system that works against you.
+                    </p>
                     <p style="color: #334155; font-size: 16px; line-height: 1.65; margin: 0 0 24px 0;">
-                      Thank you for exploring MPB Health. Based on your household and preferences, we've prepared the following rates and plan options for you.
+                      <strong style="color: #0f172a;">Health sharing is different.</strong> Real people. Real savings. No middleman deciding what you can and can't have. You get the care you need — hospital, surgery, virtual care, prescriptions — without the insurance game. That's why families save hundreds every month and never look back.
                     </p>
-                    ${pricingHtml}
-                    <p style="color: #334155; font-size: 16px; line-height: 1.65; margin: 0 0 28px 0;">
-                      Health sharing offers a practical alternative to traditional insurance — community-based, transparent, and tailored to what you actually need.
-                    </p>
-                    ${planComparisonHtml}
+                    <!-- Why MPB callout -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px 0; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 8px; border: 1px solid #6ee7b7;">
+                      <tr>
+                        <td style="padding: 20px 24px;">
+                          <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.05em;">Why MPB?</p>
+                          <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #064e3b;">We're not a call center. We're advisors who actually care. One call. A real person. They'll walk you through every option, answer every question, and get you into the plan that fits — no pressure, no runaround. That's the MPB way.</p>
+                        </td>
+                      </tr>
+                    </table>
+                    ${planDetailsHtml}
                     <!-- CTA Section -->
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 28px 0;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 28px 0;">
                       <tr>
                         <td style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 8px; padding: 24px; text-align: center;">
-                          <p style="color: #ffffff; font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">Get your exact rate and find the best plan for you</p>
-                          <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 0 0 20px 0;">Call our Senior Advisor line — press 1 when prompted</p>
+                          <p style="color: #ffffff; font-size: 17px; font-weight: 700; margin: 0 0 8px 0;">Ready to see what you could save?</p>
+                          <p style="color: rgba(255,255,255,0.95); font-size: 15px; margin: 0 0 20px 0;">Call now — a Senior Advisor will give you your exact rate and find your perfect plan. Press 1 when prompted.</p>
                           <a href="${QUOTE_PHONE_TEL}" style="display: inline-block; background-color: #ffffff; color: #0284c7; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 700; font-size: 16px;">${QUOTE_PHONE_DISPLAY} ext 1</a>
                         </td>
                       </tr>
@@ -446,15 +421,17 @@ export async function sendLeadWelcomeEmail(data: {
     </html>
   `;
 
-  const textContent = `Dear ${data.firstName},
+  const textContent = `${data.firstName}, here's why 50,000+ families chose health sharing — and why you should too.
 
-Thank you for visiting MPB Health to explore your health-share options.
+Traditional insurance? Premiums that climb every year. Deductibles you'll never hit. Claim denials. Endless paperwork. You're paying for a system that works against you.
 
-${pricingText}
+Health sharing is different. Real people. Real savings. No middleman deciding what you can and can't have. You get the care you need — hospital, surgery, virtual care, prescriptions — without the insurance game. That's why families save hundreds every month and never look back.
 
-Health-share programs offer a great solution for unexpected medical bills.
+Why MPB? We're not a call center. We're advisors who actually care. One call. A real person. They'll walk you through every option, answer every question, and get you into the plan that fits — no pressure, no runaround.
 
-${planComparisonText ? `Your plan comparison:\n${planComparisonText}\n\n` : ''}Call our Senior Advisor line to get your exact rate and find the best plan that fits you: ${QUOTE_PHONE_DISPLAY} ext 1
+${planDetailsText}
+
+Ready to see what you could save? Call now — a Senior Advisor will give you your exact rate and find your perfect plan: ${QUOTE_PHONE_DISPLAY} ext 1 (press 1 when prompted)
 
 Watch how our programs work: ${videoUrl}
 
@@ -462,10 +439,11 @@ View your comparison: ${hasPlanData ? resultsUrl : welcomePageUrl}`;
 
   return sendEmail({
     to: data.email,
-    subject: `${data.firstName}, Your MPB Health Plan Comparison`,
+    subject: `${data.firstName}, why 50,000+ families switched to health sharing`,
     html,
     text: textContent,
-    replyTo: 'info@mympb.com'
+    replyTo: 'info@mympb.com',
+    emailType: 'lead-welcome',
   });
 }
 

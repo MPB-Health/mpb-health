@@ -124,8 +124,11 @@ export async function syncUserToItsts(params: SyncUserParams): Promise<boolean> 
 
     if (createErr) {
       if (createErr.message?.includes("already been registered")) {
-        const { data: users } = await client.auth.admin.listUsers({ page: 1, perPage: 1000 });
-        const found = users?.users?.find((u) => u.email === params.email);
+        let found: { id: string; email?: string } | undefined;
+        try {
+          const { data: existingUser } = await client.auth.admin.getUserByEmail(params.email);
+          found = existingUser?.user ?? undefined;
+        } catch { /* fallback below */ }
         if (found) {
           await client.from("profiles").upsert(
             { id: found.id, email: params.email, full_name: fullName, role: itstsRole, is_active: true, ...extras },

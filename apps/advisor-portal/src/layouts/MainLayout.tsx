@@ -286,7 +286,7 @@ export default function MainLayout() {
     });
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [loadNavigation]);
 

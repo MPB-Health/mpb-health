@@ -85,6 +85,10 @@ serve(async (req) => {
         subject,
         html,
         text: text || undefined,
+        tracking: {
+          open: true,
+          click: true,
+        },
         tags: [
           { name: 'type', value: 'crm_email' },
           ...(template_id ? [{ name: 'template_id', value: template_id }] : []),

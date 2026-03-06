@@ -188,6 +188,10 @@ serve(async (req) => {
       to,
       subject,
       html: finalHtml,
+      tracking: {
+        open: track_opens,
+        click: track_clicks,
+      },
     };
 
     // Optional fields

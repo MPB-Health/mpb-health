@@ -154,7 +154,7 @@ export default function QuickRateEstimateLeads() {
             <Calculator className="w-6 h-6 text-th-accent-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-th-text-primary">Quick Rate Estimate Leads</h1>
+            <h1 className="text-2xl font-bold text-th-text-primary">Julia's Quick Rate Leads</h1>
             <p className="text-sm text-th-text-secondary">
               Leads from the hero calculator and Quick Rate Estimate forms
             </p>

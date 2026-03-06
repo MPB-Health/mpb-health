@@ -397,6 +397,10 @@ async function sendEmail(
       to: [msg.to],
       subject: msg.subject,
       html: msg.html,
+      tracking: {
+        open: true,
+        click: true,
+      },
     }),
   });
 

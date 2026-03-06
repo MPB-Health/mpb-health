@@ -188,6 +188,10 @@ Manage notification preferences: ${unsubscribeUrl}
         subject: `New Bulletin: ${bulletin_title}`,
         html: htmlContent,
         text: textContent,
+        tracking: {
+          open: true,
+          click: true,
+        },
         tags: [
           { name: 'type', value: 'bulletin' },
           { name: 'bulletin_id', value: bulletin_id },

@@ -129,9 +129,14 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Find the user by email
-    const { data: users } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    const user = users?.users?.find((u) => u.email === payload.requester_email);
+    // Find the user by email (O(1) lookup instead of scanning all users)
+    let user: { id: string; email?: string } | undefined;
+    try {
+      const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(payload.requester_email);
+      user = existingUser?.user ?? undefined;
+    } catch {
+      user = undefined;
+    }
 
     if (!user) {
       log.info("User not found in monorepo, skipping notification", { email: payload.requester_email });

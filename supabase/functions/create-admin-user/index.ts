@@ -83,6 +83,10 @@ async function sendInviteEmail(email: string, firstName: string, tempPassword: s
       to: [email],
       subject: "Welcome to MPB Health Admin Portal",
       html,
+      tracking: {
+        open: true,
+        click: true,
+      },
     }),
   });
 

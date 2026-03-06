@@ -288,12 +288,13 @@ export class UserService {
 
   /** Single cross-portal user by ID (via SECURITY DEFINER RPC) */
   async getCrossPortalUser(userId: string): Promise<CrossPortalUser | null> {
-    // get_all_users_with_roles returns all users; filter client-side for single user
-    const { data, error } = await supabase.rpc('get_all_users_with_roles');
+    const { data, error } = await supabase.rpc('get_user_with_roles', {
+      target_user_id: userId,
+    });
     if (error) throw error;
 
     const users = (data || []) as CrossPortalUser[];
-    return users.find((u) => u.id === userId) ?? null;
+    return users[0] ?? null;
   }
 
   /** Send a password reset email via Supabase Auth */

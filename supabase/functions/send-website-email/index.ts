@@ -79,6 +79,10 @@ serve(async (req) => {
       to: recipients,
       subject,
       html,
+      tracking: {
+        open: true,
+        click: true,
+      },
     };
     if (text) payload.text = text;
     if (replyTo) payload.reply_to = replyTo;

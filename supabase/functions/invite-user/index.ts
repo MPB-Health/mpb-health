@@ -110,6 +110,10 @@ async function sendInviteEmail(
       to: [email],
       subject: `You've been invited to join ${orgName} on MPB Health`,
       html,
+      tracking: {
+        open: true,
+        click: true,
+      },
     }),
   });
 

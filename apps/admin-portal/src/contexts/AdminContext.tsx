@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import {
   userService,
@@ -128,13 +128,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id]);
 
-  // Subscribe to enrollment updates
+  // Subscribe to enrollment updates (debounced to prevent hammering)
+  const metricsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const channel = enrollmentService.subscribeToEnrollments(() => {
-      refreshMetrics();
+      if (metricsDebounceRef.current) clearTimeout(metricsDebounceRef.current);
+      metricsDebounceRef.current = setTimeout(() => {
+        refreshMetrics();
+      }, 2000);
     });
 
     return () => {
+      if (metricsDebounceRef.current) clearTimeout(metricsDebounceRef.current);
       supabase.removeChannel(channel);
     };
   }, []);

@@ -81,7 +81,7 @@ const navigationSections: NavSection[] = [
     label: 'Lead Management',
     items: [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
-      { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
+      { name: "Julia's Quick Rate Leads", href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
     ],
   },

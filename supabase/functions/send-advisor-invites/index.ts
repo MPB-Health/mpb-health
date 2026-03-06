@@ -225,6 +225,10 @@ Deno.serve(async (req: Request) => {
             to: [advisor.email],
             subject: "Your MPB Health Advisor Portal Account is Ready",
             html,
+            tracking: {
+              open: true,
+              click: true,
+            },
           }),
         });
 

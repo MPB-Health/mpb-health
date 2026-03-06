@@ -18,16 +18,24 @@ export default function Enrollments() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchDebounced, setSearchDebounced] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
 
+  // Debounce search input — prevent a query on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setSearchDebounced(searchQuery), 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
   useEffect(() => {
     const loadEnrollments = async () => {
+      setLoading(true);
       try {
         const data = await enrollmentService.getEnrollments({
           status: statusFilter || undefined,
           type: typeFilter || undefined,
-          search: searchQuery || undefined,
+          search: searchDebounced || undefined,
         });
         setEnrollments(data);
       } catch (err) {
@@ -38,7 +46,7 @@ export default function Enrollments() {
     };
 
     loadEnrollments();
-  }, [searchQuery, statusFilter, typeFilter]);
+  }, [searchDebounced, statusFilter, typeFilter]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

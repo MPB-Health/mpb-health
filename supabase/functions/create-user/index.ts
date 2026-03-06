@@ -143,6 +143,10 @@ async function sendInviteEmail(
       to: [email],
       subject: "Welcome to MPB Health – Your Account Is Ready",
       html,
+      tracking: {
+        open: true,
+        click: true,
+      },
     }),
   });
 

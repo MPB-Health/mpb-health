@@ -142,6 +142,13 @@ export default function TicketDetail() {
         <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error || 'Ticket not found'}</span>
+          <button
+            type="button"
+            onClick={loadDetail}
+            className="ml-auto px-3 py-1 bg-red-100 hover:bg-red-200 rounded text-sm font-medium transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

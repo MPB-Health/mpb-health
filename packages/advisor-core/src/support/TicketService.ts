@@ -307,6 +307,9 @@ export class TicketService {
    * @param opts    Optional overrides — `allowUnauthenticated` skips the auth
    *                guard and returns null instead of throwing.
    */
+  /** Request timeout — prevents infinite hangs if the edge function or ITSTS is down */
+  private static REQUEST_TIMEOUT_MS = 30_000; // 30 seconds
+
   private async call<T extends { success: boolean }>(
     action: string,
     body: Record<string, unknown> = {},
@@ -320,13 +323,20 @@ export class TicketService {
       throw new Error(`Authentication required — please sign in again [${correlationId}]`);
     }
 
-    const { data, error } = await supabase.functions.invoke<T>('ticket-proxy', {
+    // Wrap the invoke in a timeout so the UI never hangs indefinitely
+    const invokePromise = supabase.functions.invoke<T>('ticket-proxy', {
       body: { action, ...body },
       headers: {
         ...authHeader,
         'x-request-id': correlationId,
       },
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out [${correlationId}]`)), TicketService.REQUEST_TIMEOUT_MS),
+    );
+
+    const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
 
     if (error) {
       const msg = await extractFunctionError(error);
@@ -348,22 +358,18 @@ export class TicketService {
   // ── Advisor read methods ───────────────────────────────────────────────
 
   async getMyTickets(opts: ListTicketsOptions = {}): Promise<TicketListResult> {
-    // Unauthenticated → return empty list; no noisy 401 in console.
-    const authHeader = await getResolvedAuthHeader();
-    if (!authHeader) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Authentication required — please sign in again');
-      return { tickets: [], total: 0, page: opts.page ?? 1, per_page: opts.perPage ?? 20 };
-    }
-
+    // Use this.call() which already resolves auth via getResolvedAuthHeader().
+    // Previously this called getResolvedAuthHeader() separately, causing
+    // duplicate token refresh races when fired concurrently with getTicketStats().
     const data = await this.call<TicketListResult & { success: boolean }>('list', {
       status: opts.status,
       priority: opts.priority,
       search: opts.search,
       page: opts.page ?? 1,
       per_page: opts.perPage ?? 20,
-    });
+    }, { allowUnauthenticated: true });
 
+    if (!data) return { tickets: [], total: 0, page: opts.page ?? 1, per_page: opts.perPage ?? 20 };
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 

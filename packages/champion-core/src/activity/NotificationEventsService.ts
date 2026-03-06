@@ -128,10 +128,18 @@ export class NotificationEventsService {
   // REALTIME
   // =========================================================================
 
+  private _eventChannels = new Map<string, ReturnType<typeof supabase.channel>>();
+
   subscribeToEvents(
     userId: string,
     callback: (event: NotificationEvent) => void,
   ) {
+    // Remove any existing subscription for this user to prevent duplicates
+    const existing = this._eventChannels.get(userId);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
       .channel(`notification-events-${userId}`)
       .on(
@@ -148,13 +156,16 @@ export class NotificationEventsService {
       )
       .subscribe();
 
+    this._eventChannels.set(userId, channel);
     return channel;
   }
 
   unsubscribeFromEvents(userId: string) {
-    supabase.removeChannel(
-      supabase.channel(`notification-events-${userId}`),
-    );
+    const channel = this._eventChannels.get(userId);
+    if (channel) {
+      supabase.removeChannel(channel);
+      this._eventChannels.delete(userId);
+    }
   }
 }
 

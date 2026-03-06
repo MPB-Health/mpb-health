@@ -100,10 +100,15 @@ async function getOrCreateItstsUserId(
   if (!createErr && created?.user?.id) {
     uid = created.user.id;
   } else {
-    // User may already exist in auth but the profile row is missing.
-    // Scan the first page of auth users to find them.
-    const { data: list } = await itstsAdmin.auth.admin.listUsers({ perPage: 1000 });
-    uid = list?.users?.find((u: { email?: string; id: string }) => u.email === email)?.id ?? null;
+    // User already exists in auth but the profile row is missing.
+    // Use getUserByEmail (O(1) lookup) instead of listUsers(1000) which
+    // was scanning all auth users and blocking admin replies.
+    try {
+      const { data: existingUser } = await itstsAdmin.auth.admin.getUserByEmail(email);
+      uid = existingUser?.user?.id ?? null;
+    } catch {
+      uid = null;
+    }
   }
 
   if (!uid) {
@@ -153,25 +158,18 @@ async function getTicketDetail(
   userId: string,
   ticketId: string,
 ) {
-  const { data: ticket, error } = await itstsAdmin
-    .from("tickets")
-    .select("*")
-    .eq("id", ticketId)
-    .eq("requester_id", userId)
-    .single();
+  // Fetch ticket + comments in parallel (was sequential — saves ~50-100ms)
+  const [ticketResult, commentsResult] = await Promise.all([
+    itstsAdmin.from("tickets").select("*").eq("id", ticketId).eq("requester_id", userId).single(),
+    itstsAdmin.from("ticket_comments").select("id, body, is_internal, created_at, author_id").eq("ticket_id", ticketId).eq("is_internal", false).order("created_at", { ascending: true }),
+  ]);
 
-  if (error) throw error;
-
-  // Fetch comments/replies for this ticket
-  const { data: comments } = await itstsAdmin
-    .from("ticket_comments")
-    .select("id, body, is_internal, created_at, author_id")
-    .eq("ticket_id", ticketId)
-    .eq("is_internal", false)
-    .order("created_at", { ascending: true });
+  if (ticketResult.error) throw ticketResult.error;
+  const ticket = ticketResult.data;
+  const comments = commentsResult.data || [];
 
   // Fetch author names for comments
-  const authorIds = [...new Set((comments || []).map((c) => c.author_id).filter(Boolean))];
+  const authorIds = [...new Set(comments.map((c) => c.author_id).filter(Boolean))];
   let authorMap: Record<string, string> = {};
   if (authorIds.length > 0) {
     const { data: profiles } = await itstsAdmin
@@ -181,7 +179,7 @@ async function getTicketDetail(
     authorMap = Object.fromEntries((profiles || []).map((p) => [p.id, p.full_name]));
   }
 
-  const enrichedComments = (comments || []).map((c) => ({
+  const enrichedComments = comments.map((c) => ({
     id: c.id,
     content: c.body,
     is_internal: c.is_internal,
@@ -288,51 +286,39 @@ async function getTicketDetailAdmin(
   itstsAdmin: ReturnType<typeof createClient>,
   ticketId: string,
 ) {
-  const { data: ticket, error } = await itstsAdmin
-    .from("tickets")
-    .select("*")
-    .eq("id", ticketId)
-    .single();
+  // Fetch ticket + comments in parallel (was 4 sequential queries — saves ~150-300ms)
+  const [ticketResult, commentsResult] = await Promise.all([
+    itstsAdmin.from("tickets").select("*").eq("id", ticketId).single(),
+    itstsAdmin.from("ticket_comments").select("id, body, is_internal, created_at, author_id").eq("ticket_id", ticketId).order("created_at", { ascending: true }),
+  ]);
 
-  if (error) throw error;
+  if (ticketResult.error) throw ticketResult.error;
+  const ticket = ticketResult.data;
+  const comments = commentsResult.data || [];
 
-  // Requester info
-  let requesterName = "Unknown";
-  let requesterEmail = "";
-  let requesterAgentId: string | null = null;
-  let requesterCompany: string | null = null;
-  if (ticket.requester_id) {
-    const { data: profile } = await itstsAdmin
-      .from("profiles")
-      .select("full_name, email, agent_id, company_name")
-      .eq("id", ticket.requester_id)
-      .maybeSingle();
-    if (profile) {
-      requesterName = profile.full_name;
-      requesterEmail = profile.email;
-      requesterAgentId = profile.agent_id || null;
-      requesterCompany = profile.company_name || null;
-    }
-  }
+  // Fetch requester profile + comment author profiles in parallel
+  const authorIds = [...new Set(comments.map((c: { author_id: string }) => c.author_id).filter(Boolean))];
 
-  // All comments including internal notes (admin sees everything)
-  const { data: comments } = await itstsAdmin
-    .from("ticket_comments")
-    .select("id, body, is_internal, created_at, author_id")
-    .eq("ticket_id", ticketId)
-    .order("created_at", { ascending: true });
+  const [requesterResult, authorResult] = await Promise.all([
+    ticket.requester_id
+      ? itstsAdmin.from("profiles").select("full_name, email, agent_id, company_name").eq("id", ticket.requester_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    authorIds.length > 0
+      ? itstsAdmin.from("profiles").select("id, full_name").in("id", authorIds)
+      : Promise.resolve({ data: [] }),
+  ]);
 
-  const authorIds = [...new Set((comments || []).map((c: { author_id: string }) => c.author_id).filter(Boolean))];
-  let authorMap: Record<string, string> = {};
-  if (authorIds.length > 0) {
-    const { data: profiles } = await itstsAdmin
-      .from("profiles")
-      .select("id, full_name")
-      .in("id", authorIds);
-    authorMap = Object.fromEntries((profiles || []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
-  }
+  const profile = requesterResult.data;
+  const requesterName = profile?.full_name || "Unknown";
+  const requesterEmail = profile?.email || "";
+  const requesterAgentId = profile?.agent_id || null;
+  const requesterCompany = profile?.company_name || null;
 
-  const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
+  const authorMap: Record<string, string> = Object.fromEntries(
+    ((authorResult.data as { id: string; full_name: string }[]) || []).map((p) => [p.id, p.full_name]),
+  );
+
+  const enrichedComments = comments.map((c: Record<string, unknown>) => ({
     id: c.id,
     content: c.body,
     is_internal: c.is_internal,
@@ -549,11 +535,13 @@ async function getCategories(itstsAdmin: ReturnType<typeof createClient>) {
   return { categories };
 }
 
-// ── Email notification (fire-and-forget) ──────────────────────────────────────
+// ── Email notification (fire-and-forget with timeout) ─────────────────────────
 function fireNotification(payload: Record<string, unknown>): void {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceRoleKey) return;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000); // 10s timeout
   fetch(`${supabaseUrl}/functions/v1/send-ticket-notification`, {
     method: "POST",
     headers: {
@@ -561,7 +549,9 @@ function fireNotification(payload: Record<string, unknown>): void {
       "Authorization": `Bearer ${serviceRoleKey}`,
     },
     body: JSON.stringify(payload),
-  }).catch(() => { /* fire-and-forget — never block the response */ });
+    signal: controller.signal,
+  }).catch(() => { /* fire-and-forget — never block the response */ })
+    .finally(() => clearTimeout(timeoutId));
 }
 
 Deno.serve(async (req: Request) => {

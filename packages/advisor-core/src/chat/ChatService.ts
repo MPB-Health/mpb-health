@@ -70,6 +70,8 @@ async function extractFunctionError(error: unknown): Promise<string> {
 // ============================================================================
 
 export class ChatService {
+  private static REQUEST_TIMEOUT_MS = 30_000; // 30 seconds
+
   // Central edge function call method
   private async call<T extends { success: boolean }>(
     action: string,
@@ -80,13 +82,19 @@ export class ChatService {
 
     const correlationId = newCorrelationId();
 
-    const { data, error } = await supabase.functions.invoke<T>('chat-service', {
+    const invokePromise = supabase.functions.invoke<T>('chat-service', {
       body: { action, ...body },
       headers: {
         ...authHeader,
         'x-request-id': correlationId,
       },
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`[${correlationId}] Request timed out`)), ChatService.REQUEST_TIMEOUT_MS),
+    );
+
+    const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
 
     if (error) {
       const msg = await extractFunctionError(error);
@@ -197,10 +205,19 @@ export class ChatService {
   // REALTIME
   // =========================================================================
 
+  private _messageChannels = new Map<string, ReturnType<typeof supabase.channel>>();
+  private _conversationUpdatesChannel: ReturnType<typeof supabase.channel> | null = null;
+
   subscribeToMessages(
     conversationId: string,
     callback: (message: ChatMessage) => void,
   ) {
+    // Remove existing subscription to prevent duplicates on re-mount
+    const existing = this._messageChannels.get(conversationId);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
       .channel(`chat-messages-${conversationId}`)
       .on(
@@ -217,16 +234,24 @@ export class ChatService {
       )
       .subscribe();
 
+    this._messageChannels.set(conversationId, channel);
     return channel;
   }
 
   unsubscribeFromMessages(conversationId: string) {
-    supabase.removeChannel(
-      supabase.channel(`chat-messages-${conversationId}`),
-    );
+    const channel = this._messageChannels.get(conversationId);
+    if (channel) {
+      supabase.removeChannel(channel);
+      this._messageChannels.delete(conversationId);
+    }
   }
 
   subscribeToConversationUpdates(callback: (conversation: ChatConversation) => void) {
+    // Remove existing subscription to prevent duplicates
+    if (this._conversationUpdatesChannel) {
+      supabase.removeChannel(this._conversationUpdatesChannel);
+    }
+
     const channel = supabase
       .channel('chat-conversations-updates')
       .on(
@@ -242,13 +267,15 @@ export class ChatService {
       )
       .subscribe();
 
+    this._conversationUpdatesChannel = channel;
     return channel;
   }
 
   unsubscribeFromConversationUpdates() {
-    supabase.removeChannel(
-      supabase.channel('chat-conversations-updates'),
-    );
+    if (this._conversationUpdatesChannel) {
+      supabase.removeChannel(this._conversationUpdatesChannel);
+      this._conversationUpdatesChannel = null;
+    }
   }
 
   // =========================================================================

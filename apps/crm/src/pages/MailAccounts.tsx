@@ -280,7 +280,7 @@ export default function MailAccounts() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5" />
-                    {account.scopes?.length || 0} permissions
+                    {account.is_active ? 'Active' : 'Inactive'}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />

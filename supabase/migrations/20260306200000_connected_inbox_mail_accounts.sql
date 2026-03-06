@@ -20,7 +20,7 @@ END $$;
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS mail_accounts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id uuid NOT NULL REFERENCES crm_organizations(id) ON DELETE CASCADE,
+  org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   provider mail_provider NOT NULL,
   email_address text NOT NULL,
@@ -362,7 +362,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS mail_domains (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id uuid NOT NULL REFERENCES crm_organizations(id) ON DELETE CASCADE,
+  org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   domain text NOT NULL,
 
   -- Verification status
@@ -412,19 +412,19 @@ ALTER TABLE mail_domains ENABLE ROW LEVEL SECURITY;
 CREATE POLICY mail_domains_select ON mail_domains
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM crm_org_members
-      WHERE crm_org_members.org_id = mail_domains.org_id
-      AND crm_org_members.user_id = auth.uid()
+      SELECT 1 FROM org_memberships
+      WHERE org_memberships.org_id = mail_domains.org_id
+      AND org_memberships.user_id = auth.uid()
     )
   );
 
 CREATE POLICY mail_domains_manage ON mail_domains
   FOR ALL USING (
     EXISTS (
-      SELECT 1 FROM crm_org_members
-      WHERE crm_org_members.org_id = mail_domains.org_id
-      AND crm_org_members.user_id = auth.uid()
-      AND crm_org_members.role IN ('owner', 'admin')
+      SELECT 1 FROM org_memberships
+      WHERE org_memberships.org_id = mail_domains.org_id
+      AND org_memberships.user_id = auth.uid()
+      AND org_memberships.role IN ('owner', 'admin')
     )
   );
 
@@ -433,7 +433,7 @@ CREATE POLICY mail_domains_manage ON mail_domains
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS mail_sender_identities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id uuid NOT NULL REFERENCES crm_organizations(id) ON DELETE CASCADE,
+  org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   domain_id uuid NOT NULL REFERENCES mail_domains(id) ON DELETE CASCADE,
   email_address text NOT NULL,
   display_name text,
@@ -450,9 +450,9 @@ ALTER TABLE mail_sender_identities ENABLE ROW LEVEL SECURITY;
 CREATE POLICY mail_sender_identities_access ON mail_sender_identities
   FOR ALL USING (
     EXISTS (
-      SELECT 1 FROM crm_org_members
-      WHERE crm_org_members.org_id = mail_sender_identities.org_id
-      AND crm_org_members.user_id = auth.uid()
+      SELECT 1 FROM org_memberships
+      WHERE org_memberships.org_id = mail_sender_identities.org_id
+      AND org_memberships.user_id = auth.uid()
     )
   );
 
@@ -532,7 +532,7 @@ CREATE POLICY mail_audit_log_select ON mail_audit_log
 CREATE OR REPLACE FUNCTION encrypt_token(token text, key text)
 RETURNS bytea
 LANGUAGE sql IMMUTABLE SECURITY DEFINER
-SET search_path = public
+SET search_path = extensions, public
 AS $$
   SELECT pgp_sym_encrypt(token, key)
 $$;
@@ -540,7 +540,7 @@ $$;
 CREATE OR REPLACE FUNCTION decrypt_token(encrypted bytea, key text)
 RETURNS text
 LANGUAGE sql IMMUTABLE SECURITY DEFINER
-SET search_path = public
+SET search_path = extensions, public
 AS $$
   SELECT pgp_sym_decrypt(encrypted, key)
 $$;

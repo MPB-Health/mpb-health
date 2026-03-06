@@ -82,23 +82,19 @@ const EnhancedHero: React.FC = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <button
+              <Button
+                size="lg"
                 onClick={() => {
                   const calculator = document.getElementById('calculator');
                   if (calculator) {
                     calculator.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
                 }}
-                className="flex-1 sm:flex-initial"
+                className="flex-1 sm:flex-initial w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
               >
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
-                >
-                  Get Your Quote
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </button>
+                Get Your Quote
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
 
               <button
                 onClick={() => setShowVideo(!showVideo)}

@@ -1,8 +1,17 @@
-import { Heart, Activity, Brain, Pill, Shield, Stethoscope, PawPrint, LucideIcon } from 'lucide-react';
+import { Heart, Shield, Building2, Pill, Wallet, Stethoscope, LucideIcon } from 'lucide-react';
 
+/**
+ * Membership Priorities — aligned with Membership Overview (Agent Resource) PDF.
+ *
+ * IMPORTANT: Virtual Care ($0 unlimited), MPB Concierge, Pharmacy Discounts,
+ * Discounted Supplements, and Pet Telehealth come with ALL memberships.
+ * These priorities focus on what ACTUALLY differentiates plans.
+ */
 export interface MembershipPriority {
   id: string;
   label: string;
+  /** Plain-language label for forms — easier to scan */
+  shortLabel?: string;
   icon: LucideIcon;
   description: string;
   keywords: string[];
@@ -19,117 +28,141 @@ export interface PlanRecommendation {
 
 export const membershipPriorities: MembershipPriority[] = [
   {
-    id: 'primary-care',
-    label: 'Primary Care',
-    icon: Stethoscope,
-    description: 'Routine doctor visits and checkups',
-    keywords: ['doctor visits', 'annual physicals', 'wellness exams', 'preventative care'],
-  },
-  {
-    id: 'urgent-care',
-    label: 'Urgent Care',
-    icon: Activity,
-    description: 'Immediate medical attention for non-emergencies',
-    keywords: ['urgent care', 'walk-in clinic', 'immediate care', 'minor emergencies'],
-  },
-  {
-    id: 'virtual-behavioral-health',
-    label: 'Virtual Behavioral Health',
-    icon: Brain,
-    description: 'Counseling and virtual behavioral health services',
-    keywords: ['therapy', 'counseling', 'behavioral health', 'virtual behavioral health', 'telehealth'],
-  },
-  {
-    id: 'rx',
-    label: 'Prescriptions (RX)',
-    icon: Pill,
-    description: 'Prescription medication membership and discounts',
-    keywords: ['prescriptions', 'medications', 'pharmacy', 'rx discounts', 'drug membership'],
-  },
-  {
-    id: 'large-medical',
-    label: 'Large Medical Expenses',
+    id: 'medical-cost-sharing',
+    label: 'Medical Cost Sharing',
+    shortLabel: 'Hospital & surgery coverage',
     icon: Shield,
-    description: 'Major medical events and hospitalizations',
-    keywords: ['hospital', 'surgery', 'major medical', 'catastrophic', 'high-cost procedures'],
+    description: 'Hospital, surgery, major medical — community shares eligible expenses',
+    keywords: ['hospital', 'surgery', 'major medical', 'catastrophic', 'medical cost sharing'],
   },
   {
-    id: 'preventative',
-    label: 'Preventative Care',
+    id: 'hospital-debt-relief',
+    label: 'Hospital Debt Relief',
+    shortLabel: 'Help with existing medical bills',
+    icon: Wallet,
+    description: 'Reduce or eliminate existing medical debt (Debt Dismissal Program)',
+    keywords: ['medical debt', 'hospital bills', 'debt relief', 'debt dismissal'],
+  },
+  {
+    id: 'hsa-tax-benefits',
+    label: 'HSA & Tax Benefits',
+    shortLabel: 'Pre-tax savings (HSA)',
+    icon: Building2,
+    description: 'Pre-tax healthcare savings, IRS-compliant HSA',
+    keywords: ['HSA', 'tax deductible', 'self-employed', '1099', 'pre-tax'],
+  },
+  {
+    id: 'aca-compliance',
+    label: 'ACA Employer Compliance',
+    shortLabel: 'Small business / employer coverage',
+    icon: Building2,
+    description: 'Minimum Essential Coverage — satisfies employer mandate',
+    keywords: ['ACA', 'MEC', 'employer mandate', 'small business', 'compliance'],
+  },
+  {
+    id: 'preventive-care',
+    label: 'Preventive Care',
+    shortLabel: 'Checkups & wellness',
+    icon: Stethoscope,
+    description: 'Annual wellness, screenings, immunizations',
+    keywords: ['preventive', 'wellness', 'screenings', 'immunizations', 'annual checkup'],
+  },
+  {
+    id: 'prescriptions',
+    label: 'Prescriptions (RX)',
+    shortLabel: 'Prescription savings',
+    icon: Pill,
+    description: 'RX Valet ($0–$14.95) or pharmacy discounts',
+    keywords: ['prescriptions', 'medications', 'pharmacy', 'RX Valet'],
+  },
+  {
+    id: 'budget-friendly',
+    label: 'Budget-Friendly',
+    shortLabel: 'Lowest monthly cost',
     icon: Heart,
-    description: 'Preventive screenings and wellness care',
-    keywords: ['preventative', 'screenings', 'wellness', 'immunizations', 'health maintenance'],
-  },
-  {
-    id: 'pet-care',
-    label: 'Pet Care',
-    icon: PawPrint,
-    description: 'Optional pet insurance add-on',
-    keywords: ['pet insurance', 'veterinary', 'animal care', 'pet health'],
+    description: 'Lower monthly cost, essential protection',
+    keywords: ['affordable', 'budget', 'low cost', 'savings'],
   },
 ];
 
-// Plan membership strength matrix (0-10 scale)
+/**
+ * Plan strength matrix (0–10) — from Membership Overview PDF.
+ * Virtual Care, Concierge, Supplements, Pharmacy come with ALL plans.
+ */
 const planMembershipMatrix: Record<string, Record<string, number>> = {
+  'essentials': {
+    'medical-cost-sharing': 0,
+    'hospital-debt-relief': 10,
+    'hsa-tax-benefits': 0,
+    'aca-compliance': 0,
+    'preventive-care': 7,
+    'prescriptions': 6,
+    'budget-friendly': 9,
+  },
   'mec-essentials': {
-    'primary-care': 8,
-    'urgent-care': 7,
-    'mental-health': 6,
-    'rx': 5,
-    'large-medical': 3,
-    'preventative': 8,
-    'pet-care': 5,
+    'medical-cost-sharing': 0,
+    'hospital-debt-relief': 10,
+    'hsa-tax-benefits': 10,
+    'aca-compliance': 10,
+    'preventive-care': 9,
+    'prescriptions': 9,
+    'budget-friendly': 8,
   },
   'care-plus': {
-    'primary-care': 9,
-    'urgent-care': 9,
-    'mental-health': 8,
-    'rx': 7,
-    'large-medical': 9,
-    'preventative': 9,
-    'pet-care': 5,
+    'medical-cost-sharing': 10,
+    'hospital-debt-relief': 0,
+    'hsa-tax-benefits': 0,
+    'aca-compliance': 0,
+    'preventive-care': 8,
+    'prescriptions': 7,
+    'budget-friendly': 7,
   },
   'direct': {
-    'primary-care': 10,
-    'urgent-care': 9,
-    'mental-health': 8,
-    'rx': 7,
-    'large-medical': 7,
-    'preventative': 10,
-    'pet-care': 5,
+    'medical-cost-sharing': 10,
+    'hospital-debt-relief': 0,
+    'hsa-tax-benefits': 0,
+    'aca-compliance': 0,
+    'preventive-care': 10,
+    'prescriptions': 6,
+    'budget-friendly': 9,
   },
   'secure-hsa': {
-    'primary-care': 8,
-    'urgent-care': 8,
-    'mental-health': 8,
-    'rx': 7,
-    'large-medical': 10,
-    'preventative': 9,
-    'pet-care': 5,
+    'medical-cost-sharing': 10,
+    'hospital-debt-relief': 0,
+    'hsa-tax-benefits': 10,
+    'aca-compliance': 10,
+    'preventive-care': 9,
+    'prescriptions': 9,
+    'budget-friendly': 6,
   },
 };
 
-// Plan details for recommendations
+// From Membership Overview (Agent Resource) PDF
 const planDetails: Record<string, { name: string; tagline: string; bestFor: string[] }> = {
+  'essentials': {
+    name: 'Essentials',
+    tagline: 'Hospital debt relief + virtual care',
+    bestFor: ['Those with existing medical debt', 'Debt Dismissal Program eligible', 'Virtual care + discounts only'],
+  },
   'mec-essentials': {
     name: 'MEC+ Essentials',
-    tagline: 'Affordable basic membership',
-    bestFor: ['Budget-conscious families', 'Basic preventative care', 'Minimum essential membership'],
+    tagline: 'ACA MEC + Debt Dismissal + HSA',
+    bestFor: ['Small businesses (2–50 employees)', 'ACA employer mandate', 'Self-employed needing HSA + debt relief'],
   },
   'care-plus': {
     name: 'Care+',
-    tagline: 'Best overall value',
-    bestFor: ['Comprehensive membership', 'Families with children', 'Balanced protection'],
+    tagline: 'Medical cost sharing',
+    bestFor: ['Families wanting hospital/surgery sharing', 'Medical cost sharing', 'No HSA needed'],
   },
   'direct': {
     name: 'Direct',
-    tagline: 'Best for preventative care',
-    bestFor: ['Primary care focus', 'Wellness-oriented individuals', 'Frequent doctor visits'],
+    tagline: 'Limited preventive + medical sharing',
+    bestFor: ['Annual wellness, labs, screenings, immunizations', 'Wellness-focused', 'Budget-conscious'],
   },
   'secure-hsa': {
     name: 'Secure HSA',
-    tagline: 'Best for self-employed',
-    bestFor: ['HSA compatibility', 'Self-employed individuals', 'Major medical protection'],
+    tagline: 'Medical sharing + MEC + HSA + RX Valet',
+    bestFor: ['Self-employed, 1099, gig workers', 'HSA + tax advantages', 'Full protection + MEC'],
   },
 };
 
@@ -138,7 +171,7 @@ export function recommendPlans(selectedPriorities: string[]): PlanRecommendation
     return [];
   }
 
-  const plans = ['mec-essentials', 'care-plus', 'direct', 'secure-hsa'];
+  const plans = ['essentials', 'mec-essentials', 'care-plus', 'direct', 'secure-hsa'];
   const recommendations: PlanRecommendation[] = [];
 
   plans.forEach((planId) => {
@@ -148,46 +181,41 @@ export function recommendPlans(selectedPriorities: string[]): PlanRecommendation
     const details = planDetails[planId];
 
     selectedPriorities.forEach((priorityId) => {
-      const score = planMembership[priorityId] || 0;
+      const score = planMembership[priorityId] ?? 0;
       totalScore += score;
 
-      // Add reasons for strong matches
       if (score >= 9) {
         const priority = membershipPriorities.find((p) => p.id === priorityId);
         if (priority) {
-          reasons.push(`Excellent ${priority.label.toLowerCase()} membership`);
+          reasons.push(`Strong ${priority.label.toLowerCase()} match`);
         }
       }
     });
 
     const maxPossibleScore = selectedPriorities.length * 10;
-    const matchPercentage = Math.round((totalScore / maxPossibleScore) * 100);
+    const matchPercentage = maxPossibleScore > 0
+      ? Math.round((totalScore / maxPossibleScore) * 100)
+      : 0;
 
     recommendations.push({
       planId,
       planName: details.name,
       score: totalScore,
       matchPercentage,
-      reasons: reasons.slice(0, 3), // Top 3 reasons
+      reasons: reasons.slice(0, 3),
       bestFor: details.bestFor,
     });
   });
 
-  // Sort by score (highest first)
   recommendations.sort((a, b) => b.score - a.score);
 
-  // Add generic reasons for top plans if specific reasons are missing
   recommendations.forEach((rec, index) => {
     if (rec.reasons.length === 0 && index < 2) {
-      if (rec.planId === 'care-plus') {
-        rec.reasons.push('Well-rounded membership for all priorities');
-      } else if (rec.planId === 'direct') {
-        rec.reasons.push('Strong preventative and primary care focus');
-      } else if (rec.planId === 'secure-hsa') {
-        rec.reasons.push('HSA-compatible with comprehensive protection');
-      } else if (rec.planId === 'mec-essentials') {
-        rec.reasons.push('Budget-friendly essential membership');
-      }
+      if (rec.planId === 'care-plus') rec.reasons.push('Full medical cost sharing');
+      else if (rec.planId === 'direct') rec.reasons.push('Preventive care + medical sharing');
+      else if (rec.planId === 'secure-hsa') rec.reasons.push('HSA + medical sharing + MEC');
+      else if (rec.planId === 'mec-essentials') rec.reasons.push('ACA compliance + debt relief + HSA');
+      else if (rec.planId === 'essentials') rec.reasons.push('Hospital debt relief + virtual care');
     }
   });
 
@@ -208,7 +236,5 @@ export function getRecommendedPlanIds(selectedPriorities: string[], limit: numbe
   return recommendations.slice(0, limit).map((rec) => rec.planId);
 }
 
-// Re-export old names for backwards compatibility during migration
 export const coveragePriorities = membershipPriorities;
 export type CoveragePriority = MembershipPriority;
-

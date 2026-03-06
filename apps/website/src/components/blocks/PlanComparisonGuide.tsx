@@ -18,7 +18,7 @@ const comparisonData: ComparisonCategory[] = [
   {
     name: 'Membership Overview',
     rows: [
-      { feature: 'Best For', carePlus: 'Individuals & families seeking protection from large medical expenses', direct: 'Those who value preventive care and DPC', essentials: 'Young, healthy individuals seeking virtual care' },
+      { feature: 'Best For', carePlus: 'Individuals & families seeking protection from large medical expenses', direct: 'Those who value preventive care and DPC', essentials: 'Those seeking hospital debt relief (no medical cost sharing)' },
       { feature: 'Monthly Contribution', carePlus: 'From $166/month*', direct: 'From $201/month*', essentials: 'From $50/month*' },
       { feature: 'Initial Unshareable Amount (IUA)', carePlus: '$1,250, $2,500, $5,000', direct: '$1,250, $2,500, $5,000', essentials: 'N/A' },
     ],
@@ -155,7 +155,7 @@ export const PlanComparisonGuide: React.FC<PlanComparisonGuideProps> = ({
                 </th>
                 <th className="text-center py-4 px-4 text-white font-semibold w-1/4">
                   <div>Essentials</div>
-                  <span className="inline-block mt-1 px-2 py-0.5 bg-success-500 text-white text-xs rounded-full">Best for Virtual Care</span>
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-success-500 text-white text-xs rounded-full">Best for Debt Relief</span>
                 </th>
               </tr>
             </thead>

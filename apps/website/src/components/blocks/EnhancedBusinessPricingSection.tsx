@@ -29,7 +29,7 @@ const businessPlansData: PlanData[] = [
     name: 'MEC+Essentials',
     planId: 'mec-essentials',
     price: '$125',
-    description: 'Perfect for small businesses and contractors who want Minimum Essential Coverage with virtual care access and basic protection.',
+    description: 'ACA MEC + Debt Dismissal + HSA for small businesses (2–50 employees).',
     whoIsThisFor: 'Best for: Cost-conscious businesses & 1099 professionals',
     tier: 'basic',
     enrollUrl: 'https://mec.enrollmpb.com/',

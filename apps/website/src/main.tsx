@@ -1,12 +1,9 @@
-import React, { StrictMode, Suspense } from 'react';
+import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
-import { lazyDefault } from './utils/lazyUtils';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
-
-// Lazy load the App itself for better error isolation
-const App = lazyDefault(() => import('./App'));
+import App from './App';
 
 // Filter out StackBlitz platform errors from console
 if (import.meta.env.DEV) {
@@ -49,22 +46,10 @@ if (!container) {
 
   const root = createRoot(container);
 
-  // Loading fallback component
-  const LoadingFallback = () => (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e8f3fc] to-white">
-      <div className="text-center">
-        <div className="inline-block w-16 h-16 border-4 border-[#0a4c8f] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-lg font-medium text-[#0a4c8f]">Loading...</p>
-      </div>
-    </div>
-  );
-
   root.render(
     <StrictMode>
       <LazyLoadErrorBoundary>
-        <Suspense fallback={<LoadingFallback />}>
-          <App />
-        </Suspense>
+        <App />
       </LazyLoadErrorBoundary>
     </StrictMode>
   );

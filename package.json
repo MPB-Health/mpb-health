@@ -3,8 +3,9 @@
   "private": true,
   "packageManager": "pnpm@9.15.4",
   "scripts": {
-    "dev": "turbo run dev",
-    "dev:website": "turbo run dev --filter=website",
+    "dev": "bash scripts/dev-website.sh",
+    "dev:website": "bash scripts/dev-website.sh",
+    "setup": "bash -c 'export PATH=\"$HOME/Library/pnpm:$PATH\" && pnpm install'",
     "dev:crm": "turbo run dev --filter=@mpbhealth/crm",
     "dev:advisor": "turbo run dev --filter=@mpbhealth/advisor-portal",
     "dev:admin": "turbo run dev --filter=admin-portal",

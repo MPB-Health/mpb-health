@@ -21,7 +21,7 @@ export function EnrollmentFAQ() {
     },
     {
       question: 'What memberships are available?',
-      answer: 'We offer three memberships: (1) Care+ includes comprehensive sharing with bundled direct primary care, (2) Direct offers cost sharing with optional DPC add-on, and (3) Essentials provides virtual care access and basic protection. All memberships include transparent pricing and no hidden fees.',
+      answer: 'We offer five memberships: Care+, Direct, Secure HSA, Essentials, and MEC+ Essentials. All include $0 unlimited virtual care, MPB Concierge, and pharmacy discounts. Essentials focuses on hospital debt relief (no medical cost sharing); Care+, Direct, and Secure HSA include medical cost sharing. All memberships include transparent pricing and no hidden fees.',
     },
     {
       question: 'Do you serve my area?',

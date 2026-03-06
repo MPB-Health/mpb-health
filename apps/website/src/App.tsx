@@ -37,6 +37,7 @@ const FAQ = lazyAuto(() => import('./pages/FAQ'));
 const JoinOurTeam = lazyAuto(() => import('./pages/JoinOurTeam'));
 const GetStarted = lazyAuto(() => import('./pages/GetStarted'));
 const GetAQuote = lazyAuto(() => import('./pages/GetAQuote'));
+const QuoteResults = lazyAuto(() => import('./pages/QuoteResults'));
 const HowItWorksPage = lazyAuto(() => import('./pages/HowItWorks'));
 const Enrollment = lazyAuto(() => import('./pages/Enrollment'));
 const PlanComparison = lazyAuto(() => import('./pages/PlanComparison'));
@@ -291,6 +292,7 @@ const App = () => {
                   <Route path="/get-started" element={<GetStarted />} />
                   <Route path="/get-a-quote" element={<GetAQuote />} />
                   <Route path="/quote" element={<Navigate to="/get-a-quote" replace />} />
+                  <Route path="/quote/results" element={<QuoteResults />} />
                   <Route path="/calculator" element={<Navigate to="/get-started" replace />} />
                   <Route path="/individuals-and-families" element={<IndividualsAndFamilies />} />
                   <Route path="/businesses-and-organizations" element={<BusinessesOrganizations />} />

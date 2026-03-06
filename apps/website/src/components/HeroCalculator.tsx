@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,18 +11,25 @@ import { Button } from './ui/button';
 import { Input } from './ui/Input';
 import { Label } from './ui/Label';
 import { Select } from './ui/Select';
-import { Calculator, Sparkles, CheckCircle2, X, ArrowLeft, BarChart3 } from 'lucide-react';
-import { estimateAllMemberships, AllMembershipsEstimate } from '../lib/newRateEngine';
+import {
+  Calculator,
+  Sparkles,
+  X,
+  ArrowLeft,
+  ArrowRight,
+  Shield,
+  Users,
+  Lock,
+} from 'lucide-react';
+import { estimateAllMemberships } from '../lib/newRateEngine';
 import { useAnalytics, AnalyticsEvents } from '../lib/analytics';
 import { CompactMembershipPrioritySelector } from './CompactMembershipPrioritySelector';
-import { AllPlansComparisonTable } from './AllPlansComparisonTable';
-import { recommendPlans, PlanRecommendation } from '../lib/membershipPriorities';
+import { recommendPlans } from '../lib/membershipPriorities';
 import { leadSubmissionService } from '../lib/leadSubmissionService';
+import { cn, fmtMoney } from '../lib/utils';
 
 const log = createClientLogger('HeroCalculator');
 
-// Simplified schema - no plan selection required upfront
-// Uses correct membership types to match pricing: MemberOnly, MemberSpouse, MemberChild, MemberFamily
 const heroCalculatorSchema = z.object({
   householdType: z.enum(['member-only', 'member-spouse', 'member-child', 'member-family']),
   state: z.string().min(2, 'State is required'),
@@ -35,28 +43,20 @@ const heroCalculatorSchema = z.object({
   phone: z.string().optional(),
 }).refine(
   (data) => {
-    // Spouse age required for member-spouse and member-family
     if (data.householdType === 'member-spouse' || data.householdType === 'member-family') {
       return data.spouseAge !== undefined && data.spouseAge >= 18 && data.spouseAge <= 64;
     }
     return true;
   },
-  {
-    message: 'Spouse age is required',
-    path: ['spouseAge'],
-  }
+  { message: 'Spouse age is required', path: ['spouseAge'] }
 ).refine(
   (data) => {
-    // Dependents required for member-child and member-family
     if (data.householdType === 'member-child' || data.householdType === 'member-family') {
       return data.dependentsCount !== undefined && data.dependentsCount >= 1;
     }
     return true;
   },
-  {
-    message: 'Number of children is required',
-    path: ['dependentsCount'],
-  }
+  { message: 'Number of children is required', path: ['dependentsCount'] }
 );
 
 type HeroCalculatorInput = z.infer<typeof heroCalculatorSchema>;
@@ -66,38 +66,36 @@ const states = [
   'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
   'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
   'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WV', 'WI', 'WY',
 ];
 
-// Household types matching actual pricing structure
 const householdTypes = [
-  { value: 'member-only', label: 'Just Me', icon: '👤', description: 'Individual member' },
+  { value: 'member-only', label: 'Just Me', icon: '👤', description: 'Individual' },
   { value: 'member-spouse', label: 'Me + Spouse', icon: '👥', description: 'No children' },
   { value: 'member-child', label: 'Me + Kids', icon: '👨‍👧', description: 'Single parent' },
   { value: 'member-family', label: 'Full Family', icon: '👨‍👩‍👧‍👦', description: 'Spouse + kids' },
 ];
 
+const TOTAL_STEPS = 3;
+
 export default function HeroCalculator() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [step, setStep] = useState(1);
   const [isCalculating, setIsCalculating] = useState(false);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const { track } = useAnalytics();
-
-  // New state for all-plans comparison
-  const [allPlansEstimate, setAllPlansEstimate] = useState<AllMembershipsEstimate | null>(null);
-  const [recommendations, setRecommendations] = useState<PlanRecommendation[]>([]);
-  const [traditionalCost, setTraditionalCost] = useState<number>(0);
-  const [showResults, setShowResults] = useState(false);
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    reset,
+    trigger,
     formState: { errors },
-    reset: _reset,
   } = useForm<HeroCalculatorInput>({
     resolver: zodResolver(heroCalculatorSchema),
     mode: 'onChange',
@@ -116,39 +114,69 @@ export default function HeroCalculator() {
   const watchedFirstName = watch('firstName');
   const watchedLastName = watch('lastName');
   const watchedEmail = watch('email');
+  const watchedPhone = watch('phone');
 
   const estimateTraditionalInsurance = (householdType: string, age: number): number => {
-    let baseCost = 0;
-
-    switch (householdType) {
-      case 'member-only':
-        baseCost = 475;
-        break;
-      case 'member-spouse':
-        baseCost = 950;
-        break;
-      case 'member-child':
-        baseCost = 850; // Single parent typically less than couple
-        break;
-      case 'member-family':
-        baseCost = 1350;
-        break;
-    }
-
+    const baseCost = { 'member-only': 475, 'member-spouse': 950, 'member-child': 850, 'member-family': 1350 }[householdType] ?? 475;
     const ageFactor = age < 30 ? 0.85 : age < 40 ? 1.0 : age < 50 ? 1.2 : age < 60 ? 1.5 : 1.8;
     return Math.round(baseCost * ageFactor);
   };
+
+  const canProceedStep1 = () => {
+    if (!watchedState || !watchedAge) return false;
+    if (watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') {
+      return watchedSpouseAge !== undefined && watchedSpouseAge >= 18 && watchedSpouseAge <= 64;
+    }
+    if (watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') {
+      return watchedDependentsCount !== undefined && watchedDependentsCount >= 1;
+    }
+    return true;
+  };
+
+  const canProceedStep2 = () => selectedPriorities.length > 0;
+
+  // Pre-fill form when returning from "Edit your quote"
+  useEffect(() => {
+    const state = location.state as { editQuote?: boolean; formData?: Record<string, unknown> } | undefined;
+    if (state?.editQuote && state?.formData) {
+      const fd = state.formData;
+      reset({
+        householdType: (fd.householdType as HeroCalculatorInput['householdType']) ?? 'member-only',
+        state: (fd.state as string) ?? '',
+        primaryAge: (fd.primaryAge as number) ?? 18,
+        spouseAge: fd.spouseAge as number | undefined,
+        dependentsCount: fd.dependentsCount as number | undefined,
+        membershipPriorities: (fd.membershipPriorities as string[]) ?? [],
+        firstName: (fd.firstName as string) ?? '',
+        lastName: (fd.lastName as string) ?? '',
+        email: (fd.email as string) ?? '',
+        phone: fd.phone as string | undefined,
+      });
+      setSelectedPriorities((fd.membershipPriorities as string[]) ?? []);
+      setStep(3);
+    }
+  }, [location.state, reset]);
+
+  const handleNextStep = async () => {
+    if (step === 1) {
+      const fields: (keyof HeroCalculatorInput)[] = ['state', 'primaryAge'];
+      if (watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') fields.push('spouseAge');
+      if (watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') fields.push('dependentsCount');
+      const valid = await trigger(fields);
+      if (valid && canProceedStep1()) setStep(2);
+    } else if (step === 2 && canProceedStep2()) {
+      setStep(3);
+    }
+  };
+
+  const handlePrevStep = () => setStep(Math.max(1, step - 1));
 
   const onSubmit = async (data: HeroCalculatorInput) => {
     setIsCalculating(true);
     setIsSubmittingLead(true);
     setSubmissionError(null);
-    setShowSuccessMessage(false);
-
-    log.info('Starting form submission with all-plans comparison...');
 
     try {
-      // Calculate estimates for ALL plans at once
       const comparisonInput = {
         householdType: data.householdType,
         state: data.state,
@@ -164,10 +192,6 @@ export default function HeroCalculator() {
       const planRecommendations = recommendPlans(data.membershipPriorities || []);
       const traditional = estimateTraditionalInsurance(data.householdType, data.primaryAge);
 
-      log.info('All plans estimates:', allEstimates);
-      log.info('Recommendations:', planRecommendations);
-
-      // Build the all_plan_rates object for storage
       const allPlanRates: Record<string, any> = {};
       allEstimates.plans.forEach(plan => {
         allPlanRates[plan.planId] = {
@@ -179,15 +203,7 @@ export default function HeroCalculator() {
         };
       });
 
-      // Submit the lead with all plan rates
-      log.info('Submitting lead with all plan comparisons:', {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email
-      });
-
-      // Calculate household size based on membership type
-      let householdSize = 1; // member-only starts with 1
+      let householdSize = 1;
       if (data.householdType === 'member-spouse') householdSize = 2;
       else if (data.householdType === 'member-child') householdSize = 1 + (data.dependentsCount || 0);
       else if (data.householdType === 'member-family') householdSize = 2 + (data.dependentsCount || 0);
@@ -209,7 +225,6 @@ export default function HeroCalculator() {
           spouse_age: data.spouseAge,
           dependents_count: data.dependentsCount,
           membership_priorities: data.membershipPriorities,
-          // NEW: All plan rates instead of single plan
           all_plan_rates: allPlanRates,
           priorities_matched: data.membershipPriorities,
           traditional_cost_estimate: traditional,
@@ -217,22 +232,6 @@ export default function HeroCalculator() {
           best_match_percentage: planRecommendations[0]?.matchPercentage || 0,
         },
       });
-
-      log.info('Submission result:', submissionResult);
-
-      if (submissionResult.success) {
-        log.info('Submission successful!');
-        setShowSuccessMessage(true);
-        setAllPlansEstimate(allEstimates);
-        setRecommendations(planRecommendations);
-        setTraditionalCost(traditional);
-        setShowResults(true);
-        setTimeout(() => setShowSuccessMessage(false), 8000);
-      } else {
-        console.error('[HeroCalculator] Submission failed:', submissionResult.error);
-        setSubmissionError(submissionResult.error || 'Failed to submit your information. Please try again.');
-        return;
-      }
 
       track({
         event: AnalyticsEvents.CALCULATE_RATE,
@@ -250,386 +249,311 @@ export default function HeroCalculator() {
           email_captured: true,
         },
       });
+
+      navigate('/quote/results', {
+        replace: true,
+        state: {
+          estimates: allEstimates,
+          recommendations: planRecommendations,
+          traditionalCost: traditional,
+          email: data.email,
+          submissionSuccess: submissionResult.success,
+          submissionError: submissionResult.success
+            ? undefined
+            : submissionResult.error || 'We couldn\'t save your info. Your comparison is below — please reach out or try again.',
+          formData: {
+            householdType: data.householdType,
+            state: data.state,
+            primaryAge: data.primaryAge,
+            spouseAge: data.spouseAge,
+            dependentsCount: data.dependentsCount,
+            membershipPriorities: data.membershipPriorities || [],
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+          },
+        },
+      });
     } catch (error) {
-      console.error('[HeroCalculator] Error submitting lead:', error);
-      setSubmissionError(
-        error instanceof Error
-          ? error.message
-          : 'An unexpected error occurred. Please try again.'
-      );
+      console.error('[HeroCalculator] Error:', error);
+      setSubmissionError(error instanceof Error ? error.message : 'An unexpected error occurred.');
     } finally {
       setIsCalculating(false);
       setIsSubmittingLead(false);
     }
   };
 
-  // Handle going back to form from results
-  const handleBackToForm = () => {
-    setShowResults(false);
-    setAllPlansEstimate(null);
-    setRecommendations([]);
-  };
-
-  // If showing results, display the comparison table
-  if (showResults && allPlansEstimate) {
-    return (
-      <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-5 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                <BarChart3 className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-base leading-tight">Your Plan Comparison</h3>
-                <p className="text-white/90 text-xs">Compare all options side-by-side</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleBackToForm}
-              className="flex items-center gap-1 text-white/80 hover:text-white text-xs font-medium transition-colors"
-            >
-              <ArrowLeft className="h-3 w-3" />
-              New Quote
-            </button>
-          </div>
-        </div>
-
-        <CardContent className="p-5">
-          {showSuccessMessage && (
-            <div className="bg-green-50 border-2 border-green-500 rounded-lg p-3 mb-4 animate-in fade-in slide-in-from-top-1 duration-300">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="text-sm font-bold text-green-900 mb-1">Success! Your Rates Are Ready</h4>
-                  <p className="text-xs text-green-800 leading-relaxed">
-                    We've sent your personalized rate comparison to <strong>{watchedEmail}</strong>. 
-                    A health advisor will contact you shortly to discuss your options.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <AllPlansComparisonTable
-            estimates={allPlansEstimate}
-            recommendations={recommendations}
-            traditionalCostEstimate={traditionalCost}
-          />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Show the input form
   return (
-    <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-5 py-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-            <Calculator className="h-4 w-4 text-white" />
+    <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm overflow-hidden max-w-lg mx-auto">
+      {/* Header with trust signals */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-600 px-5 py-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+        <div className="relative flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+            <Calculator className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="text-white font-bold text-base leading-tight">Quick Rate Estimate</h3>
-            <p className="text-white/90 text-xs">Compare all plans in 30 seconds</p>
+            <h3 className="text-white font-bold text-lg leading-tight">Quick Rate Estimate</h3>
+            <p className="text-white/90 text-sm">Compare all plans in 30 seconds</p>
           </div>
+        </div>
+        <div className="relative mt-3 flex items-center gap-4 text-white/90 text-xs">
+          <span className="flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            50,000+ families
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Shield className="h-3.5 w-3.5" />
+            Secure & private
+          </span>
         </div>
       </div>
 
-      <CardContent className="p-5">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-700">Who's Covered?</Label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {householdTypes.map((type) => (
-                <button
-                  key={type.value}
-                  type="button"
-                  onClick={() => setValue('householdType', type.value as any)}
-                  className={`
-                    p-2 rounded-lg border-2 transition-all text-center
-                    ${watchedHouseholdType === type.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }
-                  `}
-                >
-                  <div className="text-lg mb-0.5">{type.icon}</div>
-                  <div className="text-[10px] font-semibold text-gray-900">{type.label}</div>
-                  <div className="text-[9px] text-gray-500">{type.description}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Progress bar */}
+      <div className="h-1 bg-gray-100">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500 ease-out"
+          style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+        />
+      </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="hero-state" className="text-xs font-semibold text-gray-700">State</Label>
-              <Select
-                id="hero-state"
-                {...register('state')}
-                className="h-9 text-sm"
-              >
-                <option value="">Select</option>
-                {states.map((state) => (
-                  <option key={state} value={state}>{state}</option>
+      <CardContent className="p-5 sm:p-6">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Step 1: Household & location */}
+          {step === 1 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
+              <div>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 1 of 3</p>
+                <h4 className="text-base font-bold text-gray-900">Who&apos;s covered?</h4>
+                <p className="text-sm text-gray-500 mt-0.5">Tell us about your household</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {householdTypes.map((type) => (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => setValue('householdType', type.value as any)}
+                    className={cn(
+                      'p-3 rounded-xl border-2 transition-all text-center min-h-[72px] flex flex-col items-center justify-center',
+                      watchedHouseholdType === type.value
+                        ? 'border-blue-500 bg-blue-50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    )}
+                  >
+                    <span className="text-2xl mb-1">{type.icon}</span>
+                    <span className="text-xs font-semibold text-gray-900">{type.label}</span>
+                    <span className="text-[10px] text-gray-500">{type.description}</span>
+                  </button>
                 ))}
-              </Select>
-              {errors.state && (
-                <p className="text-[10px] text-red-600">{errors.state.message}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="hero-state" className="text-sm font-semibold text-gray-700">State</Label>
+                  <Select id="hero-state" {...register('state')} className="h-11 text-sm">
+                    <option value="">Select</option>
+                    {states.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </Select>
+                  {errors.state && <p className="text-xs text-red-600">{errors.state.message}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="hero-age" className="text-sm font-semibold text-gray-700">Your Age</Label>
+                  <Input
+                    id="hero-age"
+                    type="number"
+                    min={18}
+                    max={64}
+                    placeholder="e.g., 35"
+                    className="h-11 text-sm"
+                    {...register('primaryAge', { valueAsNumber: true })}
+                  />
+                  {errors.primaryAge && <p className="text-xs text-red-600">{errors.primaryAge.message}</p>}
+                </div>
+              </div>
+
+              {(watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') && (
+                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 animate-in fade-in duration-200">
+                  <Label htmlFor="hero-spouse-age" className="text-sm font-semibold text-gray-700">Spouse Age</Label>
+                  <Input
+                    id="hero-spouse-age"
+                    type="number"
+                    min={18}
+                    max={64}
+                    placeholder="e.g., 33"
+                    className="h-11 text-sm bg-white mt-1.5"
+                    {...register('spouseAge', { valueAsNumber: true })}
+                  />
+                  {errors.spouseAge && <p className="text-xs text-red-600 mt-1">{errors.spouseAge.message}</p>}
+                </div>
+              )}
+
+              {(watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') && (
+                <div className="p-4 bg-green-50 rounded-xl border border-green-100 animate-in fade-in duration-200">
+                  <Label htmlFor="hero-dependents" className="text-sm font-semibold text-gray-700"># of Children (under 26)</Label>
+                  <Input
+                    id="hero-dependents"
+                    type="number"
+                    min={1}
+                    max={10}
+                    placeholder="e.g., 2"
+                    className="h-11 text-sm bg-white mt-1.5"
+                    {...register('dependentsCount', { valueAsNumber: true })}
+                  />
+                  {errors.dependentsCount && <p className="text-xs text-red-600 mt-1">{errors.dependentsCount.message}</p>}
+                </div>
               )}
             </div>
+          )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="hero-age" className="text-xs font-semibold text-gray-700">Your Age</Label>
-              <Input
-                id="hero-age"
-                type="number"
-                min={18}
-                max={64}
-                placeholder="e.g., 35"
-                className="h-9 text-sm"
-                {...register('primaryAge', { valueAsNumber: true })}
+          {/* Step 2: Priorities */}
+          {step === 2 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
+              <div>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 2 of 3</p>
+                <h4 className="text-base font-bold text-gray-900">What matters most?</h4>
+                <p className="text-sm text-gray-500 mt-0.5">We&apos;ll match you to the best plan</p>
+              </div>
+
+              <CompactMembershipPrioritySelector
+                selectedPriorities={selectedPriorities}
+                onChange={(p) => {
+                  setSelectedPriorities(p);
+                  setValue('membershipPriorities', p);
+                }}
+                className=""
               />
-              {errors.primaryAge && (
-                <p className="text-[10px] text-red-600">{errors.primaryAge.message}</p>
+              {errors.membershipPriorities && (
+                <p className="text-xs text-red-600">{errors.membershipPriorities.message}</p>
               )}
             </div>
-          </div>
-
-          {/* Show spouse age for member-spouse and member-family */}
-          {(watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') && (
-            <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200 animate-in fade-in slide-in-from-top-1 duration-200">
-              <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide">
-                Spouse Details
-              </p>
-              <div className="space-y-1.5">
-                <Label htmlFor="hero-spouse-age" className="text-xs font-semibold text-gray-700">Spouse Age *</Label>
-                <Input
-                  id="hero-spouse-age"
-                  type="number"
-                  min={18}
-                  max={64}
-                  placeholder="e.g., 33"
-                  className="h-9 text-sm bg-white"
-                  {...register('spouseAge', { valueAsNumber: true })}
-                />
-                {errors.spouseAge && (
-                  <p className="text-[10px] text-red-600">{errors.spouseAge.message}</p>
-                )}
-              </div>
-            </div>
           )}
 
-          {/* Show children count for member-child and member-family */}
-          {(watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') && (
-            <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200 animate-in fade-in slide-in-from-top-1 duration-200">
-              <p className="text-[10px] font-semibold text-green-700 uppercase tracking-wide">
-                Children Details
-              </p>
-              <div className="space-y-1.5">
-                <Label htmlFor="hero-dependents" className="text-xs font-semibold text-gray-700"># of Children (under 26) *</Label>
-                <Input
-                  id="hero-dependents"
-                  type="number"
-                  min={1}
-                  max={10}
-                  placeholder="e.g., 2"
-                  className="h-9 text-sm bg-white"
-                  {...register('dependentsCount', { valueAsNumber: true })}
-                />
-                {errors.dependentsCount && (
-                  <p className="text-[10px] text-red-600">{errors.dependentsCount.message}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-700">What's Most Important to You?</Label>
-            <CompactMembershipPrioritySelector
-              selectedPriorities={selectedPriorities}
-              onChange={(priorities) => {
-                setSelectedPriorities(priorities);
-                setValue('membershipPriorities', priorities);
-              }}
-            />
-            {errors.membershipPriorities && (
-              <p className="text-[10px] text-red-600">{errors.membershipPriorities.message}</p>
-            )}
-          </div>
-
-          {/* Name and Email - Always visible now (no plan selection needed) */}
-          {selectedPriorities.length > 0 && (
-            <>
-              <div className="pt-2 border-t border-gray-100">
-                <p className="text-xs text-gray-600 mb-3 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                  <span>Enter your details to see rates for <strong>all plans</strong></span>
-                </p>
+          {/* Step 3: Contact */}
+          {step === 3 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
+              <div>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 3 of 3</p>
+                <h4 className="text-base font-bold text-gray-900">Get your personalized comparison</h4>
+                <p className="text-sm text-gray-500 mt-0.5">A health advisor will send your results and reach out to discuss options</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                <div className="space-y-1.5">
-                  <Label htmlFor="hero-first-name" className="text-xs font-semibold text-gray-700">
-                    First Name
-                  </Label>
-                  <Input
-                    id="hero-first-name"
-                    type="text"
-                    placeholder="John"
-                    className="h-9 text-sm"
-                    {...register('firstName')}
-                  />
-                  {errors.firstName && (
-                    <p className="text-[10px] text-red-600">{errors.firstName.message}</p>
-                  )}
+              {/* Savings preview */}
+              {canProceedStep1() && watchedState && watchedAge && (
+                <div className="p-4 bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-xl border-2 border-emerald-200">
+                  <p className="text-sm font-semibold text-emerald-900">Your estimated savings</p>
+                  <p className="text-emerald-800 mt-1 text-sm">
+                    Families like yours typically save{' '}
+                    <strong>{fmtMoney(Math.round(estimateTraditionalInsurance(watchedHouseholdType, watchedAge) * 0.4))}–{fmtMoney(Math.round(estimateTraditionalInsurance(watchedHouseholdType, watchedAge) * 0.6))}</strong>
+                    {' '}/mo vs traditional insurance
+                  </p>
                 </div>
+              )}
 
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="hero-last-name" className="text-xs font-semibold text-gray-700">
-                    Last Name
-                  </Label>
-                  <Input
-                    id="hero-last-name"
-                    type="text"
-                    placeholder="Smith"
-                    className="h-9 text-sm"
-                    {...register('lastName')}
-                  />
-                  {errors.lastName && (
-                    <p className="text-[10px] text-red-600">{errors.lastName.message}</p>
-                  )}
+                  <Label htmlFor="hero-first-name" className="text-sm font-semibold text-gray-700">First Name</Label>
+                  <Input id="hero-first-name" type="text" placeholder="John" className="h-11 text-sm" {...register('firstName')} />
+                  {errors.firstName && <p className="text-xs text-red-600">{errors.firstName.message}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="hero-last-name" className="text-sm font-semibold text-gray-700">Last Name</Label>
+                  <Input id="hero-last-name" type="text" placeholder="Smith" className="h-11 text-sm" {...register('lastName')} />
+                  {errors.lastName && <p className="text-xs text-red-600">{errors.lastName.message}</p>}
                 </div>
               </div>
 
-              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                <Label htmlFor="hero-email" className="text-xs font-semibold text-gray-700">
-                  Email Address
-                </Label>
-                <Input
-                  id="hero-email"
-                  type="email"
-                  placeholder="your@email.com"
-                  className="h-9 text-sm"
-                  {...register('email')}
-                />
-                {errors.email && (
-                  <p className="text-[10px] text-red-600">{errors.email.message}</p>
-                )}
-                <p className="text-[9px] text-gray-500 leading-relaxed">
-                  We'll send your personalized rate comparison to this email
-                </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="hero-email" className="text-sm font-semibold text-gray-700">Email</Label>
+                <Input id="hero-email" type="email" placeholder="your@email.com" className="h-11 text-sm" {...register('email')} />
+                {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+                <p className="text-xs text-gray-500">We&apos;ll send your comparison here</p>
               </div>
 
-              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                <Label htmlFor="hero-phone" className="text-xs font-semibold text-gray-700">
-                  Phone Number <span className="text-[10px] font-normal text-gray-400">(optional)</span>
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <Label htmlFor="hero-phone" className="text-sm font-semibold text-gray-700">
+                  Phone <span className="font-normal text-gray-500">(optional)</span>
                 </Label>
                 <Input
                   id="hero-phone"
                   type="tel"
                   placeholder="(555) 123-4567"
-                  className="h-9 text-sm"
+                  className="h-11 text-sm bg-white mt-1.5"
                   {...register('phone')}
                 />
-                <p className="text-[9px] text-gray-500 leading-relaxed">
-                  Want a call from our team? Add your number and we'll reach out
+                <p className="text-xs text-gray-600 mt-1.5">
+                  A healthcare advisor will call to see if the plan fits you and walk you through your options.
                 </p>
-              </div>
-            </>
-          )}
-
-          {submissionError && (
-            <div className="bg-red-50 border-2 border-red-500 rounded-lg p-3 animate-in fade-in slide-in-from-top-1 duration-300">
-              <div className="flex items-start gap-2">
-                <X className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="text-sm font-bold text-red-900 mb-1">Submission Failed</h4>
-                  <p className="text-xs text-red-800 leading-relaxed mb-2">
-                    {submissionError}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setSubmissionError(null)}
-                    className="text-xs font-semibold text-red-700 hover:text-red-900 underline"
-                  >
-                    Try Again
-                  </button>
-                </div>
               </div>
             </div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full h-10 text-sm font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={
-              isCalculating ||
-              isSubmittingLead ||
-              !watchedState ||
-              !watchedAge ||
-              ((watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') && !watchedSpouseAge) ||
-              ((watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') && !watchedDependentsCount) ||
-              !watchedPriorities ||
-              watchedPriorities.length === 0 ||
-              !watchedFirstName ||
-              !watchedLastName ||
-              !watchedEmail
-            }
-          >
-            {isCalculating || isSubmittingLead ? (
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                {isSubmittingLead ? 'Getting Your Rates...' : 'Calculating...'}
+          {submissionError && (
+            <div className="mt-4 bg-red-50 border-2 border-red-200 rounded-xl p-3 flex items-start gap-2">
+              <X className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-red-900">Submission failed</p>
+                <p className="text-xs text-red-800">{submissionError}</p>
+                <button type="button" onClick={() => setSubmissionError(null)} className="text-xs font-semibold text-red-700 underline mt-1">
+                  Try again
+                </button>
               </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="mt-6 flex gap-3">
+            {step > 1 ? (
+              <Button type="button" variant="outline" onClick={handlePrevStep} className="flex-1 h-11">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+            ) : null}
+            {step < TOTAL_STEPS ? (
+              <Button
+                type="button"
+                onClick={handleNextStep}
+                disabled={
+                  (step === 1 && !canProceedStep1()) ||
+                  (step === 2 && !canProceedStep2())
+                }
+                className={cn('flex-1 h-11', step === 1 ? '' : 'flex-[2]')}
+              >
+                Continue
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             ) : (
-              <>
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Compare All Plans
-              </>
+              <Button
+                type="submit"
+                disabled={
+                  isCalculating ||
+                  isSubmittingLead ||
+                  !watchedFirstName ||
+                  !watchedLastName ||
+                  !watchedEmail
+                }
+                className="flex-[2] h-11 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+              >
+                {isCalculating || isSubmittingLead ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Getting your comparison...
+                  </span>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Get My Comparison
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
-
-          {/* Validation helper - show what's missing */}
-          {(() => {
-            const missingFields: string[] = [];
-            if (!watchedState) missingFields.push('State');
-            if (!watchedAge) missingFields.push('Your Age');
-            if ((watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') && !watchedSpouseAge) {
-              missingFields.push('Spouse Age');
-            }
-            if ((watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') && !watchedDependentsCount) {
-              missingFields.push('# of Children');
-            }
-            if (!watchedPriorities || watchedPriorities.length === 0) {
-              missingFields.push('Priorities');
-            }
-            if (selectedPriorities.length > 0) {
-              if (!watchedFirstName) missingFields.push('First Name');
-              if (!watchedLastName) missingFields.push('Last Name');
-              if (!watchedEmail) missingFields.push('Email');
-            }
-
-            if (missingFields.length === 0) return null;
-
-            return (
-              <div className="text-center">
-                <p className="text-[10px] text-amber-600 font-medium">
-                  {missingFields.length === 1
-                    ? `Please enter: ${missingFields[0]}`
-                    : `Missing: ${missingFields.slice(0, 3).join(', ')}${missingFields.length > 3 ? ` +${missingFields.length - 3} more` : ''}`}
-                </p>
-              </div>
-            );
-          })()}
+          </div>
         </form>
 
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <p className="text-[10px] text-gray-500 text-center leading-relaxed">
-            Estimates are informational only. Not insurance. Final rates determined during enrollment.
-          </p>
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-center gap-2 text-[11px] text-gray-500">
+          <Lock className="h-3 w-3" />
+          Estimates are informational only. Not insurance. Your info is secure.
         </div>
       </CardContent>
     </Card>

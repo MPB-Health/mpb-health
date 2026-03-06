@@ -68,6 +68,27 @@
       max-height: 2000px;
     }
   }
+
+  @keyframes slideUpFade {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-up-fade {
+    animation: slideUpFade 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up-fade-delay-1 { animation: slideUpFade 0.5s ease-out 0.05s forwards; opacity: 0; }
+  .animate-slide-up-fade-delay-2 { animation: slideUpFade 0.5s ease-out 0.1s forwards; opacity: 0; }
+  .animate-slide-up-fade-delay-3 { animation: slideUpFade 0.5s ease-out 0.15s forwards; opacity: 0; }
+  .animate-slide-up-fade-delay-4 { animation: slideUpFade 0.5s ease-out 0.2s forwards; opacity: 0; }
+  .animate-slide-up-fade-delay-5 { animation: slideUpFade 0.5s ease-out 0.25s forwards; opacity: 0; }
 }
 
 /* Print styles for Plan Comparison */

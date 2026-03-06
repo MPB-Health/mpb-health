@@ -1,25 +1,99 @@
 import React, { useState } from 'react';
 import {
   Check,
-  Star,
   ChevronDown,
   ChevronUp,
   TrendingDown,
+  Phone,
   ExternalLink,
-  Info,
   Sparkles,
   Shield,
-  Heart
+  Heart,
+  Building2,
+  Stethoscope,
+  Wallet,
+  Video,
 } from 'lucide-react';
 import { AllMembershipsEstimate } from '../lib/newRateEngine';
 import { PlanRecommendation } from '../lib/membershipPriorities';
+import { QUOTE_PHONE_TEL } from '../lib/constants';
 import { fmtMoney } from '../lib/utils';
 import { cn } from '../lib/utils';
+
+const PLAN_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  'secure-hsa': Shield,
+  'mec-essentials': Building2,
+  'essentials': Wallet,
+  'care-plus': Heart,
+  'direct': Stethoscope,
+};
+
+/** Sales-focused: tagline + benefit bullets with lead + detail */
+const PLAN_SELL: Record<string, { tagline: string; bullets: { lead: string; detail: string }[] }> = {
+  'secure-hsa': {
+    tagline: 'The smart choice for self-employed & contractors',
+    bullets: [
+      { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
+      { lead: 'Pre-tax dollars', detail: 'HSA + MEC means real tax savings — keep more of what you earn' },
+      { lead: 'Full protection', detail: 'Hospital, surgery, major medical + RX Valet ($0–$14.95)' },
+      { lead: '50,000+ families', detail: 'Already ditched expensive insurance — you can too' },
+    ],
+  },
+  'mec-essentials': {
+    tagline: 'Perfect for small businesses & ACA compliance',
+    bullets: [
+      { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
+      { lead: 'Employer mandate satisfied', detail: 'No penalties, no headaches — stay compliant' },
+      { lead: 'Debt Dismissal Program', detail: 'Reduce or eliminate existing medical debt' },
+      { lead: 'HSA + RX Valet', detail: 'Benefits that actually save you money' },
+    ],
+  },
+  'essentials': {
+    tagline: 'Essential protection without the overwhelm',
+    bullets: [
+      { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
+      { lead: 'Hospital Debt Relief', detail: 'Get help with existing medical bills' },
+      { lead: 'Pharmacy & supplement discounts', detail: 'Save on everyday health needs' },
+      { lead: '50,000+ families', detail: 'Join a community that saves together' },
+    ],
+  },
+  'care-plus': {
+    tagline: 'Complete peace of mind for families',
+    bullets: [
+      { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
+      { lead: 'Full medical cost sharing', detail: 'Hospital, surgery, no lifetime limits' },
+      { lead: 'Maternity sharing', detail: 'Real support after 6 months when you need it' },
+      { lead: 'Any doctor, any hospital', detail: 'No network restrictions — your choice' },
+    ],
+  },
+  'direct': {
+    tagline: 'Wellness-first + real protection',
+    bullets: [
+      { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
+      { lead: 'Preventive care included', detail: 'Annual wellness ($175), labs, screenings, immunizations' },
+      { lead: 'Medical cost sharing', detail: 'For the unexpected — without breaking the bank' },
+      { lead: 'Best of both worlds', detail: 'Proactive care + catastrophic protection' },
+    ],
+  },
+};
+
+/** Virtual care included in every plan — shown at top of comparison */
+const VIRTUAL_CARE_INCLUDED = {
+  title: '$0 Unlimited Virtual Care',
+  subtitle: 'Included in every plan — no extra cost',
+  items: [
+    '24/7 urgent care — get help when you need it',
+    'Primary care visits — routine check-ins from home',
+    'Virtual behavioral health — mental wellness support',
+    'See a doctor anytime, anywhere — phone, tablet, or computer',
+  ],
+};
 
 interface AllPlansComparisonTableProps {
   estimates: AllMembershipsEstimate;
   recommendations: PlanRecommendation[];
   traditionalCostEstimate: number;
+  leadGenMode?: boolean;
   className?: string;
 }
 
@@ -27,408 +101,334 @@ export const AllPlansComparisonTable: React.FC<AllPlansComparisonTableProps> = (
   estimates,
   recommendations,
   traditionalCostEstimate,
+  leadGenMode = false,
   className,
 }) => {
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
 
-  // Get match percentage for a plan from recommendations
   const getMatchPercentage = (planId: string): number => {
     const rec = recommendations.find(r => r.planId === planId);
     return rec?.matchPercentage || 0;
   };
 
-  // Get reasons for a plan from recommendations
   const getReasons = (planId: string): string[] => {
     const rec = recommendations.find(r => r.planId === planId);
     return rec?.reasons || [];
   };
 
-  // Find the best match plan
   const bestMatchPlanId = recommendations.length > 0 ? recommendations[0].planId : null;
 
-  // Sort plans by match percentage (best first)
   const sortedPlans = [...estimates.plans].sort((a, b) => {
     const matchA = getMatchPercentage(a.planId);
     const matchB = getMatchPercentage(b.planId);
     return matchB - matchA;
   });
 
-  // Toggle expanded state for a plan
   const toggleExpanded = (planId: string) => {
     setExpandedPlan(expandedPlan === planId ? null : planId);
   };
 
-  return (
-    <div className={cn('space-y-4', className)}>
-      {/* Summary Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl p-4 text-white">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-5 w-5" />
-          <h3 className="text-lg font-bold">Your Personalized Rate Comparison</h3>
+  const getPlanSell = (planId: string) => PLAN_SELL[planId] || { tagline: '', bullets: [] as { lead: string; detail: string }[] };
+
+  const formatHousehold = (ht: string) => {
+    const map: Record<string, string> = {
+      'member-only': 'Individual',
+      'member-spouse': 'Member + Spouse',
+      'member-child': 'Member + Children',
+      'member-family': 'Family',
+    };
+    return map[ht] || ht;
+  };
+
+  const MatchBadge = ({ percentage, isBest }: { percentage: number; isBest: boolean }) => {
+    const color = percentage >= 80 ? 'emerald' : percentage >= 60 ? 'blue' : 'amber';
+    const strokeColor = color === 'emerald' ? '#10b981' : color === 'blue' ? '#2563eb' : '#f59e0b';
+    const circumference = 100;
+    const strokeDash = Math.min((percentage / 100) * circumference, circumference);
+    return (
+      <div className="relative w-20 h-20 shrink-0">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+          <path
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            className="text-slate-200"
+          />
+          <path
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            fill="none"
+            stroke={strokeColor}
+            strokeWidth="3"
+            strokeDasharray={`${strokeDash} ${circumference}`}
+            strokeLinecap="round"
+            className="transition-all duration-700 ease-out"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={cn(
+            'text-xl font-bold tabular-nums',
+            color === 'emerald' && 'text-emerald-600',
+            color === 'blue' && 'text-blue-600',
+            color === 'amber' && 'text-amber-600'
+          )}>
+            {percentage}
+          </span>
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">match</span>
         </div>
-        <p className="text-sm text-white/90">
-          Based on your household ({estimates.inputSummary.householdType}, age {estimates.inputSummary.primaryAge}) 
-          in {estimates.inputSummary.state}
-        </p>
-        <div className="mt-3 flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <TrendingDown className="h-4 w-4" />
-            <span>Traditional insurance avg: <strong>{fmtMoney(traditionalCostEstimate)}/mo</strong></span>
+      </div>
+    );
+  };
+
+  return (
+    <div className={cn('space-y-8', className)}>
+      {/* Summary */}
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-4 p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/80 shadow-sm">
+        <div>
+          <h3 className="text-xl font-bold text-slate-900">
+            {leadGenMode ? 'Your Plan Matches' : 'Rate Comparison'}
+          </h3>
+          <p className="text-slate-600 mt-1 flex items-center gap-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-sm font-medium">
+              {formatHousehold(estimates.inputSummary.householdType)}
+            </span>
+            <span>•</span>
+            <span>Age {estimates.inputSummary.primaryAge}</span>
+            <span>•</span>
+            <span>{estimates.inputSummary.state}</span>
+          </p>
+        </div>
+        {!leadGenMode && (
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-100">
+            <TrendingDown className="h-5 w-5 text-emerald-600" />
+            <span className="text-sm font-semibold text-emerald-800">
+              Traditional avg: {fmtMoney(traditionalCostEstimate)}/mo
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Virtual Care — included in every plan (leadGenMode) */}
+      {leadGenMode && (
+        <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-cyan-50/30 to-blue-50 p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-lg">
+              <Video className="h-7 w-7 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-lg font-bold text-slate-900">{VIRTUAL_CARE_INCLUDED.title}</h4>
+              <p className="text-sm font-medium text-blue-700 mt-0.5">{VIRTUAL_CARE_INCLUDED.subtitle}</p>
+              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                {VIRTUAL_CARE_INCLUDED.items.map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
+                    <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">Plan</th>
-              <th className="text-center px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">Match</th>
-              <th className="text-center px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">Monthly Rate</th>
-              <th className="text-center px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">You Save</th>
-              <th className="text-center px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">IUA Options</th>
-              <th className="text-right px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedPlans.map((plan, _index) => {
-              const matchPercentage = getMatchPercentage(plan.planId);
-              const isBestMatch = plan.planId === bestMatchPlanId;
-              const savings = traditionalCostEstimate - plan.lowestPrice;
-              const reasons = getReasons(plan.planId);
-              const isExpanded = expandedPlan === plan.planId;
-
-              return (
-                <React.Fragment key={plan.planId}>
-                  <tr 
-                    className={cn(
-                      'border-b border-gray-100 transition-colors',
-                      isBestMatch ? 'bg-blue-50/50' : 'hover:bg-gray-50',
-                      isExpanded && 'bg-gray-50'
-                    )}
-                  >
-                    {/* Plan Name & Description */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-gray-900">{plan.planLabel}</h4>
-                            {isBestMatch && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-2 py-0.5 rounded-full">
-                                <Star className="h-2.5 w-2.5 fill-current" />
-                                BEST MATCH
-                              </span>
-                            )}
-                            {plan.popular && !isBestMatch && (
-                              <span className="text-[10px] font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                                Popular
-                              </span>
-                            )}
-                            {plan.hsaCompatible && (
-                              <span className="text-[10px] font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                                HSA
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-600 mt-0.5">{plan.description}</p>
-                          {reasons.length > 0 && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
-                              <span className="text-[10px] text-green-700">{reasons[0]}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Match Percentage */}
-                    <td className="px-4 py-4 text-center">
-                      <div className="inline-flex flex-col items-center">
-                        <div className="w-16 bg-gray-200 rounded-full h-2 mb-1 overflow-hidden">
-                          <div
-                            className={cn(
-                              'h-full rounded-full transition-all duration-500',
-                              matchPercentage >= 80
-                                ? 'bg-gradient-to-r from-green-500 to-green-600'
-                                : matchPercentage >= 60
-                                ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-                                : 'bg-gradient-to-r from-yellow-500 to-yellow-600'
-                            )}
-                            style={{ width: `${matchPercentage}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-bold text-gray-700">{matchPercentage}%</span>
-                      </div>
-                    </td>
-
-                    {/* Monthly Rate */}
-                    <td className="px-4 py-4 text-center">
-                      <div className="font-bold text-lg text-gray-900">
-                        {plan.flatRate ? (
-                          fmtMoney(plan.flatRate)
-                        ) : (
-                          <span className="flex items-center justify-center gap-1">
-                            <span className="text-sm text-gray-500">from</span>
-                            {fmtMoney(plan.lowestPrice)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-gray-500">per month</div>
-                    </td>
-
-                    {/* Savings */}
-                    <td className="px-4 py-4 text-center">
-                      {savings > 0 ? (
-                        <div className="inline-flex flex-col items-center">
-                          <div className="flex items-center gap-1 text-green-600">
-                            <TrendingDown className="h-3.5 w-3.5" />
-                            <span className="font-bold">{fmtMoney(savings)}</span>
-                          </div>
-                          <span className="text-[10px] text-gray-500">vs traditional</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
-                    </td>
-
-                    {/* IUA Options */}
-                    <td className="px-4 py-4 text-center">
-                      {plan.tiers.length > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => toggleExpanded(plan.planId)}
-                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                        >
-                          {plan.tiers.length} options
-                          {isExpanded ? (
-                            <ChevronUp className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      ) : (
-                        <span className="text-xs text-gray-500">Flat rate</span>
-                      )}
-                    </td>
-
-                    {/* Action */}
-                    <td className="px-4 py-4 text-right">
-                      {plan.enrollUrl ? (
-                        <a
-                          href={plan.enrollUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={cn(
-                            'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all',
-                            isBestMatch
-                              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-md hover:shadow-lg'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          )}
-                        >
-                          Enroll Now
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      ) : (
-                        <span className="text-xs text-gray-400">Coming soon</span>
-                      )}
-                    </td>
-                  </tr>
-
-                  {/* Expanded IUA Tiers Row */}
-                  {isExpanded && plan.tiers.length > 0 && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={6} className="px-4 py-3">
-                        <div className="ml-4 pl-4 border-l-2 border-blue-200">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Info className="h-4 w-4 text-blue-600" />
-                            <span className="text-xs font-semibold text-gray-700">
-                              IUA (Initial Unshareable Amount) Options
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {plan.tiers.map((tier) => (
-                              <div
-                                key={tier.tierId}
-                                className="bg-white rounded-lg border border-gray-200 p-3 text-center"
-                              >
-                                <div className="text-xs text-gray-500 mb-1">{tier.tierLabel}</div>
-                                <div className="font-bold text-gray-900">{fmtMoney(tier.monthly)}/mo</div>
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-[10px] text-gray-500 mt-2">
-                            Lower IUA = Higher monthly cost but less out-of-pocket per incident
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-3">
-        {sortedPlans.map((plan) => {
+      {/* Plan Cards — items-stretch for equal height */}
+      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3 items-stretch">
+        {sortedPlans.map((plan, index) => {
           const matchPercentage = getMatchPercentage(plan.planId);
           const isBestMatch = plan.planId === bestMatchPlanId;
           const savings = traditionalCostEstimate - plan.lowestPrice;
           const reasons = getReasons(plan.planId);
           const isExpanded = expandedPlan === plan.planId;
+          const planSell = getPlanSell(plan.planId);
+          const PlanIcon = PLAN_ICONS[plan.planId] || Shield;
+          const delayClasses = ['animate-slide-up-fade-delay-1', 'animate-slide-up-fade-delay-2', 'animate-slide-up-fade-delay-3', 'animate-slide-up-fade-delay-4', 'animate-slide-up-fade-delay-5'];
+          const delayClass = delayClasses[Math.min(index, 4)];
 
           return (
             <div
               key={plan.planId}
               className={cn(
-                'rounded-xl border-2 overflow-hidden transition-all',
+                'rounded-2xl border-2 bg-white overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 flex flex-col',
+                delayClass,
                 isBestMatch
-                  ? 'border-blue-500 bg-blue-50/30 shadow-lg'
-                  : 'border-gray-200 bg-white'
+                  ? 'border-blue-500 shadow-lg ring-2 ring-blue-200/50'
+                  : 'border-slate-200 hover:border-slate-300'
               )}
             >
-              {/* Card Header */}
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex-1">
+              {/* Card header */}
+              <div className={cn(
+                'relative px-8 py-8',
+                isBestMatch ? 'bg-gradient-to-br from-blue-50 via-cyan-50/50 to-blue-50' : 'bg-gradient-to-br from-slate-50 to-white'
+              )}>
+                {isBestMatch && (
+                  <div className="absolute top-0 right-0">
+                    <div className="bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider px-4 py-1.5 rounded-bl-xl rounded-tr-2xl shadow-md">
+                      Recommended
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-start gap-4 sm:gap-5">
+                  <div className="flex flex-col items-center gap-2 shrink-0">
+                    <MatchBadge percentage={matchPercentage} isBest={isBestMatch} />
+                    <div className={cn(
+                      'w-10 h-10 rounded-xl flex items-center justify-center',
+                      isBestMatch ? 'bg-blue-100' : 'bg-slate-100'
+                    )}>
+                      <PlanIcon className={cn('h-5 w-5', isBestMatch ? 'text-blue-600' : 'text-slate-600')} />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 pt-1 overflow-hidden">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-bold text-gray-900">{plan.planLabel}</h4>
+                      <h4 className="text-xl font-bold text-slate-900">{plan.planLabel}</h4>
                       {isBestMatch && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-2 py-0.5 rounded-full">
-                          <Star className="h-2.5 w-2.5 fill-current" />
-                          BEST MATCH
+                        <span className="inline-flex items-center gap-1 text-xs font-bold bg-blue-600 text-white px-2.5 py-1 rounded-full">
+                          <Sparkles className="h-3 w-3" />
+                          Best for you
+                        </span>
+                      )}
+                      {plan.popular && !isBestMatch && (
+                        <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                          Best Seller
+                        </span>
+                      )}
+                      {plan.hsaCompatible && (
+                        <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          HSA
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">{plan.description}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-bold text-lg text-gray-900">
-                      {plan.flatRate ? fmtMoney(plan.flatRate) : fmtMoney(plan.lowestPrice)}
-                    </div>
-                    <div className="text-[10px] text-gray-500">
-                      {plan.flatRate ? 'per month' : 'from/mo'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Match & Savings Row */}
-                <div className="flex items-center justify-between gap-4 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 bg-gray-200 rounded-full h-2 overflow-hidden">
-                      <div
-                        className={cn(
-                          'h-full rounded-full',
-                          matchPercentage >= 80
-                            ? 'bg-gradient-to-r from-green-500 to-green-600'
-                            : matchPercentage >= 60
-                            ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-                            : 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                    {leadGenMode && (
+                      <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <span className="text-lg font-bold text-slate-900">
+                          Start at {plan.flatRate ? fmtMoney(plan.flatRate) : fmtMoney(plan.lowestPrice)}
+                        </span>
+                        <span className="text-slate-500 text-sm">/mo</span>
+                        {savings > 0 && (
+                          <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+                            Save {fmtMoney(savings)} vs traditional
+                          </span>
                         )}
-                        style={{ width: `${matchPercentage}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-bold text-gray-700">{matchPercentage}% Match</span>
-                  </div>
-                  {savings > 0 && (
-                    <div className="flex items-center gap-1 text-green-600 text-xs font-semibold">
-                      <TrendingDown className="h-3 w-3" />
-                      Save {fmtMoney(savings)}/mo
-                    </div>
-                  )}
-                </div>
-
-                {/* Reasons */}
-                {reasons.length > 0 && (
-                  <div className="space-y-1 mb-3">
-                    {reasons.slice(0, 2).map((reason, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5">
-                        <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
-                        <span className="text-[11px] text-gray-700">{reason}</span>
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Badges */}
-                <div className="flex items-center gap-2 mb-3">
-                  {plan.hsaCompatible && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                      <Shield className="h-2.5 w-2.5" />
-                      HSA Compatible
-                    </span>
-                  )}
-                  {plan.popular && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                      <Heart className="h-2.5 w-2.5" />
-                      Popular Choice
-                    </span>
-                  )}
-                </div>
-
-                {/* IUA Toggle */}
-                {plan.tiers.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => toggleExpanded(plan.planId)}
-                    className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-200 transition-colors mb-3"
-                  >
-                    <span>View {plan.tiers.length} IUA options</span>
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
                     )}
-                  </button>
-                )}
-
-                {/* Expanded IUA Tiers */}
-                {isExpanded && plan.tiers.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 mb-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                    {plan.tiers.map((tier) => (
-                      <div
-                        key={tier.tierId}
-                        className="bg-gray-50 rounded-lg border border-gray-200 p-2 text-center"
-                      >
-                        <div className="text-[10px] text-gray-500">{tier.tierLabel}</div>
-                        <div className="font-bold text-sm text-gray-900">{fmtMoney(tier.monthly)}/mo</div>
-                      </div>
-                    ))}
                   </div>
-                )}
+                </div>
+              </div>
 
-                {/* Enroll Button */}
-                {plan.enrollUrl && (
+              {/* Benefits — sales-focused bullets (lead + detail) */}
+              <div className="px-8 py-7 flex-1 flex flex-col">
+                {leadGenMode ? (
+                  planSell.bullets.length > 0 && (
+                    <ul className="space-y-5">
+                      {planSell.bullets.map((b, i) => (
+                        <li key={i} className="flex items-start gap-4 group">
+<div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-emerald-200 transition-colors">
+                        <Check className="h-4 w-4 text-emerald-600" />
+                          </div>
+                          <span className="text-base text-slate-700 leading-relaxed">
+                            <strong className="text-slate-900 font-semibold">{b.lead}</strong>
+                            <span className="text-slate-600"> — {b.detail}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                ) : reasons.length > 0 ? (
+                  <ul className="space-y-5">
+                    {reasons.slice(0, 3).map((line, i) => (
+                      <li key={i} className="flex items-start gap-4 group">
+                        <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-emerald-200 transition-colors">
+                          <Check className="h-4 w-4 text-emerald-600" />
+                        </div>
+                        <span className="text-base text-slate-700 leading-relaxed">{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                {!leadGenMode && (
+                  <>
+                    <div className="mt-6 pt-6 border-t border-slate-100 flex items-center justify-between">
+                      <div>
+                        <span className="text-2xl font-bold text-slate-900">
+                          {plan.flatRate ? fmtMoney(plan.flatRate) : `${fmtMoney(plan.lowestPrice)}+`}
+                        </span>
+                        <span className="text-sm text-slate-500 ml-1">/mo</span>
+                      </div>
+                      {savings > 0 && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold">
+                          <TrendingDown className="h-4 w-4" />
+                          Save {fmtMoney(savings)}
+                        </div>
+                      )}
+                    </div>
+                    {plan.tiers.length > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(plan.planId)}
+                          className="mt-4 w-full flex items-center justify-between px-4 py-3 bg-slate-100 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors"
+                        >
+                          <span>View {plan.tiers.length} IUA options</span>
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                        {isExpanded && (
+                          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 animate-fadeIn">
+                            {plan.tiers.map((tier) => (
+                              <div key={tier.tierId} className="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                                <div className="text-[10px] text-slate-500 font-medium">{tier.tierLabel}</div>
+                                <div className="font-bold text-slate-900 text-sm">{fmtMoney(tier.monthly)}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* CTA */}
+              <div className="px-8 pb-8 pt-2">
+                {leadGenMode ? (
+                  <a
+                    href={QUOTE_PHONE_TEL}
+                    className={cn(
+                      'flex items-center justify-center gap-2 w-full py-5 rounded-xl text-base font-bold transition-all active:scale-[0.98]',
+                      isBestMatch
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
+                        : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
+                    )}
+                  >
+                    <Phone className="h-5 w-5" />
+                    {isBestMatch ? 'Get Your Personalized Rate — Call Now' : 'Call for Your Quote'}
+                  </a>
+                ) : plan.enrollUrl ? (
                   <a
                     href={plan.enrollUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all',
+                      'flex items-center justify-center gap-2 w-full py-5 rounded-xl text-base font-bold transition-all',
                       isBestMatch
-                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
+                        : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
                     )}
                   >
-                    Enroll in {plan.planLabel}
-                    <ExternalLink className="h-4 w-4" />
+                    Enroll Now
+                    <ExternalLink className="h-5 w-5" />
                   </a>
-                )}
+                ) : null}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Footer Note */}
-      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-        <p className="text-[11px] text-gray-600 text-center leading-relaxed">
-          <strong>Note:</strong> Estimates are informational only. Not insurance. 
-          Final rates and eligibility are determined during enrollment. 
-          IUA (Initial Unshareable Amount) is the amount you pay out-of-pocket before sharing begins for each medical incident.
+      {/* Footer */}
+      <div className="rounded-2xl bg-slate-100/80 px-6 py-5 border border-slate-200/60">
+        <p className="text-sm text-slate-600 leading-relaxed">
+          <strong className="text-slate-700">Disclaimer:</strong> Estimates are informational only. Not insurance. 
+          Final rates and eligibility are determined during enrollment.
         </p>
       </div>
     </div>
@@ -436,5 +436,3 @@ export const AllPlansComparisonTable: React.FC<AllPlansComparisonTableProps> = (
 };
 
 export default AllPlansComparisonTable;
-
-

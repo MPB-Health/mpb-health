@@ -161,33 +161,33 @@ export function getConfigurationVersion(): string {
   return getConfigurationVersionV2();
 }
 
-// Plan metadata for display
+// Plan metadata — from Membership Overview (Agent Resource) PDF
 const PLAN_METADATA: Record<string, { label: string; description: string; popular?: boolean; hsaCompatible?: boolean; enrollUrl?: string }> = {
   'essentials': {
     label: 'Essentials',
-    description: 'Virtual care focus with essential medical sharing protection',
+    description: 'Hospital debt relief + $0 virtual care. No medical cost sharing.',
     enrollUrl: 'https://essentials.enrollmpb.com/'
   },
   'mec-essentials': {
     label: 'MEC+ Essentials',
-    description: 'ACA-compliant minimum essential coverage with virtual care',
+    description: 'ACA MEC + Debt Dismissal + HSA. No medical cost sharing.',
     enrollUrl: 'https://mecplus.enrollmpb.com/'
   },
   'care-plus': {
     label: 'Care+',
-    description: 'Comprehensive sharing with low IUA options for everyday healthcare',
-    popular: true,
+    description: 'Medical cost sharing + virtual care + MPB Concierge',
     enrollUrl: 'https://careplus.enrollmpb.com/'
   },
   'direct': {
     label: 'Direct',
-    description: 'Affordable sharing with higher IUA for budget-conscious members',
+    description: 'Limited preventive sharing + medical cost sharing + virtual care',
     enrollUrl: 'https://direct.enrollmpb.com/'
   },
   'secure-hsa': {
     label: 'Secure HSA',
-    description: 'HSA-compatible membership with tax advantages for self-employed',
+    description: 'Medical cost sharing + MEC + HSA + RX Valet',
     hsaCompatible: true,
+    popular: true, // Best seller
     enrollUrl: 'https://securehsa.enrollmpb.com/'
   }
 };

@@ -334,6 +334,21 @@ export type {
   SOLineItemUpdateInput,
 } from './sales-orders/salesOrderTypes';
 
+// Cases / Support
+export { CaseService, createCaseService } from './cases/caseService';
+export type {
+  Case,
+  CaseWithRelations,
+  CaseComment,
+  CaseStatus,
+  CasePriority,
+  CaseOrigin,
+  CaseFilters,
+  CaseCreateInput,
+  CaseUpdateInput,
+  CaseCommentCreateInput,
+} from './cases/caseTypes';
+
 // CRM Studio (Custom Modules, Fields, Layouts, Views, Validation)
 export {
   // Services
@@ -552,3 +567,24 @@ export type {
   TriggerCondition,
 } from './approvals/types';
 export * from './approvals';
+
+// Documents
+export { DocumentService, createDocumentService } from './documents/documentService';
+export type {
+  Document,
+  DocumentWithRelations,
+  DocumentFilters,
+  DocumentCreateInput,
+  DocumentUpdateInput,
+  DocumentCategory,
+} from './documents/documentTypes';
+export * from './documents';
+
+// Saved Views
+export { SavedViewService, createSavedViewService } from './saved-views/savedViewService';
+export type {
+  SavedView,
+  SavedViewCreateInput,
+  SavedViewUpdateInput,
+} from './saved-views/savedViewTypes';
+export * from './saved-views';

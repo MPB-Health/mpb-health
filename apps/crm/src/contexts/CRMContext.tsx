@@ -81,6 +81,24 @@ import {
   // Forecasting
   createForecastingService,
   type ForecastingService,
+  // Vendors & Orders
+  createVendorService,
+  type VendorService,
+  createPurchaseOrderService,
+  type PurchaseOrderService,
+  createSalesOrderService,
+  type SalesOrderService,
+  createPriceBookService,
+  type PriceBookService,
+  // Cases
+  createCaseService,
+  type CaseService,
+  // Documents
+  createDocumentService,
+  type DocumentService,
+  // Saved Views
+  createSavedViewService,
+  type SavedViewService,
   // Approvals
   createApprovalService,
   type ApprovalService,
@@ -145,6 +163,17 @@ interface CRMContextType {
   importService: ImportService;
   // Forecasting service
   forecastingService: ForecastingService;
+  // Vendors & Orders
+  vendorService: VendorService;
+  purchaseOrderService: PurchaseOrderService;
+  salesOrderService: SalesOrderService;
+  priceBookService: PriceBookService;
+  // Case service
+  caseService: CaseService;
+  // Document service
+  documentService: DocumentService;
+  // Saved Views service
+  savedViewService: SavedViewService;
   // Approval service
   approvalService: ApprovalService;
   // Web Form service
@@ -219,6 +248,13 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     dynamicRecordService: createDynamicRecordService(supabase),
     importService: createImportService(supabase),
     forecastingService: createForecastingService(supabase),
+    vendorService: createVendorService(supabase),
+    purchaseOrderService: createPurchaseOrderService(supabase),
+    salesOrderService: createSalesOrderService(supabase),
+    priceBookService: createPriceBookService(supabase),
+    caseService: createCaseService(supabase),
+    documentService: createDocumentService(supabase),
+    savedViewService: createSavedViewService(supabase),
     approvalService: createApprovalService(supabase),
     formService: createFormService(supabase),
     // Connected Inbox services

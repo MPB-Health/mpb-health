@@ -249,15 +249,101 @@ export async function sendLeadNotification(data: {
   });
 }
 
-const BOOKING_URL = 'https://outlook-sdf.office.com/bookwithme/user/b5a563c9279c4a2bae04c6f70d39e03e%40mympb.com/meetingtype/470f7109-0022-46af-a43b-0bc75e0efad9?anonymous&ismsaljsauthenabled=true';
+const QUOTE_PHONE_TEL = 'tel:+18005192969,1';
+const QUOTE_PHONE_DISPLAY = '1-800-519-2969';
+
+function fmtMoney(amount: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+}
+
+export interface LeadWelcomeEmailPlanData {
+  all_plan_rates?: Record<string, { planLabel: string; lowestPrice: number; highestPrice?: number; flatRate?: number }>;
+  traditional_cost_estimate?: number;
+  best_match_plan?: string | null;
+  best_match_percentage?: number;
+}
 
 export async function sendLeadWelcomeEmail(data: {
   firstName: string;
   email: string;
+  planData?: LeadWelcomeEmailPlanData;
 }): Promise<EmailResponse> {
   const welcomePageUrl = `https://mpb.health/welcome?name=${encodeURIComponent(data.firstName)}`;
+  const resultsUrl = 'https://mpb.health/quote/results';
   const videoUrl = 'https://vimeo.com/1115561411';
-  
+
+  const planData = data.planData;
+  const hasPlanData = planData?.all_plan_rates && Object.keys(planData.all_plan_rates).length > 0;
+
+  // Build personalized pricing section
+  let pricingHtml = '';
+  let pricingText = '';
+  if (hasPlanData && planData.all_plan_rates) {
+    const plans = Object.entries(planData.all_plan_rates);
+    const minPrice = Math.min(...plans.map(([, p]) => p.flatRate ?? p.lowestPrice));
+    const maxPrice = Math.max(...plans.map(([, p]) => p.highestPrice ?? p.flatRate ?? p.lowestPrice));
+    pricingHtml = `
+      <div style="background: linear-gradient(to right, #eff6ff, #ecfeff); border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <p style="color: #1e40af; font-size: 16px; line-height: 1.7; margin: 0;">
+          <strong>Your personalized rates</strong> — Plans start at <strong style="color: #0f172a;">${fmtMoney(minPrice)}/mo</strong>${maxPrice > minPrice ? ` and go up to <strong style="color: #0f172a;">${fmtMoney(maxPrice)}/mo</strong>` : ''} based on your household and preferences.
+          ${planData.traditional_cost_estimate ? ` Traditional insurance averages <strong>${fmtMoney(planData.traditional_cost_estimate)}/mo</strong> for similar coverage.` : ''}
+        </p>
+      </div>`;
+    pricingText = `Your personalized rates: Plans start at ${fmtMoney(minPrice)}/mo${maxPrice > minPrice ? ` up to ${fmtMoney(maxPrice)}/mo` : ''}.${planData.traditional_cost_estimate ? ` Traditional insurance averages ${fmtMoney(planData.traditional_cost_estimate)}/mo.` : ''}`;
+  } else {
+    pricingHtml = `
+      <div style="background: linear-gradient(to right, #eff6ff, #ecfeff); border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <p style="color: #1e40af; font-size: 16px; line-height: 1.7; margin: 0;">
+          <strong>Individual programs</strong> typically range from <strong style="color: #0f172a;">$160 to $350 per month</strong>, while <strong>family plans</strong> range from <strong style="color: #0f172a;">$400 to $1,050 monthly</strong>, depending on your specific medical needs.
+        </p>
+      </div>`;
+    pricingText = 'Individual programs typically range from $160 to $350 per month, while family plans range from $400 to $1,050 monthly.';
+  }
+
+  // Build recommended plan + comparison table
+  let planComparisonHtml = '';
+  let planComparisonText = '';
+  if (hasPlanData && planData.all_plan_rates) {
+    const bestPlan = planData.best_match_plan ? planData.all_plan_rates[planData.best_match_plan] : null;
+    const planRows = Object.entries(planData.all_plan_rates)
+      .map(([id, p]) => {
+        const price = p.flatRate ?? p.lowestPrice;
+        const isBest = id === planData.best_match_plan;
+        return `<tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 12px 0; color: #1f2937; font-weight: ${isBest ? '600' : '500'};">
+            ${p.planLabel}${isBest && planData.best_match_percentage ? ` <span style="background: #2563eb; color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px;">${planData.best_match_percentage}% match</span>` : ''}
+          </td>
+          <td style="padding: 12px 0; text-align: right; color: #0f172a; font-weight: 600;">${fmtMoney(price)}/mo</td>
+        </tr>`;
+      })
+      .join('');
+
+    planComparisonHtml = `
+      <div style="margin: 30px 0;">
+        <h3 style="color: #0f172a; font-size: 18px; margin: 0 0 15px 0;">${bestPlan ? 'Your recommended plan' : 'Plan comparison'}</h3>
+        ${bestPlan ? `<p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;"><strong>${bestPlan.planLabel}</strong> — Start at ${fmtMoney(bestPlan.flatRate ?? bestPlan.lowestPrice)}/mo</p>` : ''}
+        <table width="100%" style="border-collapse: collapse; background: #f8fafc; border-radius: 8px; overflow: hidden;">
+          <thead>
+            <tr style="background: #e2e8f0;">
+              <th style="padding: 12px 16px; text-align: left; font-size: 13px; color: #475569;">Plan</th>
+              <th style="padding: 12px 16px; text-align: right; font-size: 13px; color: #475569;">Start at</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${planRows}
+          </tbody>
+        </table>
+      </div>`;
+
+    planComparisonText = Object.entries(planData.all_plan_rates)
+      .map(([id, p]) => {
+        const price = p.flatRate ?? p.lowestPrice;
+        const suffix = id === planData.best_match_plan && planData.best_match_percentage ? ` (${planData.best_match_percentage}% match)` : '';
+        return `${p.planLabel}${suffix}: ${fmtMoney(price)}/mo`;
+      })
+      .join('\n');
+  }
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -271,99 +357,38 @@ export async function sendLeadWelcomeEmail(data: {
           <tr>
             <td align="center">
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                <!-- Header -->
                 <tr>
                   <td style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px 40px; border-radius: 12px 12px 0 0; text-align: center;">
                     <img src="https://mpb.health/assets/MPB-Health-No-background.png" alt="MPB Health" style="max-width: 180px; height: auto; margin-bottom: 15px;">
                     <h1 style="color: #ffffff; font-size: 28px; margin: 0;">Dear ${data.firstName},</h1>
                   </td>
                 </tr>
-                
-                <!-- Main Content -->
                 <tr>
                   <td style="padding: 40px;">
                     <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 20px 0;">
                       Thank you for visiting MPB Health to explore your health-share options.
                     </p>
-                    
-                    <!-- Pricing Box -->
-                    <div style="background: linear-gradient(to right, #eff6ff, #ecfeff); border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 25px 0;">
-                      <p style="color: #1e40af; font-size: 16px; line-height: 1.7; margin: 0;">
-                        <strong>Individual programs</strong> typically range from <strong style="color: #0f172a;">$160 to $350 per month</strong>, while <strong>family plans</strong> range from <strong style="color: #0f172a;">$400 to $1,050 monthly</strong>, depending on your specific medical needs.
-                      </p>
-                    </div>
-                    
+                    ${pricingHtml}
                     <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 20px 0;">
                       Health-share programs offer a great solution for unexpected medical bills. Our ability to custom tailor a program to your needs makes our health-share particularly beneficial for those looking to avoid pre-paying for benefits they'll never use.
                     </p>
-                    
+                    ${planComparisonHtml}
                     <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
-                      We offer a handful of the very best and unique healthshare options, and I can answer any questions you have and help you figure out which one is the right fit for you. You can read more about them on our website or watch the video below for more about how our programs work.
+                      Call our Senior Advisor line to get your exact rate and find the best plan that fits you.
                     </p>
-                    
-                    <!-- Video CTA -->
                     <div style="text-align: center; margin: 30px 0;">
-                      <a href="${videoUrl}" style="display: inline-block; text-decoration: none;">
-                        <div style="background-color: #0f172a; border-radius: 8px; padding: 40px 60px; position: relative;">
-                          <div style="width: 60px; height: 60px; background-color: #2563eb; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
-                            <span style="color: white; font-size: 24px; margin-left: 4px;">▶</span>
-                          </div>
-                          <p style="color: #94a3b8; font-size: 14px; margin: 15px 0 0 0;">Watch: How MPB Health Works</p>
-                        </div>
+                      <a href="${QUOTE_PHONE_TEL}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                        📞 Call ${QUOTE_PHONE_DISPLAY} ext 1
                       </a>
                     </div>
-                    
-                    <!-- Schedule CTA -->
-                    <div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
-                      <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 15px 0;">
-                        If you'd like my assistance in deciding which program is right for you, just click on my calendar link and schedule a call with me or one of our advisors.
-                      </p>
-                      <p style="color: #64748b; font-size: 14px; font-weight: 600; margin: 0 0 20px 0;">
-                        There's no charge nor obligation.
-                      </p>
-                      <a href="${BOOKING_URL}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                        📅 Schedule Your Free Consultation
-                      </a>
-                    </div>
-                    
-                    <!-- View Online Link -->
                     <div style="text-align: center; margin: 25px 0;">
-                      <a href="${welcomePageUrl}" style="color: #2563eb; font-size: 14px;">View this message on our website →</a>
+                      <a href="${videoUrl}" style="color: #2563eb; font-size: 14px;">Watch: How MPB Health Works →</a>
+                    </div>
+                    <div style="text-align: center; margin: 15px 0;">
+                      <a href="${hasPlanData ? resultsUrl : welcomePageUrl}" style="color: #64748b; font-size: 13px;">View your comparison on our website →</a>
                     </div>
                   </td>
                 </tr>
-                
-                <!-- Contact Card -->
-                <tr>
-                  <td style="padding: 0 40px 40px 40px;">
-                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 25px;">
-                      <table width="100%" cellpadding="0" cellspacing="0">
-                        <tr>
-                          <td width="70" valign="top">
-                            <div style="width: 60px; height: 60px; background: linear-gradient(to bottom right, #3b82f6, #06b6d4); border-radius: 50%; text-align: center; line-height: 60px; color: white; font-size: 24px; font-weight: bold;">
-                              LM
-                            </div>
-                          </td>
-                          <td valign="top" style="padding-left: 15px;">
-                            <h3 style="color: #0f172a; font-size: 18px; margin: 0 0 5px 0;">Leonardo Moraes</h3>
-                            <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Health Share Advisor</p>
-                            <p style="margin: 0 0 8px 0;">
-                              <a href="mailto:Leonardo@mympb.com" style="color: #2563eb; font-size: 14px; text-decoration: none;">📧 Leonardo@mympb.com</a>
-                            </p>
-                            <p style="margin: 0 0 8px 0;">
-                              <a href="tel:8558164650" style="color: #333; font-size: 14px; text-decoration: none;">📞 Office: 855-816-4650 Ext.1001</a>
-                            </p>
-                            <p style="margin: 0;">
-                              <a href="tel:5612863544" style="color: #059669; font-size: 14px; text-decoration: none;">📱 Direct: (561) 286-3544 (Text or Call)</a>
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
-                    </div>
-                  </td>
-                </tr>
-                
-                <!-- Footer -->
                 <tr>
                   <td style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center; border-radius: 0 0 12px 12px;">
                     <p style="color: #999; font-size: 12px; margin: 0 0 10px 0;">
@@ -387,34 +412,22 @@ export async function sendLeadWelcomeEmail(data: {
 
 Thank you for visiting MPB Health to explore your health-share options.
 
-Individual programs typically range from $160 to $350 per month, while family plans range from $400 to $1,050 monthly, depending on your specific medical needs.
+${pricingText}
 
-Health-share programs offer a great solution for unexpected medical bills. Our ability to custom tailor a program to your needs makes our health-share particularly beneficial for those looking to avoid pre-paying for benefits they'll never use.
+Health-share programs offer a great solution for unexpected medical bills.
 
-We offer a handful of the very best and unique healthshare options, and I can answer any questions you have and help you figure out which one is the right fit for you.
+${planComparisonText ? `Your plan comparison:\n${planComparisonText}\n\n` : ''}Call our Senior Advisor line to get your exact rate and find the best plan that fits you: ${QUOTE_PHONE_DISPLAY} ext 1
 
 Watch how our programs work: ${videoUrl}
 
-If you'd like my assistance in deciding which program is right for you, schedule a call with me or one of our advisors. There's no charge nor obligation.
-
-Schedule Your Free Consultation: ${BOOKING_URL}
-
-View this message online: ${welcomePageUrl}
-
----
-
-Leonardo Moraes
-Health Share Advisor
-E: Leonardo@mympb.com
-Office: 855-816-4650 Ext.1001
-Direct: (561) 286-3544 (Text or Call)`;
+View your comparison: ${hasPlanData ? resultsUrl : welcomePageUrl}`;
 
   return sendEmail({
     to: data.email,
-    subject: `${data.firstName}, Thank You for Exploring MPB Health`,
+    subject: `${data.firstName}, Your MPB Health Plan Comparison`,
     html,
     text: textContent,
-    replyTo: 'Leonardo@mympb.com'
+    replyTo: 'info@mympb.com'
   });
 }
 

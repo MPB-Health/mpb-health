@@ -129,11 +129,20 @@ class LeadSubmissionService {
       console.error('Staff email notification error:', error);
     }
 
-    // Send welcome email to the lead
+    // Send welcome email to the lead (with plan comparison when from hero calculator)
     try {
+      const planData = formData.formData?.all_plan_rates
+        ? {
+            all_plan_rates: formData.formData.all_plan_rates,
+            traditional_cost_estimate: formData.formData.traditional_cost_estimate,
+            best_match_plan: formData.formData.best_match_plan ?? null,
+            best_match_percentage: formData.formData.best_match_percentage,
+          }
+        : undefined;
       await sendLeadWelcomeEmail({
         firstName: formData.firstName,
         email: formData.email,
+        planData,
       });
       log.info(`[LeadSubmission] Welcome email sent to ${formData.email}`);
     } catch (error) {

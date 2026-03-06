@@ -14,44 +14,15 @@ import {
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
 import { useOrg } from '../contexts/OrgContext';
-import { createCaseService, formatTimeAgo } from '@mpbhealth/crm-core';
+import {
+  createCaseService,
+  formatTimeAgo,
+  type CaseWithRelations,
+  type CaseComment,
+  type CaseStatus,
+  type CasePriority,
+} from '@mpbhealth/crm-core';
 import { supabase } from '../lib/supabase';
-
-// Inline types (may not be exported from crm-core yet)
-type CaseStatus = 'new' | 'assigned' | 'in_progress' | 'on_hold' | 'escalated' | 'resolved' | 'closed';
-type CasePriority = 'low' | 'medium' | 'high' | 'urgent';
-
-interface CaseRecord {
-  id: string;
-  case_number: string;
-  subject: string;
-  description: string | null;
-  status: CaseStatus;
-  priority: CasePriority;
-  origin: string | null;
-  category: string | null;
-  resolution: string | null;
-  due_date: string | null;
-  assigned_to: string | null;
-  owner_id: string | null;
-  account_id: string | null;
-  contact_id: string | null;
-  tags: string[] | null;
-  created_at: string;
-  updated_at: string;
-  account?: { id: string; name: string } | null;
-  contact?: { id: string; first_name: string; last_name: string } | null;
-  assigned_user?: { id: string; full_name: string; email: string } | null;
-  owner?: { id: string; full_name: string; email: string } | null;
-}
-
-interface CaseComment {
-  id: string;
-  body: string;
-  is_internal: boolean;
-  created_at: string;
-  author?: { id: string; full_name: string; email: string } | null;
-}
 
 // Status badge colors
 function getStatusColors(status: CaseStatus) {
@@ -115,7 +86,7 @@ export default function CaseDetail() {
   const [caseService] = useState(() => createCaseService(supabase));
 
   // State
-  const [caseData, setCaseData] = useState<CaseRecord | null>(null);
+  const [caseData, setCaseData] = useState<CaseWithRelations | null>(null);
   const [comments, setComments] = useState<CaseComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'comments'>('overview');

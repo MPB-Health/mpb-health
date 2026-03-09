@@ -36,7 +36,7 @@ const PLAN_SELL: Record<string, { tagline: string; bullets: { lead: string; deta
       { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
       { lead: 'Pre-tax dollars', detail: 'HSA + MEC means real tax savings — keep more of what you earn' },
       { lead: 'Full protection', detail: 'Hospital, surgery, major medical + RX Valet ($0–$14.95)' },
-      { lead: '50,000+ families', detail: 'Already ditched expensive insurance — you can too' },
+      { lead: 'RX Benefits ($0–$15)', detail: '' },
     ],
   },
   'mec-essentials': {
@@ -45,7 +45,7 @@ const PLAN_SELL: Record<string, { tagline: string; bullets: { lead: string; deta
       { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
       { lead: 'Employer mandate satisfied', detail: 'No penalties, no headaches — stay compliant' },
       { lead: 'Debt Dismissal Program', detail: 'Reduce or eliminate existing medical debt' },
-      { lead: 'HSA + RX Valet', detail: 'Benefits that actually save you money' },
+      { lead: 'MEC', detail: '' },
     ],
   },
   'essentials': {
@@ -326,7 +326,7 @@ export const AllPlansComparisonTable: React.FC<AllPlansComparisonTableProps> = (
                           </div>
                           <span className="text-base text-slate-700 leading-relaxed">
                             <strong className="text-slate-900 font-semibold">{b.lead}</strong>
-                            <span className="text-slate-600"> — {b.detail}</span>
+                            {b.detail ? <span className="text-slate-600"> — {b.detail}</span> : null}
                           </span>
                         </li>
                       ))}

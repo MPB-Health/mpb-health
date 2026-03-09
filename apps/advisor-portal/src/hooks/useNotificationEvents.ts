@@ -12,7 +12,7 @@ export function useNotificationEvents(options: {
   eventType?: NotificationEventType;
   limit?: number;
 } = {}) {
-  const { profile, loading: profileLoading } = useAdvisor();
+  const { profile, profileLoading } = useAdvisor();
   const userId = profile?.id;
 
   const [events, setEvents] = useState<NotificationEvent[]>([]);

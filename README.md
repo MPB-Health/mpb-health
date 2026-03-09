@@ -85,6 +85,11 @@ mpbhealth-monorepo/
 └── turbo.json
 ```
 
+## Documentation
+
+- [Hawk-Eye Audit Checklist](docs/HAWK-EYE-AUDIT.md) — Framework for auditing loading, auth, and performance
+- [Hawk-Eye Findings Report](docs/HAWK-EYE-FINDINGS-REPORT.md) — Advisor Portal audit findings (Mar 2025)
+
 ## Tech Stack
 
 - **Framework:** React 18 + TypeScript

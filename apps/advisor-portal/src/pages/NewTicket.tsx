@@ -50,7 +50,8 @@ function formatBytes(bytes: number): string {
 
 export default function NewTicket() {
   const navigate = useNavigate();
-  const { profile, loading: authLoading } = useAdvisor();
+  const { profile, loading: authCheckLoading, profileLoading } = useAdvisor();
+  const authLoading = authCheckLoading || profileLoading;
   const [categories, setCategories] = useState<string[]>([]);
   const [catLoading, setCatLoading] = useState(true);
   const [subject, setSubject] = useState('');

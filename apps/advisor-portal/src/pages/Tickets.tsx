@@ -46,7 +46,8 @@ const PRIORITY_CONFIG: Record<TicketPriority, { label: string; color: string }> 
 };
 
 export default function Tickets() {
-  const { profile, loading: authLoading } = useAdvisor();
+  const { profile, loading: authCheckLoading, profileLoading } = useAdvisor();
+  const authLoading = authCheckLoading || profileLoading;
   const { executeWithAuth } = useTicketAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<TicketStats | null>(null);

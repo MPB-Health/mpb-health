@@ -1,9 +1,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@mpbhealth/ui';
 import App from './App';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+    },
+  },
+});
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
@@ -68,9 +78,10 @@ class ErrorBoundary extends React.Component<
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <ThemeProvider>
-        <BrowserRouter>
-          <App />
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <BrowserRouter>
+            <App />
           <Toaster
             position="top-right"
             toastOptions={{
@@ -84,6 +95,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           />
         </BrowserRouter>
       </ThemeProvider>
+    </QueryClientProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

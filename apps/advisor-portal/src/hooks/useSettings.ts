@@ -154,7 +154,7 @@ export function useUserPreferences() {
 // =============================================================================
 
 export function useNotificationSettings() {
-  const { profile, loading: profileLoading } = useAdvisor();
+  const { profile, profileLoading } = useAdvisor();
   const userId = profile?.user_id;
   const orgId = profile?.org_id;
 

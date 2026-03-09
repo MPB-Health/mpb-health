@@ -1,6 +1,5 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ticketService } from '@mpbhealth/advisor-core';
 import { AdvisorProvider } from './contexts/AdvisorContext';
 import { TourProvider } from './contexts/TourContext';
 import MainLayout from './layouts/MainLayout';
@@ -160,12 +159,6 @@ function RouteSpinner() {
 }
 
 export default function App() {
-  // Warm up the ticket-proxy edge function on app mount so the first ticket
-  // page load doesn't pay the cold-start penalty (~5-13 s).
-  useEffect(() => {
-    ticketService.ping().catch(() => {});
-  }, []);
-
   return (
     <AdvisorProvider>
       <TourProvider>

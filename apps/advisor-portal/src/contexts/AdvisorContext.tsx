@@ -16,6 +16,7 @@ interface AdvisorContextType {
   // Profile
   profile: AdvisorProfile | null;
   loading: boolean;
+  profileLoading: boolean;
   error: string | null;
 
   // Training
@@ -42,6 +43,7 @@ const AdvisorContext = createContext<AdvisorContextType | undefined>(undefined);
 export function AdvisorProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AdvisorProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [trainingModules, setTrainingModules] = useState<TrainingModule[]>([]);
@@ -86,13 +88,14 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  // Load profile
+  // Load profile (called when we have session — does not block initial shell)
   const loadProfile = async () => {
+    setProfileLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         setProfile(null);
-        setLoading(false);
+        setProfileLoading(false);
         return;
       }
 
@@ -111,7 +114,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       }
       setError(err instanceof Error ? err.message : 'Failed to load profile');
     } finally {
-      setLoading(false);
+      setProfileLoading(false);
     }
   };
 
@@ -152,14 +155,14 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
 
   // Refresh profile
   const refreshProfile = async () => {
-    setLoading(true);
+    setProfileLoading(true);
     await loadProfile();
   };
 
   // Handle authentication errors by refreshing session
   const handleAuthError = async () => {
     try {
-      setLoading(true);
+      setProfileLoading(true);
       // Try to refresh the session
       const { data: { session }, error } = await supabase.auth.refreshSession();
       if (error) {
@@ -181,7 +184,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       window.location.href = '/login';
     } finally {
-      setLoading(false);
+      setProfileLoading(false);
     }
   };
 
@@ -212,8 +215,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   const initialHandled = useRef(false);
 
   // Single auth listener — handles initial session + subsequent changes.
-  // Replaces the old pattern of calling getSession() + onAuthStateChange separately,
-  // which caused loadProfile() to fire twice on mount.
+  // Key: set loading=false as soon as we get INITIAL_SESSION so shell can render.
+  // Profile loads in background — shell shows immediately with skeleton user section.
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setLoading(false);
@@ -224,30 +227,13 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && !initialHandled.current)) {
           initialHandled.current = true;
+          setLoading(false);
           if (session?.user) {
-            try {
-              const advisorProfile = await profileService.getProfile(session.user.id);
-              if (advisorProfile) {
-                setProfile(advisorProfile);
-              } else {
-                console.warn('[AdvisorContext] advisor_profiles row missing; using session fallback profile');
-                setProfile(buildSessionFallbackProfile(session.user));
-              }
-            } catch (err) {
-              if (err instanceof Error && err.name === 'AbortError') {
-                console.debug('[AdvisorContext] Session check aborted (likely due to navigation)');
-                return;
-              }
-              setError(err instanceof Error ? err.message : 'Failed to load profile');
-            } finally {
-              setLoading(false);
-            }
+            loadProfile();
           } else {
             setProfile(null);
-            setLoading(false);
           }
         } else if (event === 'SIGNED_IN') {
-          // Subsequent sign-ins (e.g. token refresh that triggers SIGNED_IN)
           await loadProfile();
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
@@ -291,6 +277,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       value={{
         profile,
         loading,
+        profileLoading,
         error,
         trainingModules,
         trainingProgress,

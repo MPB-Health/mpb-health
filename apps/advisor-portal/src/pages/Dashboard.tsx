@@ -226,7 +226,6 @@ export default function Dashboard() {
   const [shareSuccess, setShareSuccess] = useState(false);
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [quickLinksLoading] = useState(false);
   const [copiedFormSlug, setCopiedFormSlug] = useState<string | null>(null);
   const [memberForms, setMemberForms] = useState<AdvisorForm[]>([]);
   const [memberFormsLoading, setMemberFormsLoading] = useState(true);
@@ -1105,23 +1104,7 @@ export default function Dashboard() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-        {quickLinksLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 rounded-xl border border-th-border p-4 animate-pulse"
-              >
-                <div className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayQuickLinks.map((link) =>
               link.popup ? (
                 <button
@@ -1179,7 +1162,6 @@ export default function Dashboard() {
               )
             )}
           </div>
-        )}
       </div>
 
       {/* Grow Your Tree - Refer Advisors modal */}

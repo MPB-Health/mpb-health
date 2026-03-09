@@ -54,7 +54,7 @@ import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhea
 import { getPortalUrl } from '@mpbhealth/config';
 import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
-import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
+import { navigationService, ticketService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { NotificationCenter } from '../components/notifications';
 
@@ -218,7 +218,7 @@ export function clearNavCache() {
 
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, unreadBulletinCount, logout, loading } = useAdvisor();
+  const { profile, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
   const { totalUnread: chatUnreadCount } = useChat();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
@@ -272,6 +272,13 @@ export default function MainLayout() {
       setNavLoading(false);
     }
   }, []);
+
+  // Warm up ticket-proxy Edge Function once we have session (reduces cold-start on /tickets)
+  useEffect(() => {
+    if (!loading && (profile || profileLoading)) {
+      ticketService.ping().catch(() => {});
+    }
+  }, [loading, profile, profileLoading]);
 
   useEffect(() => {
     loadNavigation();
@@ -399,8 +406,8 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // Redirect to login if not authenticated (only after auth check completes)
-  if (!loading && !profile) {
+  // Redirect to login if not authenticated (only after auth check completes and we're not loading profile)
+  if (!loading && !profile && !profileLoading) {
     return <Navigate to="/login" replace />;
   }
 
@@ -446,27 +453,47 @@ export default function MainLayout() {
           }`
         }
       >
-        {profile?.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt=""
-            aria-hidden="true"
-            role="presentation"
-            className="w-8 h-8 rounded-full object-cover"
-          />
+        {profileLoading ? (
+          <>
+            <div className="w-8 h-8 rounded-full bg-[rgb(var(--sidebar-text)_/_0.12)] animate-pulse" />
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="h-4 w-24 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded animate-pulse" />
+              <div className="h-3 w-16 bg-[rgb(var(--sidebar-text)_/_0.08)] rounded animate-pulse" />
+            </div>
+          </>
+        ) : profile?.avatar_url ? (
+          <>
+            <img
+              src={profile.avatar_url}
+              alt=""
+              aria-hidden="true"
+              role="presentation"
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-[rgb(var(--sidebar-text-active))]">
+                {profile?.first_name} {profile?.last_name}
+              </p>
+              <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] truncate">
+                {profile?.specialization}
+              </p>
+            </div>
+          </>
         ) : (
-          <div className="w-8 h-8 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-[rgb(var(--sidebar-text))]" />
-          </div>
+          <>
+            <div className="w-8 h-8 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-[rgb(var(--sidebar-text))]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-[rgb(var(--sidebar-text-active))]">
+                {profile?.first_name} {profile?.last_name}
+              </p>
+              <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] truncate">
+                {profile?.specialization}
+              </p>
+            </div>
+          </>
         )}
-        <div className="flex-1 min-w-0">
-          <p className="truncate text-[rgb(var(--sidebar-text-active))]">
-            {profile?.first_name} {profile?.last_name}
-          </p>
-          <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] truncate">
-            {profile?.specialization}
-          </p>
-        </div>
       </NavLink>
 
       <button
@@ -616,13 +643,7 @@ export default function MainLayout() {
           )
         }
       >
-        {loading ? (
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-th-accent-600" />
-          </div>
-        ) : (
-          <Outlet />
-        )}
+        <Outlet />
       </AppLayout>
       </div>
     </>

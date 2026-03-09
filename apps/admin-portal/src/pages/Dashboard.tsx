@@ -81,7 +81,7 @@ export default function Dashboard() {
       {/* Header */}
       <GradientHeader
         title={`Welcome back, ${user?.first_name}`}
-        subtitle="Here's what's happening with your platform today."
+        subtitle="Here&apos;s what&apos;s happening with your platform today."
       />
 
       {/* Pending enrollments alert */}

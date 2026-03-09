@@ -19,9 +19,6 @@ export const MEDIA_URLS: MediaUrls = {
    */
   heroVideoUrl: 'https://player.vimeo.com/video/1135808114?h=c0bfafd29e',
 
-  /**
-   * Optional: Thumbnail image for video player
-   * TODO: Add if custom thumbnail is needed
-   */
+  /** Optional: Custom thumbnail for video player (omit to use Vimeo default) */
   heroVideoThumbnail: undefined,
 };

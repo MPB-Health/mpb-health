@@ -143,7 +143,7 @@ export default function OrganizationSettings() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-th-text-primary">Organization Settings</h1>
           <p className="text-th-text-secondary mt-1">
-            Configure your organization's profile, branding, and business rules
+            Configure your organization&apos;s profile, branding, and business rules
           </p>
         </div>
 

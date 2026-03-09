@@ -151,9 +151,11 @@ export default function EventForm() {
       }
 
       navigate('/events/manage');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save failed:', err);
-      if (err?.message?.includes('duplicate key') || err?.code === '23505') {
+      const msg = err instanceof Error ? err.message : String(err);
+      const code = err && typeof err === 'object' && 'code' in err ? (err as { code?: string }).code : undefined;
+      if (msg?.includes('duplicate key') || code === '23505') {
         toast.error('An event with this slug already exists');
       } else {
         toast.error('Failed to save event');

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.ticket_categories (
 ALTER TABLE public.ticket_categories ENABLE ROW LEVEL SECURITY;
 
 -- All authenticated users can read active categories (needed for ticket creation form)
+DROP POLICY IF EXISTS "Authenticated users can read ticket_categories" ON public.ticket_categories;
 CREATE POLICY "Authenticated users can read ticket_categories"
   ON public.ticket_categories
   FOR SELECT
@@ -22,6 +23,7 @@ CREATE POLICY "Authenticated users can read ticket_categories"
   USING (true);
 
 -- Only admins and super_admins can manage categories
+DROP POLICY IF EXISTS "Admins can manage ticket_categories" ON public.ticket_categories;
 CREATE POLICY "Admins can manage ticket_categories"
   ON public.ticket_categories
   FOR ALL

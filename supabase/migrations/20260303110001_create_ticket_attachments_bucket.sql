@@ -1,6 +1,6 @@
 -- ============================================
 -- MPB Health Ticket Attachments Storage Bucket
--- Migration: 20260303110000_create_ticket_attachments_bucket.sql
+-- Migration: 20260303110001_create_ticket_attachments_bucket.sql
 -- Purpose: Secure upload storage for advisor support ticket attachments
 -- ============================================
 
@@ -14,6 +14,7 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- Advisors can insert files only into their own top-level folder: {auth.uid()}/...
+DROP POLICY IF EXISTS "Advisors can upload own ticket attachments" ON storage.objects;
 CREATE POLICY "Advisors can upload own ticket attachments"
 ON storage.objects
 FOR INSERT
@@ -24,6 +25,7 @@ WITH CHECK (
 );
 
 -- Advisors can read only their own files (needed for signed URL creation).
+DROP POLICY IF EXISTS "Advisors can read own ticket attachments" ON storage.objects;
 CREATE POLICY "Advisors can read own ticket attachments"
 ON storage.objects
 FOR SELECT
@@ -33,6 +35,7 @@ USING (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
+DROP POLICY IF EXISTS "Advisors can update own ticket attachments" ON storage.objects;
 CREATE POLICY "Advisors can update own ticket attachments"
 ON storage.objects
 FOR UPDATE
@@ -46,6 +49,7 @@ WITH CHECK (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
+DROP POLICY IF EXISTS "Advisors can delete own ticket attachments" ON storage.objects;
 CREATE POLICY "Advisors can delete own ticket attachments"
 ON storage.objects
 FOR DELETE
@@ -56,6 +60,7 @@ USING (
 );
 
 -- Admins and super admins can manage all support ticket attachments.
+DROP POLICY IF EXISTS "Admins can manage all ticket attachments" ON storage.objects;
 CREATE POLICY "Admins can manage all ticket attachments"
 ON storage.objects
 FOR ALL

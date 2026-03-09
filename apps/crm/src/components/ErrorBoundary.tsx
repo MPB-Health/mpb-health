@@ -152,7 +152,7 @@ function RouteErrorFallback({ error, errorInfo, onRetry, onGoHome }: RouteErrorF
             Something went wrong
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            This page encountered an error. Don't worry, your data is safe.
+            This page encountered an error. Don&apos;t worry, your data is safe.
           </p>
         </div>
 
@@ -263,7 +263,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[AppErrorBoundary] Critical error:', error, errorInfo);
-    // TODO: Send to error reporting service (Sentry, etc.)
+    // Error reporting (e.g. Sentry) can be wired here when configured
   }
 
   handleRefresh = () => {

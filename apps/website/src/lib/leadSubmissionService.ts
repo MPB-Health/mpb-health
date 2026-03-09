@@ -1,3 +1,4 @@
+import { createZohoService } from '@mpbhealth/crm-core/zoho';
 import { supabase } from './supabase';
 import { sendLeadNotification, sendLeadWelcomeEmail } from './emailService';
 import { triggerN8nWebhook } from './n8nWebhookService';
@@ -173,6 +174,16 @@ class LeadSubmissionService {
       console.error('Get submission stats error:', error);
       return null;
     }
+  }
+
+  async retryFailedSubmissions(_maxRetries: number = 3): Promise<{ attempted: number; succeeded: number; failed: number }> {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      return { attempted: 0, succeeded: 0, failed: 0 };
+    }
+    const zoho = createZohoService(supabase, supabaseUrl);
+    const { synced, failed } = await zoho.retryFailedSyncs();
+    return { attempted: synced + failed, succeeded: synced, failed };
   }
 }
 

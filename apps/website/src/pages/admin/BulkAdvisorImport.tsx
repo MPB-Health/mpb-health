@@ -358,8 +358,8 @@ export default function BulkAdvisorImport() {
         summary: { total: number; sent: number; skipped: number; errors: number };
       }>('send-advisor-invites', { send_all_pending: true, password });
 
-      if (error) {
-        toast.error(`Failed to send invites: ${error.message}`);
+      if (error || !data) {
+        toast.error(error ? `Failed to send invites: ${error.message}` : 'No response from server');
         return;
       }
 

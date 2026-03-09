@@ -5,7 +5,6 @@
 import { supabase } from '@mpbhealth/database';
 import type {
   ComplianceDocument,
-  ComplianceAcknowledgment,
   ComplianceAcknowledgmentWithDocument,
   ComplianceViolation,
   UserComplianceStatus,
@@ -402,7 +401,7 @@ export class ComplianceService {
       limit?: number;
       offset?: number;
     } = {}
-  ): Promise<{ logs: any[]; total: number }> {
+  ): Promise<{ logs: Record<string, unknown>[]; total: number }> {
     let query = supabase
       .from('audit_logs_detailed')
       .select('*', { count: 'exact' })

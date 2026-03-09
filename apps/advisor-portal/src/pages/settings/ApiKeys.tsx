@@ -446,7 +446,7 @@ export default function ApiKeys() {
             <div className="p-4">
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
                 <p className="text-sm text-yellow-800 font-medium">
-                  Make sure to copy your API key now. You won't be able to see it again!
+                  Make sure to copy your API key now. You won&apos;t be able to see it again!
                 </p>
               </div>
 

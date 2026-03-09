@@ -111,7 +111,7 @@ export default function BulletinDetail() {
         <Bell className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
         <h2 className="text-xl font-semibold text-th-text-primary mb-2">Bulletin not found</h2>
         <p className="text-th-text-tertiary mb-6">
-          The bulletin you're looking for doesn't exist or has been removed.
+          The bulletin you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
         <button
           onClick={() => navigate('/bulletins')}

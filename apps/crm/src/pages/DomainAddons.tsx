@@ -403,7 +403,7 @@ export default function DomainAddons() {
                   onClick={() => { setShowAddModal(false); setExpandedDomain(addResult.domain.id); }}
                   className="w-full px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 text-sm"
                 >
-                  Done - I'll verify after DNS propagates
+                  Done - I&apos;ll verify after DNS propagates
                 </button>
               </>
             )}

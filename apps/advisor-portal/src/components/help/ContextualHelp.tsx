@@ -126,7 +126,7 @@ export function ContextualHelp({
                 onClick={handleDismiss}
                 className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
               >
-                Got it, don't show again
+                Got it, don&apos;t show again
               </button>
               {tip.learnMoreUrl && (
                 <a

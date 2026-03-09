@@ -47,7 +47,7 @@ export default function PushNotificationOptIn() {
         <div>
           <p className="text-sm font-medium text-red-800">Push notifications blocked</p>
           <p className="text-xs text-red-600 mt-0.5">
-            You have blocked notifications for this site. To enable them, update your browser's site permissions.
+            You have blocked notifications for this site. To enable them, update your browser&apos;s site permissions.
           </p>
         </div>
       </div>

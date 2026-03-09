@@ -2,6 +2,7 @@
 // Conversation Service — Manages inbox conversations
 // ============================================================================
 
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { supabase } from '@mpbhealth/database';
 import type {
   Conversation,
@@ -268,14 +269,19 @@ export class ConversationService {
     return supabase
       .channel('conversations')
       .on(
-        'postgres_changes' as any,
+        'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'conversations',
           filter: `org_id=eq.${orgId}`,
         },
-        callback as any
+        (payload: RealtimePostgresChangesPayload<Conversation>) => {
+          callback({
+            new: payload.new as Conversation,
+            old: payload.old as Conversation,
+          });
+        }
       )
       .subscribe();
   }

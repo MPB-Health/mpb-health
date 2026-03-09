@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
@@ -27,8 +27,6 @@ export default function Bulletins() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const tickerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -71,8 +69,6 @@ export default function Bulletins() {
       b.excerpt?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
-
-  const latestBulletins = bulletins.slice(0, 5);
 
   if (loading) {
     return (
@@ -121,40 +117,6 @@ export default function Bulletins() {
           )}
         </div>
       </GradientHeader>
-
-      {/* Latest bulletin ticker */}
-      {latestBulletins.length > 0 && (
-        <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
-          <div className="flex items-center">
-            <div className="bg-gradient-to-r from-[#0A4E8E] to-[#0C71C3] px-4 py-3 flex items-center gap-2 shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
-              <span className="text-xs font-semibold text-white uppercase tracking-wider whitespace-nowrap">Latest</span>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <div ref={tickerRef} className="ticker-scroll flex items-center gap-8 px-4 py-3">
-                {[...latestBulletins, ...latestBulletins].map((b, i) => (
-                  <button
-                    key={`${b.id}-${i}`}
-                    onClick={() => navigate(`/bulletins/${b.slug}`)}
-                    className="flex items-center gap-3 whitespace-nowrap text-sm hover:text-th-accent-600 transition-colors group shrink-0"
-                  >
-                    {!b.is_read && (
-                      <span className="w-1.5 h-1.5 bg-[#0C71C3] rounded-full shrink-0" />
-                    )}
-                    <span className="font-medium text-th-text-primary group-hover:text-th-accent-600 transition-colors">
-                      {b.title}
-                    </span>
-                    <span className="text-th-text-tertiary text-xs">
-                      {formatDistanceToNow(new Date(b.published_date), { addSuffix: true })}
-                    </span>
-                    <span className="text-th-text-tertiary">·</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Featured slider */}
       {featuredBulletins.length > 0 && (

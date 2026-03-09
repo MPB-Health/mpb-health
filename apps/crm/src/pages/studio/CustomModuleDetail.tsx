@@ -295,7 +295,7 @@ export default function CustomModuleDetail() {
               Delete {module.singular_name}
             </h3>
             <p className="text-th-text-secondary mb-6">
-              Are you sure you want to delete "{record?.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{record?.name}&quot;? This action cannot be undone.
             </p>
 
             <div className="flex items-center justify-end gap-3">

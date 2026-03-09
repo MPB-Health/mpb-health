@@ -241,7 +241,7 @@ export function GlobalSearch() {
             <div className="px-4 py-8 text-center">
               <Search className="w-8 h-8 text-th-text-muted/50 mx-auto mb-2" />
               <p className="text-sm text-th-text-secondary">
-                No results for "<span className="font-medium">{query}</span>"
+                No results for &quot;<span className="font-medium">{query}</span>&quot;
               </p>
               <p className="text-xs text-th-text-muted mt-1">
                 Try a different search term

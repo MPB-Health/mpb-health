@@ -78,7 +78,7 @@ export default function NewTicket() {
 
     const tooLarge = incoming.find((file) => file.size > MAX_ATTACHMENT_SIZE);
     if (tooLarge) {
-      setError(`\"${tooLarge.name}\" is too large. Maximum size is 15 MB.`);
+      setError(`"${tooLarge.name}" is too large. Maximum size is 15 MB.`);
       return;
     }
 

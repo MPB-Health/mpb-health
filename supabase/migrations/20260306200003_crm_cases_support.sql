@@ -84,14 +84,22 @@ CREATE INDEX IF NOT EXISTS idx_crm_case_comments_case_id ON public.crm_case_comm
 ALTER TABLE public.crm_cases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_case_comments ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY crm_cases_select ON public.crm_cases FOR SELECT USING (is_org_member(org_id) AND has_org_permission(org_id, 'cases.read'));
-CREATE POLICY crm_cases_insert ON public.crm_cases FOR INSERT WITH CHECK (is_org_member(org_id) AND has_org_permission(org_id, 'cases.write'));
-CREATE POLICY crm_cases_update ON public.crm_cases FOR UPDATE USING (is_org_member(org_id) AND has_org_permission(org_id, 'cases.write'));
-CREATE POLICY crm_cases_delete ON public.crm_cases FOR DELETE USING (is_org_member(org_id) AND has_org_permission(org_id, 'cases.delete'));
+DROP POLICY IF EXISTS crm_cases_select ON public.crm_cases;
+CREATE POLICY crm_cases_select ON public.crm_cases FOR SELECT USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'cases.read'));
+DROP POLICY IF EXISTS crm_cases_insert ON public.crm_cases;
+CREATE POLICY crm_cases_insert ON public.crm_cases FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'cases.write'));
+DROP POLICY IF EXISTS crm_cases_update ON public.crm_cases;
+CREATE POLICY crm_cases_update ON public.crm_cases FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'cases.write'));
+DROP POLICY IF EXISTS crm_cases_delete ON public.crm_cases;
+CREATE POLICY crm_cases_delete ON public.crm_cases FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'cases.delete'));
 
-CREATE POLICY crm_case_comments_select ON public.crm_case_comments FOR SELECT USING (EXISTS (SELECT 1 FROM public.crm_cases c WHERE c.id = case_id AND is_org_member(c.org_id) AND has_org_permission(c.org_id, 'cases.read')));
-CREATE POLICY crm_case_comments_insert ON public.crm_case_comments FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.crm_cases c WHERE c.id = case_id AND is_org_member(c.org_id) AND has_org_permission(c.org_id, 'cases.write')));
+DROP POLICY IF EXISTS crm_case_comments_select ON public.crm_case_comments;
+CREATE POLICY crm_case_comments_select ON public.crm_case_comments FOR SELECT USING (EXISTS (SELECT 1 FROM public.crm_cases c WHERE c.id = case_id AND public.is_org_member(c.org_id) AND public.has_org_permission(c.org_id, 'cases.read')));
+DROP POLICY IF EXISTS crm_case_comments_insert ON public.crm_case_comments;
+CREATE POLICY crm_case_comments_insert ON public.crm_case_comments FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.crm_cases c WHERE c.id = case_id AND public.is_org_member(c.org_id) AND public.has_org_permission(c.org_id, 'cases.write')));
+DROP POLICY IF EXISTS crm_case_comments_update ON public.crm_case_comments;
 CREATE POLICY crm_case_comments_update ON public.crm_case_comments FOR UPDATE USING (author_id = auth.uid());
+DROP POLICY IF EXISTS crm_case_comments_delete ON public.crm_case_comments;
 CREATE POLICY crm_case_comments_delete ON public.crm_case_comments FOR DELETE USING (author_id = auth.uid());
 
 INSERT INTO public.permissions (key, module, description) VALUES

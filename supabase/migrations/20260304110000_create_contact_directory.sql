@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS advisor_contact_directory (
 ALTER TABLE advisor_contact_directory ENABLE ROW LEVEL SECURITY;
 
 -- Advisors and members can read active contacts
+DROP POLICY IF EXISTS "authenticated_read_active_contacts" ON advisor_contact_directory;
 CREATE POLICY "authenticated_read_active_contacts"
   ON advisor_contact_directory
   FOR SELECT
@@ -26,6 +27,7 @@ CREATE POLICY "authenticated_read_active_contacts"
   USING (is_active = true);
 
 -- Admins can read all contacts (including inactive)
+DROP POLICY IF EXISTS "admin_read_all_contacts" ON advisor_contact_directory;
 CREATE POLICY "admin_read_all_contacts"
   ON advisor_contact_directory
   FOR SELECT
@@ -39,6 +41,7 @@ CREATE POLICY "admin_read_all_contacts"
   );
 
 -- Admins can insert contacts
+DROP POLICY IF EXISTS "admin_insert_contacts" ON advisor_contact_directory;
 CREATE POLICY "admin_insert_contacts"
   ON advisor_contact_directory
   FOR INSERT
@@ -52,6 +55,7 @@ CREATE POLICY "admin_insert_contacts"
   );
 
 -- Admins can update contacts
+DROP POLICY IF EXISTS "admin_update_contacts" ON advisor_contact_directory;
 CREATE POLICY "admin_update_contacts"
   ON advisor_contact_directory
   FOR UPDATE
@@ -65,6 +69,7 @@ CREATE POLICY "admin_update_contacts"
   );
 
 -- Admins can delete contacts
+DROP POLICY IF EXISTS "admin_delete_contacts" ON advisor_contact_directory;
 CREATE POLICY "admin_delete_contacts"
   ON advisor_contact_directory
   FOR DELETE
@@ -78,6 +83,6 @@ CREATE POLICY "admin_delete_contacts"
   );
 
 -- Index for ordering
-CREATE INDEX idx_contact_directory_display_order ON advisor_contact_directory (display_order);
-CREATE INDEX idx_contact_directory_department ON advisor_contact_directory (department);
-CREATE INDEX idx_contact_directory_is_active ON advisor_contact_directory (is_active);
+CREATE INDEX IF NOT EXISTS idx_contact_directory_display_order ON advisor_contact_directory (display_order);
+CREATE INDEX IF NOT EXISTS idx_contact_directory_department ON advisor_contact_directory (department);
+CREATE INDEX IF NOT EXISTS idx_contact_directory_is_active ON advisor_contact_directory (is_active);

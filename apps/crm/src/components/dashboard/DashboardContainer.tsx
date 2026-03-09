@@ -89,7 +89,7 @@ function DashboardContent() {
           <LayoutDashboard className="h-12 w-12 mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">No widgets yet</h3>
           <p className="text-sm text-center max-w-md mb-4">
-            Your dashboard is empty. Click "Edit Dashboard" and then "Add Widget" to customize your command center.
+            Your dashboard is empty. Click &quot;Edit Dashboard&quot; and then &quot;Add Widget&quot; to customize your command center.
           </p>
         </div>
       </div>
@@ -109,7 +109,7 @@ function DashboardContent() {
       {/* Edit mode indicator */}
       {editMode && (
         <div className="bg-blue-100 dark:bg-blue-900/30 px-4 py-2 text-sm text-blue-700 dark:text-blue-300 border-b border-blue-200 dark:border-blue-800">
-          <span className="font-medium">Edit Mode:</span> Drag widgets to reorder, resize using the controls, or remove widgets you don't need.
+          <span className="font-medium">Edit Mode:</span> Drag widgets to reorder, resize using the controls, or remove widgets you don&apos;t need.
         </div>
       )}
 

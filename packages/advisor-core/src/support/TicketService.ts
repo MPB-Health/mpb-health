@@ -87,8 +87,9 @@ async function extractFunctionError(error: unknown): Promise<string> {
   if (error && typeof error === 'object' && 'context' in error) {
     try {
       const ctx = (error as Record<string, unknown>).context;
-      if (ctx && typeof ctx === 'object' && 'json' in ctx && typeof (ctx as any).json === 'function') {
-        const body = await (ctx as any).json();
+      const ctxWithJson = ctx as { json?: () => Promise<{ error?: string }> };
+      if (ctxWithJson?.json && typeof ctxWithJson.json === 'function') {
+        const body = await ctxWithJson.json();
         if (body?.error) return body.error;
       }
     } catch {
@@ -238,7 +239,7 @@ export class TicketService {
     try {
       for (const file of attachments) {
         if (file.size > TicketService.ATTACHMENT_MAX_SIZE) {
-          throw new Error(`File \"${file.name}\" exceeds the 15 MB limit.`);
+          throw new Error(`File "${file.name}" exceeds the 15 MB limit.`);
         }
 
         const safeName = this.sanitizeFileName(file.name);

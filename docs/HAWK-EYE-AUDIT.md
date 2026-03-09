@@ -36,19 +36,23 @@ Client/server logging, Supabase logs, monitoring, traceability.
 
 | Area | Path |
 |------|------|
-| Auth | `src/hooks/useAuth.ts`, `src/hooks/useAdvisorAuth.ts`, `src/contexts/AdvisorContext.tsx` |
-| Routing | `src/App.tsx`, `src/layouts/MainLayout.tsx` |
+| Auth | `apps/advisor-portal/src/hooks/useAuth.ts`, `useAdvisorAuth.ts`, `contexts/AdvisorContext.tsx` |
+| Routing | `apps/advisor-portal/src/App.tsx`, `layouts/MainLayout.tsx` |
 | Supabase | `packages/database`, `packages/advisor-core` |
 | Server / Edge | `supabase/functions/` |
 | Profile / RLS | `advisor_profiles` table, `packages/advisor-core/src/profile/ProfileService.ts` |
 
 ## Related Docs
 
-- Auth Troubleshooting
-- Edge Function Errors
-- Operational Procedures
-- Security Controls
+- [Hawk-Eye Findings Report](./HAWK-EYE-FINDINGS-REPORT.md) — Latest audit findings
+- Auth troubleshooting (internal)
+- Edge Function errors (internal)
+- Operational procedures (internal)
+- Security controls (internal)
 
 ---
 
-Use this as a manual checklist or as a prompt for an AI agent auditing the codebase.
+## How to Use
+
+- **Manual audit:** Work through each phase, checking items against the codebase.
+- **AI agent:** Use this document as a prompt: "Run the Hawk-Eye audit on the advisor-portal using the framework in docs/HAWK-EYE-AUDIT.md and produce a findings report."

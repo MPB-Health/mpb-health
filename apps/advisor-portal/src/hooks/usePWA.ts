@@ -39,7 +39,7 @@ export function usePWA() {
   useEffect(() => {
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
       document.referrer.includes('android-app://');
 
     const userAgent = navigator.userAgent.toLowerCase();

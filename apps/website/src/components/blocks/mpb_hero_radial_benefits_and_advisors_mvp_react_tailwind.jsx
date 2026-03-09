@@ -350,10 +350,9 @@ export default function App() {
               <>
                 <Hero />
                 <div id="plans" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-                  {/* TODO: Insert your plan cards or compact calculator here */}
+                  {/* Plan cards / calculator section */}
                 </div>
                 <RadialBenefits />
-                {/* TODO: Add how-it-works split-screen section and FAQ */}
               </>
             )}
           />

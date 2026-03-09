@@ -69,7 +69,7 @@ export function PWAInstallPrompt() {
       <div className="fixed top-0 left-0 right-0 z-[100] bg-yellow-500 text-yellow-900 px-4 py-2 lg:ml-72">
         <div className="flex items-center justify-center gap-2 text-sm font-medium">
           <WifiOff className="w-4 h-4" />
-          <span>You're offline. Some features may be unavailable.</span>
+          <span>You&apos;re offline. Some features may be unavailable.</span>
         </div>
       </div>
     );

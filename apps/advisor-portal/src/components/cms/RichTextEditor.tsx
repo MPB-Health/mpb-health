@@ -125,12 +125,20 @@ const ColorPicker: React.FC<{ editor: Editor; type: 'text' | 'highlight' }> = ({
           <div className="absolute top-full left-0 mt-1 p-2 bg-white border border-neutral-200 rounded-lg shadow-lg z-20 grid grid-cols-4 gap-1">
             {colors.map(color => (
               <button key={color} type="button" onClick={() => {
-                type === 'text' ? editor.chain().focus().setColor(color).run() : editor.chain().focus().toggleHighlight({ color }).run();
+                if (type === 'text') {
+                  editor.chain().focus().setColor(color).run();
+                } else {
+                  editor.chain().focus().toggleHighlight({ color }).run();
+                }
                 setIsOpen(false);
               }} className="w-6 h-6 rounded border border-neutral-300 hover:scale-110 transition-transform" style={{ backgroundColor: color }} title={color} />
             ))}
             <button type="button" onClick={() => {
-              type === 'text' ? editor.chain().focus().unsetColor().run() : editor.chain().focus().unsetHighlight().run();
+              if (type === 'text') {
+                editor.chain().focus().unsetColor().run();
+              } else {
+                editor.chain().focus().unsetHighlight().run();
+              }
               setIsOpen(false);
             }} className="w-6 h-6 rounded border border-neutral-300 hover:bg-neutral-100 flex items-center justify-center text-xs" title="Remove color">x</button>
           </div>

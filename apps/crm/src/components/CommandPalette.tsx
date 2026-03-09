@@ -472,7 +472,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                 {query.length >= 2 && !loading && results.length === 0 && (
                   <div className="px-4 py-8 text-center">
                     <Search className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 dark:text-gray-400">No results found for "{query}"</p>
+                    <p className="text-gray-600 dark:text-gray-400">No results found for &quot;{query}&quot;</p>
                     <p className="text-sm text-gray-400 mt-1">
                       Try a different search term
                     </p>

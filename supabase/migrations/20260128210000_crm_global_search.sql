@@ -6,10 +6,11 @@
 BEGIN;
 
 -- ============================================================================
--- SECTION A: ENABLE pg_trgm EXTENSION
+-- SECTION A: ENABLE pg_trgm EXTENSION (in extensions schema per security best practice)
 -- ============================================================================
 
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
 
 -- ============================================================================
 -- SECTION B: ADD SEARCH VECTORS TO TABLES
@@ -47,21 +48,21 @@ CREATE INDEX IF NOT EXISTS idx_crm_deals_search
 CREATE INDEX IF NOT EXISTS idx_crm_products_search
     ON public.crm_products USING gin(search_vector);
 
--- Trigram indexes for fuzzy matching
+-- Trigram indexes for fuzzy matching (pg_trgm in extensions schema)
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_name_trgm
-    ON public.crm_accounts USING gin(name gin_trgm_ops);
+    ON public.crm_accounts USING gin(name extensions.gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS idx_crm_contacts_name_trgm
-    ON public.crm_contacts USING gin((first_name || ' ' || last_name) gin_trgm_ops);
+    ON public.crm_contacts USING gin((first_name || ' ' || last_name) extensions.gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS idx_crm_contacts_email_trgm
-    ON public.crm_contacts USING gin(email gin_trgm_ops);
+    ON public.crm_contacts USING gin(email extensions.gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS idx_crm_deals_name_trgm
-    ON public.crm_deals USING gin(name gin_trgm_ops);
+    ON public.crm_deals USING gin(name extensions.gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS idx_crm_products_name_trgm
-    ON public.crm_products USING gin(name gin_trgm_ops);
+    ON public.crm_products USING gin(name extensions.gin_trgm_ops);
 
 -- ============================================================================
 -- SECTION D: SEARCH VECTOR UPDATE FUNCTIONS

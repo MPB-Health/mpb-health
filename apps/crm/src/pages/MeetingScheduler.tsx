@@ -589,7 +589,7 @@ function AvailabilityEditor({
                 </div>
               ))}
               {dayData.enabled && dayData.ranges.length === 0 && (
-                <p className="ml-8 text-xs text-gray-400 italic">No time ranges — click "+ Add range"</p>
+                <p className="ml-8 text-xs text-gray-400 italic">No time ranges — click &quot;+ Add range&quot;</p>
               )}
             </div>
           );
@@ -1672,7 +1672,7 @@ export default function MeetingScheduler() {
       ) : filteredSchedules.length === 0 ? (
         <div className="text-center py-16">
           <Search className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No schedules match "{searchQuery}"</p>
+          <p className="text-sm text-gray-500">No schedules match &quot;{searchQuery}&quot;</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

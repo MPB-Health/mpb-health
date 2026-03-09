@@ -556,7 +556,7 @@ function FilterPill({ filter, availableFilters, onRemove }: FilterPillProps) {
     <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
       <span className="font-medium">{field?.label || filter.field}</span>
       <span className="text-blue-500">{operatorLabels[filter.operator]}</span>
-      {filter.value !== null && <span>"{filter.value}"</span>}
+      {filter.value !== null && <span>&quot;{filter.value}&quot;</span>}
       <button
         onClick={onRemove}
         className="ml-1 hover:text-blue-900 dark:hover:text-blue-100"

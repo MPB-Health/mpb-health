@@ -179,7 +179,7 @@ export class AIService {
     // This is a mock implementation
     // In production, you would call Claude, OpenAI, or another AI service
 
-    const { original_message, context, lead_name, tone = 'professional', action = 'improve' } = request;
+    const { original_message, lead_name, tone = 'professional', action = 'improve' } = request;
 
     let suggestedMessage = original_message || '';
     let reasoning = '';
@@ -202,13 +202,14 @@ export class AIService {
         reasoning = 'Added more context and detail to the message.';
         break;
 
-      case 'check_compliance':
+      case 'check_compliance': {
         const issues = this.mockCheckCompliance(suggestedMessage);
         complianceIssues.push(...issues);
         reasoning = issues.length > 0
           ? 'Found potential compliance concerns.'
           : 'No compliance issues detected.';
         break;
+      }
     }
 
     // Create a suggestion record

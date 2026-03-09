@@ -16,7 +16,7 @@ interface SSOResult {
 async function extractError(error: unknown): Promise<string> {
   if (error && typeof error === 'object' && 'context' in error) {
     try {
-      const ctx = (error as any).context;
+      const ctx = (error as { context?: Response }).context;
       const status = typeof ctx?.status === 'number' ? ctx.status : undefined;
       if (ctx && typeof ctx.clone === 'function') {
         const cloned = ctx.clone();

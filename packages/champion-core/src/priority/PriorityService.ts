@@ -5,7 +5,6 @@
 import { supabase } from '@mpbhealth/database';
 import type {
   PriorityLane,
-  PriorityItem,
   PriorityItemWithDetails,
   ScoringRule,
   PowerListItem,
@@ -533,7 +532,7 @@ export class PriorityService {
   /**
    * Get priority stats for dashboard
    */
-  async getStats(orgId: string, userId?: string): Promise<{
+  async getStats(orgId: string, _userId?: string): Promise<{
     totalItems: number;
     byLane: { laneId: string; laneName: string; count: number }[];
     snoozedCount: number;
@@ -555,7 +554,7 @@ export class PriorityService {
     const byLane: Record<string, { laneId: string; laneName: string; count: number }> = {};
     for (const item of laneCounts || []) {
       const laneId = item.lane_id;
-      const laneName = (item.priority_lanes as any)?.name || 'Unknown';
+      const laneName = (item.priority_lanes as { name?: string } | null)?.name || 'Unknown';
       if (!byLane[laneId]) {
         byLane[laneId] = { laneId, laneName, count: 0 };
       }

@@ -260,7 +260,7 @@ export function useAuditLogs(options: {
     setLoading(true);
     try {
       const data = await complianceService.getAuditLogs(organization.id, options);
-      setLogs(data.logs);
+      setLogs(data.logs as unknown as AuditLogDetailed[]);
       setTotal(data.total);
       setError(null);
     } catch (err) {
@@ -291,7 +291,12 @@ export function useAISuggestions(userId: string | undefined, options: { type?: s
 
     setLoading(true);
     try {
-      const data = await aiService.getSuggestions(userId, options as any);
+      const data = await aiService.getSuggestions(userId, {
+        type: options.type as never,
+        status: options.status,
+        leadId: options.leadId,
+        limit: options.limit,
+      });
       setSuggestions(data);
       setError(null);
     } catch (err) {

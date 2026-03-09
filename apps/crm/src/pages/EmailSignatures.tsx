@@ -216,7 +216,7 @@ function DeleteDialog({
         </div>
         <p className="text-sm text-th-text-secondary mb-6">
           Are you sure you want to delete{' '}
-          <span className="font-semibold text-th-text-primary">"{sigName}"</span>?
+          <span className="font-semibold text-th-text-primary">&quot;{sigName}&quot;</span>?
           Any emails currently using this signature will not be affected.
         </p>
         <div className="flex items-center justify-end gap-3">

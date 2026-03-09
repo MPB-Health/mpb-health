@@ -17,6 +17,9 @@
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/auth": "workspace:*"
   },
+  "peerDependencies": {
+    "@supabase/supabase-js": "catalog:"
+  },
   "devDependencies": {
     "@mpbhealth/typescript-config": "workspace:*",
     "@mpbhealth/eslint-config": "workspace:*",

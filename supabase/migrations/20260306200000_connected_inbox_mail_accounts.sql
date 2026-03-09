@@ -71,6 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_mail_accounts_next_sync ON mail_accounts(last_syn
 -- RLS
 ALTER TABLE mail_accounts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_accounts_select ON mail_accounts;
 CREATE POLICY mail_accounts_select ON mail_accounts
   FOR SELECT USING (
     user_id = auth.uid()
@@ -82,12 +83,15 @@ CREATE POLICY mail_accounts_select ON mail_accounts
     )
   );
 
+DROP POLICY IF EXISTS mail_accounts_insert ON mail_accounts;
 CREATE POLICY mail_accounts_insert ON mail_accounts
   FOR INSERT WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS mail_accounts_update ON mail_accounts;
 CREATE POLICY mail_accounts_update ON mail_accounts
   FOR UPDATE USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS mail_accounts_delete ON mail_accounts;
 CREATE POLICY mail_accounts_delete ON mail_accounts
   FOR DELETE USING (user_id = auth.uid());
 
@@ -108,6 +112,7 @@ CREATE TABLE IF NOT EXISTS mail_shared_access (
 
 ALTER TABLE mail_shared_access ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_shared_access_owner ON mail_shared_access;
 CREATE POLICY mail_shared_access_owner ON mail_shared_access
   FOR ALL USING (
     EXISTS (
@@ -117,6 +122,7 @@ CREATE POLICY mail_shared_access_owner ON mail_shared_access
     )
   );
 
+DROP POLICY IF EXISTS mail_shared_access_grantee ON mail_shared_access;
 CREATE POLICY mail_shared_access_grantee ON mail_shared_access
   FOR SELECT USING (grantee_user_id = auth.uid());
 
@@ -152,6 +158,7 @@ CREATE INDEX IF NOT EXISTS idx_mail_folders_type ON mail_folders(account_id, fol
 
 ALTER TABLE mail_folders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_folders_access ON mail_folders;
 CREATE POLICY mail_folders_access ON mail_folders
   FOR ALL USING (
     EXISTS (
@@ -238,6 +245,7 @@ CREATE INDEX IF NOT EXISTS idx_mail_messages_fts ON mail_messages
 
 ALTER TABLE mail_messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_messages_access ON mail_messages;
 CREATE POLICY mail_messages_access ON mail_messages
   FOR ALL USING (
     EXISTS (
@@ -278,6 +286,7 @@ CREATE INDEX IF NOT EXISTS idx_mail_message_attachments_msg ON mail_message_atta
 
 ALTER TABLE mail_message_attachments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_message_attachments_access ON mail_message_attachments;
 CREATE POLICY mail_message_attachments_access ON mail_message_attachments
   FOR ALL USING (
     EXISTS (
@@ -343,6 +352,7 @@ CREATE INDEX IF NOT EXISTS idx_mail_rules_active ON mail_rules(account_id, is_ac
 
 ALTER TABLE mail_rules ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_rules_access ON mail_rules;
 CREATE POLICY mail_rules_access ON mail_rules
   FOR ALL USING (
     EXISTS (
@@ -409,6 +419,7 @@ CREATE INDEX IF NOT EXISTS idx_mail_domains_pending ON mail_domains(next_check_a
 
 ALTER TABLE mail_domains ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_domains_select ON mail_domains;
 CREATE POLICY mail_domains_select ON mail_domains
   FOR SELECT USING (
     EXISTS (
@@ -418,6 +429,7 @@ CREATE POLICY mail_domains_select ON mail_domains
     )
   );
 
+DROP POLICY IF EXISTS mail_domains_manage ON mail_domains;
 CREATE POLICY mail_domains_manage ON mail_domains
   FOR ALL USING (
     EXISTS (
@@ -447,6 +459,7 @@ CREATE TABLE IF NOT EXISTS mail_sender_identities (
 
 ALTER TABLE mail_sender_identities ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_sender_identities_access ON mail_sender_identities;
 CREATE POLICY mail_sender_identities_access ON mail_sender_identities
   FOR ALL USING (
     EXISTS (
@@ -492,6 +505,7 @@ CREATE INDEX IF NOT EXISTS idx_mail_sync_jobs_account ON mail_sync_jobs(account_
 ALTER TABLE mail_sync_jobs ENABLE ROW LEVEL SECURITY;
 
 -- Jobs are managed by service role; users can view their own
+DROP POLICY IF EXISTS mail_sync_jobs_select ON mail_sync_jobs;
 CREATE POLICY mail_sync_jobs_select ON mail_sync_jobs
   FOR SELECT USING (
     EXISTS (
@@ -521,6 +535,7 @@ CREATE INDEX IF NOT EXISTS idx_mail_audit_log_action ON mail_audit_log(action, c
 
 ALTER TABLE mail_audit_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mail_audit_log_select ON mail_audit_log;
 CREATE POLICY mail_audit_log_select ON mail_audit_log
   FOR SELECT USING (user_id = auth.uid());
 

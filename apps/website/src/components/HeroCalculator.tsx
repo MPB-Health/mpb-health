@@ -127,7 +127,7 @@ export default function HeroCalculator() {
     if (watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') {
       return watchedSpouseAge !== undefined && watchedSpouseAge >= 18 && watchedSpouseAge <= 64;
     }
-    if (watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') {
+    if (watchedHouseholdType === 'member-child') {
       return watchedDependentsCount !== undefined && watchedDependentsCount >= 1;
     }
     return true;

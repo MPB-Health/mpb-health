@@ -1,3 +1,4 @@
+import { createZohoService } from '@mpbhealth/crm-core/zoho';
 import { supabase } from './supabase';
 
 // ============================================================================
@@ -810,6 +811,28 @@ class CRMService {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  // --------------------------------------------------------------------------
+  // Zoho Sync
+  // --------------------------------------------------------------------------
+
+  async syncLeadToZoho(leadId: string): Promise<{ success: boolean; leadId?: string; zohoLeadId?: string; error?: string }> {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      return { success: false, error: 'Supabase URL not configured' };
+    }
+    const zoho = createZohoService(supabase, supabaseUrl);
+    return zoho.syncLeadToZoho(leadId);
+  }
+
+  async bulkSyncToZoho(leadIds: string[]): Promise<{ success: boolean; synced: number; failed: number; errors: Array<{ leadId: string; error: string }> }> {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      return { success: false, synced: 0, failed: leadIds.length, errors: leadIds.map(id => ({ leadId: id, error: 'Supabase URL not configured' })) };
+    }
+    const zoho = createZohoService(supabase, supabaseUrl);
+    return zoho.bulkSyncToZoho(leadIds);
   }
 }
 

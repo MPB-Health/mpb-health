@@ -4,7 +4,6 @@ import type {
   MeetingAttendee,
   MeetingInvitation,
   MeetingTemplate,
-  MeetingResource,
 } from '../types';
 import { JITSI_CONFIG } from '../types';
 

@@ -375,7 +375,7 @@ export default function NotificationCenter() {
                 <div className="py-12 text-center">
                   <Bell className="w-10 h-10 text-th-text-muted mx-auto mb-3" />
                   <p className="text-th-text-secondary">No notifications</p>
-                  <p className="text-xs text-th-text-muted mt-1">You're all caught up!</p>
+                  <p className="text-xs text-th-text-muted mt-1">You&apos;re all caught up!</p>
                 </div>
               ) : (
                 <>

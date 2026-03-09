@@ -68,35 +68,42 @@ ALTER TABLE crm_web_forms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crm_web_form_submissions ENABLE ROW LEVEL SECURITY;
 
 -- Forms: org members can CRUD
+DROP POLICY IF EXISTS crm_web_forms_select ON crm_web_forms;
 CREATE POLICY crm_web_forms_select ON crm_web_forms
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS crm_web_forms_insert ON crm_web_forms;
 CREATE POLICY crm_web_forms_insert ON crm_web_forms
   FOR INSERT WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS crm_web_forms_update ON crm_web_forms;
 CREATE POLICY crm_web_forms_update ON crm_web_forms
   FOR UPDATE USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS crm_web_forms_delete ON crm_web_forms;
 CREATE POLICY crm_web_forms_delete ON crm_web_forms
   FOR DELETE USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
 
 -- Public read for active forms (by slug) — needed for public form renderer
+DROP POLICY IF EXISTS crm_web_forms_public_read ON crm_web_forms;
 CREATE POLICY crm_web_forms_public_read ON crm_web_forms
   FOR SELECT USING (status = 'active');
 
 -- Submissions: publicly insertable (for the public form endpoint)
+DROP POLICY IF EXISTS crm_web_form_submissions_insert ON crm_web_form_submissions;
 CREATE POLICY crm_web_form_submissions_insert ON crm_web_form_submissions
   FOR INSERT WITH CHECK (true);
 
 -- Submissions: readable only by org members (via form's org_id)
+DROP POLICY IF EXISTS crm_web_form_submissions_select ON crm_web_form_submissions;
 CREATE POLICY crm_web_form_submissions_select ON crm_web_form_submissions
   FOR SELECT USING (
     form_id IN (
@@ -106,6 +113,7 @@ CREATE POLICY crm_web_form_submissions_select ON crm_web_form_submissions
   );
 
 -- Submissions: updatable by org members (for status changes)
+DROP POLICY IF EXISTS crm_web_form_submissions_update ON crm_web_form_submissions;
 CREATE POLICY crm_web_form_submissions_update ON crm_web_form_submissions
   FOR UPDATE USING (
     form_id IN (
@@ -115,6 +123,7 @@ CREATE POLICY crm_web_form_submissions_update ON crm_web_form_submissions
   );
 
 -- Submissions: deletable by org members
+DROP POLICY IF EXISTS crm_web_form_submissions_delete ON crm_web_form_submissions;
 CREATE POLICY crm_web_form_submissions_delete ON crm_web_form_submissions
   FOR DELETE USING (
     form_id IN (

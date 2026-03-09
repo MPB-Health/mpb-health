@@ -305,9 +305,9 @@ export function ConvertLeadModal({ open, onClose, onSuccess, lead }: ConvertLead
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 className="text-sm font-medium text-blue-800 mb-2">What will happen:</h4>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>- A new contact will be created with the lead's information</li>
+            <li>- A new contact will be created with the lead&apos;s information</li>
             {accountMode === 'new' ? (
-              <li>- A new account "{newAccountName || '...'}" will be created</li>
+              <li>- A new account &quot;{newAccountName || '...'}&quot; will be created</li>
             ) : (
               <li>
                 - The contact will be linked to{' '}

@@ -577,7 +577,7 @@ export default function Dashboard() {
                 </p>
               ) : (
                 <p className="text-sm text-th-text-secondary leading-relaxed">
-                  You're all caught up — no new notifications.
+                  You&apos;re all caught up — no new notifications.
                 </p>
               )}
               {unreadBulletinCount > 0 && (
@@ -1194,7 +1194,7 @@ export default function Dashboard() {
               <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800">
                 <Heart className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-th-text-primary leading-relaxed">
-                  Refer someone who is dedicated to making a real impact in healthcare. We'd love to meet them!
+                  Refer someone who is dedicated to making a real impact in healthcare. We&apos;d love to meet them!
                 </p>
               </div>
               <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800">

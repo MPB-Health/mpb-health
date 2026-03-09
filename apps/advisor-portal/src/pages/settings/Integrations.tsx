@@ -511,7 +511,7 @@ export default function Integrations() {
 
               <div className="p-4 bg-surface-secondary rounded-lg">
                 <p className="text-sm text-th-text-secondary">
-                  After adding this integration, you'll need to complete the OAuth flow or provide
+                  After adding this integration, you&apos;ll need to complete the OAuth flow or provide
                   API credentials to connect your account.
                 </p>
                 <a

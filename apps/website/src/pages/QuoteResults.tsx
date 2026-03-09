@@ -110,6 +110,7 @@ export function QuoteResults() {
   }, []);
 
   const handleEditQuote = () => {
+    if (!data) return;
     navigate('/', {
       state: data.formData
         ? { editQuote: true, formData: data.formData }

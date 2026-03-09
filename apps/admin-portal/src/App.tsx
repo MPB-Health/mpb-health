@@ -54,8 +54,9 @@ const Reports = React.lazy(() => import('./pages/Reports'));
 function GAPageTracker() {
   const location = useLocation();
   useEffect(() => {
-    if (typeof (window as any).gtag === 'function') {
-      (window as any).gtag('event', 'page_view', {
+    const gtag = (window as Window & { gtag?: (cmd: string, ev: string, params: Record<string, string>) => void }).gtag;
+    if (typeof gtag === 'function') {
+      gtag('event', 'page_view', {
         page_path: location.pathname + location.search,
       });
     }

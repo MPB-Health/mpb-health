@@ -167,8 +167,9 @@ export default function PortalSettingsManager() {
           <div>
             <AdminBreadcrumb
               currentPage="Portal Settings"
-              parentPages={[
+              items={[
                 { label: 'Advisor CMS', href: '/admin/advisor-cms' },
+                { label: 'Portal Settings' },
               ]}
             />
             <h1 className="text-2xl font-bold text-gray-900 mt-2">

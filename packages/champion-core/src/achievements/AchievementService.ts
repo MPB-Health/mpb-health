@@ -114,7 +114,7 @@ export class AchievementService {
     achievement: AchievementDefinition,
     stats: UserStats
   ): number {
-    const { type, metric, target } = achievement.requirement;
+    const { metric } = achievement.requirement;
 
     switch (metric) {
       case 'overall':
@@ -140,7 +140,7 @@ export class AchievementService {
     }
   }
 
-  private async getUserStats(userId: string, orgId: string): Promise<UserStats> {
+  private async getUserStats(userId: string, _orgId: string): Promise<UserStats> {
     // Fetch various stats for the user
     // In a real implementation, this would aggregate from multiple tables
 

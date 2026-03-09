@@ -59,7 +59,7 @@ export default function Contact() {
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-th-text-primary">Get In Touch</h2>
           <p className="text-sm text-th-text-tertiary mt-1">
-            Have a question or want to get in touch? Fill out the form below, and we'll get back to you as soon as possible. Whether you need support, have a business inquiry, or just want to say hello, we're here to help!
+            Have a question or want to get in touch? Fill out the form below, and we&apos;ll get back to you as soon as possible. Whether you need support, have a business inquiry, or just want to say hello, we&apos;re here to help!
           </p>
         </div>
 

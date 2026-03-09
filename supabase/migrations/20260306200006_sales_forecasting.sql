@@ -92,7 +92,17 @@ CREATE TABLE IF NOT EXISTS public.crm_forecast_entries (
 -- SECTION D: CREATE CRM_DEAL_STAGE_METRICS VIEW
 -- ============================================================================
 
+-- Compute days-in-stage per history row in a subquery (window functions can't be inside aggregates)
 CREATE OR REPLACE VIEW public.crm_deal_stage_metrics AS
+WITH stage_durations AS (
+    SELECT
+        h.deal_id,
+        h.to_stage_id,
+        EXTRACT(EPOCH FROM (
+            LEAD(h.changed_at) OVER (PARTITION BY h.deal_id ORDER BY h.changed_at) - h.changed_at
+        )) / 86400.0 AS days_in_stage
+    FROM public.crm_deal_stage_history h
+)
 SELECT
     d.org_id,
     s.id AS stage_id,
@@ -115,16 +125,12 @@ SELECT
     END AS win_rate,
     COALESCE(ROUND(AVG(d.amount) FILTER (WHERE d.amount IS NOT NULL), 2), 0) AS avg_deal_size,
     COALESCE(
-        ROUND(AVG(
-            EXTRACT(EPOCH FROM (
-                LEAD(h.changed_at) OVER (PARTITION BY h.deal_id ORDER BY h.changed_at) - h.changed_at
-            )) / 86400.0
-        ) FILTER (WHERE h.id IS NOT NULL), 1),
+        ROUND(AVG(sd.days_in_stage) FILTER (WHERE sd.days_in_stage IS NOT NULL), 1),
         0
     ) AS avg_days_in_stage
 FROM public.crm_deal_stages s
 LEFT JOIN public.crm_deals d ON d.stage_id = s.id
-LEFT JOIN public.crm_deal_stage_history h ON h.deal_id = d.id AND h.to_stage_id = s.id
+LEFT JOIN stage_durations sd ON sd.deal_id = d.id AND sd.to_stage_id = s.id
 WHERE s.is_active = true
 GROUP BY d.org_id, s.id, s.name, s.display_name, s.sort_order, s.is_won_stage, s.is_lost_stage
 ORDER BY s.sort_order;
@@ -170,6 +176,7 @@ ALTER TABLE public.crm_forecasts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_forecast_entries ENABLE ROW LEVEL SECURITY;
 
 -- Forecasts policies
+DROP POLICY IF EXISTS "crm_forecasts_select" ON public.crm_forecasts;
 CREATE POLICY "crm_forecasts_select"
     ON public.crm_forecasts
     FOR SELECT
@@ -178,6 +185,7 @@ CREATE POLICY "crm_forecasts_select"
         public.is_org_member(org_id)
     );
 
+DROP POLICY IF EXISTS "crm_forecasts_insert" ON public.crm_forecasts;
 CREATE POLICY "crm_forecasts_insert"
     ON public.crm_forecasts
     FOR INSERT
@@ -186,6 +194,7 @@ CREATE POLICY "crm_forecasts_insert"
         public.has_org_permission(org_id, 'deals.write')
     );
 
+DROP POLICY IF EXISTS "crm_forecasts_update" ON public.crm_forecasts;
 CREATE POLICY "crm_forecasts_update"
     ON public.crm_forecasts
     FOR UPDATE
@@ -197,6 +206,7 @@ CREATE POLICY "crm_forecasts_update"
         public.has_org_permission(org_id, 'deals.write')
     );
 
+DROP POLICY IF EXISTS "crm_forecasts_delete" ON public.crm_forecasts;
 CREATE POLICY "crm_forecasts_delete"
     ON public.crm_forecasts
     FOR DELETE
@@ -206,6 +216,7 @@ CREATE POLICY "crm_forecasts_delete"
     );
 
 -- Forecast entries policies (access via forecast -> org_id)
+DROP POLICY IF EXISTS "crm_forecast_entries_select" ON public.crm_forecast_entries;
 CREATE POLICY "crm_forecast_entries_select"
     ON public.crm_forecast_entries
     FOR SELECT
@@ -218,6 +229,7 @@ CREATE POLICY "crm_forecast_entries_select"
         )
     );
 
+DROP POLICY IF EXISTS "crm_forecast_entries_insert" ON public.crm_forecast_entries;
 CREATE POLICY "crm_forecast_entries_insert"
     ON public.crm_forecast_entries
     FOR INSERT
@@ -230,6 +242,7 @@ CREATE POLICY "crm_forecast_entries_insert"
         )
     );
 
+DROP POLICY IF EXISTS "crm_forecast_entries_update" ON public.crm_forecast_entries;
 CREATE POLICY "crm_forecast_entries_update"
     ON public.crm_forecast_entries
     FOR UPDATE
@@ -249,6 +262,7 @@ CREATE POLICY "crm_forecast_entries_update"
         )
     );
 
+DROP POLICY IF EXISTS "crm_forecast_entries_delete" ON public.crm_forecast_entries;
 CREATE POLICY "crm_forecast_entries_delete"
     ON public.crm_forecast_entries
     FOR DELETE

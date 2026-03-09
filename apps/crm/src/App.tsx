@@ -128,7 +128,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         <div className="text-center max-w-md px-4">
           <h2 className="text-xl font-semibold text-th-text-primary mb-2">No Organization</h2>
           <p className="text-th-text-secondary">
-            You're not a member of any organization. Contact your administrator to get access.
+            You&apos;re not a member of any organization. Contact your administrator to get access.
           </p>
         </div>
       </div>

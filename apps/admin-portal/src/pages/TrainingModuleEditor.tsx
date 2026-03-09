@@ -377,10 +377,10 @@ export default function TrainingModuleEditor() {
                 className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-sm text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
               />
               {newCategory.trim() && (
-                <p className="text-xs text-th-accent-600 mt-1">Will use: "{newCategory.trim()}"</p>
+                <p className="text-xs text-th-accent-600 mt-1">Will use: &quot;{newCategory.trim()}&quot;</p>
               )}
               {!newCategory.trim() && effectiveCategory && (
-                <p className="text-xs text-th-text-tertiary mt-1">Current: "{effectiveCategory}"</p>
+                <p className="text-xs text-th-text-tertiary mt-1">Current: &quot;{effectiveCategory}&quot;</p>
               )}
             </div>
           </div>

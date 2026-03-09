@@ -4,6 +4,8 @@
 **Scope:** Advisor Portal (`apps/advisor-portal`) + shared packages  
 **Focus:** Loading issues, auth, page load, performance, database, observability
 
+*Generated using the [Hawk-Eye Audit Checklist](./HAWK-EYE-AUDIT.md).*
+
 ---
 
 ## Severity Legend
@@ -31,7 +33,7 @@ The Advisor Portal has several architectural strengths (lazy loading, chunk spli
 | Stack is modern and well-structured | Info | React 18, Vite, Turborepo, Supabase, Tailwind |
 | Good chunk splitting | Info | `vite.config.ts` manualChunks for react, tiptap, lucide, supabase, advisor-core |
 | Security guard for VITE_ vars | Info | `vite.config.ts` blocks service role key and other secrets from bundle |
-| No React Query / TanStack Query | Medium | All data fetching is raw `useState` + `useEffect`; no caching, deduplication, or background refetch |
+| React Query provider present but unused | Medium | `QueryClientProvider` wraps app but no `useQuery`/`useMutation`; all data fetching uses raw `useState` + `useEffect`; no caching, deduplication, or background refetch |
 | External script blocks parsing | Low | `index.html` loads `meet.jit.si/external_api.js` synchronously; consider async/defer |
 
 ---
@@ -164,7 +166,7 @@ The Advisor Portal has several architectural strengths (lazy loading, chunk spli
 ### P1 — High
 
 3. **Introduce request deduplication / caching**  
-   - Add React Query (or similar) for profile, nav, training, bulletin count.  
+   - Use React Query (`useQuery`) for profile, nav, training, bulletin count — provider already present.  
    - Reduces duplicate fetches and improves perceived loading.
 
 4. **Mitigate Edge Function cold start**  
@@ -173,30 +175,30 @@ The Advisor Portal has several architectural strengths (lazy loading, chunk spli
 
 ### P2 — Medium
 
-6. **Preconnect to Supabase**  
+5. **Preconnect to Supabase**  
    - Add `<link rel="preconnect">` for Supabase URL in `index.html`.
 
-7. **Batch dashboard data**  
+6. **Batch dashboard data**  
    - Combine meeting fetch with other dashboard `Promise.allSettled` calls where possible.
 
-8. **Add performance marks**  
+7. **Add performance marks**  
    - `performance.mark('auth-start')`, `performance.mark('profile-loaded')`, etc.  
    - Use for debugging and future APM integration.
 
 ### P3 — Low / Info
 
-9. **Remove dead `quickLinksLoading`**  
+8. **Remove dead `quickLinksLoading`**  
    - Either use it or remove it.
 
-10. **Lazy load Jitsi script**  
-    - Load `external_api.js` only when user navigates to meeting-related pages.
+9. **Lazy load Jitsi script**  
+   - Load `external_api.js` only when user navigates to meeting-related pages.
 
 ### P4 — Observability
 
-11. **Structured logging**  
+10. **Structured logging**  
     - Add correlation IDs to user-facing errors.
 
-12. **APM / Application Insights**  
+11. **APM / Application Insights**  
     - Instrument critical paths for production monitoring.
 
 ---

@@ -25,32 +25,36 @@ CREATE TABLE IF NOT EXISTS crm_approval_processes (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_crm_approval_processes_org ON crm_approval_processes(org_id);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_processes_entity ON crm_approval_processes(entity_type);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_processes_active ON crm_approval_processes(org_id, is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_crm_approval_processes_org ON public.crm_approval_processes(org_id);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_processes_entity ON public.crm_approval_processes(entity_type);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_processes_active ON public.crm_approval_processes(org_id, is_active) WHERE is_active = true;
 
 -- RLS
 ALTER TABLE crm_approval_processes ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "approval_processes_select" ON crm_approval_processes
+DROP POLICY IF EXISTS "approval_processes_select" ON public.crm_approval_processes;
+CREATE POLICY "approval_processes_select" ON public.crm_approval_processes
   FOR SELECT TO authenticated
   USING (org_id IN (
     SELECT om.org_id FROM org_memberships om WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_processes_insert" ON crm_approval_processes
+DROP POLICY IF EXISTS "approval_processes_insert" ON public.crm_approval_processes;
+CREATE POLICY "approval_processes_insert" ON public.crm_approval_processes
   FOR INSERT TO authenticated
   WITH CHECK (org_id IN (
     SELECT om.org_id FROM org_memberships om WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_processes_update" ON crm_approval_processes
+DROP POLICY IF EXISTS "approval_processes_update" ON public.crm_approval_processes;
+CREATE POLICY "approval_processes_update" ON public.crm_approval_processes
   FOR UPDATE TO authenticated
   USING (org_id IN (
     SELECT om.org_id FROM org_memberships om WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_processes_delete" ON crm_approval_processes
+DROP POLICY IF EXISTS "approval_processes_delete" ON public.crm_approval_processes;
+CREATE POLICY "approval_processes_delete" ON public.crm_approval_processes
   FOR DELETE TO authenticated
   USING (org_id IN (
     SELECT om.org_id FROM org_memberships om WHERE om.user_id = auth.uid()
@@ -76,42 +80,46 @@ CREATE TABLE IF NOT EXISTS crm_approval_steps (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_crm_approval_steps_process ON crm_approval_steps(process_id);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_steps_order ON crm_approval_steps(process_id, step_order);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_steps_approver ON crm_approval_steps(approver_id) WHERE approver_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_crm_approval_steps_process ON public.crm_approval_steps(process_id);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_steps_order ON public.crm_approval_steps(process_id, step_order);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_steps_approver ON public.crm_approval_steps(approver_id) WHERE approver_id IS NOT NULL;
 
 -- RLS (inherit access from parent process)
 ALTER TABLE crm_approval_steps ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "approval_steps_select" ON crm_approval_steps
+DROP POLICY IF EXISTS "approval_steps_select" ON public.crm_approval_steps;
+CREATE POLICY "approval_steps_select" ON public.crm_approval_steps
   FOR SELECT TO authenticated
   USING (process_id IN (
     SELECT ap.id FROM crm_approval_processes ap
-    JOIN org_members om ON om.org_id = ap.org_id
+    JOIN org_memberships om ON om.org_id = ap.org_id AND om.status = 'active'
     WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_steps_insert" ON crm_approval_steps
+DROP POLICY IF EXISTS "approval_steps_insert" ON public.crm_approval_steps;
+CREATE POLICY "approval_steps_insert" ON public.crm_approval_steps
   FOR INSERT TO authenticated
   WITH CHECK (process_id IN (
     SELECT ap.id FROM crm_approval_processes ap
-    JOIN org_members om ON om.org_id = ap.org_id
+    JOIN org_memberships om ON om.org_id = ap.org_id AND om.status = 'active'
     WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_steps_update" ON crm_approval_steps
+DROP POLICY IF EXISTS "approval_steps_update" ON public.crm_approval_steps;
+CREATE POLICY "approval_steps_update" ON public.crm_approval_steps
   FOR UPDATE TO authenticated
   USING (process_id IN (
     SELECT ap.id FROM crm_approval_processes ap
-    JOIN org_members om ON om.org_id = ap.org_id
+    JOIN org_memberships om ON om.org_id = ap.org_id AND om.status = 'active'
     WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_steps_delete" ON crm_approval_steps
+DROP POLICY IF EXISTS "approval_steps_delete" ON public.crm_approval_steps;
+CREATE POLICY "approval_steps_delete" ON public.crm_approval_steps
   FOR DELETE TO authenticated
   USING (process_id IN (
     SELECT ap.id FROM crm_approval_processes ap
-    JOIN org_members om ON om.org_id = ap.org_id
+    JOIN org_memberships om ON om.org_id = ap.org_id AND om.status = 'active'
     WHERE om.user_id = auth.uid()
   ));
 
@@ -140,29 +148,32 @@ CREATE TABLE IF NOT EXISTS crm_approval_requests (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_org ON crm_approval_requests(org_id);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_process ON crm_approval_requests(process_id);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_entity ON crm_approval_requests(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_status ON crm_approval_requests(status);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_requester ON crm_approval_requests(requested_by);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_pending ON crm_approval_requests(org_id, status) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_org ON public.crm_approval_requests(org_id);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_process ON public.crm_approval_requests(process_id);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_entity ON public.crm_approval_requests(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_status ON public.crm_approval_requests(status);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_requester ON public.crm_approval_requests(requested_by);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_requests_pending ON public.crm_approval_requests(org_id, status) WHERE status = 'pending';
 
 -- RLS
 ALTER TABLE crm_approval_requests ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "approval_requests_select" ON crm_approval_requests
+DROP POLICY IF EXISTS "approval_requests_select" ON public.crm_approval_requests;
+CREATE POLICY "approval_requests_select" ON public.crm_approval_requests
   FOR SELECT TO authenticated
   USING (org_id IN (
     SELECT om.org_id FROM org_memberships om WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_requests_insert" ON crm_approval_requests
+DROP POLICY IF EXISTS "approval_requests_insert" ON public.crm_approval_requests;
+CREATE POLICY "approval_requests_insert" ON public.crm_approval_requests
   FOR INSERT TO authenticated
   WITH CHECK (org_id IN (
     SELECT om.org_id FROM org_memberships om WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_requests_update" ON crm_approval_requests
+DROP POLICY IF EXISTS "approval_requests_update" ON public.crm_approval_requests;
+CREATE POLICY "approval_requests_update" ON public.crm_approval_requests
   FOR UPDATE TO authenticated
   USING (org_id IN (
     SELECT om.org_id FROM org_memberships om WHERE om.user_id = auth.uid()
@@ -186,25 +197,27 @@ CREATE TABLE IF NOT EXISTS crm_approval_actions (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_crm_approval_actions_request ON crm_approval_actions(request_id);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_actions_approver ON crm_approval_actions(approver_id);
-CREATE INDEX IF NOT EXISTS idx_crm_approval_actions_step ON crm_approval_actions(step_id);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_actions_request ON public.crm_approval_actions(request_id);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_actions_approver ON public.crm_approval_actions(approver_id);
+CREATE INDEX IF NOT EXISTS idx_crm_approval_actions_step ON public.crm_approval_actions(step_id);
 
 -- RLS (inherit access from parent request)
 ALTER TABLE crm_approval_actions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "approval_actions_select" ON crm_approval_actions
+DROP POLICY IF EXISTS "approval_actions_select" ON public.crm_approval_actions;
+CREATE POLICY "approval_actions_select" ON public.crm_approval_actions
   FOR SELECT TO authenticated
   USING (request_id IN (
     SELECT ar.id FROM crm_approval_requests ar
-    JOIN org_members om ON om.org_id = ar.org_id
+    JOIN org_memberships om ON om.org_id = ar.org_id AND om.status = 'active'
     WHERE om.user_id = auth.uid()
   ));
 
-CREATE POLICY "approval_actions_insert" ON crm_approval_actions
+DROP POLICY IF EXISTS "approval_actions_insert" ON public.crm_approval_actions;
+CREATE POLICY "approval_actions_insert" ON public.crm_approval_actions
   FOR INSERT TO authenticated
   WITH CHECK (request_id IN (
     SELECT ar.id FROM crm_approval_requests ar
-    JOIN org_members om ON om.org_id = ar.org_id
+    JOIN org_memberships om ON om.org_id = ar.org_id AND om.status = 'active'
     WHERE om.user_id = auth.uid()
   ));

@@ -24,15 +24,8 @@ export const COMPANY_CONTACT: CompanyContact = {
   officeState: 'FL',
   officeZip: '33487',
   officePhone: '(855) 816-4650',
-
-  // TODO: Add official office email address
   officeEmail: 'info@mpbhealth.com',
-
-  // TODO: Add Google Maps URL for office location
-  // Example: 'https://maps.google.com/?q=5301+N+Federal+Hwy+Suite+155+Boca+Raton+FL+33487'
   officeMapsUrl: 'https://maps.google.com/?q=5301+N+Federal+Hwy+Suite+155+Boca+Raton+FL+33487',
-
-  // TODO: Confirm official office hours
   officeHours: 'Monday - Friday: 9:00 AM - 6:00 PM ET',
 };
 

@@ -12,9 +12,9 @@ export interface GradientHeaderProps {
 }
 
 const sizeClasses = {
-  sm: 'p-4 md:p-5',
-  md: 'p-5 md:p-8',
-  lg: 'p-6 md:p-10',
+  sm: 'px-5 py-4 md:px-6 md:py-5',
+  md: 'px-6 py-5 md:px-8 md:py-6',
+  lg: 'px-6 py-6 md:px-10 md:py-8',
 };
 
 const titleSizes = {
@@ -35,26 +35,29 @@ export function GradientHeader({
   return (
     <div
       className={cn(
-        'rounded-2xl text-white relative overflow-hidden bg-gradient-to-br from-[#0A4E8E] via-[#0C71C3] to-[#0E2D41]',
+        'rounded-2xl bg-surface-primary border border-th-border relative overflow-hidden',
         sizeClasses[size],
         className
       )}
     >
-      <div className="absolute inset-0 opacity-[0.04] grid-pattern-overlay" />
-      <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#A4CC43]/20 blur-[100px]" />
-      <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/5 blur-[80px]" />
+      {/* Subtle top accent line */}
+      <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-th-accent-400 via-th-accent-500 to-th-accent-600" />
 
       <div className="relative z-10">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-3">
-              {icon && <div className="flex-shrink-0">{icon}</div>}
-              <h1 className={cn('font-bold tracking-tight', titleSizes[size])}>
+              {icon && (
+                <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-th-accent-50 dark:bg-th-accent-900/20 flex items-center justify-center text-th-accent-600">
+                  {icon}
+                </div>
+              )}
+              <h1 className={cn('font-semibold tracking-tight text-th-text-primary', titleSizes[size])}>
                 {title}
               </h1>
             </div>
             {subtitle && (
-              <p className="text-white/60 text-sm md:text-base max-w-2xl">
+              <p className="text-th-text-tertiary text-sm md:text-base max-w-2xl leading-relaxed">
                 {subtitle}
               </p>
             )}

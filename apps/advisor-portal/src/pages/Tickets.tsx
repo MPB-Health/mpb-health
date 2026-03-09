@@ -293,7 +293,7 @@ export default function Tickets() {
         actions={
           <Link
             to="/tickets/new"
-            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-th-accent-50 dark:bg-th-accent-900/20 hover:bg-th-accent-100 dark:hover:bg-th-accent-900/30 text-th-text-primary rounded-lg text-sm font-medium transition-colors border border-th-border"
           >
             <PlusCircle className="w-4 h-4" />
             New Ticket

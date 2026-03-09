@@ -86,33 +86,33 @@ export default function Bulletins() {
         icon={<Newspaper className="w-6 h-6" />}
         actions={
           unreadBulletinCount > 0 ? (
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/10">
+            <div className="flex items-center gap-2 px-4 py-2 bg-th-accent-50 dark:bg-th-accent-900/20 backdrop-blur-sm rounded-lg border border-th-border">
               <div className="relative">
                 <Bell className="w-4 h-4 text-amber-400" />
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
               </div>
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-th-text-primary">
                 {unreadBulletinCount} unread
               </span>
             </div>
           ) : undefined
         }
       >
-        <div className="mt-1 pt-5 border-t border-white/10 flex flex-wrap gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.08] backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/[0.06]">
-            <Newspaper className="w-3.5 h-3.5 text-[#A4CC43]" />
-            <span><strong className="text-white">{bulletins.length}</strong> total bulletins</span>
+        <div className="mt-1 pt-5 border-t border-th-border flex flex-wrap gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-th-accent-50 dark:bg-th-accent-900/20 backdrop-blur-sm rounded-full text-xs text-th-text-secondary border border-th-border">
+            <Newspaper className="w-3.5 h-3.5 text-th-accent-500" />
+            <span><strong className="text-th-text-primary">{bulletins.length}</strong> total bulletins</span>
           </div>
           {bulletins.length > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.08] backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/[0.06]">
-              <CalendarDays className="w-3.5 h-3.5 text-[#A4CC43]" />
-              <span>Latest: <strong className="text-white">{format(new Date(bulletins[0].published_date), 'MMM d, yyyy')}</strong></span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-th-accent-50 dark:bg-th-accent-900/20 backdrop-blur-sm rounded-full text-xs text-th-text-secondary border border-th-border">
+              <CalendarDays className="w-3.5 h-3.5 text-th-accent-500" />
+              <span>Latest: <strong className="text-th-text-primary">{format(new Date(bulletins[0].published_date), 'MMM d, yyyy')}</strong></span>
             </div>
           )}
           {unreadBulletinCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 backdrop-blur-sm rounded-full text-xs text-amber-200 border border-amber-400/20">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 backdrop-blur-sm rounded-full text-xs text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
               <Eye className="w-3.5 h-3.5" />
-              <span><strong className="text-white">{unreadBulletinCount}</strong> to review</span>
+              <span><strong className="text-th-text-primary">{unreadBulletinCount}</strong> to review</span>
             </div>
           )}
         </div>

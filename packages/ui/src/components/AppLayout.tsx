@@ -116,8 +116,8 @@ export function AppLayout({
             : 'translate-x-0'
         )}
       >
-        {/* Accent gradient strip */}
-        <div className="absolute inset-y-0 left-0 w-[3px] sidebar-gradient-strip" />
+        {/* Subtle top accent line */}
+        <div className="absolute top-0 left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-[rgb(var(--sidebar-active-bg)_/_0.2)] to-transparent" />
 
         {/* ---- Logo area ---- */}
         <div className={cn(

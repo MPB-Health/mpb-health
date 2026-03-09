@@ -12,7 +12,7 @@ export interface AuthUser {
 }
 
 export function useAuth() {
-  const { profile, loading, logout } = useAdvisor();
+  const { profile, loading, profileLoading, logout } = useAdvisor();
 
   const user = useMemo<AuthUser | null>(() => {
     if (!profile) return null;
@@ -23,11 +23,11 @@ export function useAuth() {
     };
   }, [profile]);
 
-  const isAuthenticated = !!profile;
+  const isAuthenticated = !!profile || profileLoading;
 
   return {
     user,
-    loading,
+    loading: loading || profileLoading,
     isAuthenticated,
     logout,
   };

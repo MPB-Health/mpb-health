@@ -11,7 +11,8 @@ export interface Organization {
 }
 
 export function useOrganization() {
-  const { profile, loading } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const loading = authLoading || profileLoading;
 
   const organization = useMemo<Organization | null>(() => {
     if (!profile?.org_id) return null;

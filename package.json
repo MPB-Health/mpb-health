@@ -2,6 +2,11 @@
   "name": "mpbhealth-monorepo",
   "private": true,
   "packageManager": "pnpm@9.15.4",
+  "pnpm": {
+    "overrides": {
+      "dompurify": ">=3.3.2"
+    }
+  },
   "scripts": {
     "dev": "bash scripts/dev-website.sh",
     "dev:website": "bash scripts/dev-website.sh",
@@ -12,7 +17,7 @@
     "build": "turbo run build",
     "build:website": "turbo run build --filter=website",
     "build:crm": "turbo run build --filter=crm",
-    "build:advisor": "turbo run build --filter=advisor-portal",
+    "build:advisor": "turbo run build --filter=@mpbhealth/advisor-portal",
     "build:admin": "turbo run build --filter=admin-portal",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

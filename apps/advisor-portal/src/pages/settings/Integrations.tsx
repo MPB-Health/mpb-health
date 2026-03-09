@@ -515,7 +515,7 @@ export default function Integrations() {
                   API credentials to connect your account.
                 </p>
                 <a
-                  href="#"
+                  href="/quick-links"
                   className="inline-flex items-center gap-1 text-sm text-th-accent-600 hover:text-th-accent-700 mt-2"
                 >
                   View setup guide

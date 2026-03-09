@@ -58,7 +58,7 @@ export default function Login() {
       formFooter={
         <p className="text-center text-sm text-th-text-tertiary">
           Need help?{' '}
-          <a href="#" className="text-th-accent-600 hover:text-th-accent-700 font-medium">
+          <a href="/contact" className="text-th-accent-600 hover:text-th-accent-700 font-medium">
             Contact Support
           </a>
         </p>

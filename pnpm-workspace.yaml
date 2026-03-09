@@ -61,3 +61,6 @@ catalog:
   react-dom: ^18.3.1
   "@types/react": ^18.3.5
   "@types/react-dom": ^18.3.0
+
+  # ---------- Data fetching ----------
+  "@tanstack/react-query": ^5.62.0

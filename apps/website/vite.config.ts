@@ -57,8 +57,10 @@ export default defineConfig(({ mode }) => {
         name: 'copy-htaccess',
         closeBundle() {
           try {
-            if (existsSync('.htaccess')) {
-              copyFileSync('.htaccess', 'dist/.htaccess');
+            const src = path.resolve(__dirname, '.htaccess');
+            const dest = path.resolve(__dirname, 'dist', '.htaccess');
+            if (existsSync(src)) {
+              copyFileSync(src, dest);
               console.log('✓ Copied .htaccess to dist/');
             } else {
               console.log('ℹ️  No .htaccess file found, skipping copy');

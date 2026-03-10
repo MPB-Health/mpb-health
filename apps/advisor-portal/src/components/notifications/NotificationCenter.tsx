@@ -2,8 +2,9 @@
 // Notification Center — Dropdown panel for notifications + events
 // ============================================================================
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   Bell,
   Check,
@@ -233,8 +234,27 @@ export default function NotificationCenter() {
     limit: 20,
   });
 
+  // Toast on new realtime event
+  const handleNewEvent = useCallback((event: { title: string; body: string | null; action_url: string | null }) => {
+    toast(
+      (t) => (
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            toast.dismiss(t.id);
+            if (event.action_url) navigate(event.action_url);
+          }}
+        >
+          <p className="font-semibold text-sm">{event.title}</p>
+          {event.body && <p className="text-xs text-gray-600 mt-0.5">{event.body}</p>}
+        </div>
+      ),
+      { duration: 8000, icon: '\uD83D\uDD14' },
+    );
+  }, [navigate]);
+
   // Events tab data
-  const { events, loading: eventsLoading, markAsRead: markEventRead, markAllRead: markAllEventsRead } = useNotificationEvents({ limit: 30 });
+  const { events, loading: eventsLoading, markAsRead: markEventRead, markAllRead: markAllEventsRead } = useNotificationEvents({ limit: 30, onNewEvent: handleNewEvent });
   const { count: eventCount, decrement: decrementEvent, reset: resetEvents } = useUnreadEventCount();
 
   const totalBadge = count + eventCount;

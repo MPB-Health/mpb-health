@@ -11,6 +11,7 @@ export function useNotificationEvents(options: {
   unreadOnly?: boolean;
   eventType?: NotificationEventType;
   limit?: number;
+  onNewEvent?: (event: NotificationEvent) => void;
 } = {}) {
   const { profile, profileLoading } = useAdvisor();
   const userId = profile?.id;
@@ -48,6 +49,7 @@ export function useNotificationEvents(options: {
 
     const channel = notificationEventsService.subscribeToEvents(userId, (event) => {
       setEvents((prev) => [event, ...prev]);
+      options.onNewEvent?.(event);
     });
 
     return () => {

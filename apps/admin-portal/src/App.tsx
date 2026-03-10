@@ -2,53 +2,54 @@ import React, { Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AdminProvider } from './contexts/AdminContext';
 import MainLayout from './layouts/MainLayout';
+import { lazyRetry } from './utils/lazyRetry';
 
-// ── Lazy-loaded page components ──────────────────────────────────────────────
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const Users = React.lazy(() => import('./pages/Users'));
-const UserDetail = React.lazy(() => import('./pages/UserDetail'));
-const Enrollments = React.lazy(() => import('./pages/Enrollments'));
-const EnrollmentDetail = React.lazy(() => import('./pages/EnrollmentDetail'));
-const BlogPosts = React.lazy(() => import('./pages/BlogPosts'));
-const BlogEditor = React.lazy(() => import('./pages/BlogEditor'));
-const Resources = React.lazy(() => import('./pages/Resources'));
-const BulletinsList = React.lazy(() => import('./pages/BulletinsList'));
-const BulletinEditor = React.lazy(() => import('./pages/BulletinEditor'));
-const Settings = React.lazy(() => import('./pages/Settings'));
-const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
-const Login = React.lazy(() => import('./pages/Login'));
-const AcceptInvite = React.lazy(() => import('./pages/AcceptInvite'));
-const PaymentProcessors = React.lazy(() => import('./pages/PaymentProcessors'));
-const SmsAccounts = React.lazy(() => import('./pages/SmsAccounts'));
-const PromoCodes = React.lazy(() => import('./pages/PromoCodes'));
-const CodeInventory = React.lazy(() => import('./pages/CodeInventory'));
-const AdminResources = React.lazy(() => import('./pages/AdminResources'));
-const ESignature = React.lazy(() => import('./pages/ESignature'));
-const PlansList = React.lazy(() => import('./pages/PlansList'));
-const PlanEditor = React.lazy(() => import('./pages/PlanEditor'));
-const TicketsList = React.lazy(() => import('./pages/TicketsList'));
-const TicketDetail = React.lazy(() => import('./pages/TicketDetail'));
-const TicketCategoriesSettings = React.lazy(() => import('./pages/TicketCategoriesSettings'));
+// ── Lazy-loaded page components (with retry + auto-reload on chunk/cache errors) ──
+const Dashboard = lazyRetry(() => import('./pages/Dashboard'));
+const Users = lazyRetry(() => import('./pages/Users'));
+const UserDetail = lazyRetry(() => import('./pages/UserDetail'));
+const Enrollments = lazyRetry(() => import('./pages/Enrollments'));
+const EnrollmentDetail = lazyRetry(() => import('./pages/EnrollmentDetail'));
+const BlogPosts = lazyRetry(() => import('./pages/BlogPosts'));
+const BlogEditor = lazyRetry(() => import('./pages/BlogEditor'));
+const Resources = lazyRetry(() => import('./pages/Resources'));
+const BulletinsList = lazyRetry(() => import('./pages/BulletinsList'));
+const BulletinEditor = lazyRetry(() => import('./pages/BulletinEditor'));
+const Settings = lazyRetry(() => import('./pages/Settings'));
+const AuditLogs = lazyRetry(() => import('./pages/AuditLogs'));
+const Login = lazyRetry(() => import('./pages/Login'));
+const AcceptInvite = lazyRetry(() => import('./pages/AcceptInvite'));
+const PaymentProcessors = lazyRetry(() => import('./pages/PaymentProcessors'));
+const SmsAccounts = lazyRetry(() => import('./pages/SmsAccounts'));
+const PromoCodes = lazyRetry(() => import('./pages/PromoCodes'));
+const CodeInventory = lazyRetry(() => import('./pages/CodeInventory'));
+const AdminResources = lazyRetry(() => import('./pages/AdminResources'));
+const ESignature = lazyRetry(() => import('./pages/ESignature'));
+const PlansList = lazyRetry(() => import('./pages/PlansList'));
+const PlanEditor = lazyRetry(() => import('./pages/PlanEditor'));
+const TicketsList = lazyRetry(() => import('./pages/TicketsList'));
+const TicketDetail = lazyRetry(() => import('./pages/TicketDetail'));
+const TicketCategoriesSettings = lazyRetry(() => import('./pages/TicketCategoriesSettings'));
 // Phase 2 — CMS pages
-const TrainingModulesList = React.lazy(() => import('./pages/TrainingModulesList'));
-const TrainingModuleEditor = React.lazy(() => import('./pages/TrainingModuleEditor'));
-const SOPsList = React.lazy(() => import('./pages/SOPsList'));
-const SOPEditor = React.lazy(() => import('./pages/SOPEditor'));
-const QuickLinksList = React.lazy(() => import('./pages/QuickLinksList'));
-const VideoLibraryList = React.lazy(() => import('./pages/VideoLibraryList'));
-const FormsList = React.lazy(() => import('./pages/FormsList'));
-const ContactDirectory = React.lazy(() => import('./pages/ContactDirectory'));
-const NavigationManager = React.lazy(() => import('./pages/NavigationManager'));
+const TrainingModulesList = lazyRetry(() => import('./pages/TrainingModulesList'));
+const TrainingModuleEditor = lazyRetry(() => import('./pages/TrainingModuleEditor'));
+const SOPsList = lazyRetry(() => import('./pages/SOPsList'));
+const SOPEditor = lazyRetry(() => import('./pages/SOPEditor'));
+const QuickLinksList = lazyRetry(() => import('./pages/QuickLinksList'));
+const VideoLibraryList = lazyRetry(() => import('./pages/VideoLibraryList'));
+const FormsList = lazyRetry(() => import('./pages/FormsList'));
+const ContactDirectory = lazyRetry(() => import('./pages/ContactDirectory'));
+const NavigationManager = lazyRetry(() => import('./pages/NavigationManager'));
 // Command center pages
-const Members = React.lazy(() => import('./pages/Members'));
-const MemberDetail = React.lazy(() => import('./pages/MemberDetail'));
-const CRMDashboard = React.lazy(() => import('./pages/CRMDashboard'));
-const CRMLeads = React.lazy(() => import('./pages/CRMLeads'));
-const CRMLeadDetail = React.lazy(() => import('./pages/CRMLeadDetail'));
-const SystemHealth = React.lazy(() => import('./pages/SystemHealth'));
-const ChatModeration = React.lazy(() => import('./pages/ChatModeration'));
-const PushNotifications = React.lazy(() => import('./pages/PushNotifications'));
-const Reports = React.lazy(() => import('./pages/Reports'));
+const Members = lazyRetry(() => import('./pages/Members'));
+const MemberDetail = lazyRetry(() => import('./pages/MemberDetail'));
+const CRMDashboard = lazyRetry(() => import('./pages/CRMDashboard'));
+const CRMLeads = lazyRetry(() => import('./pages/CRMLeads'));
+const CRMLeadDetail = lazyRetry(() => import('./pages/CRMLeadDetail'));
+const SystemHealth = lazyRetry(() => import('./pages/SystemHealth'));
+const ChatModeration = lazyRetry(() => import('./pages/ChatModeration'));
+const PushNotifications = lazyRetry(() => import('./pages/PushNotifications'));
+const Reports = lazyRetry(() => import('./pages/Reports'));
 
 // ── GA4 page-view tracker ─────────────────────────────────────────────────────
 function GAPageTracker() {
@@ -90,6 +91,8 @@ const CHUNK_ERROR_PATTERNS = [
   'Failed to fetch',
   'Loading chunk',
   'ChunkLoadError',
+  'ERR_CACHE_READ_FAILURE',
+  'CACHE_READ_FAILURE',
   'dynamically imported module',
   'error loading dynamically imported module',
 ];
@@ -149,7 +152,7 @@ class RouteErrorBoundary extends React.Component<
           <h2 style={{ color: '#dc2626', marginBottom: '0.5rem' }}>Page failed to load</h2>
           <p style={{ color: '#64748b', marginBottom: '1rem' }}>
             {isChunk
-              ? 'This page could not be loaded. This often happens after a site update when your browser is using an outdated cached version.'
+              ? 'This page could not be loaded. This often happens after a site update or when the browser cache is corrupted. Try "Clear Cache & Reload" or a hard refresh (Ctrl+Shift+R).'
               : this.state.error?.message || 'An unexpected error occurred.'}
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>

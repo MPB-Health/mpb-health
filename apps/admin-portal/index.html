@@ -22,6 +22,19 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (function(){
+        var k='admin_chunk_reload_ts';
+        function isChunkErr(e){var m=(e&&e.reason&&e.reason.message)||'';return /Failed to fetch|ChunkLoadError|ERR_CACHE_READ_FAILURE|dynamically imported module/i.test(m);}
+        function shouldReload(){try{var t=sessionStorage.getItem(k);if(!t)return true;return Date.now()-parseInt(t,10)>30000;}catch(r){return true;}}
+        function mark(){try{sessionStorage.setItem(k,Date.now().toString());}catch(r){}}
+        window.addEventListener('unhandledrejection',function(e){
+          if(!isChunkErr(e))return;
+          e.preventDefault();
+          if(shouldReload()){mark();if(window.caches){caches.keys().then(function(n){Promise.all(n.map(function(x){return caches.delete(x);})).finally(function(){location.reload();});}).catch(function(){location.reload();});}else{location.reload();}}
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

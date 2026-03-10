@@ -84,6 +84,22 @@ function LoadingSpinner() {
 }
 
 // ── Route-level error boundary ───────────────────────────────────────────────
+// Handles chunk load failures (stale cache after deploy) with proper recovery.
+const CHUNK_ERROR_PATTERNS = [
+  'Failed to fetch dynamically imported module',
+  'Failed to fetch',
+  'Loading chunk',
+  'ChunkLoadError',
+  'dynamically imported module',
+  'error loading dynamically imported module',
+];
+
+function isChunkLoadError(error: Error | null): boolean {
+  if (!error?.message) return false;
+  const msg = error.message;
+  return CHUNK_ERROR_PATTERNS.some((p) => msg.includes(p));
+}
+
 class RouteErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
@@ -101,41 +117,84 @@ class RouteErrorBoundary extends React.Component<
     console.error('Admin route error:', error, info.componentStack);
   }
 
+  handleTryAgain = () => {
+    // For chunk errors, a simple state reset won't help — the same chunk URL will 404 again.
+    // Must do a full reload to fetch fresh HTML with current chunk URLs.
+    if (isChunkLoadError(this.state.error)) {
+      window.location.reload();
+      return;
+    }
+    this.setState({ hasError: false, error: null });
+  };
+
+  handleClearCacheAndReload = () => {
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name));
+      });
+    }
+    try {
+      sessionStorage.clear();
+    } catch {
+      /* ignore */
+    }
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
+      const isChunk = isChunkLoadError(this.state.error);
       return (
         <div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif', textAlign: 'center' }}>
           <h2 style={{ color: '#dc2626', marginBottom: '0.5rem' }}>Page failed to load</h2>
           <p style={{ color: '#64748b', marginBottom: '1rem' }}>
-            {this.state.error?.message || 'An unexpected error occurred.'}
+            {isChunk
+              ? 'This page could not be loaded. This often happens after a site update when your browser is using an outdated cached version.'
+              : this.state.error?.message || 'An unexpected error occurred.'}
           </p>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            style={{
-              padding: '0.5rem 1.5rem',
-              background: '#3b82f6',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '0.375rem',
-              cursor: 'pointer',
-              marginRight: '0.5rem',
-            }}
-          >
-            Try Again
-          </button>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '0.5rem 1.5rem',
-              background: '#e2e8f0',
-              color: '#334155',
-              border: 'none',
-              borderRadius: '0.375rem',
-              cursor: 'pointer',
-            }}
-          >
-            Reload Page
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={this.handleTryAgain}
+              style={{
+                padding: '0.5rem 1.5rem',
+                background: '#3b82f6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+              }}
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '0.5rem 1.5rem',
+                background: '#e2e8f0',
+                color: '#334155',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+              }}
+            >
+              Reload Page
+            </button>
+            {isChunk && (
+              <button
+                onClick={this.handleClearCacheAndReload}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  background: '#fef3c7',
+                  color: '#92400e',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Clear Cache & Reload
+              </button>
+            )}
+          </div>
         </div>
       );
     }

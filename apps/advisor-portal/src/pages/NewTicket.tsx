@@ -7,11 +7,14 @@ import { ticketService, type TicketPriority, type Ticket } from '@mpbhealth/advi
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 const FALLBACK_CATEGORIES = [
-  'Technical Issue',
-  'Account Management',
-  'Billing & Payments',
-  'Portal Access',
-  'General Inquiry',
+  'Account & Billing',
+  'Commissions',
+  'E123 Enrollment Issue',
+  'Enrollment Issue',
+  'Landing Page Issue',
+  'Member Issues',
+  'Software',
+  'Technical Support',
   'Other',
 ];
 

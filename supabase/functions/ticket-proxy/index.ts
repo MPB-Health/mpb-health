@@ -520,18 +520,22 @@ async function updateTicket(
   };
 }
 
-async function getCategories(itstsAdmin: ReturnType<typeof createClient>) {
-  const { data, error } = await itstsAdmin
-    .from("tickets")
-    .select("category")
-    .not("category", "is", null);
+async function getCategories(_itstsAdmin: ReturnType<typeof createClient>) {
+  // Read from the advisor-portal ticket_categories table (dtmnkzllidaiqyheguhl)
+  // so categories are managed centrally, not derived from free-text ticket data.
+  const primaryUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const primary = createClient(primaryUrl, serviceKey);
+
+  const { data, error } = await primary
+    .from("ticket_categories")
+    .select("name")
+    .eq("is_active", true)
+    .order("display_order", { ascending: true });
 
   if (error) throw error;
 
-  const categories = [...new Set(
-    (data || []).map((t: { category: string }) => t.category).filter((c: string) => c?.trim()),
-  )].sort() as string[];
-
+  const categories = (data || []).map((r: { name: string }) => r.name);
   return { categories };
 }
 

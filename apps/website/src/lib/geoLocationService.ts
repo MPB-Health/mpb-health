@@ -103,7 +103,7 @@ export async function getStateSetting(stateCode: string): Promise<GeoStateSettin
       .from('geo_state_settings')
       .select('*')
       .eq('state_code', normalizedCode)
-      .single();
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') {

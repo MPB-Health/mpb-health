@@ -10,7 +10,12 @@
       "Bash(supabase functions deploy ticket-proxy --project-ref dtmnkzllidaiqyheguhl)",
       "Bash(ls -la \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")",
       "Bash(cat apps/advisor-portal/dist/assets/index-*.css)",
-      "Bash(tr '}' '\\\\n')"
+      "Bash(tr '}' '\\\\n')",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo\" -type d -name \"send-ticket-notification\")",
+      "Bash(xargs grep:*)",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal\" -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.jsx\" -o -name \"*.js\")",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src/pages/\")",
+      "Bash(npx turbo:*)"
     ]
   }
 }

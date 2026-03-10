@@ -76,39 +76,57 @@ export default function Dashboard() {
     },
   ];
 
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  })();
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <GradientHeader
-        title={`Welcome back, ${user?.first_name}`}
-        subtitle="Here&apos;s what&apos;s happening with your platform today."
-      />
+    <div className="space-y-8">
+      {/* Premium welcome banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[rgb(var(--accent-600))] via-[rgb(var(--accent-700))] to-[rgb(var(--accent-900))] p-8 text-white">
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_40%,white_0%,transparent_60%)]" />
+        <div className="relative z-10">
+          <p className="text-sm font-medium text-white/70 mb-1 tracking-wide uppercase">
+            {greeting}
+          </p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">
+            {user?.first_name} {user?.last_name}
+          </h1>
+          <p className="text-white/60 text-sm max-w-lg">
+            Here's what's happening with your platform today.
+          </p>
+        </div>
+      </div>
 
       {/* Pending enrollments alert */}
       {pendingEnrollments > 0 && (
         <button
+          type="button"
           onClick={() => navigate('/enrollments')}
-          className="w-full flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+          className="w-full flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-700/40 rounded-2xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all shadow-sm"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-800/40 rounded-full flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-800/40 rounded-xl flex items-center justify-center">
+              <UserPlus className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="text-left">
-              <p className="font-medium text-yellow-800 dark:text-yellow-200">
+              <p className="font-semibold text-amber-800 dark:text-amber-200">
                 {pendingEnrollments} pending enrollment{pendingEnrollments !== 1 ? 's' : ''}
               </p>
-              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              <p className="text-sm text-amber-600 dark:text-amber-400">
                 Review and approve new applications
               </p>
             </div>
           </div>
-          <TrendingUp className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+          <TrendingUp className="w-5 h-5 text-amber-500 dark:text-amber-400" />
         </button>
       )}
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((stat) => (
           <MetricCard
             key={stat.name}
@@ -123,8 +141,9 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Lead activity chart */}
-        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-          <h2 className="font-semibold text-th-text-primary mb-6">Lead Activity</h2>
+        <div className="card-premium p-6">
+          <h2 className="font-semibold text-th-text-primary mb-1">Lead Activity</h2>
+          <p className="text-xs text-th-text-tertiary mb-6">Last 14 days</p>
           <div className="h-64">
             {loading ? (
               <div className="flex items-center justify-center h-full">
@@ -149,8 +168,9 @@ export default function Dashboard() {
                     contentStyle={{
                       backgroundColor: chartTheme.tooltipBg,
                       border: `1px solid ${chartTheme.tooltipBorder}`,
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       color: chartTheme.tooltipText,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                     }}
                     labelFormatter={(date) =>
                       new Date(date).toLocaleDateString('en-US', {
@@ -164,8 +184,9 @@ export default function Dashboard() {
                     type="monotone"
                     dataKey="value"
                     stroke={chartTheme.colors[1]}
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     dot={false}
+                    activeDot={{ r: 5, strokeWidth: 2, fill: '#fff' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -174,8 +195,9 @@ export default function Dashboard() {
         </div>
 
         {/* Lead sources chart */}
-        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-          <h2 className="font-semibold text-th-text-primary mb-6">Top Lead Sources</h2>
+        <div className="card-premium p-6">
+          <h2 className="font-semibold text-th-text-primary mb-1">Top Lead Sources</h2>
+          <p className="text-xs text-th-text-tertiary mb-6">All time</p>
           <div className="h-64">
             {loading ? (
               <div className="flex items-center justify-center h-full">
@@ -196,11 +218,12 @@ export default function Dashboard() {
                     contentStyle={{
                       backgroundColor: chartTheme.tooltipBg,
                       border: `1px solid ${chartTheme.tooltipBorder}`,
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       color: chartTheme.tooltipText,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                     }}
                   />
-                  <Bar dataKey="count" fill={chartTheme.colors[1]} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="count" fill={chartTheme.colors[1]} radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -212,39 +235,30 @@ export default function Dashboard() {
       <CRMOverviewCard />
 
       {/* Quick actions */}
-      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-        <h2 className="font-semibold text-th-text-primary mb-4">Quick Actions</h2>
+      <div className="card-premium p-6">
+        <h2 className="font-semibold text-th-text-primary mb-1">Quick Actions</h2>
+        <p className="text-xs text-th-text-tertiary mb-5">Common tasks at a glance</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button
-            onClick={() => navigate('/users')}
-            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
-          >
-            <Users className="w-8 h-8 text-th-accent-600 mb-2" />
-            <span className="text-sm font-medium text-th-text-secondary">Manage Users</span>
-          </button>
-          <button
-            onClick={() => navigate('/enrollments')}
-            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
-          >
-            <UserPlus className="w-8 h-8 text-th-accent-600 mb-2" />
-            <span className="text-sm font-medium text-th-text-secondary">
-              Review Enrollments
-            </span>
-          </button>
-          <button
-            onClick={() => navigate('/content/blog/new')}
-            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
-          >
-            <TrendingUp className="w-8 h-8 text-th-accent-600 mb-2" />
-            <span className="text-sm font-medium text-th-text-secondary">New Blog Post</span>
-          </button>
-          <button
-            onClick={() => navigate('/settings')}
-            className="flex flex-col items-center p-4 rounded-lg border border-th-border hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
-          >
-            <Activity className="w-8 h-8 text-th-accent-600 mb-2" />
-            <span className="text-sm font-medium text-th-text-secondary">Settings</span>
-          </button>
+          {[
+            { icon: Users, label: 'Manage Users', href: '/users' },
+            { icon: UserPlus, label: 'Review Enrollments', href: '/enrollments' },
+            { icon: TrendingUp, label: 'New Blog Post', href: '/content/blog/new' },
+            { icon: Activity, label: 'Settings', href: '/settings' },
+          ].map((action) => (
+            <button
+              type="button"
+              key={action.href}
+              onClick={() => navigate(action.href)}
+              className="group flex flex-col items-center p-5 rounded-2xl border border-th-border/60 hover:border-th-accent-300 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-all hover:shadow-md"
+            >
+              <div className="w-12 h-12 rounded-xl bg-th-accent-50 dark:bg-th-accent-900/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <action.icon className="w-6 h-6 text-th-accent-600" />
+              </div>
+              <span className="text-sm font-medium text-th-text-secondary group-hover:text-th-text-primary transition-colors">
+                {action.label}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

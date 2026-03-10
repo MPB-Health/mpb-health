@@ -47,13 +47,15 @@ export function useNotificationEvents(options: {
   useEffect(() => {
     if (!userId) return;
 
-    const channel = notificationEventsService.subscribeToEvents(userId, (event) => {
+    const handler = (event: NotificationEvent) => {
       setEvents((prev) => [event, ...prev]);
       options.onNewEvent?.(event);
-    });
+    };
+
+    notificationEventsService.subscribeToEvents(userId, handler);
 
     return () => {
-      notificationEventsService.unsubscribeFromEvents(userId);
+      notificationEventsService.unsubscribeFromEvents(userId, handler);
     };
   }, [userId]);
 
@@ -115,16 +117,18 @@ export function useUnreadEventCount() {
     fetchCount();
   }, [fetchCount]);
 
-  // Realtime: increment on new event, refresh periodically
+  // Realtime: increment on new event
   useEffect(() => {
     if (!userId) return;
 
-    const channel = notificationEventsService.subscribeToEvents(userId, () => {
+    const handler = () => {
       setCount((prev) => prev + 1);
-    });
+    };
+
+    notificationEventsService.subscribeToEvents(userId, handler);
 
     return () => {
-      notificationEventsService.unsubscribeFromEvents(userId);
+      notificationEventsService.unsubscribeFromEvents(userId, handler);
     };
   }, [userId]);
 

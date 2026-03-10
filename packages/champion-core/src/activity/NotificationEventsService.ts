@@ -125,42 +125,64 @@ export class NotificationEventsService {
   }
 
   // =========================================================================
-  // REALTIME
+  // REALTIME — supports multiple subscribers per user via shared channel
   // =========================================================================
 
   private _eventChannels = new Map<string, ReturnType<typeof supabase.channel>>();
+  private _eventCallbacks = new Map<string, Set<(event: NotificationEvent) => void>>();
 
   subscribeToEvents(
     userId: string,
     callback: (event: NotificationEvent) => void,
   ) {
-    // Remove any existing subscription for this user to prevent duplicates
-    const existing = this._eventChannels.get(userId);
-    if (existing) {
-      supabase.removeChannel(existing);
+    // Track the callback
+    if (!this._eventCallbacks.has(userId)) {
+      this._eventCallbacks.set(userId, new Set());
+    }
+    this._eventCallbacks.get(userId)!.add(callback);
+
+    // Only create one Supabase channel per user — fan out to all callbacks
+    if (!this._eventChannels.has(userId)) {
+      const channel = supabase
+        .channel(`notification-events-${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notification_events',
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload) => {
+            const ev = payload.new as NotificationEvent;
+            const cbs = this._eventCallbacks.get(userId);
+            if (cbs) {
+              for (const cb of cbs) {
+                try { cb(ev); } catch { /* don't let one callback break others */ }
+              }
+            }
+          },
+        )
+        .subscribe();
+
+      this._eventChannels.set(userId, channel);
     }
 
-    const channel = supabase
-      .channel(`notification-events-${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notification_events',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          callback(payload.new as NotificationEvent);
-        },
-      )
-      .subscribe();
-
-    this._eventChannels.set(userId, channel);
-    return channel;
+    return this._eventChannels.get(userId)!;
   }
 
-  unsubscribeFromEvents(userId: string) {
+  unsubscribeFromEvents(userId: string, callback?: (event: NotificationEvent) => void) {
+    if (callback) {
+      // Remove just this callback; keep channel alive if others remain
+      const cbs = this._eventCallbacks.get(userId);
+      if (cbs) {
+        cbs.delete(callback);
+        if (cbs.size > 0) return; // Other subscribers still active
+      }
+    }
+
+    // No callbacks left (or full teardown) — remove the channel
+    this._eventCallbacks.delete(userId);
     const channel = this._eventChannels.get(userId);
     if (channel) {
       supabase.removeChannel(channel);

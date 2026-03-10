@@ -67,8 +67,11 @@ const EVENT_TYPE_ICONS: Record<string, typeof Bell> = {
   chat_mention: AtSign,
   ticket_update: Ticket,
   ticket_reply: Ticket,
+  ticket_status_change: Ticket,
   bulletin: Megaphone,
+  bulletin_published: Megaphone,
   system: Bell,
+  system_alert: Bell,
 };
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -76,8 +79,11 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   chat_mention: 'bg-violet-100 text-violet-600',
   ticket_update: 'bg-orange-100 text-orange-600',
   ticket_reply: 'bg-orange-100 text-orange-600',
+  ticket_status_change: 'bg-amber-100 text-amber-600',
   bulletin: 'bg-emerald-100 text-emerald-600',
+  bulletin_published: 'bg-emerald-100 text-emerald-600',
   system: 'bg-gray-100 text-gray-600',
+  system_alert: 'bg-gray-100 text-gray-600',
 };
 
 function formatRelativeTime(dateString: string): string {

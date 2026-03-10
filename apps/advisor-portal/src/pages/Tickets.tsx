@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useTicketAuth } from '../components/TicketAuthWrapper';
@@ -49,6 +49,7 @@ export default function Tickets() {
   const { profile, loading: authCheckLoading, profileLoading } = useAdvisor();
   const authLoading = authCheckLoading || profileLoading;
   const { executeWithAuth } = useTicketAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<TicketStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -128,6 +129,17 @@ export default function Tickets() {
   useEffect(() => {
     if (!authLoading && profile) loadStats();
   }, [authLoading, profile, loadStats]);
+
+  // Deep-link: auto-open ticket detail from ?tid= query param (e.g. from notification)
+  useEffect(() => {
+    const tid = searchParams.get('tid');
+    if (tid && !authLoading && profile && !selectedTicket) {
+      openTicketDetail(tid);
+      // Remove tid from URL so refreshing doesn't re-open
+      searchParams.delete('tid');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, authLoading, profile]);
 
   const openTicketDetail = async (ticketId: string) => {
     setDetailLoading(true);

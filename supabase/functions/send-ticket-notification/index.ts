@@ -422,6 +422,7 @@ interface PushTarget {
   action_url: string;
   tag: string;
   event_type: string;
+  actor_name?: string;
 }
 
 /**
@@ -443,9 +444,10 @@ function buildPushTargets(
           user_id: advisorUserId,
           title: "Ticket received",
           body: `Ticket #${p.ticket_number} has been submitted`,
-          action_url: "/tickets",
+          action_url: `/tickets?tid=${p.ticket_id}`,
           tag: "mpb-ticket",
           event_type: "ticket_status_change",
+          actor_name: p.advisor_name || null,
         });
       }
       // All admins get alert about new ticket
@@ -457,6 +459,7 @@ function buildPushTargets(
           action_url: "/admin/tickets",
           tag: "mpb-ticket",
           event_type: "ticket_reply",
+          actor_name: p.advisor_name || null,
         });
       }
       break;
@@ -469,9 +472,10 @@ function buildPushTargets(
           user_id: advisorUserId,
           title: "Ticket opened for you",
           body: `Support ticket #${p.ticket_number} was opened on your behalf`,
-          action_url: "/tickets",
+          action_url: `/tickets?tid=${p.ticket_id}`,
           tag: "mpb-ticket",
           event_type: "ticket_status_change",
+          actor_name: p.actor_name || "Support Team",
         });
       }
       break;
@@ -487,6 +491,7 @@ function buildPushTargets(
           action_url: "/admin/tickets",
           tag: "mpb-ticket",
           event_type: "ticket_reply",
+          actor_name: p.advisor_name || null,
         });
       }
       break;
@@ -499,9 +504,10 @@ function buildPushTargets(
           user_id: advisorUserId,
           title: "New reply on your ticket",
           body: `Support team replied to ticket #${p.ticket_number}`,
-          action_url: "/tickets",
+          action_url: `/tickets?tid=${p.ticket_id}`,
           tag: "mpb-ticket",
           event_type: "ticket_reply",
+          actor_name: p.actor_name || "Support Team",
         });
       }
       break;
@@ -515,9 +521,10 @@ function buildPushTargets(
           user_id: advisorUserId,
           title: "Ticket updated",
           body: `Ticket #${p.ticket_number} is now ${statusText}`,
-          action_url: "/tickets",
+          action_url: `/tickets?tid=${p.ticket_id}`,
           tag: "mpb-ticket",
           event_type: "ticket_status_change",
+          actor_name: p.actor_name || "Support Team",
         });
       }
       break;
@@ -608,6 +615,7 @@ async function sendInAppAndPush(
       action_url: target.action_url,
       source_type: "ticket",
       source_id: ticketId,
+      actor_name: target.actor_name || null,
       metadata: { tag: target.tag },
     });
 

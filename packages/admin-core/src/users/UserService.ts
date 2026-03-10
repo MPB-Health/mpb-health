@@ -12,7 +12,6 @@ export interface CrossPortalUser {
 
 export interface AdvisorProfileSummary {
   id: string;
-  user_id: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -147,21 +146,22 @@ export class UserService {
     const { data, error } = await supabase
       .from('permissions')
       .select('*')
-      .order('category', { ascending: true });
+      .order('module', { ascending: true });
 
     if (error) throw error;
     return data || [];
   }
 
-  // Get permissions by category
+  // Get permissions grouped by module
   async getPermissionsByCategory(): Promise<Record<string, Permission[]>> {
     const permissions = await this.getPermissions();
     return permissions.reduce(
       (acc, perm) => {
-        if (!acc[perm.category]) {
-          acc[perm.category] = [];
+        const key = perm.module || 'general';
+        if (!acc[key]) {
+          acc[key] = [];
         }
-        acc[perm.category].push(perm);
+        acc[key].push(perm);
         return acc;
       },
       {} as Record<string, Permission[]>
@@ -256,8 +256,8 @@ export class UserService {
   async getAdvisorProfile(userId: string): Promise<AdvisorProfileSummary | null> {
     const { data, error } = await supabase
       .from('advisor_profiles')
-      .select('id, user_id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
-      .or(`id.eq.${userId},user_id.eq.${userId}`)
+      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
+      .eq('id', userId)
       .limit(1);
 
     if (error) throw error;
@@ -297,9 +297,11 @@ export class UserService {
     return users[0] ?? null;
   }
 
-  /** Send a password reset email via Supabase Auth */
+  /** Send a password reset email via Supabase Auth (redirects to advisor portal) */
   async sendPasswordReset(email: string): Promise<void> {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://advisor.mpb.health/reset-password',
+    });
     if (error) throw error;
   }
 
@@ -316,7 +318,7 @@ export class UserService {
     const { error } = await supabase
       .from('advisor_profiles')
       .update({ status })
-      .or(`id.eq.${userId},user_id.eq.${userId}`);
+      .eq('id', userId);
     if (error) throw error;
   }
 
@@ -328,10 +330,37 @@ export class UserService {
     const { data, error } = await supabase
       .from('advisor_profiles')
       .update(updates)
-      .or(`id.eq.${userId},user_id.eq.${userId}`)
-      .select('id, user_id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
+      .eq('id', userId)
+      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
       .single();
 
+    if (error) throw error;
+    return data;
+  }
+
+  /** List advisor profiles with optional search (by name, email, or agent_id) */
+  async getAdvisorProfiles(search?: string): Promise<AdvisorProfileSummary[]> {
+    let query = supabase
+      .from('advisor_profiles')
+      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
+      .order('created_at', { ascending: false });
+
+    if (search) {
+      query = query.or(
+        `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,agent_id.ilike.%${search}%`
+      );
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  /** Resend welcome/invite email to a single advisor via send-advisor-invites edge function */
+  async resendAdvisorInvite(advisorId: string, password: string): Promise<{ success: boolean; error?: string }> {
+    const { data, error } = await supabase.functions.invoke('send-advisor-invites', {
+      body: { advisor_ids: [advisorId], password },
+    });
     if (error) throw error;
     return data;
   }

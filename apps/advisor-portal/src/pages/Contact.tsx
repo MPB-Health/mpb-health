@@ -40,7 +40,7 @@ export default function Contact() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-surface-tertiary">
@@ -55,7 +55,7 @@ export default function Contact() {
       </div>
 
       {/* Cognito Form Card */}
-      <div className="bg-surface-primary rounded-xl border border-th-border p-6 max-w-2xl">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-th-text-primary">Get In Touch</h2>
           <p className="text-sm text-th-text-tertiary mt-1">
@@ -74,7 +74,7 @@ export default function Contact() {
       </div>
 
       {/* Contact info */}
-      <div className="bg-surface-primary rounded-xl border border-th-border p-6 max-w-2xl">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
         <p className="text-sm text-th-text-tertiary font-medium">
           Empowering Healthcare Advisors – Making a Difference Every Day!
         </p>

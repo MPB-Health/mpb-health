@@ -378,6 +378,13 @@ verify_jwt = true
 [functions.send-ticket-notification]
 verify_jwt = false
 
+# push-service is called server-side by send-ticket-notification (via service
+# role key). Disable gateway JWT verification — the function validates the
+# service role key itself (line 192). User-facing actions still go through
+# verifyAuth() internally.
+[functions.push-service]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

@@ -13,6 +13,7 @@ import {
   Copy,
   CheckCheck,
   ExternalLink,
+  Share2,
 } from 'lucide-react';
 import { Tooltip } from '../components/Tooltip';
 import {
@@ -228,6 +229,22 @@ export default function Forms({ section }: FormsProps) {
                         <Link2 className="w-4 h-4" />
                       )}
                     </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (navigator.share) {
+                          navigator.share({ title: form.name || form.label, url: shareUrl }).catch(() => {});
+                        } else {
+                          navigator.clipboard.writeText(shareUrl);
+                          setCopiedId(form.id);
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg text-th-text-tertiary hover:text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
+                      title="Share form"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
                     <a
                       href={shareUrl}
                       target="_blank"
@@ -318,6 +335,23 @@ export default function Forms({ section }: FormsProps) {
                         >
                           {copied ? <CheckCheck className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
                           {copied ? 'Copied!' : 'Copy Link'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (navigator.share) {
+                              navigator.share({ title: selectedForm.name || selectedForm.label, url }).catch(() => {});
+                            } else {
+                              navigator.clipboard.writeText(url);
+                              setCopiedId(selectedForm.id);
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+                          title="Share form"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          Share
                         </button>
                         <button
                           type="button"

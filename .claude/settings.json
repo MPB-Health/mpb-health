@@ -8,7 +8,9 @@
       "Bash(supabase --version)",
       "Bash(supabase projects list)",
       "Bash(supabase functions deploy ticket-proxy --project-ref dtmnkzllidaiqyheguhl)",
-      "Bash(ls -la \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")"
+      "Bash(ls -la \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")",
+      "Bash(cat apps/advisor-portal/dist/assets/index-*.css)",
+      "Bash(tr '}' '\\\\n')"
     ]
   }
 }

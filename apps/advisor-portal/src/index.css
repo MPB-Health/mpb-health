@@ -9,9 +9,9 @@
    Brand palette: #0A4E8E, #0C71C3, #A4CC43, #E2EAF0, #0E2D41
    ============================================================================ */
 
-/* Use `:root` to match specificity of theme-tokens.css `:root` declarations.
-   Later source order wins at equal specificity, ensuring our overrides apply. */
-:root {
+/* Use `html:root` (specificity 0,1,1) to beat theme-tokens.css `:root` (0,1,0).
+   This guarantees our overrides always win regardless of CSS load order. */
+html:root {
   /* Accent palette — MPB Health brand blue, refined for premium feel */
   --accent-50: 239 246 255;
   --accent-100: 219 234 254;
@@ -24,12 +24,13 @@
   --accent-800: 14 64 118;
   --accent-900: 8 51 97;
 
-  /* Sidebar — clean white with refined hierarchy */
-  --sidebar-bg: 255 255 255;
-  --sidebar-hover: 247 248 250;
-  --sidebar-text: 100 116 139;
+  /* Sidebar — icy white with a hint of blue, premium feel */
+  --sidebar-bg: 248 250 255;
+  --sidebar-hover: 237 242 254;
+  --sidebar-text: 71 85 105;
   --sidebar-text-active: 15 23 42;
   --sidebar-active-bg: 12 113 195;
+  --sidebar-border: 226 232 248;
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -40,13 +41,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Dark mode: keep sidebar white — advisor portal always uses a light sidebar. */
-:root.dark {
-  --sidebar-bg: 255 255 255;
-  --sidebar-hover: 247 248 250;
-  --sidebar-text: 100 116 139;
+/* Dark mode: keep sidebar light — advisor portal always uses a light sidebar. */
+html:root.dark {
+  --sidebar-bg: 248 250 255;
+  --sidebar-hover: 237 242 254;
+  --sidebar-text: 71 85 105;
   --sidebar-text-active: 15 23 42;
   --sidebar-active-bg: 12 113 195;
+  --sidebar-border: 226 232 248;
 }
 
 body {

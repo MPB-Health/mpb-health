@@ -14,7 +14,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 

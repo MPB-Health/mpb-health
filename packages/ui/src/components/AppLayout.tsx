@@ -109,7 +109,7 @@ export function AppLayout({
         className={cn(
           'fixed top-0 left-0 z-50 h-full flex flex-col',
           'bg-[rgb(var(--sidebar-bg))] text-[rgb(var(--sidebar-text))]',
-          'border-r border-[rgb(var(--sidebar-text)_/_0.1)] transition-all duration-300 ease-in-out',
+          'border-r border-[rgb(var(--sidebar-text)_/_0.08)] shadow-[1px_0_4px_rgba(0,0,0,0.04)] transition-all duration-300 ease-in-out',
           sidebarWidth,
           isMobile
             ? sidebarOpen ? 'translate-x-0' : '-translate-x-full'

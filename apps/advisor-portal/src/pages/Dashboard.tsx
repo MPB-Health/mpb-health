@@ -800,6 +800,23 @@ export default function Dashboard() {
                       <><Copy className="w-3.5 h-3.5" /> Copy Link</>
                     )}
                   </button>
+                  <button
+                    onClick={() => {
+                      const url = `${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`;
+                      if (navigator.share) {
+                        navigator.share({ title: form.name || form.label, url }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(url);
+                        setCopiedFormSlug(form.slug);
+                        setTimeout(() => setCopiedFormSlug(null), 2000);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-th-text-secondary border border-th-border hover:bg-surface-tertiary transition-colors"
+                    title="Share form"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Share
+                  </button>
                   <a
                     href={`${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`}
                     target="_blank"

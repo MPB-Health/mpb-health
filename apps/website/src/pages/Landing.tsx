@@ -39,7 +39,7 @@ const Landing: React.FC = () => {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://mpb.health" />
         <meta property="og:site_name" content="MPB Health" />
-        <meta property="og:image" content="https://mpb.health/assets/MPB-Health-No-background.png" />
+        <meta property="og:image" content="https://mpb.health/assets/MPB-Health-No-background.png?v=2" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:locale" content="en_US" />

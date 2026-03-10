@@ -104,7 +104,7 @@ serve(async (req) => {
       maxRequests: 10,
       windowSeconds: 60,
       keyPrefix: 'send-crm-email-v2',
-    });
+    }, req);
     if (rateLimitResponse) return rateLimitResponse;
 
     // SECURITY: Require authentication - no unauthenticated email sending

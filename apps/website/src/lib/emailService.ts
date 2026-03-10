@@ -63,7 +63,7 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<EmailRe
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <tr>
                   <td style="padding: 40px 40px 20px 40px; text-align: center;">
-                    <img src="https://mpb.health/assets/MPB-Health-No-background.png" alt="MPB Health" style="max-width: 200px; height: auto;">
+                    <img src="https://mpb.health/assets/MPB-Health-No-background.png?v=2" alt="MPB Health" style="max-width: 200px; height: auto;">
                   </td>
                 </tr>
                 <tr>
@@ -382,7 +382,7 @@ export async function sendLeadWelcomeEmail(data: {
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center">
-                          <img src="https://mpb.health/assets/MPB-Health-No-background.png" alt="MPB Health" width="200" style="display: block; max-width: 200px; height: auto; margin: 0 auto;" />
+                          <img src="https://mpb.health/assets/MPB-Health-No-background.png?v=2" alt="MPB Health" width="200" style="display: block; max-width: 200px; height: auto; margin: 0 auto;" />
                         </td>
                       </tr>
                     </table>
@@ -1042,7 +1042,7 @@ export async function sendUserInvitationEmail(data: UserInvitationData): Promise
                 <!-- Header -->
                 <tr>
                   <td style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px 40px; border-radius: 12px 12px 0 0; text-align: center;">
-                    <img src="https://mpb.health/assets/MPB-Health-No-background.png" alt="MPB Health" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+                    <img src="https://mpb.health/assets/MPB-Health-No-background.png?v=2" alt="MPB Health" style="max-width: 180px; height: auto; margin-bottom: 15px;">
                     <h1 style="color: #ffffff; font-size: 24px; margin: 0;">You're Invited!</h1>
                   </td>
                 </tr>

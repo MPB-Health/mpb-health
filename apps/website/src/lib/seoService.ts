@@ -15,7 +15,7 @@ export const defaultSEO: SEOMetadata = {
   keywords: 'health sharing, healthcare costs, insurance alternative, medical cost sharing, affordable healthcare, community health',
   ogTitle: 'MPB Health - Affordable Health Sharing Plans',
   ogDescription: 'Save up to 60% on healthcare costs with trusted community health sharing. No network restrictions, transparent pricing.',
-  ogImage: 'https://mpb.health/assets/MPB-Health-No-background.png',
+  ogImage: 'https://mpb.health/assets/MPB-Health-No-background.png?v=2',
   canonicalUrl: 'https://mpb.health',
   robots: 'index, follow'
 };
@@ -27,7 +27,7 @@ export const pageSEO: Record<string, SEOMetadata> = {
     keywords: 'health sharing, healthcare costs, insurance alternative, affordable healthcare, medical cost sharing',
     ogTitle: 'MPB Health - Affordable Health Sharing Plans',
     ogDescription: 'Save up to 60% on healthcare with trusted community health sharing.',
-    ogImage: 'https://mpb.health/assets/MPB-Health-No-background.png',
+    ogImage: 'https://mpb.health/assets/MPB-Health-No-background.png?v=2',
     canonicalUrl: 'https://mpb.health',
     robots: 'index, follow'
   },
@@ -164,7 +164,7 @@ export function getStructuredData(type: 'organization' | 'faq' | 'article', data
       name: 'MPB Health',
       description: 'Community-based health sharing organization offering affordable alternatives to traditional health insurance',
       url: baseUrl,
-      logo: `${baseUrl}/assets/MPB-Health-No-background.png`,
+      logo: `${baseUrl}/assets/MPB-Health-No-background.png?v=2`,
       telephone: '(855) 816-4650',
       email: 'info@mympb.com',
       foundingDate: '2011',
@@ -205,7 +205,7 @@ export function getStructuredData(type: 'organization' | 'faq' | 'article', data
       '@type': 'Article',
       headline: data.title,
       description: data.description,
-      image: data.image || `${baseUrl}/assets/MPB-Health-No-background.png`,
+      image: data.image || `${baseUrl}/assets/MPB-Health-No-background.png?v=2`,
       author: {
         '@type': 'Organization',
         name: 'MPB Health'
@@ -215,7 +215,7 @@ export function getStructuredData(type: 'organization' | 'faq' | 'article', data
         name: 'MPB Health',
         logo: {
           '@type': 'ImageObject',
-          url: `${baseUrl}/assets/MPB-Health-No-background.png`
+          url: `${baseUrl}/assets/MPB-Health-No-background.png?v=2`
         }
       },
       datePublished: data.publishedDate,

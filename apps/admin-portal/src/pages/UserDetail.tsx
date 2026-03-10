@@ -957,13 +957,13 @@ export default function UserDetail() {
                     <label key={perm.id} className="flex items-start space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={formData.permissions.includes(perm.name)}
-                        onChange={() => togglePermission(perm.name)}
+                        checked={formData.permissions.includes(perm.key)}
+                        onChange={() => togglePermission(perm.key)}
                         disabled={!editMode}
                         className="mt-1 w-4 h-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                       />
                       <div>
-                        <p className="text-sm font-medium text-th-text-secondary">{perm.name}</p>
+                        <p className="text-sm font-medium text-th-text-secondary">{perm.key}</p>
                         <p className="text-xs text-th-text-tertiary">{perm.description}</p>
                       </div>
                     </label>

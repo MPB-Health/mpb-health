@@ -93,7 +93,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   const canonicalUrl = seo?.canonicalUrl || 'https://mpb.health';
   const ogTitle = seo?.ogTitle || title;
   const ogDescription = seo?.ogDescription || description;
-  const ogImage = seo?.ogImage || 'https://mpb.health/assets/MPB-Health-No-background.png';
+  const ogImage = seo?.ogImage || 'https://mpb.health/assets/MPB-Health-No-background.png?v=2';
   const robots = seo?.robots || 'index, follow';
 
   // AI-optimized content snippets for featured snippets and AI summaries

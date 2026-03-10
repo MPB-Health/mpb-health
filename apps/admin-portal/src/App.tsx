@@ -50,6 +50,7 @@ const SystemHealth = lazyRetry(() => import('./pages/SystemHealth'));
 const ChatModeration = lazyRetry(() => import('./pages/ChatModeration'));
 const PushNotifications = lazyRetry(() => import('./pages/PushNotifications'));
 const Reports = lazyRetry(() => import('./pages/Reports'));
+const AdvisorAccess = lazyRetry(() => import('./pages/AdvisorAccess'));
 
 // ── GA4 page-view tracker ─────────────────────────────────────────────────────
 function GAPageTracker() {
@@ -217,6 +218,7 @@ export default function App() {
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="users" element={<Users />} />
+              <Route path="advisor-access" element={<AdvisorAccess />} />
               <Route path="users/:userId" element={<UserDetail />} />
               <Route path="enrollments" element={<Enrollments />} />
               <Route path="enrollments/:enrollmentId" element={<EnrollmentDetail />} />

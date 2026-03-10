@@ -323,7 +323,7 @@ export const generateOrganizationSchema = (): OrganizationSchema => ({
   url: 'https://mpb.health',
   logo: {
     '@type': 'ImageObject',
-    url: 'https://mpb.health/assets/MPB-Health-No-background.png',
+    url: 'https://mpb.health/assets/MPB-Health-No-background.png?v=2',
     width: 400,
     height: 100,
   },
@@ -533,13 +533,13 @@ export const generateArticleSchema = (
   },
   datePublished,
   dateModified: datePublished,
-  image: image || 'https://mpb.health/assets/MPB-Health-No-background.png',
+  image: image || 'https://mpb.health/assets/MPB-Health-No-background.png?v=2',
   publisher: {
     '@type': 'Organization',
     name: 'MPB Health',
     logo: {
       '@type': 'ImageObject',
-      url: 'https://mpb.health/assets/MPB-Health-No-background.png',
+      url: 'https://mpb.health/assets/MPB-Health-No-background.png?v=2',
     },
   },
   mainEntityOfPage: url
@@ -741,7 +741,7 @@ export const generateHowToSchema = (
   '@type': 'HowTo',
   name,
   description,
-  image: 'https://mpb.health/assets/MPB-Health-No-background.png',
+  image: 'https://mpb.health/assets/MPB-Health-No-background.png?v=2',
   totalTime: 'PT10M',
   step: steps.map((step, index) => ({
     '@type': 'HowToStep',

@@ -97,7 +97,7 @@ export class CRMBridgeService {
     const { data: stages } = await supabase
       .from('crm_pipeline_stages')
       .select('id, name, color')
-      .order('display_order', { ascending: true });
+      .order('sort_order', { ascending: true });
 
     if (!stages || stages.length === 0) return [];
 
@@ -216,11 +216,11 @@ export class CRMBridgeService {
     };
   }
 
-  async getPipelineStages(): Promise<{ id: string; name: string; color: string; display_order: number }[]> {
+  async getPipelineStages(): Promise<{ id: string; name: string; color: string; sort_order: number }[]> {
     const { data, error } = await supabase
       .from('crm_pipeline_stages')
-      .select('id, name, color, display_order')
-      .order('display_order', { ascending: true });
+      .select('id, name, color, sort_order')
+      .order('sort_order', { ascending: true });
 
     if (error) throw error;
     return data || [];

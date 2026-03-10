@@ -74,7 +74,7 @@ export const ProspectHeader: React.FC = () => {
             }}
           >
             <img
-              src="/assets/MPB-Health-No-background.png"
+              src="/assets/MPB-Health-No-background.png?v=2"
               alt="MPB Health"
               className={cn(
                 'w-auto transition-all duration-300',

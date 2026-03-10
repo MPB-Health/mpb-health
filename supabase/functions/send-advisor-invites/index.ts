@@ -27,7 +27,7 @@ function buildInviteEmail(
   password: string,
   agentId: string | null,
 ): string {
-  const loginUrl = "https://advisor-portal-chi.vercel.app/login";
+  const loginUrl = "https://advisor.mpb.health/login";
 
   return `
     <!DOCTYPE html>

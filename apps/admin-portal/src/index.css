@@ -5,9 +5,10 @@
 @tailwind utilities;
 
 /* ============================================================================
-   Admin Portal - MPB Health Brand Blue Accent Overrides
+   Admin Portal - MPB Health Premium Design System
    ============================================================================ */
 :root {
+  /* ---- Accent palette ---- */
   --accent-50: 232 244 253;
   --accent-100: 209 233 251;
   --accent-200: 163 211 247;
@@ -19,8 +20,12 @@
   --accent-800: 10 78 142;
   --accent-900: 8 61 113;
 
-  --sidebar-bg: 14 45 65;
-  --sidebar-hover: 10 78 142;
+  /* ---- Light sidebar ---- */
+  --sidebar-bg: 255 255 255;
+  --sidebar-text: 100 116 139;
+  --sidebar-text-active: 15 23 42;
+  --sidebar-hover: 248 250 252;
+  --sidebar-active-bg: 232 244 253;
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -29,6 +34,14 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.dark {
+  --sidebar-bg: 15 23 42;
+  --sidebar-text: 148 163 184;
+  --sidebar-text-active: 241 245 249;
+  --sidebar-hover: 30 41 59;
+  --sidebar-active-bg: 30 41 59;
 }
 
 body {
@@ -51,7 +64,6 @@ body {
   transition-timing-function: ease;
 }
 
-/* Exclude elements that need instant transitions */
 input,
 textarea,
 select,
@@ -62,23 +74,79 @@ a,
 }
 
 /* ============================================================================
-   Custom scrollbar
+   Premium scrollbar
    ============================================================================ */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgb(var(--surface-tertiary));
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--border-default));
-  border-radius: 4px;
+  background: rgb(var(--border-strong) / 0.5);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--text-tertiary));
+}
+
+/* ============================================================================
+   Premium utility classes
+   ============================================================================ */
+
+/* Section label for sidebar groups */
+.nav-section-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--sidebar-text) / 0.5);
+  padding: 1.25rem 0.75rem 0.375rem;
+}
+
+/* Active nav indicator - left accent bar */
+.nav-active-indicator {
+  position: relative;
+}
+.nav-active-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: rgb(var(--accent-600));
+}
+
+/* Premium card with subtle shadow + hover lift */
+.card-premium {
+  background: rgb(var(--surface-primary));
+  border: 1px solid rgb(var(--border-primary) / 0.6);
+  border-radius: 1rem;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 4px 16px rgb(0 0 0 / 0.03);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-premium:hover {
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.05),
+    0 8px 24px rgb(0 0 0 / 0.06);
+  transform: translateY(-1px);
+}
+
+.dark .card-premium {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.2),
+    0 4px 16px rgb(0 0 0 / 0.15);
+}
+.dark .card-premium:hover {
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.25),
+    0 8px 24px rgb(0 0 0 / 0.2);
 }

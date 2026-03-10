@@ -268,7 +268,7 @@ export default function AcceptInvite() {
         {/* Header */}
         <div className="text-center mb-8">
           <img
-            src="https://mpb.health/assets/MPB-Health-No-background.png"
+            src="https://mpb.health/assets/MPB-Health-No-background.png?v=2"
             alt="MPB Health"
             className="h-12 mx-auto mb-4"
           />

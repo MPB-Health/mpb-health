@@ -16,7 +16,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
-import { GradientHeader } from '@mpbhealth/ui';
+import { Button, GradientHeader } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 export default function Bulletins() {
@@ -164,13 +164,15 @@ export default function Bulletins() {
                         {bulletin.excerpt}
                       </p>
                     )}
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={() => navigate(`/bulletins/${bulletin.slug}`)}
-                      className="group flex items-center gap-2 px-5 py-2.5 bg-white text-[#0A4E8E] rounded-lg text-sm font-semibold shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02] transition-all w-fit"
+                      className="bg-white text-[#0A4E8E] hover:bg-white/90 shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02]"
                     >
                       Read Bulletin
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </button>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -179,24 +181,34 @@ export default function Bulletins() {
 
           {featuredBulletins.length > 1 && (
             <>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm transition-colors"
+                className="absolute left-4 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm"
+                aria-label="Previous slide"
               >
                 <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm"
+                aria-label="Next slide"
               >
                 <ChevronRight className="w-5 h-5" />
-              </button>
+              </Button>
 
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                 {featuredBulletins.map((_, index) => (
                   <button
+                    type="button"
                     key={index}
                     onClick={() => setCurrentSlide(index)}
+                    aria-label={`Go to slide ${index + 1}`}
                     className={`rounded-full transition-all ${
                       index === currentSlide
                         ? 'w-8 h-2 bg-white'
@@ -223,8 +235,10 @@ export default function Bulletins() {
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-th-text-tertiary hover:text-th-text-primary"
+                aria-label="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -342,12 +356,15 @@ export default function Bulletins() {
             {searchQuery ? 'Try adjusting your search' : 'No bulletins at this time. Check back soon!'}
           </p>
           {searchQuery && (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setSearchQuery('')}
-              className="mt-4 text-sm text-[#0A4E8E] hover:text-[#0C71C3] font-medium"
+              className="mt-4 text-[#0A4E8E] hover:text-[#0C71C3]"
             >
               Clear search
-            </button>
+            </Button>
           )}
         </div>
       )}

@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Shield,
 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { useMessageAssist, useComplianceActions } from '../../hooks/useCompliance';
 import type { MessageAssistResponse } from '@mpbhealth/champion-core';
 
@@ -115,12 +116,16 @@ export default function AIMessageAssistant({
           </div>
         </div>
         {onClose && (
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="min-h-[44px] min-w-[44px]"
+            aria-label="Close"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -136,6 +141,7 @@ export default function AIMessageAssistant({
               const isSelected = selectedAction === action.value;
               return (
                 <button
+                  type="button"
                   key={action.value}
                   onClick={() => setSelectedAction(action.value)}
                   className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${
@@ -166,6 +172,7 @@ export default function AIMessageAssistant({
             <div className="flex flex-wrap gap-2">
               {TONES.map((tone) => (
                 <button
+                  type="button"
                   key={tone.value}
                   onClick={() => setSelectedTone(tone.value)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
@@ -182,10 +189,12 @@ export default function AIMessageAssistant({
         )}
 
         {/* Generate Button */}
-        <button
+        <Button
+          type="button"
+          variant="primary"
           onClick={handleAssist}
           disabled={loading || !originalMessage.trim()}
-          className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full"
         >
           {loading ? (
             <>
@@ -198,7 +207,7 @@ export default function AIMessageAssistant({
               {selectedAction === 'check_compliance' ? 'Check Message' : 'Generate Suggestion'}
             </>
           )}
-        </button>
+        </Button>
 
         {/* Error */}
         {error && (
@@ -266,32 +275,42 @@ export default function AIMessageAssistant({
             {result.suggested_message && selectedAction !== 'check_compliance' && (
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={handleReject}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     title="Reject suggestion"
+                    className="min-h-[44px] min-w-[44px] hover:text-red-500 hover:bg-red-50"
+                    aria-label="Reject suggestion"
                   >
                     <ThumbsDown className="h-4 w-4" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={handleCopy}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                     title="Copy to clipboard"
+                    className="min-h-[44px] min-w-[44px]"
+                    aria-label="Copy to clipboard"
                   >
                     {copied ? (
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
-                  </button>
+                  </Button>
                 </div>
-                <button
+                <Button
+                  type="button"
+                  variant="primary"
                   onClick={handleApply}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                  className="bg-green-600 hover:bg-green-700"
                 >
                   <ThumbsUp className="h-4 w-4" />
                   Apply Suggestion
-                </button>
+                </Button>
               </div>
             )}
 

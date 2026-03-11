@@ -73,14 +73,14 @@ export default function NotesWidget({ config, size }: BaseWidgetProps) {
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Write a note..."
-            className="w-full p-2 text-sm border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+            className="w-full p-2 text-sm border border-th-border bg-surface-primary text-th-text-primary rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             rows={3}
             autoFocus
           />
           <div className="flex justify-end gap-2 mt-2">
             <button
               onClick={() => { setIsAdding(false); setNewNote(''); }}
-              className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              className="px-3 py-1.5 text-xs text-th-text-secondary hover:bg-surface-tertiary rounded transition-colors"
             >
               Cancel
             </button>
@@ -96,7 +96,7 @@ export default function NotesWidget({ config, size }: BaseWidgetProps) {
       ) : (
         <button
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 w-full p-2 mb-4 text-sm text-gray-500 border-2 border-dashed rounded-lg hover:border-blue-300 hover:text-blue-600 transition-colors"
+          className="flex items-center gap-2 w-full p-2 mb-4 text-sm text-th-text-secondary border-2 border-dashed rounded-lg hover:border-blue-300 hover:text-blue-600 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Add a note
@@ -105,7 +105,7 @@ export default function NotesWidget({ config, size }: BaseWidgetProps) {
 
       {/* Notes List */}
       {notes.length === 0 ? (
-        <div className="text-center py-4 text-gray-500">
+        <div className="text-center py-4 text-th-text-secondary">
           <StickyNote className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No notes yet</p>
         </div>
@@ -136,7 +136,7 @@ interface NoteCardProps {
 }
 
 const NOTE_COLORS: Record<string, string> = {
-  default: 'bg-gray-50 dark:bg-gray-700/50',
+  default: 'bg-surface-secondary',
   yellow: 'bg-yellow-50 dark:bg-yellow-900/20',
   green: 'bg-green-50 dark:bg-green-900/20',
   blue: 'bg-blue-50 dark:bg-blue-900/20',
@@ -172,7 +172,7 @@ function NoteCard({ note, onTogglePin, onDelete }: NoteCardProps) {
           </button>
         </div>
       </div>
-      <p className="text-xs text-gray-400 mt-2">
+      <p className="text-xs text-th-text-tertiary mt-2">
         {new Date(note.created_at).toLocaleDateString()}
       </p>
     </div>

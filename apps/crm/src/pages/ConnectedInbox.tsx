@@ -286,13 +286,13 @@ export default function ConnectedInbox() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-white">
+    <div className="flex h-[calc(100vh-64px)] bg-surface-primary">
       {/* ================================================================ */}
       {/* Folder Sidebar */}
       {/* ================================================================ */}
-      <div className="w-56 border-r border-neutral-200 flex flex-col bg-neutral-50/50">
+      <div className="w-56 border-r border-th-border flex flex-col bg-surface-secondary">
         {/* Account Selector */}
-        <div className="p-3 border-b border-neutral-200">
+        <div className="p-3 border-b border-th-border">
           <select
             value={selectedAccountId}
             onChange={e => {
@@ -300,7 +300,7 @@ export default function ConnectedInbox() {
               setPage(1);
               setSelectedMessage(null);
             }}
-            className="w-full text-sm px-2 py-1.5 border border-neutral-200 rounded-lg bg-white"
+            className="w-full text-sm px-2 py-1.5 border border-th-border rounded-lg bg-surface-primary"
           >
             <option value="all">All Accounts ({accounts.length})</option>
             {accounts.map(a => (
@@ -323,7 +323,7 @@ export default function ConnectedInbox() {
                 className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                   isActive
                     ? 'bg-th-accent-50 text-th-accent-700 font-medium'
-                    : 'text-th-text-secondary hover:bg-neutral-100'
+                    : 'text-th-text-secondary hover:bg-surface-tertiary'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -332,7 +332,7 @@ export default function ConnectedInbox() {
                 </div>
                 {folder.unread > 0 && (
                   <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                    isActive ? 'bg-th-accent-600 text-white' : 'bg-neutral-200 text-neutral-600'
+                    isActive ? 'bg-th-accent-600 text-white' : 'bg-surface-tertiary text-th-text-secondary'
                   }`}>
                     {folder.unread}
                   </span>
@@ -354,7 +354,7 @@ export default function ConnectedInbox() {
                   className={`w-full flex items-center justify-between px-4 py-1.5 text-sm transition-colors ${
                     selectedFolderId === f.id
                       ? 'bg-th-accent-50 text-th-accent-700 font-medium'
-                      : 'text-th-text-secondary hover:bg-neutral-100'
+                      : 'text-th-text-secondary hover:bg-surface-tertiary'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -368,7 +368,7 @@ export default function ConnectedInbox() {
                     <span className="truncate">{f.display_name || f.name}</span>
                   </div>
                   {f.unread_count > 0 && (
-                    <span className="text-xs text-neutral-500">{f.unread_count}</span>
+                    <span className="text-xs text-th-text-secondary">{f.unread_count}</span>
                   )}
                 </button>
               ))}
@@ -378,7 +378,7 @@ export default function ConnectedInbox() {
 
         {/* Unread summary */}
         {stats && (
-          <div className="p-3 border-t border-neutral-200 text-xs text-th-text-tertiary">
+          <div className="p-3 border-t border-th-border text-xs text-th-text-tertiary">
             {stats.total_unread} unread &middot; {stats.total_flagged} flagged
           </div>
         )}
@@ -387,19 +387,19 @@ export default function ConnectedInbox() {
       {/* ================================================================ */}
       {/* Message List */}
       {/* ================================================================ */}
-      <div className={`flex flex-col border-r border-neutral-200 ${
+      <div className={`flex flex-col border-r border-th-border ${
         readingPaneExpanded ? 'w-0 hidden' : selectedMessage ? 'w-96' : 'flex-1'
       }`}>
         {/* Search & Actions Bar */}
-        <div className="flex items-center gap-2 p-3 border-b border-neutral-200">
+        <div className="flex items-center gap-2 p-3 border-b border-th-border">
           <form onSubmit={handleSearch} className="flex-1 relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search messages..."
-              className="w-full pl-8 pr-3 py-1.5 text-sm border border-neutral-200 rounded-lg"
+              className="w-full pl-8 pr-3 py-1.5 text-sm border border-th-border rounded-lg"
             />
           </form>
           <button
@@ -432,8 +432,8 @@ export default function ConnectedInbox() {
                 <div
                   key={msg.id}
                   onClick={() => handleSelectMessage(msg)}
-                  className={`px-4 py-3 border-b border-neutral-100 cursor-pointer transition-colors ${
-                    isSelected ? 'bg-th-accent-50' : msg.is_read ? 'bg-white hover:bg-neutral-50' : 'bg-blue-50/30 hover:bg-blue-50/50'
+                  className={`px-4 py-3 border-b border-th-border cursor-pointer transition-colors ${
+                    isSelected ? 'bg-th-accent-50' : msg.is_read ? 'bg-surface-primary hover:bg-surface-secondary' : 'bg-blue-50/30 hover:bg-blue-50/50'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -468,7 +468,7 @@ export default function ConnectedInbox() {
                           {msg.snippet}
                         </span>
                         {msg.has_attachments && (
-                          <Paperclip className="w-3 h-3 text-neutral-400 flex-shrink-0" />
+                          <Paperclip className="w-3 h-3 text-th-text-tertiary flex-shrink-0" />
                         )}
                         {msg.is_flagged && (
                           <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 flex-shrink-0" />
@@ -480,7 +480,7 @@ export default function ConnectedInbox() {
 
                       {/* Account badge (when viewing all) */}
                       {selectedAccountId === 'all' && account && (
-                        <span className="inline-block mt-1 text-[10px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded truncate max-w-[200px]">
+                        <span className="inline-block mt-1 text-[10px] bg-surface-tertiary text-th-text-secondary px-1.5 py-0.5 rounded truncate max-w-[200px]">
                           {account.email_address}
                         </span>
                       )}
@@ -494,7 +494,7 @@ export default function ConnectedInbox() {
 
         {/* Pagination */}
         {totalMessages > 25 && (
-          <div className="flex items-center justify-between px-4 py-2 border-t border-neutral-200 text-xs text-th-text-tertiary">
+          <div className="flex items-center justify-between px-4 py-2 border-t border-th-border text-xs text-th-text-tertiary">
             <span>
               {(page - 1) * 25 + 1}-{Math.min(page * 25, totalMessages)} of {totalMessages}
             </span>
@@ -502,14 +502,14 @@ export default function ConnectedInbox() {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-2 py-1 hover:bg-neutral-100 rounded disabled:opacity-50"
+                className="px-2 py-1 hover:bg-surface-tertiary rounded disabled:opacity-50"
               >
                 Prev
               </button>
               <button
                 onClick={() => setPage(p => p + 1)}
                 disabled={page * 25 >= totalMessages}
-                className="px-2 py-1 hover:bg-neutral-100 rounded disabled:opacity-50"
+                className="px-2 py-1 hover:bg-surface-tertiary rounded disabled:opacity-50"
               >
                 Next
               </button>
@@ -522,9 +522,9 @@ export default function ConnectedInbox() {
       {/* Reading Pane */}
       {/* ================================================================ */}
       {selectedMessage && (
-        <div className={`flex flex-col ${readingPaneExpanded ? 'flex-1' : 'flex-1'} bg-white`}>
+        <div className={`flex flex-col ${readingPaneExpanded ? 'flex-1' : 'flex-1'} bg-surface-primary`}>
           {/* Message Header */}
-          <div className="p-4 border-b border-neutral-200">
+          <div className="p-4 border-b border-th-border">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-th-text-primary truncate">
@@ -581,7 +581,7 @@ export default function ConnectedInbox() {
                 </button>
                 <button
                   onClick={() => { setSelectedMessage(null); setReadingPaneExpanded(false); }}
-                  className="p-2 text-th-text-tertiary hover:text-th-text-primary hover:bg-neutral-100 rounded-lg"
+                  className="p-2 text-th-text-tertiary hover:text-th-text-primary hover:bg-surface-tertiary rounded-lg"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -590,7 +590,7 @@ export default function ConnectedInbox() {
 
             {/* Attachment bar */}
             {selectedMessage.has_attachments && (
-              <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-neutral-50 rounded-lg text-xs text-th-text-secondary">
+              <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-surface-secondary rounded-lg text-xs text-th-text-secondary">
                 <Paperclip className="w-3.5 h-3.5" />
                 <span>This message has attachments</span>
               </div>
@@ -614,16 +614,16 @@ export default function ConnectedInbox() {
           </div>
 
           {/* Quick Reply Bar */}
-          <div className="p-3 border-t border-neutral-200 flex items-center gap-2">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-th-text-secondary hover:bg-neutral-100 rounded-lg border border-neutral-200">
+          <div className="p-3 border-t border-th-border flex items-center gap-2">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-th-text-secondary hover:bg-surface-tertiary rounded-lg border border-th-border">
               <Reply className="w-3.5 h-3.5" />
               Reply
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-th-text-secondary hover:bg-neutral-100 rounded-lg border border-neutral-200">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-th-text-secondary hover:bg-surface-tertiary rounded-lg border border-th-border">
               <ReplyAll className="w-3.5 h-3.5" />
               Reply All
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-th-text-secondary hover:bg-neutral-100 rounded-lg border border-neutral-200">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-th-text-secondary hover:bg-surface-tertiary rounded-lg border border-th-border">
               <Forward className="w-3.5 h-3.5" />
               Forward
             </button>

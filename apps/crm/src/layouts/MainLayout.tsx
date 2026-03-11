@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
-import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
+import type { NavItem, NavSection, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
@@ -74,13 +74,13 @@ interface ExtendedNavItem extends Omit<NavItem, 'children'> {
 // Navigation Configuration with Grouped Sections
 // ============================================================================
 
-interface NavSection {
+interface LocalNavSection {
   id: string;
   label?: string; // Optional section label
   items: ExtendedNavItem[];
 }
 
-const navigationSections: NavSection[] = [
+const navigationSections: LocalNavSection[] = [
   {
     id: 'main',
     items: [
@@ -214,26 +214,34 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const totalPendingTasks = tasksDueToday.length + overdueTasks.length;
 
-  // Filter nav items based on permissions and feature flags
-  const visibleNav: NavItem[] = navigation
-    .filter((item) => {
-      if (!item.permission) return true;
-      return can(item.permission);
-    })
-    .map((item) => ({
-      name: item.name,
-      href: item.href,
-      icon: item.icon,
-      children: item.children
-        ?.filter((child) => !child.permission || can(child.permission))
-        .map((child) => ({ name: child.name, href: child.href })),
-      badge:
-        item.name === 'Tasks' && totalPendingTasks > 0 ? (
-          <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">
-            {totalPendingTasks}
-          </span>
-        ) : undefined,
-    }));
+  const mapNavItem = (item: ExtendedNavItem): NavItem => ({
+    name: item.name,
+    href: item.href,
+    icon: item.icon,
+    children: item.children
+      ?.filter((child) => !child.permission || can(child.permission))
+      .map((child) => ({ name: child.name, href: child.href })),
+    badge:
+      item.name === 'Tasks' && totalPendingTasks > 0 ? (
+        <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">
+          {totalPendingTasks}
+        </span>
+      ) : undefined,
+  });
+
+  // Filtered sections passed to AppLayout for labeled sidebar groups
+  const visibleNavSections: NavSection[] = navigationSections
+    .map((section) => ({
+      id: section.id,
+      label: section.label,
+      items: section.items
+        .filter((item) => !item.permission || can(item.permission))
+        .map(mapNavItem),
+    }))
+    .filter((section) => section.items.length > 0);
+
+  // Flat list kept for backward compat (used by renderNavLink checks, etc.)
+  const visibleNav: NavItem[] = visibleNavSections.flatMap((s) => s.items);
 
   const renderNavLink = (item: NavItem, props: NavLinkRenderProps) => {
     const isActive = location.pathname === item.href ||
@@ -362,6 +370,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         appName="CRM"
         logoSrc="/assets/MPB-Health-No-background.png?v=2"
         navigation={visibleNav}
+        navSections={visibleNavSections}
         portalSwitcher={
           <PortalSwitcher
             currentPortal="crm"

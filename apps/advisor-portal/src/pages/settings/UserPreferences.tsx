@@ -14,6 +14,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { useUserPreferences } from '../../hooks/useSettings';
 import type { UpdateUserPreferencesInput } from '@mpbhealth/champion-core';
 
@@ -145,6 +146,7 @@ export default function UserPreferences() {
 
                 return (
                   <button
+                    type="button"
                     key={option.value}
                     onClick={() => updateField('theme', option.value as 'light' | 'dark' | 'system')}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
@@ -239,6 +241,7 @@ export default function UserPreferences() {
                 <div className="flex gap-2">
                   {VIEW_OPTIONS.map((option) => (
                     <button
+                      type="button"
                       key={option.value}
                       onClick={() =>
                         updateField('power_list_view', option.value as 'cards' | 'list' | 'kanban')
@@ -400,11 +403,7 @@ export default function UserPreferences() {
 
         {/* Save Button */}
         <div className="mt-6 flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
-          >
+          <Button type="button" variant="primary" onClick={handleSave} disabled={saving}>
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -416,7 +415,7 @@ export default function UserPreferences() {
                 Save Preferences
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

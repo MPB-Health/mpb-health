@@ -57,12 +57,12 @@ export function DashboardToolbar() {
 
   return (
     <>
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-primary border-b border-th-border">
         {/* Left side */}
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-xl font-semibold">Command Center</h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-th-text-secondary">
               {editMode ? 'Editing dashboard layout' : 'Your personalized dashboard'}
             </p>
           </div>
@@ -72,7 +72,7 @@ export function DashboardToolbar() {
         <div className="flex items-center gap-2">
           {/* Last saved indicator */}
           {lastSaved && !editMode && (
-            <span className="text-xs text-gray-400 mr-2">
+            <span className="text-xs text-th-text-tertiary mr-2">
               Saved {formatTimeAgo(lastSaved)}
             </span>
           )}
@@ -98,7 +98,7 @@ export function DashboardToolbar() {
 
               <button
                 onClick={handleReset}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-tertiary rounded-lg transition-colors"
                 title="Reset to default layout"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -110,7 +110,7 @@ export function DashboardToolbar() {
                 disabled={isSaving}
                 className={cn(
                   'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                  'bg-blue-600 text-white hover:bg-blue-700',
+                  'bg-th-accent-primary text-white hover:bg-th-accent-hover',
                   isSaving && 'opacity-50 cursor-not-allowed'
                 )}
               >
@@ -127,7 +127,7 @@ export function DashboardToolbar() {
           {/* Keyboard shortcuts */}
           <button
             onClick={() => setShowShortcuts(true)}
-            className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 text-th-text-secondary hover:bg-surface-tertiary rounded-lg transition-colors"
             title="Keyboard shortcuts"
           >
             <Keyboard className="h-5 w-5" />
@@ -139,8 +139,8 @@ export function DashboardToolbar() {
             className={cn(
               'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               editMode
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-th-accent-primary text-white hover:bg-th-accent-hover'
+                : 'bg-surface-tertiary text-th-text-primary hover:bg-surface-tertiary'
             )}
           >
             <Edit3 className="h-4 w-4" />

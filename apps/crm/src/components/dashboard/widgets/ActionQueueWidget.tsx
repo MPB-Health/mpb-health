@@ -135,9 +135,9 @@ export default function ActionQueueWidget({ config, size }: BaseWidgetProps) {
           <FilterButton active={filter === 'urgent'} onClick={() => setFilter('urgent')}>Urgent</FilterButton>
           <FilterButton active={filter === 'tasks'} onClick={() => setFilter('tasks')}>Tasks</FilterButton>
         </div>
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-th-text-secondary">
           <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-green-500" />
-          <p className="font-medium text-gray-900 dark:text-gray-100">All caught up!</p>
+          <p className="font-medium text-th-text-primary">All caught up!</p>
           <p className="text-sm mt-1">No items need your attention right now.</p>
         </div>
       </div>
@@ -174,8 +174,8 @@ export default function ActionQueueWidget({ config, size }: BaseWidgetProps) {
 
       {/* See All Link */}
       {filteredItems.length > maxItems && (
-        <div className="mt-4 pt-4 border-t dark:border-gray-700 text-center">
-          <span className="text-sm text-gray-500">
+        <div className="mt-4 pt-4 border-t border-th-border text-center">
+          <span className="text-sm text-th-text-secondary">
             +{filteredItems.length - maxItems} more items
           </span>
         </div>
@@ -204,7 +204,7 @@ function FilterButton({
         'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
         active
           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-          : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+          : 'text-th-text-secondary hover:bg-surface-tertiary'
       )}
     >
       {children}
@@ -226,7 +226,7 @@ function ActionItemCard({ item, onAction, onDismiss }: ActionItemCardProps) {
     <div
       className={cn(
         'flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer',
-        'hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600',
+        'hover:shadow-sm hover:border-th-border',
         priorityColor.border
       )}
       onClick={onAction}
@@ -239,7 +239,7 @@ function ActionItemCard({ item, onAction, onDismiss }: ActionItemCardProps) {
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+          <p className="text-sm font-medium text-th-text-primary truncate">
             {item.title}
           </p>
           {item.priority === 'urgent' && (
@@ -248,13 +248,13 @@ function ActionItemCard({ item, onAction, onDismiss }: ActionItemCardProps) {
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        <p className="text-xs text-th-text-secondary mt-0.5">
           {item.description}
         </p>
       </div>
 
       {/* Action */}
-      <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+      <ChevronRight className="h-4 w-4 text-th-text-tertiary flex-shrink-0" />
     </div>
   );
 }

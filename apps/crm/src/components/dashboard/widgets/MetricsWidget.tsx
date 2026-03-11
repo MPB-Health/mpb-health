@@ -124,7 +124,7 @@ export default function MetricsWidget({ config, size }: BaseWidgetProps) {
         </div>
         <div className="mt-3">
           <p className="text-2xl font-bold">{formattedValue}</p>
-          <p className="text-sm text-gray-500 mt-1">{metricConfig.label}</p>
+          <p className="text-sm text-th-text-secondary mt-1">{metricConfig.label}</p>
         </div>
       </div>
     );
@@ -143,11 +143,11 @@ export default function MetricsWidget({ config, size }: BaseWidgetProps) {
       </div>
       <div>
         <p className="text-3xl font-bold">{formattedValue}</p>
-        <p className="text-sm text-gray-500 mt-1">{metricConfig.label}</p>
+        <p className="text-sm text-th-text-secondary mt-1">{metricConfig.label}</p>
       </div>
       {size !== 'md' && (
-        <div className="mt-4 pt-4 border-t dark:border-gray-700">
-          <p className="text-xs text-gray-400">
+        <div className="mt-4 pt-4 border-t border-th-border">
+          <p className="text-xs text-th-text-tertiary">
             Last updated: {new Date().toLocaleTimeString()}
           </p>
         </div>
@@ -170,7 +170,7 @@ function TrendIndicator({ direction, percentage }: { direction: string; percenta
         'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
         isUp && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
         isDown && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-        !isUp && !isDown && 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+        !isUp && !isDown && 'bg-surface-tertiary text-th-text-secondary'
       )}
     >
       {isUp && <TrendingUp className="h-3 w-3" />}

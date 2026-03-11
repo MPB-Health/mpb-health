@@ -118,10 +118,10 @@ export default function AlertsWidget({ config, size }: BaseWidgetProps) {
 
   if (alerts.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-th-text-secondary">
         <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No alerts</p>
-        <p className="text-xs text-gray-400 mt-1">You&apos;re all caught up!</p>
+        <p className="text-xs text-th-text-tertiary mt-1">You&apos;re all caught up!</p>
       </div>
     );
   }
@@ -129,7 +129,7 @@ export default function AlertsWidget({ config, size }: BaseWidgetProps) {
   return (
     <div className="p-4">
       {/* Summary */}
-      <div className="flex items-center gap-4 mb-4 pb-4 border-b dark:border-gray-700">
+      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-th-border">
         {urgentCount > 0 && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full text-sm font-medium">
             <AlertTriangle className="h-4 w-4" />
@@ -158,7 +158,7 @@ export default function AlertsWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/notifications"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t border-th-border text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all notifications
         <ArrowRight className="h-4 w-4" />
@@ -204,11 +204,11 @@ function AlertCard({ alert, onDismiss, onMarkRead }: AlertCardProps) {
 
   const content = (
     <>
-      <p className={cn('text-sm font-medium', !alert.read && 'text-gray-900 dark:text-white')}>
+      <p className={cn('text-sm font-medium', !alert.read && 'text-th-text-primary')}>
         {alert.title}
       </p>
-      <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{alert.message}</p>
-      <p className="text-xs text-gray-400 mt-1">{formatTimeAgo(alert.timestamp)}</p>
+      <p className="text-sm text-th-text-secondary truncate">{alert.message}</p>
+      <p className="text-xs text-th-text-tertiary mt-1">{formatTimeAgo(alert.timestamp)}</p>
     </>
   );
 
@@ -217,7 +217,7 @@ function AlertCard({ alert, onDismiss, onMarkRead }: AlertCardProps) {
       className={cn(
         'flex gap-3 p-3 rounded-lg border-l-4 group',
         PRIORITY_COLORS[alert.priority],
-        !alert.read && 'ring-1 ring-inset ring-gray-200 dark:ring-gray-600'
+        !alert.read && 'ring-1 ring-inset ring-th-border'
       )}
     >
       <div className={cn('mt-0.5', ICON_COLORS[alert.priority])}>

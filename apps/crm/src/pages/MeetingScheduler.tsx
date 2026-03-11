@@ -265,7 +265,7 @@ function StatusBadge({ status }: { status: BookingStatus }) {
 function LocationBadge({ type }: { type: LocationType }) {
   const Icon = getLocationIcon(type);
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-tertiary text-th-text-primary">
       <Icon className="w-3 h-3" />
       {getLocationLabel(type)}
     </span>
@@ -280,7 +280,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
       </div>
       <div>
         <p className="text-lg font-semibold text-th-text-primary">{value}</p>
-        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-xs text-th-text-secondary">{label}</p>
       </div>
     </div>
   );
@@ -293,7 +293,7 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
         <CalendarDays className="w-8 h-8 text-th-accent-600" />
       </div>
       <h3 className="text-lg font-semibold text-th-text-primary mb-2">No meeting schedules yet</h3>
-      <p className="text-sm text-gray-500 text-center max-w-md mb-6">
+      <p className="text-sm text-th-text-secondary text-center max-w-md mb-6">
         Create a booking link that leads can use to self-schedule meetings with you. Set your availability, duration, and location preferences.
       </p>
       <button
@@ -343,19 +343,19 @@ function ScheduleCard({
                 Active
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 uppercase tracking-wide">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-tertiary text-th-text-secondary uppercase tracking-wide">
                 Inactive
               </span>
             )}
           </div>
           {schedule.description && (
-            <p className="text-sm text-gray-500 line-clamp-2">{schedule.description}</p>
+            <p className="text-sm text-th-text-secondary line-clamp-2">{schedule.description}</p>
           )}
         </div>
       </div>
 
       {/* Meta row */}
-      <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-500">
+      <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-th-text-secondary">
         <span className="inline-flex items-center gap-1">
           <Clock className="w-3.5 h-3.5" />
           {schedule.duration_minutes} min
@@ -371,14 +371,14 @@ function ScheduleCard({
 
       {/* Booking link */}
       <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-surface-secondary">
-        <Link2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-        <span className="text-xs text-gray-500 truncate flex-1 font-mono">{bookingUrl}</span>
+        <Link2 className="w-3.5 h-3.5 text-th-text-tertiary flex-shrink-0" />
+        <span className="text-xs text-th-text-secondary truncate flex-1 font-mono">{bookingUrl}</span>
         <button
           onClick={onCopyLink}
-          className="flex-shrink-0 p-1 rounded hover:bg-gray-200 transition-colors"
+          className="flex-shrink-0 p-1 rounded hover:bg-surface-tertiary transition-colors"
           title="Copy link"
         >
-          <Copy className="w-3.5 h-3.5 text-gray-500" />
+          <Copy className="w-3.5 h-3.5 text-th-text-secondary" />
         </button>
       </div>
 
@@ -386,19 +386,19 @@ function ScheduleCard({
       <div className="grid grid-cols-4 gap-2 mb-4">
         <div className="text-center py-2 rounded-lg bg-surface-secondary">
           <p className="text-sm font-semibold text-th-text-primary">{stats.total}</p>
-          <p className="text-[10px] text-gray-500 uppercase tracking-wide">Total</p>
+          <p className="text-[10px] text-th-text-secondary uppercase tracking-wide">Total</p>
         </div>
         <div className="text-center py-2 rounded-lg bg-surface-secondary">
           <p className="text-sm font-semibold text-blue-600">{stats.upcoming}</p>
-          <p className="text-[10px] text-gray-500 uppercase tracking-wide">Upcoming</p>
+          <p className="text-[10px] text-th-text-secondary uppercase tracking-wide">Upcoming</p>
         </div>
         <div className="text-center py-2 rounded-lg bg-surface-secondary">
           <p className="text-sm font-semibold text-green-600">{stats.completed}</p>
-          <p className="text-[10px] text-gray-500 uppercase tracking-wide">Done</p>
+          <p className="text-[10px] text-th-text-secondary uppercase tracking-wide">Done</p>
         </div>
         <div className="text-center py-2 rounded-lg bg-surface-secondary">
           <p className="text-sm font-semibold text-amber-600">{stats.no_shows}</p>
-          <p className="text-[10px] text-gray-500 uppercase tracking-wide">No-shows</p>
+          <p className="text-[10px] text-th-text-secondary uppercase tracking-wide">No-shows</p>
         </div>
       </div>
 
@@ -434,12 +434,12 @@ function ScheduleCard({
           {schedule.is_active ? (
             <ToggleRight className="w-5 h-5 text-green-600" />
           ) : (
-            <ToggleLeft className="w-5 h-5 text-gray-400" />
+            <ToggleLeft className="w-5 h-5 text-th-text-tertiary" />
           )}
         </button>
         <button
           onClick={onDelete}
-          className="p-1.5 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+          className="p-1.5 rounded-md hover:bg-red-50 text-th-text-tertiary hover:text-red-600 transition-colors"
           title="Delete"
         >
           <Trash2 className="w-4 h-4" />
@@ -539,10 +539,10 @@ function AvailabilityEditor({
                   {dayData.enabled ? (
                     <ToggleRight className="w-5 h-5 text-green-600" />
                   ) : (
-                    <ToggleLeft className="w-5 h-5 text-gray-400" />
+                    <ToggleLeft className="w-5 h-5 text-th-text-tertiary" />
                   )}
                 </button>
-                <span className={`text-sm font-medium ${dayData.enabled ? 'text-th-text-primary' : 'text-gray-400'}`}>
+                <span className={`text-sm font-medium ${dayData.enabled ? 'text-th-text-primary' : 'text-th-text-tertiary'}`}>
                   {label}
                 </span>
                 {dayData.enabled && (
@@ -566,7 +566,7 @@ function AvailabilityEditor({
                       <option key={t} value={t}>{formatTime24to12(t)}</option>
                     ))}
                   </select>
-                  <span className="text-xs text-gray-400">to</span>
+                  <span className="text-xs text-th-text-tertiary">to</span>
                   <select
                     value={range.end}
                     onChange={(e) => updateRange(key, idx, 'end', e.target.value)}
@@ -580,7 +580,7 @@ function AvailabilityEditor({
                   {dayData.ranges.length > 1 && (
                     <button
                       onClick={() => removeRange(key, idx)}
-                      className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                      className="p-1 rounded hover:bg-red-50 text-th-text-tertiary hover:text-red-500 transition-colors"
                       title="Remove time range"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -589,7 +589,7 @@ function AvailabilityEditor({
                 </div>
               ))}
               {dayData.enabled && dayData.ranges.length === 0 && (
-                <p className="ml-8 text-xs text-gray-400 italic">No time ranges — click &quot;+ Add range&quot;</p>
+                <p className="ml-8 text-xs text-th-text-tertiary italic">No time ranges — click &quot;+ Add range&quot;</p>
               )}
             </div>
           );
@@ -676,7 +676,7 @@ function BookingPagePreview({ schedule }: { schedule: Partial<MeetingSchedule> &
 
       <div className="p-5">
         {schedule.description && (
-          <p className="text-sm text-gray-500 mb-4">{schedule.description}</p>
+          <p className="text-sm text-th-text-secondary mb-4">{schedule.description}</p>
         )}
 
         {/* Mini calendar */}
@@ -687,7 +687,7 @@ function BookingPagePreview({ schedule }: { schedule: Partial<MeetingSchedule> &
               className="p-1 rounded hover:bg-surface-secondary"
               title="Previous month"
             >
-              <ChevronLeft className="w-4 h-4 text-gray-500" />
+              <ChevronLeft className="w-4 h-4 text-th-text-secondary" />
             </button>
             <h4 className="text-sm font-semibold text-th-text-primary">
               {previewMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -697,12 +697,12 @@ function BookingPagePreview({ schedule }: { schedule: Partial<MeetingSchedule> &
               className="p-1 rounded hover:bg-surface-secondary"
               title="Next month"
             >
-              <ChevronRight className="w-4 h-4 text-gray-500" />
+              <ChevronRight className="w-4 h-4 text-th-text-secondary" />
             </button>
           </div>
           <div className="grid grid-cols-7 gap-0.5 text-center">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-              <div key={d} className="text-[10px] font-medium text-gray-400 py-1">{d}</div>
+              <div key={d} className="text-[10px] font-medium text-th-text-tertiary py-1">{d}</div>
             ))}
             {daysInMonth.map((date, i) => {
               if (!date) return <div key={`empty-${i}`} />;
@@ -718,7 +718,7 @@ function BookingPagePreview({ schedule }: { schedule: Partial<MeetingSchedule> &
                       ? 'bg-th-accent-600 text-white font-semibold'
                       : avail
                         ? 'hover:bg-th-accent-600/10 text-th-text-primary font-medium'
-                        : 'text-gray-300 cursor-not-allowed'
+                        : 'text-th-text-tertiary cursor-not-allowed'
                   }`}
                 >
                   {date.getDate()}
@@ -746,7 +746,7 @@ function BookingPagePreview({ schedule }: { schedule: Partial<MeetingSchedule> &
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-400 italic">No available slots</p>
+              <p className="text-xs text-th-text-tertiary italic">No available slots</p>
             )}
           </div>
         )}
@@ -756,20 +756,20 @@ function BookingPagePreview({ schedule }: { schedule: Partial<MeetingSchedule> &
           <h4 className="text-sm font-medium text-th-text-primary mb-3">Your Information</h4>
           <div className="space-y-2.5">
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-th-border bg-surface-secondary">
-              <User className="w-4 h-4 text-gray-400" />
-              <span className="text-xs text-gray-400">Full name</span>
+              <User className="w-4 h-4 text-th-text-tertiary" />
+              <span className="text-xs text-th-text-tertiary">Full name</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-th-border bg-surface-secondary">
-              <Mail className="w-4 h-4 text-gray-400" />
-              <span className="text-xs text-gray-400">Email address</span>
+              <Mail className="w-4 h-4 text-th-text-tertiary" />
+              <span className="text-xs text-th-text-tertiary">Email address</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-th-border bg-surface-secondary">
-              <Phone className="w-4 h-4 text-gray-400" />
-              <span className="text-xs text-gray-400">Phone number</span>
+              <Phone className="w-4 h-4 text-th-text-tertiary" />
+              <span className="text-xs text-th-text-tertiary">Phone number</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-th-border bg-surface-secondary h-16 items-start pt-2.5">
-              <MessageSquare className="w-4 h-4 text-gray-400 mt-0.5" />
-              <span className="text-xs text-gray-400">Additional notes</span>
+              <MessageSquare className="w-4 h-4 text-th-text-tertiary mt-0.5" />
+              <span className="text-xs text-th-text-tertiary">Additional notes</span>
             </div>
             <button className="w-full py-2.5 rounded-lg bg-th-accent-600 text-white text-sm font-medium hover:bg-th-accent-600/90 transition-colors">
               Confirm Booking
@@ -886,7 +886,7 @@ function ScheduleEditorModal({
         <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-5 bg-surface-primary border-b border-th-border z-10">
           <div className="flex items-center gap-3">
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-secondary transition-colors" title="Close editor">
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-th-text-secondary" />
             </button>
             <h2 className="text-lg font-semibold text-th-text-primary">
               {isEdit ? 'Edit Schedule' : 'Create Schedule'}
@@ -927,7 +927,7 @@ function ScheduleEditorModal({
                   value={form.name || ''}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="e.g., 30-Minute Discovery Call"
-                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
+                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
                 />
               </div>
 
@@ -939,7 +939,7 @@ function ScheduleEditorModal({
                   onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="Brief description for the booking page"
                   rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-th-accent-600/30 resize-none"
+                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-600/30 resize-none"
                 />
               </div>
 
@@ -954,7 +954,7 @@ function ScheduleEditorModal({
                       className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                         (!customDuration && form.duration_minutes === opt.value) || (customDuration && opt.value === 0)
                           ? 'border-th-accent-600 bg-th-accent-600/10 text-th-accent-600'
-                          : 'border-th-border hover:border-gray-300 text-gray-600'
+                          : 'border-th-border hover:border-th-border text-th-text-secondary'
                       }`}
                     >
                       {opt.label}
@@ -985,7 +985,7 @@ function ScheduleEditorModal({
                       className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                         form.buffer_minutes === opt.value
                           ? 'border-th-accent-600 bg-th-accent-600/10 text-th-accent-600'
-                          : 'border-th-border hover:border-gray-300 text-gray-600'
+                          : 'border-th-border hover:border-th-border text-th-text-secondary'
                       }`}
                     >
                       {opt.label}
@@ -998,7 +998,7 @@ function ScheduleEditorModal({
               <div className="mb-4">
                 <label className="block text-sm font-medium text-th-text-primary mb-1.5">Booking URL Slug</label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400 flex-shrink-0">https://{BOOKING_DOMAIN}/book/</span>
+                  <span className="text-xs text-th-text-tertiary flex-shrink-0">https://{BOOKING_DOMAIN}/book/</span>
                   <input
                     type="text"
                     value={form.slug || ''}
@@ -1024,13 +1024,13 @@ function ScheduleEditorModal({
                       className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${
                         form.location_type === loc.value
                           ? 'border-th-accent-600 bg-th-accent-600/5'
-                          : 'border-th-border hover:border-gray-300'
+                          : 'border-th-border hover:border-th-border'
                       }`}
                     >
-                      <LIcon className={`w-5 h-5 ${form.location_type === loc.value ? 'text-th-accent-600' : 'text-gray-400'}`} />
+                      <LIcon className={`w-5 h-5 ${form.location_type === loc.value ? 'text-th-accent-600' : 'text-th-text-tertiary'}`} />
                       <div>
                         <p className="text-sm font-medium text-th-text-primary">{loc.label}</p>
-                        <p className="text-[10px] text-gray-400">{loc.desc}</p>
+                        <p className="text-[10px] text-th-text-tertiary">{loc.desc}</p>
                       </div>
                     </button>
                   );
@@ -1048,7 +1048,7 @@ function ScheduleEditorModal({
                     }))
                   }
                   placeholder={locField.placeholder}
-                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
+                  className="w-full px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
                 />
               </div>
             </div>
@@ -1067,7 +1067,7 @@ function ScheduleEditorModal({
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                       form.booking_window_days === opt.value
                         ? 'border-th-accent-600 bg-th-accent-600/10 text-th-accent-600'
-                        : 'border-th-border hover:border-gray-300 text-gray-600'
+                        : 'border-th-border hover:border-th-border text-th-text-secondary'
                     }`}
                   >
                     {opt.label}
@@ -1205,11 +1205,11 @@ function BookingsView({
           className="p-2 rounded-lg hover:bg-surface-secondary transition-colors"
           title="Back to schedules"
         >
-          <ChevronLeft className="w-5 h-5 text-gray-500" />
+          <ChevronLeft className="w-5 h-5 text-th-text-secondary" />
         </button>
         <div>
           <h2 className="text-lg font-semibold text-th-text-primary">Bookings: {schedule.name}</h2>
-          <p className="text-sm text-gray-500">{schedule.duration_minutes} min · {getLocationLabel(schedule.location_type)}</p>
+          <p className="text-sm text-th-text-secondary">{schedule.duration_minutes} min · {getLocationLabel(schedule.location_type)}</p>
         </div>
       </div>
 
@@ -1225,13 +1225,13 @@ function BookingsView({
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or email…"
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
           />
         </div>
         <select
@@ -1253,7 +1253,7 @@ function BookingsView({
           title="Filter from date"
           className="px-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
         />
-        <span className="text-xs text-gray-400">to</span>
+        <span className="text-xs text-th-text-tertiary">to</span>
         <input
           type="date"
           value={dateTo}
@@ -1271,8 +1271,8 @@ function BookingsView({
         </div>
       ) : filteredBookings.length === 0 ? (
         <div className="text-center py-16">
-          <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No bookings found</p>
+          <Calendar className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
+          <p className="text-sm text-th-text-secondary">No bookings found</p>
         </div>
       ) : (
         <div className="rounded-xl border border-th-border overflow-hidden">
@@ -1280,12 +1280,12 @@ function BookingsView({
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-surface-secondary">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Booker</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Date & Time</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Duration</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Notes</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Actions</th>
+                  <th className="text-left px-4 py-3 font-medium text-th-text-secondary text-xs uppercase tracking-wide">Booker</th>
+                  <th className="text-left px-4 py-3 font-medium text-th-text-secondary text-xs uppercase tracking-wide">Date & Time</th>
+                  <th className="text-left px-4 py-3 font-medium text-th-text-secondary text-xs uppercase tracking-wide">Duration</th>
+                  <th className="text-left px-4 py-3 font-medium text-th-text-secondary text-xs uppercase tracking-wide">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-th-text-secondary text-xs uppercase tracking-wide">Notes</th>
+                  <th className="text-right px-4 py-3 font-medium text-th-text-secondary text-xs uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-th-border">
@@ -1297,19 +1297,19 @@ function BookingsView({
                     <tr key={booking.id} className="hover:bg-surface-secondary/50 transition-colors">
                       <td className="px-4 py-3">
                         <p className="font-medium text-th-text-primary">{booking.booker_name}</p>
-                        <p className="text-xs text-gray-500">{booking.booker_email}</p>
+                        <p className="text-xs text-th-text-secondary">{booking.booker_email}</p>
                         {booking.booker_phone && (
-                          <p className="text-xs text-gray-400">{booking.booker_phone}</p>
+                          <p className="text-xs text-th-text-tertiary">{booking.booker_phone}</p>
                         )}
                       </td>
                       <td className="px-4 py-3 text-th-text-primary whitespace-nowrap">
                         {formatDateTime(booking.start_time)}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">{durationMin} min</td>
+                      <td className="px-4 py-3 text-th-text-secondary">{durationMin} min</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={booking.status} />
                       </td>
-                      <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">
+                      <td className="px-4 py-3 text-th-text-secondary max-w-[200px] truncate">
                         {booking.notes || '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -1346,7 +1346,7 @@ function BookingsView({
                             </>
                           )}
                           {booking.status === 'cancelled' && booking.cancellation_reason && (
-                            <span className="text-xs text-gray-400 italic" title={booking.cancellation_reason}>
+                            <span className="text-xs text-th-text-tertiary italic" title={booking.cancellation_reason}>
                               {booking.cancellation_reason.slice(0, 30)}…
                             </span>
                           )}
@@ -1637,7 +1637,7 @@ export default function MeetingScheduler() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-th-text-primary">Meeting Scheduler</h1>
-          <p className="text-sm text-gray-500 mt-1">Create shareable booking links for leads</p>
+          <p className="text-sm text-th-text-secondary mt-1">Create shareable booking links for leads</p>
         </div>
         <button
           onClick={handleCreateSchedule}
@@ -1651,13 +1651,13 @@ export default function MeetingScheduler() {
       {/* Search bar */}
       {schedules.length > 0 && (
         <div className="relative max-w-md mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search schedules…"
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-th-border bg-surface-primary text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-600/30"
           />
         </div>
       )}
@@ -1671,8 +1671,8 @@ export default function MeetingScheduler() {
         <EmptyState onCreateClick={handleCreateSchedule} />
       ) : filteredSchedules.length === 0 ? (
         <div className="text-center py-16">
-          <Search className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No schedules match &quot;{searchQuery}&quot;</p>
+          <Search className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
+          <p className="text-sm text-th-text-secondary">No schedules match &quot;{searchQuery}&quot;</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

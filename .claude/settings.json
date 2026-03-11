@@ -36,7 +36,9 @@
       "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/\")",
       "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")",
       "Bash(cat \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/.gitignore\")",
-      "Bash(head -20 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\supabase.ts\")"
+      "Bash(head -20 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\supabase.ts\")",
+      "Bash(grep -rn \"overflow-x-auto\" apps/crm/src/pages/*.tsx)",
+      "Bash(do echo:*)"
     ]
   }
 }

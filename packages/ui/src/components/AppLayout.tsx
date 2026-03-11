@@ -15,11 +15,20 @@ export interface NavItem {
   children?: { name: string; href: string; external?: boolean }[];
 }
 
+export interface NavSection {
+  id: string;
+  /** Optional label shown above the section in the sidebar */
+  label?: string;
+  items: NavItem[];
+}
+
 export interface AppLayoutProps {
   children: React.ReactNode;
   appName: string;
   logoSrc?: string;
   navigation: NavItem[];
+  /** Optional grouped sections with labels — when provided, overrides `navigation` in the sidebar */
+  navSections?: NavSection[];
   userSection?: React.ReactNode;
   topBarActions?: React.ReactNode;
   /** Content rendered in the center of the top bar (e.g. global search) */
@@ -53,6 +62,7 @@ export function AppLayout({
   appName,
   logoSrc,
   navigation,
+  navSections,
   userSection,
   topBarActions,
   topBarCenter,
@@ -178,73 +188,93 @@ export function AppLayout({
 
         {/* ---- Navigation ---- */}
         <nav className={cn(
-          'flex-1 overflow-y-auto py-4 space-y-1',
+          'flex-1 overflow-y-auto py-4',
           collapsed && !isMobile ? 'px-2' : 'px-3'
         )}>
-          {navigation.map((item) => {
-            if (item.children && renderChildNavLink) {
-              const isExpanded = expandedGroups.has(item.name);
-              return (
-                <div key={item.name}>
-                  <button
-                    onClick={() => toggleGroup(item.name)}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                      'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]',
-                      collapsed && !isMobile && 'justify-center px-0'
-                    )}
-                  >
-                    <item.icon className="w-[18px] h-[18px] shrink-0" />
-                    {!(collapsed && !isMobile) && (
-                      <>
-                        <span className="flex-1 text-left truncate">{item.name}</span>
-                        <ChevronLeft className={cn(
-                          'w-3.5 h-3.5 transition-transform duration-200',
-                          isExpanded ? '-rotate-90' : 'rotate-0'
-                        )} />
-                      </>
-                    )}
-                  </button>
-                  {isExpanded && !(collapsed && !isMobile) && (
-                    <div className="ml-[30px] mt-1 space-y-0.5 border-l border-[rgb(var(--sidebar-text)_/_0.1)] pl-3">
-                      {item.children.map((child) =>
-                        renderChildNavLink(child, {
-                          className: 'block px-3 py-2 rounded-lg text-sm transition-all duration-150',
-                          onClick: closeSidebar,
-                          children: child.name,
-                        })
+          {(navSections ?? [{ id: '_default', items: navigation }]).map((section, sectionIndex) => (
+            <div key={section.id} className={sectionIndex > 0 ? 'mt-1' : ''}>
+              {/* Section label */}
+              {section.label && !(collapsed && !isMobile) && (
+                <p className={cn(
+                  'text-xs font-semibold uppercase tracking-wider text-[rgb(var(--sidebar-text)_/_0.45)] px-3 mb-1',
+                  sectionIndex > 0 ? 'mt-5' : 'mt-1'
+                )}>
+                  {section.label}
+                </p>
+              )}
+              {/* Section divider (collapsed mode: thin rule between sections) */}
+              {section.label && collapsed && !isMobile && sectionIndex > 0 && (
+                <div className="mx-2 my-2 border-t border-[rgb(var(--sidebar-text)_/_0.1)]" />
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  if (item.children && renderChildNavLink) {
+                    const isExpanded = expandedGroups.has(item.name);
+                    return (
+                      <div key={item.name}>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(item.name)}
+                          className={cn(
+                            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                            'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]',
+                            collapsed && !isMobile && 'justify-center px-0'
+                          )}
+                        >
+                          <item.icon className="w-[18px] h-[18px] shrink-0" />
+                          {!(collapsed && !isMobile) && (
+                            <>
+                              <span className="flex-1 text-left truncate">{item.name}</span>
+                              <ChevronLeft className={cn(
+                                'w-3.5 h-3.5 transition-transform duration-200',
+                                isExpanded ? '-rotate-90' : 'rotate-0'
+                              )} />
+                            </>
+                          )}
+                        </button>
+                        {isExpanded && !(collapsed && !isMobile) && (
+                          <div className="ml-[30px] mt-1 space-y-0.5 border-l border-[rgb(var(--sidebar-text)_/_0.1)] pl-3">
+                            {item.children.map((child) =>
+                              renderChildNavLink!(child, {
+                                className: 'block px-3 py-2 rounded-lg text-sm transition-all duration-150',
+                                onClick: closeSidebar,
+                                children: child.name,
+                              })
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  const navContent = (
+                    <>
+                      <item.icon className="w-[18px] h-[18px] shrink-0" />
+                      {!(collapsed && !isMobile) && (
+                        <>
+                          <span className="flex-1 truncate">{item.name}</span>
+                          {item.badge}
+                        </>
                       )}
-                    </div>
-                  )}
-                </div>
-              );
-            }
+                    </>
+                  );
 
-            const navContent = (
-              <>
-                <item.icon className="w-[18px] h-[18px] shrink-0" />
-                {!(collapsed && !isMobile) && (
-                  <>
-                    <span className="flex-1 truncate">{item.name}</span>
-                    {item.badge}
-                  </>
-                )}
-              </>
-            );
-
-            return (
-              <React.Fragment key={item.name}>
-                {renderNavLink(item, {
-                  className: cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                    collapsed && !isMobile && 'justify-center px-0'
-                  ),
-                  onClick: closeSidebar,
-                  children: navContent,
+                  return (
+                    <React.Fragment key={item.name}>
+                      {renderNavLink(item, {
+                        className: cn(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                          collapsed && !isMobile && 'justify-center px-0'
+                        ),
+                        onClick: closeSidebar,
+                        children: navContent,
+                      })}
+                    </React.Fragment>
+                  );
                 })}
-              </React.Fragment>
-            );
-          })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* ---- Bottom section: User + Theme ---- */}

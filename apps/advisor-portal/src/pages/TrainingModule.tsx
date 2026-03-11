@@ -16,6 +16,7 @@ import {
   type TrainingModule as TrainingModuleType,
   type TrainingProgress,
 } from '@mpbhealth/advisor-core';
+import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import Training from './Training';
 
@@ -119,12 +120,9 @@ export default function TrainingModule() {
     return (
       <div className="text-center py-12">
         <p className="text-th-text-tertiary">Module not found</p>
-        <button
-          onClick={() => navigate('/training')}
-          className="mt-4 text-th-accent-600 hover:text-th-accent-700 font-medium"
-        >
+        <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/training')} className="mt-4 text-th-accent-600 hover:text-th-accent-700">
           Back to Training
-        </button>
+        </Button>
       </div>
     );
   }
@@ -136,13 +134,10 @@ export default function TrainingModule() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Back button */}
-      <button
-        onClick={() => navigate('/training')}
-        className="flex items-center space-x-2 text-th-text-secondary hover:text-th-text-primary"
-      >
+      <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/training')} className="text-th-text-secondary hover:text-th-text-primary">
         <ArrowLeft className="w-5 h-5" />
         <span>Back to Training</span>
-      </button>
+      </Button>
 
       {/* Module header */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-6">
@@ -263,13 +258,10 @@ export default function TrainingModule() {
             <span className="font-medium">Module Completed</span>
           </div>
         ) : !progress ? (
-          <button
-            onClick={handleStart}
-            className="flex items-center space-x-2 px-6 py-2.5 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
-          >
+          <Button type="button" variant="primary" onClick={handleStart}>
             <Play className="w-5 h-5" />
             <span>Start Module</span>
-          </button>
+          </Button>
         ) : (
           <div className="text-th-text-tertiary">
             Time spent: {progress.time_spent_minutes} minutes
@@ -277,10 +269,12 @@ export default function TrainingModule() {
         )}
 
         {isInProgress && (
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onClick={handleComplete}
             disabled={completing}
-            className="flex items-center space-x-2 px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+            className="bg-green-600 hover:bg-green-700"
           >
             {completing ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -288,7 +282,7 @@ export default function TrainingModule() {
               <CheckCircle2 className="w-5 h-5" />
             )}
             <span>Mark Complete</span>
-          </button>
+          </Button>
         )}
       </div>
     </div>

@@ -263,7 +263,7 @@ function SignatureCard({
   return (
     <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden hover:shadow-md transition-shadow">
       {/* Preview */}
-      <div className="relative h-40 overflow-hidden border-b border-th-border bg-white">
+      <div className="relative h-40 overflow-hidden border-b border-th-border bg-surface-primary">
         <div
           className="absolute inset-0 p-4 pointer-events-none origin-top-left scale-[0.65]"
           style={{ width: '154%' }}

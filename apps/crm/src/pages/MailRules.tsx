@@ -193,7 +193,7 @@ export default function MailRules() {
   if (accounts.length === 0 && !loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
           <Filter className="w-12 h-12 text-th-text-tertiary mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-th-text-primary mb-2">No mail accounts connected</h3>
           <p className="text-sm text-th-text-secondary">Connect an email account first to create inbox rules</p>
@@ -226,7 +226,7 @@ export default function MailRules() {
         <select
           value={selectedAccountId}
           onChange={e => setSelectedAccountId(e.target.value)}
-          className="px-3 py-2 border border-neutral-200 rounded-lg text-sm"
+          className="px-3 py-2 border border-th-border rounded-lg text-sm"
         >
           {accounts.map(a => (
             <option key={a.id} value={a.id}>{a.email_address}</option>
@@ -240,7 +240,7 @@ export default function MailRules() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
         </div>
       ) : rules.length === 0 ? (
-        <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
           <Filter className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
           <h3 className="font-semibold text-th-text-primary mb-1">No rules yet</h3>
           <p className="text-sm text-th-text-secondary">
@@ -252,13 +252,13 @@ export default function MailRules() {
           {rules.map(rule => (
             <div
               key={rule.id}
-              className={`bg-white rounded-xl border border-neutral-200 p-4 ${
+              className={`bg-surface-primary rounded-xl border border-th-border p-4 ${
                 !rule.is_active ? 'opacity-50' : ''
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <GripVertical className="w-4 h-4 text-neutral-300 cursor-grab" />
+                  <GripVertical className="w-4 h-4 text-th-text-tertiary cursor-grab" />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-th-text-primary">{rule.name}</span>
@@ -278,7 +278,7 @@ export default function MailRules() {
                       </span>
                       {rule.times_applied > 0 && (
                         <>
-                          <span className="text-neutral-300 mx-1">|</span>
+                          <span className="text-th-text-tertiary mx-1">|</span>
                           <span>Applied {rule.times_applied}x</span>
                         </>
                       )}
@@ -289,13 +289,13 @@ export default function MailRules() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleToggle(rule)}
-                    className="p-1.5 hover:bg-neutral-50 rounded-lg"
+                    className="p-1.5 hover:bg-surface-secondary rounded-lg"
                     title={rule.is_active ? 'Disable' : 'Enable'}
                   >
                     {rule.is_active ? (
                       <ToggleRight className="w-5 h-5 text-green-500" />
                     ) : (
-                      <ToggleLeft className="w-5 h-5 text-neutral-400" />
+                      <ToggleLeft className="w-5 h-5 text-th-text-tertiary" />
                     )}
                   </button>
                   <button
@@ -320,7 +320,7 @@ export default function MailRules() {
       {/* Rule Editor Modal */}
       {showEditor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowEditor(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface-primary rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-th-text-primary mb-4">
               {editingRule ? 'Edit Rule' : 'Create Rule'}
             </h2>
@@ -333,7 +333,7 @@ export default function MailRules() {
                 value={ruleName}
                 onChange={e => setRuleName(e.target.value)}
                 placeholder="e.g., Move newsletters to folder"
-                className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-th-border rounded-lg text-sm"
               />
             </div>
 
@@ -353,7 +353,7 @@ export default function MailRules() {
                     <select
                       value={cond.field}
                       onChange={e => updateCondition(i, { field: e.target.value as RuleCondition['field'] })}
-                      className="px-2 py-1.5 border border-neutral-200 rounded text-sm"
+                      className="px-2 py-1.5 border border-th-border rounded text-sm"
                     >
                       {CONDITION_FIELDS.map(f => (
                         <option key={f.value} value={f.value}>{f.label}</option>
@@ -362,7 +362,7 @@ export default function MailRules() {
                     <select
                       value={cond.operator}
                       onChange={e => updateCondition(i, { operator: e.target.value as RuleCondition['operator'] })}
-                      className="px-2 py-1.5 border border-neutral-200 rounded text-sm"
+                      className="px-2 py-1.5 border border-th-border rounded text-sm"
                     >
                       {CONDITION_OPERATORS.map(o => (
                         <option key={o.value} value={o.value}>{o.label}</option>
@@ -373,7 +373,7 @@ export default function MailRules() {
                       value={cond.value}
                       onChange={e => updateCondition(i, { value: e.target.value })}
                       placeholder="Value..."
-                      className="flex-1 px-2 py-1.5 border border-neutral-200 rounded text-sm"
+                      className="flex-1 px-2 py-1.5 border border-th-border rounded text-sm"
                     />
                     {conditions.length > 1 && (
                       <button onClick={() => removeCondition(i)} className="p-1 text-red-400 hover:text-red-500">
@@ -401,7 +401,7 @@ export default function MailRules() {
                     <select
                       value={action.type}
                       onChange={e => updateAction(i, { type: e.target.value as RuleAction['type'] })}
-                      className="px-2 py-1.5 border border-neutral-200 rounded text-sm"
+                      className="px-2 py-1.5 border border-th-border rounded text-sm"
                     >
                       {ACTION_TYPES.map(a => (
                         <option key={a.value} value={a.value}>{a.label}</option>
@@ -411,7 +411,7 @@ export default function MailRules() {
                       <select
                         value={action.folder_id || ''}
                         onChange={e => updateAction(i, { folder_id: e.target.value })}
-                        className="flex-1 px-2 py-1.5 border border-neutral-200 rounded text-sm"
+                        className="flex-1 px-2 py-1.5 border border-th-border rounded text-sm"
                       >
                         <option value="">Select folder...</option>
                         {folders.map(f => (
@@ -425,7 +425,7 @@ export default function MailRules() {
                         value={action.label || ''}
                         onChange={e => updateAction(i, { label: e.target.value })}
                         placeholder="Label name..."
-                        className="flex-1 px-2 py-1.5 border border-neutral-200 rounded text-sm"
+                        className="flex-1 px-2 py-1.5 border border-th-border rounded text-sm"
                       />
                     )}
                     {action.type === 'forward' && (
@@ -434,7 +434,7 @@ export default function MailRules() {
                         value={action.forward_to || ''}
                         onChange={e => updateAction(i, { forward_to: e.target.value })}
                         placeholder="Forward to email..."
-                        className="flex-1 px-2 py-1.5 border border-neutral-200 rounded text-sm"
+                        className="flex-1 px-2 py-1.5 border border-th-border rounded text-sm"
                       />
                     )}
                     {actions.length > 1 && (

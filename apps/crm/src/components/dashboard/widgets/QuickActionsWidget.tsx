@@ -76,12 +76,12 @@ export default function QuickActionsWidget({ size }: BaseWidgetProps) {
                 'hover:shadow-md hover:-translate-y-0.5'
               )}
             >
-              <div className={cn('p-2 rounded-lg bg-white/50 dark:bg-black/20', colors.text)}>
+              <div className={cn('p-2 rounded-lg bg-white/50 dark:bg-surface-primary/20', colors.text)}>
                 <Icon className="h-5 w-5" />
               </div>
               <span className="text-sm font-medium">{action.label}</span>
               {size !== 'sm' && (
-                <span className="text-xs text-gray-500">{action.description}</span>
+                <span className="text-xs text-th-text-secondary">{action.description}</span>
               )}
             </button>
           );

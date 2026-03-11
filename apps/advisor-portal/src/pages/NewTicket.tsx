@@ -183,11 +183,11 @@ export default function NewTicket() {
         <div className="flex-1 min-w-0">
           <form
             onSubmit={handleSubmit}
-            className="bg-white rounded-xl border border-neutral-200 divide-y divide-neutral-100"
+            className="bg-surface-primary rounded-xl border border-th-border divide-y divide-th-border-subtle"
           >
             {/* Subject */}
             <div className="p-6">
-              <label className="block text-sm font-medium text-neutral-900 mb-1.5">
+              <label className="block text-sm font-medium text-th-text-primary mb-1.5">
                 Subject <span className="text-red-500">*</span>
               </label>
               <input
@@ -196,21 +196,21 @@ export default function NewTicket() {
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Brief summary of the issue..."
                 maxLength={255}
-                className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                className="w-full px-4 py-2.5 border border-th-border rounded-lg text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               />
-              <p className="text-xs text-neutral-400 mt-1">{subject.length}/255</p>
+              <p className="text-xs text-th-text-tertiary mt-1">{subject.length}/255</p>
             </div>
 
             {/* Advisor ID */}
             {profile?.agent_id && (
               <div className="p-6">
-                <label className="block text-sm font-medium text-neutral-900 mb-1.5">Advisor ID</label>
+                <label className="block text-sm font-medium text-th-text-primary mb-1.5">Advisor ID</label>
                 <input
                   type="text"
                   value={profile.agent_id}
                   readOnly
                   title="Advisor ID"
-                  className="w-full px-4 py-2.5 border border-neutral-200 rounded-lg text-sm text-neutral-500 bg-neutral-50 cursor-default"
+                  className="w-full px-4 py-2.5 border border-th-border rounded-lg text-sm text-th-text-secondary bg-surface-secondary cursor-default"
                 />
               </div>
             )}
@@ -218,13 +218,13 @@ export default function NewTicket() {
             {/* Category & Priority */}
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-900 mb-1.5">Category</label>
+                <label className="block text-sm font-medium text-th-text-primary mb-1.5">Category</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   disabled={catLoading}
                   title="Category"
-                  className="w-full px-3 py-2.5 border border-neutral-300 rounded-lg text-sm text-neutral-900 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-60"
+                  className="w-full px-3 py-2.5 border border-th-border rounded-lg text-sm text-th-text-primary bg-surface-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-60"
                 >
                   <option value="">Select a category...</option>
                   {categories.map((cat) => (
@@ -235,12 +235,12 @@ export default function NewTicket() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-900 mb-1.5">Priority</label>
+                <label className="block text-sm font-medium text-th-text-primary mb-1.5">Priority</label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as TicketPriority)}
                   title="Priority"
-                  className="w-full px-3 py-2.5 border border-neutral-300 rounded-lg text-sm text-neutral-900 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                  className="w-full px-3 py-2.5 border border-th-border rounded-lg text-sm text-th-text-primary bg-surface-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                 >
                   {PRIORITIES.map((p) => (
                     <option key={p.value} value={p.value}>
@@ -253,7 +253,7 @@ export default function NewTicket() {
 
             {/* Description */}
             <div className="p-6">
-              <label className="block text-sm font-medium text-neutral-900 mb-1.5">
+              <label className="block text-sm font-medium text-th-text-primary mb-1.5">
                 Description <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -262,15 +262,15 @@ export default function NewTicket() {
                 placeholder="Describe what's happening, steps to reproduce, any error messages, and the impact on your work..."
                 rows={7}
                 maxLength={10000}
-                className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-y"
+                className="w-full px-4 py-3 border border-th-border rounded-lg text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-y"
               />
-              <p className="text-xs text-neutral-400 mt-1">{description.length.toLocaleString()}/10,000</p>
+              <p className="text-xs text-th-text-tertiary mt-1">{description.length.toLocaleString()}/10,000</p>
             </div>
 
             {/* Attachments */}
             <div className="p-6 space-y-3">
-              <label className="block text-sm font-medium text-neutral-900 mb-1.5">Attachments</label>
-              <label className="flex items-center justify-center gap-2 px-4 py-3 border border-dashed border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 cursor-pointer transition-colors">
+              <label className="block text-sm font-medium text-th-text-primary mb-1.5">Attachments</label>
+              <label className="flex items-center justify-center gap-2 px-4 py-3 border border-dashed border-th-border rounded-lg text-sm text-th-text-primary hover:bg-surface-secondary cursor-pointer transition-colors">
                 <Paperclip className="w-4 h-4" />
                 <span>Upload images or files</span>
                 <input
@@ -283,7 +283,7 @@ export default function NewTicket() {
                   className="sr-only"
                 />
               </label>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-th-text-tertiary">
                 Up to {MAX_ATTACHMENT_COUNT} files, {formatBytes(MAX_ATTACHMENT_SIZE)} max each.
               </p>
 
@@ -292,16 +292,16 @@ export default function NewTicket() {
                   {attachments.map((file, idx) => (
                     <li
                       key={`${file.name}-${file.size}-${file.lastModified}-${idx}`}
-                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-neutral-200"
+                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-th-border"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm text-neutral-800 truncate">{file.name}</p>
-                        <p className="text-xs text-neutral-500">{formatBytes(file.size)}</p>
+                        <p className="text-sm text-th-text-primary truncate">{file.name}</p>
+                        <p className="text-xs text-th-text-secondary">{formatBytes(file.size)}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeAttachment(idx)}
-                        className="p-1 text-neutral-500 hover:text-neutral-800 rounded transition-colors"
+                        className="p-1 text-th-text-secondary hover:text-th-text-primary rounded transition-colors"
                         aria-label={`Remove ${file.name}`}
                       >
                         <X className="w-4 h-4" />
@@ -324,7 +324,7 @@ export default function NewTicket() {
             <div className="p-6 flex items-center justify-between gap-3">
               <Link
                 to="/tickets"
-                className="px-4 py-2.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                className="px-4 py-2.5 text-sm font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary rounded-lg transition-colors"
               >
                 Cancel
               </Link>
@@ -352,13 +352,13 @@ export default function NewTicket() {
         {/* Right: ticket history panel */}
         <aside className="hidden lg:flex flex-col w-72 xl:w-80 flex-shrink-0 gap-4 sticky top-6">
           {/* Stats chips */}
-          <div className="bg-white rounded-xl border border-neutral-200 p-4">
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Your Tickets</p>
+          <div className="bg-surface-primary rounded-xl border border-th-border p-4">
+            <p className="text-xs font-semibold text-th-text-secondary uppercase tracking-wide mb-3">Your Tickets</p>
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
                 { label: 'Open', value: (stats?.open ?? 0) + (stats?.pending ?? 0), chip: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
                 { label: 'Resolved', value: stats?.resolved ?? 0, chip: 'bg-green-50 text-green-700 border-green-200' },
-                { label: 'Total', value: stats?.total ?? 0, chip: 'bg-neutral-50 text-neutral-600 border-neutral-200' },
+                { label: 'Total', value: stats?.total ?? 0, chip: 'bg-surface-secondary text-th-text-secondary border-th-border' },
               ].map(({ label, value, chip }) => (
                 <div key={label} className={`rounded-lg border px-2 py-2 ${chip}`}>
                   <p className="text-lg font-bold leading-none">{historyLoading ? '—' : value}</p>
@@ -369,34 +369,34 @@ export default function NewTicket() {
           </div>
 
           {/* Timeline */}
-          <div className="bg-white rounded-xl border border-neutral-200 p-4">
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-4">Recent History</p>
+          <div className="bg-surface-primary rounded-xl border border-th-border p-4">
+            <p className="text-xs font-semibold text-th-text-secondary uppercase tracking-wide mb-4">Recent History</p>
 
             {historyLoading ? (
               <div className="flex justify-center py-6">
                 <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
               </div>
             ) : tickets.length === 0 ? (
-              <p className="text-sm text-neutral-400 text-center py-6">No tickets yet</p>
+              <p className="text-sm text-th-text-tertiary text-center py-6">No tickets yet</p>
             ) : (
-              <ol className="relative border-l-2 border-neutral-100 ml-2 space-y-0">
+              <ol className="relative border-l-2 border-th-border-subtle ml-2 space-y-0">
                 {tickets.map((t, idx) => (
                   <li key={t.id} className={`pl-5 relative${idx < tickets.length - 1 ? ' pb-5' : ''}`}>
                     <span
-                      className={`absolute -left-[9px] top-1.5 w-[18px] h-[18px] rounded-full border-2 border-white flex-shrink-0 ${STATUS_DOT[t.status] ?? 'bg-neutral-300'}`}
+                      className={`absolute -left-[9px] top-1.5 w-[18px] h-[18px] rounded-full border-2 border-surface-primary flex-shrink-0 ${STATUS_DOT[t.status] ?? 'bg-th-text-tertiary'}`}
                     />
                     <Link
                       to="/tickets"
-                      className="group block hover:bg-neutral-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
+                      className="group block hover:bg-surface-secondary -mx-2 px-2 py-1 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                        <span className="text-xs font-mono font-semibold text-neutral-700">#{t.ticket_number}</span>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_LABEL[t.status]?.chip ?? 'bg-neutral-100 text-neutral-600'}`}>
+                        <span className="text-xs font-mono font-semibold text-th-text-primary">#{t.ticket_number}</span>
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_LABEL[t.status]?.chip ?? 'bg-surface-tertiary text-th-text-secondary'}`}>
                           {STATUS_LABEL[t.status]?.text ?? t.status}
                         </span>
                       </div>
-                      <p className="text-xs text-neutral-600 line-clamp-2 group-hover:text-neutral-900 leading-snug">{t.subject}</p>
-                      <p className="text-[10px] text-neutral-400 mt-0.5">{new Date(t.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-th-text-secondary line-clamp-2 group-hover:text-th-text-primary leading-snug">{t.subject}</p>
+                      <p className="text-[10px] text-th-text-tertiary mt-0.5">{new Date(t.created_at).toLocaleDateString()}</p>
                     </Link>
                   </li>
                 ))}

@@ -171,7 +171,7 @@ export default function MailAccounts() {
 
       {/* Connected Accounts */}
       {accounts.length === 0 ? (
-        <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
           <Mail className="w-12 h-12 text-th-text-tertiary mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-th-text-primary mb-2">No accounts connected</h3>
           <p className="text-sm text-th-text-secondary mb-6 max-w-sm mx-auto">
@@ -192,7 +192,7 @@ export default function MailAccounts() {
             const StatusIcon = statusConfig.icon;
 
             return (
-              <div key={account.id} className="bg-white rounded-xl border border-neutral-200 p-5">
+              <div key={account.id} className="bg-surface-primary rounded-xl border border-th-border p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     {/* Avatar */}
@@ -220,14 +220,14 @@ export default function MailAccounts() {
                         <span className={`text-xs font-medium ${providerConfig.color}`}>
                           {providerConfig.name}
                         </span>
-                        <span className="text-neutral-300">|</span>
+                        <span className="text-th-text-tertiary">|</span>
                         <span className={`flex items-center gap-1 text-xs ${statusConfig.color}`}>
                           <StatusIcon className={`w-3.5 h-3.5 ${account.sync_status === 'syncing' ? 'animate-spin' : ''}`} />
                           {statusConfig.label}
                         </span>
                         {account.last_sync_at && (
                           <>
-                            <span className="text-neutral-300">|</span>
+                            <span className="text-th-text-tertiary">|</span>
                             <span className="text-xs text-th-text-tertiary">
                               Last sync: {new Date(account.last_sync_at).toLocaleTimeString()}
                             </span>
@@ -269,12 +269,12 @@ export default function MailAccounts() {
                 </div>
 
                 {/* Sync Settings Bar */}
-                <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-6 text-xs text-th-text-tertiary">
+                <div className="mt-4 pt-4 border-t border-th-border flex items-center gap-6 text-xs text-th-text-tertiary">
                   <div className="flex items-center gap-1.5">
                     {account.auto_sync ? (
                       <Wifi className="w-3.5 h-3.5 text-green-500" />
                     ) : (
-                      <WifiOff className="w-3.5 h-3.5 text-gray-400" />
+                      <WifiOff className="w-3.5 h-3.5 text-th-text-tertiary" />
                     )}
                     Auto-sync: {account.auto_sync ? `Every ${account.sync_interval_minutes}m` : 'Off'}
                   </div>
@@ -296,7 +296,7 @@ export default function MailAccounts() {
       {/* Connect Account Modal */}
       {showConnectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowConnectModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface-primary rounded-xl shadow-xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-th-text-primary mb-1">Connect Email Account</h2>
             <p className="text-sm text-th-text-secondary mb-6">
               Choose your email provider to get started
@@ -310,7 +310,7 @@ export default function MailAccounts() {
                   handleConnect('microsoft365');
                 }}
                 disabled={connecting === 'microsoft365'}
-                className="w-full flex items-center gap-4 p-4 border border-neutral-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                className="w-full flex items-center gap-4 p-4 border border-th-border rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
               >
                 <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-lg group-hover:bg-blue-100 transition-colors">
                   🏢
@@ -331,7 +331,7 @@ export default function MailAccounts() {
                   handleConnect('gmail');
                 }}
                 disabled={connecting === 'gmail'}
-                className="w-full flex items-center gap-4 p-4 border border-neutral-200 rounded-xl hover:border-red-300 hover:bg-red-50/50 transition-all group"
+                className="w-full flex items-center gap-4 p-4 border border-th-border rounded-xl hover:border-red-300 hover:bg-red-50/50 transition-all group"
               >
                 <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center text-lg group-hover:bg-red-100 transition-colors">
                   📧
@@ -346,15 +346,15 @@ export default function MailAccounts() {
               </button>
 
               {/* IMAP (coming soon) */}
-              <div className="w-full flex items-center gap-4 p-4 border border-neutral-200 rounded-xl opacity-50 cursor-not-allowed">
-                <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-lg">
+              <div className="w-full flex items-center gap-4 p-4 border border-th-border rounded-xl opacity-50 cursor-not-allowed">
+                <div className="w-10 h-10 bg-surface-secondary rounded-lg flex items-center justify-center text-lg">
                   🔧
                 </div>
                 <div className="text-left flex-1">
                   <div className="font-medium text-th-text-primary">IMAP / SMTP</div>
                   <div className="text-xs text-th-text-secondary">Custom mail servers</div>
                 </div>
-                <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-surface-tertiary text-th-text-secondary px-2 py-0.5 rounded-full">
                   Coming soon
                 </span>
               </div>

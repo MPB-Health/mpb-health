@@ -218,7 +218,7 @@ export default function Approvals() {
                     {req.status === 'pending' && (
                       <button
                         onClick={() => handleRecall(req.id)}
-                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded border border-th-border hover:bg-surface-secondary transition-colors"
+                        className="flex items-center gap-1 text-xs text-th-text-secondary hover:text-th-text-primary px-2 py-1 rounded border border-th-border hover:bg-surface-secondary transition-colors"
                       >
                         <Undo2 className="w-3 h-3" />
                         Recall

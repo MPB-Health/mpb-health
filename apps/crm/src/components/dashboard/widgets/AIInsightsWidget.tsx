@@ -156,11 +156,11 @@ export default function AIInsightsWidget({ config, size }: BaseWidgetProps) {
       <div className="p-4">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-blue-500 animate-pulse" />
-          <span className="text-sm text-gray-500">Analyzing your data...</span>
+          <span className="text-sm text-th-text-secondary">Analyzing your data...</span>
         </div>
         <div className="space-y-3 animate-pulse">
-          <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
-          <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+          <div className="h-20 bg-surface-tertiary rounded-lg" />
+          <div className="h-20 bg-surface-tertiary rounded-lg" />
         </div>
       </div>
     );
@@ -168,10 +168,10 @@ export default function AIInsightsWidget({ config, size }: BaseWidgetProps) {
 
   if (insights.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-th-text-secondary">
         <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No insights available</p>
-        <p className="text-xs text-gray-400 mt-1">Add more data to generate AI insights</p>
+        <p className="text-xs text-th-text-tertiary mt-1">Add more data to generate AI insights</p>
       </div>
     );
   }
@@ -179,20 +179,20 @@ export default function AIInsightsWidget({ config, size }: BaseWidgetProps) {
   return (
     <div className="p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 pb-4 border-b dark:border-gray-700">
+      <div className="flex items-center justify-between mb-4 pb-4 border-b border-th-border">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
             <p className="text-sm font-medium">AI Insights</p>
-            <p className="text-xs text-gray-500">{insights.length} recommendations</p>
+            <p className="text-xs text-th-text-secondary">{insights.length} recommendations</p>
           </div>
         </div>
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+          className="p-2 rounded-lg hover:bg-surface-tertiary transition-colors disabled:opacity-50"
           title="Refresh insights"
         >
           <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
@@ -268,7 +268,7 @@ function InsightCard({ insight }: InsightCardProps) {
             <p className="text-sm font-medium">{insight.title}</p>
             <ConfidenceBadge confidence={insight.confidence} />
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-th-text-secondary mt-1">
             {insight.description}
           </p>
           {insight.actionLink && (
@@ -298,7 +298,7 @@ function ConfidenceBadge({ confidence }: ConfidenceBadgeProps) {
   const getColor = () => {
     if (confidence >= 90) return 'bg-green-100 text-green-700 dark:bg-green-900/30';
     if (confidence >= 70) return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30';
-    return 'bg-gray-100 text-gray-700 dark:bg-gray-700';
+    return 'bg-surface-tertiary text-th-text-primary';
   };
 
   return (

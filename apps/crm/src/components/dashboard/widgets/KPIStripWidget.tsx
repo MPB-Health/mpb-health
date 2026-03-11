@@ -130,15 +130,15 @@ function KPICard({ metric }: KPICardProps) {
   const Icon = metric.icon;
   const colorStyles = getColorStyles(metric.color);
   const TrendIcon = metric.trend === 'up' ? TrendingUp : metric.trend === 'down' ? TrendingDown : Minus;
-  const trendColor = metric.trend === 'up' ? 'text-green-500' : metric.trend === 'down' ? 'text-red-500' : 'text-gray-400';
+  const trendColor = metric.trend === 'up' ? 'text-green-500' : metric.trend === 'down' ? 'text-red-500' : 'text-th-text-tertiary';
 
   return (
     <div
       className={cn(
         'relative p-4 rounded-xl border transition-all',
-        'bg-white dark:bg-gray-800',
-        'border-gray-200 dark:border-gray-700',
-        'hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600',
+        'bg-surface-primary',
+        'border-th-border',
+        'hover:shadow-md hover:border-th-border',
         metric.onClick && 'cursor-pointer'
       )}
       onClick={metric.onClick}
@@ -151,10 +151,10 @@ function KPICard({ metric }: KPICardProps) {
       {/* Value */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <p className="text-2xl font-bold text-th-text-primary">
             {metric.value}
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-sm text-th-text-secondary mt-0.5">
             {metric.label}
           </p>
         </div>
@@ -196,8 +196,8 @@ function getColorStyles(color: KPIMetric['color']) {
       icon: 'text-red-600 dark:text-red-400',
     },
     gray: {
-      bg: 'bg-gray-100 dark:bg-gray-700',
-      icon: 'text-gray-600 dark:text-gray-400',
+      bg: 'bg-surface-tertiary',
+      icon: 'text-th-text-secondary',
     },
   };
   return colors[color];
@@ -234,7 +234,7 @@ export function KPIStrip() {
   ];
 
   return (
-    <div className="flex items-center gap-6 px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+    <div className="flex items-center gap-6 px-6 py-3 bg-surface-secondary border-b border-th-border">
       {metrics.map((metric, i) => (
         <div key={i} className="flex items-center gap-2">
           <span className={cn(
@@ -246,7 +246,7 @@ export function KPIStrip() {
           )}>
             {metric.value}
           </span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-sm text-th-text-secondary">
             {metric.label}
           </span>
         </div>

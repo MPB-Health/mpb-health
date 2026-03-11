@@ -24,7 +24,7 @@ export function FormPreviewModal({ open, onClose, fields, styling }: FormPreview
       case 'paragraph':
         return (
           <div key={field.id} className={widthClass}>
-            <p className="text-sm text-gray-600">{field.content || field.label}</p>
+            <p className="text-sm text-th-text-secondary">{field.content || field.label}</p>
           </div>
         );
       case 'hidden':
@@ -32,12 +32,12 @@ export function FormPreviewModal({ open, onClose, fields, styling }: FormPreview
       case 'textarea':
         return (
           <div key={field.id} className={`${widthClass} mb-4`}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-primary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
             <textarea
               placeholder={field.placeholder}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm"
               rows={3}
             />
           </div>
@@ -45,10 +45,10 @@ export function FormPreviewModal({ open, onClose, fields, styling }: FormPreview
       case 'select':
         return (
           <div key={field.id} className={`${widthClass} mb-4`}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-primary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
-            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <select className="w-full border border-th-border rounded-lg px-3 py-2 text-sm">
               <option>{field.placeholder || 'Select...'}</option>
               {field.options?.map((opt, i) => <option key={i}>{opt}</option>)}
             </select>
@@ -57,7 +57,7 @@ export function FormPreviewModal({ open, onClose, fields, styling }: FormPreview
       case 'radio':
         return (
           <div key={field.id} className={`${widthClass} mb-4`}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-primary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
             <div className="space-y-1">
@@ -81,13 +81,13 @@ export function FormPreviewModal({ open, onClose, fields, styling }: FormPreview
       default:
         return (
           <div key={field.id} className={`${widthClass} mb-4`}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-primary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
             <input
               type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
               placeholder={field.placeholder}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm"
             />
           </div>
         );
@@ -97,12 +97,12 @@ export function FormPreviewModal({ open, onClose, fields, styling }: FormPreview
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div className="relative w-full max-w-lg bg-surface-primary rounded-xl shadow-2xl overflow-y-auto max-h-[90vh]">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 z-10"
+          className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-surface-tertiary z-10"
         >
-          <X className="w-5 h-5 text-gray-500" />
+          <X className="w-5 h-5 text-th-text-secondary" />
         </button>
 
         <div className="p-8" style={{ backgroundColor: styling.backgroundColor || '#ffffff' }}>
@@ -110,10 +110,10 @@ export function FormPreviewModal({ open, onClose, fields, styling }: FormPreview
             <img src={styling.logoUrl} alt="Logo" className="h-10 mb-4" />
           )}
           {styling.headerText && (
-            <h2 className="text-xl font-bold text-gray-900 mb-1">{styling.headerText}</h2>
+            <h2 className="text-xl font-bold text-th-text-primary mb-1">{styling.headerText}</h2>
           )}
           {styling.descriptionText && (
-            <p className="text-sm text-gray-600 mb-6">{styling.descriptionText}</p>
+            <p className="text-sm text-th-text-secondary mb-6">{styling.descriptionText}</p>
           )}
 
           <div className="flex flex-wrap -mx-2">

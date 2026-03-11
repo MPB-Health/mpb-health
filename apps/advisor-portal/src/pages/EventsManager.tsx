@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus, Search, Calendar, MapPin, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Button } from '@mpbhealth/ui';
 import { eventsService } from '@mpbhealth/advisor-core';
 import type { CmsEvent } from '@mpbhealth/advisor-core/src/types';
 
@@ -81,13 +82,10 @@ export default function EventsManager() {
           <h1 className="text-2xl font-bold text-neutral-900">Events Manager</h1>
           <p className="text-sm text-neutral-500 mt-1">Create and manage events for mpb.health/events</p>
         </div>
-        <button
-          onClick={() => navigate('/events/manage/new')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-        >
+        <Button type="button" variant="primary" onClick={() => navigate('/events/manage/new')}>
           <Plus className="h-4 w-4" />
           New Event
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
@@ -190,27 +188,39 @@ export default function EventsManager() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <button
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => togglePublish(event)}
                         title={event.is_published ? 'Unpublish' : 'Publish'}
-                        className="p-1.5 text-neutral-400 hover:text-blue-600 rounded transition-colors"
+                        aria-label={event.is_published ? 'Unpublish event' : 'Publish event'}
+                        className="min-h-[44px] min-w-[44px] text-neutral-400 hover:text-blue-600"
                       >
                         {event.is_published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => navigate(`/events/manage/${event.id}/edit`)}
                         title="Edit"
-                        className="p-1.5 text-neutral-400 hover:text-blue-600 rounded transition-colors"
+                        aria-label="Edit event"
+                        className="min-h-[44px] min-w-[44px] text-neutral-400 hover:text-blue-600"
                       >
                         <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setDeleteId(event.id)}
                         title="Delete"
-                        className="p-1.5 text-neutral-400 hover:text-red-600 rounded transition-colors"
+                        aria-label="Delete event"
+                        className="min-h-[44px] min-w-[44px] text-neutral-400 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -227,18 +237,17 @@ export default function EventsManager() {
             <h3 className="text-lg font-semibold text-neutral-900 mb-2">Delete Event</h3>
             <p className="text-sm text-neutral-600 mb-6">Are you sure? This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setDeleteId(null)}
-                className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
-              >
+              <Button type="button" variant="ghost" onClick={() => setDeleteId(null)}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
                 onClick={() => handleDelete(deleteId)}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                className="bg-red-600 hover:bg-red-700"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>

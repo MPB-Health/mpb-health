@@ -72,9 +72,9 @@ export default function GoalsWidget({ config, size }: BaseWidgetProps) {
     return (
       <div className="p-4 animate-pulse">
         <div className="space-y-4">
-          <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-16 bg-surface-tertiary rounded" />
+          <div className="h-16 bg-surface-tertiary rounded" />
+          <div className="h-16 bg-surface-tertiary rounded" />
         </div>
       </div>
     );
@@ -82,7 +82,7 @@ export default function GoalsWidget({ config, size }: BaseWidgetProps) {
 
   if (goals.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-th-text-secondary">
         <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No goals set</p>
         <button className="flex items-center gap-1 mx-auto mt-3 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
@@ -100,22 +100,22 @@ export default function GoalsWidget({ config, size }: BaseWidgetProps) {
   return (
     <div className="p-4">
       {/* Summary */}
-      <div className="flex items-center gap-4 mb-4 pb-4 border-b dark:border-gray-700">
+      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-th-border">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600">
             <Trophy className="h-5 w-5" />
           </div>
           <div>
             <p className="text-2xl font-bold">{completedGoals}/{goals.length}</p>
-            <p className="text-xs text-gray-500">goals completed</p>
+            <p className="text-xs text-th-text-secondary">goals completed</p>
           </div>
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-500">Overall progress</span>
+            <span className="text-xs text-th-text-secondary">Overall progress</span>
             <span className="text-xs font-medium">{Math.round(totalProgress * 100)}%</span>
           </div>
-          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-tertiary rounded-full overflow-hidden">
             <div
               className={cn(
                 'h-full rounded-full transition-all',
@@ -134,7 +134,7 @@ export default function GoalsWidget({ config, size }: BaseWidgetProps) {
         ))}
       </div>
 
-      <button className="flex items-center justify-center gap-1 w-full mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors">
+      <button className="flex items-center justify-center gap-1 w-full mt-4 pt-4 border-t border-th-border text-sm text-blue-600 hover:text-blue-700 transition-colors">
         <Plus className="h-4 w-4" />
         Add new goal
       </button>
@@ -171,12 +171,12 @@ const METRIC_COLORS: Record<string, string> = {
   emails_sent: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30',
   meetings_held: 'bg-pink-100 text-pink-600 dark:bg-pink-900/30',
   tasks_completed: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
-  custom: 'bg-gray-100 text-gray-600 dark:bg-gray-700',
+  custom: 'bg-surface-tertiary text-th-text-secondary',
 };
 
 function GoalCard({ goal }: GoalCardProps) {
   const Icon = METRIC_ICONS[goal.metric_type] || Target;
-  const colorClass = METRIC_COLORS[goal.metric_type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700';
+  const colorClass = METRIC_COLORS[goal.metric_type] || 'bg-surface-tertiary text-th-text-secondary';
 
   const progress = goal.current_value / goal.target_value;
   const isComplete = progress >= 1;
@@ -190,7 +190,7 @@ function GoalCard({ goal }: GoalCardProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{goal.name}</p>
-          <p className="text-xs text-gray-500">{goal.period}</p>
+          <p className="text-xs text-th-text-secondary">{goal.period}</p>
         </div>
         <div className="flex items-center gap-1 text-sm">
           {isComplete ? (
@@ -212,7 +212,7 @@ function GoalCard({ goal }: GoalCardProps) {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="flex-1 h-2 bg-surface-tertiary rounded-full overflow-hidden">
           <div
             className={cn(
               'h-full rounded-full transition-all',

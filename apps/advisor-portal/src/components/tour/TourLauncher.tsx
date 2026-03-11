@@ -89,7 +89,9 @@ export function TourLauncher({ isOpen, onClose }: TourLauncherProps) {
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
+              aria-label="Close"
               className="p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
@@ -114,6 +116,7 @@ export function TourLauncher({ isOpen, onClose }: TourLauncherProps) {
 
               return (
                 <button
+                  type="button"
                   key={tour.id}
                   onClick={() => handleStartTour(tour.id as TourId)}
                   className={cn(
@@ -160,6 +163,7 @@ export function TourLauncher({ isOpen, onClose }: TourLauncherProps) {
                   <div className="flex items-center gap-2">
                     {isCompleted && (
                       <button
+                        type="button"
                         onClick={(e) => handleResetTour(e, tour.id as TourId)}
                         className="p-1.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-white dark:hover:bg-neutral-600 rounded transition-colors"
                         title="Take tour again"
@@ -191,12 +195,14 @@ export function TourLauncher({ isOpen, onClose }: TourLauncherProps) {
                   </span>
                   <div className="flex items-center gap-2">
                     <button
+                      type="button"
                       onClick={() => setShowReset(false)}
                       className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
                     >
                       Cancel
                     </button>
                     <button
+                      type="button"
                       onClick={handleResetAll}
                       className="px-3 py-1.5 text-sm bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded transition-colors"
                     >
@@ -206,6 +212,7 @@ export function TourLauncher({ isOpen, onClose }: TourLauncherProps) {
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => setShowReset(true)}
                   className="text-sm text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
                 >

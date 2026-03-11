@@ -95,6 +95,7 @@ function ResultItem({ result, isSelected, onSelect }: ResultItemProps) {
 
   return (
     <button
+      type="button"
       onClick={onSelect}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
         isSelected
@@ -134,6 +135,7 @@ function ActionItem({ action, isSelected, onSelect }: ActionItemProps) {
 
   return (
     <button
+      type="button"
       onClick={onSelect}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
         isSelected
@@ -390,7 +392,9 @@ export default function CommandPalette() {
             />
             {loading && <Loader2 className="w-5 h-5 text-th-accent-600 animate-spin" />}
             <button
+              type="button"
               onClick={close}
+              aria-label="Close"
               className="p-1 text-th-text-muted hover:text-th-text-primary rounded transition-colors"
             >
               <X className="w-5 h-5" />
@@ -400,6 +404,7 @@ export default function CommandPalette() {
           {/* Mode Tabs */}
           <div className="flex border-b border-th-border-primary">
             <button
+              type="button"
               onClick={() => setMode('search')}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 mode === 'search'
@@ -411,6 +416,7 @@ export default function CommandPalette() {
               Search
             </button>
             <button
+              type="button"
               onClick={() => setMode('commands')}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 mode === 'commands'
@@ -468,6 +474,7 @@ export default function CommandPalette() {
                     </div>
                     {recentSearches.map((search, index) => (
                       <button
+                        type="button"
                         key={search.id}
                         onClick={() => setQuery(search.query)}
                         data-selected={index === selectedIndex}

@@ -128,7 +128,7 @@ export default function PublicForm() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
@@ -136,11 +136,11 @@ export default function PublicForm() {
 
   if (error && !form) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-surface-secondary p-4">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Form Not Available</h1>
-          <p className="text-gray-600">{error}</p>
+          <h1 className="text-xl font-semibold text-th-text-primary mb-2">Form Not Available</h1>
+          <p className="text-th-text-secondary">{error}</p>
         </div>
       </div>
     );
@@ -148,10 +148,10 @@ export default function PublicForm() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-surface-secondary p-4">
         <div className="text-center max-w-md">
           <CheckCircle className="w-16 h-16 mx-auto mb-4" style={{ color: primaryColor }} />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+          <h1 className="text-xl font-semibold text-th-text-primary mb-2">
             {styling.successMessage || 'Thank you! Your submission has been received.'}
           </h1>
         </div>
@@ -166,20 +166,20 @@ export default function PublicForm() {
     const inputClass = `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
       hasError
         ? 'border-red-400 focus:ring-red-300'
-        : 'border-gray-300 focus:ring-blue-300'
+        : 'border-th-border focus:ring-blue-300'
     }`;
 
     switch (field.type) {
       case 'heading':
         return (
           <div key={field.id} className="col-span-full">
-            <h3 className="text-lg font-semibold text-gray-900">{field.content || field.label}</h3>
+            <h3 className="text-lg font-semibold text-th-text-primary">{field.content || field.label}</h3>
           </div>
         );
       case 'paragraph':
         return (
           <div key={field.id} className="col-span-full">
-            <p className="text-sm text-gray-600">{field.content || field.label}</p>
+            <p className="text-sm text-th-text-secondary">{field.content || field.label}</p>
           </div>
         );
       case 'hidden':
@@ -189,7 +189,7 @@ export default function PublicForm() {
       case 'textarea':
         return (
           <div key={field.id} className={field.width === 'half' ? '' : 'col-span-full'}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-primary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
             <textarea
@@ -205,7 +205,7 @@ export default function PublicForm() {
       case 'select':
         return (
           <div key={field.id} className={field.width === 'half' ? '' : 'col-span-full'}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-primary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
             <select
@@ -224,12 +224,12 @@ export default function PublicForm() {
       case 'radio':
         return (
           <div key={field.id} className={field.width === 'half' ? '' : 'col-span-full'}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-primary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
             <div className="space-y-1.5">
               {(field.options || []).map((opt, i) => (
-                <label key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                <label key={i} className="flex items-center gap-2 text-sm text-th-text-primary">
                   <input
                     type="radio"
                     name={field.id}
@@ -247,7 +247,7 @@ export default function PublicForm() {
       case 'checkbox':
         return (
           <div key={field.id} className={field.width === 'half' ? '' : 'col-span-full'}>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+            <label className="flex items-center gap-2 text-sm text-th-text-primary">
               <input
                 type="checkbox"
                 checked={formData[field.id] === 'true'}
@@ -261,7 +261,7 @@ export default function PublicForm() {
       default:
         return (
           <div key={field.id} className={field.width === 'half' ? '' : 'col-span-full'}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-th-text-primary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
             <input
@@ -282,15 +282,15 @@ export default function PublicForm() {
       className="min-h-screen flex items-start justify-center py-12 px-4"
       style={{ backgroundColor: styling.backgroundColor || '#f9fafb' }}
     >
-      <div className="w-full max-w-lg bg-white rounded-xl shadow-lg p-8">
+      <div className="w-full max-w-lg bg-surface-primary rounded-xl shadow-lg p-8">
         {styling.logoUrl && (
           <img src={styling.logoUrl} alt="Logo" className="h-10 mb-4" />
         )}
         {styling.headerText && (
-          <h1 className="text-xl font-bold text-gray-900 mb-1">{styling.headerText}</h1>
+          <h1 className="text-xl font-bold text-th-text-primary mb-1">{styling.headerText}</h1>
         )}
         {styling.descriptionText && (
-          <p className="text-sm text-gray-600 mb-6">{styling.descriptionText}</p>
+          <p className="text-sm text-th-text-secondary mb-6">{styling.descriptionText}</p>
         )}
 
         {error && (
@@ -316,7 +316,7 @@ export default function PublicForm() {
           </button>
         </form>
 
-        <p className="text-xs text-gray-400 mt-6 text-center">
+        <p className="text-xs text-th-text-tertiary mt-6 text-center">
           Powered by MPB Health CRM
         </p>
       </div>

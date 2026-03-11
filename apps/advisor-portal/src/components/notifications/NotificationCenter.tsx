@@ -25,6 +25,7 @@ import {
   Megaphone,
   AtSign,
 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { useNotifications, useUnreadNotificationCount } from '../../hooks/useActivity';
 import { useNotificationEvents, useUnreadEventCount } from '../../hooks/useNotificationEvents';
 import type { Notification, NotificationCategory } from '@mpbhealth/champion-core';
@@ -158,21 +159,29 @@ function NotificationItem({ notification, onMarkRead, onDismiss }: NotificationI
                 </Link>
               )}
               {!notification.is_read && (
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onMarkRead(notification.id)}
-                  className="p-1 text-th-text-muted hover:text-green-600 rounded transition-colors"
                   title="Mark as read"
+                  className="min-h-[44px] min-w-[44px] hover:text-green-600"
+                  aria-label="Mark as read"
                 >
                   <Check className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               )}
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => onDismiss(notification.id)}
-                className="p-1 text-th-text-muted hover:text-red-600 rounded transition-colors"
                 title="Dismiss"
+                className="min-h-[44px] min-w-[44px] hover:text-red-600"
+                aria-label="Dismiss"
               >
                 <X className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -307,9 +316,13 @@ export default function NotificationCenter() {
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell Button */}
-      <button
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-th-text-secondary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary transition-colors"
+        className="relative min-h-[44px] min-w-[44px]"
+        aria-label="Notifications"
       >
         <Bell className="w-5 h-5" />
         {totalBadge > 0 && (
@@ -317,7 +330,7 @@ export default function NotificationCenter() {
             {totalBadge > 99 ? '99+' : totalBadge}
           </span>
         )}
-      </button>
+      </Button>
 
       {/* Dropdown Panel */}
       {isOpen && (
@@ -327,6 +340,7 @@ export default function NotificationCenter() {
             <div className="flex items-center justify-between px-4 pt-3 pb-0">
               <div className="flex gap-1">
                 <button
+                  type="button"
                   onClick={() => setActiveTab('notifications')}
                   className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors relative ${
                     activeTab === 'notifications'
@@ -342,6 +356,7 @@ export default function NotificationCenter() {
                   )}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveTab('events')}
                   className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors relative ${
                     activeTab === 'events'
@@ -481,13 +496,16 @@ export default function NotificationCenter() {
           {/* Footer */}
           {activeTab === 'notifications' && notifications.length > 0 && (
             <div className="flex items-center justify-end px-4 py-3 border-t border-th-border-primary">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={handleDismissAll}
-                className="text-xs text-th-text-muted hover:text-red-600 flex items-center gap-1"
+                className="text-xs text-th-text-muted hover:text-red-600"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Clear all
-              </button>
+              </Button>
             </div>
           )}
         </div>

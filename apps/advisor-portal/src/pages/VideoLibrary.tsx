@@ -13,7 +13,7 @@ import {
   Grid3X3,
   List,
 } from 'lucide-react';
-import { GradientHeader } from '@mpbhealth/ui';
+import { Button, GradientHeader } from '@mpbhealth/ui';
 
 type VideoCategory = 'all' | 'training' | 'marketing';
 
@@ -151,12 +151,16 @@ export default function VideoLibrary() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => navigate(-1)}
-          className="p-2 rounded-lg hover:bg-surface-tertiary text-th-text-secondary transition-colors"
+          className="min-h-[44px] min-w-[44px]"
+          aria-label="Back"
         >
           <ArrowLeft className="w-5 h-5" />
-        </button>
+        </Button>
         <div className="flex-1">
           <GradientHeader
             title="Video Library"
@@ -175,21 +179,19 @@ export default function VideoLibrary() {
               const Icon = opt.icon;
               const isActive = category === opt.value;
               return (
-                <button
+                <Button
+                  type="button"
                   key={opt.value}
+                  variant={isActive ? 'primary' : 'secondary'}
+                  size="sm"
                   onClick={() => setCategory(opt.value)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-[#0A4E8E] text-white shadow-sm'
-                      : 'bg-surface-tertiary text-th-text-secondary hover:bg-surface-inset hover:text-th-text-primary'
-                  }`}
                 >
                   <Icon className="w-4 h-4" />
                   {opt.label}
                   <span className={`text-xs rounded-full px-1.5 py-0.5 ${isActive ? 'bg-white/20' : 'bg-th-border'}`}>
                     {opt.count}
                   </span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -208,24 +210,34 @@ export default function VideoLibrary() {
                 className="w-full pl-9 pr-8 py-2 bg-surface-tertiary rounded-lg text-sm text-th-text-primary placeholder-th-text-tertiary outline-none focus:ring-2 focus:ring-[#0A4E8E]/30 transition-shadow"
               />
               {search && (
-                <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-th-text-tertiary hover:text-th-text-primary">
+                <button type="button" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-th-text-tertiary hover:text-th-text-primary" aria-label="Clear search">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
             <div className="flex bg-surface-tertiary rounded-lg p-0.5">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-surface-primary shadow-sm text-th-text-primary' : 'text-th-text-tertiary hover:text-th-text-secondary'}`}
+                className={`min-h-[44px] min-w-[44px] rounded-md ${viewMode === 'grid' ? 'bg-surface-primary shadow-sm text-th-text-primary' : 'text-th-text-tertiary hover:text-th-text-secondary'}`}
+                aria-label="Grid view"
+                aria-pressed={viewMode === 'grid' ? 'true' : 'false'}
               >
                 <Grid3X3 className="w-4 h-4" />
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-surface-primary shadow-sm text-th-text-primary' : 'text-th-text-tertiary hover:text-th-text-secondary'}`}
+                className={`min-h-[44px] min-w-[44px] rounded-md ${viewMode === 'list' ? 'bg-surface-primary shadow-sm text-th-text-primary' : 'text-th-text-tertiary hover:text-th-text-secondary'}`}
+                aria-label="List view"
+                aria-pressed={viewMode === 'list' ? 'true' : 'false'}
               >
                 <List className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -244,9 +256,15 @@ export default function VideoLibrary() {
           <Filter className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
           <p className="text-th-text-primary font-medium">No videos found</p>
           <p className="text-sm text-th-text-tertiary mt-1">Try adjusting your search or category filter.</p>
-          <button onClick={() => { setSearch(''); setCategory('all'); }} className="mt-4 text-sm text-th-accent-600 hover:text-th-accent-700 font-medium">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => { setSearch(''); setCategory('all'); }}
+            className="mt-4 text-th-accent-600 hover:text-th-accent-700"
+          >
             Clear filters
-          </button>
+          </Button>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -254,9 +272,11 @@ export default function VideoLibrary() {
             <div key={video.id} className="bg-surface-primary rounded-xl border border-th-border overflow-hidden group hover:shadow-lg hover:border-th-accent-300 transition-all">
               {/* Thumbnail */}
               <button
+                type="button"
                 onClick={() => setPlayingVideo(video)}
                 className="relative w-full block"
                 style={{ paddingBottom: '56.25%' }}
+                aria-label={`Play ${video.title}`}
               >
                 <img
                   src={video.thumbnail}
@@ -308,21 +328,26 @@ export default function VideoLibrary() {
                 </div>
                 {/* Actions */}
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-th-border-subtle">
-                  <button
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={() => setPlayingVideo(video)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white gradient-accent rounded-md hover:opacity-90 transition-opacity"
+                    className="flex-1"
                   >
                     <Play className="w-3 h-3" fill="currentColor" />
                     Watch
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => copyVideoLink(video)}
-                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-th-text-secondary border border-th-border rounded-md hover:bg-surface-tertiary transition-colors"
                     title="Copy video link"
                   >
                     {copiedId === video.id ? <CheckCheck className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                     {copiedId === video.id ? 'Copied' : 'Copy Link'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -335,9 +360,11 @@ export default function VideoLibrary() {
             <div key={video.id} className="flex gap-4 p-4 hover:bg-surface-secondary/50 transition-colors group">
               {/* Thumbnail */}
               <button
+                type="button"
                 onClick={() => setPlayingVideo(video)}
                 className="relative w-48 flex-shrink-0 rounded-lg overflow-hidden"
                 style={{ aspectRatio: '16/9' }}
+                aria-label={`Play ${video.title}`}
               >
                 <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
@@ -369,20 +396,24 @@ export default function VideoLibrary() {
                   <p className="mt-1 text-xs text-th-text-tertiary leading-relaxed">{video.description}</p>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
-                  <button
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={() => setPlayingVideo(video)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white gradient-accent rounded-md hover:opacity-90 transition-opacity"
                   >
                     <Play className="w-3 h-3" fill="currentColor" />
                     Watch
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => copyVideoLink(video)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-th-text-secondary border border-th-border rounded-md hover:bg-surface-tertiary transition-colors"
                   >
                     {copiedId === video.id ? <CheckCheck className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                     {copiedId === video.id ? 'Copied' : 'Copy Link'}
-                  </button>
+                  </Button>
                   {video.tags.map(tag => (
                     <span key={tag} className="hidden md:inline px-1.5 py-0.5 bg-surface-tertiary text-th-text-tertiary text-[10px] rounded font-medium">
                       {tag}
@@ -404,12 +435,16 @@ export default function VideoLibrary() {
                 <h3 className="text-white font-semibold text-lg">{playingVideo.title}</h3>
                 <p className="text-white/50 text-sm mt-0.5">{playingVideo.description}</p>
               </div>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setPlayingVideo(null)}
-                className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="min-h-[44px] min-w-[44px] text-white/60 hover:text-white hover:bg-white/10"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
             <div className="relative bg-black rounded-xl overflow-hidden" style={{ paddingBottom: '56.25%' }}>
               <iframe
@@ -430,13 +465,16 @@ export default function VideoLibrary() {
                 {playingVideo.category === 'training' ? <GraduationCap className="w-3.5 h-3.5" /> : <Megaphone className="w-3.5 h-3.5" />}
                 {playingVideo.category === 'training' ? 'Advisor Training' : 'Share with Members'}
               </span>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => copyVideoLink(playingVideo)}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20"
               >
                 {copiedId === playingVideo.id ? <CheckCheck className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                 {copiedId === playingVideo.id ? 'Copied!' : 'Copy Link'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

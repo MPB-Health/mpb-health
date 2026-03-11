@@ -85,33 +85,33 @@ export function WidgetCatalog({ isOpen, onClose }: WidgetCatalogProps) {
         title="Add Widget" onClose={onClose} size="lg">
       <div className="flex flex-col h-[80vh] max-h-[700px]">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-th-border">
           <div>
             <h2 className="text-xl font-semibold">Add Widget</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-th-text-secondary mt-1">
               Choose a widget to add to your dashboard
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-surface-tertiary rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-th-text-secondary" />
           </button>
         </div>
 
         {/* Search & Filter */}
-        <div className="p-4 border-b dark:border-gray-700">
+        <div className="p-4 border-b border-th-border">
           <div className="flex gap-4">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-th-text-tertiary" />
               <input
                 type="text"
                 placeholder="Search widgets..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                className="w-full pl-10 pr-4 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
@@ -119,7 +119,7 @@ export function WidgetCatalog({ isOpen, onClose }: WidgetCatalogProps) {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value as WidgetCategory | 'all')}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              className="px-4 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Categories</option>
               {categories.map((category) => (
@@ -134,14 +134,14 @@ export function WidgetCatalog({ isOpen, onClose }: WidgetCatalogProps) {
         {/* Widget List */}
         <div className="flex-1 overflow-y-auto p-4">
           {Object.entries(widgetsByCategory).length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-th-text-secondary">
               <p>No widgets found matching your search.</p>
             </div>
           ) : (
             <div className="space-y-6">
               {Object.entries(widgetsByCategory).map(([category, widgets]) => (
                 <div key={category}>
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                  <h3 className="text-sm font-semibold text-th-text-secondary uppercase tracking-wider mb-3">
                     {CATEGORY_LABELS[category as WidgetCategory] || category}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -191,7 +191,7 @@ function WidgetCard({ widget, onAdd }: WidgetCardProps) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <h4 className="font-medium text-gray-900 dark:text-gray-100">
+          <h4 className="font-medium text-th-text-primary">
             {widget.title}
           </h4>
           <button
@@ -204,11 +204,11 @@ function WidgetCard({ widget, onAdd }: WidgetCardProps) {
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+        <p className="text-sm text-th-text-secondary mt-1 line-clamp-2">
           {widget.description}
         </p>
         <div className="flex items-center gap-2 mt-2">
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-surface-tertiary text-th-text-secondary">
             {widget.defaultSize}
           </span>
           {widget.permissions && widget.permissions.length > 0 && (

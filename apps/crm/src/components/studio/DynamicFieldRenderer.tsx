@@ -427,7 +427,7 @@ function MultiPicklistSelector({
       <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`w-full border rounded-lg px-3 py-2 text-sm cursor-pointer flex flex-wrap gap-1 min-h-[38px] ${
-          disabled ? 'bg-surface-secondary cursor-not-allowed' : 'bg-white'
+          disabled ? 'bg-surface-secondary cursor-not-allowed' : 'bg-surface-primary'
         } border-th-border`}
       >
         {selectedValues.length === 0 ? (
@@ -457,7 +457,7 @@ function MultiPicklistSelector({
       </div>
 
       {isOpen && !disabled && (
-        <div className="absolute z-10 mt-1 w-full bg-white border border-th-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-10 mt-1 w-full bg-surface-primary border border-th-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {options.map((opt) => (
             <label
               key={opt.value}

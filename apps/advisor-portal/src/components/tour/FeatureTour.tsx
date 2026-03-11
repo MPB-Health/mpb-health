@@ -258,7 +258,9 @@ export function FeatureTour({
             {currentStep.title}
           </h3>
           <button
+            type="button"
             onClick={handleSkip}
+            aria-label="Close tour"
             className="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 rounded transition-colors"
           >
             <X className="w-4 h-4" />
@@ -274,6 +276,7 @@ export function FeatureTour({
           {/* Custom action button */}
           {currentStep.action && (
             <button
+              type="button"
               onClick={currentStep.action.onClick}
               className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
             >
@@ -308,6 +311,7 @@ export function FeatureTour({
           <div className="flex items-center gap-2">
             {!isLastStep && (
               <button
+                type="button"
                 onClick={handleSkip}
                 className="flex items-center gap-1 px-2 py-1.5 text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
               >
@@ -318,8 +322,10 @@ export function FeatureTour({
 
             {!isFirstStep && (
               <button
+                type="button"
                 onClick={handlePrev}
                 disabled={isTransitioning}
+                aria-label="Previous step"
                 className="p-2 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors disabled:opacity-50"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -327,6 +333,7 @@ export function FeatureTour({
             )}
 
             <button
+              type="button"
               onClick={handleNext}
               disabled={isTransitioning}
               className={cn(

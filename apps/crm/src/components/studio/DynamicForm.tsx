@@ -145,7 +145,7 @@ export function DynamicForm({
             <button
               type="button"
               onClick={() => toggleSection(section.name)}
-              className="w-full px-4 py-3 bg-surface-secondary flex items-center justify-between text-left hover:bg-gray-100 transition-colors"
+              className="w-full px-4 py-3 bg-surface-secondary flex items-center justify-between text-left hover:bg-surface-tertiary transition-colors"
             >
               <span className="font-medium text-th-text-primary">{section.name}</span>
               {isCollapsed ? (

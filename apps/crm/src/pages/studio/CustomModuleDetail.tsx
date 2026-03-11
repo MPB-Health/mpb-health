@@ -290,7 +290,7 @@ export default function CustomModuleDetail() {
           />
 
           {/* Modal */}
-          <div className="relative bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="relative bg-surface-primary rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-semibold text-th-text-primary mb-2">
               Delete {module.singular_name}
             </h3>

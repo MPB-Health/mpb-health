@@ -49,7 +49,9 @@ export function ContextualHelp({
       {position === 'floating' ? (
         <div className="absolute -top-2 -right-2 z-10">
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
+            aria-label="Show tip"
             className={cn(
               'w-6 h-6 rounded-full flex items-center justify-center text-white shadow-lg transition-all',
               variant === 'pulse' && 'animate-pulse',
@@ -63,6 +65,7 @@ export function ContextualHelp({
         </div>
       ) : (
         <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           className={cn(
             'ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all',
@@ -105,6 +108,7 @@ export function ContextualHelp({
                 </h4>
               </div>
               <button
+                type="button"
                 onClick={handleDismiss}
                 className="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
                 aria-label="Dismiss"
@@ -123,6 +127,7 @@ export function ContextualHelp({
             {/* Footer */}
             <div className="px-3 pb-3 flex items-center justify-between">
               <button
+                type="button"
                 onClick={handleDismiss}
                 className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
               >

@@ -47,7 +47,7 @@ export default function ActivityWidget({ config, size }: BaseWidgetProps) {
 
   if (displayActivities.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-th-text-secondary">
         <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No recent activity</p>
       </div>
@@ -58,7 +58,7 @@ export default function ActivityWidget({ config, size }: BaseWidgetProps) {
     <div className="p-4">
       <div className="relative">
         {/* Timeline line */}
-        <div className="absolute left-[11px] top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
+        <div className="absolute left-[11px] top-0 bottom-0 w-0.5 bg-surface-tertiary" />
 
         <div className="space-y-4">
           {displayActivities.map((activity, index) => {
@@ -76,11 +76,11 @@ export default function ActivityWidget({ config, size }: BaseWidgetProps) {
                 <div className="flex-1 min-w-0 pb-4">
                   <p className="text-sm font-medium truncate">{activity.title}</p>
                   {showDescription && activity.description && (
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                    <p className="text-xs text-th-text-secondary mt-0.5 line-clamp-2">
                       {activity.description}
                     </p>
                   )}
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-th-text-tertiary mt-1">
                     {formatTimeAgo(activity.created_at)}
                   </p>
                 </div>
@@ -92,7 +92,7 @@ export default function ActivityWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/leads"
-        className="flex items-center justify-center gap-1 mt-2 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-2 pt-4 border-t border-th-border text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all activity
         <ArrowRight className="h-4 w-4" />

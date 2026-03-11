@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Share2,
 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { Tooltip } from '../components/Tooltip';
 import {
   formsService,
@@ -218,18 +219,24 @@ export default function Forms({ section }: FormsProps) {
                 </div>
                 {shareUrl && (
                   <div className="flex items-center gap-1">
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => handleCopyLink(e, form)}
-                      className="p-1.5 rounded-lg text-th-text-tertiary hover:text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
                       title="Copy shareable link"
+                      className="min-h-[44px] min-w-[44px] text-th-text-tertiary hover:text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20"
                     >
                       {isCopied ? (
                         <CheckCheck className="w-4 h-4 text-green-600" />
                       ) : (
                         <Link2 className="w-4 h-4" />
                       )}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (navigator.share) {
@@ -240,11 +247,11 @@ export default function Forms({ section }: FormsProps) {
                           setTimeout(() => setCopiedId(null), 2000);
                         }
                       }}
-                      className="p-1.5 rounded-lg text-th-text-tertiary hover:text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 transition-colors"
                       title="Share form"
+                      className="min-h-[44px] min-w-[44px] text-th-text-tertiary hover:text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20"
                     >
                       <Share2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                     <a
                       href={shareUrl}
                       target="_blank"
@@ -288,12 +295,15 @@ export default function Forms({ section }: FormsProps) {
                         : 'Pending'}
                     </span>
                   ) : null}
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setSelectedForm(form)}
-                    className="text-sm text-th-accent-600 font-medium hover:text-th-accent-700 transition-colors"
+                    className="text-th-accent-600 hover:text-th-accent-700"
                   >
                     {form.slug === '/webinar-questionnaire/' ? 'Schedule →' : 'Fill out →'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -328,16 +338,20 @@ export default function Forms({ section }: FormsProps) {
                     const copied = copiedId === selectedForm.id;
                     return (
                       <>
-                        <button
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={(e) => handleCopyLink(e, selectedForm)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                           title="Copy shareable link"
                         >
                           {copied ? <CheckCheck className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
                           {copied ? 'Copied!' : 'Copy Link'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             if (navigator.share) {
                               navigator.share({ title: selectedForm.name || selectedForm.label, url }).catch(() => {});
@@ -347,36 +361,39 @@ export default function Forms({ section }: FormsProps) {
                               setTimeout(() => setCopiedId(null), 2000);
                             }
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                           title="Share form"
                         >
                           <Share2 className="w-3.5 h-3.5" />
                           Share
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                           title="Open Cognito form in new tab"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                           Open
-                        </button>
+                        </Button>
                       </>
                     );
                   })()}
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setSelectedForm(null)}
-                    className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                    className="min-h-[44px] min-w-[44px]"
+                    aria-label="Close"
                   >
-                    <span className="sr-only">Close</span>
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">

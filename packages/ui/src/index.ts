@@ -2,6 +2,9 @@
 export { Button } from './components/Button';
 export type { ButtonProps } from './components/Button';
 
+export { DataTable } from './components/DataTable';
+export type { DataTableProps, Column as DataTableColumn } from './components/DataTable';
+
 export { Input } from './components/Input';
 export type { InputProps } from './components/Input';
 
@@ -48,8 +51,14 @@ export type { MetricCardProps } from './components/MetricCard';
 export { StatusDot } from './components/StatusDot';
 export type { StatusDotProps } from './components/StatusDot';
 
+export { SkeletonLine, SkeletonAvatar, SkeletonMetric, SkeletonCard, SkeletonTable } from './components/Skeleton';
+export type { SkeletonLineProps, SkeletonAvatarProps, SkeletonMetricProps, SkeletonCardProps, SkeletonTableProps } from './components/Skeleton';
+
 export { AppLayout } from './components/AppLayout';
-export type { AppLayoutProps, NavItem, NavLinkRenderProps, ChildNavLinkRenderProps } from './components/AppLayout';
+export type { AppLayoutProps, NavItem, NavSection, NavLinkRenderProps, ChildNavLinkRenderProps } from './components/AppLayout';
+
+export { Breadcrumbs } from './components/Breadcrumbs';
+export type { BreadcrumbsProps, BreadcrumbItem } from './components/Breadcrumbs';
 
 export { PortalSwitcher } from './components/PortalSwitcher';
 export type { PortalSwitcherProps, PortalKey } from './components/PortalSwitcher';

@@ -279,9 +279,9 @@ export default function Vendors() {
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-4">
           {/* Search */}
-          <div className="flex-1 flex items-center bg-surface-tertiary rounded-lg px-3 py-2">
+          <div className="flex-1 min-w-[200px] flex items-center bg-surface-tertiary rounded-lg px-3 py-2">
             <Search className="w-4 h-4 text-th-text-tertiary mr-2" />
             <input
               type="text"
@@ -359,6 +359,7 @@ export default function Vendors() {
           </div>
         ) : (
           <>
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-secondary border-b border-th-border">
@@ -493,6 +494,7 @@ export default function Vendors() {
                 })}
               </tbody>
             </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (

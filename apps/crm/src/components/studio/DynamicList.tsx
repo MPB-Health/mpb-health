@@ -134,7 +134,7 @@ export function DynamicList({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-th-border">
+    <div className="bg-surface-primary rounded-xl border border-th-border">
       {/* Toolbar */}
       <div className="p-4 border-b border-th-border flex items-center justify-between gap-4">
         {/* Search */}
@@ -207,7 +207,7 @@ export function DynamicList({
                 <th
                   key={field.id}
                   className={`px-4 py-3 text-left text-xs font-medium text-th-text-secondary uppercase tracking-wider ${
-                    sortable ? 'cursor-pointer hover:bg-gray-100' : ''
+                    sortable ? 'cursor-pointer hover:bg-surface-tertiary' : ''
                   }`}
                   onClick={() => sortable && handleSort(field)}
                 >
@@ -282,7 +282,7 @@ export function DynamicList({
                       </button>
 
                       {actionMenuId === record.id && (
-                        <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-th-border rounded-lg shadow-lg z-10">
+                        <div className="absolute right-0 top-full mt-1 w-40 bg-surface-primary border border-th-border rounded-lg shadow-lg z-10">
                           <button
                             onClick={() => {
                               onRecordClick(record);

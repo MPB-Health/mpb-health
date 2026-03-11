@@ -497,6 +497,7 @@ export default function MainLayout() {
       </NavLink>
 
       <button
+        type="button"
         onClick={openSupport}
         disabled={ssoLoading}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150 disabled:opacity-50"
@@ -506,6 +507,7 @@ export default function MainLayout() {
       </button>
 
       <button
+        type="button"
         onClick={logout}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150"
       >
@@ -531,6 +533,7 @@ export default function MainLayout() {
       ) : (
         <div className="relative group">
           <button
+            type="button"
             disabled
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-400 text-white rounded-full text-sm font-medium cursor-not-allowed opacity-75"
           >

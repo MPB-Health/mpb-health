@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Hash, Lock, ArrowLeft, Users, Search, MessageSquare } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { useChat, useChatMessages } from '../hooks/useChat';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { chatService } from '@mpbhealth/advisor-core';
@@ -107,12 +108,16 @@ export default function Chat() {
           <>
             {/* Header */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-th-border-primary">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => navigate('/chat')}
-                className="lg:hidden p-1 hover:bg-th-bg-secondary rounded"
+                aria-label="Back to chat list"
+                className="lg:hidden min-h-[44px] min-w-[44px]"
               >
                 <ArrowLeft className="w-5 h-5 text-th-text-primary" />
-              </button>
+              </Button>
 
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {activeConv.type === 'channel' ? (
@@ -135,15 +140,17 @@ export default function Chat() {
               </div>
 
               {activeConv.type !== 'direct' && (
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={handleLoadMembers}
-                  className={`p-1.5 rounded hover:bg-th-bg-secondary ${
-                    showMembers ? 'bg-th-bg-secondary' : ''
-                  }`}
                   title="Members"
+                  aria-label="Show members"
+                  className={`min-h-[44px] min-w-[44px] ${showMembers ? 'bg-th-bg-secondary' : ''}`}
                 >
                   <Users className="w-4 h-4 text-th-text-secondary" />
-                </button>
+                </Button>
               )}
             </div>
 
@@ -236,15 +243,19 @@ export default function Chat() {
           <div className="bg-th-bg-primary rounded-xl shadow-lg w-96 max-h-[60vh] flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-th-border-primary">
               <h3 className="text-sm font-semibold text-th-text-primary">New Direct Message</h3>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setShowNewDmSearch(false);
                   setDmSearchQuery('');
                 }}
-                className="text-th-text-tertiary hover:text-th-text-primary"
+                aria-label="Close"
+                className="min-h-[44px] min-w-[44px]"
               >
                 &times;
-              </button>
+              </Button>
             </div>
             <div className="p-3">
               <div className="relative">

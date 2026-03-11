@@ -142,7 +142,7 @@ export default function DomainAddons() {
 
       {/* Domains List */}
       {domains.length === 0 ? (
-        <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
           <Globe className="w-12 h-12 text-th-text-tertiary mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-th-text-primary mb-2">No domains configured</h3>
           <p className="text-sm text-th-text-secondary mb-6 max-w-sm mx-auto">
@@ -162,10 +162,10 @@ export default function DomainAddons() {
             const health = healthData[domain.id];
 
             return (
-              <div key={domain.id} className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+              <div key={domain.id} className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
                 {/* Domain Header */}
                 <div
-                  className="p-5 cursor-pointer hover:bg-neutral-50/50 transition-colors"
+                  className="p-5 cursor-pointer hover:bg-surface-secondary/50 transition-colors"
                   onClick={() => setExpandedDomain(isExpanded ? null : domain.id)}
                 >
                   <div className="flex items-center justify-between">
@@ -216,7 +216,7 @@ export default function DomainAddons() {
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); handleCheckHealth(domain.id); }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-th-text-tertiary hover:bg-neutral-50 rounded-lg"
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-th-text-tertiary hover:bg-surface-secondary rounded-lg"
                       >
                         <Shield className="w-3.5 h-3.5" />
                         Health
@@ -228,9 +228,9 @@ export default function DomainAddons() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                       {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-neutral-400" />
+                        <ChevronDown className="w-4 h-4 text-th-text-tertiary" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-neutral-400" />
+                        <ChevronRight className="w-4 h-4 text-th-text-tertiary" />
                       )}
                     </div>
                   </div>
@@ -238,10 +238,10 @@ export default function DomainAddons() {
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-neutral-100 p-5 bg-neutral-50/50 space-y-4">
+                  <div className="border-t border-th-border p-5 bg-surface-secondary space-y-4">
                     {/* Health Score */}
                     {health && (
-                      <div className="bg-white rounded-lg border border-neutral-200 p-4">
+                      <div className="bg-surface-primary rounded-lg border border-th-border p-4">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-medium text-th-text-primary">Domain Health</h4>
                           <div className={`text-2xl font-bold ${
@@ -322,7 +322,7 @@ export default function DomainAddons() {
                         }}
                         placeholder="e.g., This message may contain PHI. If you received this in error..."
                         rows={3}
-                        className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm"
+                        className="w-full px-3 py-2 border border-th-border rounded-lg text-sm"
                       />
                     </div>
 
@@ -343,7 +343,7 @@ export default function DomainAddons() {
       {/* Add Domain Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowAddModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface-primary rounded-xl shadow-xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             {!addResult ? (
               <>
                 <h2 className="text-lg font-semibold text-th-text-primary mb-1">Add Sender Domain</h2>
@@ -356,7 +356,7 @@ export default function DomainAddons() {
                     value={newDomain}
                     onChange={e => setNewDomain(e.target.value)}
                     placeholder="e.g., mpb.health"
-                    className="flex-1 px-3 py-2 border border-neutral-200 rounded-lg text-sm"
+                    className="flex-1 px-3 py-2 border border-th-border rounded-lg text-sm"
                     onKeyDown={e => e.key === 'Enter' && handleAddDomain()}
                   />
                   <button
@@ -376,16 +376,16 @@ export default function DomainAddons() {
                 </p>
                 <div className="space-y-3 mb-4">
                   {Object.entries(addResult.required_records).map(([key, record]) => (
-                    <div key={key} className="bg-neutral-50 rounded-lg p-3">
+                    <div key={key} className="bg-surface-secondary rounded-lg p-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-medium text-th-text-primary uppercase">{key}</span>
                         <span className="text-xs text-th-text-tertiary">{record.type}</span>
                       </div>
                       <div className="text-xs text-th-text-secondary mb-1">
-                        Host: <code className="bg-neutral-200 px-1 rounded">{record.host}</code>
+                        Host: <code className="bg-surface-tertiary px-1 rounded">{record.host}</code>
                       </div>
                       <div className="flex items-center gap-2">
-                        <code className="text-xs bg-neutral-200 px-2 py-1 rounded flex-1 break-all">
+                        <code className="text-xs bg-surface-tertiary px-2 py-1 rounded flex-1 break-all">
                           {record.value}
                         </code>
                         <button
@@ -436,19 +436,19 @@ function DnsRecordRow({
   onCopy: (text: string) => void;
 }) {
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 p-3">
+    <div className="bg-surface-primary rounded-lg border border-th-border p-3">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-th-text-primary">{label}</span>
-          <span className="text-xs bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded">{type}</span>
+          <span className="text-xs bg-surface-tertiary text-th-text-secondary px-1.5 py-0.5 rounded">{type}</span>
         </div>
         <StatusBadge status={status} />
       </div>
       <div className="text-xs text-th-text-tertiary mb-1">
-        Host: <code className="bg-neutral-100 px-1 rounded">{host}</code>
+        Host: <code className="bg-surface-tertiary px-1 rounded">{host}</code>
       </div>
       <div className="flex items-center gap-2">
-        <code className="text-xs bg-neutral-100 px-2 py-1 rounded flex-1 break-all text-th-text-secondary">
+        <code className="text-xs bg-surface-tertiary px-2 py-1 rounded flex-1 break-all text-th-text-secondary">
           {value}
         </code>
         <button

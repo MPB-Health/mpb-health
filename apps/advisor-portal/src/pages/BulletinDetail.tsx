@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Breadcrumbs, Button } from '@mpbhealth/ui';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -113,27 +114,40 @@ export default function BulletinDetail() {
         <p className="text-th-text-tertiary mb-6">
           The bulletin you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
-        <button
+        <Button
+          type="button"
+          variant="primary"
           onClick={() => navigate('/bulletins')}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-xl font-medium hover:bg-th-accent-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Bulletins
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        className="mb-4"
+        items={[
+          { label: 'Bulletins', href: '/bulletins' },
+          { label: bulletin.title },
+        ]}
+      />
+
       {/* Back Button */}
-      <button
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
         onClick={() => navigate('/bulletins')}
-        className="flex items-center gap-2 text-th-text-secondary hover:text-th-text-primary mb-6 transition-colors"
+        className="mb-6 text-th-text-secondary hover:text-th-text-primary"
       >
         <ArrowLeft className="w-5 h-5" />
         <span>Back to Bulletins</span>
-      </button>
+      </Button>
 
       {/* Featured Image */}
       {bulletin.featured_image_url && (
@@ -173,24 +187,26 @@ export default function BulletinDetail() {
 
         {/* Action Bar */}
         <div className="flex items-center gap-3 mt-4 pt-4 border-t border-th-border">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleBookmark}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              isBookmarked
-                ? 'bg-th-accent-100 text-th-accent-700 dark:bg-th-accent-900/30 dark:text-th-accent-400'
-                : 'text-th-text-secondary hover:bg-surface-tertiary'
-            }`}
+            className={isBookmarked ? 'bg-th-accent-100 text-th-accent-700 dark:bg-th-accent-900/30 dark:text-th-accent-400' : 'text-th-text-secondary'}
           >
             {isBookmarked ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
             {isBookmarked ? 'Bookmarked' : 'Bookmark'}
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+            className="text-th-text-secondary"
           >
             <Share2 className="w-4 h-4" />
             Share
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -213,13 +229,16 @@ export default function BulletinDetail() {
 
       {/* Bottom Navigation */}
       <div className="border-t border-th-border pt-6 mb-4">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => navigate('/bulletins')}
-          className="flex items-center gap-2 text-th-accent-600 hover:text-th-accent-700 font-medium transition-colors"
+          className="text-th-accent-600 hover:text-th-accent-700 font-medium"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to all bulletins
-        </button>
+        </Button>
       </div>
 
       {/* PDF Preview Modal */}

@@ -30,6 +30,7 @@ const ConversationItem = memo(function ConversationItem({
 
   return (
     <button
+      type="button"
       onClick={() => onSelect(conv.id)}
       className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
         isActive
@@ -160,9 +161,11 @@ export default function ConversationList({
                 </span>
                 {onCreateDM && (
                   <button
+                    type="button"
                     onClick={onCreateDM}
-                    className="p-0.5 hover:bg-th-bg-secondary rounded"
+                    className="p-2.5 hover:bg-th-bg-secondary rounded min-h-[44px] min-w-[44px] flex items-center justify-center"
                     title="New message"
+                    aria-label="New direct message"
                   >
                     <Plus className="w-3.5 h-3.5 text-th-text-tertiary" />
                   </button>

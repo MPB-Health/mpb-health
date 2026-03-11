@@ -79,20 +79,20 @@ export function WidgetSettings({ widget, isOpen, onClose }: WidgetSettingsProps)
             </div>
             <div>
               <h2 className="text-lg font-semibold">{widgetConfig.title} Settings</h2>
-              <p className="text-sm text-gray-500">{widgetConfig.description}</p>
+              <p className="text-sm text-th-text-secondary">{widgetConfig.description}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-surface-tertiary rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-th-text-secondary" />
           </button>
         </div>
 
         {/* Size Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-th-text-primary mb-2">
             Widget Size
           </label>
           <div className="flex gap-2">
@@ -102,8 +102,8 @@ export function WidgetSettings({ widget, isOpen, onClose }: WidgetSettingsProps)
                 onClick={() => setLocalSize(size)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   localSize === size
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ? 'bg-th-accent-primary text-white'
+                    : 'bg-surface-tertiary text-th-text-primary hover:bg-surface-tertiary'
                 }`}
               >
                 {size.charAt(0).toUpperCase() + size.slice(1)}
@@ -115,7 +115,7 @@ export function WidgetSettings({ widget, isOpen, onClose }: WidgetSettingsProps)
         {/* Config Fields */}
         {widgetConfig.configSchema && widgetConfig.configSchema.fields.length > 0 && (
           <div className="space-y-4 mb-6">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <h3 className="text-sm font-medium text-th-text-primary">
               Configuration
             </h3>
             {widgetConfig.configSchema.fields.map((field) => (
@@ -130,23 +130,23 @@ export function WidgetSettings({ widget, isOpen, onClose }: WidgetSettingsProps)
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-4 border-t dark:border-gray-700">
+        <div className="flex items-center justify-between pt-4 border-t border-th-border">
           <button
             onClick={handleReset}
-            className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            className="text-sm text-th-text-secondary hover:text-th-text-primary"
           >
             Reset to defaults
           </button>
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-th-text-primary hover:bg-surface-tertiary rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-th-accent-primary hover:bg-th-accent-hover rounded-lg transition-colors"
             >
               Save Changes
             </button>
@@ -172,17 +172,17 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
     case 'text':
       return (
         <div>
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             {field.label}
           </label>
           <input
             type="text"
             value={(value as string) || ''}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+            className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           {field.description && (
-            <p className="text-xs text-gray-500 mt-1">{field.description}</p>
+            <p className="text-xs text-th-text-secondary mt-1">{field.description}</p>
           )}
         </div>
       );
@@ -190,17 +190,17 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
     case 'number':
       return (
         <div>
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             {field.label}
           </label>
           <input
             type="number"
             value={(value as number) || 0}
             onChange={(e) => onChange(parseInt(e.target.value, 10))}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+            className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           {field.description && (
-            <p className="text-xs text-gray-500 mt-1">{field.description}</p>
+            <p className="text-xs text-th-text-secondary mt-1">{field.description}</p>
           )}
         </div>
       );
@@ -208,13 +208,13 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
     case 'select':
       return (
         <div>
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             {field.label}
           </label>
           <select
             value={(value as string) || ''}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+            className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             {field.options?.map((option) => (
               <option key={option.value} value={option.value}>
@@ -223,7 +223,7 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
             ))}
           </select>
           {field.description && (
-            <p className="text-xs text-gray-500 mt-1">{field.description}</p>
+            <p className="text-xs text-th-text-secondary mt-1">{field.description}</p>
           )}
         </div>
       );
@@ -236,16 +236,16 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
             id={field.key}
             checked={(value as boolean) || false}
             onChange={(e) => onChange(e.target.checked)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-th-border rounded"
           />
           <label
             htmlFor={field.key}
-            className="text-sm font-medium text-gray-600 dark:text-gray-400"
+            className="text-sm font-medium text-th-text-secondary"
           >
             {field.label}
           </label>
           {field.description && (
-            <p className="text-xs text-gray-500">{field.description}</p>
+            <p className="text-xs text-th-text-secondary">{field.description}</p>
           )}
         </div>
       );
@@ -253,17 +253,17 @@ function ConfigFieldInput({ field, value, onChange }: ConfigFieldInputProps) {
     case 'color':
       return (
         <div>
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
             {field.label}
           </label>
           <input
             type="color"
             value={(value as string) || '#8B5CF6'}
             onChange={(e) => onChange(e.target.value)}
-            className="h-10 w-20 cursor-pointer rounded border border-gray-300"
+            className="h-10 w-20 cursor-pointer rounded border border-th-border"
           />
           {field.description && (
-            <p className="text-xs text-gray-500 mt-1">{field.description}</p>
+            <p className="text-xs text-th-text-secondary mt-1">{field.description}</p>
           )}
         </div>
       );

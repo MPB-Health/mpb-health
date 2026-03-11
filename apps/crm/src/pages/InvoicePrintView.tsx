@@ -39,10 +39,10 @@ export default function InvoicePrintView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading invoice...</p>
+          <p className="mt-4 text-th-text-secondary">Loading invoice...</p>
         </div>
       </div>
     );
@@ -50,12 +50,12 @@ export default function InvoicePrintView() {
 
   if (error || !invoice) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
         <div className="text-center">
           <p className="text-red-600 text-lg">{error || 'Invoice not found'}</p>
           <button
             onClick={() => window.close()}
-            className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            className="mt-4 px-4 py-2 bg-surface-tertiary text-th-text-primary rounded-lg hover:bg-surface-tertiary/80"
           >
             Close
           </button>

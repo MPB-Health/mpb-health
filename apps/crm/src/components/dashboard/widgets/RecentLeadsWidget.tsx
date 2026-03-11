@@ -25,7 +25,7 @@ export default function RecentLeadsWidget({ config, size }: BaseWidgetProps) {
 
   if (displayLeads.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-th-text-secondary">
         <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No leads yet</p>
       </div>
@@ -39,7 +39,7 @@ export default function RecentLeadsWidget({ config, size }: BaseWidgetProps) {
           <Link
             key={lead.id}
             to={`/leads/${lead.id}`}
-            className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-surface-secondary transition-colors"
           >
             {showAvatar && (
               <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-medium text-sm">
@@ -50,11 +50,11 @@ export default function RecentLeadsWidget({ config, size }: BaseWidgetProps) {
               <p className="text-sm font-medium truncate">
                 {lead.first_name} {lead.last_name}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-th-text-secondary truncate">
                 {lead.email || 'No email'}
               </p>
             </div>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-th-text-tertiary">
               {formatTimeAgo(lead.created_at)}
             </span>
           </Link>
@@ -63,7 +63,7 @@ export default function RecentLeadsWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/leads"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t border-th-border text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all leads
         <ArrowRight className="h-4 w-4" />

@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { X, ExternalLink, Loader2 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 
 interface DocumentPreviewModalProps {
   isOpen: boolean;
@@ -102,13 +103,15 @@ export default function DocumentPreviewModal({
           <h2 className="text-lg font-semibold text-th-text-primary truncate pr-4">
             {title}
           </h2>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-surface-tertiary text-th-text-tertiary hover:text-th-text-primary transition-colors"
+            className="min-h-[44px] min-w-[44px]"
             aria-label="Close preview"
           >
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Document Container */}
@@ -140,19 +143,19 @@ export default function DocumentPreviewModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-th-border bg-surface-secondary">
-          <button
+          <Button
+            variant="outline"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-tertiary transition-colors"
           >
             Close
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             onClick={handleOpenDocument}
-            className="px-4 py-2 rounded-lg bg-th-accent-600 text-white hover:bg-th-accent-700 transition-colors flex items-center gap-2"
           >
             <span>Open Full Document</span>
             <ExternalLink className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

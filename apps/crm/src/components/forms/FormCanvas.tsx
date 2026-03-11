@@ -104,7 +104,7 @@ export function FormCanvas({
       case 'hidden':
         return (
           <div className={widthClass}>
-            <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-400">
+            <div className="bg-surface-secondary border border-dashed border-th-border rounded-lg px-3 py-2 text-xs text-th-text-tertiary">
               Hidden: {field.label} = {field.defaultValue || '(empty)'}
             </div>
           </div>
@@ -118,7 +118,7 @@ export function FormCanvas({
             </label>
             <textarea
               placeholder={field.placeholder || ''}
-              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm pointer-events-none bg-white"
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm pointer-events-none bg-surface-primary"
               rows={3}
               readOnly
             />
@@ -131,7 +131,7 @@ export function FormCanvas({
             <label className="block text-sm font-medium text-th-text-secondary mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </label>
-            <select className="w-full border border-th-border rounded-lg px-3 py-2 text-sm pointer-events-none bg-white">
+            <select className="w-full border border-th-border rounded-lg px-3 py-2 text-sm pointer-events-none bg-surface-primary">
               <option>{field.placeholder || 'Select...'}</option>
               {field.options?.map((opt, i) => (
                 <option key={i}>{opt}</option>
@@ -176,7 +176,7 @@ export function FormCanvas({
             <input
               type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
               placeholder={field.placeholder || ''}
-              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm pointer-events-none bg-white"
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm pointer-events-none bg-surface-primary"
               readOnly
             />
           </div>
@@ -186,7 +186,7 @@ export function FormCanvas({
 
   return (
     <div
-      className="bg-white rounded-xl border border-th-border p-6 min-h-[400px]"
+      className="bg-surface-primary rounded-xl border border-th-border p-6 min-h-[400px]"
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
       onDrop={handleCanvasDrop}
     >

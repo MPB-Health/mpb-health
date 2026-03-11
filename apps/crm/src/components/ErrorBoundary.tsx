@@ -148,10 +148,10 @@ function RouteErrorFallback({ error, errorInfo, onRetry, onGoHome }: RouteErrorF
 
         {/* Error Message */}
         <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h2 className="text-xl font-semibold text-th-text-primary mb-2">
             Something went wrong
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-th-text-secondary">
             This page encountered an error. Don&apos;t worry, your data is safe.
           </p>
         </div>
@@ -161,19 +161,19 @@ function RouteErrorFallback({ error, errorInfo, onRetry, onGoHome }: RouteErrorF
           <div className="mb-6">
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mx-auto"
+              className="flex items-center gap-2 text-sm text-th-text-secondary hover:text-th-text-primary mx-auto"
             >
               <Bug className="w-4 h-4" />
               <span>Technical details</span>
               {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
             {showDetails && (
-              <div className="mt-3 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono overflow-auto max-h-48">
+              <div className="mt-3 p-4 bg-surface-tertiary rounded-lg text-sm font-mono overflow-auto max-h-48">
                 <p className="text-red-600 dark:text-red-400 font-semibold mb-2">
                   {error.name}: {error.message}
                 </p>
                 {errorInfo?.componentStack && (
-                  <pre className="text-gray-600 dark:text-gray-400 text-xs whitespace-pre-wrap">
+                  <pre className="text-th-text-secondary text-xs whitespace-pre-wrap">
                     {errorInfo.componentStack}
                   </pre>
                 )}
@@ -186,14 +186,14 @@ function RouteErrorFallback({ error, errorInfo, onRetry, onGoHome }: RouteErrorF
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={onRetry}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-th-accent-primary text-white rounded-lg hover:bg-th-accent-hover transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Try Again
           </button>
           <button
             onClick={onGoHome}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-tertiary text-th-text-primary rounded-lg hover:bg-surface-tertiary transition-colors"
           >
             <Home className="w-4 h-4" />
             Go to Dashboard
@@ -220,10 +220,10 @@ function WidgetErrorFallback({ error, widgetName, onRetry }: WidgetErrorFallback
       <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
         <AlertTriangle className="w-5 h-5 text-red-500" />
       </div>
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <p className="text-sm font-medium text-th-text-primary mb-1">
         {widgetName ? `${widgetName} failed to load` : 'Widget error'}
       </p>
-      <p className="text-xs text-gray-500 mb-3">
+      <p className="text-xs text-th-text-secondary mb-3">
         {error?.message || 'An unexpected error occurred'}
       </p>
       <button
@@ -273,26 +273,26 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-8">
+        <div className="min-h-screen bg-surface-secondary flex items-center justify-center p-8">
           <div className="max-w-md w-full text-center">
             <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-400" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h1 className="text-2xl font-bold text-th-text-primary mb-2">
               Application Error
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-th-text-secondary mb-6">
               The application encountered a critical error. Please refresh the page to continue.
             </p>
             <button
               onClick={this.handleRefresh}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-th-accent-primary text-white rounded-lg hover:bg-th-accent-hover transition-colors"
             >
               <RefreshCw className="w-5 h-5" />
               Refresh Page
             </button>
             {this.state.error && (
-              <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-left">
+              <div className="mt-6 p-4 bg-surface-tertiary rounded-lg text-left">
                 <p className="text-sm font-mono text-red-600 dark:text-red-400">
                   {this.state.error.message}
                 </p>

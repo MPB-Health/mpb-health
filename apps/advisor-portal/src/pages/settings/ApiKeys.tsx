@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useApiKeys } from '../../hooks/useSettings';
 import type { ApiKey, CreateApiKeyInput } from '@mpbhealth/champion-core';
+import { Button } from '@mpbhealth/ui';
 
 const AVAILABLE_SCOPES = [
   { value: 'leads:read', label: 'Read Leads', description: 'View lead information' },
@@ -159,13 +160,13 @@ export default function ApiKeys() {
             </p>
           </div>
 
-          <button
+          <Button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
+            variant="primary"
           >
             <Plus className="w-4 h-4" />
             Create API Key
-          </button>
+          </Button>
         </div>
 
         {/* Security Notice */}
@@ -206,17 +207,19 @@ export default function ApiKeys() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button
+                        <Button
                           onClick={() => handleRevoke(key.id)}
                           disabled={actionLoading === key.id}
-                          className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50"
                         >
                           {actionLoading === key.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             'Revoke'
                           )}
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
@@ -256,12 +259,13 @@ export default function ApiKeys() {
             <div className="bg-surface-primary rounded-xl border border-th-border-primary p-12 text-center">
               <Key className="w-12 h-12 text-th-text-muted mx-auto mb-4" />
               <p className="text-th-text-secondary">No active API keys</p>
-              <button
+              <Button
                 onClick={() => setShowCreateModal(true)}
-                className="mt-4 text-th-accent-600 hover:text-th-accent-700 font-medium"
+                variant="ghost"
+                className="mt-4 text-th-accent-600 hover:text-th-accent-700"
               >
                 Create your first API key
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -286,17 +290,19 @@ export default function ApiKeys() {
                       </div>
                     </div>
 
-                    <button
+                    <Button
                       onClick={() => handleDelete(key.id)}
                       disabled={actionLoading === key.id}
-                      className="p-2 text-th-text-muted hover:text-red-600 transition-colors"
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-[44px] min-w-[44px] hover:text-red-600"
                     >
                       {actionLoading === key.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Trash2 className="w-4 h-4" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -311,12 +317,14 @@ export default function ApiKeys() {
           <div className="bg-surface-primary rounded-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-th-border-primary">
               <h2 className="text-lg font-semibold text-th-text-primary">Create API Key</h2>
-              <button
+              <Button
                 onClick={() => setShowCreateModal(false)}
-                className="p-1 text-th-text-muted hover:text-th-text-primary"
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px]"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 space-y-4">
@@ -402,16 +410,16 @@ export default function ApiKeys() {
             </div>
 
             <div className="flex justify-end gap-3 p-4 border-t border-th-border-primary">
-              <button
+              <Button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary transition-colors"
+                variant="ghost"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreate}
                 disabled={actionLoading === 'create'}
-                className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
+                variant="primary"
               >
                 {actionLoading === 'create' ? (
                   <>
@@ -424,7 +432,7 @@ export default function ApiKeys() {
                     Create Key
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -478,15 +486,15 @@ export default function ApiKeys() {
             </div>
 
             <div className="flex justify-end p-4 border-t border-th-border-primary">
-              <button
+              <Button
                 onClick={() => {
                   setNewKeySecret(null);
                   setShowCreateModal(false);
                 }}
-                className="px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
+                variant="primary"
               >
                 Done
-              </button>
+              </Button>
             </div>
           </div>
         </div>

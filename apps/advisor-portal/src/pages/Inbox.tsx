@@ -13,7 +13,7 @@ import {
   ChevronRight,
   RefreshCw,
 } from 'lucide-react';
-import { GradientHeader, MetricCard } from '@mpbhealth/ui';
+import { Button, GradientHeader, MetricCard, SkeletonAvatar, SkeletonLine } from '@mpbhealth/ui';
 import { useConversations, useInboxSummary, useInboxActions } from '../hooks/useInbox';
 import type { ConversationWithLead } from '@mpbhealth/champion-core';
 
@@ -66,7 +66,7 @@ export default function Inbox() {
       case 'email':
         return <Mail className="w-4 h-4 text-blue-500" />;
       default:
-        return <InboxIcon className="w-4 h-4 text-neutral-500" />;
+        return <InboxIcon className="w-4 h-4 text-th-text-secondary" />;
     }
   };
 
@@ -96,7 +96,7 @@ export default function Inbox() {
           value={summary?.active_sequences ?? '-'}
           icon={<MessageSquare className="w-5 h-5" />}
         />
-        <button onClick={refresh} className="text-left">
+        <button type="button" onClick={refresh} className="text-left">
           <MetricCard
             label="Refresh"
             value={<RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />}
@@ -109,56 +109,52 @@ export default function Inbox() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         {/* Search */}
-        <div className="flex items-center bg-white border border-neutral-200 rounded-lg px-3 py-2 w-full sm:w-64">
-          <Search className="w-4 h-4 text-neutral-400 mr-2" />
+        <div className="flex items-center bg-surface-primary border border-th-border rounded-lg px-3 py-2 w-full sm:w-64">
+          <Search className="w-4 h-4 text-th-text-tertiary mr-2" />
           <input
             type="text"
             placeholder="Search conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent border-none outline-none text-sm w-full text-neutral-700 placeholder-neutral-400"
+            className="bg-transparent border-none outline-none text-sm w-full text-th-text-primary placeholder-th-text-tertiary"
           />
         </div>
 
         {/* Channel filter */}
         <div className="flex items-center space-x-2">
           {(['all', 'sms', 'email'] as ChannelFilter[]).map((channel) => (
-            <button
+            <Button
+              type="button"
               key={channel}
+              variant={channelFilter === channel ? 'primary' : 'secondary'}
+              size="sm"
               onClick={() => setChannelFilter(channel)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
-                channelFilter === channel
-                  ? 'bg-neutral-900 text-white'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-              }`}
+              className="capitalize"
             >
               {channel}
-            </button>
+            </Button>
           ))}
         </div>
 
         {/* Status filter */}
         <div className="flex items-center space-x-2">
-          <button
+          <Button
+            type="button"
+            variant={statusFilter === 'active' ? 'primary' : 'secondary'}
+            size="sm"
             onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              statusFilter === 'active'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-            }`}
+            className={statusFilter === 'active' ? 'bg-green-600 hover:bg-green-700' : ''}
           >
             Active
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant={statusFilter === 'archived' ? 'primary' : 'secondary'}
+            size="sm"
             onClick={() => setStatusFilter('archived')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              statusFilter === 'archived'
-                ? 'bg-neutral-700 text-white'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-            }`}
           >
             Archived
-          </button>
+          </Button>
         </div>
 
         {/* Unread toggle */}
@@ -167,37 +163,48 @@ export default function Inbox() {
             type="checkbox"
             checked={unreadOnly}
             onChange={(e) => setUnreadOnly(e.target.checked)}
-            className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+            className="rounded border-th-border text-primary-600 focus:ring-primary-500"
           />
-          <span className="text-sm text-neutral-600">Unread only</span>
+          <span className="text-sm text-th-text-secondary">Unread only</span>
         </label>
       </div>
 
       {/* Conversation list */}
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+        <div className="bg-surface-primary rounded-xl border border-th-border divide-y divide-th-border-subtle">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center p-4">
+              <SkeletonAvatar size="w-12 h-12" />
+              <div className="flex-1 min-w-0 ml-4 space-y-2">
+                <SkeletonLine width="w-1/3" />
+                <SkeletonLine width="w-2/3" className="h-3" />
+              </div>
+              <div className="ml-4 flex-shrink-0">
+                <SkeletonLine width="w-16" className="h-3" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : conversations.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-neutral-200">
-          <InboxIcon className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-500">
+        <div className="text-center py-16 bg-surface-primary rounded-xl border border-th-border">
+          <InboxIcon className="w-12 h-12 text-th-text-tertiary mx-auto mb-3" />
+          <p className="text-th-text-secondary">
             {search ? 'No conversations match your search' : 'No conversations yet'}
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-neutral-200 divide-y divide-neutral-100">
+        <div className="bg-surface-primary rounded-xl border border-th-border divide-y divide-th-border-subtle">
           {conversations.map((conversation) => (
             <div
               key={conversation.id}
               onClick={() => handleConversationClick(conversation)}
-              className={`flex items-center p-4 hover:bg-neutral-50 cursor-pointer transition-colors ${
+              className={`flex items-center p-4 hover:bg-surface-secondary cursor-pointer transition-colors ${
                 conversation.unread_count > 0 ? 'bg-blue-50/50' : ''
               }`}
             >
               {/* Avatar */}
-              <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="w-6 h-6 text-neutral-500" />
+              <div className="w-12 h-12 bg-surface-tertiary rounded-full flex items-center justify-center flex-shrink-0">
+                <User className="w-6 h-6 text-th-text-secondary" />
               </div>
 
               {/* Content */}
@@ -206,8 +213,8 @@ export default function Inbox() {
                   <h3
                     className={`font-medium truncate ${
                       conversation.unread_count > 0
-                        ? 'text-neutral-900'
-                        : 'text-neutral-700'
+                        ? 'text-th-text-primary'
+                        : 'text-th-text-primary'
                     }`}
                   >
                     {conversation.participant_name}
@@ -219,9 +226,9 @@ export default function Inbox() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-neutral-500 truncate mt-0.5">
+                <p className="text-sm text-th-text-secondary truncate mt-0.5">
                   {conversation.last_message_direction === 'outbound' && (
-                    <span className="text-neutral-400">You: </span>
+                    <span className="text-th-text-tertiary">You: </span>
                   )}
                   {conversation.last_message_preview || 'No messages yet'}
                 </p>
@@ -230,22 +237,26 @@ export default function Inbox() {
               {/* Timestamp and actions */}
               <div className="flex items-center space-x-3 ml-4 flex-shrink-0">
                 {conversation.last_message_at && (
-                  <span className="text-xs text-neutral-400">
+                  <span className="text-xs text-th-text-tertiary">
                     {formatDistanceToNow(new Date(conversation.last_message_at), {
                       addSuffix: true,
                     })}
                   </span>
                 )}
                 {statusFilter === 'active' && (
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={(e) => handleArchive(e, conversation.id)}
-                    className="p-1.5 hover:bg-neutral-200 rounded transition-colors"
                     title="Archive"
+                    aria-label="Archive conversation"
+                    className="min-h-[44px] min-w-[44px] text-th-text-tertiary"
                   >
-                    <Archive className="w-4 h-4 text-neutral-400" />
-                  </button>
+                    <Archive className="w-4 h-4" />
+                  </Button>
                 )}
-                <ChevronRight className="w-5 h-5 text-neutral-400" />
+                <ChevronRight className="w-5 h-5 text-th-text-tertiary" />
               </div>
             </div>
           ))}

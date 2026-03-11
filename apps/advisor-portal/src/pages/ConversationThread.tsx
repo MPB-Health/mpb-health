@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Breadcrumbs, Button } from '@mpbhealth/ui';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -94,9 +95,9 @@ export default function ConversationThread() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'sent':
-        return <Check className="w-3 h-3 text-neutral-400" />;
+        return <Check className="w-3 h-3 text-th-text-tertiary" />;
       case 'delivered':
-        return <CheckCheck className="w-3 h-3 text-neutral-400" />;
+        return <CheckCheck className="w-3 h-3 text-th-text-tertiary" />;
       case 'opened':
       case 'clicked':
         return <CheckCheck className="w-3 h-3 text-blue-500" />;
@@ -122,34 +123,49 @@ export default function ConversationThread() {
   if (!conversation) {
     return (
       <div className="text-center py-16">
-        <p className="text-neutral-500 mb-4">Conversation not found</p>
-        <button
+        <p className="text-th-text-secondary mb-4">Conversation not found</p>
+        <Button
+          type="button"
+          variant="secondary"
           onClick={() => navigate('/inbox')}
-          className="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200"
         >
           Back to Inbox
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
+      {/* Breadcrumbs */}
+      <div className="px-4 pt-3 pb-1">
+        <Breadcrumbs
+          items={[
+            { label: 'Inbox', href: '/inbox' },
+            { label: conversation.participant_name },
+          ]}
+        />
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-white">
+      <div className="flex items-center justify-between p-4 border-b border-th-border bg-surface-primary">
         <div className="flex items-center space-x-4">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate('/inbox')}
-            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+            className="min-h-[44px] min-w-[44px]"
+            aria-label="Back to inbox"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-600" />
-          </button>
-          <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-neutral-500" />
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="w-10 h-10 bg-surface-tertiary rounded-full flex items-center justify-center">
+            <User className="w-5 h-5 text-th-text-secondary" />
           </div>
           <div>
-            <h2 className="font-semibold text-neutral-900">{conversation.participant_name}</h2>
-            <div className="flex items-center space-x-2 text-sm text-neutral-500">
+            <h2 className="font-semibold text-th-text-primary">{conversation.participant_name}</h2>
+            <div className="flex items-center space-x-2 text-sm text-th-text-secondary">
               {conversation.participant_email && (
                 <span>{conversation.participant_email}</span>
               )}
@@ -164,36 +180,38 @@ export default function ConversationThread() {
           {conversation.participant_email && (
             <a
               href={`mailto:${conversation.participant_email}`}
-              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-surface-tertiary rounded-lg transition-colors"
               title="Send external email"
             >
-              <Mail className="w-5 h-5 text-neutral-500" />
+              <Mail className="w-5 h-5 text-th-text-secondary" />
             </a>
           )}
           {conversation.participant_phone && (
             <a
               href={`tel:${conversation.participant_phone}`}
-              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-surface-tertiary rounded-lg transition-colors"
               title="Call"
             >
-              <Phone className="w-5 h-5 text-neutral-500" />
+              <Phone className="w-5 h-5 text-th-text-secondary" />
             </a>
           )}
           {conversation.lead_id && (
-            <button
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => navigate(`/leads/${conversation.lead_id}`)}
-              className="px-3 py-1.5 text-sm bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors"
             >
               View Lead
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-surface-secondary">
         {messages.length === 0 ? (
-          <div className="text-center py-8 text-neutral-400">
+          <div className="text-center py-8 text-th-text-tertiary">
             <MessageSquare className="w-12 h-12 mx-auto mb-3" />
             <p>No messages yet. Start the conversation!</p>
           </div>
@@ -209,13 +227,13 @@ export default function ConversationThread() {
                 className={`max-w-[70%] rounded-2xl px-4 py-2 ${
                   message.direction === 'outbound'
                     ? 'bg-primary-600 text-white rounded-br-md'
-                    : 'bg-white text-neutral-900 border border-neutral-200 rounded-bl-md'
+                    : 'bg-surface-primary text-th-text-primary border border-th-border rounded-bl-md'
                 }`}
               >
                 {/* Channel indicator */}
                 <div
                   className={`flex items-center space-x-1 text-xs mb-1 ${
-                    message.direction === 'outbound' ? 'text-primary-200' : 'text-neutral-400'
+                    message.direction === 'outbound' ? 'text-primary-200' : 'text-th-text-tertiary'
                   }`}
                 >
                   {message.channel === 'email' ? (
@@ -230,7 +248,7 @@ export default function ConversationThread() {
                 {message.channel === 'email' && message.subject && (
                   <p
                     className={`font-medium text-sm mb-1 ${
-                      message.direction === 'outbound' ? 'text-white' : 'text-neutral-900'
+                      message.direction === 'outbound' ? 'text-white' : 'text-th-text-primary'
                     }`}
                   >
                     {message.subject}
@@ -245,7 +263,7 @@ export default function ConversationThread() {
                 {/* Timestamp and status */}
                 <div
                   className={`flex items-center justify-end space-x-1 mt-1 text-xs ${
-                    message.direction === 'outbound' ? 'text-primary-200' : 'text-neutral-400'
+                    message.direction === 'outbound' ? 'text-primary-200' : 'text-th-text-tertiary'
                   }`}
                 >
                   <span>{format(new Date(message.created_at), 'h:mm a')}</span>
@@ -259,75 +277,73 @@ export default function ConversationThread() {
       </div>
 
       {/* Compose area */}
-      <div className="border-t border-neutral-200 bg-white p-4">
+      <div className="border-t border-th-border bg-surface-primary p-4">
         {/* Channel toggle */}
         <div className="flex items-center space-x-2 mb-3">
-          <button
+          <Button
+            type="button"
+            variant={channel === 'sms' ? 'primary' : 'secondary'}
+            size="sm"
             onClick={() => setChannel('sms')}
             disabled={!conversation.participant_phone}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              channel === 'sms'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-            } ${!conversation.participant_phone ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={channel === 'sms' ? 'bg-green-600 hover:bg-green-700' : ''}
           >
             <MessageSquare className="w-4 h-4" />
             <span>SMS</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant={channel === 'email' ? 'primary' : 'secondary'}
+            size="sm"
             onClick={() => setChannel('email')}
             disabled={!conversation.participant_email}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              channel === 'email'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-            } ${!conversation.participant_email ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <Mail className="w-4 h-4" />
             <span>Email</span>
-          </button>
+          </Button>
 
           <div className="flex-1" />
 
           {/* AI Assist button */}
-          <button
+          <Button
+            type="button"
+            variant={showAIAssist ? 'primary' : 'secondary'}
+            size="sm"
             onClick={() => setShowAIAssist(!showAIAssist)}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              showAIAssist
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-            }`}
           >
             <Sparkles className="w-4 h-4" />
             <span>AI Assist</span>
-          </button>
+          </Button>
 
           {/* Templates button */}
           <div className="relative">
-            <button
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => setShowTemplates(!showTemplates)}
-              className="flex items-center space-x-1 px-3 py-1.5 bg-neutral-100 text-neutral-600 rounded-lg hover:bg-neutral-200 text-sm font-medium"
             >
               <FileText className="w-4 h-4" />
               <span>Templates</span>
-            </button>
+            </Button>
 
             {/* Templates dropdown */}
             {showTemplates && (
-              <div className="absolute bottom-full right-0 mb-2 w-72 bg-white rounded-xl shadow-lg border border-neutral-200 max-h-64 overflow-y-auto z-10">
+              <div className="absolute bottom-full right-0 mb-2 w-72 bg-surface-primary rounded-xl shadow-lg border border-th-border max-h-64 overflow-y-auto z-10">
                 <div className="p-2">
                   {templates
                     .filter((t) => t.channel === channel || t.channel === 'both')
                     .map((template) => (
                       <button
+                        type="button"
                         key={template.id}
                         onClick={() => handleTemplateSelect(template)}
-                        className="w-full text-left p-3 hover:bg-neutral-50 rounded-lg"
+                        className="w-full text-left p-3 hover:bg-surface-secondary rounded-lg"
                       >
-                        <p className="font-medium text-sm text-neutral-900">
+                        <p className="font-medium text-sm text-th-text-primary">
                           {template.name}
                         </p>
-                        <p className="text-xs text-neutral-500 truncate mt-0.5">
+                        <p className="text-xs text-th-text-secondary truncate mt-0.5">
                           {template.body_text.substring(0, 60)}...
                         </p>
                       </button>
@@ -335,7 +351,7 @@ export default function ConversationThread() {
                   {templates.filter(
                     (t) => t.channel === channel || t.channel === 'both'
                   ).length === 0 && (
-                    <p className="text-sm text-neutral-400 p-3 text-center">
+                    <p className="text-sm text-th-text-tertiary p-3 text-center">
                       No templates for {channel}
                     </p>
                   )}
@@ -374,7 +390,7 @@ export default function ConversationThread() {
             placeholder="Subject..."
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            className="w-full px-4 py-2 border border-neutral-200 rounded-lg mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-th-border rounded-lg mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         )}
 
@@ -393,12 +409,13 @@ export default function ConversationThread() {
               }
             }}
             rows={channel === 'sms' ? 2 : 4}
-            className="flex-1 px-4 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+            className="flex-1 px-4 py-2 border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
           />
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onClick={handleSend}
             disabled={sending || !content.trim() || (channel === 'email' && !subject.trim())}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {sending ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
@@ -406,12 +423,12 @@ export default function ConversationThread() {
               <Send className="w-4 h-4" />
             )}
             <span>Send</span>
-          </button>
+          </Button>
         </div>
 
         {/* Character count for SMS */}
         {channel === 'sms' && (
-          <p className="text-xs text-neutral-400 mt-1 text-right">
+          <p className="text-xs text-th-text-tertiary mt-1 text-right">
             {content.length} / 160 characters
             {content.length > 160 && ` (${Math.ceil(content.length / 160)} messages)`}
           </p>

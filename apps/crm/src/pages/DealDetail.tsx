@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Breadcrumbs } from '@mpbhealth/ui';
 import {
   ArrowLeft,
   Edit2,
@@ -206,6 +207,14 @@ export default function DealDetail() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: 'Deals', href: '/deals' },
+          { label: deal.name },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">

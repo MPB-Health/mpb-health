@@ -151,9 +151,9 @@ export default function TeamWidget({ config, size }: BaseWidgetProps) {
     return (
       <div className="p-4 animate-pulse">
         <div className="space-y-3">
-          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-12 bg-surface-tertiary rounded" />
+          <div className="h-12 bg-surface-tertiary rounded" />
+          <div className="h-12 bg-surface-tertiary rounded" />
         </div>
       </div>
     );
@@ -164,14 +164,14 @@ export default function TeamWidget({ config, size }: BaseWidgetProps) {
   return (
     <div className="p-4">
       {/* Header Stats */}
-      <div className="flex items-center gap-4 mb-4 pb-4 border-b dark:border-gray-700">
+      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-th-border">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600">
             <Users className="h-5 w-5" />
           </div>
           <div>
             <p className="text-sm font-medium">{onlineCount} online</p>
-            <p className="text-xs text-gray-500">of {members.length} members</p>
+            <p className="text-xs text-th-text-secondary">of {members.length} members</p>
           </div>
         </div>
         <div className="flex -space-x-2">
@@ -185,25 +185,25 @@ export default function TeamWidget({ config, size }: BaseWidgetProps) {
                 <img
                   src={member.avatar_url}
                   alt={member.full_name}
-                  className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800"
+                  className="h-8 w-8 rounded-full border-2 border-surface-primary"
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800 bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-xs font-medium text-blue-600">
+                <div className="h-8 w-8 rounded-full border-2 border-surface-primary bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-xs font-medium text-blue-600">
                   {member.full_name.charAt(0)}
                 </div>
               )}
               <span
                 className={cn(
-                  'absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white dark:border-gray-800',
+                  'absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-primary',
                   member.status === 'online' && 'bg-green-500',
                   member.status === 'away' && 'bg-amber-500',
-                  member.status === 'offline' && 'bg-gray-400'
+                  member.status === 'offline' && 'bg-surface-tertiary'
                 )}
               />
             </div>
           ))}
           {members.length > 5 && (
-            <div className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium">
+            <div className="h-8 w-8 rounded-full border-2 border-surface-primary bg-surface-tertiary flex items-center justify-center text-xs font-medium">
               +{members.length - 5}
             </div>
           )}
@@ -239,7 +239,7 @@ function TeamMembersList({ members }: TeamMembersListProps) {
       {sortedMembers.map((member) => (
         <div
           key={member.id}
-          className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-surface-secondary transition-colors"
         >
           <div className="relative">
             {member.avatar_url ? (
@@ -255,28 +255,28 @@ function TeamMembersList({ members }: TeamMembersListProps) {
             )}
             <span
               className={cn(
-                'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-gray-800',
+                'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-surface-primary',
                 member.status === 'online' && 'bg-green-500',
                 member.status === 'away' && 'bg-amber-500',
-                member.status === 'offline' && 'bg-gray-400'
+                member.status === 'offline' && 'bg-surface-tertiary'
               )}
             />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{member.full_name}</p>
-            <p className="text-xs text-gray-500">{member.role}</p>
+            <p className="text-xs text-th-text-secondary">{member.role}</p>
           </div>
           <div className="text-right">
             <p className={cn(
               'text-xs capitalize',
               member.status === 'online' && 'text-green-600',
               member.status === 'away' && 'text-amber-600',
-              member.status === 'offline' && 'text-gray-500'
+              member.status === 'offline' && 'text-th-text-secondary'
             )}>
               {member.status}
             </p>
             {member.status !== 'online' && member.last_active && (
-              <p className="text-xs text-gray-400 flex items-center gap-1 justify-end">
+              <p className="text-xs text-th-text-tertiary flex items-center gap-1 justify-end">
                 <Clock className="h-3 w-3" />
                 {formatTimeAgo(member.last_active)}
               </p>
@@ -315,7 +315,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
 function TeamActivityFeed({ activities }: TeamActivityFeedProps) {
   if (activities.length === 0) {
     return (
-      <div className="text-center py-4 text-gray-500">
+      <div className="text-center py-4 text-th-text-secondary">
         <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No recent activity</p>
       </div>
@@ -326,7 +326,7 @@ function TeamActivityFeed({ activities }: TeamActivityFeedProps) {
     <div className="space-y-3">
       {activities.map((activity) => {
         const Icon = ACTIVITY_ICONS[activity.action] || Circle;
-        const colorClass = ACTIVITY_COLORS[activity.action] || 'bg-gray-100 text-gray-600 dark:bg-gray-700';
+        const colorClass = ACTIVITY_COLORS[activity.action] || 'bg-surface-tertiary text-th-text-secondary';
 
         return (
           <div key={activity.id} className="flex gap-3">
@@ -337,10 +337,10 @@ function TeamActivityFeed({ activities }: TeamActivityFeedProps) {
               <p className="text-sm">
                 <span className="font-medium">{activity.user_name}</span>
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+              <p className="text-sm text-th-text-secondary truncate">
                 {activity.description}
               </p>
-              <p className="text-xs text-gray-400 mt-1">{formatTimeAgo(activity.timestamp)}</p>
+              <p className="text-xs text-th-text-tertiary mt-1">{formatTimeAgo(activity.timestamp)}</p>
             </div>
           </div>
         );

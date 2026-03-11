@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Breadcrumbs } from '@mpbhealth/ui';
 import {
   ArrowLeft,
   Mail,
@@ -130,6 +131,14 @@ export default function LeadDetail() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: 'Leads', href: '/leads' },
+          { label: `${lead.first_name} ${lead.last_name}` },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">

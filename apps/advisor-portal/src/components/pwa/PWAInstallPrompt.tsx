@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Download, Smartphone, Share, Plus, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { usePWA } from '../../hooks/usePWA';
 
 export function PWAInstallPrompt() {
@@ -85,18 +86,25 @@ export function PWAInstallPrompt() {
             <span className="text-sm font-medium">A new version is available!</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleUpdate}
-              className="px-3 py-1.5 bg-white text-primary-600 rounded-lg text-sm font-semibold hover:bg-primary-50"
+              className="bg-white text-primary-600 hover:bg-primary-50"
             >
               Update Now
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setShowUpdateBanner(false)}
-              className="p-1.5 hover:bg-primary-500 rounded-lg"
+              className="min-h-[44px] min-w-[44px] hover:bg-primary-500"
+              aria-label="Dismiss"
             >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -114,12 +122,16 @@ export function PWAInstallPrompt() {
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
                 Install Advisor Portal
               </h3>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowIOSGuide(false)}
-                className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
+                className="min-h-[44px] min-w-[44px]"
+                aria-label="Close"
               >
-                <X className="w-5 h-5 text-neutral-500" />
-              </button>
+                <X className="w-5 h-5" />
+              </Button>
             </div>
 
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
@@ -153,15 +165,17 @@ export function PWAInstallPrompt() {
           </div>
 
           <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-200 dark:border-neutral-700">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => {
                 setShowIOSGuide(false);
                 dismissPrompt(30);
               }}
-              className="w-full py-3 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              className="w-full"
             >
               Maybe later
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -189,38 +203,47 @@ export function PWAInstallPrompt() {
                 Add to your home screen for quick access and offline features.
               </p>
             </div>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleDismiss}
-              className="flex-shrink-0 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
+              className="flex-shrink-0 min-h-[44px] min-w-[44px]"
+              aria-label="Dismiss"
             >
-              <X className="w-4 h-4 text-neutral-400" />
-            </button>
+              <X className="w-4 h-4" />
+            </Button>
           </div>
 
           <div className="flex items-center gap-3 mt-4">
             {isIOS ? (
-              <button
+              <Button
+                type="button"
+                variant="primary"
                 onClick={() => setShowIOSGuide(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
+                className="flex-1"
               >
                 <Share className="w-4 h-4" />
                 <span>How to Install</span>
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
+                type="button"
+                variant="primary"
                 onClick={handleInstall}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
+                className="flex-1"
               >
                 <Download className="w-4 h-4" />
                 <span>Install App</span>
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={handleDismiss}
-              className="px-4 py-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white font-medium"
             >
               Not now
-            </button>
+            </Button>
           </div>
         </div>
       </div>

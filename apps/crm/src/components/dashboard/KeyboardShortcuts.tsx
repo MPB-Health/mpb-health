@@ -213,14 +213,14 @@ export function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShortcutsHelp
             </div>
             <div>
               <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
-              <p className="text-sm text-gray-500">Quick actions for power users</p>
+              <p className="text-sm text-th-text-secondary">Quick actions for power users</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-surface-tertiary rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-th-text-secondary" />
           </button>
         </div>
 
@@ -228,7 +228,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShortcutsHelp
         <div className="space-y-6">
           {Object.entries(groupedShortcuts).map(([category, shortcuts]) => (
             <div key={category}>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-th-text-secondary uppercase tracking-wider mb-3">
                 {CATEGORY_LABELS[category] || category}
               </h3>
               <div className="space-y-2">
@@ -237,17 +237,17 @@ export function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShortcutsHelp
                     key={index}
                     className="flex items-center justify-between py-2"
                   >
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-th-text-primary">
                       {shortcut.description}
                     </span>
                     <div className="flex items-center gap-1">
                       {shortcut.keys.map((key, keyIndex) => (
                         <span key={keyIndex}>
-                          <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">
+                          <kbd className="px-2 py-1 text-xs font-mono bg-surface-tertiary border border-th-border rounded">
                             {key}
                           </kbd>
                           {keyIndex < shortcut.keys.length - 1 && (
-                            <span className="mx-1 text-gray-400">+</span>
+                            <span className="mx-1 text-th-text-tertiary">+</span>
                           )}
                         </span>
                       ))}

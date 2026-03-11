@@ -136,7 +136,7 @@ interface ResultItemProps {
 
 function ResultItem({ result, isSelected, onSelect }: ResultItemProps) {
   const Icon = ENTITY_ICONS[result.entity_type] || Search;
-  const colorClass = ENTITY_COLORS[result.entity_type] || 'text-gray-500';
+  const colorClass = ENTITY_COLORS[result.entity_type] || 'text-th-text-secondary';
 
   return (
     <button
@@ -144,19 +144,19 @@ function ResultItem({ result, isSelected, onSelect }: ResultItemProps) {
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
         isSelected
           ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-600'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-l-2 border-transparent'
+          : 'hover:bg-surface-secondary border-l-2 border-transparent'
       }`}
     >
       <Icon className={`w-5 h-5 flex-shrink-0 ${colorClass}`} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+        <p className="text-sm font-medium text-th-text-primary truncate">
           {result.title}
         </p>
         {result.subtitle && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{result.subtitle}</p>
+          <p className="text-xs text-th-text-secondary truncate">{result.subtitle}</p>
         )}
       </div>
-      <span className="text-xs text-gray-500 capitalize bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+      <span className="text-xs text-th-text-secondary capitalize bg-surface-tertiary px-2 py-0.5 rounded">
         {result.entity_type}
       </span>
       {isSelected && <ArrowRight className="w-4 h-4 text-blue-600" />}
@@ -183,18 +183,18 @@ function ActionItem({ action, isSelected, onSelect }: ActionItemProps) {
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
         isSelected
           ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-600'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-l-2 border-transparent'
+          : 'hover:bg-surface-secondary border-l-2 border-transparent'
       }`}
     >
-      <Icon className="w-5 h-5 flex-shrink-0 text-gray-500" />
+      <Icon className="w-5 h-5 flex-shrink-0 text-th-text-secondary" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{action.name}</p>
+        <p className="text-sm font-medium text-th-text-primary">{action.name}</p>
         {action.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{action.description}</p>
+          <p className="text-xs text-th-text-secondary truncate">{action.description}</p>
         )}
       </div>
       {action.shortcut && (
-        <kbd className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded font-mono">
+        <kbd className="text-xs text-th-text-secondary bg-surface-tertiary px-2 py-0.5 rounded font-mono">
           {action.shortcut}
         </kbd>
       )}
@@ -386,13 +386,13 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
 
       {/* Modal */}
       <div className="fixed inset-x-4 top-[15%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl z-50">
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-surface-primary rounded-xl shadow-2xl border border-th-border overflow-hidden">
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-th-border">
             {mode === 'search' ? (
-              <Search className="w-5 h-5 text-gray-400" />
+              <Search className="w-5 h-5 text-th-text-tertiary" />
             ) : (
-              <Command className="w-5 h-5 text-gray-400" />
+              <Command className="w-5 h-5 text-th-text-tertiary" />
             )}
             <input
               ref={inputRef}
@@ -404,12 +404,12 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                   ? 'Search leads, accounts, contacts, deals...'
                   : 'Type a command or action...'
               }
-              className="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+              className="flex-1 bg-transparent border-none outline-none text-th-text-primary placeholder:text-th-text-tertiary"
             />
             {loading && <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />}
             <button
               onClick={close}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors"
+              className="p-1 text-th-text-tertiary hover:text-th-text-secondary rounded transition-colors"
               title="Close (Esc)"
               aria-label="Close command palette"
             >
@@ -418,13 +418,13 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
           </div>
 
           {/* Mode Tabs */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <div className="flex border-b border-th-border">
             <button
               onClick={() => setMode('search')}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 mode === 'search'
                   ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                  : 'text-th-text-secondary hover:text-th-text-primary'
               }`}
             >
               <Search className="w-4 h-4 inline mr-2" />
@@ -435,7 +435,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 mode === 'commands'
                   ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                  : 'text-th-text-secondary hover:text-th-text-primary'
               }`}
             >
               <Command className="w-4 h-4 inline mr-2" />
@@ -450,7 +450,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                 {/* Search Results */}
                 {query.length >= 2 && results.length > 0 && (
                   <div>
-                    <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                    <div className="px-4 py-2 text-xs font-medium text-th-text-secondary uppercase tracking-wider bg-surface-secondary">
                       Results
                       {durationMs && (
                         <span className="ml-2 font-normal">({durationMs}ms)</span>
@@ -471,9 +471,9 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                 {/* No Results */}
                 {query.length >= 2 && !loading && results.length === 0 && (
                   <div className="px-4 py-8 text-center">
-                    <Search className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 dark:text-gray-400">No results found for &quot;{query}&quot;</p>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <Search className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
+                    <p className="text-th-text-secondary">No results found for &quot;{query}&quot;</p>
+                    <p className="text-sm text-th-text-tertiary mt-1">
                       Try a different search term
                     </p>
                   </div>
@@ -482,9 +482,9 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                 {/* Empty State */}
                 {query.length < 2 && (
                   <div className="px-4 py-8 text-center">
-                    <Search className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 dark:text-gray-400">Start typing to search</p>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <Search className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
+                    <p className="text-th-text-secondary">Start typing to search</p>
+                    <p className="text-sm text-th-text-tertiary mt-1">
                       Search across leads, accounts, contacts, deals, and more
                     </p>
                   </div>
@@ -512,7 +512,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
 
                       return (
                         <div key={category}>
-                          <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                          <div className="px-4 py-2 text-xs font-medium text-th-text-secondary uppercase tracking-wider bg-surface-secondary">
                             {categoryLabels[category] || category}
                           </div>
                           {categoryActions.map((action) => {
@@ -536,8 +536,8 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                   </div>
                 ) : (
                   <div className="px-4 py-8 text-center">
-                    <Command className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 dark:text-gray-400">No commands found</p>
+                    <Command className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
+                    <p className="text-th-text-secondary">No commands found</p>
                   </div>
                 )}
               </>
@@ -545,29 +545,29 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-between text-xs text-gray-500">
+          <div className="px-4 py-2 border-t border-th-border bg-surface-secondary flex items-center justify-between text-xs text-th-text-secondary">
             <div className="flex items-center gap-4">
               <span>
-                <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 font-mono">
+                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">
                   ↑↓
                 </kbd>{' '}
                 Navigate
               </span>
               <span>
-                <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 font-mono">
+                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">
                   ↵
                 </kbd>{' '}
                 Select
               </span>
               <span>
-                <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 font-mono">
+                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">
                   Tab
                 </kbd>{' '}
                 Switch mode
               </span>
             </div>
             <span>
-              <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 font-mono">
+              <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">
                 Esc
               </kbd>{' '}
               Close

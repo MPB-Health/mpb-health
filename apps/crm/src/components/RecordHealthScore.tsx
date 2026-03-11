@@ -121,24 +121,24 @@ function HealthScoreCompact({ healthScore }: { healthScore: HealthScoreResult })
             {healthScore.score}
           </div>
           <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100">
+            <p className="font-medium text-th-text-primary">
               Health Score
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-th-text-secondary">
               Grade: {healthScore.grade}
             </p>
           </div>
         </div>
         {expanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
+          <ChevronUp className="w-5 h-5 text-th-text-tertiary" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
+          <ChevronDown className="w-5 h-5 text-th-text-tertiary" />
         )}
       </button>
 
       {/* Expanded Details */}
       {expanded && (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-3 space-y-3">
+        <div className="border-t border-th-border p-3 space-y-3">
           {/* Factors */}
           <div className="space-y-2">
             {healthScore.factors.map((factor) => (
@@ -148,8 +148,8 @@ function HealthScoreCompact({ healthScore }: { healthScore: HealthScoreResult })
 
           {/* Suggestions */}
           {healthScore.suggestions.length > 0 && (
-            <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="pt-3 border-t border-th-border">
+              <div className="flex items-center gap-2 text-sm font-medium text-th-text-primary mb-2">
                 <Lightbulb className="w-4 h-4 text-yellow-500" />
                 Suggestions
               </div>
@@ -157,7 +157,7 @@ function HealthScoreCompact({ healthScore }: { healthScore: HealthScoreResult })
                 {healthScore.suggestions.map((suggestion, i) => (
                   <li
                     key={i}
-                    className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-2"
+                    className="text-sm text-th-text-secondary flex items-start gap-2"
                   >
                     <span className="text-yellow-500 mt-0.5">•</span>
                     {suggestion}
@@ -193,7 +193,7 @@ function HealthScoreFull({ healthScore, showSuggestions = true }: { healthScore:
               stroke="currentColor"
               strokeWidth="8"
               fill="none"
-              className="text-gray-200 dark:text-gray-700"
+              className="text-th-border"
             />
             <circle
               cx="40"
@@ -217,14 +217,14 @@ function HealthScoreFull({ healthScore, showSuggestions = true }: { healthScore:
         {/* Grade & Summary */}
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <span className="text-2xl font-bold text-th-text-primary">
               Grade: {healthScore.grade}
             </span>
             <span className={cn('px-2 py-0.5 rounded text-sm font-medium', colors.bg, colors.text)}>
               {getGradeLabel(healthScore.grade)}
             </span>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-th-text-secondary mt-1">
             {getGradeDescription(healthScore.score)}
           </p>
         </div>
@@ -232,7 +232,7 @@ function HealthScoreFull({ healthScore, showSuggestions = true }: { healthScore:
 
       {/* Factors Breakdown */}
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+        <h4 className="text-sm font-medium text-th-text-primary flex items-center gap-2">
           <Info className="w-4 h-4" />
           Score Breakdown
         </h4>
@@ -289,21 +289,21 @@ function FactorRow({ factor, showWeight = false }: { factor: HealthScoreFactor; 
       <StatusIcon className={cn('w-4 h-4 flex-shrink-0', statusColors[factor.status])} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-700 dark:text-gray-300 truncate">
+          <span className="text-th-text-primary truncate">
             {factor.label}
             {showWeight && (
-              <span className="text-gray-400 ml-1">({factor.weight}%)</span>
+              <span className="text-th-text-tertiary ml-1">({factor.weight}%)</span>
             )}
           </span>
-          <span className="text-gray-600 dark:text-gray-400 ml-2">
+          <span className="text-th-text-secondary ml-2">
             {factor.score}%
           </span>
         </div>
         {factor.detail && (
-          <p className="text-xs text-gray-500 truncate">{factor.detail}</p>
+          <p className="text-xs text-th-text-secondary truncate">{factor.detail}</p>
         )}
         {/* Progress bar */}
-        <div className="mt-1 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="mt-1 h-1 bg-surface-tertiary rounded-full overflow-hidden">
           <div
             className={cn(
               'h-full rounded-full transition-all',

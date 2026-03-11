@@ -34,7 +34,7 @@ import {
   Stethoscope,
   ClipboardList,
 } from 'lucide-react';
-import { GradientHeader, MetricCard } from '@mpbhealth/ui';
+import { Button, GradientHeader, MetricCard, SkeletonLine, SkeletonAvatar } from '@mpbhealth/ui';
 import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm } from '@mpbhealth/advisor-core';
 import { supabase, supabaseUrl } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -417,14 +417,16 @@ export default function Dashboard() {
                   )}
                 </div>
                 {announcement.is_dismissible && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleDismissAnnouncement(announcement.id)}
-                    className={`flex-shrink-0 p-1 rounded-lg ${config.textColor} opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-all`}
+                    className={`flex-shrink-0 min-h-[44px] min-w-[44px] ${config.textColor} opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10`}
                     aria-label="Dismiss announcement"
                   >
                     <X className="w-4 h-4" />
-                  </button>
+                  </Button>
                 )}
               </div>
             );
@@ -497,6 +499,7 @@ export default function Dashboard() {
             })()}
             {unreadBulletinCount > 0 && (
               <button
+                type="button"
                 onClick={() => navigate('/bulletins')}
                 className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-full text-xs text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
               >
@@ -515,7 +518,7 @@ export default function Dashboard() {
       {/* Action cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Grow Your Tree - Refer Advisors */}
-        <button onClick={() => setAffiliateModalOpen(true)} className="text-left h-full w-full group">
+        <button type="button" onClick={() => setAffiliateModalOpen(true)} className="text-left h-full w-full group">
           <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-200 h-full p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
@@ -538,7 +541,7 @@ export default function Dashboard() {
         </button>
 
         {/* Notifications */}
-        <button onClick={() => navigate('/bulletins')} className="text-left h-full w-full group">
+        <button type="button" onClick={() => navigate('/bulletins')} className="text-left h-full w-full group">
           <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-200 h-full p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
@@ -567,7 +570,7 @@ export default function Dashboard() {
         </button>
 
         {/* Training */}
-        <button onClick={() => navigate('/training')} className="text-left h-full w-full group">
+        <button type="button" onClick={() => navigate('/training')} className="text-left h-full w-full group">
           <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-200 h-full p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
@@ -745,25 +748,28 @@ export default function Dashboard() {
             <ClipboardList className="w-5 h-5 text-th-text-tertiary" />
             <h2 className="font-semibold text-th-text-primary">Membership Forms</h2>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate('/forms/member')}
-            className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
+            className="text-th-accent-600 hover:text-th-accent-700"
           >
             View All
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
         <div className="divide-y divide-th-border-subtle">
           {memberFormsLoading ? (
             <div className="p-5 space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 animate-pulse">
-                  <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
-                  <div className="flex-1 space-y-1">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                <div key={i} className="flex items-center gap-4">
+                  <SkeletonAvatar size="w-8 h-8" className="rounded-lg" />
+                  <div className="flex-1 space-y-1.5">
+                    <SkeletonLine width="w-1/3" />
+                    <SkeletonLine width="w-1/2" className="h-3" />
                   </div>
-                  <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <SkeletonLine width="w-24" className="h-8 rounded-lg" />
                 </div>
               ))}
             </div>
@@ -785,22 +791,24 @@ export default function Dashboard() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleCopyFormLink(form.slug)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                      copiedFormSlug === form.slug
-                        ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                        : 'text-th-text-secondary border border-th-border hover:bg-surface-tertiary'
-                    }`}
                     title="Copy shareable link"
+                    className={copiedFormSlug === form.slug ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200' : ''}
                   >
                     {copiedFormSlug === form.slug ? (
                       <><CheckCheck className="w-3.5 h-3.5" /> Copied</>
                     ) : (
                       <><Copy className="w-3.5 h-3.5" /> Copy Link</>
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       const url = `${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`;
                       if (navigator.share) {
@@ -811,12 +819,11 @@ export default function Dashboard() {
                         setTimeout(() => setCopiedFormSlug(null), 2000);
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-th-text-secondary border border-th-border hover:bg-surface-tertiary transition-colors"
                     title="Share form"
                   >
                     <Share2 className="w-3.5 h-3.5" />
                     Share
-                  </button>
+                  </Button>
                   <a
                     href={`${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`}
                     target="_blank"
@@ -833,12 +840,15 @@ export default function Dashboard() {
             <div className="p-8 text-center">
               <FileTextIcon className="w-10 h-10 mx-auto mb-3 text-th-text-tertiary" />
               <p className="text-sm text-th-text-tertiary">No membership forms available</p>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => navigate('/forms/member')}
-                className="mt-2 text-sm font-medium text-th-accent-600 hover:text-th-accent-700"
+                className="mt-2 text-th-accent-600 hover:text-th-accent-700"
               >
                 Browse all forms &rarr;
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -856,12 +866,15 @@ export default function Dashboard() {
               <span className="text-xs text-th-text-tertiary font-medium">
                 {activeVideoIndex + 1} / {ADVISOR_VIDEOS.length}
               </span>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => navigate('/videos')}
-                className="text-xs font-medium text-th-accent-600 hover:text-th-accent-700 transition-colors"
+                className="text-xs text-th-accent-600 hover:text-th-accent-700"
               >
                 View Library &rarr;
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -879,8 +892,10 @@ export default function Dashboard() {
                 />
               ) : (
                 <button
+                  type="button"
                   onClick={() => setVideoPlaying(true)}
                   className="absolute inset-0 w-full h-full group cursor-pointer"
+                  aria-label="Play video"
                 >
                   <img
                     src={ADVISOR_VIDEOS[activeVideoIndex].thumbnail}
@@ -903,26 +918,32 @@ export default function Dashboard() {
             </div>
 
             {/* Navigation Arrows */}
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               aria-label="Previous video"
               onClick={() => {
                 setActiveVideoIndex((prev) => (prev === 0 ? ADVISOR_VIDEOS.length - 1 : prev - 1));
                 setVideoPlaying(false);
               }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors z-10"
+              className="absolute left-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] rounded-full bg-black/50 hover:bg-black/70 text-white z-10"
             >
               <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               aria-label="Next video"
               onClick={() => {
                 setActiveVideoIndex((prev) => (prev === ADVISOR_VIDEOS.length - 1 ? 0 : prev + 1));
                 setVideoPlaying(false);
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors z-10"
+              className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] rounded-full bg-black/50 hover:bg-black/70 text-white z-10"
             >
               <ChevronRight className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
 
           {/* Thumbnail Strip */}
@@ -936,11 +957,13 @@ export default function Dashboard() {
                 const isActive = index === activeVideoIndex;
                 return (
                   <button
+                    type="button"
                     key={video.id}
                     onClick={() => {
                       setActiveVideoIndex(index);
                       setVideoPlaying(false);
                     }}
+                    aria-label={`Play ${video.title}`}
                     className={`relative flex-shrink-0 w-52 rounded-xl overflow-hidden transition-all duration-200 ${
                       isActive
                         ? 'ring-2 ring-th-accent-500 shadow-md scale-[1.02]'
@@ -976,11 +999,11 @@ export default function Dashboard() {
             {meetingsLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4 p-3 rounded-lg animate-pulse">
-                    <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                  <div key={i} className="flex items-center space-x-4 p-3 rounded-lg">
+                    <SkeletonAvatar size="w-12 h-12" className="rounded-lg" />
                     <div className="flex-1 min-w-0 space-y-2">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                      <SkeletonLine width="w-2/3" />
+                      <SkeletonLine width="w-1/2" className="h-3" />
                     </div>
                   </div>
                 ))}
@@ -1080,18 +1103,22 @@ export default function Dashboard() {
       <div className="bg-surface-primary rounded-xl border border-th-border p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-th-text-primary">Resource Center</h2>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate('/quick-links')}
-            className="text-sm font-medium text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
+            className="text-th-accent-600 hover:text-th-accent-700"
           >
             View All
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayQuickLinks.map((link) =>
               link.popup ? (
                 <button
+                  type="button"
                   key={link.url}
                   onClick={() => setQuickLinkPopup(link)}
                   title={link.description}
@@ -1153,14 +1180,16 @@ export default function Dashboard() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-surface-primary rounded-2xl w-full max-w-lg mx-4 shadow-xl overflow-hidden">
             <div className="relative bg-gradient-to-br from-[#0A4E8E] to-[#0E2D41] px-6 py-8 text-white">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setAffiliateModalOpen(false)}
-                className="absolute top-4 right-4 p-1 text-white/70 hover:text-white rounded-lg hover:bg-white/10"
+                className="absolute top-4 right-4 min-h-[44px] min-w-[44px] text-white/70 hover:text-white hover:bg-white/10"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 rounded-xl bg-white/15">
                   <TreePine className="w-6 h-6" />
@@ -1190,17 +1219,17 @@ export default function Dashboard() {
             </div>
             <div className="px-6 pb-6 flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3">
-                <button
+                <Button
                   type="button"
+                  variant="primary"
                   onClick={() => {
                     setAffiliateModalOpen(false);
                     setScheduleCallOpen(true);
                   }}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
                 >
                   <Calendar className="w-4 h-4" />
                   Schedule a Call
-                </button>
+                </Button>
                 <a
                   href={`tel:${affiliatePhone.replace(/\D/g, '')}`}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-th-text-primary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors"
@@ -1209,17 +1238,18 @@ export default function Dashboard() {
                   Call Us
                 </a>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => {
                   setAffiliateModalOpen(false);
                   setApplicationFormOpen(true);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-th-accent-700 bg-th-accent-50 border border-th-accent-200 rounded-lg hover:bg-th-accent-100 transition-colors"
+                className="w-full"
               >
                 <FileTextIcon className="w-4 h-4" />
                 Application Form
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1238,15 +1268,16 @@ export default function Dashboard() {
                 <h2 className="text-lg font-semibold text-th-text-primary">
                   Application Form
                 </h2>
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setApplicationFormOpen(false)}
-                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                  className="min-h-[44px] min-w-[44px]"
+                  aria-label="Close"
                 >
-                  <span className="sr-only">Close</span>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                  <X className="w-5 h-5" />
+                </Button>
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">
                 <iframe
@@ -1274,15 +1305,16 @@ export default function Dashboard() {
                 <h2 className="text-lg font-semibold text-th-text-primary">
                   Schedule a Call
                 </h2>
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setScheduleCallOpen(false)}
-                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                  className="min-h-[44px] min-w-[44px]"
+                  aria-label="Close"
                 >
-                  <span className="sr-only">Close</span>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                  <X className="w-5 h-5" />
+                </Button>
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">
                 <iframe
@@ -1309,13 +1341,16 @@ export default function Dashboard() {
                 <h2 className="text-lg font-semibold text-th-text-primary">
                   {quickLinkPopup.label}
                 </h2>
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setQuickLinkPopup(null)}
-                  className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-tertiary"
+                  className="min-h-[44px] min-w-[44px]"
+                  aria-label="Close"
                 >
-                  <span className="sr-only">Close</span>
                   <X className="w-5 h-5" />
-                </button>
+                </Button>
               </div>
               <div className="flex-1 overflow-hidden flex flex-col">
                 <iframe
@@ -1338,19 +1373,21 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-th-text-primary">
                 Share {shareModal.label}
               </h2>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setShareModal(null);
                   setShareForm({ name: '', email: '' });
                   setShareError(null);
                   setShareSuccess(false);
                 }}
-                className="p-1 text-th-text-muted hover:text-th-text-primary rounded"
+                className="min-h-[44px] min-w-[44px]"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             {shareSuccess ? (
@@ -1360,17 +1397,18 @@ export default function Dashboard() {
                 <p className="text-sm text-th-text-secondary mt-1">
                   Your advisor page link has been shared with {shareForm.name}.
                 </p>
-                <button
+                <Button
                   type="button"
+                  variant="primary"
                   onClick={() => {
                     setShareModal(null);
                     setShareForm({ name: '', email: '' });
                     setShareSuccess(false);
                   }}
-                  className="mt-4 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700"
+                  className="mt-4"
                 >
                   Done
-                </button>
+                </Button>
               </div>
             ) : (
               <>
@@ -1409,20 +1447,21 @@ export default function Dashboard() {
                   )}
                 </div>
                 <div className="flex justify-end gap-3 p-4 border-t border-th-border">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => {
                       setShareModal(null);
                       setShareForm({ name: '', email: '' });
                       setShareError(null);
                     }}
-                    className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary"
                     disabled={shareSending}
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="primary"
                     disabled={shareSending || !shareForm.name.trim() || !shareForm.email.trim()}
                     onClick={async () => {
                       setShareError(null);
@@ -1446,7 +1485,6 @@ export default function Dashboard() {
                         setShareSending(false);
                       }
                     }}
-                    className="px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {shareSending && (
                       <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -1455,7 +1493,7 @@ export default function Dashboard() {
                       </svg>
                     )}
                     {shareSending ? 'Sending...' : 'Send'}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}

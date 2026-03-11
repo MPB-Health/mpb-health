@@ -30,7 +30,7 @@ export default function PipelineWidget({ config, size }: BaseWidgetProps) {
 
   if (displayStages.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-th-text-secondary">
         <p>No pipeline stages configured</p>
       </div>
     );
@@ -56,12 +56,12 @@ export default function PipelineWidget({ config, size }: BaseWidgetProps) {
                   </span>
                 </div>
                 {showValues && (
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-th-text-secondary">
                     {count}
                   </span>
                 )}
               </div>
-              <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-surface-tertiary rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
@@ -78,7 +78,7 @@ export default function PipelineWidget({ config, size }: BaseWidgetProps) {
       {pipelineStages.length > maxStages && (
         <Link
           to="/pipeline"
-          className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+          className="flex items-center justify-center gap-1 mt-4 pt-4 border-t border-th-border text-sm text-blue-600 hover:text-blue-700 transition-colors"
         >
           View all stages
           <ArrowRight className="h-4 w-4" />

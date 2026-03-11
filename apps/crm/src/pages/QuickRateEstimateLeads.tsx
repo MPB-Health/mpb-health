@@ -163,7 +163,7 @@ export default function QuickRateEstimateLeads() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white rounded-xl border border-th-border mb-6">
+      <div className="bg-surface-primary rounded-xl border border-th-border mb-6">
         <div className="p-4 flex flex-wrap items-center gap-4">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px] max-w-md">
@@ -201,7 +201,7 @@ export default function QuickRateEstimateLeads() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-th-border overflow-hidden">
+      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -310,7 +310,7 @@ export default function QuickRateEstimateLeads() {
                           setSelectedSubmission(sub);
                         }}
                         aria-label={`View details for ${sub.first_name} ${sub.last_name}`}
-                        className="p-1 rounded hover:bg-gray-200"
+                        className="p-1 rounded hover:bg-surface-tertiary"
                       >
                         <Eye className="w-4 h-4 text-th-text-tertiary" />
                       </button>
@@ -360,7 +360,7 @@ export default function QuickRateEstimateLeads() {
             className="absolute inset-0 bg-black/30"
             onClick={() => setSelectedSubmission(null)}
           />
-          <div className="absolute right-0 top-0 h-full w-full max-w-lg bg-white shadow-xl overflow-y-auto">
+          <div className="absolute right-0 top-0 h-full w-full max-w-lg bg-surface-primary shadow-xl overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-th-text-primary">

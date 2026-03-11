@@ -13,7 +13,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useOnboarding, type OnboardingStep } from '../../hooks/useOnboarding';
-import { cn } from '@mpbhealth/ui';
+import { Button, cn } from '@mpbhealth/ui';
 
 const STEP_ICONS: Record<string, React.ElementType> = {
   sparkles: Sparkles,
@@ -87,12 +87,16 @@ export function OnboardingWizard() {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden">
         {/* Close button */}
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
           onClick={skipOnboarding}
-          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors z-10"
+          className="absolute top-4 right-4 min-h-[44px] min-w-[44px] z-10"
+          aria-label="Close"
         >
           <X className="w-5 h-5" />
-        </button>
+        </Button>
 
         {/* Progress bar */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-neutral-100 dark:bg-neutral-800">
@@ -186,13 +190,15 @@ export function OnboardingWizard() {
                   description="Call, email, or snooze with one click"
                 />
               </div>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => handleNavigateToFeature('/power-list')}
-                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg font-medium transition-colors"
+                className="mt-4 w-full text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
               >
                 <span>View Power List</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           )}
 
@@ -212,13 +218,15 @@ export function OnboardingWizard() {
                   description="Automated multi-step outreach"
                 />
               </div>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => handleNavigateToFeature('/inbox')}
-                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg font-medium transition-colors"
+                className="mt-4 w-full text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
               >
                 <span>View Inbox</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           )}
 
@@ -238,13 +246,15 @@ export function OnboardingWizard() {
                   description="Start with pre-built automation recipes"
                 />
               </div>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => handleNavigateToFeature('/automations')}
-                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg font-medium transition-colors"
+                className="mt-4 w-full text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
               >
                 <span>View Automations</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           )}
 
@@ -264,13 +274,15 @@ export function OnboardingWizard() {
                   description="What types of clients you serve"
                 />
               </div>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => handleNavigateToFeature('/profile')}
-                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg font-medium transition-colors"
+                className="mt-4 w-full text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
               >
                 <span>Edit Profile</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           )}
 
@@ -301,37 +313,36 @@ export function OnboardingWizard() {
           <div className="flex items-center justify-between">
             <div>
               {!isFirstStep && !isLastStep && (
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={prevStep}
-                  className="flex items-center gap-2 px-4 py-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg font-medium transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Back</span>
-                </button>
+                </Button>
               )}
             </div>
 
             <div className="flex items-center gap-3">
               {!isLastStep && (
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={skipOnboarding}
-                  className="px-4 py-2.5 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 font-medium transition-colors"
                 >
                   Skip
-                </button>
+                </Button>
               )}
-              <button
+              <Button
+                type="button"
+                variant="primary"
                 onClick={handlePrimaryAction}
-                className={cn(
-                  'flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-colors',
-                  isLastStep
-                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                    : 'bg-primary-600 hover:bg-primary-700 text-white'
-                )}
+                className={isLastStep ? 'bg-green-600 hover:bg-green-700' : ''}
               >
                 <span>{isLastStep ? 'Get Started' : 'Continue'}</span>
                 <ChevronRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>

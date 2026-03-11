@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useIntegrations } from '../../hooks/useSettings';
 import type { IntegrationConfig, CreateIntegrationInput, IntegrationType } from '@mpbhealth/champion-core';
+import { Button } from '@mpbhealth/ui';
 
 // Icon mapping for providers
 const PROVIDER_ICONS: Record<string, string> = {
@@ -216,29 +217,21 @@ export default function Integrations() {
 
         {/* Tabs */}
         <div className="flex gap-4 mb-6">
-          <button
+          <Button
             onClick={() => setActiveTab('connected')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'connected'
-                ? 'bg-th-accent-600 text-white'
-                : 'bg-surface-secondary text-th-text-secondary hover:bg-surface-tertiary'
-            }`}
+            variant={activeTab === 'connected' ? 'primary' : 'secondary'}
           >
             <Plug className="w-4 h-4" />
             Connected ({integrations.length})
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={() => setActiveTab('available')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'available'
-                ? 'bg-th-accent-600 text-white'
-                : 'bg-surface-secondary text-th-text-secondary hover:bg-surface-tertiary'
-            }`}
+            variant={activeTab === 'available' ? 'primary' : 'secondary'}
           >
             <Zap className="w-4 h-4" />
             Available
-          </button>
+          </Button>
         </div>
 
         {/* Connected Integrations Tab */}
@@ -309,52 +302,56 @@ export default function Integrations() {
                 {selectedIntegration?.id === integration.id && (
                   <div className="mt-4 pt-4 border-t border-th-border-primary flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleToggle(integration);
                         }}
                         disabled={actionLoading === integration.id}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                          integration.is_enabled
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                        variant="ghost"
+                        size="sm"
+                        className={integration.is_enabled ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
                       >
                         {integration.is_enabled ? 'Enabled' : 'Disabled'}
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenSettings(integration);
                         }}
-                        className="p-2 text-th-text-muted hover:text-th-text-primary hover:bg-surface-tertiary rounded-lg transition-colors"
+                        variant="ghost"
+                        size="sm"
+                        className="min-h-[44px] min-w-[44px]"
                         title="Settings"
                       >
                         <Settings className="w-4 h-4" />
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSync(integration);
                         }}
                         disabled={syncingId === integration.id}
-                        className="p-2 text-th-text-muted hover:text-th-text-primary hover:bg-surface-tertiary rounded-lg transition-colors disabled:opacity-50"
+                        variant="ghost"
+                        size="sm"
+                        className="min-h-[44px] min-w-[44px]"
                         title="Sync now"
                       >
                         <RefreshCw className={`w-4 h-4 ${syncingId === integration.id ? 'animate-spin' : ''}`} />
-                      </button>
+                      </Button>
                     </div>
 
-                    <button
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete(integration.id);
                       }}
                       disabled={actionLoading === integration.id}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-[44px] min-w-[44px] text-red-500 hover:bg-red-50"
                       title="Remove integration"
                     >
                       {actionLoading === integration.id ? (
@@ -362,7 +359,7 @@ export default function Integrations() {
                       ) : (
                         <Trash2 className="w-4 h-4" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -372,12 +369,13 @@ export default function Integrations() {
               <div className="col-span-2 bg-surface-primary rounded-xl border border-th-border-primary p-12 text-center">
                 <Plug className="w-12 h-12 text-th-text-muted mx-auto mb-4" />
                 <p className="text-th-text-secondary">No integrations connected</p>
-                <button
+                <Button
                   onClick={() => setActiveTab('available')}
-                  className="mt-4 text-th-accent-600 hover:text-th-accent-700 font-medium"
+                  variant="ghost"
+                  className="mt-4 text-th-accent-600 hover:text-th-accent-700"
                 >
                   Browse available integrations
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -437,9 +435,9 @@ export default function Integrations() {
                         </div>
 
                         {!isConfigured && (
-                          <button className="mt-4 w-full py-2 text-sm font-medium text-th-accent-600 hover:bg-th-accent-50 rounded-lg transition-colors">
+                          <Button variant="ghost" className="mt-4 w-full text-th-accent-600 hover:bg-th-accent-50">
                             Add Integration
-                          </button>
+                          </Button>
                         )}
                       </div>
                     );
@@ -462,16 +460,20 @@ export default function Integrations() {
                   Add {availableIntegrations.find((i) => i.provider === selectedProvider)?.name}
                 </h2>
               </div>
-              <button
+              <Button
+                type="button"
                 onClick={() => {
                   setShowAddModal(false);
                   setSelectedProvider(null);
                   setAddForm({});
                 }}
-                className="p-1 text-th-text-muted hover:text-th-text-primary"
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px]"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 space-y-4">
@@ -525,20 +527,22 @@ export default function Integrations() {
             </div>
 
             <div className="flex justify-end gap-3 p-4 border-t border-th-border-primary">
-              <button
+              <Button
+                type="button"
                 onClick={() => {
                   setShowAddModal(false);
                   setSelectedProvider(null);
                   setAddForm({});
                 }}
-                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary transition-colors"
+                variant="ghost"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
                 onClick={handleAddIntegration}
                 disabled={actionLoading === 'add'}
-                className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
+                variant="primary"
               >
                 {actionLoading === 'add' ? (
                   <>
@@ -551,7 +555,7 @@ export default function Integrations() {
                     Add Integration
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -568,16 +572,20 @@ export default function Integrations() {
                   {settingsIntegration.name} Settings
                 </h2>
               </div>
-              <button
+              <Button
+                type="button"
                 onClick={() => {
                   setShowSettingsModal(false);
                   setSettingsIntegration(null);
                   setSettingsForm({});
                 }}
-                className="p-1 text-th-text-muted hover:text-th-text-primary"
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px]"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 space-y-4">
@@ -610,7 +618,10 @@ export default function Integrations() {
               <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
                 <span className="text-sm text-th-text-secondary">Enable Integration</span>
                 <button
+                  type="button"
                   onClick={() => setSettingsForm({ ...settingsForm, enabled: !settingsForm.enabled })}
+                  aria-label={settingsForm.enabled !== false ? 'Disable integration' : 'Enable integration'}
+                  aria-pressed={settingsForm.enabled !== false ? 'true' : 'false'}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     settingsForm.enabled !== false ? 'bg-th-accent-600' : 'bg-gray-300'
                   }`}
@@ -625,20 +636,22 @@ export default function Integrations() {
             </div>
 
             <div className="flex justify-end gap-3 p-4 border-t border-th-border-primary">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => {
                   setShowSettingsModal(false);
                   setSettingsIntegration(null);
                   setSettingsForm({});
                 }}
-                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
                 onClick={handleSaveSettings}
                 disabled={actionLoading === settingsIntegration.id}
-                className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
               >
                 {actionLoading === settingsIntegration.id ? (
                   <>
@@ -651,7 +664,7 @@ export default function Integrations() {
                     Save Settings
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

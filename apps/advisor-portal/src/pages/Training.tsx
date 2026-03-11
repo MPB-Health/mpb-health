@@ -26,6 +26,7 @@ import {
   Trophy,
   XCircle,
 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { trainingService } from '@mpbhealth/advisor-core';
 import { generateCertificate, type CertificateOptions } from '../utils/generateCertificate';
@@ -1107,26 +1108,30 @@ function QuizViewer({
 
             {passed && (
               <div className="mt-4 flex flex-wrap gap-3">
-                <button
+                <Button
+                  type="button"
+                  variant="primary"
                   onClick={handleDownloadCertificate}
                   disabled={generating}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  className="bg-green-600 hover:bg-green-700"
                 >
                   <Download className="w-4 h-4" />
                   {generating ? 'Generating...' : 'Download Certificate'}
-                </button>
+                </Button>
               </div>
             )}
 
             {!passed && (
               <div className="mt-4">
-                <button
+                <Button
+                  type="button"
+                  variant="primary"
                   onClick={handleRetry}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="bg-red-600 hover:bg-red-700"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Retake Quiz
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -1171,6 +1176,7 @@ function QuizViewer({
 
                   return (
                     <button
+                      type="button"
                       key={oi}
                       onClick={() => handleSelect(q.id, oi, isMulti)}
                       disabled={submitted}
@@ -1216,14 +1222,16 @@ function QuizViewer({
         {/* Submit Button */}
         {!submitted && (
           <div className="flex justify-center pt-4">
-            <button
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
               onClick={handleSubmit}
               disabled={!allAnswered}
-              className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl text-base font-semibold transition-colors shadow-lg shadow-blue-600/20"
             >
               <CheckCircle2 className="w-5 h-5" />
               Submit Quiz ({answeredCount}/{questions.length} answered)
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -1544,43 +1552,38 @@ function LessonViewer({
       {/* Mark as Complete + Navigation */}
       <div className="px-8 pb-8">
         <div className="flex items-center justify-between border-t border-th-border-subtle pt-6">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={onPrev}
             disabled={!hasPrev}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              hasPrev
-                ? 'text-th-text-secondary hover:bg-surface-tertiary'
-                : 'text-th-text-tertiary opacity-50 cursor-not-allowed'
-            }`}
           >
             <ChevronLeft className="w-4 h-4" />
             Previous
-          </button>
+          </Button>
 
-          <button
+          <Button
+            type="button"
+            variant={completed ? 'secondary' : 'primary'}
             onClick={onMarkComplete}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              completed
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+            className={completed ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : ''}
           >
             <CheckCircle2 className="w-4 h-4" />
             {completed ? 'Completed' : 'Mark as Complete'}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={onNext}
             disabled={!hasNext}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              hasNext
-                ? 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10'
-                : 'text-th-text-tertiary opacity-50 cursor-not-allowed'
-            }`}
+            className={hasNext ? 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10' : ''}
           >
             Next
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -1906,12 +1909,16 @@ export default function Training({ section }: TrainingProps) {
       {/* Top Bar */}
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white flex-shrink-0 rounded-t-xl">
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate(section === 'secure-hsa' || section === 'care-plus' ? '/training/mpb-cards' : '/training')}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            className="min-h-[44px] min-w-[44px] text-white hover:bg-white/10"
+            aria-label="Back"
           >
             <ChevronLeft className="w-5 h-5" />
-          </button>
+          </Button>
           <span className="font-semibold text-sm md:text-base">{config.title}</span>
         </div>
         <div className="flex items-center gap-4">
@@ -1919,17 +1926,20 @@ export default function Training({ section }: TrainingProps) {
             Your Progress: <strong>{completedCount}</strong> of {totalLessons} ({progressPercent}%)
           </span>
           {activeLesson && (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleMarkComplete}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={
                 activeLessonId && completedLessons.has(activeLessonId)
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-green-500 text-white hover:bg-green-600'
                   : 'bg-white/15 hover:bg-white/25 text-white border border-white/30'
-              }`}
+              }
             >
               <CheckCircle2 className="w-4 h-4" />
               Mark as Complete
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -1956,6 +1966,7 @@ export default function Training({ section }: TrainingProps) {
                 return (
                   <div key={topic.id} className="border-b border-th-border-subtle last:border-b-0">
                     <button
+                      type="button"
                       onClick={() => toggleTopic(topic.id)}
                       className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-tertiary transition-colors text-left"
                     >
@@ -1983,6 +1994,7 @@ export default function Training({ section }: TrainingProps) {
 
                           return (
                             <button
+                              type="button"
                               key={lesson.id}
                               onClick={() => navigateLesson(lesson.id)}
                               className={`w-full flex items-center gap-3 px-4 py-2.5 pl-6 text-left transition-colors ${
@@ -2025,8 +2037,10 @@ export default function Training({ section }: TrainingProps) {
 
         {/* Toggle sidebar button (mobile) */}
         <button
+          type="button"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-surface-primary border border-th-border rounded-r-lg px-1 py-3 md:hidden shadow-sm"
+          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
         >
           {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
@@ -2083,13 +2097,15 @@ export default function Training({ section }: TrainingProps) {
                 </div>
                 <span className="text-xs text-th-text-tertiary">{progressPercent}%</span>
               </div>
-              <button
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
                 onClick={() => navigateLesson(flat[0].id)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
                 <Play className="w-4 h-4" />
                 Start Learning
-              </button>
+              </Button>
             </div>
           </div>
         )}

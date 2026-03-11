@@ -4,8 +4,9 @@
 // ============================================================================
 
 import { useEffect } from 'react';
-import { Loader2, AlertCircle, LayoutDashboard } from 'lucide-react';
+import { AlertCircle, LayoutDashboard } from 'lucide-react';
 import { createClientLogger } from '@mpbhealth/utils';
+import { SkeletonMetric, SkeletonCard } from '@mpbhealth/ui';
 import { DashboardProvider, useDashboardStore } from '../../contexts/DashboardContext';
 import { DashboardToolbar } from './DashboardToolbar';
 import { WidgetGrid } from './WidgetGrid';
@@ -52,9 +53,17 @@ function DashboardContent() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-500">
-        <Loader2 className="h-8 w-8 animate-spin mb-4" />
-        <p>Loading dashboard...</p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonMetric key={i} />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} lines={4} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -85,7 +94,7 @@ function DashboardContent() {
     return (
       <div className="flex flex-col">
         <DashboardToolbar />
-        <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-500">
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-th-text-secondary">
           <LayoutDashboard className="h-12 w-12 mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">No widgets yet</h3>
           <p className="text-sm text-center max-w-md mb-4">

@@ -48,6 +48,7 @@ export function MobileBottomNav() {
           if (item.name === 'More') {
             return (
               <button
+                type="button"
                 key={item.name}
                 onClick={() => {
                   // Dispatch custom event to open sidebar

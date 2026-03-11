@@ -142,6 +142,8 @@ export function GlobalSearch() {
         {loading && <Loader2 className="w-4 h-4 text-th-accent-600 animate-spin shrink-0" />}
         {query && !loading && (
           <button
+            type="button"
+            aria-label="Clear search"
             onClick={() => {
               clearSearch();
               inputRef.current?.focus();
@@ -181,6 +183,7 @@ export function GlobalSearch() {
 
                         return (
                           <button
+                            type="button"
                             key={result.entity_id}
                             onClick={() => handleSelect(result)}
                             onMouseEnter={() => setSelectedIndex(idx)}

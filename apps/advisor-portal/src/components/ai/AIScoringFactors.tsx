@@ -60,7 +60,9 @@ export default function AIScoringFactors({
   if (compact) {
     return (
       <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-label="Toggle AI score factors"
         className={`w-full bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg border border-blue-200 overflow-hidden ${className}`}
       >
         <div className="flex items-center justify-between p-3">
@@ -200,9 +202,11 @@ function FactorDetailRow({ factor }: { factor: AIScoringFactor }) {
           </div>
           {factor.analysis_data && Object.keys(factor.analysis_data).length > 0 && (
             <button
+              type="button"
               onClick={() => setShowDetails(!showDetails)}
               className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
               title="View analysis data"
+              aria-label="View analysis data"
             >
               <Info className="h-4 w-4" />
             </button>

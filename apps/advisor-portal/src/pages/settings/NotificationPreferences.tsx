@@ -17,6 +17,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { useNotificationSettings } from '../../hooks/useSettings';
 import type { UpdateNotificationSettingsInput } from '@mpbhealth/champion-core';
 import PushNotificationOptIn from '../../components/notifications/PushNotificationOptIn';
@@ -138,13 +139,9 @@ export default function NotificationPreferences() {
           {timedOut && (
             <div className="mt-4">
               <p className="text-sm text-th-text-secondary mb-3">Taking longer than expected...</p>
-              <button
-                type="button"
-                onClick={refresh}
-                className="px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
-              >
+              <Button type="button" variant="primary" size="sm" onClick={refresh}>
                 Retry
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -158,13 +155,9 @@ export default function NotificationPreferences() {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-th-text-secondary mb-4">{error}</p>
-          <button
-            type="button"
-            onClick={refresh}
-            className="px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
-          >
+          <Button type="button" variant="primary" size="sm" onClick={refresh}>
             Try Again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -555,11 +548,7 @@ export default function NotificationPreferences() {
 
         {/* Save Button */}
         <div className="mt-6 flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
-          >
+          <Button type="button" variant="primary" onClick={handleSave} disabled={saving}>
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -571,7 +560,7 @@ export default function NotificationPreferences() {
                 Save Preferences
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

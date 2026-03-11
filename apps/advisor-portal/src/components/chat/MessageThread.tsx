@@ -81,6 +81,7 @@ export default function MessageThread({
       {hasMore && (
         <div className="flex justify-center py-2 mb-3">
           <button
+            type="button"
             onClick={onLoadMore}
             className="text-xs text-th-accent-600 hover:text-th-accent-700 font-medium px-3 py-1.5 rounded-full border border-th-border-primary hover:bg-th-bg-secondary transition-colors"
           >
@@ -170,18 +171,22 @@ export default function MessageThread({
                       <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {onReply && (
                           <button
+                            type="button"
                             onClick={() => onReply(msg.id)}
-                            className="p-1 rounded hover:bg-th-bg-secondary text-th-text-tertiary hover:text-th-text-primary"
+                            className="p-1.5 rounded hover:bg-th-bg-secondary text-th-text-tertiary hover:text-th-text-primary min-h-[44px] min-w-[44px] flex items-center justify-center"
                             title="Reply"
+                            aria-label="Reply to message"
                           >
                             <Reply className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {(isOwnMessage || isAdminOrOwner) && (
                           <button
+                            type="button"
                             onClick={() => onDeleteMessage(msg.id)}
-                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-th-text-tertiary hover:text-red-600"
+                            className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-th-text-tertiary hover:text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
                             title="Delete message"
+                            aria-label="Delete message"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

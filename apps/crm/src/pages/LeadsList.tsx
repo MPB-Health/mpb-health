@@ -21,6 +21,7 @@ import { BulkEmailModal } from '../components/BulkEmailModal';
 import { ImportModal } from '../components/ImportModal';
 import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel } from '@mpbhealth/crm-core';
+import { SkeletonTable } from '@mpbhealth/ui';
 
 export default function LeadsList() {
   const { leadService, pipelineStages } = useCRM();
@@ -169,9 +170,9 @@ export default function LeadsList() {
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-4">
           {/* Search */}
-          <div className="flex-1 flex items-center bg-surface-tertiary rounded-lg px-3 py-2">
+          <div className="flex-1 min-w-[200px] flex items-center bg-surface-tertiary rounded-lg px-3 py-2">
             <Search className="w-4 h-4 text-th-text-tertiary mr-2" />
             <input
               type="text"
@@ -229,9 +230,7 @@ export default function LeadsList() {
       {/* Leads table */}
       <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
-          </div>
+          <SkeletonTable rows={8} cols={5} />
         ) : leads.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-th-text-tertiary">
             <p>No leads found</p>
@@ -239,6 +238,7 @@ export default function LeadsList() {
           </div>
         ) : (
           <>
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-secondary border-b border-th-border">
@@ -357,6 +357,7 @@ export default function LeadsList() {
                 })}
               </tbody>
             </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (

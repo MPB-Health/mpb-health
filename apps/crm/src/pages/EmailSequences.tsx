@@ -528,7 +528,7 @@ function SequenceCard({
           <span className="text-th-text-secondary">Completion</span>
           <span className="font-medium text-th-text-primary">{completionRate}%</span>
         </div>
-        <div className="w-full bg-gray-100 rounded-full h-1.5">
+        <div className="w-full bg-surface-tertiary rounded-full h-1.5">
           <div
             className="bg-green-500 h-1.5 rounded-full transition-all"
             style={{ width: `${completionRate}%` }}
@@ -577,7 +577,7 @@ function StepCard({
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={`border rounded-xl transition-all ${
-        step.is_active ? 'border-th-border bg-surface-primary' : 'border-dashed border-gray-300 bg-gray-50 opacity-60'
+        step.is_active ? 'border-th-border bg-surface-primary' : 'border-dashed border-th-border bg-surface-secondary opacity-60'
       }`}
     >
       {/* Step header */}
@@ -616,7 +616,7 @@ function StepCard({
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => onUpdate({ is_active: !step.is_active })}
-            className={`p-1.5 rounded-lg text-xs ${step.is_active ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'}`}
+            className={`p-1.5 rounded-lg text-xs ${step.is_active ? 'text-green-600 hover:bg-green-50' : 'text-th-text-tertiary hover:bg-surface-tertiary'}`}
             title={step.is_active ? 'Disable step' : 'Enable step'}
           >
             {step.is_active ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
@@ -1435,7 +1435,7 @@ function SequenceAnalytics({
                       <span className="text-xs font-medium text-th-text-secondary">Step {step.step_number}</span>
                     </div>
                     <div className="flex-1 relative">
-                      <div className="w-full bg-gray-100 rounded-full h-8">
+                      <div className="w-full bg-surface-tertiary rounded-full h-8">
                         <div
                           className="bg-th-accent-600/20 h-8 rounded-full flex items-center px-3 transition-all"
                           style={{ width: `${Math.max(barWidth, 8)}%` }}
@@ -1541,7 +1541,7 @@ function SequenceAnalytics({
                         {count} ({w}%)
                       </span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className="w-full bg-surface-tertiary rounded-full h-2">
                       <div className={`${cfg.bg} h-2 rounded-full transition-all`} style={{ width: `${w}%` }} />
                     </div>
                   </div>

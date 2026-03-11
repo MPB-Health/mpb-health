@@ -337,6 +337,7 @@ export default function Deals() {
           </div>
         ) : (
           <>
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-secondary border-b border-th-border">
@@ -439,6 +440,7 @@ export default function Deals() {
                 })}
               </tbody>
             </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (

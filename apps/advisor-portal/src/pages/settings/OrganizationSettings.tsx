@@ -14,6 +14,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { useOrgSettings } from '../../hooks/useSettings';
 import type { BusinessHours, BusinessAddress, UpdateOrgSettingsInput } from '@mpbhealth/champion-core';
 
@@ -165,6 +166,7 @@ export default function OrganizationSettings() {
         <div className="flex gap-2 mb-6 border-b border-th-border-primary">
           {tabs.map((tab) => (
             <button
+              type="button"
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
@@ -418,7 +420,7 @@ export default function OrganizationSettings() {
                         alt="Organization logo"
                         className="h-16 mx-auto object-contain"
                       />
-                      <button className="text-sm text-th-accent-600 hover:text-th-accent-700">
+                      <button type="button" className="text-sm text-th-accent-600 hover:text-th-accent-700">
                         Change logo
                       </button>
                     </div>
@@ -446,6 +448,7 @@ export default function OrganizationSettings() {
                     {formData.business_name || 'Your Business Name'}
                   </p>
                   <button
+                    type="button"
                     className="mt-3 px-4 py-2 rounded-lg text-sm font-medium"
                     style={{ backgroundColor: formData.secondary_color || '#818CF8', color: 'white' }}
                   >
@@ -618,11 +621,7 @@ export default function OrganizationSettings() {
 
         {/* Save Button */}
         <div className="mt-6 flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
-          >
+          <Button type="button" variant="primary" onClick={handleSave} disabled={saving}>
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -634,7 +633,7 @@ export default function OrganizationSettings() {
                 Save Changes
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

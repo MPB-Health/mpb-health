@@ -19,6 +19,7 @@ import {
   trainingService,
   type Certification,
 } from '@mpbhealth/advisor-core';
+import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { generateCertificate } from '../utils/generateCertificate';
 
@@ -206,20 +207,13 @@ export default function Profile() {
                   />
                 </div>
                 <div className="flex items-center space-x-3">
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
-                  >
+                  <Button type="button" variant="primary" onClick={handleSave} disabled={saving}>
                     <Save className="w-4 h-4" />
                     <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-                  </button>
-                  <button
-                    onClick={() => setEditing(false)}
-                    className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
-                  >
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setEditing(false)}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -231,12 +225,9 @@ export default function Profile() {
                     </h2>
                     <p className="text-th-text-tertiary">{profile.specialization}</p>
                   </div>
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
                     Edit Profile
-                  </button>
+                  </Button>
                 </div>
                 <div className="flex items-center space-x-6 mt-4 text-sm text-th-text-secondary">
                   <div className="flex items-center space-x-2">
@@ -273,14 +264,10 @@ export default function Profile() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleDownloadCertificate}
-              disabled={generating}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
-            >
+            <Button type="button" variant="primary" onClick={handleDownloadCertificate} disabled={generating}>
               <Download className="w-4 h-4" />
               <span>{generating ? 'Generating...' : 'Download'}</span>
-            </button>
+            </Button>
           </div>
         </div>
       )}

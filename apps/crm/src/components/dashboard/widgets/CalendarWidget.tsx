@@ -39,10 +39,10 @@ export default function CalendarWidget({ config, size }: BaseWidgetProps) {
 
   if (displayEvents.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-th-text-secondary">
         <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No upcoming events</p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-th-text-tertiary mt-1">
           {view === 'today' ? 'for today' : 'this week'}
         </p>
       </div>
@@ -52,15 +52,15 @@ export default function CalendarWidget({ config, size }: BaseWidgetProps) {
   return (
     <div className="p-4">
       {/* Today's Date */}
-      <div className="flex items-center gap-3 mb-4 pb-4 border-b dark:border-gray-700">
+      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-th-border">
         <div className="text-center">
-          <p className="text-xs text-gray-500 uppercase">{now.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+          <p className="text-xs text-th-text-secondary uppercase">{now.toLocaleDateString('en-US', { weekday: 'short' })}</p>
           <p className="text-2xl font-bold text-blue-600">{now.getDate()}</p>
-          <p className="text-xs text-gray-500">{now.toLocaleDateString('en-US', { month: 'short' })}</p>
+          <p className="text-xs text-th-text-secondary">{now.toLocaleDateString('en-US', { month: 'short' })}</p>
         </div>
         <div className="flex-1">
           <p className="text-sm font-medium">{displayEvents.length} events</p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-th-text-secondary">
             {view === 'today' ? 'today' : 'this week'}
           </p>
         </div>
@@ -75,7 +75,7 @@ export default function CalendarWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/calendar"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t border-th-border text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View calendar
         <ArrowRight className="h-4 w-4" />
@@ -113,25 +113,25 @@ const EVENT_COLORS: Record<string, string> = {
 
 function EventCard({ event }: EventCardProps) {
   const Icon = EVENT_ICONS[event.event_type] || Calendar;
-  const colorClass = EVENT_COLORS[event.event_type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700';
+  const colorClass = EVENT_COLORS[event.event_type] || 'bg-surface-tertiary text-th-text-secondary';
 
   const startTime = new Date(event.start_time);
   const isToday = startTime.toDateString() === new Date().toDateString();
 
   return (
-    <div className="flex gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+    <div className="flex gap-3 p-2 -mx-2 rounded-lg hover:bg-surface-secondary transition-colors">
       <div className={cn('p-2 rounded-lg', colorClass)}>
         <Icon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{event.title}</p>
         <div className="flex items-center gap-2 mt-1">
-          <span className="flex items-center gap-1 text-xs text-gray-500">
+          <span className="flex items-center gap-1 text-xs text-th-text-tertiary">
             <Clock className="h-3 w-3" />
             {isToday ? formatTime(startTime) : formatDateTime(startTime)}
           </span>
           {event.location && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1 text-xs text-th-text-secondary">
               <MapPin className="h-3 w-3" />
               {event.location}
             </span>

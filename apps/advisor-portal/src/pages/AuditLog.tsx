@@ -18,6 +18,7 @@ import {
   ArrowRight,
   RefreshCw,
 } from 'lucide-react';
+import { Button } from '@mpbhealth/ui';
 import { useAuditLogs } from '../hooks/useCompliance';
 
 const ACTION_ICONS: Record<string, typeof User> = {
@@ -91,46 +92,48 @@ export default function AuditLog() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Audit Log</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-th-text-primary">Audit Log</h1>
+          <p className="text-sm text-th-text-secondary mt-1">
             Track all system activity and compliance-related events
           </p>
         </div>
-        <button
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
           onClick={refresh}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="bg-surface-primary rounded-xl border border-th-border p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-th-text-tertiary" />
             <input
               type="text"
               placeholder="Search logs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-th-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           {/* Resource Type Filter */}
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-th-text-tertiary" />
             <select
               value={selectedResourceType}
               onChange={(e) => {
                 setSelectedResourceType(e.target.value);
                 setPage(0);
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+              className="w-full pl-10 pr-4 py-2 border border-th-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-surface-primary"
             >
               <option value="">All Resources</option>
               {resourceTypes.map(type => (
@@ -147,7 +150,7 @@ export default function AuditLog() {
                 setSelectedAction(e.target.value);
                 setPage(0);
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+              className="w-full px-4 py-2 border border-th-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-surface-primary"
             >
               <option value="">All Actions</option>
               <option value="create">Create</option>
@@ -170,7 +173,7 @@ export default function AuditLog() {
                 }));
                 setPage(0);
               }}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 px-3 py-2 border border-th-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Start date"
             />
             <input
@@ -182,7 +185,7 @@ export default function AuditLog() {
                 }));
                 setPage(0);
               }}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 px-3 py-2 border border-th-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="End date"
             />
           </div>
@@ -190,7 +193,7 @@ export default function AuditLog() {
       </div>
 
       {/* Results Info */}
-      <div className="flex items-center justify-between text-sm text-gray-500">
+      <div className="flex items-center justify-between text-sm text-th-text-secondary">
         <span>
           Showing {filteredLogs.length} of {total} events
         </span>
@@ -202,32 +205,33 @@ export default function AuditLog() {
       </div>
 
       {/* Log List */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
         {loading && logs.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-th-text-secondary">
             <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
             <p>Loading audit logs...</p>
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+          <div className="p-8 text-center text-th-text-secondary">
+            <Clock className="h-8 w-8 mx-auto mb-2 text-th-text-tertiary" />
             <p>No audit events found</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-th-border">
             {filteredLogs.map((log) => {
               const Icon = getResourceIcon(log.resource_type);
               const isExpanded = expandedId === log.id;
 
               return (
-                <div key={log.id} className="hover:bg-gray-50 transition-colors">
+                <div key={log.id} className="hover:bg-surface-secondary transition-colors">
                   <button
+                    type="button"
                     onClick={() => setExpandedId(isExpanded ? null : log.id)}
                     className="w-full px-4 py-3 flex items-center gap-4 text-left"
                   >
                     {/* Icon */}
-                    <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-gray-600" />
+                    <div className="flex-shrink-0 w-10 h-10 bg-surface-tertiary rounded-lg flex items-center justify-center">
+                      <Icon className="h-5 w-5 text-th-text-secondary" />
                     </div>
 
                     {/* Content */}
@@ -237,23 +241,23 @@ export default function AuditLog() {
                           {log.action}
                         </span>
                         {log.resource_type && (
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-th-text-secondary">
                             {log.resource_type}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         {log.user_name || log.user_email ? (
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-th-text-primary">
                             {log.user_name || log.user_email}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-500 italic">System</span>
+                          <span className="text-sm text-th-text-secondary italic">System</span>
                         )}
                         {log.resource_id && (
                           <>
-                            <ArrowRight className="h-3 w-3 text-gray-400" />
-                            <span className="text-sm text-gray-500 font-mono truncate max-w-[200px]">
+                            <ArrowRight className="h-3 w-3 text-th-text-tertiary" />
+                            <span className="text-sm text-th-text-secondary font-mono truncate max-w-[200px]">
                               {log.resource_id}
                             </span>
                           </>
@@ -263,13 +267,13 @@ export default function AuditLog() {
 
                     {/* Timestamp & Expand */}
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-th-text-secondary">
                         {format(new Date(log.created_at), 'MMM d, h:mm a')}
                       </span>
                       {isExpanded ? (
-                        <ChevronUp className="h-4 w-4 text-gray-400" />
+                        <ChevronUp className="h-4 w-4 text-th-text-tertiary" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                        <ChevronDown className="h-4 w-4 text-th-text-tertiary" />
                       )}
                     </div>
                   </button>
@@ -277,15 +281,15 @@ export default function AuditLog() {
                   {/* Expanded Details */}
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-0">
-                      <div className="ml-14 bg-gray-50 rounded-lg p-4 space-y-3">
+                      <div className="ml-14 bg-surface-secondary rounded-lg p-4 space-y-3">
                         {/* User Info */}
                         {(log.user_name || log.user_email) && (
                           <div>
-                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">User</h4>
-                            <p className="text-sm text-gray-900">
+                            <h4 className="text-xs font-medium text-th-text-secondary uppercase tracking-wide mb-1">User</h4>
+                            <p className="text-sm text-th-text-primary">
                               {log.user_name && <span className="font-medium">{log.user_name}</span>}
                               {log.user_email && (
-                                <span className="text-gray-500 ml-2">({log.user_email})</span>
+                                <span className="text-th-text-secondary ml-2">({log.user_email})</span>
                               )}
                             </p>
                           </div>
@@ -295,14 +299,14 @@ export default function AuditLog() {
                         <div className="grid grid-cols-2 gap-4">
                           {log.ip_address && (
                             <div>
-                              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">IP Address</h4>
-                              <p className="text-sm text-gray-900 font-mono">{log.ip_address}</p>
+                              <h4 className="text-xs font-medium text-th-text-secondary uppercase tracking-wide mb-1">IP Address</h4>
+                              <p className="text-sm text-th-text-primary font-mono">{log.ip_address}</p>
                             </div>
                           )}
                           {log.user_agent && (
                             <div>
-                              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">User Agent</h4>
-                              <p className="text-sm text-gray-900 truncate" title={log.user_agent}>
+                              <h4 className="text-xs font-medium text-th-text-secondary uppercase tracking-wide mb-1">User Agent</h4>
+                              <p className="text-sm text-th-text-primary truncate" title={log.user_agent}>
                                 {log.user_agent}
                               </p>
                             </div>
@@ -312,8 +316,8 @@ export default function AuditLog() {
                         {/* Details */}
                         {log.details && Object.keys(log.details).length > 0 && (
                           <div>
-                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Details</h4>
-                            <pre className="text-sm text-gray-900 bg-white rounded border border-gray-200 p-3 overflow-x-auto max-h-40">
+                            <h4 className="text-xs font-medium text-th-text-secondary uppercase tracking-wide mb-1">Details</h4>
+                            <pre className="text-sm text-th-text-primary bg-surface-primary rounded border border-th-border p-3 overflow-x-auto max-h-40">
                               {JSON.stringify(log.details, null, 2)}
                             </pre>
                           </div>
@@ -321,8 +325,8 @@ export default function AuditLog() {
 
                         {/* Full Timestamp */}
                         <div>
-                          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Timestamp</h4>
-                          <p className="text-sm text-gray-900">
+                          <h4 className="text-xs font-medium text-th-text-secondary uppercase tracking-wide mb-1">Timestamp</h4>
+                          <p className="text-sm text-th-text-primary">
                             {format(new Date(log.created_at), 'EEEE, MMMM d, yyyy \'at\' h:mm:ss a')}
                           </p>
                         </div>
@@ -339,25 +343,29 @@ export default function AuditLog() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0 || loading}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-h-[44px] min-w-[44px]"
           >
             Previous
-          </button>
+          </Button>
           <div className="flex items-center gap-1">
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               const pageNum = page < 2 ? i : page > totalPages - 3 ? totalPages - 5 + i : page - 2 + i;
               if (pageNum < 0 || pageNum >= totalPages) return null;
               return (
                 <button
+                  type="button"
                   key={pageNum}
                   onClick={() => setPage(pageNum)}
                   className={`w-10 h-10 rounded-lg text-sm font-medium ${
                     pageNum === page
                       ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      : 'text-th-text-primary hover:bg-surface-tertiary'
                   }`}
                 >
                   {pageNum + 1}
@@ -365,13 +373,16 @@ export default function AuditLog() {
               );
             })}
           </div>
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1 || loading}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-h-[44px] min-w-[44px]"
           >
             Next
-          </button>
+          </Button>
         </div>
       )}
     </div>

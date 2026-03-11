@@ -135,6 +135,7 @@ export default function AISuggestionsPanel({
             >
               {/* Header */}
               <button
+                type="button"
                 onClick={() => setExpandedId(isExpanded ? null : suggestion.id)}
                 className="w-full p-3 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors"
               >
@@ -156,12 +157,14 @@ export default function AISuggestionsPanel({
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleIgnore(suggestion.id);
                     }}
                     className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                     title="Dismiss"
+                    aria-label="Dismiss suggestion"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -242,6 +245,7 @@ export default function AISuggestionsPanel({
                   {/* Actions */}
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
                     <button
+                      type="button"
                       onClick={() => handleReject(suggestion.id)}
                       disabled={actionLoading}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
@@ -250,6 +254,7 @@ export default function AISuggestionsPanel({
                       Not helpful
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleAccept(suggestion)}
                       disabled={actionLoading}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"

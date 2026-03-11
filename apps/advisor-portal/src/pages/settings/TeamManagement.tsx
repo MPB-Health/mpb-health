@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useTeamManagement } from '../../hooks/useSettings';
 import type { OrgMember, OrganizationInvitation, CreateInvitationInput } from '@mpbhealth/champion-core';
+import { Button } from '@mpbhealth/ui';
 
 const ROLES = [
   { value: 'admin', label: 'Admin', description: 'Full access to all features and settings' },
@@ -205,40 +206,32 @@ export default function TeamManagement() {
             </p>
           </div>
 
-          <button
+          <Button
             onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
+            variant="primary"
           >
             <UserPlus className="w-4 h-4" />
             Invite Member
-          </button>
+          </Button>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-4 mb-6">
-          <button
+          <Button
             onClick={() => setActiveTab('members')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'members'
-                ? 'bg-th-accent-600 text-white'
-                : 'bg-surface-secondary text-th-text-secondary hover:bg-surface-tertiary'
-            }`}
+            variant={activeTab === 'members' ? 'primary' : 'secondary'}
           >
             <Users className="w-4 h-4" />
             Members ({members.length})
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={() => setActiveTab('invitations')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'invitations'
-                ? 'bg-th-accent-600 text-white'
-                : 'bg-surface-secondary text-th-text-secondary hover:bg-surface-tertiary'
-            }`}
+            variant={activeTab === 'invitations' ? 'primary' : 'secondary'}
           >
             <Mail className="w-4 h-4" />
             Invitations ({pendingInvitations.length})
-          </button>
+          </Button>
         </div>
 
         {/* Members Tab */}
@@ -290,12 +283,14 @@ export default function TeamManagement() {
 
                   {/* Actions */}
                   <div className="relative">
-                    <button
+                    <Button
                       onClick={() => setSelectedMember(selectedMember?.user_id === member.user_id ? null : member)}
-                      className="p-2 text-th-text-muted hover:text-th-text-primary hover:bg-surface-tertiary rounded-lg transition-colors"
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-[44px] min-w-[44px]"
                     >
                       <MoreHorizontal className="w-5 h-5" />
-                    </button>
+                    </Button>
 
                     {/* Dropdown */}
                     {selectedMember?.user_id === member.user_id && (
@@ -337,12 +332,13 @@ export default function TeamManagement() {
                 <div className="p-12 text-center">
                   <Users className="w-12 h-12 text-th-text-muted mx-auto mb-4" />
                   <p className="text-th-text-secondary">No team members yet</p>
-                  <button
+                  <Button
                     onClick={() => setShowInviteModal(true)}
-                    className="mt-4 text-th-accent-600 hover:text-th-accent-700 font-medium"
+                    variant="ghost"
+                    className="mt-4 text-th-accent-600 hover:text-th-accent-700"
                   >
                     Invite your first team member
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -395,10 +391,12 @@ export default function TeamManagement() {
                     {/* Actions */}
                     {invitation.status === 'pending' && (
                       <div className="flex items-center gap-2">
-                        <button
+                        <Button
                           onClick={() => handleResendInvitation(invitation.id)}
                           disabled={actionLoading === invitation.id}
-                          className="p-2 text-th-text-muted hover:text-th-accent-600 hover:bg-surface-tertiary rounded-lg transition-colors"
+                          variant="ghost"
+                          size="sm"
+                          className="min-h-[44px] min-w-[44px]"
                           title="Resend invitation"
                         >
                           {actionLoading === invitation.id ? (
@@ -406,15 +404,17 @@ export default function TeamManagement() {
                           ) : (
                             <RefreshCw className="w-4 h-4" />
                           )}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleRevokeInvitation(invitation.id)}
                           disabled={actionLoading === invitation.id}
-                          className="p-2 text-th-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          variant="ghost"
+                          size="sm"
+                          className="min-h-[44px] min-w-[44px] hover:text-red-600 hover:bg-red-50"
                           title="Revoke invitation"
                         >
                           <XCircle className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -438,12 +438,14 @@ export default function TeamManagement() {
           <div className="bg-surface-primary rounded-xl w-full max-w-md mx-4">
             <div className="flex items-center justify-between p-4 border-b border-th-border-primary">
               <h2 className="text-lg font-semibold text-th-text-primary">Invite Team Member</h2>
-              <button
+              <Button
                 onClick={() => setShowInviteModal(false)}
-                className="p-1 text-th-text-muted hover:text-th-text-primary"
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px]"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 space-y-4">
@@ -501,16 +503,16 @@ export default function TeamManagement() {
             </div>
 
             <div className="flex justify-end gap-3 p-4 border-t border-th-border-primary">
-              <button
+              <Button
                 onClick={() => setShowInviteModal(false)}
-                className="px-4 py-2 text-th-text-secondary hover:text-th-text-primary transition-colors"
+                variant="ghost"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleInvite}
                 disabled={actionLoading === 'invite'}
-                className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
+                variant="primary"
               >
                 {actionLoading === 'invite' ? (
                   <>
@@ -523,7 +525,7 @@ export default function TeamManagement() {
                     Send Invitation
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

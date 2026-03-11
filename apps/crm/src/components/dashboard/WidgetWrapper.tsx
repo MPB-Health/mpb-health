@@ -71,9 +71,9 @@ function getPrevSize(current: 'sm' | 'md' | 'lg' | 'full', allowedSizes: Array<'
 function WidgetSkeleton() {
   return (
     <div className="animate-pulse p-4">
-      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3" />
-      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2" />
-      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+      <div className="h-4 bg-surface-tertiary rounded w-3/4 mb-3" />
+      <div className="h-3 bg-surface-tertiary rounded w-1/2 mb-2" />
+      <div className="h-3 bg-surface-tertiary rounded w-2/3" />
     </div>
   );
 }
@@ -86,7 +86,7 @@ function WidgetError({ error }: { error: Error }) {
   return (
     <div className="p-4 text-center text-red-500">
       <p className="text-sm font-medium">Failed to load widget</p>
-      <p className="text-xs text-gray-500 mt-1">{error.message}</p>
+      <p className="text-xs text-th-text-secondary mt-1">{error.message}</p>
     </div>
   );
 }
@@ -134,7 +134,7 @@ export function WidgetWrapper({
 
   if (!widgetConfig) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-th-text-secondary">
         Unknown widget type: {widget.widgetId}
       </div>
     );
@@ -167,7 +167,7 @@ export function WidgetWrapper({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'bg-white dark:bg-gray-800 rounded-xl border shadow-sm overflow-hidden transition-all duration-200',
+        'bg-surface-primary rounded-xl border border-th-border shadow-sm overflow-hidden transition-all duration-200',
         isSelected && isEditMode && 'ring-2 ring-blue-500 border-blue-500',
         isDragging && 'shadow-lg',
         !isEditMode && 'hover:shadow-md'
@@ -177,14 +177,14 @@ export function WidgetWrapper({
       {/* Header */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 py-3 border-b dark:border-gray-700',
+          'flex items-center justify-between px-4 py-3 border-b border-th-border',
           isEditMode && 'cursor-grab active:cursor-grabbing'
         )}
         {...(isEditMode ? { ...attributes, ...listeners } : {})}
       >
         <div className="flex items-center gap-2 min-w-0">
           {isEditMode && (
-            <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <GripVertical className="h-4 w-4 text-th-text-tertiary flex-shrink-0" />
           )}
           <Icon className="h-4 w-4 text-blue-500 flex-shrink-0" />
           <span className="font-medium text-sm truncate">{widgetConfig.title}</span>
@@ -192,7 +192,7 @@ export function WidgetWrapper({
 
         <div className="flex items-center gap-1">
           {/* Size indicator */}
-          <span className="text-xs text-gray-400 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
+          <span className="text-xs text-th-text-tertiary px-1.5 py-0.5 bg-surface-tertiary rounded">
             {widget.size}
           </span>
 
@@ -202,13 +202,13 @@ export function WidgetWrapper({
               e.stopPropagation();
               toggleWidgetCollapse(widget.instanceId);
             }}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-surface-tertiary rounded-lg transition-colors"
             title={widget.collapsed ? 'Expand' : 'Collapse'}
           >
             {widget.collapsed ? (
-              <ChevronDown className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-th-text-secondary" />
             ) : (
-              <ChevronUp className="h-4 w-4 text-gray-500" />
+              <ChevronUp className="h-4 w-4 text-th-text-secondary" />
             )}
           </button>
 
@@ -221,22 +221,22 @@ export function WidgetWrapper({
                   e.stopPropagation();
                   handleResize('shrink');
                 }}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-surface-tertiary rounded-lg transition-colors"
                 title="Shrink"
                 disabled={widget.size === widgetConfig.allowedSizes[0]}
               >
-                <Minimize2 className="h-4 w-4 text-gray-500" />
+                <Minimize2 className="h-4 w-4 text-th-text-secondary" />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleResize('grow');
                 }}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-surface-tertiary rounded-lg transition-colors"
                 title="Expand"
                 disabled={widget.size === widgetConfig.allowedSizes[widgetConfig.allowedSizes.length - 1]}
               >
-                <Maximize2 className="h-4 w-4 text-gray-500" />
+                <Maximize2 className="h-4 w-4 text-th-text-secondary" />
               </button>
 
               {/* Settings */}
@@ -246,10 +246,10 @@ export function WidgetWrapper({
                     e.stopPropagation();
                     onOpenSettings();
                   }}
-                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-surface-tertiary rounded-lg transition-colors"
                   title="Settings"
                 >
-                  <Settings className="h-4 w-4 text-gray-500" />
+                  <Settings className="h-4 w-4 text-th-text-secondary" />
                 </button>
               )}
 

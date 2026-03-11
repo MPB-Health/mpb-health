@@ -45,7 +45,7 @@ export default function TasksWidget({ config }: BaseWidgetProps) {
           <ViewButton active={view === 'due-today'} onClick={() => setView('due-today')}>Due Today</ViewButton>
           <ViewButton active={view === 'overdue'} onClick={() => setView('overdue')}>Overdue</ViewButton>
         </div>
-        <div className="text-center py-6 text-gray-500">
+        <div className="text-center py-6 text-th-text-secondary">
           <CheckSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No {view === 'overdue' ? 'overdue' : ''} tasks</p>
         </div>
@@ -72,12 +72,12 @@ export default function TasksWidget({ config }: BaseWidgetProps) {
         {tasks.slice(0, 5).map((task) => (
           <div
             key={task.id}
-            className="flex items-start gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            className="flex items-start gap-3 p-2 -mx-2 rounded-lg hover:bg-surface-secondary transition-colors"
           >
             <button
               onClick={() => handleComplete(task.id)}
               disabled={completingId === task.id}
-              className="mt-0.5 text-gray-400 hover:text-green-500 transition-colors"
+              className="mt-0.5 text-th-text-tertiary hover:text-green-500 transition-colors"
             >
               {completingId === task.id ? (
                 <CheckCircle2 className="h-5 w-5 text-green-500 animate-pulse" />
@@ -87,7 +87,7 @@ export default function TasksWidget({ config }: BaseWidgetProps) {
             </button>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{task.title}</p>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-th-text-secondary mt-0.5">
                 Due: {formatDate(task.due_date)}
               </p>
             </div>
@@ -98,7 +98,7 @@ export default function TasksWidget({ config }: BaseWidgetProps) {
 
       <Link
         to="/tasks"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t border-th-border text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all tasks
         <ArrowRight className="h-4 w-4" />
@@ -119,7 +119,7 @@ function ViewButton({ active, onClick, children }: { active: boolean; onClick: (
         'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
         active
           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-          : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+          : 'text-th-text-secondary hover:bg-surface-tertiary'
       )}
     >
       {children}
@@ -132,7 +132,7 @@ function PriorityBadge({ priority }: { priority?: string }) {
     urgent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    low: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+    low: 'bg-surface-tertiary text-th-text-secondary',
   };
 
   return (

@@ -63,10 +63,10 @@ export default function DealsWidget({ config, size }: BaseWidgetProps) {
   if (isLoading) {
     return (
       <div className="p-4 animate-pulse">
-        <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+        <div className="h-16 bg-surface-tertiary rounded mb-4" />
         <div className="space-y-2">
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-10 bg-surface-tertiary rounded" />
+          <div className="h-10 bg-surface-tertiary rounded" />
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ export default function DealsWidget({ config, size }: BaseWidgetProps) {
   return (
     <div className="p-4">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-4 pb-4 border-b dark:border-gray-700">
+      <div className="grid grid-cols-3 gap-3 mb-4 pb-4 border-b border-th-border">
         <StatCard
           icon={Briefcase}
           label="Total Deals"
@@ -98,7 +98,7 @@ export default function DealsWidget({ config, size }: BaseWidgetProps) {
 
       {/* Recent Deals */}
       {deals.length === 0 ? (
-        <div className="text-center py-4 text-gray-500">
+        <div className="text-center py-4 text-th-text-secondary">
           <Briefcase className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No deals yet</p>
         </div>
@@ -108,11 +108,11 @@ export default function DealsWidget({ config, size }: BaseWidgetProps) {
             <Link
               key={deal.id}
               to={`/deals/${deal.id}`}
-              className="flex items-center justify-between p-2 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              className="flex items-center justify-between p-2 -mx-2 rounded-lg hover:bg-surface-secondary transition-colors"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{deal.name}</p>
-                <p className="text-xs text-gray-500">{deal.stage?.display_name || 'No stage'}</p>
+                <p className="text-xs text-th-text-secondary">{deal.stage?.display_name || 'No stage'}</p>
               </div>
               <span className="text-sm font-medium text-green-600">
                 {formatCurrency(deal.amount || 0)}
@@ -124,7 +124,7 @@ export default function DealsWidget({ config, size }: BaseWidgetProps) {
 
       <Link
         to="/deals"
-        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t dark:border-gray-700 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+        className="flex items-center justify-center gap-1 mt-4 pt-4 border-t border-th-border text-sm text-blue-600 hover:text-blue-700 transition-colors"
       >
         View all deals
         <ArrowRight className="h-4 w-4" />
@@ -156,7 +156,7 @@ function StatCard({ icon: Icon, label, value, color }: StatCardProps) {
         <Icon className="h-4 w-4" />
       </div>
       <p className="text-lg font-bold">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-xs text-th-text-secondary">{label}</p>
     </div>
   );
 }

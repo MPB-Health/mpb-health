@@ -108,7 +108,7 @@ export function ImportModal({ isOpen, onClose, entityType, onSuccess }: ImportMo
       <div className="fixed inset-0 bg-black/50" onClick={resetAndClose} />
 
       <div className="relative min-h-screen flex items-center justify-center p-4">
-        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="relative bg-surface-primary rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="px-6 py-4 border-b border-th-border flex items-center justify-between">
             <h2 className="text-lg font-semibold text-th-text-primary">

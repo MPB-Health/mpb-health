@@ -25,6 +25,7 @@ import {
   type ContactFilters,
   type AccountWithRelations,
 } from '@mpbhealth/crm-core';
+import { SkeletonTable } from '@mpbhealth/ui';
 
 const contactService = createContactService(supabase);
 const accountService = createAccountService(supabase);
@@ -253,9 +254,9 @@ export default function Contacts() {
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-4">
           {/* Search */}
-          <div className="flex-1 flex items-center bg-surface-tertiary rounded-lg px-3 py-2">
+          <div className="flex-1 min-w-[200px] flex items-center bg-surface-tertiary rounded-lg px-3 py-2">
             <Search className="w-4 h-4 text-th-text-tertiary mr-2" />
             <input
               type="text"
@@ -380,9 +381,7 @@ export default function Contacts() {
       {/* Contacts table */}
       <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
-          </div>
+          <SkeletonTable rows={8} cols={5} />
         ) : contacts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-th-text-tertiary">
             <Users className="w-12 h-12 mb-3" />
@@ -391,6 +390,7 @@ export default function Contacts() {
           </div>
         ) : (
           <>
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-secondary border-b border-th-border">
@@ -524,6 +524,7 @@ export default function Contacts() {
                 })}
               </tbody>
             </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (

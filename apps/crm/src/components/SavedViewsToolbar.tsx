@@ -155,7 +155,7 @@ export function SavedViewsToolbar({
   const hasActiveFilters = activeFilters.length > 0;
 
   return (
-    <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+    <div className="bg-surface-primary border-b border-th-border">
       {/* Main Toolbar Row */}
       <div className="px-4 py-3 flex items-center gap-3 flex-wrap">
         {/* Saved Views Selector */}
@@ -166,7 +166,7 @@ export function SavedViewsToolbar({
               'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors',
               activeView
                 ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
-                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+                : 'bg-surface-primary border-th-border text-th-text-primary hover:bg-surface-secondary'
             )}
           >
             <LayoutGrid className="w-4 h-4" />
@@ -176,7 +176,7 @@ export function SavedViewsToolbar({
 
           {/* Views Dropdown */}
           {showViewsDropdown && (
-            <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+            <div className="absolute top-full left-0 mt-1 w-64 bg-surface-primary border border-th-border rounded-lg shadow-lg z-50">
               {/* Default View */}
               <button
                 onClick={() => {
@@ -184,11 +184,11 @@ export function SavedViewsToolbar({
                   setShowViewsDropdown(false);
                 }}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-800',
+                  'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-secondary',
                   !activeView && 'bg-blue-50 dark:bg-blue-900/30'
                 )}
               >
-                <LayoutGrid className="w-4 h-4 text-gray-400" />
+                <LayoutGrid className="w-4 h-4 text-th-text-tertiary" />
                 <span>All Records</span>
                 {!activeView && <Check className="w-4 h-4 text-blue-600 ml-auto" />}
               </button>
@@ -196,15 +196,15 @@ export function SavedViewsToolbar({
               {/* Saved Views */}
               {savedViews.length > 0 && (
                 <>
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                  <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase">
+                  <div className="border-t border-th-border my-1" />
+                  <div className="px-3 py-1.5 text-xs font-medium text-th-text-secondary uppercase">
                     Saved Views
                   </div>
                   {savedViews.map((view) => (
                     <div
                       key={view.id}
                       className={cn(
-                        'group flex items-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800',
+                        'group flex items-center gap-2 px-4 py-2 hover:bg-surface-secondary',
                         activeView?.id === view.id && 'bg-blue-50 dark:bg-blue-900/30'
                       )}
                     >
@@ -227,7 +227,7 @@ export function SavedViewsToolbar({
                             e.stopPropagation();
                             onViewDelete(view.id);
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-th-text-tertiary hover:text-red-500 transition-opacity"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -238,7 +238,7 @@ export function SavedViewsToolbar({
               )}
 
               {/* Save Current View */}
-              <div className="border-t border-gray-200 dark:border-gray-700 mt-1">
+              <div className="border-t border-th-border mt-1">
                 <button
                   onClick={() => {
                     setShowViewsDropdown(false);
@@ -261,7 +261,7 @@ export function SavedViewsToolbar({
             'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors',
             hasActiveFilters
               ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
-              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              : 'bg-surface-primary border-th-border text-th-text-primary hover:bg-surface-secondary'
           )}
         >
           <SlidersHorizontal className="w-4 h-4" />
@@ -277,7 +277,7 @@ export function SavedViewsToolbar({
         {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
-            className="flex items-center gap-1 px-2 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            className="flex items-center gap-1 px-2 py-2 text-sm text-th-text-secondary hover:text-th-text-primary"
           >
             <X className="w-4 h-4" />
             Clear
@@ -290,27 +290,27 @@ export function SavedViewsToolbar({
         {/* Search */}
         {onSearchChange && (
           <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-th-border rounded-lg bg-surface-primary text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         )}
 
         {/* View Mode Toggle */}
         {showViewModeToggle && onViewModeChange && (
-          <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+          <div className="flex items-center border border-th-border rounded-lg overflow-hidden">
             <button
               onClick={() => onViewModeChange('list')}
               className={cn(
                 'p-2 transition-colors',
                 viewMode === 'list'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                  ? 'bg-surface-tertiary text-th-text-primary'
+                  : 'text-th-text-tertiary hover:text-th-text-secondary'
               )}
               title="List view"
             >
@@ -321,8 +321,8 @@ export function SavedViewsToolbar({
               className={cn(
                 'p-2 transition-colors',
                 viewMode === 'grid'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                  ? 'bg-surface-tertiary text-th-text-primary'
+                  : 'text-th-text-tertiary hover:text-th-text-secondary'
               )}
               title="Grid view"
             >
@@ -336,7 +336,7 @@ export function SavedViewsToolbar({
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
+            className="p-2 text-th-text-tertiary hover:text-th-text-secondary disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCw className={cn('w-4 h-4', isRefreshing && 'animate-spin')} />
@@ -347,7 +347,7 @@ export function SavedViewsToolbar({
         {showExport && onExport && (
           <button
             onClick={onExport}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="p-2 text-th-text-tertiary hover:text-th-text-secondary"
             title="Export"
           >
             <Download className="w-4 h-4" />
@@ -370,7 +370,7 @@ export function SavedViewsToolbar({
 
       {/* Active Filters Pills */}
       {hasActiveFilters && (
-        <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 flex items-center gap-2 flex-wrap">
+        <div className="px-4 py-2 border-t border-th-border flex items-center gap-2 flex-wrap">
           {activeFilters.map((filter, index) => (
             <FilterPill
               key={index}
@@ -432,7 +432,7 @@ function FiltersPanel({ availableFilters, activeFilters, onFiltersChange, onClos
   };
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-4 bg-gray-50 dark:bg-gray-800/50">
+    <div className="border-t border-th-border px-4 py-4 bg-surface-secondary">
       <div className="space-y-3">
         {pendingFilters.map((filter, index) => (
           <div key={index} className="flex items-center gap-2">
@@ -444,7 +444,7 @@ function FiltersPanel({ availableFilters, activeFilters, onFiltersChange, onClos
                 updated[index] = { ...filter, field: e.target.value };
                 setPendingFilters(updated);
               }}
-              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+              className="px-3 py-2 text-sm border border-th-border rounded-lg bg-surface-primary text-th-text-primary"
             >
               {availableFilters.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -461,7 +461,7 @@ function FiltersPanel({ availableFilters, activeFilters, onFiltersChange, onClos
                 updated[index] = { ...filter, operator: e.target.value as FilterCondition['operator'] };
                 setPendingFilters(updated);
               }}
-              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+              className="px-3 py-2 text-sm border border-th-border rounded-lg bg-surface-primary text-th-text-primary"
             >
               <option value="contains">contains</option>
               <option value="equals">equals</option>
@@ -484,14 +484,14 @@ function FiltersPanel({ availableFilters, activeFilters, onFiltersChange, onClos
                   setPendingFilters(updated);
                 }}
                 placeholder="Value..."
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+                className="flex-1 px-3 py-2 text-sm border border-th-border rounded-lg bg-surface-primary text-th-text-primary"
               />
             )}
 
             {/* Remove */}
             <button
               onClick={() => setPendingFilters(pendingFilters.filter((_, i) => i !== index))}
-              className="p-2 text-gray-400 hover:text-red-500"
+              className="p-2 text-th-text-tertiary hover:text-red-500"
             >
               <X className="w-4 h-4" />
             </button>
@@ -509,16 +509,16 @@ function FiltersPanel({ availableFilters, activeFilters, onFiltersChange, onClos
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-th-border">
         <button
           onClick={onClose}
-          className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+          className="px-3 py-2 text-sm text-th-text-secondary hover:text-th-text-primary"
         >
           Cancel
         </button>
         <button
           onClick={handleApply}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+          className="px-4 py-2 text-sm font-medium text-white bg-th-accent-primary hover:bg-th-accent-hover rounded-lg"
         >
           Apply Filters
         </button>
@@ -582,8 +582,8 @@ function SaveViewModal({ viewName, onViewNameChange, onSave, onClose }: SaveView
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-2xl z-50 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-surface-primary rounded-xl shadow-2xl z-50 p-6">
+        <h3 className="text-lg font-semibold text-th-text-primary mb-4">
           Save Current View
         </h3>
         <input
@@ -591,20 +591,20 @@ function SaveViewModal({ viewName, onViewNameChange, onSave, onClose }: SaveView
           value={viewName}
           onChange={(e) => onViewNameChange(e.target.value)}
           placeholder="View name..."
-          className="w-full px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-4"
+          className="w-full px-4 py-2 text-sm border border-th-border rounded-lg bg-surface-primary text-th-text-primary mb-4"
           autoFocus
         />
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400"
+            className="px-4 py-2 text-sm text-th-text-secondary hover:text-th-text-primary"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
             disabled={!viewName.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-th-accent-primary hover:bg-th-accent-hover rounded-lg disabled:opacity-50"
           >
             Save View
           </button>

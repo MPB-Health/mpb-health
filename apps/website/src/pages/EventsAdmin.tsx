@@ -176,9 +176,9 @@ export const EventsAdmin: React.FC = () => {
 
       resetForm();
       fetchEvents();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[EventsAdmin] Error saving event:', error);
-      setNotification({ type: 'error', message: `Failed to save event: ${error.message}` });
+      setNotification({ type: 'error', message: `Failed to save event: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setSaving(false);
     }
@@ -215,9 +215,9 @@ export const EventsAdmin: React.FC = () => {
       if (error) throw error;
       setNotification({ type: 'success', message: 'Event deleted successfully!' });
       fetchEvents();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[EventsAdmin] Error deleting event:', error);
-      setNotification({ type: 'error', message: `Failed to delete event: ${error.message}` });
+      setNotification({ type: 'error', message: `Failed to delete event: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
   };
 

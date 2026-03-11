@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger } from "../_shared/logger.ts";
-import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { checkRateLimit, getClientIdentifier, verifyHmacSignature } from "../_shared/security.ts";
 
 const log = createLogger("ticket-webhook-receiver");
 
@@ -21,26 +21,12 @@ interface TicketWebhookPayload {
 
 const WEBHOOK_SECRET = Deno.env.get("ITSTS_WEBHOOK_SECRET");
 
-/**
- * Constant-time comparison to prevent timing attacks on webhook signatures.
- */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  const encoder = new TextEncoder();
-  const bufA = encoder.encode(a);
-  const bufB = encoder.encode(b);
-  let result = 0;
-  for (let i = 0; i < bufA.length; i++) {
-    result |= bufA[i] ^ bufB[i];
-  }
-  return result === 0;
-}
-
-function verifyWebhookSignature(req: Request): boolean {
+async function verifyWebhookSignature(req: Request, body: string): Promise<boolean> {
   if (!WEBHOOK_SECRET) return false; // SECURITY: Fail closed - reject if secret not configured
   const sig = req.headers.get("x-webhook-signature");
   if (!sig) return false;
-  return timingSafeEqual(sig, WEBHOOK_SECRET);
+  // Use HMAC-SHA256 of the request body instead of comparing the raw secret
+  return verifyHmacSignature(body, sig, WEBHOOK_SECRET);
 }
 
 function getNotificationTitle(payload: TicketWebhookPayload): string {
@@ -102,12 +88,13 @@ Deno.serve(async (req: Request) => {
   });
   if (rateLimitResponse) return rateLimitResponse;
 
-  if (!verifyWebhookSignature(req)) {
+  const rawBody = await req.text();
+  if (!(await verifyWebhookSignature(req, rawBody))) {
     return new Response("Invalid signature", { status: 401 });
   }
 
   try {
-    const payload: TicketWebhookPayload = await req.json();
+    const payload: TicketWebhookPayload = JSON.parse(rawBody);
 
     if (!payload.requester_email || !payload.ticket_id) {
       return new Response(

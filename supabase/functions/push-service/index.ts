@@ -135,9 +135,10 @@ function base64UrlDecode(str: string): Uint8Array {
 
 Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req);
-  const correlationId =
-    req.headers.get("x-request-id") ||
-    `push-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const rawReqId = req.headers.get("x-request-id");
+  const correlationId = rawReqId
+    ? rawReqId.replace(/[^a-zA-Z0-9\-_.:]/g, "").slice(0, 128)
+    : `push-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
@@ -190,8 +191,17 @@ Deno.serve(async (req: Request) => {
 
     // send_push: internal (service-role only)
     if (action === "send_push") {
-      const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "");
-      if (authHeader !== supabaseServiceKey) {
+      const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "") || "";
+      // Constant-time comparison to prevent timing attacks on service-role key
+      const enc = new TextEncoder();
+      const a = enc.encode(authHeader);
+      const b = enc.encode(supabaseServiceKey);
+      let match = a.length === b.length ? 1 : 0;
+      const len = Math.max(a.length, b.length);
+      for (let i = 0; i < len; i++) {
+        match &= ((a[i % a.length] ?? 0) ^ (b[i % b.length] ?? 0)) === 0 ? 1 : 0;
+      }
+      if (!match) {
         return respondError("Unauthorized — service role required", 401);
       }
 

@@ -117,9 +117,9 @@ export const ResourceAdmin: React.FC = () => {
       setEditingId(null);
       resetForm();
       fetchResources();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving resource:', error);
-      setNotification({ type: 'error', message: `Failed to save resource: ${error.message}` });
+      setNotification({ type: 'error', message: `Failed to save resource: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setSaving(false);
     }
@@ -152,9 +152,9 @@ export const ResourceAdmin: React.FC = () => {
       if (error) throw error;
       setNotification({ type: 'success', message: 'Resource deleted successfully!' });
       fetchResources();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting resource:', error);
-      setNotification({ type: 'error', message: `Failed to delete resource: ${error.message}` });
+      setNotification({ type: 'error', message: `Failed to delete resource: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
   };
 

@@ -449,8 +449,8 @@ export default function AdvisorPortalCMS() {
               await advisorContentService.createContent(bulletinData);
             }
             result = { success: true };
-          } catch (error: any) {
-            result = { success: false, error: error.message };
+          } catch (error: unknown) {
+            result = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
           }
           break;
         case 'meetings':
@@ -461,8 +461,8 @@ export default function AdvisorPortalCMS() {
               await advisorMeetingService.createMeeting(meetingForm as CreateMeetingInput);
             }
             result = { success: true };
-          } catch (error: any) {
-            result = { success: false, error: error.message };
+          } catch (error: unknown) {
+            result = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
           }
           break;
         case 'quick-links':
@@ -499,8 +499,8 @@ export default function AdvisorPortalCMS() {
               await advisorContentService.createContent(resourceData);
             }
             result = { success: true };
-          } catch (error: any) {
-            result = { success: false, error: error.message };
+          } catch (error: unknown) {
+            result = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
           }
           break;
         case 'sops':
@@ -523,8 +523,8 @@ export default function AdvisorPortalCMS() {
               if (error) throw error;
             }
             result = { success: true };
-          } catch (error: any) {
-            result = { success: false, error: error.message };
+          } catch (error: unknown) {
+            result = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
           }
           break;
         case 'categories':
@@ -578,16 +578,16 @@ export default function AdvisorPortalCMS() {
           try {
             await advisorContentService.deleteContent(id);
             result = { success: true };
-          } catch (error: any) {
-            result = { success: false, error: error.message };
+          } catch (error: unknown) {
+            result = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
           }
           break;
         case 'meetings':
           try {
             await advisorMeetingService.deleteMeeting(id);
             result = { success: true };
-          } catch (error: any) {
-            result = { success: false, error: error.message };
+          } catch (error: unknown) {
+            result = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
           }
           break;
         case 'quick-links':
@@ -603,8 +603,8 @@ export default function AdvisorPortalCMS() {
           try {
             await advisorContentService.deleteContent(id);
             result = { success: true };
-          } catch (error: any) {
-            result = { success: false, error: error.message };
+          } catch (error: unknown) {
+            result = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
           }
           break;
         case 'categories':
@@ -650,8 +650,8 @@ export default function AdvisorPortalCMS() {
           try {
             await advisorContentService.updateContent(id, { is_published: !currentStatus });
             result = { success: true };
-          } catch (error: any) {
-            result = { success: false, error: error.message };
+          } catch (error: unknown) {
+            result = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
           }
           break;
         case 'widgets':

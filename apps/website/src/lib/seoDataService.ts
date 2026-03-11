@@ -530,10 +530,11 @@ export const syncKeywordData = async (
     });
 
     return { inserted, updated: 0 };
-  } catch (error: any) {
-    await updateSyncStatus(credentials.site_url, 'error', error.message);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    await updateSyncStatus(credentials.site_url, 'error', errMsg);
     await logSyncOperation(credentials.site_url, 'keywords', 'failed', {
-      error: error.message,
+      error: errMsg,
       dateFrom: dateRange.startDate,
       dateTo: dateRange.endDate,
       durationMs: Date.now() - startTime,

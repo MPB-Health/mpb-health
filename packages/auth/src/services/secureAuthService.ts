@@ -166,14 +166,14 @@ class SecureAuthService {
         session: data.session,
         mfaRequired: false,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Secure login error:', error);
 
       await securityEventService.logLoginFailure(
         email,
         ipAddress,
         userAgent,
-        error.message || 'System error'
+        error instanceof Error ? error.message : 'System error'
       );
 
       return {
@@ -472,8 +472,8 @@ class SecureAuthService {
       }
 
       return true;
-    } catch (error: any) {
-      console.error('[SECURITY] CAPTCHA verification request failed:', error.message);
+    } catch (error: unknown) {
+      console.error('[SECURITY] CAPTCHA verification request failed:', error instanceof Error ? error.message : error);
       // Fail closed: network/unexpected errors reject the CAPTCHA
       return false;
     }

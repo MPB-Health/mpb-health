@@ -166,14 +166,14 @@ class SecureAuthService {
         session: data.session,
         mfaRequired: false,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Secure login error:', error);
 
       await securityEventService.logLoginFailure(
         email,
         ipAddress,
         userAgent,
-        error.message || 'System error'
+        error instanceof Error ? error.message : 'System error'
       );
 
       return {

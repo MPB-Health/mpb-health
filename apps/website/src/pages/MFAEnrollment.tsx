@@ -50,8 +50,8 @@ export default function MFAEnrollment() {
       if (factors) {
         setStep('setup');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to start MFA enrollment');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to start MFA enrollment');
     } finally {
       setLoading(false);
     }
@@ -76,8 +76,8 @@ export default function MFAEnrollment() {
       }
 
       setStep('backup');
-    } catch (err: any) {
-      setError(err.message || 'Verification failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
       setLoading(false);
     }

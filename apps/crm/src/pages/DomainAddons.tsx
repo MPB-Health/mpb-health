@@ -68,8 +68,8 @@ export default function DomainAddons() {
       setAddResult(result);
       toast.success('Domain added - configure DNS records below');
       await loadDomains();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add domain');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add domain');
     } finally {
       setAdding(false);
     }

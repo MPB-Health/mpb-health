@@ -88,9 +88,9 @@ export const GoogleSearchConsoleConnect: React.FC<GoogleSearchConsoleConnectProp
     try {
       await fullSync(credentials, 28);
       await loadConnectedSites();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error syncing data:', err);
-      setError(err.message || 'Failed to sync data');
+      setError(err instanceof Error ? err.message : 'Failed to sync data');
     } finally {
       setSyncing(null);
     }

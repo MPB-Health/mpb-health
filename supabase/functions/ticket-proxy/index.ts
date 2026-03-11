@@ -567,9 +567,11 @@ Deno.serve(async (req: Request) => {
   // Accept x-request-id from the client (TicketService sends one for every
   // call) or generate a fallback. Echoed back in the response so clients can
   // match request ↔ log entry.
-  const correlationId =
-    req.headers.get("x-request-id") ??
-    `sf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  // Sanitize client-provided correlation ID to prevent log injection
+  const rawRequestId = req.headers.get("x-request-id");
+  const correlationId = rawRequestId
+    ? rawRequestId.replace(/[^a-zA-Z0-9\-_.:]/g, "").slice(0, 128)
+    : `sf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
   const corsHeaders = getCorsHeaders(req);
   const headers: Record<string, string> = {

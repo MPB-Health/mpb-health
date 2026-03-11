@@ -24,7 +24,19 @@
       "Bash(npx -p typescript tsc --noEmit --project apps/advisor-portal/tsconfig.json)",
       "Bash(node_modules/.bin/tsc --noEmit -p packages/champion-core/tsconfig.json)",
       "Bash(packages/champion-core/node_modules/.bin/tsc --noEmit -p packages/champion-core/tsconfig.json)",
-      "Bash(GIT_TERMINAL_PROMPT=0 git push origin master)"
+      "Bash(GIT_TERMINAL_PROMPT=0 git push origin master)",
+      "mcp__claude_ai_Supabase__get_advisors",
+      "Bash(jq -r .[0].text)",
+      "Bash(jq \".result.lints | group_by\\(.name\\) | map\\({name: .[0].name, level: .[0].level, count: length}\\) | sort_by\\(-.count\\) | .[] | \"\"[\\\\\\(.level\\)] \\\\\\(.name\\): \\\\\\(.count\\)\"\"\")",
+      "Bash(node -e \":*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/**)",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")",
+      "Bash(cat \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/.gitignore\")",
+      "Bash(head -20 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\supabase.ts\")"
     ]
   }
 }

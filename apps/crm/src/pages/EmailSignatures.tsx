@@ -551,8 +551,8 @@ function SignatureEditorModal({
         logo_storage_path: result.path,
       }));
       toast.success('Logo uploaded');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to upload logo');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to upload logo');
     } finally {
       setUploadingLogo(false);
     }
@@ -575,8 +575,8 @@ function SignatureEditorModal({
         banner_storage_path: result.path,
       }));
       toast.success('Banner uploaded');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to upload banner');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to upload banner');
     } finally {
       setUploadingBanner(false);
     }
@@ -928,8 +928,8 @@ export default function EmailSignatures() {
     try {
       const data = await signatureService.getUserSignatures(activeOrgId);
       setSignatures(data);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to load signatures');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load signatures');
     } finally {
       setLoading(false);
     }
@@ -1017,8 +1017,8 @@ export default function EmailSignatures() {
 
       closeEditor();
       await loadSignatures();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save signature');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save signature');
     } finally {
       setSaving(false);
     }
@@ -1029,8 +1029,8 @@ export default function EmailSignatures() {
       await signatureService.duplicateSignature(sig.id);
       toast.success(`Duplicated "${sig.name}"`);
       await loadSignatures();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to duplicate signature');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to duplicate signature');
     }
   };
 
@@ -1039,8 +1039,8 @@ export default function EmailSignatures() {
       await signatureService.updateSignature(sig.id, { is_default: true });
       toast.success(`"${sig.name}" set as default`);
       await loadSignatures();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to set default');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to set default');
     }
   };
 
@@ -1052,8 +1052,8 @@ export default function EmailSignatures() {
       toast.success(`Deleted "${deleteTarget.name}"`);
       setDeleteTarget(null);
       await loadSignatures();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete signature');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete signature');
     } finally {
       setDeleting(false);
     }

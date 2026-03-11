@@ -97,9 +97,9 @@ export const SEOAnalyticsDashboard: React.FC = () => {
       setTrendingUp(trendingUpData);
       setTrendingDown(trendingDownData);
       setPages(pagesData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading SEO data:', err);
-      setError(err.message || 'Failed to load SEO data');
+      setError(err instanceof Error ? err.message : 'Failed to load SEO data');
     } finally {
       setLoading(false);
     }

@@ -7,7 +7,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
 import { checkRateLimit, getClientIdentifier, requireAuth } from '../_shared/security.ts';
+
+const log = createLogger('send-crm-email-v2');
 
 // ============================================================================
 // Types

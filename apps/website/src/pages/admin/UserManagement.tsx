@@ -220,9 +220,9 @@ const UserManagement: React.FC = () => {
       if (error) throw error;
 
       toast.success(`Password reset email sent to ${email}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending reset:', error);
-      toast.error(error.message || 'Failed to send password reset email');
+      toast.error(error instanceof Error ? error.message : 'Failed to send password reset email');
     } finally {
       setSendingReset(null);
     }
@@ -275,11 +275,11 @@ const UserManagement: React.FC = () => {
       toast.success(`Password updated for ${targetEmail}`);
       log.info('Password change confirmed for:', targetEmail);
       closePasswordModal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error changing password:', error);
       // Fallback message if edge function doesn't exist
       toast.error(
-        error.message || 
+        error instanceof Error ? error.message :
         'Direct password change requires a backend function. Use "Send Reset Email" instead.'
       );
     } finally {
@@ -328,18 +328,18 @@ const UserManagement: React.FC = () => {
       );
       
       closeNameModal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating name:', error);
-      
+
       // If edge function fails, try updating own profile if it's the current user
       if (nameModal.userId === user?.id) {
         try {
           const { error: updateError } = await supabase.auth.updateUser({
             data: { full_name: editName.trim() }
           });
-          
+
           if (updateError) throw updateError;
-          
+
           toast.success(`Name updated to "${editName.trim()}"`);
           setUsers((prev) =>
             prev.map((u) =>
@@ -348,13 +348,13 @@ const UserManagement: React.FC = () => {
           );
           closeNameModal();
           return;
-        } catch (selfError: any) {
+        } catch (selfError: unknown) {
           console.error('Error updating own name:', selfError);
         }
       }
-      
+
       toast.error(
-        error.message || 
+        error instanceof Error ? error.message :
         'Updating other users requires a backend function. You can update your own profile.'
       );
     } finally {

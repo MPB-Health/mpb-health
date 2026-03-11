@@ -103,9 +103,9 @@ export const EditTrackingSnippetModal: React.FC<EditTrackingSnippetModalProps> =
 
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating snippet:', err);
-      setError(err.message || 'Failed to update tracking snippet');
+      setError(err instanceof Error ? err.message : 'Failed to update tracking snippet');
     } finally {
       setLoading(false);
     }
@@ -119,9 +119,9 @@ export const EditTrackingSnippetModal: React.FC<EditTrackingSnippetModalProps> =
       await analyticsTrackingService.deleteTrackingSnippet(snippet.id);
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting snippet:', err);
-      setError(err.message || 'Failed to delete tracking snippet');
+      setError(err instanceof Error ? err.message : 'Failed to delete tracking snippet');
       setDeleting(false);
     }
   };

@@ -12,6 +12,9 @@ export {
   invalidateHealthCheck,
 } from './client';
 
+// Types - Supabase Generated (auto-generated from live schema)
+export type { Database } from './types/supabase';
+
 // Types - Database
 export type {
   BlogAuthor,

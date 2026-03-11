@@ -94,8 +94,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({ plan, onSave, onClose }) => 
       } else {
         onClose();
       }
-    } catch (err: any) {
-      setErrorMsg(err?.message ?? 'Unexpected error');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Unexpected error');
     } finally {
       setSaving(false);
     }

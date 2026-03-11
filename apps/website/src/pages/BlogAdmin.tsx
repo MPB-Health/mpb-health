@@ -146,9 +146,9 @@ export const BlogAdmin: React.FC = () => {
 
       resetForm();
       fetchArticles();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[BlogAdmin] Error saving article:', error);
-      setNotification({ type: 'error', message: `Failed to save article: ${error.message}` });
+      setNotification({ type: 'error', message: `Failed to save article: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setSaving(false);
     }
@@ -180,9 +180,9 @@ export const BlogAdmin: React.FC = () => {
       if (error) throw error;
       setNotification({ type: 'success', message: 'Article deleted successfully!' });
       fetchArticles();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[BlogAdmin] Error deleting article:', error);
-      setNotification({ type: 'error', message: `Failed to delete article: ${error.message}` });
+      setNotification({ type: 'error', message: `Failed to delete article: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
   };
 

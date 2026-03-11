@@ -62,8 +62,9 @@ export class NotificationCenterService {
           });
         }
       }
-    } catch (error: any) {
-      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+    } catch (error: unknown) {
+      const pgErr = error instanceof Object ? (error as { code?: string; message?: string }) : null;
+      if (pgErr?.code === '42P01' || pgErr?.message?.includes('does not exist')) {
         this.tablesAvailable = false;
         return [];
       }
@@ -97,8 +98,9 @@ export class NotificationCenterService {
           });
         }
       }
-    } catch (error: any) {
-      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+    } catch (error: unknown) {
+      const pgErr = error instanceof Object ? (error as { code?: string; message?: string }) : null;
+      if (pgErr?.code === '42P01' || pgErr?.message?.includes('does not exist')) {
         this.tablesAvailable = false;
         return [];
       }

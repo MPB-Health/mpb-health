@@ -56,3 +56,5 @@ vite.config.d.ts
 nul
 .vercel
 .env*.local
+.env.vercel-pull
+*.env.vercel-pull

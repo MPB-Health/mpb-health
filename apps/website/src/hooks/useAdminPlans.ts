@@ -53,8 +53,8 @@ export function useAdminPlans() {
       const result = await planService.getPlans(f ?? filters, 100, 0);
       setPlans(result.plans);
       setTotalPlans(result.total);
-    } catch (err: any) {
-      setError(err?.message ?? 'Failed to load plans');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load plans');
     } finally {
       setLoading(false);
     }

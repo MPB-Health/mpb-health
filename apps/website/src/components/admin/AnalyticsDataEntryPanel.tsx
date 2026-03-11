@@ -63,9 +63,9 @@ export const AnalyticsDataEntryPanel: React.FC = () => {
         avg_session_duration: 0,
         conversion_rate: 0
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving analytics:', err);
-      setError(err.message || 'Failed to save analytics data');
+      setError(err instanceof Error ? err.message : 'Failed to save analytics data');
     } finally {
       setLoading(false);
     }
@@ -106,9 +106,9 @@ export const AnalyticsDataEntryPanel: React.FC = () => {
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error bulk importing:', err);
-      setError(err.message || 'Failed to import analytics data');
+      setError(err instanceof Error ? err.message : 'Failed to import analytics data');
     } finally {
       setLoading(false);
     }

@@ -107,9 +107,9 @@ export const AddTrackingSnippetModal: React.FC<AddTrackingSnippetModalProps> = (
 
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating snippet:', err);
-      setError(err.message || 'Failed to create tracking snippet');
+      setError(err instanceof Error ? err.message : 'Failed to create tracking snippet');
     } finally {
       setLoading(false);
     }

@@ -38,7 +38,18 @@
       "Bash(cat \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/.gitignore\")",
       "Bash(head -20 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\supabase.ts\")",
       "Bash(grep -rn \"overflow-x-auto\" apps/crm/src/pages/*.tsx)",
-      "Bash(do echo:*)"
+      "Bash(do echo:*)",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/ITSTS' -type f -name *.sql -o -name *migration* -o -name *schema*)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo\" -type f \\\\\\( -name \"*ticket*\" -o -name \"*Ticket*\" \\\\\\) -path \"*/src/*\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages\" -type f \\\\\\( -name \"*type*\" -o -name \"*interface*\" \\\\\\))",
+      "Bash(python3 -c \":*)",
+      "Bash(node scripts/temp-analyze.js)",
+      "Bash(node scripts/generate-import-sql.js)",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/\")",
+      "Bash(cat \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/batch_001_tickets.sql\")",
+      "Bash(cat '/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/batch_025_tickets.sql')",
+      "Bash(cat \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/batch_025_tickets.sql\")"
     ]
   }
 }

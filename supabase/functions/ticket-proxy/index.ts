@@ -18,10 +18,11 @@ type ProxyAction =
   | "reply"
   | "update_ticket"
   | "get_categories"
-  | "create_for_advisor";
+  | "create_for_advisor"
+  | "list_kb";
 
 const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor"];
-const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories"];
+const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories", "list_kb"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_COMMENT_LENGTH = 10_000;
@@ -150,6 +151,31 @@ async function listTickets(
   const { data, count, error } = await query;
   if (error) throw error;
 
+  return { tickets: data || [], total: count || 0, page: opts.page, per_page: opts.perPage };
+}
+
+async function listKnowledgeBase(
+  itstsAdmin: ReturnType<typeof createClient>,
+  opts: { search?: string; category?: string; page: number; perPage: number },
+) {
+  let query = itstsAdmin
+    .from("tickets")
+    .select("id, ticket_number, subject, description, status, priority, category, created_at, origin, submitter_name, submitter_email", { count: "exact" })
+    .eq("is_imported", true)
+    .in("status", ["resolved", "closed"])
+    .order("created_at", { ascending: false })
+    .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
+
+  if (opts.category) query = query.eq("category", opts.category);
+  if (opts.search) {
+    const safe = opts.search.replace(/[%_\\]/g, "").slice(0, 100);
+    if (safe) {
+      query = query.or(`subject.ilike.%${safe}%,description.ilike.%${safe}%`);
+    }
+  }
+
+  const { data, count, error } = await query;
+  if (error) throw error;
   return { tickets: data || [], total: count || 0, page: opts.page, per_page: opts.perPage };
 }
 
@@ -633,7 +659,7 @@ Deno.serve(async (req: Request) => {
 
     // ── ITSTS not configured → return graceful stubs for read actions ──────
     if (!itstsAdmin) {
-      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all"];
+      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all", "list_kb"];
       if (READ_STUB_ACTIONS.includes(action as string)) {
         const stubs: Record<string, unknown> = {
           list:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
@@ -641,6 +667,7 @@ Deno.serve(async (req: Request) => {
           get_categories:{ categories: [] },
           list_all:      { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
           stats_all:     { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+          list_kb:       { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
         };
         return new Response(
           JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId }),
@@ -857,6 +884,14 @@ Deno.serve(async (req: Request) => {
         break;
       case "get_categories":
         result = await getCategories(itstsAdmin);
+        break;
+      case "list_kb":
+        result = await listKnowledgeBase(itstsAdmin, {
+          search: body.search,
+          category: body.category,
+          page: body.page || 1,
+          perPage: body.per_page || 20,
+        });
         break;
 
       // ── Admin write actions ──

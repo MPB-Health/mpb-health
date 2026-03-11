@@ -25,6 +25,7 @@ const Tickets = React.lazy(() => import('./pages/Tickets'));
 const NewTicket = React.lazy(() => import('./pages/NewTicket'));
 const ChatPage = React.lazy(() => import('./pages/Chat'));
 const AdminTickets = React.lazy(() => import('./pages/AdminTickets'));
+const KnowledgeBase = React.lazy(() => import('./pages/KnowledgeBase'));
 const EventsManager = React.lazy(() => import('./pages/EventsManager'));
 const EventForm = React.lazy(() => import('./pages/EventForm'));
 const Login = React.lazy(() => import('./pages/Login'));
@@ -210,6 +211,7 @@ export default function App() {
               <Route path="contact" element={<Suspense fallback={<RouteSpinner />}><Contact /></Suspense>} />
               <Route path="tickets" element={<Suspense fallback={<RouteSpinner />}><Tickets /></Suspense>} />
               <Route path="tickets/new" element={<Suspense fallback={<RouteSpinner />}><NewTicket /></Suspense>} />
+              <Route path="knowledge-base" element={<Suspense fallback={<RouteSpinner />}><KnowledgeBase /></Suspense>} />
               <Route path="admin/tickets" element={<Suspense fallback={<RouteSpinner />}><AdminTickets /></Suspense>} />
               <Route path="chat" element={<Suspense fallback={<RouteSpinner />}><ChatPage /></Suspense>} />
               <Route path="chat/:conversationId" element={<Suspense fallback={<RouteSpinner />}><ChatPage /></Suspense>} />

@@ -396,6 +396,17 @@ export class TicketService {
     }
   }
 
+  async getKnowledgeBase(opts: { search?: string; category?: string; page?: number; perPage?: number } = {}): Promise<TicketListResult> {
+    const data = await this.call<TicketListResult & { success: boolean }>('list_kb', {
+      search: opts.search,
+      category: opts.category,
+      page: opts.page ?? 1,
+      per_page: opts.perPage ?? 20,
+    }, { allowUnauthenticated: true });
+    if (!data) return { tickets: [], total: 0, page: opts.page ?? 1, per_page: opts.perPage ?? 20 };
+    return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
+  }
+
   // ── Advisor write methods ──────────────────────────────────────────────
 
   async createTicket(opts: CreateTicketOptions): Promise<CreateTicketResult> {

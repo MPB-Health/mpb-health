@@ -168,6 +168,7 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'Support Tickets', href: '/tickets', icon: Headphones },
+  { name: 'Knowledge Base', href: '/knowledge-base', icon: BookOpen },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
 
@@ -334,6 +335,9 @@ export default function MainLayout() {
     if (!base.some((item) => item.href === '/tickets' || item.name === 'Support Tickets')) {
       base.push({ name: 'Support Tickets', href: '/tickets', icon: Headphones });
     }
+    if (!base.some((item) => item.href === '/knowledge-base' || item.name === 'Knowledge Base')) {
+      base.push({ name: 'Knowledge Base', href: '/knowledge-base', icon: BookOpen });
+    }
 
     // Admin-only: Ticket Management
     if (isAdminUser) {
@@ -345,7 +349,7 @@ export default function MainLayout() {
     }
 
     // Enforce sidebar order
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Events', 'Submit Group', 'Chat', 'Support Tickets', 'Ticket Management', 'Contact'];
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Events', 'Submit Group', 'Chat', 'Support Tickets', 'Knowledge Base', 'Ticket Management', 'Contact'];
     base = [...base].sort((a, b) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);

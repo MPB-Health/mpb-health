@@ -30,7 +30,7 @@ export const DEV_PORTS = {
   training: 5177,
 } as const;
 
-export type PortalKey = 'admin' | 'crm' | 'advisors';
+export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website';
 
 export interface PortalInfo {
   key: PortalKey;

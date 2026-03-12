@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, LayoutDashboard, Users, GraduationCap, Check } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, Users, GraduationCap, Globe, Check } from 'lucide-react';
 import { cn } from '../utils';
 
-export type PortalKey = 'admin' | 'crm' | 'advisors';
+export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website';
 
 export interface PortalSwitcherProps {
   /** The current portal the user is on */
@@ -13,6 +13,8 @@ export interface PortalSwitcherProps {
   canAccessCRM: boolean;
   /** Whether the user can access the Advisor Portal */
   canAccessAdvisor: boolean;
+  /** Whether the user can access the Website Backend */
+  canAccessWebsite?: boolean;
   /** Function to get the URL for a portal */
   getPortalUrl: (portal: PortalKey) => string;
   /** Optional: async SSO URL for cross-portal nav. If provided and returns URL, use it; else fall back to getPortalUrl */
@@ -47,6 +49,12 @@ const PORTAL_OPTIONS: PortalOption[] = [
     description: 'Training & resources',
     icon: GraduationCap,
   },
+  {
+    key: 'website',
+    name: 'Website Backend',
+    description: 'CMS, blog & site settings',
+    icon: Globe,
+  },
 ];
 
 export function PortalSwitcher({
@@ -54,6 +62,7 @@ export function PortalSwitcher({
   canAccessAdmin,
   canAccessCRM,
   canAccessAdvisor,
+  canAccessWebsite,
   getPortalUrl,
   getPortalUrlWithSSO,
   className,
@@ -79,6 +88,7 @@ export function PortalSwitcher({
     if (portal.key === 'admin') return canAccessAdmin;
     if (portal.key === 'crm') return canAccessCRM;
     if (portal.key === 'advisors') return canAccessAdvisor;
+    if (portal.key === 'website') return !!canAccessWebsite;
     return false;
   });
 

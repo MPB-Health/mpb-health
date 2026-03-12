@@ -584,6 +584,141 @@ export class ImportService {
   }
 
   // =========================================================================
+  // BULK ACTIONS
+  // =========================================================================
+
+  /**
+   * Delete lead submissions by IDs
+   */
+  async deleteLeadSubmissions(ids: string[]): Promise<{ success: boolean; deletedCount: number; error?: string }> {
+    const { error, count } = await this.supabase
+      .from('zoho_lead_submissions')
+      .delete({ count: 'exact' })
+      .in('id', ids);
+
+    if (error) return { success: false, deletedCount: 0, error: error.message };
+    return { success: true, deletedCount: count || 0 };
+  }
+
+  /**
+   * Add tags to lead submissions (merges with existing tags)
+   */
+  async addTagsToLeads(ids: string[], tags: string[]): Promise<{ success: boolean; error?: string }> {
+    // Fetch current tags, merge, then update each row
+    const { data: rows, error: fetchErr } = await this.supabase
+      .from('zoho_lead_submissions')
+      .select('id, tags')
+      .in('id', ids);
+
+    if (fetchErr) return { success: false, error: fetchErr.message };
+
+    for (const row of rows || []) {
+      const existing: string[] = (row.tags as string[]) || [];
+      const merged = [...new Set([...existing, ...tags])];
+      const { error } = await this.supabase
+        .from('zoho_lead_submissions')
+        .update({ tags: merged })
+        .eq('id', row.id);
+      if (error) return { success: false, error: error.message };
+    }
+    return { success: true };
+  }
+
+  /**
+   * Remove tags from lead submissions
+   */
+  async removeTagsFromLeads(ids: string[], tags: string[]): Promise<{ success: boolean; error?: string }> {
+    const { data: rows, error: fetchErr } = await this.supabase
+      .from('zoho_lead_submissions')
+      .select('id, tags')
+      .in('id', ids);
+
+    if (fetchErr) return { success: false, error: fetchErr.message };
+
+    for (const row of rows || []) {
+      const existing: string[] = (row.tags as string[]) || [];
+      const filtered = existing.filter(t => !tags.includes(t));
+      const { error } = await this.supabase
+        .from('zoho_lead_submissions')
+        .update({ tags: filtered })
+        .eq('id', row.id);
+      if (error) return { success: false, error: error.message };
+    }
+    return { success: true };
+  }
+
+  /**
+   * Update interested_plans for leads
+   */
+  async setInterestedPlans(ids: string[], plans: string[]): Promise<{ success: boolean; error?: string }> {
+    const { error } = await this.supabase
+      .from('zoho_lead_submissions')
+      .update({ interested_plans: plans })
+      .in('id', ids);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }
+
+  /**
+   * Update pipeline_stage for leads
+   */
+  async updateLeadStage(ids: string[], stage: string): Promise<{ success: boolean; error?: string }> {
+    const { error } = await this.supabase
+      .from('zoho_lead_submissions')
+      .update({ pipeline_stage: stage, stage_changed_at: new Date().toISOString() })
+      .in('id', ids);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }
+
+  /**
+   * Convert leads to CRM contacts
+   */
+  async convertLeadsToContacts(ids: string[]): Promise<{ success: boolean; convertedCount: number; errors: string[] }> {
+    const { data: user } = await this.supabase.auth.getUser();
+    if (!user.user) return { success: false, convertedCount: 0, errors: ['Not authenticated'] };
+
+    const { data: leads, error: fetchErr } = await this.supabase
+      .from('zoho_lead_submissions')
+      .select('*')
+      .in('id', ids);
+
+    if (fetchErr || !leads) return { success: false, convertedCount: 0, errors: [fetchErr?.message || 'Fetch failed'] };
+
+    const errors: string[] = [];
+    let convertedCount = 0;
+
+    for (const lead of leads) {
+      const { error: insertErr } = await this.supabase
+        .from('crm_contacts')
+        .insert({
+          first_name: lead.first_name,
+          last_name: lead.last_name,
+          email: lead.email || null,
+          phone: lead.phone || null,
+          tags: lead.tags || [],
+          lead_source: lead.source_cta || lead.source_page || 'Quick Rate Lead',
+          mailing_address: lead.zip_code ? { postal_code: lead.zip_code } : {},
+          created_by: user.user.id,
+        });
+
+      if (insertErr) {
+        errors.push(`${lead.first_name} ${lead.last_name}: ${insertErr.message}`);
+      } else {
+        await this.supabase
+          .from('zoho_lead_submissions')
+          .update({ converted_at: new Date().toISOString(), pipeline_stage: 'converted' })
+          .eq('id', lead.id);
+        convertedCount++;
+      }
+    }
+
+    return { success: errors.length === 0, convertedCount, errors };
+  }
+
+  // =========================================================================
   // HELPERS
   // =========================================================================
 

@@ -55,6 +55,39 @@ export interface CRMLeadFilters {
   offset?: number;
 }
 
+export interface CRMContact {
+  id: string;
+  org_id: string;
+  account_id: string | null;
+  salutation: string | null;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  mobile: string | null;
+  title: string | null;
+  department: string | null;
+  lead_source: string | null;
+  converted_from_lead_id: string | null;
+  converted_at: string | null;
+  tags: string[];
+  description: string | null;
+  owner_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConvertLeadInput {
+  salutation?: string;
+  title?: string;
+  department?: string;
+  mobile?: string;
+  account_id?: string;
+  tags?: string[];
+  description?: string;
+}
+
 export class CRMBridgeService {
   async getCRMSummary(): Promise<CRMSummary> {
     const [totalLeads, newToday, stageData, convertedCount, pendingTasks] = await Promise.all([
@@ -233,6 +266,105 @@ export class CRMBridgeService {
       .eq('id', leadId);
 
     if (error) throw error;
+  }
+
+  // ── Lead-to-Contact conversion ─────────────────────────────────────────────
+
+  async isLeadConverted(leadId: string): Promise<{ converted: boolean; contactId?: string }> {
+    const { data } = await supabase
+      .from('crm_contacts')
+      .select('id')
+      .eq('converted_from_lead_id', leadId)
+      .limit(1);
+
+    if (data && data.length > 0) {
+      return { converted: true, contactId: data[0].id };
+    }
+    return { converted: false };
+  }
+
+  async convertLeadToContact(
+    leadId: string,
+    extras?: ConvertLeadInput,
+  ): Promise<CRMContact> {
+    // 1. Get the lead
+    const { data: lead, error: leadError } = await supabase
+      .from('zoho_lead_submissions')
+      .select('*')
+      .eq('id', leadId)
+      .single();
+
+    if (leadError || !lead) throw new Error('Lead not found');
+
+    // 2. Check not already converted
+    const { converted } = await this.isLeadConverted(leadId);
+    if (converted) throw new Error('Lead has already been converted to a contact');
+
+    // 3. Get current auth user
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) throw new Error('Not authenticated');
+
+    // 4. Default org (MPB Health)
+    const ORG_ID = '00000000-0000-4000-a000-000000000001';
+
+    // 5. Create the contact
+    const now = new Date().toISOString();
+    const { data: contact, error: insertError } = await supabase
+      .from('crm_contacts')
+      .insert({
+        org_id: ORG_ID,
+        first_name: lead.first_name || 'Unknown',
+        last_name: lead.last_name || 'Unknown',
+        email: lead.email || null,
+        phone: lead.phone || null,
+        mobile: extras?.mobile || null,
+        salutation: extras?.salutation || null,
+        title: extras?.title || null,
+        department: extras?.department || null,
+        lead_source: lead.source || lead.utm_source || null,
+        converted_from_lead_id: leadId,
+        converted_at: now,
+        account_id: extras?.account_id || null,
+        tags: extras?.tags || [],
+        description: extras?.description || lead.notes || null,
+        owner_id: lead.assigned_to || authUser.id,
+        created_by: authUser.id,
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    // 6. Update the lead status to converted + move to won stage
+    const { data: wonStage } = await supabase
+      .from('crm_pipeline_stages')
+      .select('id')
+      .eq('is_won_stage', true)
+      .limit(1);
+
+    const leadUpdate: Record<string, unknown> = {
+      status: 'converted',
+      converted_at: now,
+      updated_at: now,
+    };
+    if (wonStage && wonStage.length > 0) {
+      leadUpdate.pipeline_stage_id = wonStage[0].id;
+    }
+
+    await supabase
+      .from('zoho_lead_submissions')
+      .update(leadUpdate)
+      .eq('id', leadId);
+
+    // 7. Log the conversion activity
+    await supabase.from('lead_activities').insert({
+      lead_id: leadId,
+      type: 'status_change',
+      description: `Lead converted to contact (${contact.id})`,
+      created_by: authUser.id,
+    });
+
+    return contact as CRMContact;
   }
 
   async getRevenueMetrics(): Promise<{

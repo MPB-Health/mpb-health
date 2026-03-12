@@ -89,7 +89,11 @@
       "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/node_modules/typescript/bin/\")",
       "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/crm-core/src/leads/\")",
       "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps\" -name \"*.tsx\" -o -name \"*.ts\")",
-      "Bash(find '/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo' -type f -name .env*)"
+      "Bash(find '/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo' -type f -name .env*)",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/functions/\")",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations/\")",
+      "Bash(npx -p typescript tsc --noEmit -p apps/crm/tsconfig.json)",
+      "Bash(node_modules/.bin/tsc --noEmit -p apps/crm/tsconfig.json)"
     ]
   }
 }

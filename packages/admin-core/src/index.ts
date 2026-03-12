@@ -31,6 +31,8 @@ export {
   type CRMLeadFilters,
   type CRMActivity,
   type CRMTask,
+  type CRMContact,
+  type ConvertLeadInput,
 } from './analytics/CRMBridgeService';
 
 // Specialized Settings Services

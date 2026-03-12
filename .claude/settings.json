@@ -65,7 +65,16 @@
       "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/admin-core/src\" -type f -name \"*ulletin*\" -o -type f -name \"*announcement*\")",
       "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/admin-core/src\" -maxdepth 2 -type f -name \"index.ts\")",
       "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages' -name *widget* -o -name *dashboard*)",
-      "Bash(grep -r \"advisor_dashboard_widgets\\\\|advisor_announcements\" 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages' --include=*.ts --include=*.tsx)"
+      "Bash(grep -r \"advisor_dashboard_widgets\\\\|advisor_announcements\" 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages' --include=*.ts --include=*.tsx)",
+      "Bash(find \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\supabase\\\\migrations\" -name \"*quick_links*\" -o -name \"*advisor_quick*\")",
+      "Bash(find \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\supabase\\\\migrations\" -name \"*quick*\")",
+      "Bash(find \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\advisor-core\\\\src\" -name \"*.ts\")",
+      "Bash(ls -la \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\advisor-core\\\\src\\\\types\"\")",
+      "Bash(find 'c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages' -name *Video* -o -name *video*)",
+      "Bash(ls -la \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\\\\src\\\\content\")",
+      "Bash(find \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\" -name \"*Video*\")",
+      "Bash(find \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\" -name \"*Handbook*\")",
+      "Bash(tail -100 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\database.ts\")"
     ]
   }
 }

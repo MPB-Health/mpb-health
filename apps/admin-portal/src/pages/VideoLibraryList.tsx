@@ -25,6 +25,9 @@ const EMPTY_FORM: VideoFormData = {
   description: '',
   order_index: 0,
   is_active: true,
+  category: 'training',
+  tags: [],
+  duration: '',
 };
 
 export default function VideoLibraryList() {
@@ -93,6 +96,9 @@ export default function VideoLibraryList() {
       description: video.description || '',
       order_index: video.order_index,
       is_active: video.is_active,
+      category: video.category || 'training',
+      tags: video.tags || [],
+      duration: video.duration || '',
     });
     setShowModal(true);
   };

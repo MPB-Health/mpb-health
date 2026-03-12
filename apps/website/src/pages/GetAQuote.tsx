@@ -3,6 +3,10 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Clock, Phone, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { LeadForm } from '../components/forms/LeadForm';
+import { createClientLogger } from '@mpbhealth/utils';
+
+const log = createClientLogger('GetAQuote');
 
 const GetAQuote: React.FC = () => {
   return (
@@ -60,13 +64,7 @@ const GetAQuote: React.FC = () => {
             {/* Form Column */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden p-6">
-                <iframe
-                  src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/418"
-                  title="Get a Quote"
-                  allow="payment"
-                  style={{ border: 0, width: '100%', display: 'block', minHeight: '1400px' }}
-                  loading="lazy"
-                />
+                <LeadForm onSubmit={(formData) => log.info('Quote form submitted', formData)} />
               </div>
             </div>
 

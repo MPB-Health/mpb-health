@@ -288,9 +288,9 @@ export default function QuickRateEstimateLeads() {
 
   const renderCellContent = (col: ColumnDef, sub: QuoteSubmission) => {
     const fd = (sub.form_data || {}) as Record<string, unknown>;
-    const tags: string[] = ((sub as Record<string, unknown>).tags as string[]) || [];
-    const stage = (sub as Record<string, unknown>).pipeline_stage as string | null;
-    const plans: string[] = ((sub as Record<string, unknown>).interested_plans as string[]) || [];
+    const tags: string[] = sub.tags || [];
+    const stage = sub.pipeline_stage;
+    const plans: string[] = sub.interested_plans || [];
 
     switch (col.id) {
       case 'name':
@@ -347,8 +347,8 @@ export default function QuickRateEstimateLeads() {
 
   const renderExpandedRow = (sub: QuoteSubmission) => {
     const fd = (sub.form_data || {}) as Record<string, unknown>;
-    const tags: string[] = ((sub as Record<string, unknown>).tags as string[]) || [];
-    const plans: string[] = ((sub as Record<string, unknown>).interested_plans as string[]) || [];
+    const tags: string[] = sub.tags || [];
+    const plans: string[] = sub.interested_plans || [];
     return (
       <tr className="bg-surface-secondary/50">
         <td colSpan={visibleCols.length + 2} className="px-6 py-4">
@@ -637,7 +637,7 @@ export default function QuickRateEstimateLeads() {
                   <div className="w-12 h-12 rounded-full bg-th-accent-100 flex items-center justify-center"><span className="text-th-accent-600 font-semibold">{detailSub.first_name?.[0]}{detailSub.last_name?.[0]}</span></div>
                   <div>
                     <div className="font-medium text-th-text-primary text-lg">{detailSub.first_name} {detailSub.last_name}</div>
-                    {getStageBadge((detailSub as Record<string, unknown>).pipeline_stage as string | null)}
+                    {getStageBadge(detailSub.pipeline_stage)}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-2 text-sm">
@@ -663,8 +663,8 @@ export default function QuickRateEstimateLeads() {
 
               {/* Labels */}
               {(() => {
-                const tags: string[] = ((detailSub as Record<string, unknown>).tags as string[]) || [];
-                const plans: string[] = ((detailSub as Record<string, unknown>).interested_plans as string[]) || [];
+                const tags: string[] = detailSub.tags || [];
+                const plans: string[] = detailSub.interested_plans || [];
                 return (tags.length > 0 || plans.length > 0) ? (
                   <div className="mb-6">
                     <h4 className="text-sm font-medium text-th-text-secondary mb-3">Labels & Products</h4>

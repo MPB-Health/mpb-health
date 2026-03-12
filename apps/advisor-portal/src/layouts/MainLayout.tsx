@@ -182,7 +182,7 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
       href: item.url || '/',
       icon: getIconComponent(item.icon),
       badge: item.badge_text ? (
-        <span 
+        <span
           className={`ml-auto text-white text-xs rounded-full px-2 py-0.5 ${
             item.badge_color === 'red' ? 'bg-red-500' :
             item.badge_color === 'green' ? 'bg-green-500' :
@@ -201,6 +201,7 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
             .map(child => ({
               name: child.label,
               href: child.url || '/',
+              external: child.is_external || undefined,
             }))
         : undefined,
     }));
@@ -298,63 +299,19 @@ export default function MainLayout() {
     };
   }, [loadNavigation]);
 
-  // Training link overrides: ensure correct URLs regardless of CMS
-  const TRAINING_LINK_OVERRIDES: Record<string, { href: string; external?: true }> = {
-    'MPB Training': { href: '/training/mpb-cards' },
-    'Secure HSA Training': { href: '/training/secure-hsa' },
-    'CARE+ Training': { href: '/training/care-plus' },
-    'Sedera Training': { href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
-    'Zion Training': { href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
-  };
-
-  // Use CMS navigation if available, otherwise fallback. Inject Quick Links after Forms if not already present.
+  // Use CMS navigation if available, otherwise fallback.
+  // Database order_index controls ordering — no hardcoded overrides.
   const navigation = useMemo(() => {
     let base = cmsNavItems.length > 0 ? cmsNavItems : fallbackNavigation;
 
-    // Override training links (MPB → mpb-cards page; Sedera/Zion → external)
-    base = base.map(item => {
-      if (item.children) {
-        return {
-          ...item,
-          children: item.children.map(child => {
-            const override = TRAINING_LINK_OVERRIDES[child.name];
-            return override ? { ...child, ...override } : child;
-          }),
-        };
-      }
-      return item;
-    });
-
-    // Inject items that may not exist in CMS nav
-    if (!base.some((item) => item.href === '/quick-links' || item.name === 'Resource Center')) {
-      base.push({ name: 'Resource Center', href: '/quick-links', icon: Link });
-    }
-    if (!base.some((item) => item.href === '/videos' || item.name === 'Video Library')) {
-      base.push({ name: 'Video Library', href: '/videos', icon: Video });
-    }
-    if (!base.some((item) => item.href === '/tickets' || item.name === 'Support Tickets')) {
-      base.push({ name: 'Support Tickets', href: '/tickets', icon: Headphones });
-    }
-    if (!base.some((item) => item.href === '/knowledge-base' || item.name === 'Knowledge Base')) {
-      base.push({ name: 'Knowledge Base', href: '/knowledge-base', icon: BookOpen });
-    }
-
-    // Admin-only: Ticket Management
+    // Admin-only: Ticket Management (role-gated, not CMS-managed)
     if (isAdminUser) {
       if (!base.some((item) => item.href === '/admin/tickets' || item.name === 'Ticket Management')) {
-        base.push({ name: 'Ticket Management', href: '/admin/tickets', icon: ShieldCheck });
+        base = [...base, { name: 'Ticket Management', href: '/admin/tickets', icon: ShieldCheck }];
       }
     } else {
       base = base.filter((item) => item.name !== 'Ticket Management');
     }
-
-    // Enforce sidebar order
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Events', 'Submit Group', 'Chat', 'Support Tickets', 'Knowledge Base', 'Ticket Management', 'Contact'];
-    base = [...base].sort((a, b) => {
-      const ai = ORDER.indexOf(a.name);
-      const bi = ORDER.indexOf(b.name);
-      return (ai === -1 ? ORDER.length : ai) - (bi === -1 ? ORDER.length : bi);
-    });
 
     return base;
   }, [cmsNavItems, isAdminUser]);

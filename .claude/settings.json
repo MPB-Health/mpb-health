@@ -54,7 +54,18 @@
       "Bash(find /c/Users/VinnieRTannous -path *database* -name *.ts)",
       "Bash(grep -r \"navigationService\\\\|navigationAdminService\" apps/advisor-portal/src --include=*.ts --include=*.tsx -l)",
       "Bash(grep -r \"adminService\\\\|contentService\" packages/admin-core/src --include=*.ts -l)",
-      "Bash(grep -r \"content/\\\\|/training\\\\|/forms\\\\|/sops\\\\|admin-portal/src/pages\" apps/admin-portal/src -name \"*.tsx\")"
+      "Bash(grep -r \"content/\\\\|/training\\\\|/forms\\\\|/sops\\\\|admin-portal/src/pages\" apps/admin-portal/src -name \"*.tsx\")",
+      "Bash(find /c/Users/VinnieRTannous/'OneDrive - mympb.com \\(1\\)'/Documents/GitHub/mpbhealth-monorepo -type d -name \"*core*\")",
+      "Bash(./node_modules/.bin/tsc --noEmit -p apps/advisor-portal/tsconfig.json)",
+      "Bash(ls apps/advisor-portal/node_modules/.bin/tsc*)",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations' -name *advisor_portal_cms* -o -name *dashboard* -o -name *announcement*)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages\" -name \"*service*\" -type f)",
+      "Bash(ls -la \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core/src\" -type f -name \"*.ts\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/admin-core/src\" -type f -name \"*ulletin*\" -o -type f -name \"*announcement*\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/admin-core/src\" -maxdepth 2 -type f -name \"index.ts\")",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages' -name *widget* -o -name *dashboard*)",
+      "Bash(grep -r \"advisor_dashboard_widgets\\\\|advisor_announcements\" 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages' --include=*.ts --include=*.tsx)"
     ]
   }
 }

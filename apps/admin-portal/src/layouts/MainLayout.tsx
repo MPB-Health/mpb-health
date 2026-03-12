@@ -89,6 +89,8 @@ const navigation: NavItem[] = [
       { name: 'Forms', href: '/content/forms' },
       { name: 'Contact Directory', href: '/content/contacts' },
       { name: 'Navigation', href: '/content/navigation' },
+      { name: 'Announcements', href: '/content/announcements' },
+      { name: 'Dashboard Widgets', href: '/content/widgets' },
     ],
   },
 

@@ -158,6 +158,24 @@ export {
   type NavItemUpdateInput,
 } from './content/NavigationAdminService';
 
+// Announcements management
+export {
+  AnnouncementAdminService,
+  announcementAdminService,
+  type AdminAnnouncement,
+  type AnnouncementCreateInput,
+  type AnnouncementUpdateInput,
+} from './content/AnnouncementAdminService';
+
+// Dashboard widgets management
+export {
+  WidgetAdminService,
+  widgetAdminService,
+  type DashboardWidget,
+  type WidgetCreateInput,
+  type WidgetUpdateInput,
+} from './content/WidgetAdminService';
+
 // Video library (re-export from advisor-core — already has full CRUD)
 export { VideoService, videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
 

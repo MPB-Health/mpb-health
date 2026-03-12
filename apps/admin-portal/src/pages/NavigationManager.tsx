@@ -223,6 +223,11 @@ export default function NavigationManager() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium text-th-text-primary text-sm">{node.label}</span>
+              {node.icon && (
+                <span className="px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-mono">
+                  {node.icon}
+                </span>
+              )}
               {!node.is_active && (
                 <span className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                   Hidden
@@ -234,6 +239,11 @@ export default function NavigationManager() {
                 </span>
               )}
               {node.is_external && <ExternalLink className="w-3 h-3 text-th-text-tertiary" />}
+              {hasChildren && (
+                <span className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  {node.children.length} {node.children.length === 1 ? 'child' : 'children'}
+                </span>
+              )}
             </div>
             {node.url && (
               <span className="text-xs text-th-text-tertiary">{node.url}</span>
@@ -242,7 +252,7 @@ export default function NavigationManager() {
 
           {/* Actions */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            {depth === 0 && (
+            {depth < 2 && (
               <button
                 type="button"
                 onClick={() => openCreate(node.id)}
@@ -444,7 +454,9 @@ export default function NavigationManager() {
                 >
                   <option value="">Top level (no parent)</option>
                   {topLevelItems.map((item) => (
-                    <option key={item.id} value={item.id}>{item.label}</option>
+                    <option key={item.id} value={item.id}>
+                      {item.label} ({items.filter(i => i.parent_id === item.id).length} children)
+                    </option>
                   ))}
                 </select>
               </div>

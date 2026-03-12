@@ -9,6 +9,9 @@ export interface AdvisorVideo {
   description?: string | null;
   order_index: number;
   is_active: boolean;
+  category: string;
+  tags: string[];
+  duration?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -9,7 +9,8 @@ export type QuickLinkCategory =
   | 'employer_forms'
   | 'member_forms'
   | 'bulletins'
-  | 'dashboard_actions';
+  | 'dashboard_actions'
+  | 'resource_center';
 
 export type QuickLinkCreateInput = Omit<QuickLink, 'id' | 'created_at' | 'updated_at'>;
 export type QuickLinkUpdateInput = Partial<Omit<QuickLink, 'id' | 'created_at' | 'updated_at'>>;

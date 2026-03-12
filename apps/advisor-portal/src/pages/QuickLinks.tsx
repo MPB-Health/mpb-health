@@ -1,68 +1,7 @@
-import { useState } from 'react';
-import { ExternalLink, X, Smartphone, ArrowRight, Video, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ExternalLink, X, Smartphone, ArrowRight, Video, Calendar, Loader2 } from 'lucide-react';
 import { supabaseUrl } from '@mpbhealth/database';
-
-const STORAGE_BASE = `${supabaseUrl}/storage/v1/object/public/advisor-documents`;
-
-interface QuickLinkItem {
-  label: string;
-  url: string;
-  image: string;
-  description: string;
-  popup?: boolean;
-}
-
-const quickLinks: QuickLinkItem[] = [
-  {
-    label: 'RX, Labs & Imaging Quote',
-    url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2026',
-    image: `${STORAGE_BASE}/quick-link-rx-labs-imaging.png`,
-    description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
-    popup: true,
-  },
-  {
-    label: 'Laboratory Assist',
-    url: 'https://laboratoryassist.com/',
-    image: `${STORAGE_BASE}/quick-link-lab-assist.png`,
-    description: 'Nationwide access to affordable diagnostic lab tests.',
-  },
-  {
-    label: 'Find a Provider',
-    url: 'https://providersearch.multiplan.com/',
-    image: `${STORAGE_BASE}/quick-link-provider-search.png`,
-    description: 'Search the MultiPlan network for in-network healthcare providers.',
-  },
-  {
-    label: 'Book a Doctor',
-    url: 'https://www.zocdoc.com/?dd_referrer=',
-    image: `${STORAGE_BASE}/quick-link-zocdoc.png`,
-    description: 'Find and book doctor appointments online through ZocDoc.',
-  },
-  {
-    label: 'Prescription Savings',
-    url: 'https://www.goodrx.com/',
-    image: `${STORAGE_BASE}/quick-link-goodrx.png`,
-    description: 'Compare prescription drug prices and find discounts with GoodRx.',
-  },
-  {
-    label: 'HealthyCare Podcast',
-    url: 'https://www.youtube.com/@HealthyCarePodcast',
-    image: `${STORAGE_BASE}/quick-link-healthy-care-podcast.png`,
-    description: 'Watch the HealthyCare Podcast for health education and tips.',
-  },
-  {
-    label: 'MPB Health Channel',
-    url: 'https://www.youtube.com/@MPBHealth_official',
-    image: `${STORAGE_BASE}/quick-link-mpb-health-youtube.png`,
-    description: 'Visit the official MPB Health YouTube channel for updates and content.',
-  },
-  {
-    label: 'Preventive Care',
-    url: 'https://www.healthcare.gov/coverage/preventive-care-benefits/',
-    image: `${STORAGE_BASE}/quick-link-preventive-care.png`,
-    description: 'Learn about preventive health services covered at no cost, including screenings and immunizations.',
-  },
-];
+import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 
 function LinkCard({
   label,
@@ -126,8 +65,29 @@ function LinkCard({
   );
 }
 
+function resolveImageUrl(imageUrl: string | null | undefined): string {
+  if (!imageUrl) return '';
+  if (imageUrl.startsWith('http')) return imageUrl;
+  return `${supabaseUrl}${imageUrl}`;
+}
+
 export default function QuickLinks() {
   const [popupLink, setPopupLink] = useState<{ label: string; url: string } | null>(null);
+  const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    navigationService.getQuickLinks('resource_center').then((links) => {
+      if (!cancelled) {
+        setQuickLinks(links);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -219,19 +179,25 @@ export default function QuickLinks() {
         </div>
       </a>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {quickLinks.map((link) => (
-          <LinkCard
-            key={link.url}
-            label={link.label}
-            url={link.url}
-            image={link.image}
-            description={link.description}
-            isPopup={link.popup}
-            onPopupClick={() => setPopupLink({ label: link.label, url: link.url })}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-6 h-6 text-th-accent-500 animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {quickLinks.map((link) => (
+            <LinkCard
+              key={link.id}
+              label={link.label}
+              url={link.url}
+              image={resolveImageUrl(link.image_url)}
+              description={link.description ?? ''}
+              isPopup={link.is_popup}
+              onPopupClick={() => setPopupLink({ label: link.label, url: link.url })}
+            />
+          ))}
+        </div>
+      )}
 
       {popupLink && (
         <div className="fixed inset-0 z-50 overflow-y-auto">

@@ -176,6 +176,15 @@ export {
   type WidgetUpdateInput,
 } from './content/WidgetAdminService';
 
+// Handbooks management
+export {
+  HandbookAdminService,
+  handbookAdminService,
+  type AdminHandbook,
+  type HandbookCreateInput,
+  type HandbookUpdateInput,
+} from './content/HandbookAdminService';
+
 // Video library (re-export from advisor-core — already has full CRUD)
 export { VideoService, videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
 

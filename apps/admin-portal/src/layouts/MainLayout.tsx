@@ -91,6 +91,7 @@ const navigation: NavItem[] = [
       { name: 'Navigation', href: '/content/navigation' },
       { name: 'Announcements', href: '/content/announcements' },
       { name: 'Dashboard Widgets', href: '/content/widgets' },
+      { name: 'Handbooks', href: '/content/handbooks' },
     ],
   },
 

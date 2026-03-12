@@ -121,19 +121,14 @@ export class ContentService {
 
   // ========== Handbooks ==========
 
-  // Get all handbooks
-  async getHandbooks(category?: string): Promise<Handbook[]> {
-    let query = supabase
+  // Get all active handbooks
+  async getHandbooks(): Promise<Handbook[]> {
+    const { data, error } = await supabase
       .from('handbooks')
       .select('*')
-      .eq('is_published', true)
-      .order('order_index', { ascending: true });
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
 
-    if (category) {
-      query = query.eq('category', category);
-    }
-
-    const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
@@ -375,8 +370,9 @@ export class ContentService {
       supabase
         .from('handbooks')
         .select('*')
-        .eq('is_published', true)
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%,content.ilike.%${query}%`)
+        .eq('is_active', true)
+        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+        .order('sort_order', { ascending: true })
         .then(r => r.data || []),
       this.getBulletins({ search: query }),
     ]);

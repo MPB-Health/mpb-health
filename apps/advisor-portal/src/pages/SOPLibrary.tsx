@@ -21,6 +21,7 @@ import {
   contentService,
   type SOPDocument,
   type SOPCategory,
+  type Handbook,
 } from '@mpbhealth/advisor-core';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import DocumentCard from '../components/DocumentCard';
@@ -112,34 +113,6 @@ const fallbackSectionConfig: Record<string, SectionEntry> = {
   },
 };
 
-// Hardcoded handbook links (external 3D flip-book URLs, not CMS documents)
-const HANDBOOK_LINKS: { title: string; url: string; description: string }[] = [
-  {
-    title: 'Care+ Handbook',
-    url: 'https://mpb.health/3d-flip-book/careplus',
-    description: 'Interactive handbook for the Care+ health sharing plan.',
-  },
-  {
-    title: 'Direct Handbook',
-    url: 'https://mpb.health/3d-flip-book/direct-handbook',
-    description: 'Interactive handbook for the Direct health sharing plan.',
-  },
-  {
-    title: 'Secure HSA Handbook',
-    url: 'https://mpb.health/3d-flip-book/secure-hsa',
-    description: 'Interactive handbook for the Secure HSA plan.',
-  },
-  {
-    title: 'Essentials Handbook',
-    url: 'https://mpb.health/3d-flip-book/essentials',
-    description: 'Interactive handbook for the Essentials health sharing plan.',
-  },
-  {
-    title: 'MEC Essentials Handbook',
-    url: 'https://mpb.health/3d-flip-book/mecessentials-handbook',
-    description: 'Interactive handbook for the MEC Essentials plan.',
-  },
-];
 
 /** Build section config dynamically from CMS categories, falling back to hardcoded defaults */
 function buildSectionConfig(categories: SOPCategory[]): Record<string, SectionEntry> {
@@ -161,6 +134,7 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
   const [documents, setDocuments] = useState<SOPDocument[]>([]);
   const [categories, setCategories] = useState<SOPCategory[]>([]);
   const [popularDocs, setPopularDocs] = useState<SOPDocument[]>([]);
+  const [handbooks, setHandbooks] = useState<Handbook[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [previewDoc, setPreviewDoc] = useState<SOPDocument | null>(null);
@@ -189,10 +163,16 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
           console.error('Failed to load popular SOPs:', err);
           return [];
         });
-        
+
+        const hbooks = await contentService.getHandbooks().catch(err => {
+          console.error('Failed to load handbooks:', err);
+          return [];
+        });
+
         setDocuments(docs);
         setCategories(cats);
         setPopularDocs(popular);
+        setHandbooks(hbooks);
       } catch (err) {
         console.error('Failed to load SOPs:', err);
       } finally {
@@ -238,8 +218,16 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
     return matchesSearch;
   });
 
-  // Render hardcoded handbook links for the /sops/handbooks section
+  // Render handbook cards from database for the /sops/handbooks section
   if (section === 'handbooks') {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -262,29 +250,32 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
             gap: '1rem',
           }}
         >
-          {HANDBOOK_LINKS.map((book) => (
-            <a
-              key={book.url}
-              href={book.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all flex flex-col p-5 gap-3"
-            >
-              <div className="w-10 h-10 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Library className="w-5 h-5 text-th-accent-600 dark:text-th-accent-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
-                  {book.title}
-                </h3>
-                <p className="text-sm text-th-text-tertiary mt-1">{book.description}</p>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-th-accent-600 font-medium mt-auto pt-3 border-t border-th-border-subtle">
-                <ExternalLink className="w-3.5 h-3.5" />
-                Open Handbook
-              </div>
-            </a>
-          ))}
+          {handbooks.map((book) => {
+            const url = book.flipbook_url || `https://mpb.health/3d-flip-book/${book.slug}`;
+            return (
+              <a
+                key={book.id}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all flex flex-col p-5 gap-3"
+              >
+                <div className="w-10 h-10 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Library className="w-5 h-5 text-th-accent-600 dark:text-th-accent-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
+                    {book.name}
+                  </h3>
+                  <p className="text-sm text-th-text-tertiary mt-1">{book.description}</p>
+                </div>
+                <div className="flex items-center gap-1 text-sm text-th-accent-600 font-medium mt-auto pt-3 border-t border-th-border-subtle">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open Handbook
+                </div>
+              </a>
+            );
+          })}
         </div>
       </div>
     );

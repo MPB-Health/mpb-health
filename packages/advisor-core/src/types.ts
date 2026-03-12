@@ -163,15 +163,19 @@ export interface SOPCategory {
 
 export interface Handbook {
   id: string;
-  title: string;
+  slug: string;
+  name: string;
   description: string | null;
-  category: string;
-  content: string;
-  file_url: string | null;
-  is_published: boolean;
-  order_index: number;
-  created_at: string;
-  updated_at: string;
+  pdf_path: string | null;
+  flipbook_url: string | null;
+  plan_type: string | null;
+  color: string | null;
+  icon: string | null;
+  features: string[] | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Bulletin from advisor_content table (CMS-managed)

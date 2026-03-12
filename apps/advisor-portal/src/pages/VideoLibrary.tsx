@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Play,
@@ -12,136 +12,64 @@ import {
   ArrowLeft,
   Grid3X3,
   List,
+  Loader2,
 } from 'lucide-react';
 import { Button, GradientHeader } from '@mpbhealth/ui';
+import { videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
 
 type VideoCategory = 'all' | 'training' | 'marketing';
 
-interface Video {
-  id: string;
-  title: string;
-  description: string;
-  vimeoId: string;
-  vimeoHash?: string;
-  thumbnail: string;
-  category: VideoCategory;
-  tags: string[];
-  duration?: string;
+function getThumbnail(video: AdvisorVideo): string {
+  return video.thumbnail_url || `https://vumbnail.com/${video.vimeo_id}.jpg`;
 }
-
-const VIDEOS: Video[] = [
-  {
-    id: 'v-alp',
-    title: 'Advisor Landing Page Training',
-    description: 'Learn how to set up and customize your personal advisor landing page to attract new members.',
-    vimeoId: '1098270274',
-    vimeoHash: '8a7898b305',
-    thumbnail: 'https://vumbnail.com/1098270274.jpg',
-    category: 'training',
-    tags: ['onboarding', 'landing page', 'advisor tools'],
-    duration: '12 min',
-  },
-  {
-    id: 'v-zion-contest',
-    title: 'Zion Healthshare Contest',
-    description: 'Details on the current Zion Healthshare contest, incentives, and how to participate.',
-    vimeoId: '1121281554',
-    thumbnail: 'https://vumbnail.com/1121281554.jpg',
-    category: 'training',
-    tags: ['zion', 'contest', 'incentives'],
-    duration: '8 min',
-  },
-  {
-    id: 'v-mcs',
-    title: 'What is Medical Cost Sharing?',
-    description: 'A clear overview of medical cost sharing for advisors to share with potential members exploring alternatives to traditional insurance.',
-    vimeoId: '867328836',
-    thumbnail: 'https://vumbnail.com/867328836.jpg',
-    category: 'marketing',
-    tags: ['overview', 'cost sharing', 'education', 'member-facing'],
-    duration: '5 min',
-  },
-  {
-    id: 'v-spanish',
-    title: 'MPB Health – Accessible, Flexible y Eficaz',
-    description: 'Spanish-language marketing video showcasing MPB Health benefits. Share with Spanish-speaking prospects.',
-    vimeoId: '999576729',
-    thumbnail: 'https://vumbnail.com/999576729.jpg',
-    category: 'marketing',
-    tags: ['spanish', 'multicultural', 'member-facing'],
-    duration: '4 min',
-  },
-  {
-    id: 'v-overview',
-    title: 'MPB Health Membership Overview',
-    description: 'Comprehensive walkthrough of MPB Health membership options, benefits, and enrollment process for prospective members.',
-    vimeoId: '560882524',
-    thumbnail: 'https://vumbnail.com/560882524.jpg',
-    category: 'marketing',
-    tags: ['overview', 'membership', 'benefits', 'member-facing'],
-    duration: '6 min',
-  },
-  {
-    id: 'v-premium',
-    title: 'Premium Care',
-    description: 'Detailed breakdown of the Premium Care plan — coverage, pricing, and key selling points to present to clients.',
-    vimeoId: '951207884',
-    thumbnail: 'https://vumbnail.com/951207884.jpg',
-    category: 'marketing',
-    tags: ['premium care', 'plans', 'member-facing'],
-    duration: '7 min',
-  },
-  {
-    id: 'v-hsa',
-    title: 'Premium HSA',
-    description: 'Overview of the Premium HSA plan with HSA-compatible features. Great for sharing with cost-conscious prospects.',
-    vimeoId: '952446997',
-    thumbnail: 'https://vumbnail.com/952446997.jpg',
-    category: 'marketing',
-    tags: ['hsa', 'premium', 'plans', 'member-facing'],
-    duration: '6 min',
-  },
-  {
-    id: 'v-app',
-    title: 'MPB Health App Walkthrough',
-    description: 'Demonstration of the MPB Health mobile app features. Share with members or use during onboarding presentations.',
-    vimeoId: '889549950',
-    thumbnail: 'https://vumbnail.com/889549950.jpg',
-    category: 'marketing',
-    tags: ['app', 'technology', 'member-facing', 'onboarding'],
-    duration: '3 min',
-  },
-];
-
-const CATEGORY_OPTIONS: { value: VideoCategory; label: string; icon: typeof GraduationCap; count: number }[] = [
-  { value: 'all', label: 'All Videos', icon: Grid3X3, count: VIDEOS.length },
-  { value: 'training', label: 'Advisor Training', icon: GraduationCap, count: VIDEOS.filter(v => v.category === 'training').length },
-  { value: 'marketing', label: 'Share with Members', icon: Megaphone, count: VIDEOS.filter(v => v.category === 'marketing').length },
-];
 
 export default function VideoLibrary() {
   const navigate = useNavigate();
+  const [videos, setVideos] = useState<AdvisorVideo[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<VideoCategory>('all');
-  const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<AdvisorVideo | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    videoService.getVideos()
+      .then((data) => {
+        if (!cancelled) setVideos(data);
+      })
+      .catch(() => {
+        if (!cancelled) setVideos([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const categoryOptions: { value: VideoCategory; label: string; icon: typeof GraduationCap; count: number }[] = useMemo(() => [
+    { value: 'all', label: 'All Videos', icon: Grid3X3, count: videos.length },
+    { value: 'training', label: 'Advisor Training', icon: GraduationCap, count: videos.filter(v => v.category === 'training').length },
+    { value: 'marketing', label: 'Share with Members', icon: Megaphone, count: videos.filter(v => v.category === 'marketing').length },
+  ], [videos]);
+
   const filtered = useMemo(() => {
-    return VIDEOS.filter(v => {
+    return videos.filter(v => {
       const matchesCategory = category === 'all' || v.category === category;
-      const matchesSearch = !search || 
+      const matchesSearch = !search ||
         v.title.toLowerCase().includes(search.toLowerCase()) ||
-        v.description.toLowerCase().includes(search.toLowerCase()) ||
+        (v.description ?? '').toLowerCase().includes(search.toLowerCase()) ||
         v.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
       return matchesCategory && matchesSearch;
     });
-  }, [search, category]);
+  }, [videos, search, category]);
 
-  const copyVideoLink = (video: Video) => {
-    const url = video.vimeoHash
-      ? `https://vimeo.com/${video.vimeoId}/${video.vimeoHash}`
-      : `https://vimeo.com/${video.vimeoId}`;
+  const copyVideoLink = (video: AdvisorVideo) => {
+    const url = video.vimeo_hash
+      ? `https://vimeo.com/${video.vimeo_id}/${video.vimeo_hash}`
+      : `https://vimeo.com/${video.vimeo_id}`;
     navigator.clipboard.writeText(url);
     setCopiedId(video.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -175,7 +103,7 @@ export default function VideoLibrary() {
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           {/* Category pills */}
           <div className="flex items-center gap-2 flex-wrap">
-            {CATEGORY_OPTIONS.map(opt => {
+            {categoryOptions.map(opt => {
               const Icon = opt.icon;
               const isActive = category === opt.value;
               return (
@@ -244,14 +172,19 @@ export default function VideoLibrary() {
 
         {/* Results count */}
         <p className="mt-3 text-xs text-th-text-tertiary">
-          Showing {filtered.length} of {VIDEOS.length} videos
-          {category !== 'all' && ` in "${CATEGORY_OPTIONS.find(c => c.value === category)?.label}"`}
+          Showing {filtered.length} of {videos.length} videos
+          {category !== 'all' && ` in "${categoryOptions.find(c => c.value === category)?.label}"`}
           {search && ` matching "${search}"`}
         </p>
       </div>
 
-      {/* Video grid / list */}
-      {filtered.length === 0 ? (
+      {/* Loading state */}
+      {loading ? (
+        <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
+          <Loader2 className="w-8 h-8 text-th-text-tertiary mx-auto mb-3 animate-spin" />
+          <p className="text-th-text-primary font-medium">Loading videos...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
           <Filter className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
           <p className="text-th-text-primary font-medium">No videos found</p>
@@ -279,7 +212,7 @@ export default function VideoLibrary() {
                 aria-label={`Play ${video.title}`}
               >
                 <img
-                  src={video.thumbnail}
+                  src={getThumbnail(video)}
                   alt={video.title}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
@@ -366,7 +299,7 @@ export default function VideoLibrary() {
                 style={{ aspectRatio: '16/9' }}
                 aria-label={`Play ${video.title}`}
               >
-                <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                <img src={getThumbnail(video)} alt={video.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-md">
@@ -449,7 +382,7 @@ export default function VideoLibrary() {
             <div className="relative bg-black rounded-xl overflow-hidden" style={{ paddingBottom: '56.25%' }}>
               <iframe
                 className="absolute inset-0 w-full h-full"
-                src={`https://player.vimeo.com/video/${playingVideo.vimeoId}${playingVideo.vimeoHash ? '?h=' + playingVideo.vimeoHash + '&' : '?'}autoplay=1&dnt=1`}
+                src={`https://player.vimeo.com/video/${playingVideo.vimeo_id}${playingVideo.vimeo_hash ? '?h=' + playingVideo.vimeo_hash + '&' : '?'}autoplay=1&dnt=1`}
                 title={playingVideo.title}
                 frameBorder="0"
                 allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"

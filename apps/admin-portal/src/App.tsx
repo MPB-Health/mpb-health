@@ -42,6 +42,7 @@ const ContactDirectory = lazyRetry(() => import('./pages/ContactDirectory'));
 const NavigationManager = lazyRetry(() => import('./pages/NavigationManager'));
 const AnnouncementManager = lazyRetry(() => import('./pages/AnnouncementManager'));
 const WidgetManager = lazyRetry(() => import('./pages/WidgetManager'));
+const HandbookManager = lazyRetry(() => import('./pages/HandbookManager'));
 // Command center pages
 const Members = lazyRetry(() => import('./pages/Members'));
 const MemberDetail = lazyRetry(() => import('./pages/MemberDetail'));
@@ -248,6 +249,7 @@ export default function App() {
               <Route path="content/navigation" element={<NavigationManager />} />
               <Route path="content/announcements" element={<AnnouncementManager />} />
               <Route path="content/widgets" element={<WidgetManager />} />
+              <Route path="content/handbooks" element={<HandbookManager />} />
               <Route path="settings" element={<Settings />} />
               <Route path="settings/payments" element={<PaymentProcessors />} />
               <Route path="settings/sms" element={<SmsAccounts />} />

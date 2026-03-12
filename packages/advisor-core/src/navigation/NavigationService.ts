@@ -28,7 +28,9 @@ export interface QuickLink {
   is_external: boolean;
   is_active: boolean;
   requires_auth: boolean;
-  category: 'resources' | 'advisor_forms' | 'employer_forms' | 'member_forms' | 'bulletins' | 'dashboard_actions';
+  category: string;
+  image_url: string | null;
+  is_popup: boolean;
   created_at: string;
   updated_at: string;
 }

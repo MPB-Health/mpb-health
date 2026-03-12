@@ -22,6 +22,7 @@ import {
 
 const CATEGORIES: { value: QuickLinkCategory; label: string }[] = [
   { value: 'resources', label: 'Resources' },
+  { value: 'resource_center', label: 'Resource Center' },
   { value: 'advisor_forms', label: 'Advisor Forms' },
   { value: 'employer_forms', label: 'Employer Forms' },
   { value: 'member_forms', label: 'Member Forms' },
@@ -39,6 +40,8 @@ const EMPTY_FORM: QuickLinkCreateInput = {
   is_active: true,
   is_external: false,
   requires_auth: false,
+  image_url: null,
+  is_popup: false,
 };
 
 export default function QuickLinksList() {
@@ -372,6 +375,25 @@ export default function QuickLinksList() {
                   />
                   <span className="text-sm text-th-text-secondary">External link</span>
                 </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={modalForm.is_popup ?? false}
+                    onChange={(e) => setModalForm((p) => ({ ...p, is_popup: e.target.checked }))}
+                    className="rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
+                  />
+                  <span className="text-sm text-th-text-secondary">Open in popup iframe</span>
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1">Image URL</label>
+                <input
+                  type="url"
+                  value={modalForm.image_url || ''}
+                  onChange={(e) => setModalForm((p) => ({ ...p, image_url: e.target.value || null }))}
+                  placeholder="Image URL for resource center cards"
+                  className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                />
               </div>
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-th-border">

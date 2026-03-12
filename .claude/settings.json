@@ -74,7 +74,9 @@
       "Bash(ls -la \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\\\\src\\\\content\")",
       "Bash(find \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\" -name \"*Video*\")",
       "Bash(find \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\" -name \"*Handbook*\")",
-      "Bash(tail -100 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\database.ts\")"
+      "Bash(tail -100 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\database.ts\")",
+      "Bash(ls -la \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\\\\src\" \")",
+      "Bash(find /c/Users/VinnieRTannous/OneDrive* -path *admin-portal/src/components/CRMOverviewCard*)"
     ]
   }
 }

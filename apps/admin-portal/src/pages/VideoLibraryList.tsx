@@ -359,6 +359,41 @@ export default function VideoLibraryList() {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Category</label>
+                  <select
+                    title="Video category"
+                    value={modalForm.category || 'training'}
+                    onChange={(e) => setModalForm((p) => ({ ...p, category: e.target.value }))}
+                    className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                  >
+                    <option value="training">Advisor Training</option>
+                    <option value="marketing">Share with Members</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Duration</label>
+                  <input
+                    type="text"
+                    value={modalForm.duration || ''}
+                    onChange={(e) => setModalForm((p) => ({ ...p, duration: e.target.value }))}
+                    placeholder="e.g. 12 min"
+                    className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1">Tags</label>
+                <input
+                  type="text"
+                  value={(modalForm.tags || []).join(', ')}
+                  onChange={(e) => setModalForm((p) => ({ ...p, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) }))}
+                  placeholder="tag1, tag2, tag3"
+                  className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                />
+                <p className="text-xs text-th-text-tertiary mt-1">Comma-separated tags for search filtering</p>
+              </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"

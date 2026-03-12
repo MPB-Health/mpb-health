@@ -113,6 +113,8 @@ export default function QuickLinksList() {
       is_active: link.is_active,
       is_external: link.is_external ?? false,
       requires_auth: link.requires_auth ?? false,
+      image_url: link.image_url ?? '',
+      is_popup: link.is_popup ?? false,
     });
     setShowAddModal(true);
   };

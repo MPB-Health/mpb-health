@@ -377,6 +377,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
+            canAccessWebsite={canAccessAdmin}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />

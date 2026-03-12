@@ -72,7 +72,9 @@ export function getPortalUrl(portal: keyof typeof DOMAINS): string {
     }
   }
   
-  return `https://${DOMAINS[portal]}`;
+  const baseUrl = `https://${DOMAINS[portal]}`;
+  // Website backend lives at /admin on the main website domain
+  return portal === 'website' ? `${baseUrl}/admin` : baseUrl;
 }
 
 /**

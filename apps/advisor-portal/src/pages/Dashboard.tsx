@@ -38,6 +38,7 @@ import { Button, GradientHeader, MetricCard, SkeletonLine, SkeletonAvatar } from
 import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm } from '@mpbhealth/advisor-core';
 import { supabase, supabaseUrl } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
 
 interface FallbackQuickLink {
   label: string;
@@ -211,6 +212,7 @@ export default function Dashboard() {
     unreadBulletinCount,
   } = useAdvisor();
 
+  const { isVisible } = useWidgetVisibility();
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
@@ -516,7 +518,7 @@ export default function Dashboard() {
       </div>
 
       {/* Action cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {isVisible('stats_cards') && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Grow Your Tree - Refer Advisors */}
         <button type="button" onClick={() => setAffiliateModalOpen(true)} className="text-left h-full w-full group">
           <div className="relative bg-surface-primary border border-th-border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md hover:border-th-accent-200 h-full p-5">
@@ -591,7 +593,7 @@ export default function Dashboard() {
             </div>
           </div>
         </button>
-      </div>
+      </div>}
 
       {/* Member Tools: APP Access, Providers, RX Valet */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -742,7 +744,7 @@ export default function Dashboard() {
       </div>
 
       {/* Membership Forms */}
-      <div className="bg-surface-primary rounded-xl border border-th-border">
+      {isVisible('certifications') && <div className="bg-surface-primary rounded-xl border border-th-border">
         <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-th-text-tertiary" />
@@ -852,9 +854,9 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {isVisible('training_modules') && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Video Slider - 2/3 width */}
         <div className="lg:col-span-2 bg-surface-primary rounded-xl border border-th-border overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
@@ -1097,10 +1099,10 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Quick Links */}
-      <div className="bg-surface-primary rounded-xl border border-th-border p-5">
+      {isVisible('quick_links') && <div className="bg-surface-primary rounded-xl border border-th-border p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-th-text-primary">Resource Center</h2>
           <Button
@@ -1173,7 +1175,7 @@ export default function Dashboard() {
               )
             )}
           </div>
-      </div>
+      </div>}
 
       {/* Grow Your Tree - Refer Advisors modal */}
       {affiliateModalOpen && (

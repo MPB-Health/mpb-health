@@ -49,7 +49,12 @@
       "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/\")",
       "Bash(cat \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/batch_001_tickets.sql\")",
       "Bash(cat '/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/batch_025_tickets.sql')",
-      "Bash(cat \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/batch_025_tickets.sql\")"
+      "Bash(cat \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/scripts/import-batches/batch_025_tickets.sql\")",
+      "Bash(ls -la \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\supabase\\\\migrations\")",
+      "Bash(find /c/Users/VinnieRTannous -path *database* -name *.ts)",
+      "Bash(grep -r \"navigationService\\\\|navigationAdminService\" apps/advisor-portal/src --include=*.ts --include=*.tsx -l)",
+      "Bash(grep -r \"adminService\\\\|contentService\" packages/admin-core/src --include=*.ts -l)",
+      "Bash(grep -r \"content/\\\\|/training\\\\|/forms\\\\|/sops\\\\|admin-portal/src/pages\" apps/admin-portal/src -name \"*.tsx\")"
     ]
   }
 }

@@ -241,7 +241,7 @@ export async function sendLeadNotification(data: {
   `;
 
   return sendEmail({
-    to: 'info@mympb.com',
+    to: ['info@mympb.com', 'julia@mympb.com'],
     subject: `🎯 New Lead: ${data.name || data.email}`,
     html,
     replyTo: data.email,

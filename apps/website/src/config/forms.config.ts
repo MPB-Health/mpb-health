@@ -149,7 +149,7 @@ export const FORMS: FormEntry[] = [
     icon: 'UserPlus',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/MPoweringBenefits1/DependentOver18Information" style="border:0;width:100%" height="800"></iframe>',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/MPoweringBenefits1/DependentSpouseOver18Information" allow="payment" style="border:0;width:100%;" height="483"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
   },
 ];
 

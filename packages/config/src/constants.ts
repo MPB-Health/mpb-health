@@ -54,6 +54,11 @@ export const PORTALS: Record<PortalKey, PortalInfo> = {
     name: 'Advisor Portal',
     description: 'Training, meetings, and resources',
   },
+  website: {
+    key: 'website',
+    name: 'Website Backend',
+    description: 'CMS, blog & site settings',
+  },
 } as const;
 
 /**

@@ -160,7 +160,7 @@ async function listKnowledgeBase(
 ) {
   let query = itstsAdmin
     .from("tickets")
-    .select("id, ticket_number, subject, description, status, priority, category, created_at, origin, submitter_name, submitter_email", { count: "exact" })
+    .select("id, ticket_number, subject, description, status, priority, category, created_at", { count: "exact" })
     .eq("is_imported", true)
     .in("status", ["resolved", "closed"])
     .order("created_at", { ascending: false })

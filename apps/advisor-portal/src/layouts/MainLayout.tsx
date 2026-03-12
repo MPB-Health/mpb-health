@@ -168,7 +168,6 @@ const fallbackNavigation: NavItem[] = [
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'Support Tickets', href: '/tickets', icon: Headphones },
-  { name: 'Knowledge Base', href: '/knowledge-base', icon: BookOpen },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
 

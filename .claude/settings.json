@@ -76,7 +76,17 @@
       "Bash(find \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\" -name \"*Handbook*\")",
       "Bash(tail -100 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\database.ts\")",
       "Bash(ls -la \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\admin-core\\\\src\" \")",
-      "Bash(find /c/Users/VinnieRTannous/OneDrive* -path *admin-portal/src/components/CRMOverviewCard*)"
+      "Bash(find /c/Users/VinnieRTannous/OneDrive* -path *admin-portal/src/components/CRMOverviewCard*)",
+      "Bash(find /c/Users/VinnieRTannous/OneDrive* -path \"*admin-core/src*\" -type f -name \"*.ts\")",
+      "Bash(find /c/Users/VinnieRTannous/OneDrive* -path \"*admin-portal/src*\" -type d)",
+      "Bash(ls -1 \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src/components/\")",
+      "Bash(ls -1 \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/admin-core/src/\")",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src/\" -maxdepth 1 -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(node_modules/.bin/tsc.cmd --noEmit -p apps/advisor-portal/tsconfig.json)",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/node_modules/.bin/tsc\"*)",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/node_modules/typescript/bin/\")",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/node_modules/.bin/tsc\"*)",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/node_modules/typescript/bin/\")"
     ]
   }
 }

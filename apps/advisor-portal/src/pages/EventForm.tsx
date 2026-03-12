@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Upload, X, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Upload, X, ImageIcon, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { eventsService } from '@mpbhealth/advisor-core';
 import { Breadcrumbs, Button } from '@mpbhealth/ui';
@@ -26,6 +26,7 @@ interface EventFormData {
   is_published: boolean;
   is_featured: boolean;
   tags: string;
+  video_url: string;
   gallery_images: string[];
 }
 
@@ -46,6 +47,7 @@ const EMPTY_FORM: EventFormData = {
   is_published: false,
   is_featured: false,
   tags: '',
+  video_url: '',
   gallery_images: [],
 };
 
@@ -90,6 +92,7 @@ export default function EventForm() {
         is_published: event.is_published,
         is_featured: event.is_featured,
         tags: (event.tags || []).join(', '),
+        video_url: event.video_url || '',
         gallery_images: event.gallery_images || [],
       });
       setSlugManuallyEdited(true);
@@ -139,6 +142,7 @@ export default function EventForm() {
         is_published: form.is_published,
         is_featured: form.is_featured,
         tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        video_url: form.video_url.trim() || null,
         gallery_images: form.gallery_images,
         created_by: user?.id || null,
       };
@@ -343,6 +347,42 @@ export default function EventForm() {
             onChange={(url) => updateField('featured_image_url', url)}
             slug={form.slug}
           />
+        </div>
+
+        {/* Video Embed */}
+        <div className="bg-surface-primary border border-th-border rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Video className="h-5 w-5 text-th-text-secondary" />
+            <h2 className="text-lg font-semibold text-th-text-primary">Video</h2>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-th-text-primary mb-1">YouTube or Video URL</label>
+            <input
+              type="url" value={form.video_url} onChange={(e) => updateField('video_url', e.target.value)}
+              className="w-full px-3 py-2 border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+            />
+            <p className="text-xs text-th-text-tertiary mt-1">Paste a YouTube, Vimeo, or direct video file URL. It will be embedded on the event page.</p>
+          </div>
+          {form.video_url && (() => {
+            const ytMatch = form.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+            if (ytMatch) {
+              return (
+                <div className="aspect-video rounded-lg overflow-hidden border border-th-border">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${ytMatch[1]}`}
+                    title="Video preview"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+              );
+            }
+            return (
+              <p className="text-sm text-th-text-secondary">Preview will appear on the live event page.</p>
+            );
+          })()}
         </div>
 
         {/* Content */}

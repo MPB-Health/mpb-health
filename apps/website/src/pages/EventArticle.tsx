@@ -238,6 +238,39 @@ export const EventArticle: React.FC = () => {
           </div>
         )}
 
+        {event.video_url && (() => {
+          const ytMatch = event.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+          const vimeoMatch = event.video_url.match(/vimeo\.com\/(\d+)/);
+          return (
+            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mb-12">
+              <div className="relative aspect-video rounded-xl overflow-hidden shadow-lg bg-neutral-900">
+                {ytMatch ? (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${ytMatch[1]}`}
+                    title={event.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                ) : vimeoMatch ? (
+                  <iframe
+                    src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
+                    title={event.title}
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <video controls className="w-full h-full" preload="metadata">
+                    <source src={event.video_url} />
+                    Your browser does not support the video tag.
+                  </video>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 pb-16">
           <div
             className="prose prose-lg prose-neutral max-w-none

@@ -38,6 +38,7 @@ const defaultFormData = {
   location: '',
   location_type: 'in_person',
   registration_url: '',
+  video_url: '',
   event_type: 'community',
   organizer: 'MPB Health',
   max_attendees: '',
@@ -147,6 +148,7 @@ export const EventsAdmin: React.FC = () => {
       location: formData.location,
       location_type: formData.location_type,
       registration_url: formData.registration_url || null,
+      video_url: formData.video_url || null,
       event_type: formData.event_type,
       organizer: formData.organizer,
       max_attendees: formData.max_attendees ? parseInt(formData.max_attendees, 10) : null,
@@ -198,6 +200,7 @@ export const EventsAdmin: React.FC = () => {
       location: event.location || '',
       location_type: event.location_type || 'in_person',
       registration_url: event.registration_url || '',
+      video_url: event.video_url || '',
       event_type: event.event_type || 'community',
       organizer: event.organizer || 'MPB Health',
       max_attendees: event.max_attendees ? String(event.max_attendees) : '',
@@ -424,6 +427,19 @@ export const EventsAdmin: React.FC = () => {
                       className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
+                </div>
+
+                {/* Video URL */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">Video URL (YouTube, Vimeo, or direct file)</label>
+                  <input
+                    type="url"
+                    name="video_url"
+                    value={formData.video_url}
+                    onChange={handleInputChange}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
                 </div>
 
                 {/* Organizer & Max Attendees */}

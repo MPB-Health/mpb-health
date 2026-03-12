@@ -459,7 +459,7 @@ const FormsManager: React.FC = () => {
                                   <Trash2 className="w-4 h-4 text-red-600" />
                                 </button>
                                 <a
-                                  href={`/forms${form.slug}`}
+                                  href={form.slug}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="p-1 hover:bg-gray-100 rounded"
@@ -533,7 +533,7 @@ const FormsManager: React.FC = () => {
                       URL Slug *
                     </label>
                     <div className="flex items-center">
-                      <span className="text-gray-500 text-sm mr-1">/forms</span>
+                      <span className="text-gray-500 text-sm mr-1">mpb.health</span>
                       <Input
                         value={formData.slug || ''}
                         onChange={(e) => setFormData({ ...formData, slug: e.target.value })}

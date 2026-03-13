@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Share2,
   X,
+  User,
   Users,
   Heart,
   Sparkles,
@@ -37,8 +38,18 @@ import {
 import { Button, GradientHeader, MetricCard, SkeletonLine, SkeletonAvatar } from '@mpbhealth/ui';
 import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm } from '@mpbhealth/advisor-core';
 import { supabase, supabaseUrl } from '@mpbhealth/database';
+import { isAdmin } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
+
+/** Advisors and admins who see the "My Advisor Page" button */
+const MY_ADVISOR_PAGE_EMAIL_WHITELIST = new Set([
+  'rebalarney@mympb.com',
+  'vrt@mympb.com',
+  'aba@mympb.com',
+]);
+
+const JOIN_MPB_BASE = 'https://join.mpb.health';
 
 interface FallbackQuickLink {
   label: string;
@@ -213,10 +224,15 @@ export default function Dashboard() {
   } = useAdvisor();
 
   const { isVisible } = useWidgetVisibility();
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
+
+  const showMyAdvisorPage =
+    profile &&
+    (MY_ADVISOR_PAGE_EMAIL_WHITELIST.has((profile.email ?? '').toLowerCase()) || isAdminUser);
   const [quickLinkPopup, setQuickLinkPopup] = useState<{ label: string; url: string } | null>(null);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -315,6 +331,11 @@ export default function Dashboard() {
     })();
     return () => { cancelled = true; };
   }, [profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.user_id) return;
+    isAdmin(profile.user_id).then(setIsAdminUser);
+  }, [profile?.user_id]);
 
   const displayQuickLinks: FallbackQuickLink[] = fallbackDashboardQuickLinks;
 
@@ -473,6 +494,22 @@ export default function Dashboard() {
                 Support Ticket
                 <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all" />
               </a>
+              {showMyAdvisorPage && (
+                <a
+                  href={
+                    profile?.first_name
+                      ? `${JOIN_MPB_BASE}/${profile.first_name.toLowerCase().replace(/\s+/g, '-')}`
+                      : JOIN_MPB_BASE
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2.5 px-4 py-2.5 bg-surface-tertiary hover:bg-surface-inset rounded-lg text-sm font-medium text-th-text-primary transition-all border border-th-border"
+                >
+                  <User className="w-4 h-4 text-th-accent-600" />
+                  My Advisor Page
+                  <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all text-th-text-tertiary" />
+                </a>
+              )}
               <a
                 href="https://app.mpb.health/"
                 target="_blank"

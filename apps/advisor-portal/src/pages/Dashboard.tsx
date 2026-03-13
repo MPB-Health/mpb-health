@@ -42,13 +42,6 @@ import { isAdmin } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
 
-/** Advisors and admins who see the "My Advisor Page" button */
-const MY_ADVISOR_PAGE_EMAIL_WHITELIST = new Set([
-  'rebalarney@mympb.com',
-  'vrt@mympb.com',
-  'aba@mympb.com',
-]);
-
 const JOIN_MPB_BASE = 'https://join.mpb.health';
 
 interface FallbackQuickLink {
@@ -225,14 +218,13 @@ export default function Dashboard() {
 
   const { isVisible } = useWidgetVisibility();
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [hasAdvisorPageAccess, setHasAdvisorPageAccess] = useState(false);
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
 
-  const showMyAdvisorPage =
-    profile &&
-    (MY_ADVISOR_PAGE_EMAIL_WHITELIST.has((profile.email ?? '').toLowerCase()) || isAdminUser);
+  const showMyAdvisorPage = profile && (isAdminUser || hasAdvisorPageAccess);
   const [quickLinkPopup, setQuickLinkPopup] = useState<{ label: string; url: string } | null>(null);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -336,6 +328,27 @@ export default function Dashboard() {
     if (!profile?.user_id) return;
     isAdmin(profile.user_id).then(setIsAdminUser);
   }, [profile?.user_id]);
+
+  useEffect(() => {
+    if (!profile?.email) {
+      setHasAdvisorPageAccess(false);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from('advisor_access')
+      .select('has_advisor_page_access')
+      .ilike('email', profile.email)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!cancelled && !error && data?.has_advisor_page_access === true) {
+          setHasAdvisorPageAccess(true);
+        } else {
+          setHasAdvisorPageAccess(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [profile?.email]);
 
   const displayQuickLinks: FallbackQuickLink[] = fallbackDashboardQuickLinks;
 

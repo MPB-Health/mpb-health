@@ -38,7 +38,6 @@ import {
 import { Button, GradientHeader, MetricCard, SkeletonLine, SkeletonAvatar } from '@mpbhealth/ui';
 import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm } from '@mpbhealth/advisor-core';
 import { supabase, supabaseUrl } from '@mpbhealth/database';
-import { isAdmin } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
 
@@ -217,14 +216,13 @@ export default function Dashboard() {
   } = useAdvisor();
 
   const { isVisible } = useWidgetVisibility();
-  const [isAdminUser, setIsAdminUser] = useState(false);
   const [hasAdvisorPageAccess, setHasAdvisorPageAccess] = useState(false);
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
 
-  const showMyAdvisorPage = profile && (isAdminUser || hasAdvisorPageAccess);
+  const showMyAdvisorPage = profile && hasAdvisorPageAccess;
   const [quickLinkPopup, setQuickLinkPopup] = useState<{ label: string; url: string } | null>(null);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -323,11 +321,6 @@ export default function Dashboard() {
     })();
     return () => { cancelled = true; };
   }, [profile?.id]);
-
-  useEffect(() => {
-    if (!profile?.user_id) return;
-    isAdmin(profile.user_id).then(setIsAdminUser);
-  }, [profile?.user_id]);
 
   useEffect(() => {
     if (!profile?.email) {

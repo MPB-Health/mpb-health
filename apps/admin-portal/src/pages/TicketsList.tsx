@@ -212,12 +212,12 @@ export default function TicketsList() {
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-          <MetricCard label="Total" value={stats.total} icon={<ShieldCheck className="w-5 h-5" />} />
-          <MetricCard label="New" value={stats.new} icon={<CircleDot className="w-5 h-5 text-blue-500" />} />
-          <MetricCard label="Open" value={stats.open} icon={<AlertCircle className="w-5 h-5 text-yellow-500" />} />
-          <MetricCard label="Pending" value={stats.pending} icon={<Clock className="w-5 h-5 text-orange-500" />} />
-          <MetricCard label="Resolved" value={stats.resolved} icon={<CheckCircle2 className="w-5 h-5 text-green-500" />} />
-          <MetricCard label="Closed" value={stats.closed} icon={<XCircle className="w-5 h-5 text-neutral-400" />} />
+          <MetricCard label="Total" value={stats.total} icon={<ShieldCheck className="w-5 h-5" />} onClick={() => { setStatusFilter(''); setPage(1); }} active={statusFilter === ''} />
+          <MetricCard label="New" value={stats.new} icon={<CircleDot className="w-5 h-5 text-blue-500" />} onClick={() => { setStatusFilter(statusFilter === 'new' ? '' : 'new'); setPage(1); }} active={statusFilter === 'new'} />
+          <MetricCard label="Open" value={stats.open} icon={<AlertCircle className="w-5 h-5 text-yellow-500" />} onClick={() => { setStatusFilter(statusFilter === 'open' ? '' : 'open'); setPage(1); }} active={statusFilter === 'open'} />
+          <MetricCard label="Pending" value={stats.pending} icon={<Clock className="w-5 h-5 text-orange-500" />} onClick={() => { setStatusFilter(statusFilter === 'pending' ? '' : 'pending'); setPage(1); }} active={statusFilter === 'pending'} />
+          <MetricCard label="Resolved" value={stats.resolved} icon={<CheckCircle2 className="w-5 h-5 text-green-500" />} onClick={() => { setStatusFilter(statusFilter === 'resolved' ? '' : 'resolved'); setPage(1); }} active={statusFilter === 'resolved'} />
+          <MetricCard label="Closed" value={stats.closed} icon={<XCircle className="w-5 h-5 text-neutral-400" />} onClick={() => { setStatusFilter(statusFilter === 'closed' ? '' : 'closed'); setPage(1); }} active={statusFilter === 'closed'} />
         </div>
       )}
 

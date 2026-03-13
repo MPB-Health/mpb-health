@@ -12,6 +12,8 @@ export interface MetricCardProps {
   };
   className?: string;
   accentBorder?: boolean;
+  onClick?: () => void;
+  active?: boolean;
 }
 
 export function MetricCard({
@@ -21,6 +23,8 @@ export function MetricCard({
   trend,
   className,
   accentBorder = true,
+  onClick,
+  active,
 }: MetricCardProps) {
   const trendDirection = trend
     ? trend.value > 0 ? 'up' : trend.value < 0 ? 'down' : 'flat'
@@ -28,8 +32,14 @@ export function MetricCard({
 
   return (
     <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
       className={cn(
         'relative bg-surface-primary border border-th-border rounded-xl p-5 transition-all duration-200 hover:shadow-lg group overflow-hidden',
+        onClick && 'cursor-pointer',
+        active && 'ring-2 ring-blue-500 border-blue-500',
         className
       )}
     >

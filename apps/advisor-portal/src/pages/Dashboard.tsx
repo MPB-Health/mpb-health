@@ -503,11 +503,11 @@ export default function Dashboard() {
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-2.5 px-4 py-2.5 bg-surface-tertiary hover:bg-surface-inset rounded-lg text-sm font-medium text-th-text-primary transition-all border border-th-border"
+                  className="group flex items-center gap-2.5 px-4 py-2.5 bg-th-accent-50 dark:bg-th-accent-900/20 hover:bg-th-accent-100 dark:hover:bg-th-accent-900/30 rounded-lg text-sm font-medium text-th-text-primary transition-all border border-th-accent-200 dark:border-th-accent-800 hover:border-th-accent-300 dark:hover:border-th-accent-700"
                 >
-                  <User className="w-4 h-4 text-th-accent-600" />
+                  <User className="w-4 h-4 text-th-accent-600 dark:text-th-accent-400" />
                   My Advisor Page
-                  <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all text-th-text-tertiary" />
+                  <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all text-th-accent-600 dark:text-th-accent-400" />
                 </a>
               )}
               <a

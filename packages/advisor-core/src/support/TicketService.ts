@@ -503,6 +503,22 @@ export class TicketService {
     return data.closed_count;
   }
 
+  async bulkUpdateTickets(ticketIds: string[], opts: UpdateTicketOptions): Promise<number> {
+    const data = await this.call<{ success: boolean; updated_count: number }>('bulk_update', {
+      ticket_ids: ticketIds,
+      status: opts.status,
+      priority: opts.priority,
+    });
+    return data.updated_count;
+  }
+
+  async bulkDeleteTickets(ticketIds: string[]): Promise<number> {
+    const data = await this.call<{ success: boolean; deleted_count: number }>('bulk_delete', {
+      ticket_ids: ticketIds,
+    });
+    return data.deleted_count;
+  }
+
   /** Fire-and-forget warm-up ping to keep the ticket-proxy edge function warm.
    *  Silently no-ops when the user is not authenticated. */
   async ping(): Promise<void> {

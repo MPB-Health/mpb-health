@@ -19,6 +19,11 @@ import {
   ArrowUpDown,
   Archive,
   User,
+  Trash2,
+  MoreHorizontal,
+  CheckSquare,
+  Square,
+  MinusSquare,
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
 import {
@@ -73,6 +78,69 @@ export default function TicketsList() {
   // Bulk close
   const [bulkClosing, setBulkClosing] = useState(false);
   const [showBulkCloseConfirm, setShowBulkCloseConfirm] = useState(false);
+
+  // Selection & bulk actions
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActing, setBulkActing] = useState(false);
+  const [showBulkActionConfirm, setShowBulkActionConfirm] = useState<{ action: string; label: string } | null>(null);
+
+  // Clear selection when tickets change
+  useEffect(() => { setSelectedIds(new Set()); }, [tickets]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === tickets.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(tickets.map((t) => t.id)));
+    }
+  };
+
+  const handleBulkAction = async (action: string) => {
+    if (selectedIds.size === 0) return;
+    setBulkActing(true);
+    try {
+      const ids = [...selectedIds];
+      let count = 0;
+      switch (action) {
+        case 'close':
+          count = await ticketService.bulkUpdateTickets(ids, { status: 'closed' });
+          toast.success(`${count} ticket${count !== 1 ? 's' : ''} closed.`);
+          break;
+        case 'open':
+          count = await ticketService.bulkUpdateTickets(ids, { status: 'open' });
+          toast.success(`${count} ticket${count !== 1 ? 's' : ''} reopened.`);
+          break;
+        case 'pending':
+          count = await ticketService.bulkUpdateTickets(ids, { status: 'pending' });
+          toast.success(`${count} ticket${count !== 1 ? 's' : ''} set to pending.`);
+          break;
+        case 'resolved':
+          count = await ticketService.bulkUpdateTickets(ids, { status: 'resolved' });
+          toast.success(`${count} ticket${count !== 1 ? 's' : ''} resolved.`);
+          break;
+        case 'delete':
+          count = await ticketService.bulkDeleteTickets(ids);
+          toast.success(`${count} ticket${count !== 1 ? 's' : ''} deleted.`);
+          break;
+      }
+      setShowBulkActionConfirm(null);
+      setSelectedIds(new Set());
+      loadTickets();
+      loadStats();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Bulk action failed');
+    } finally {
+      setBulkActing(false);
+    }
+  };
 
   // Create ticket on behalf of advisor
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -366,6 +434,60 @@ export default function TicketsList() {
         </div>
       )}
 
+      {/* Selection Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <span className="text-sm font-medium text-blue-700">
+            {selectedIds.size} ticket{selectedIds.size !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={() => setShowBulkActionConfirm({ action: 'open', label: 'Reopen' })}
+              className="px-3 py-1.5 text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded-lg transition-colors"
+            >
+              Reopen
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBulkActionConfirm({ action: 'pending', label: 'Set Pending' })}
+              className="px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg transition-colors"
+            >
+              Set Pending
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBulkActionConfirm({ action: 'resolved', label: 'Resolve' })}
+              className="px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors"
+            >
+              Resolve
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBulkActionConfirm({ action: 'close', label: 'Close' })}
+              className="px-3 py-1.5 text-xs font-medium bg-neutral-100 text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBulkActionConfirm({ action: 'delete', label: 'Delete' })}
+              className="px-3 py-1.5 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+              Delete
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Ticket List */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -383,16 +505,52 @@ export default function TicketsList() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
+          {/* Select All header */}
+          <div className="flex items-center gap-3 px-5 py-2 bg-neutral-50 border-b border-neutral-200">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="p-0.5 text-neutral-400 hover:text-neutral-600 transition-colors"
+              title={selectedIds.size === tickets.length ? 'Deselect all' : 'Select all'}
+            >
+              {selectedIds.size === 0 ? (
+                <Square className="w-4.5 h-4.5" />
+              ) : selectedIds.size === tickets.length ? (
+                <CheckSquare className="w-4.5 h-4.5 text-blue-600" />
+              ) : (
+                <MinusSquare className="w-4.5 h-4.5 text-blue-600" />
+              )}
+            </button>
+            <span className="text-xs text-neutral-500">
+              {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
+            </span>
+          </div>
           {tickets.map((ticket) => {
             const sc = STATUS_CONFIG[ticket.status];
             const pc = PRIORITY_CONFIG[ticket.priority];
+            const isSelected = selectedIds.has(ticket.id);
 
             return (
-              <button
+              <div
                 key={ticket.id}
-                onClick={() => navigate(`/support/tickets/${ticket.id}`)}
-                className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-neutral-50 transition-colors"
+                className={`flex items-center gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors ${isSelected ? 'bg-blue-50/50' : ''}`}
               >
+                <button
+                  type="button"
+                  onClick={() => toggleSelect(ticket.id)}
+                  className="p-0.5 text-neutral-400 hover:text-neutral-600 flex-shrink-0 transition-colors"
+                >
+                  {isSelected ? (
+                    <CheckSquare className="w-4.5 h-4.5 text-blue-600" />
+                  ) : (
+                    <Square className="w-4.5 h-4.5" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/support/tickets/${ticket.id}`)}
+                  className="flex-1 min-w-0 text-left"
+                >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs text-neutral-400">#{ticket.ticket_number}</span>
@@ -438,7 +596,8 @@ export default function TicketsList() {
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-neutral-300 flex-shrink-0" />
-              </button>
+                </button>
+              </div>
             );
           })}
         </div>
@@ -452,17 +611,21 @@ export default function TicketsList() {
           </p>
           <div className="flex items-center gap-1">
             <button
+              type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="px-3 py-1 text-sm text-neutral-700">{page} / {totalPages}</span>
             <button
+              type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className="p-2 rounded-lg hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -516,8 +679,10 @@ export default function TicketsList() {
             <div className="flex items-center justify-between p-6 border-b border-neutral-100">
               <h2 className="text-lg font-semibold text-neutral-900">Create Ticket for Advisor</h2>
               <button
+                type="button"
                 onClick={() => setShowCreateModal(false)}
                 className="p-1 hover:bg-neutral-100 rounded-lg transition-colors"
+                aria-label="Close"
               >
                 <X className="w-5 h-5 text-neutral-500" />
               </button>
@@ -554,6 +719,7 @@ export default function TicketsList() {
                   <select
                     value={createCategory}
                     onChange={(e) => setCreateCategory(e.target.value)}
+                    title="Category"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="">Select category</option>
@@ -567,6 +733,7 @@ export default function TicketsList() {
                   <select
                     value={createPriority}
                     onChange={(e) => setCreatePriority(e.target.value as TicketPriority)}
+                    title="Priority"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="low">Low</option>
@@ -596,17 +763,65 @@ export default function TicketsList() {
             </div>
             <div className="p-6 border-t border-neutral-100 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={() => setShowCreateModal(false)}
                 className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleCreateTicket}
                 disabled={creating}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
                 {creating ? 'Creating…' : 'Create Ticket'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Action Confirmation Modal */}
+      {showBulkActionConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${showBulkActionConfirm.action === 'delete' ? 'bg-red-100' : 'bg-blue-100'}`}>
+                  {showBulkActionConfirm.action === 'delete' ? (
+                    <Trash2 className="w-5 h-5 text-red-600" />
+                  ) : (
+                    <CheckSquare className="w-5 h-5 text-blue-600" />
+                  )}
+                </div>
+                <h2 className="text-lg font-semibold text-neutral-900">
+                  {showBulkActionConfirm.label} {selectedIds.size} Ticket{selectedIds.size !== 1 ? 's' : ''}
+                </h2>
+              </div>
+              <p className="text-sm text-neutral-600">
+                {showBulkActionConfirm.action === 'delete'
+                  ? `This will permanently delete ${selectedIds.size} ticket${selectedIds.size !== 1 ? 's' : ''} and all associated comments. This cannot be undone.`
+                  : `This will ${showBulkActionConfirm.label.toLowerCase()} ${selectedIds.size} selected ticket${selectedIds.size !== 1 ? 's' : ''}.`}
+              </p>
+            </div>
+            <div className="p-4 border-t border-neutral-100 flex justify-end gap-3 bg-neutral-50">
+              <button
+                type="button"
+                onClick={() => setShowBulkActionConfirm(null)}
+                className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkAction(showBulkActionConfirm.action)}
+                disabled={bulkActing}
+                className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  showBulkActionConfirm.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {bulkActing ? 'Processing…' : showBulkActionConfirm.label}
               </button>
             </div>
           </div>

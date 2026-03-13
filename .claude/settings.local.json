@@ -48,7 +48,9 @@
       "Bash(corepack enable:*)",
       "Bash(corepack prepare:*)",
       "Bash(git status:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npx supabase@latest functions deploy ticket-proxy --no-verify-jwt)",
+      "Bash(npx supabase@latest functions deploy ticket-proxy --no-verify-jwt --project-ref dtmnkzllidaiqyheguhl)"
     ]
   }
 }

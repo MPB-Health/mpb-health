@@ -21,9 +21,11 @@ type ProxyAction =
   | "create_for_advisor"
   | "list_kb"
   | "list_requesters"
-  | "bulk_close";
+  | "bulk_close"
+  | "bulk_update"
+  | "bulk_delete";
 
-const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor", "list_requesters", "bulk_close"];
+const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor", "list_requesters", "bulk_close", "bulk_update", "bulk_delete"];
 const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories", "list_kb"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -52,6 +54,7 @@ interface ProxyRequest {
   requester_id?: string;
   sort_by?: string;
   sort_order?: string;
+  ticket_ids?: string[];
 }
 
 function getItstsClient(): ReturnType<typeof createClient> | null {
@@ -618,6 +621,50 @@ async function bulkCloseAll(
   return { closed_count: count || 0 };
 }
 
+async function bulkUpdateTickets(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketIds: string[],
+  opts: { status?: string; priority?: string },
+) {
+  if (!ticketIds.length) return { updated_count: 0 };
+  if (!opts.status && !opts.priority) throw new Error("At least one of status or priority is required");
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (opts.status) updates.status = opts.status;
+  if (opts.priority) updates.priority = opts.priority;
+
+  const { count, error } = await itstsAdmin
+    .from("tickets")
+    .update(updates)
+    .in("id", ticketIds)
+    .select("id", { count: "exact", head: true });
+
+  if (error) throw error;
+  return { updated_count: count || 0 };
+}
+
+async function bulkDeleteTickets(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketIds: string[],
+) {
+  if (!ticketIds.length) return { deleted_count: 0 };
+
+  // Delete comments first (foreign key)
+  await itstsAdmin
+    .from("ticket_comments")
+    .delete()
+    .in("ticket_id", ticketIds);
+
+  const { count, error } = await itstsAdmin
+    .from("tickets")
+    .delete()
+    .in("id", ticketIds)
+    .select("id", { count: "exact", head: true });
+
+  if (error) throw error;
+  return { deleted_count: count || 0 };
+}
+
 // ── Email notification (fire-and-forget with timeout) ─────────────────────────
 function fireNotification(payload: Record<string, unknown>): void {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -712,7 +759,7 @@ Deno.serve(async (req: Request) => {
 
     // ── ITSTS not configured → return graceful stubs for read actions ──────
     if (!itstsAdmin) {
-      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all", "list_kb", "list_requesters", "bulk_close"];
+      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all", "list_kb", "list_requesters", "bulk_close", "bulk_update", "bulk_delete"];
       if (READ_STUB_ACTIONS.includes(action as string)) {
         const stubs: Record<string, unknown> = {
           list:             { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
@@ -723,6 +770,8 @@ Deno.serve(async (req: Request) => {
           list_kb:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
           list_requesters:  { requesters: [] },
           bulk_close:       { closed_count: 0 },
+          bulk_update:      { updated_count: 0 },
+          bulk_delete:      { deleted_count: 0 },
         };
         return new Response(
           JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId }),
@@ -988,6 +1037,51 @@ Deno.serve(async (req: Request) => {
           });
         }
         break;
+      case "bulk_update": {
+        if (!body.ticket_ids?.length) {
+          return new Response(
+            JSON.stringify({ success: false, error: "ticket_ids array is required" }),
+            { status: 400, headers },
+          );
+        }
+        for (const tid of body.ticket_ids) {
+          if (!UUID_RE.test(tid)) {
+            return new Response(
+              JSON.stringify({ success: false, error: `Invalid ticket_id: ${tid}` }),
+              { status: 400, headers },
+            );
+          }
+        }
+        if (!body.status && !body.priority) {
+          return new Response(
+            JSON.stringify({ success: false, error: "At least one of status or priority is required" }),
+            { status: 400, headers },
+          );
+        }
+        result = await bulkUpdateTickets(itstsAdmin, body.ticket_ids, {
+          status: body.status,
+          priority: body.priority,
+        });
+        break;
+      }
+      case "bulk_delete": {
+        if (!body.ticket_ids?.length) {
+          return new Response(
+            JSON.stringify({ success: false, error: "ticket_ids array is required" }),
+            { status: 400, headers },
+          );
+        }
+        for (const tid of body.ticket_ids) {
+          if (!UUID_RE.test(tid)) {
+            return new Response(
+              JSON.stringify({ success: false, error: `Invalid ticket_id: ${tid}` }),
+              { status: 400, headers },
+            );
+          }
+        }
+        result = await bulkDeleteTickets(itstsAdmin, body.ticket_ids);
+        break;
+      }
       case "create_for_advisor": {
         if (!body.advisor_email) {
           return new Response(

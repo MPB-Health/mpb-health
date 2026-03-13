@@ -19,6 +19,8 @@ import {
   PlusCircle,
   X,
   Lock,
+  ArrowUpDown,
+  Archive,
 } from 'lucide-react';
 import { Button, GradientHeader, MetricCard } from '@mpbhealth/ui';
 import {
@@ -28,6 +30,7 @@ import {
   type TicketStats,
   type TicketStatus,
   type TicketPriority,
+  type TicketRequester,
 } from '@mpbhealth/advisor-core';
 import { isAdmin } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -61,11 +64,21 @@ export default function AdminTickets() {
   // Filters
   const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | ''>('');
+  const [advisorFilter, setAdvisorFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | 'ticket_number' | 'priority' | 'status'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [search, setSearch] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const perPage = 20;
+
+  // Advisors list for dropdown
+  const [requesters, setRequesters] = useState<TicketRequester[]>([]);
+
+  // Bulk close
+  const [bulkClosing, setBulkClosing] = useState(false);
+  const [showBulkCloseConfirm, setShowBulkCloseConfirm] = useState(false);
 
   // Detail
   const [selectedTicket, setSelectedTicket] = useState<AdminTicketDetail | null>(null);
@@ -115,6 +128,9 @@ export default function AdminTickets() {
         status: statusFilter || undefined,
         priority: priorityFilter || undefined,
         search: searchDebounced || undefined,
+        requesterId: advisorFilter || undefined,
+        sortBy,
+        sortOrder,
         page,
         perPage,
       });
@@ -125,7 +141,7 @@ export default function AdminTickets() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, priorityFilter, searchDebounced, page]);
+  }, [statusFilter, priorityFilter, advisorFilter, sortBy, sortOrder, searchDebounced, page]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -144,12 +160,28 @@ export default function AdminTickets() {
     if (adminCheck) loadStats();
   }, [adminCheck, loadStats]);
 
-  // Pre-load categories for the create modal
+  // Pre-load categories and requesters
   useEffect(() => {
     if (adminCheck) {
       ticketService.getCategories().then(setCreateCategories).catch(() => {});
+      ticketService.getRequesters().then(setRequesters).catch(() => {});
     }
   }, [adminCheck]);
+
+  const handleBulkClose = async () => {
+    setBulkClosing(true);
+    try {
+      const count = await ticketService.bulkCloseAll();
+      toast.success(`${count} ticket${count !== 1 ? 's' : ''} marked as closed.`);
+      setShowBulkCloseConfirm(false);
+      loadTickets();
+      loadStats();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to bulk close tickets');
+    } finally {
+      setBulkClosing(false);
+    }
+  };
 
   const openTicketDetail = async (ticketId: string) => {
     setDetailLoading(true);
@@ -451,46 +483,80 @@ export default function AdminTickets() {
         subtitle="View and manage all support tickets across the system"
         icon={<ShieldCheck className="w-6 h-6" />}
         actions={
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <PlusCircle className="w-4 h-4" />
-            Create Ticket
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowBulkCloseConfirm(true)}
+              className="text-white hover:bg-white/20"
+            >
+              <Archive className="w-4 h-4" />
+              Bulk Close All
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <PlusCircle className="w-4 h-4" />
+              Create Ticket
+            </Button>
+          </div>
         }
       />
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <MetricCard label="Total" value={stats.total} icon={<ShieldCheck className="w-5 h-5" />} />
-          <MetricCard label="Open" value={stats.open + stats.new} icon={<AlertCircle className="w-5 h-5 text-yellow-500" />} />
-          <MetricCard label="Pending" value={stats.pending} icon={<Clock className="w-5 h-5 text-orange-500" />} />
-          <MetricCard label="Resolved" value={stats.resolved} icon={<CheckCircle2 className="w-5 h-5 text-green-500" />} />
-          <MetricCard label="Closed" value={stats.closed} icon={<XCircle className="w-5 h-5 text-neutral-400" />} />
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+          <MetricCard label="Total" value={stats.total} icon={<ShieldCheck className="w-5 h-5" />} onClick={() => { setStatusFilter(''); setPage(1); }} active={statusFilter === ''} />
+          <MetricCard label="New" value={stats.new} icon={<CircleDot className="w-5 h-5 text-blue-500" />} onClick={() => { setStatusFilter(statusFilter === 'new' ? '' : 'new'); setPage(1); }} active={statusFilter === 'new'} />
+          <MetricCard label="Open" value={stats.open} icon={<AlertCircle className="w-5 h-5 text-yellow-500" />} onClick={() => { setStatusFilter(statusFilter === 'open' ? '' : 'open'); setPage(1); }} active={statusFilter === 'open'} />
+          <MetricCard label="Pending" value={stats.pending} icon={<Clock className="w-5 h-5 text-orange-500" />} onClick={() => { setStatusFilter(statusFilter === 'pending' ? '' : 'pending'); setPage(1); }} active={statusFilter === 'pending'} />
+          <MetricCard label="Resolved" value={stats.resolved} icon={<CheckCircle2 className="w-5 h-5 text-green-500" />} onClick={() => { setStatusFilter(statusFilter === 'resolved' ? '' : 'resolved'); setPage(1); }} active={statusFilter === 'resolved'} />
+          <MetricCard label="Closed" value={stats.closed} icon={<XCircle className="w-5 h-5 text-neutral-400" />} onClick={() => { setStatusFilter(statusFilter === 'closed' ? '' : 'closed'); setPage(1); }} active={statusFilter === 'closed'} />
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
-          <input
-            type="text"
-            placeholder="Search by subject or ticket #..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
+      <div className="bg-surface-primary rounded-xl border border-th-border p-4 space-y-3">
+        {/* Row 1: Search + Advisor dropdown */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
+            <input
+              type="text"
+              placeholder="Search by subject, ticket #, or requester..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+          </div>
+
+          <div className="relative min-w-[200px] max-w-xs flex-1">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
+            <select
+              value={advisorFilter}
+              onChange={(e) => { setAdvisorFilter(e.target.value); setPage(1); }}
+              title="Filter by advisor"
+              className="w-full pl-9 pr-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none"
+            >
+              <option value="">All advisors</option>
+              {requesters.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}{r.agent_id ? ` (${r.agent_id})` : ''} — {r.email}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Row 2: Status, Priority, Sort, Refresh */}
+        <div className="flex flex-wrap items-center gap-2">
           <Filter className="w-4 h-4 text-th-text-tertiary" />
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value as TicketStatus | ''); setPage(1); }}
+            title="Filter by status"
             className="px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           >
             <option value="">All statuses</option>
@@ -504,6 +570,7 @@ export default function AdminTickets() {
           <select
             value={priorityFilter}
             onChange={(e) => { setPriorityFilter(e.target.value as TicketPriority | ''); setPage(1); }}
+            title="Filter by priority"
             className="px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           >
             <option value="">All priorities</option>
@@ -512,19 +579,82 @@ export default function AdminTickets() {
             <option value="high">High</option>
             <option value="urgent">Urgent</option>
           </select>
+
+          <div className="flex items-center gap-1 ml-auto">
+            <ArrowUpDown className="w-4 h-4 text-th-text-tertiary" />
+            <select
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value as typeof sortBy); setPage(1); }}
+              title="Sort by"
+              className="px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="created_at">Date Created</option>
+              <option value="updated_at">Last Updated</option>
+              <option value="ticket_number">Ticket #</option>
+              <option value="priority">Priority</option>
+              <option value="status">Status</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => { setSortOrder((o) => o === 'asc' ? 'desc' : 'asc'); setPage(1); }}
+              title={sortOrder === 'asc' ? 'Ascending — click to reverse' : 'Descending — click to reverse'}
+              className="p-2 text-th-text-tertiary hover:text-th-text-primary border border-th-border rounded-lg transition-colors"
+            >
+              <ArrowUpDown className={`w-4 h-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => { loadTickets(); loadStats(); }}
+            title="Refresh"
+            className="min-h-[44px] min-w-[44px]"
+            aria-label="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
         </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => { loadTickets(); loadStats(); }}
-          title="Refresh"
-          className="min-h-[44px] min-w-[44px]"
-          aria-label="Refresh"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+        {/* Active filters summary */}
+        {(statusFilter || priorityFilter || advisorFilter || searchDebounced) && (
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-th-border-subtle">
+            <span className="text-xs text-th-text-tertiary">Active filters:</span>
+            {searchDebounced && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">
+                Search: &ldquo;{searchDebounced}&rdquo;
+                <button type="button" onClick={() => setSearch('')} title="Remove search filter" className="hover:text-blue-900"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {statusFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">
+                Status: {STATUS_CONFIG[statusFilter].label}
+                <button type="button" onClick={() => setStatusFilter('')} title="Remove status filter" className="hover:text-blue-900"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {priorityFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">
+                Priority: {PRIORITY_CONFIG[priorityFilter].label}
+                <button type="button" onClick={() => setPriorityFilter('')} title="Remove priority filter" className="hover:text-blue-900"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {advisorFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">
+                Advisor: {requesters.find((r) => r.id === advisorFilter)?.name || 'Unknown'}
+                <button type="button" onClick={() => setAdvisorFilter('')} title="Remove advisor filter" className="hover:text-blue-900"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => { setSearch(''); setStatusFilter(''); setPriorityFilter(''); setAdvisorFilter(''); setPage(1); }}
+              className="text-xs text-th-text-tertiary hover:text-th-text-primary underline"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Error */}
@@ -545,7 +675,7 @@ export default function AdminTickets() {
           <ShieldCheck className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
           <h3 className="text-lg font-medium text-th-text-primary mb-1">No tickets found</h3>
           <p className="text-sm text-th-text-secondary">
-            {statusFilter || priorityFilter || searchDebounced
+            {statusFilter || priorityFilter || advisorFilter || searchDebounced
               ? 'Try adjusting your filters.'
               : 'No support tickets have been submitted yet.'}
           </p>
@@ -649,6 +779,41 @@ export default function AdminTickets() {
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Close Confirmation Modal */}
+      {showBulkCloseConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-primary rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                  <Archive className="w-5 h-5 text-orange-600" />
+                </div>
+                <h2 className="text-lg font-semibold text-th-text-primary">Bulk Close All Tickets</h2>
+              </div>
+              <p className="text-sm text-th-text-secondary mb-2">
+                This will mark <strong>all non-closed tickets</strong> as <strong>closed</strong>.
+              </p>
+              <p className="text-sm text-th-text-tertiary">
+                This is intended for imported tickets from the Zoho desk migration. This action cannot be easily undone.
+              </p>
+            </div>
+            <div className="p-4 border-t border-th-border-subtle flex justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={() => setShowBulkCloseConfirm(false)}>
+                Cancel
+              </Button>
+              <button
+                type="button"
+                onClick={handleBulkClose}
+                disabled={bulkClosing}
+                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              >
+                {bulkClosing ? 'Closing…' : 'Close All Tickets'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -173,6 +173,16 @@ export interface AdminTicketListResult {
 
 export interface AdminListTicketsOptions extends ListTicketsOptions {
   search?: string;
+  requesterId?: string;
+  sortBy?: 'created_at' | 'updated_at' | 'ticket_number' | 'priority' | 'status';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface TicketRequester {
+  id: string;
+  name: string;
+  email: string;
+  agent_id: string | null;
 }
 
 export interface CreateTicketOptions {
@@ -438,6 +448,9 @@ export class TicketService {
       status: opts.status,
       priority: opts.priority,
       search: opts.search,
+      requester_id: opts.requesterId,
+      sort_by: opts.sortBy,
+      sort_order: opts.sortOrder,
       page: opts.page ?? 1,
       per_page: opts.perPage ?? 20,
     });
@@ -478,6 +491,16 @@ export class TicketService {
       priority: opts.priority,
     });
     return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
+  }
+
+  async getRequesters(): Promise<TicketRequester[]> {
+    const data = await this.call<{ success: boolean; requesters: TicketRequester[] }>('list_requesters');
+    return data.requesters ?? [];
+  }
+
+  async bulkCloseAll(): Promise<number> {
+    const data = await this.call<{ success: boolean; closed_count: number }>('bulk_close');
+    return data.closed_count;
   }
 
   /** Fire-and-forget warm-up ping to keep the ticket-proxy edge function warm.

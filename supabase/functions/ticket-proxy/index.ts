@@ -19,9 +19,11 @@ type ProxyAction =
   | "update_ticket"
   | "get_categories"
   | "create_for_advisor"
-  | "list_kb";
+  | "list_kb"
+  | "list_requesters"
+  | "bulk_close";
 
-const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor"];
+const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor", "list_requesters", "bulk_close"];
 const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories", "list_kb"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -47,6 +49,9 @@ interface ProxyRequest {
   per_page?: number;
   content?: string;
   is_internal?: boolean;
+  requester_id?: string;
+  sort_by?: string;
+  sort_order?: string;
 }
 
 function getItstsClient(): ReturnType<typeof createClient> | null {
@@ -261,16 +266,22 @@ async function checkAdminRole(
 
 async function listAllTickets(
   itstsAdmin: ReturnType<typeof createClient>,
-  opts: { status?: string; priority?: string; search?: string; page: number; perPage: number },
+  opts: { status?: string; priority?: string; search?: string; requester_id?: string; sort_by?: string; sort_order?: string; page: number; perPage: number },
 ) {
+  const sortColumn = ["created_at", "updated_at", "ticket_number", "priority", "status"].includes(opts.sort_by || "")
+    ? opts.sort_by!
+    : "created_at";
+  const ascending = opts.sort_order === "asc";
+
   let query = itstsAdmin
     .from("tickets")
     .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at, requester_id", { count: "exact" })
-    .order("created_at", { ascending: false })
+    .order(sortColumn, { ascending })
     .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
 
   if (opts.status) query = query.eq("status", opts.status);
   if (opts.priority) query = query.eq("priority", opts.priority);
+  if (opts.requester_id) query = query.eq("requester_id", opts.requester_id);
   if (opts.search) {
     const safe = sanitizeSearch(opts.search);
     if (safe) {
@@ -565,6 +576,48 @@ async function getCategories(_itstsAdmin: ReturnType<typeof createClient>) {
   return { categories };
 }
 
+async function listRequesters(
+  itstsAdmin: ReturnType<typeof createClient>,
+) {
+  // Get distinct requester_ids from tickets, then look up their profiles
+  const { data: tickets, error } = await itstsAdmin
+    .from("tickets")
+    .select("requester_id");
+  if (error) throw error;
+
+  const uniqueIds = [...new Set((tickets || []).map((t: { requester_id: string }) => t.requester_id).filter(Boolean))];
+  if (uniqueIds.length === 0) return { requesters: [] };
+
+  const { data: profiles, error: profileErr } = await itstsAdmin
+    .from("profiles")
+    .select("id, full_name, email, agent_id")
+    .in("id", uniqueIds)
+    .order("full_name", { ascending: true });
+  if (profileErr) throw profileErr;
+
+  return {
+    requesters: (profiles || []).map((p: { id: string; full_name: string; email: string; agent_id?: string }) => ({
+      id: p.id,
+      name: p.full_name || p.email,
+      email: p.email,
+      agent_id: p.agent_id || null,
+    })),
+  };
+}
+
+async function bulkCloseAll(
+  itstsAdmin: ReturnType<typeof createClient>,
+) {
+  const { count, error } = await itstsAdmin
+    .from("tickets")
+    .update({ status: "closed", updated_at: new Date().toISOString() })
+    .neq("status", "closed")
+    .select("id", { count: "exact", head: true });
+
+  if (error) throw error;
+  return { closed_count: count || 0 };
+}
+
 // ── Email notification (fire-and-forget with timeout) ─────────────────────────
 function fireNotification(payload: Record<string, unknown>): void {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -659,15 +712,17 @@ Deno.serve(async (req: Request) => {
 
     // ── ITSTS not configured → return graceful stubs for read actions ──────
     if (!itstsAdmin) {
-      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all", "list_kb"];
+      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all", "list_kb", "list_requesters", "bulk_close"];
       if (READ_STUB_ACTIONS.includes(action as string)) {
         const stubs: Record<string, unknown> = {
-          list:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats:         { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
-          get_categories:{ categories: [] },
-          list_all:      { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats_all:     { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
-          list_kb:       { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+          list:             { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+          stats:            { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+          get_categories:   { categories: [] },
+          list_all:         { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+          stats_all:        { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+          list_kb:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+          list_requesters:  { requesters: [] },
+          bulk_close:       { closed_count: 0 },
         };
         return new Response(
           JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId }),
@@ -751,9 +806,18 @@ Deno.serve(async (req: Request) => {
           status: body.status,
           priority: body.priority,
           search: body.search,
+          requester_id: body.requester_id,
+          sort_by: body.sort_by,
+          sort_order: body.sort_order,
           page: body.page || 1,
           perPage: body.per_page || 20,
         });
+        break;
+      case "list_requesters":
+        result = await listRequesters(itstsAdmin);
+        break;
+      case "bulk_close":
+        result = await bulkCloseAll(itstsAdmin);
         break;
       case "detail_admin":
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {

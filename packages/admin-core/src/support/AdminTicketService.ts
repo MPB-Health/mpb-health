@@ -16,6 +16,7 @@ export {
   type TicketStatus,
   type TicketPriority,
   type TicketComment,
+  type TicketRequester,
   type UpdateTicketOptions,
   type CreateTicketOptions,
   type CreateTicketResult,

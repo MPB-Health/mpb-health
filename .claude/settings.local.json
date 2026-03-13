@@ -34,7 +34,12 @@
       "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/functions/\")",
       "mcp__claude_ai_Supabase__list_migrations",
       "mcp__claude_ai_Supabase__list_edge_functions",
-      "mcp__claude_ai_Supabase__get_logs"
+      "mcp__claude_ai_Supabase__get_logs",
+      "Bash(find /Users/Vendicatore/Documents/GitHub/mpbhealth-monorepo -path */node_modules -prune -o -type f \\\\\\(-name *api* -o -name *routes* \\\\\\) -path */advisor* -print)",
+      "Bash(find /Users/Vendicatore/Documents/GitHub/mpbhealth-monorepo -type f \\\\\\(-name *ticket* -o -name *admin* \\\\\\))",
+      "Bash(node_modules/.bin/tsc --noEmit -p apps/admin-portal/tsconfig.json)",
+      "Bash(find . -path */node_modules/.bin/tsc -maxdepth 5)",
+      "Bash(find . -name tsc -path */node_modules/* -maxdepth 6)"
     ]
   }
 }

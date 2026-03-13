@@ -39,7 +39,16 @@
       "Bash(find /Users/Vendicatore/Documents/GitHub/mpbhealth-monorepo -type f \\\\\\(-name *ticket* -o -name *admin* \\\\\\))",
       "Bash(node_modules/.bin/tsc --noEmit -p apps/admin-portal/tsconfig.json)",
       "Bash(find . -path */node_modules/.bin/tsc -maxdepth 5)",
-      "Bash(find . -name tsc -path */node_modules/* -maxdepth 6)"
+      "Bash(find . -name tsc -path */node_modules/* -maxdepth 6)",
+      "Bash(npm install:*)",
+      "Bash(brew upgrade:*)",
+      "Bash(npx supabase@latest --version)",
+      "Bash(npx supabase@latest functions deploy ticket-proxy --project-ref dtmnkzllidaiqyheguhl --no-verify-jwt)",
+      "Bash(npx pnpm:*)",
+      "Bash(corepack enable:*)",
+      "Bash(corepack prepare:*)",
+      "Bash(git status:*)",
+      "Bash(git push:*)"
     ]
   }
 }

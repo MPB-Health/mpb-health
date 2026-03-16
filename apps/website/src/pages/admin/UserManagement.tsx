@@ -159,6 +159,11 @@ const UserManagement: React.FC = () => {
     errors: number;
   } | null>(null);
 
+  // Mass password reset state
+  const [massResetModal, setMassResetModal] = useState(false);
+  const [sendingMassReset, setSendingMassReset] = useState(false);
+  const [massResetResult, setMassResetResult] = useState<{ sent: number; errors: number } | null>(null);
+
   useEffect(() => {
     checkTableAndLoadData();
   }, []);
@@ -643,6 +648,43 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleMassPasswordReset = async (mode: 'selected' | 'all_advisors') => {
+    setSendingMassReset(true);
+    setMassResetResult(null);
+    const redirectTo = AUTH_URLS.advisor.resetPassword;
+
+    const targets =
+      mode === 'selected'
+        ? users.filter((u) => selectedIds.has(u.id))
+        : users.filter((u) => u.roles.includes('advisor'));
+
+    let sent = 0;
+    let errors = 0;
+
+    for (const u of targets) {
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(u.email, { redirectTo });
+        if (error) {
+          errors++;
+        } else {
+          sent++;
+        }
+      } catch {
+        errors++;
+      }
+    }
+
+    setMassResetResult({ sent, errors });
+
+    if (errors === 0) {
+      toast.success(`Password reset emails sent to ${sent} advisor${sent !== 1 ? 's' : ''}`);
+    } else {
+      toast(`Sent ${sent}, ${errors} failed`, { icon: '⚠️' });
+    }
+
+    setSendingMassReset(false);
+  };
+
   // Filter users by search + role tab
   const filteredUsers = users.filter((u) => {
     if (roleFilter !== 'all' && !u.roles.includes(roleFilter)) return false;
@@ -726,6 +768,10 @@ const UserManagement: React.FC = () => {
               <Button onClick={() => setInviteModal(true)} variant="outline">
                 <Mail className="h-4 w-4 mr-2" />
                 Send Invites
+              </Button>
+              <Button onClick={() => { setMassResetModal(true); setMassResetResult(null); }} variant="outline">
+                <Key className="h-4 w-4 mr-2" />
+                Reset Passwords
               </Button>
               <Button onClick={() => navigate('/admin/users/bulk-import')} variant="outline">
                 <UserPlus className="h-4 w-4 mr-2" />
@@ -833,6 +879,7 @@ const UserManagement: React.FC = () => {
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-teal-700 text-white rounded-xl shadow-2xl px-6 py-3 flex items-center gap-4">
             <span className="text-sm font-medium">{selectedIds.size} advisor{selectedIds.size > 1 ? 's' : ''} selected</span>
             <button
+              type="button"
               onClick={() => setInviteModal(true)}
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-white text-teal-700 rounded-lg text-sm font-semibold hover:bg-teal-50 transition-colors"
             >
@@ -840,6 +887,15 @@ const UserManagement: React.FC = () => {
               Send Invite
             </button>
             <button
+              type="button"
+              onClick={() => { setMassResetModal(true); setMassResetResult(null); }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 bg-white text-teal-700 rounded-lg text-sm font-semibold hover:bg-teal-50 transition-colors"
+            >
+              <Key className="h-4 w-4" />
+              Reset Passwords
+            </button>
+            <button
+              type="button"
               onClick={() => setSelectedIds(new Set())}
               className="text-teal-200 hover:text-white text-sm"
               aria-label="Clear selection"
@@ -1372,6 +1428,87 @@ const UserManagement: React.FC = () => {
                     <>
                       <Send className="h-4 w-4" />
                       {selectedIds.size > 0 ? `Send to ${selectedIds.size} Selected` : 'Send to All Pending'}
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mass Password Reset Modal */}
+      {massResetModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-50 rounded-lg">
+                  <Key className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-neutral-900">Mass Password Reset</h2>
+                  <p className="text-sm text-neutral-600">
+                    {selectedIds.size > 0
+                      ? `Send reset emails to ${selectedIds.size} selected advisor${selectedIds.size > 1 ? 's' : ''}`
+                      : 'Send password reset emails to all advisors'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {!massResetResult ? (
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-sm text-amber-800">
+                    This will send a <strong>Supabase password reset email</strong> to{' '}
+                    {selectedIds.size > 0
+                      ? `the ${selectedIds.size} selected advisor${selectedIds.size > 1 ? 's' : ''}`
+                      : 'every advisor in the system'}
+                    . Each advisor will receive a unique link to set a new password.
+                  </p>
+                  <p className="text-xs text-amber-700 mt-2">
+                    Note: The default temporary password is <strong>MPBHealth2025!</strong> (capital M, P, B, H).
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-green-700">{massResetResult.sent}</p>
+                    <p className="text-xs text-green-600 mt-1">Emails Sent</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-red-700">{massResetResult.errors}</p>
+                    <p className="text-xs text-red-600 mt-1">Failed</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-neutral-200 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => { setMassResetModal(false); setMassResetResult(null); }}
+                disabled={sendingMassReset}
+              >
+                {massResetResult ? 'Close' : 'Cancel'}
+              </Button>
+              {!massResetResult && (
+                <button
+                  type="button"
+                  onClick={() => handleMassPasswordReset(selectedIds.size > 0 ? 'selected' : 'all_advisors')}
+                  disabled={sendingMassReset}
+                  className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {sendingMassReset ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="h-4 w-4" />
+                      {selectedIds.size > 0 ? `Reset ${selectedIds.size} Selected` : 'Reset All Advisors'}
                     </>
                   )}
                 </button>

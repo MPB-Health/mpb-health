@@ -36,7 +36,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { Button, GradientHeader, MetricCard, SkeletonLine, SkeletonAvatar } from '@mpbhealth/ui';
-import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm } from '@mpbhealth/advisor-core';
+import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, navigationService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm, type QuickLink } from '@mpbhealth/advisor-core';
 import { supabase, supabaseUrl } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
@@ -252,6 +252,9 @@ export default function Dashboard() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set(announcementService.getDismissedIds()));
 
+  // CMS-driven dashboard quick actions (dashboard_actions category)
+  const [cmsQuickLinks, setCmsQuickLinks] = useState<QuickLink[]>([]);
+
   // Fetch all independent dashboard data in parallel on mount
   useEffect(() => {
     let cancelled = false;
@@ -270,18 +273,46 @@ export default function Dashboard() {
       ]),
       enrollmentService.getLinks(),
       formsService.getForms('member'),
-    ]).then(([annResult, settingsResult, linksResult, formsResult]) => {
+      navigationService.getDashboardQuickActions(),
+    ]).then(([annResult, settingsResult, linksResult, formsResult, quickLinksResult]) => {
       if (cancelled) return;
       if (annResult.status === 'fulfilled') setAnnouncements(annResult.value);
       if (settingsResult.status === 'fulfilled') setPortalSettings(settingsResult.value);
       if (linksResult.status === 'fulfilled') setCmsEnrollLinks(linksResult.value);
       if (formsResult.status === 'fulfilled') setMemberForms(formsResult.value);
+      if (quickLinksResult.status === 'fulfilled') setCmsQuickLinks(quickLinksResult.value);
       setMemberFormsLoading(false);
     });
 
     return () => {
       cancelled = true;
       channel.unsubscribe();
+    };
+  }, []);
+
+  // Realtime subscriptions for all dashboard CMS data
+  useEffect(() => {
+    const enrollChannel = enrollmentService.subscribeToChanges(setCmsEnrollLinks);
+    const formsChannel = formsService.subscribeToFormChanges(() => {
+      formsService.getForms('member').then(setMemberForms).catch(() => {});
+    });
+    const settingsChannel = portalSettingsService.subscribeToSettingChanges(() => {
+      portalSettingsService.getMultipleSettings([
+        'affiliate_form_url',
+        'schedule_call_url',
+        'affiliate_phone',
+        'advisor_landing_page_url',
+      ]).then(setPortalSettings).catch(() => {});
+    });
+    const quickLinksChannel = navigationService.subscribeToQuickLinkChanges((all) => {
+      const dashboardLinks = all.filter((l) => l.category === 'dashboard_actions');
+      setCmsQuickLinks(dashboardLinks);
+    });
+    return () => {
+      supabase.removeChannel(enrollChannel);
+      supabase.removeChannel(formsChannel);
+      supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(quickLinksChannel);
     };
   }, []);
 
@@ -343,7 +374,18 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, [profile?.email]);
 
-  const displayQuickLinks: FallbackQuickLink[] = fallbackDashboardQuickLinks;
+  // Use CMS dashboard_actions when available; fall back to hardcoded list
+  const displayQuickLinks: FallbackQuickLink[] = cmsQuickLinks.length > 0
+    ? cmsQuickLinks.map((l) => ({
+        label: l.label,
+        url: l.url,
+        image: l.image_url
+          ? l.image_url.startsWith('http') ? l.image_url : `${supabaseUrl}${l.image_url}`
+          : '',
+        description: l.description ?? '',
+        popup: l.is_popup,
+      }))
+    : fallbackDashboardQuickLinks;
 
   // Derive enrollment options: CMS data with fallback
   const enrollOptions = cmsEnrollLinks.length > 0

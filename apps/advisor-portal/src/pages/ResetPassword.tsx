@@ -23,6 +23,15 @@ export default function ResetPassword() {
 
     let hasValidSession = false;
 
+    // Listen FIRST so we don't miss events that fire during checkSession()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      // Accept both PASSWORD_RECOVERY and SIGNED_IN — Supabase can fire either
+      // (or both) when exchanging the recovery token from the email link.
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        hasValidSession = true;
+      }
+    });
+
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -31,14 +40,14 @@ export default function ResetPassword() {
           return;
         }
 
-        // Give the auth state change listener a moment to fire
-        // before redirecting (the token exchange may still be in progress)
+        // Give the auth state change listener time to fire — use 4 s to handle
+        // slow mobile connections where the token exchange can take a moment.
         setTimeout(() => {
           if (!hasValidSession) {
             toast.error('Invalid or expired reset link');
             navigate('/forgot-password');
           }
-        }, 2000);
+        }, 4000);
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {
           return;
@@ -49,12 +58,6 @@ export default function ResetPassword() {
     };
 
     checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        hasValidSession = true;
-      }
-    });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -107,6 +110,19 @@ export default function ResetPassword() {
             password,
           },
         }).catch(() => {});
+      }
+
+      // Clear must_change_password flag so the advisor isn't re-routed to
+      // /change-password after logging in with their new password.
+      // Must happen BEFORE signOut() while the session is still valid.
+      if (user?.id) {
+        await supabase
+          .from('advisor_profiles')
+          .update({ must_change_password: false })
+          .eq('id', user.id)
+          .then(({ error: flagErr }) => {
+            if (flagErr) console.error('Failed to clear must_change_password:', flagErr);
+          });
       }
 
       setSuccess(true);

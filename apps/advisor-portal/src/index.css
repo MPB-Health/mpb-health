@@ -107,6 +107,16 @@ body {
   background-color: var(--lane-color);
 }
 
+/* Brand preview - uses CSS custom properties for dynamic theming (set via JS) */
+.brand-preview-bg {
+  background-color: var(--brand-preview-bg, #4f46e5);
+}
+
+.brand-preview-btn {
+  background-color: var(--brand-preview-btn, #818cf8);
+  color: white;
+}
+
 /* ============================================================================
    Document Card - Fix for thumbnail gap caused by text content
    The text (H3, P) was affecting thumbnail placement due to baseline alignment.

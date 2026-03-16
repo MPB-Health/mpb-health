@@ -1,25 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@mpbhealth/database';
-import { AUTH_URLS } from '@mpbhealth/config';
 import toast from 'react-hot-toast';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
-
-/**
- * In development (localhost) we fall back to window.location.origin so the reset
- * link resolves correctly against the local Supabase project allowlist.
- * In production we ALWAYS use the canonical advisor origin — never window.location.origin —
- * to prevent Vercel preview deployments from generating disallowed redirectTo values that
- * Supabase silently falls back to SITE_URL (mpb.health) instead of the advisor portal.
- */
-const getAdvisorResetUrl = (): string => {
-  const isLocalDev =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  return isLocalDev
-    ? `${window.location.origin}/reset-password`
-    : AUTH_URLS.advisor.resetPassword;
-};
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -31,8 +14,11 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: getAdvisorResetUrl(),
+      // Route through server-side edge function so 190+ simultaneous reset requests
+      // don't hit Supabase client-side rate limits (/auth/v1/recover → 429).
+      // The edge function uses Admin API + Resend — no Supabase email rate limit.
+      const { error } = await supabase.functions.invoke('advisor-forgot-password', {
+        body: { email },
       });
 
       if (error) throw error;

@@ -1349,7 +1349,7 @@ export default function AdvisorPortalCMS() {
                 <CardTitle>
                   {editingItem ? 'Edit' : 'Create'} {tabs.find(t => t.id === activeTab)?.label.slice(0, -1)}
                 </CardTitle>
-                <button onClick={() => setShowModal(false)}>
+                <button onClick={() => setShowModal(false)} aria-label="Close">
                   <X className="w-5 h-5" />
                 </button>
               </CardHeader>
@@ -1517,10 +1517,10 @@ const QuickLinksEditor: React.FC<EditorProps<AdvisorQuickLink>> = ({
                           <EyeOff className="w-4 h-4 text-gray-400" />
                         )}
                       </button>
-                      <button onClick={() => onEdit?.(item)}>
+                      <button onClick={() => onEdit?.(item)} aria-label="Edit">
                         <Edit2 className="w-4 h-4 text-blue-600" />
                       </button>
-                      <button onClick={() => onDelete?.(item.id)}>
+                      <button onClick={() => onDelete?.(item.id)} aria-label="Delete">
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
                     </div>
@@ -1571,17 +1571,17 @@ const LearningPathsEditor: React.FC<EditorProps<AdvisorLearningPath>> = ({
                   </div>
                   <Badge variant="outline">{item.estimated_hours}h</Badge>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => onToggle?.(item.id, item.is_active)}>
+                    <button onClick={() => onToggle?.(item.id, item.is_active)} aria-label={item.is_active ? 'Hide' : 'Show'}>
                       {item.is_active ? (
                         <Eye className="w-4 h-4 text-green-600" />
                       ) : (
                         <EyeOff className="w-4 h-4 text-gray-400" />
                       )}
                     </button>
-                    <button onClick={() => onEdit?.(item)}>
+                    <button onClick={() => onEdit?.(item)} aria-label="Edit">
                       <Edit2 className="w-4 h-4 text-blue-600" />
                     </button>
-                    <button onClick={() => onDelete?.(item.id)}>
+                    <button onClick={() => onDelete?.(item.id)} aria-label="Delete">
                       <Trash2 className="w-4 h-4 text-red-600" />
                     </button>
                   </div>
@@ -1805,7 +1805,7 @@ const WidgetsEditor: React.FC<EditorProps<AdvisorDashboardWidget>> = ({
                     <p className="text-sm text-gray-500">{item.description}</p>
                   </div>
                   <Badge variant="outline">{item.grid_column}</Badge>
-                  <button onClick={() => onToggle?.(item.id, item.is_visible)}>
+                  <button onClick={() => onToggle?.(item.id, item.is_visible)} aria-label={item.is_visible ? 'Hide' : 'Show'}>
                     {item.is_visible ? (
                       <Eye className="w-4 h-4 text-green-600" />
                     ) : (
@@ -1839,8 +1839,8 @@ const CategoriesEditor: React.FC<EditorProps<AdvisorCategory>> = ({
         )}
       >
         <div
-          className="w-4 h-4 rounded"
-          style={{ backgroundColor: item.color }}
+          className="w-4 h-4 rounded bg-[var(--item-color)]"
+          style={{ '--item-color': item.color } as React.CSSProperties}
         />
         <div className="flex-1">
           <div className="flex items-center gap-2">
@@ -1851,17 +1851,17 @@ const CategoriesEditor: React.FC<EditorProps<AdvisorCategory>> = ({
         </div>
         <Badge>{item.type}</Badge>
         <div className="flex items-center gap-2">
-          <button onClick={() => onToggle?.(item.id, item.is_active)}>
+          <button onClick={() => onToggle?.(item.id, item.is_active)} aria-label={item.is_active ? 'Hide' : 'Show'}>
             {item.is_active ? (
               <Eye className="w-4 h-4 text-green-600" />
             ) : (
               <EyeOff className="w-4 h-4 text-gray-400" />
             )}
           </button>
-          <button onClick={() => onEdit?.(item)}>
+          <button onClick={() => onEdit?.(item)} aria-label="Edit">
             <Edit2 className="w-4 h-4 text-blue-600" />
           </button>
-          <button onClick={() => onDelete?.(item.id)}>
+          <button onClick={() => onDelete?.(item.id)} aria-label="Delete">
             <Trash2 className="w-4 h-4 text-red-600" />
           </button>
         </div>
@@ -1908,17 +1908,17 @@ const NavigationEditor: React.FC<EditorProps<AdvisorNavMenuItem>> = ({
                     <p className="text-sm text-gray-500">{item.url}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => onToggle?.(item.id, item.is_active)}>
+                    <button onClick={() => onToggle?.(item.id, item.is_active)} aria-label={item.is_active ? 'Hide' : 'Show'}>
                       {item.is_active ? (
                         <Eye className="w-4 h-4 text-green-600" />
                       ) : (
                         <EyeOff className="w-4 h-4 text-gray-400" />
                       )}
                     </button>
-                    <button onClick={() => onEdit?.(item)}>
+                    <button onClick={() => onEdit?.(item)} aria-label="Edit">
                       <Edit2 className="w-4 h-4 text-blue-600" />
                     </button>
-                    <button onClick={() => onDelete?.(item.id)}>
+                    <button onClick={() => onDelete?.(item.id)} aria-label="Delete">
                       <Trash2 className="w-4 h-4 text-red-600" />
                     </button>
                   </div>
@@ -1967,17 +1967,17 @@ const AnnouncementsEditor: React.FC<EditorProps<AdvisorAnnouncement>> = ({
           {item.end_date && ` - ${new Date(item.end_date).toLocaleDateString()}`}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => onToggle?.(item.id, item.is_active)}>
+          <button onClick={() => onToggle?.(item.id, item.is_active)} aria-label={item.is_active ? 'Hide' : 'Show'}>
             {item.is_active ? (
               <Eye className="w-4 h-4 text-green-600" />
             ) : (
               <EyeOff className="w-4 h-4 text-gray-400" />
             )}
           </button>
-          <button onClick={() => onEdit?.(item)}>
+          <button onClick={() => onEdit?.(item)} aria-label="Edit">
             <Edit2 className="w-4 h-4 text-blue-600" />
           </button>
-          <button onClick={() => onDelete?.(item.id)}>
+          <button onClick={() => onDelete?.(item.id)} aria-label="Delete">
             <Trash2 className="w-4 h-4 text-red-600" />
           </button>
         </div>
@@ -2019,6 +2019,7 @@ const QuickLinkForm: React.FC<FormProps<AdvisorQuickLink>> = ({ form, setForm })
         value={form.category || 'resources'}
         onChange={(e) => setForm({ ...form, category: e.target.value as AdvisorQuickLink['category'] })}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        aria-label="Category"
       >
         {QUICK_LINK_CATEGORIES.map((cat) => (
           <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -2031,6 +2032,7 @@ const QuickLinkForm: React.FC<FormProps<AdvisorQuickLink>> = ({ form, setForm })
         value={form.icon || 'Link'}
         onChange={(e) => setForm({ ...form, icon: e.target.value })}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        aria-label="Icon"
       >
         {AVAILABLE_ICONS.map((icon) => (
           <option key={icon} value={icon}>{icon}</option>
@@ -2096,6 +2098,7 @@ const LearningPathForm: React.FC<LearningPathFormProps> = ({ form, setForm, cate
           value={form.category_slug || ''}
           onChange={(e) => setForm({ ...form, category_slug: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Category"
         >
           <option value="">Select category</option>
           {categories.map((cat) => (
@@ -2120,6 +2123,7 @@ const LearningPathForm: React.FC<LearningPathFormProps> = ({ form, setForm, cate
           value={form.icon || 'BookOpen'}
           onChange={(e) => setForm({ ...form, icon: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Icon"
         >
           {AVAILABLE_ICONS.map((icon) => (
             <option key={icon} value={icon}>{icon}</option>
@@ -2132,6 +2136,7 @@ const LearningPathForm: React.FC<LearningPathFormProps> = ({ form, setForm, cate
           value={form.gradient || AVAILABLE_GRADIENTS[0].value}
           onChange={(e) => setForm({ ...form, gradient: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Color theme"
         >
           {AVAILABLE_GRADIENTS.map((g) => (
             <option key={g.value} value={g.value}>{g.label}</option>
@@ -2212,7 +2217,7 @@ const TrainingModuleForm: React.FC<TrainingModuleFormProps> = ({ form, setForm, 
           value={form.category || 'onboarding'}
           onChange={(e) => setForm({ ...form, category: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          title="Module category"
+          aria-label="Module category"
         >
           {TRAINING_CATEGORIES.map((cat) => (
             <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -2225,7 +2230,7 @@ const TrainingModuleForm: React.FC<TrainingModuleFormProps> = ({ form, setForm, 
           value={form.content_type || 'video'}
           onChange={(e) => setForm({ ...form, content_type: e.target.value as any })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          title="Content type"
+          aria-label="Content type"
         >
           {CONTENT_TYPES.map((type) => (
             <option key={type.value} value={type.value}>{type.label}</option>
@@ -2306,7 +2311,7 @@ const TrainingModuleForm: React.FC<TrainingModuleFormProps> = ({ form, setForm, 
           setForm({ ...form, prerequisites: selected });
         }}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg min-h-[100px]"
-        title="Select prerequisite modules"
+        aria-label="Select prerequisite modules"
       >
         {modules.filter(m => m.id !== (form as any).id).map((module) => (
           <option key={module.id} value={module.id}>{module.title}</option>
@@ -2386,7 +2391,7 @@ const ResourceForm: React.FC<ResourceFormProps> = ({ form, setForm, categories }
           value={form.content_type || 'resource'}
           onChange={(e) => setForm({ ...form, content_type: e.target.value as any })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          title="Resource content type"
+          aria-label="Resource content type"
         >
           {RESOURCE_CONTENT_TYPES.map((type) => (
             <option key={type.value} value={type.value}>{type.label}</option>
@@ -2399,7 +2404,7 @@ const ResourceForm: React.FC<ResourceFormProps> = ({ form, setForm, categories }
           value={form.category_id || ''}
           onChange={(e) => setForm({ ...form, category_id: e.target.value || null })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          title="Resource category"
+          aria-label="Resource category"
         >
           <option value="">No Category</option>
           {categories.map((cat) => (
@@ -2482,6 +2487,7 @@ const CategoryForm: React.FC<FormProps<AdvisorCategory>> = ({ form, setForm }) =
           value={form.type || 'training'}
           onChange={(e) => setForm({ ...form, type: e.target.value as any })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Type"
         >
           <option value="training">Training</option>
           <option value="sop">SOP</option>
@@ -2495,6 +2501,7 @@ const CategoryForm: React.FC<FormProps<AdvisorCategory>> = ({ form, setForm }) =
           value={form.icon || 'Folder'}
           onChange={(e) => setForm({ ...form, icon: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Icon"
         >
           {AVAILABLE_ICONS.map((icon) => (
             <option key={icon} value={icon}>{icon}</option>
@@ -2542,6 +2549,7 @@ const NavItemForm: React.FC<NavItemFormProps> = ({ form, setForm, navItems }) =>
           value={form.icon || 'Link'}
           onChange={(e) => setForm({ ...form, icon: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Icon"
         >
           {AVAILABLE_ICONS.map((icon) => (
             <option key={icon} value={icon}>{icon}</option>
@@ -2554,6 +2562,7 @@ const NavItemForm: React.FC<NavItemFormProps> = ({ form, setForm, navItems }) =>
           value={form.parent_id || ''}
           onChange={(e) => setForm({ ...form, parent_id: e.target.value || undefined })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Parent item"
         >
           <option value="">None (Top Level)</option>
           {navItems.filter(n => !n.parent_id).map((item) => (
@@ -2577,6 +2586,7 @@ const NavItemForm: React.FC<NavItemFormProps> = ({ form, setForm, navItems }) =>
           value={form.badge_color || 'blue'}
           onChange={(e) => setForm({ ...form, badge_color: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Badge color"
         >
           <option value="blue">Blue</option>
           <option value="green">Green</option>
@@ -2633,6 +2643,7 @@ const AnnouncementForm: React.FC<FormProps<AdvisorAnnouncement>> = ({ form, setF
           value={form.type || 'info'}
           onChange={(e) => setForm({ ...form, type: e.target.value as any })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Type"
         >
           <option value="info">Info</option>
           <option value="warning">Warning</option>
@@ -2646,6 +2657,7 @@ const AnnouncementForm: React.FC<FormProps<AdvisorAnnouncement>> = ({ form, setF
           value={form.target_audience || 'all'}
           onChange={(e) => setForm({ ...form, target_audience: e.target.value as any })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Target audience"
         >
           <option value="all">All Advisors</option>
           <option value="new_advisors">New Advisors Only</option>
@@ -2764,6 +2776,7 @@ const MeetingForm: React.FC<FormProps<AdvisorMeeting>> = ({ form, setForm }) => 
         value={form.status || 'scheduled'}
         onChange={(e) => setForm({ ...form, status: e.target.value as AdvisorMeeting['status'] })}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        aria-label="Status"
       >
         <option value="scheduled">Scheduled</option>
         <option value="live">Live</option>
@@ -2787,6 +2800,7 @@ const MeetingForm: React.FC<FormProps<AdvisorMeeting>> = ({ form, setForm }) => 
             value={form.recurrence_pattern || 'biweekly'}
             onChange={(e) => setForm({ ...form, recurrence_pattern: e.target.value as AdvisorMeeting['recurrence_pattern'] })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            aria-label="Recurrence pattern"
           >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
@@ -2828,6 +2842,7 @@ const SOPForm: React.FC<FormProps<SOPDocument>> = ({ form, setForm }) => (
           value={form.category || 'general'}
           onChange={(e) => setForm({ ...form, category: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          aria-label="Category"
         >
           <option value="general">General</option>
           <option value="sales">Sales</option>

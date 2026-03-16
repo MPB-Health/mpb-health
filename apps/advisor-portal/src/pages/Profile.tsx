@@ -151,12 +151,13 @@ export default function Profile() {
               </div>
             )}
             <label className="absolute bottom-0 right-0 w-8 h-8 bg-th-accent-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-th-accent-700 transition-colors">
-              <Camera className="w-4 h-4 text-white" />
+              <Camera className="w-4 h-4 text-white" aria-hidden="true" />
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleAvatarChange}
                 className="hidden"
+                aria-label="Upload profile photo"
               />
             </label>
           </div>
@@ -167,43 +168,49 @@ export default function Profile() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                    <label htmlFor="profile-first-name" className="block text-sm font-medium text-th-text-secondary mb-1">
                       First Name
                     </label>
                     <input
+                      id="profile-first-name"
                       type="text"
                       value={formData.first_name}
                       onChange={(e) =>
                         setFormData({ ...formData, first_name: e.target.value })
                       }
                       className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                      placeholder="First name"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                    <label htmlFor="profile-last-name" className="block text-sm font-medium text-th-text-secondary mb-1">
                       Last Name
                     </label>
                     <input
+                      id="profile-last-name"
                       type="text"
                       value={formData.last_name}
                       onChange={(e) =>
                         setFormData({ ...formData, last_name: e.target.value })
                       }
                       className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                      placeholder="Last name"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                  <label htmlFor="profile-phone" className="block text-sm font-medium text-th-text-secondary mb-1">
                     Phone
                   </label>
                   <input
+                    id="profile-phone"
                     type="tel"
                     value={formData.phone}
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-th-border rounded-lg bg-surface-primary text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                    placeholder="Phone number"
                   />
                 </div>
                 <div className="flex items-center space-x-3">

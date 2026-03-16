@@ -1409,9 +1409,17 @@ function LessonViewer({
                 );
               }
               if (line.startsWith('**') && line.endsWith('**')) {
-                return <h4 key={j} className="font-bold text-th-text-primary mt-4 mb-1">{line.replace(/\*\*/g, '')}</h4>;
+                return (
+                  <li key={j}>
+                    <h4 className="font-bold text-th-text-primary mt-4 mb-1">{line.replace(/\*\*/g, '')}</h4>
+                  </li>
+                );
               }
-              return <p key={j} className="text-[15px] text-th-text-secondary leading-relaxed mb-2">{renderInlineFormatting(line)}</p>;
+              return (
+                <li key={j} className="flex items-start gap-2 text-[15px] text-th-text-secondary leading-relaxed mb-2">
+                  {renderInlineFormatting(line)}
+                </li>
+              );
             })}
           </ul>
         );
@@ -1432,7 +1440,11 @@ function LessonViewer({
                   </li>
                 );
               }
-              return <p key={j} className="text-[15px] text-th-text-secondary leading-relaxed mb-2">{renderInlineFormatting(line)}</p>;
+              return (
+                <li key={j} className="text-[15px] text-th-text-secondary leading-relaxed mb-2">
+                  {renderInlineFormatting(line)}
+                </li>
+              );
             })}
           </ol>
         );
@@ -1729,8 +1741,7 @@ export default function Training({ section }: TrainingProps) {
                   if (course.external) { window.open(course.href, '_blank', 'noopener,noreferrer'); }
                   else { navigate(course.href); }
                 }}
-                role={course.available ? 'button' : undefined}
-                tabIndex={course.available ? 0 : undefined}
+                {...(course.available ? { role: 'button' as const, tabIndex: 0 } : {})}
                 className={`rounded-xl border border-th-border overflow-hidden flex flex-col transition-all ${
                   course.available
                     ? 'cursor-pointer hover:shadow-lg hover:border-th-accent-300'
@@ -1820,8 +1831,7 @@ export default function Training({ section }: TrainingProps) {
                   if (course.external) { window.open(course.href, '_blank', 'noopener,noreferrer'); }
                   else { navigate(course.href); }
                 }}
-                role={course.available ? 'button' : undefined}
-                tabIndex={course.available ? 0 : undefined}
+                {...(course.available ? { role: 'button' as const, tabIndex: 0 } : {})}
                 className={`rounded-xl border border-th-border overflow-hidden flex flex-col transition-all ${
                   course.available
                     ? 'cursor-pointer hover:shadow-lg hover:border-th-accent-300'
@@ -2089,10 +2099,12 @@ export default function Training({ section }: TrainingProps) {
                 {totalLessons} lessons &middot; {config.topics.length} topics &middot; Certificate
               </p>
               <div className="flex items-center gap-2 justify-center mb-6">
-                <div className="flex-1 max-w-48 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="flex-1 max-w-48 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden"
+                  style={{ '--progress-width': `${progressPercent}%` } as React.CSSProperties}
+                >
                   <div
-                    className="h-full bg-blue-600 rounded-full transition-all"
-                    style={{ width: `${progressPercent}%` }}
+                    className="h-full w-[var(--progress-width,0%)] bg-blue-600 rounded-full transition-all"
                   />
                 </div>
                 <span className="text-xs text-th-text-tertiary">{progressPercent}%</span>

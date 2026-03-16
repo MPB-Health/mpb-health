@@ -37,6 +37,14 @@ const DEFAULT_BUSINESS_HOURS: BusinessHours[] = DAYS.map((_, i) => ({
   end: '17:00',
 }));
 
+/** Sanitize hex color for safe use in CSS (prevents injection) */
+function sanitizeHexColor(value: string | undefined, fallback: string): string {
+  if (!value) return fallback;
+  const hex = /^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+  const match = value.match(hex);
+  return match ? (value.startsWith('#') ? value : `#${match[1]}`) : fallback;
+}
+
 export default function OrganizationSettings() {
   const { settings, loading, error, saving, updateSettings } = useOrgSettings();
   const [activeTab, setActiveTab] = useState<'general' | 'branding' | 'hours' | 'messaging' | 'compliance'>('general');
@@ -297,10 +305,12 @@ export default function OrganizationSettings() {
                 <h3 className="text-lg font-semibold text-th-text-primary mb-4">Regional Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                    <label htmlFor="default-timezone" className="block text-sm font-medium text-th-text-secondary mb-1.5">
                       Default Timezone
                     </label>
                     <select
+                      id="default-timezone"
+                      aria-label="Default timezone"
                       value={formData.default_timezone || 'America/New_York'}
                       onChange={(e) => updateFormField('default_timezone', e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-th-border-primary bg-surface-secondary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
@@ -314,10 +324,12 @@ export default function OrganizationSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                    <label htmlFor="time-format" className="block text-sm font-medium text-th-text-secondary mb-1.5">
                       Time Format
                     </label>
                     <select
+                      id="time-format"
+                      aria-label="Time format"
                       value={formData.time_format || '12h'}
                       onChange={(e) => updateFormField('time_format', e.target.value as '12h' | '24h')}
                       className="w-full px-3 py-2 rounded-lg border border-th-border-primary bg-surface-secondary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
@@ -328,10 +340,12 @@ export default function OrganizationSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                    <label htmlFor="date-format" className="block text-sm font-medium text-th-text-secondary mb-1.5">
                       Date Format
                     </label>
                     <select
+                      id="date-format"
+                      aria-label="Date format"
                       value={formData.date_format || 'MM/DD/YYYY'}
                       onChange={(e) => updateFormField('date_format', e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-th-border-primary bg-surface-secondary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
@@ -343,10 +357,12 @@ export default function OrganizationSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                    <label htmlFor="currency" className="block text-sm font-medium text-th-text-secondary mb-1.5">
                       Currency
                     </label>
                     <select
+                      id="currency"
+                      aria-label="Currency"
                       value={formData.currency || 'USD'}
                       onChange={(e) => updateFormField('currency', e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-th-border-primary bg-surface-secondary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
@@ -369,41 +385,51 @@ export default function OrganizationSettings() {
                 <h3 className="text-lg font-semibold text-th-text-primary mb-4">Brand Colors</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                    <label htmlFor="primary-color-picker" className="block text-sm font-medium text-th-text-secondary mb-1.5">
                       Primary Color
                     </label>
                     <div className="flex items-center gap-3">
                       <input
+                        id="primary-color-picker"
                         type="color"
+                        aria-label="Primary color picker"
                         value={formData.primary_color || '#4F46E5'}
                         onChange={(e) => updateFormField('primary_color', e.target.value)}
                         className="w-12 h-10 rounded border border-th-border-primary cursor-pointer"
                       />
                       <input
+                        id="primary-color-hex"
                         type="text"
+                        aria-label="Primary color hex value"
                         value={formData.primary_color || '#4F46E5'}
                         onChange={(e) => updateFormField('primary_color', e.target.value)}
                         className="flex-1 px-3 py-2 rounded-lg border border-th-border-primary bg-surface-secondary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent font-mono"
+                        placeholder="#4F46E5"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-th-text-secondary mb-1.5">
+                    <label htmlFor="secondary-color-picker" className="block text-sm font-medium text-th-text-secondary mb-1.5">
                       Secondary Color
                     </label>
                     <div className="flex items-center gap-3">
                       <input
+                        id="secondary-color-picker"
                         type="color"
+                        aria-label="Secondary color picker"
                         value={formData.secondary_color || '#818CF8'}
                         onChange={(e) => updateFormField('secondary_color', e.target.value)}
                         className="w-12 h-10 rounded border border-th-border-primary cursor-pointer"
                       />
                       <input
+                        id="secondary-color-hex"
                         type="text"
+                        aria-label="Secondary color hex value"
                         value={formData.secondary_color || '#818CF8'}
                         onChange={(e) => updateFormField('secondary_color', e.target.value)}
                         className="flex-1 px-3 py-2 rounded-lg border border-th-border-primary bg-surface-secondary text-th-text-primary focus:ring-2 focus:ring-th-accent-500 focus:border-transparent font-mono"
+                        placeholder="#818CF8"
                       />
                     </div>
                   </div>
@@ -440,17 +466,18 @@ export default function OrganizationSettings() {
 
               <div>
                 <h3 className="text-lg font-semibold text-th-text-primary mb-4">Preview</h3>
-                <div
-                  className="p-6 rounded-lg"
-                  style={{ backgroundColor: formData.primary_color || '#4F46E5' }}
-                >
+                <style
+                  dangerouslySetInnerHTML={{
+                    __html: `.brand-preview-dynamic { --brand-preview-bg: ${sanitizeHexColor(formData.primary_color, '#4F46E5')}; --brand-preview-btn: ${sanitizeHexColor(formData.secondary_color, '#818CF8')}; }`,
+                  }}
+                />
+                <div className="p-6 rounded-lg brand-preview-bg brand-preview-dynamic">
                   <p className="text-white font-medium">
                     {formData.business_name || 'Your Business Name'}
                   </p>
                   <button
                     type="button"
-                    className="mt-3 px-4 py-2 rounded-lg text-sm font-medium"
-                    style={{ backgroundColor: formData.secondary_color || '#818CF8', color: 'white' }}
+                    className="mt-3 px-4 py-2 rounded-lg text-sm font-medium brand-preview-btn"
                   >
                     Sample Button
                   </button>
@@ -490,6 +517,7 @@ export default function OrganizationSettings() {
                         <div className="flex items-center gap-2 flex-1">
                           <input
                             type="time"
+                            aria-label={`${DAYS[index]} start time`}
                             value={hours.start || '09:00'}
                             onChange={(e) => updateBusinessHours(index, 'start', e.target.value)}
                             className="px-3 py-1.5 rounded-lg border border-th-border-primary bg-surface-primary text-th-text-primary text-sm focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"
@@ -497,6 +525,7 @@ export default function OrganizationSettings() {
                           <span className="text-th-text-muted">to</span>
                           <input
                             type="time"
+                            aria-label={`${DAYS[index]} end time`}
                             value={hours.end || '17:00'}
                             onChange={(e) => updateBusinessHours(index, 'end', e.target.value)}
                             className="px-3 py-1.5 rounded-lg border border-th-border-primary bg-surface-primary text-th-text-primary text-sm focus:ring-2 focus:ring-th-accent-500 focus:border-transparent"

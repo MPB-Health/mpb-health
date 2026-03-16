@@ -216,8 +216,7 @@ export default function VideoLibrary() {
               <button
                 type="button"
                 onClick={() => setPlayingVideo(video)}
-                className="relative w-full block"
-                style={{ paddingBottom: '56.25%' }}
+                className="relative w-full block aspect-video"
                 aria-label={`Play ${video.title}`}
               >
                 <img
@@ -304,8 +303,7 @@ export default function VideoLibrary() {
               <button
                 type="button"
                 onClick={() => setPlayingVideo(video)}
-                className="relative w-48 flex-shrink-0 rounded-lg overflow-hidden"
-                style={{ aspectRatio: '16/9' }}
+                className="relative w-48 flex-shrink-0 rounded-lg overflow-hidden aspect-video"
                 aria-label={`Play ${video.title}`}
               >
                 <img src={getThumbnail(video)} alt={video.title} className="w-full h-full object-cover" />
@@ -388,7 +386,7 @@ export default function VideoLibrary() {
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            <div className="relative bg-black rounded-xl overflow-hidden" style={{ paddingBottom: '56.25%' }}>
+            <div className="relative bg-black rounded-xl overflow-hidden aspect-video">
               <iframe
                 className="absolute inset-0 w-full h-full"
                 src={`https://player.vimeo.com/video/${playingVideo.vimeo_id}${playingVideo.vimeo_hash ? '?h=' + playingVideo.vimeo_hash + '&' : '?'}autoplay=1&dnt=1`}

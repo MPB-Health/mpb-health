@@ -495,10 +495,11 @@ export default function BulletinsManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="bulletin-category" className="block text-sm font-medium text-gray-700 mb-1">
                     Category
                   </label>
                   <select
+                    id="bulletin-category"
                     value={form.category_id || ''}
                     onChange={(e) => setForm({ ...form, category_id: e.target.value || null })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"

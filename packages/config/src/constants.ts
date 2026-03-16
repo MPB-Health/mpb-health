@@ -101,6 +101,7 @@ export const AUTH_URLS = {
     origin: 'https://admin.mpb.health',
     resetPassword: 'https://admin.mpb.health/reset-password',
     login: 'https://admin.mpb.health/login',
+    authConfirm: 'https://admin.mpb.health/auth/confirm',
   },
   crm: {
     origin: 'https://crm.mpbhealth.com',
@@ -125,6 +126,7 @@ export const AUTH_SAFE_REDIRECT_DESTINATIONS: ReadonlySet<string> = new Set([
   AUTH_URLS.advisor.login,
   AUTH_URLS.admin.resetPassword,
   AUTH_URLS.admin.login,
+  AUTH_URLS.admin.authConfirm,
   AUTH_URLS.crm.resetPassword,
   AUTH_URLS.crm.login,
   AUTH_URLS.member.resetPassword,

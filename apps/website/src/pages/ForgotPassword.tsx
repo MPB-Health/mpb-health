@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../lib/supabase';
+import { AUTH_URLS } from '@mpbhealth/config';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
@@ -22,8 +23,17 @@ const ForgotPassword: React.FC = () => {
     setLoading(true);
 
     try {
+      // Use canonical constant so the redirect URL is always predictable and matches
+      // the Supabase allowlist, regardless of Vercel preview or www/non-www variants.
+      const isLocalDev =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const redirectTo = isLocalDev
+        ? `${window.location.origin}/auth/confirm`
+        : AUTH_URLS.admin.authConfirm;
+
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/confirm`,
+        redirectTo,
       });
 
       if (resetError) throw resetError;

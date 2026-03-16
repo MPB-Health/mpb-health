@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button, GradientHeader } from '@mpbhealth/ui';
 import { videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
+import { supabase } from '@mpbhealth/database';
 
 type VideoCategory = 'all' | 'training' | 'marketing';
 
@@ -47,6 +48,14 @@ export default function VideoLibrary() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
+  }, []);
+
+  // Realtime: refresh when admin adds/edits/removes videos
+  useEffect(() => {
+    const channel = videoService.subscribeToVideoChanges((updated) => {
+      setVideos(updated);
+    });
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const categoryOptions: { value: VideoCategory; label: string; icon: typeof GraduationCap; count: number }[] = useMemo(() => [

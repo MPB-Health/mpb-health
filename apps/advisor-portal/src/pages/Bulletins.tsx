@@ -18,6 +18,7 @@ import {
 import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
 import { Button, GradientHeader } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { supabase } from '@mpbhealth/database';
 
 export default function Bulletins() {
   const { profile, unreadBulletinCount } = useAdvisor();
@@ -44,6 +45,15 @@ export default function Bulletins() {
     };
 
     loadData();
+  }, [profile?.id]);
+
+  // Realtime: refresh when admin publishes, edits, or removes bulletins
+  useEffect(() => {
+    const channel = contentService.subscribeToBulletins(() => {
+      contentService.getBulletins({}, profile?.id).then(setBulletins).catch(() => {});
+      contentService.getFeaturedBulletins(3).then(setFeaturedBulletins).catch(() => {});
+    });
+    return () => { supabase.removeChannel(channel); };
   }, [profile?.id]);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ExternalLink, X, Smartphone, ArrowRight, Video, Calendar, Loader2 } from 'lucide-react';
-import { supabaseUrl } from '@mpbhealth/database';
+import { supabaseUrl, supabase } from '@mpbhealth/database';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 
 function LinkCard({
@@ -87,6 +87,15 @@ export default function QuickLinks() {
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
+  }, []);
+
+  // Realtime: refresh when admin edits resource center links
+  useEffect(() => {
+    const channel = navigationService.subscribeToQuickLinkChanges((allLinks) => {
+      const resourceLinks = allLinks.filter((l) => l.category === 'resource_center');
+      setQuickLinks(resourceLinks);
+    });
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   return (

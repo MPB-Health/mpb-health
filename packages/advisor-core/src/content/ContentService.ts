@@ -382,21 +382,21 @@ export class ContentService {
 
   // ========== Subscriptions ==========
 
-  // Subscribe to new bulletins (from advisor_content)
-  subscribeToBulletins(callback: (bulletin: Bulletin) => void) {
+  // Subscribe to bulletin changes (insert/update/delete) — triggers a full refresh
+  subscribeToBulletins(callback: () => void) {
     return supabase
       .channel('advisor-content-bulletins')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'advisor_content',
           filter: 'content_type=eq.bulletin',
         },
-        (payload) => {
-          callback(payload.new as Bulletin);
-        }
+        () => {
+          callback();
+        },
       )
       .subscribe();
   }

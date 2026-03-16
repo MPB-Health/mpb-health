@@ -242,6 +242,18 @@ export class FormsService {
     return form.cognito_embed || '';
   }
 
+  // Subscribe to form catalog changes (insert/update/delete) — triggers a full refresh
+  subscribeToFormChanges(callback: () => void) {
+    return supabase
+      .channel('cognito-forms-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cognito_forms' },
+        () => { callback(); },
+      )
+      .subscribe();
+  }
+
   // Subscribe to submission updates
   subscribeToSubmissions(
     advisorId: string,

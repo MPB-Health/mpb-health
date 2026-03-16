@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Zap,
@@ -42,6 +42,8 @@ interface QuickLink {
   is_external: boolean;
   is_active: boolean;
   requires_auth: boolean;
+  image_url: string | null;
+  is_popup: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -49,6 +51,7 @@ interface QuickLink {
 const CATEGORIES = [
   { value: 'dashboard_actions', label: 'Dashboard Actions' },
   { value: 'resources', label: 'Resources' },
+  { value: 'resource_center', label: 'Resource Center' },
   { value: 'advisor_forms', label: 'Advisor Forms' },
   { value: 'employer_forms', label: 'Employer Forms' },
   { value: 'member_forms', label: 'Member Forms' },
@@ -101,25 +104,37 @@ export default function QuickActionsManager() {
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
+    if (result.source.index === result.destination.index) return;
 
-    const items = Array.from(quickLinks);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    // Each category has its own DragDropContext, so indices are category-local.
+    // Operate only on items within the dragged category.
+    const categoryId = result.source.droppableId;
+    const categoryItems = quickLinks
+      .filter(l => l.category === categoryId)
+      .sort((a, b) => a.order_index - b.order_index);
 
-    const updatedItems = items.map((item, index) => ({
+    const reordered = Array.from(categoryItems);
+    const [removed] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, removed);
+
+    const updatedItems = reordered.map((item, idx) => ({
       ...item,
-      order_index: index + 1,
+      order_index: idx + 1,
     }));
 
-    setQuickLinks(updatedItems);
+    // Update local state without touching other categories
+    setQuickLinks(prev =>
+      prev.map(link => updatedItems.find(u => u.id === link.id) ?? link),
+    );
 
     setSaving(true);
     try {
       for (const item of updatedItems) {
-        await supabase
+        const { error } = await supabase
           .from('advisor_quick_links')
           .update({ order_index: item.order_index })
           .eq('id', item.id);
+        if (error) throw error;
       }
       toast.success('Order updated! Changes are live.');
     } catch (error) {
@@ -142,6 +157,8 @@ export default function QuickActionsManager() {
       is_external: false,
       is_active: true,
       requires_auth: false,
+      image_url: '',
+      is_popup: false,
     });
     setShowModal(true);
   };
@@ -172,6 +189,8 @@ export default function QuickActionsManager() {
             is_external: form.is_external,
             is_active: form.is_active,
             requires_auth: form.requires_auth,
+            image_url: form.image_url || null,
+            is_popup: form.is_popup ?? false,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingItem.id);
@@ -192,6 +211,8 @@ export default function QuickActionsManager() {
             is_external: form.is_external ?? false,
             is_active: form.is_active ?? true,
             requires_auth: form.requires_auth ?? false,
+            image_url: form.image_url || null,
+            is_popup: form.is_popup ?? false,
           });
 
         if (error) throw error;
@@ -312,6 +333,7 @@ export default function QuickActionsManager() {
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg"
+            aria-label="Filter by category"
           >
             <option value="all">All Categories</option>
             {CATEGORIES.map((cat) => (
@@ -476,6 +498,7 @@ export default function QuickActionsManager() {
                       value={form.icon || 'Zap'}
                       onChange={(e) => setForm({ ...form, icon: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      aria-label="Icon"
                     >
                       {AVAILABLE_ICONS.map((icon) => (
                         <option key={icon} value={icon}>{icon}</option>
@@ -490,6 +513,7 @@ export default function QuickActionsManager() {
                       value={form.category || 'dashboard_actions'}
                       onChange={(e) => setForm({ ...form, category: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      aria-label="Category"
                     >
                       {CATEGORIES.map((cat) => (
                         <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -508,6 +532,17 @@ export default function QuickActionsManager() {
                     rows={2}
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Image URL (for Resource Center cards)
+                  </label>
+                  <Input
+                    value={form.image_url || ''}
+                    onChange={(e) => setForm({ ...form, image_url: e.target.value || null })}
+                    placeholder="https://... or /storage/v1/object/public/..."
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Used in Resource Center card thumbnails (16:9 aspect ratio recommended)</p>
+                </div>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2">
                     <input
@@ -524,6 +559,14 @@ export default function QuickActionsManager() {
                       onChange={(e) => setForm({ ...form, is_external: e.target.checked })}
                     />
                     <span className="text-sm">External link</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.is_popup === true}
+                      onChange={(e) => setForm({ ...form, is_popup: e.target.checked })}
+                    />
+                    <span className="text-sm">Open in popup</span>
                   </label>
                 </div>
               </div>

@@ -22,6 +22,7 @@ import {
   type AdvisorForm,
   type FormSubmission,
 } from '@mpbhealth/advisor-core';
+import { supabase } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { sanitizeHtml } from '@mpbhealth/utils';
 
@@ -121,6 +122,14 @@ export default function Forms({ section }: FormsProps) {
 
     loadData();
   }, [profile?.id]);
+
+  // Realtime: refresh forms when admin adds/edits/removes form in CMS
+  useEffect(() => {
+    const channel = formsService.subscribeToFormChanges(() => {
+      formsService.getForms().then(setForms).catch(() => {});
+    });
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const getFormSubmission = (formId: string) => {
     return submissions.find((s) => s.form_id === formId);

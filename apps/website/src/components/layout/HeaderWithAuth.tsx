@@ -60,7 +60,7 @@ const HeaderWithAuth = () => {
   const getAccountRoute = (role: UserRole): string => {
     switch (role) {
       case 'advisor':
-        return '/advisor/dashboard';
+        return 'https://advisor.mpb.health';
       case 'admin':
       case 'staff':
       case 'superadmin':
@@ -940,7 +940,7 @@ const HeaderWithAuth = () => {
                       if (role === 'admin' || role === 'staff') {
                         window.location.href = '/admin';
                       } else if (role === 'advisor') {
-                        window.location.href = '/advisor/dashboard';
+                        window.location.href = 'https://advisor.mpb.health';
                       } else {
                         window.location.href = '/member/portal';
                       }
@@ -1362,7 +1362,7 @@ const HeaderWithAuth = () => {
                           if (role === 'admin' || role === 'staff') {
                             window.location.href = '/admin';
                           } else if (role === 'advisor') {
-                            window.location.href = '/advisor/dashboard';
+                            window.location.href = 'https://advisor.mpb.health';
                           } else {
                             window.location.href = '/member/portal';
                           }

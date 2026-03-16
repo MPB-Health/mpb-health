@@ -37,6 +37,9 @@ import {
   Crown,
   ArrowRight,
   Clock,
+  Zap,
+  Megaphone,
+  Navigation,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -99,7 +102,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     ]
   },
   {
-    title: 'Content',
+    title: 'Website Content',
     items: [
       { id: 'content-panel', label: 'Content Analytics', icon: BarChart3, viewId: 'content' },
       { id: 'blog', label: 'Blog Management', icon: BookOpen, href: '/admin/blog' },
@@ -110,9 +113,22 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { id: 'faq', label: 'FAQ Management', icon: HelpCircle, href: '/admin/faq' },
       { id: 'resources', label: 'Resource Library', icon: Database, href: '/admin/resources' },
       { id: 'handbooks', label: 'Member Handbooks', icon: Book, href: '/admin/handbooks' },
-      { id: 'video-manager', label: 'Video Manager', icon: Video, href: '/admin/settings?tab=media' },
-      { id: 'forms-manager', label: 'Forms Manager', icon: FileText, href: '/admin/forms' },
-      { id: 'advisor-cms', label: 'Advisor Portal CMS', icon: GraduationCap, href: '/admin/advisor-cms' },
+    ]
+  },
+  {
+    title: 'Advisor Portal',
+    items: [
+      { id: 'advisor-cms', label: 'Command Center', icon: LayoutDashboard, href: '/admin/advisor-cms' },
+      { id: 'advisor-nav', label: 'Navigation Menu', icon: Navigation, href: '/admin/advisor-cms/navigation' },
+      { id: 'advisor-bulletins', label: 'Bulletins & News', icon: Bell, href: '/admin/advisor-cms/bulletins' },
+      { id: 'advisor-announcements', label: 'Announcements', icon: Megaphone, href: '/admin/advisor-cms/announcements' },
+      { id: 'advisor-quick-actions', label: 'Quick Actions', icon: Zap, href: '/admin/advisor-cms/quick-actions' },
+      { id: 'advisor-forms', label: 'Forms', icon: FileText, href: '/admin/advisor-cms/forms' },
+      { id: 'advisor-videos', label: 'Video Library', icon: Video, href: '/admin/advisor-cms/videos' },
+      { id: 'advisor-training', label: 'Training & Learning', icon: GraduationCap, href: '/admin/advisor-cms/training' },
+      { id: 'advisor-enrollment', label: 'Enrollment Links', icon: Link2, href: '/admin/advisor-cms/enrollment' },
+      { id: 'advisor-settings', label: 'Portal Settings', icon: Settings, href: '/admin/advisor-cms/settings' },
+      { id: 'advisor-directory', label: 'Advisor Directory', icon: UserCheck, href: '/admin/advisor-cms/directory' },
     ]
   },
   {
@@ -128,7 +144,6 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { id: 'providers', label: 'Provider Directory', icon: UserCheck, href: '/admin/providers' },
       { id: 'coverage', label: 'Membership Plans', icon: Activity, href: '/admin/coverage' },
       { id: 'notifications', label: 'Notifications', icon: Bell, href: '/admin/notifications' },
-      { id: 'advisor-training', label: 'Advisor Training', icon: TrendingUp, href: '/admin/advisor-training' },
     ]
   },
   {
@@ -165,7 +180,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Analytics', 'Marketing', 'CRM', 'Content']);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Analytics', 'Marketing', 'CRM', 'Website Content', 'Advisor Portal']);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Search state

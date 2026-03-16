@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { lazyAuto } from './utils/lazyUtils';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -114,23 +114,12 @@ const ResetPassword = lazyAuto(() => import('./pages/ResetPassword'));
 const ForgotPassword = lazyAuto(() => import('./pages/ForgotPassword'));
 const MFAEnrollment = lazyAuto(() => import('./pages/MFAEnrollment'));
 
-// Advisor Portal
+// Advisor Portal (legacy routes redirect to advisor.mpb.health)
 const AdvisorDirectory = lazyAuto(() => import('./pages/AdvisorDirectory'));
-const AdvisorLogin = lazyAuto(() => import('./pages/advisor/AdvisorLogin'));
-const AdvisorOnboarding = lazyAuto(() => import('./pages/advisor/AdvisorOnboarding'));
-const AdvisorDashboard = lazyAuto(() => import('./pages/advisor/AdvisorDashboard'));
-const AdvisorTraining = lazyAuto(() => import('./pages/advisor/AdvisorTraining'));
-const TrainingUniversity = lazyAuto(() => import('./pages/advisor/TrainingUniversity'));
-const TrainingModuleView = lazyAuto(() => import('./pages/advisor/TrainingModuleView'));
-const SOPLibrary = lazyAuto(() => import('./pages/advisor/SOPLibrary'));
-const AdvisorProfile = lazyAuto(() => import('./pages/advisor/AdvisorProfile'));
-const AdvisorContentHub = lazyAuto(() => import('./pages/advisor/AdvisorContentHub'));
-const AdvisorContentDetail = lazyAuto(() => import('./pages/advisor/AdvisorContentDetail'));
-const AdvisorBulletins = lazyAuto(() => import('./pages/advisor/AdvisorBulletins'));
-const AdvisorMeetings = lazyAuto(() => import('./pages/advisor/AdvisorMeetings'));
-const AdvisorForms = lazyAuto(() => import('./pages/advisor/AdvisorForms'));
-const AdvisorResourcesLanding = lazyAuto(() => import('./pages/advisor/AdvisorResourcesLanding'));
-const AdvisorPlanDetail = lazyAuto(() => import('./pages/advisor/AdvisorPlanDetail'));
+const AdvisorPortalRedirect = () => {
+  useEffect(() => { window.location.replace('https://advisor.mpb.health'); }, []);
+  return null;
+};
 
 // Admin Portal
 const AdminLogin = lazyAuto(() => import('./pages/admin/AdminLogin'));
@@ -210,14 +199,12 @@ const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children })
   return <>{children}</>;
 };
 
-// Conditional footer - hide on admin and advisor dashboard routes
+// Conditional footer - hide on admin routes
 const ConditionalFooter: React.FC = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
-  const isAdvisorRoute = location.pathname.startsWith('/advisor');
-  
-  // Don't render footer on admin or advisor dashboard
-  if (isAdminRoute || isAdvisorRoute) {
+
+  if (isAdminRoute) {
     return null;
   }
   
@@ -347,27 +334,13 @@ const App = () => {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/auth/confirm" element={<AuthConfirm />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/advisor/login" element={<AdvisorLogin />} />
+                  <Route path="/advisor/login" element={<AdvisorPortalRedirect />} />
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/mfa-enrollment" element={<MFAEnrollment />} />
 
-                  {/* Advisor Routes */}
-                  <Route path="/advisor/onboarding" element={<AdvisorOnboarding />} />
-                  <Route path="/advisor/dashboard" element={<AdvisorDashboard />} />
-                  <Route path="/advisor" element={<AdvisorDashboard />} />
-                  <Route path="/advisor/bulletins" element={<AdvisorBulletins />} />
-                  <Route path="/advisor/university" element={<TrainingUniversity />} />
-                  <Route path="/advisor/training" element={<AdvisorTraining />} />
-                  <Route path="/advisor/training/module/:moduleId" element={<TrainingModuleView />} />
-                  <Route path="/advisor/sops" element={<SOPLibrary />} />
-                  <Route path="/advisor/profile" element={<AdvisorProfile />} />
-                  <Route path="/advisor/content" element={<AdvisorContentHub />} />
-                  <Route path="/advisor/content/:slug" element={<AdvisorContentDetail />} />
-                  <Route path="/advisor/resources" element={<AdvisorResourcesLanding />} />
-                  <Route path="/advisor/resources/:slug" element={<AdvisorPlanDetail />} />
-                  <Route path="/advisor/meetings" element={<AdvisorMeetings />} />
-                  <Route path="/advisor/forms" element={<AdvisorForms />} />
-                  <Route path="/advisor/toolkit" element={<AdvisorForms />} />
+                  {/* Advisor Portal — all legacy routes redirect to advisor.mpb.health */}
+                  <Route path="/advisor" element={<AdvisorPortalRedirect />} />
+                  <Route path="/advisor/*" element={<AdvisorPortalRedirect />} />
 
                   {/* Admin Training Management */}
                   <Route

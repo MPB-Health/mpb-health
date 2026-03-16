@@ -197,115 +197,147 @@ export default function AdvisorCMSHub() {
     toast.success('Statistics refreshed');
   };
 
-  // Management sections configuration
-  const managementSections = [
+  // Management sections grouped by function
+  type SectionGroup = {
+    groupLabel: string;
+    groupDescription: string;
+    items: {
+      title: string;
+      description: string;
+      icon: React.ElementType;
+      href: string;
+      color: string;
+      stats: string;
+      badge: string | null;
+    }[];
+  };
+
+  const sectionGroups: SectionGroup[] = [
     {
-      title: 'Navigation Menu',
-      description: 'Manage sidebar navigation items and ordering',
-      icon: Menu,
-      href: '/admin/advisor-cms/navigation',
-      color: 'blue',
-      stats: `${stats.navigationItems} items`,
-      badge: null,
+      groupLabel: 'Content & Communications',
+      groupDescription: 'Everything advisors read and watch in the portal',
+      items: [
+        {
+          title: 'Bulletins & News',
+          description: 'Create and publish bulletins for advisors',
+          icon: Bell,
+          href: '/admin/advisor-cms/bulletins',
+          color: 'purple',
+          stats: `${stats.publishedBulletins} published`,
+          badge: stats.bulletins - stats.publishedBulletins > 0 ? `${stats.bulletins - stats.publishedBulletins} drafts` : null,
+        },
+        {
+          title: 'Announcements',
+          description: 'Banner alerts shown at the top of the dashboard',
+          icon: Megaphone,
+          href: '/admin/advisor-cms/announcements',
+          color: 'red',
+          stats: `${stats.activeAnnouncements} active`,
+          badge: null,
+        },
+        {
+          title: 'Video Library',
+          description: 'Vimeo training and marketing videos for advisors',
+          icon: Video,
+          href: '/admin/advisor-cms/videos',
+          color: 'purple',
+          stats: `${stats.activeVideos} active`,
+          badge: stats.videos - stats.activeVideos > 0 ? `${stats.videos - stats.activeVideos} hidden` : null,
+        },
+        {
+          title: 'Training & Learning',
+          description: 'Learning paths and training module catalog',
+          icon: GraduationCap,
+          href: '/admin/advisor-cms/training',
+          color: 'orange',
+          stats: `${stats.learningPaths} paths, ${stats.trainingModules} modules`,
+          badge: null,
+        },
+      ],
     },
     {
-      title: 'Bulletins & News',
-      description: 'Create and publish bulletins for advisors',
-      icon: Bell,
-      href: '/admin/advisor-cms/bulletins',
-      color: 'purple',
-      stats: `${stats.publishedBulletins} published`,
-      badge: stats.bulletins - stats.publishedBulletins > 0 ? `${stats.bulletins - stats.publishedBulletins} drafts` : null,
+      groupLabel: 'Navigation & Quick Actions',
+      groupDescription: 'What advisors see in their sidebar and dashboard',
+      items: [
+        {
+          title: 'Navigation Menu',
+          description: 'Advisor portal sidebar links and ordering',
+          icon: Menu,
+          href: '/admin/advisor-cms/navigation',
+          color: 'blue',
+          stats: `${stats.navigationItems} items`,
+          badge: null,
+        },
+        {
+          title: 'Quick Actions',
+          description: 'Dashboard cards and Resource Center links',
+          icon: Zap,
+          href: '/admin/advisor-cms/quick-actions',
+          color: 'yellow',
+          stats: `${stats.quickActions} actions`,
+          badge: null,
+        },
+        {
+          title: 'Forms',
+          description: 'Cognito forms shown to advisors (advisor, employer, member)',
+          icon: FileText,
+          href: '/admin/advisor-cms/forms',
+          color: 'green',
+          stats: `${stats.activeForms} active`,
+          badge: null,
+        },
+        {
+          title: 'Enrollment Links',
+          description: 'Plan enrollment URLs shown in the Enroll dropdown',
+          icon: Link2,
+          href: '/admin/advisor-cms/enrollment',
+          color: 'blue',
+          stats: `${stats.activeEnrollmentLinks} active`,
+          badge: stats.enrollmentLinks - stats.activeEnrollmentLinks > 0 ? `${stats.enrollmentLinks - stats.activeEnrollmentLinks} hidden` : null,
+        },
+        {
+          title: 'Meetings & Events',
+          description: 'Schedule and manage advisor meetings',
+          icon: Video,
+          href: '/admin/advisor-cms/meetings',
+          color: 'cyan',
+          stats: `${stats.upcomingMeetings} upcoming`,
+          badge: stats.upcomingMeetings > 0 ? 'Live' : null,
+        },
+      ],
     },
     {
-      title: 'Forms Management',
-      description: 'Manage Cognito forms and embed codes',
-      icon: FileText,
-      href: '/admin/advisor-cms/forms',
-      color: 'green',
-      stats: `${stats.activeForms} active`,
-      badge: null,
-    },
-    {
-      title: 'Training & Learning',
-      description: 'Learning paths and training modules',
-      icon: GraduationCap,
-      href: '/admin/advisor-cms/training',
-      color: 'orange',
-      stats: `${stats.learningPaths} paths, ${stats.trainingModules} modules`,
-      badge: null,
-    },
-    {
-      title: 'Quick Actions',
-      description: 'Dashboard quick links and shortcuts',
-      icon: Zap,
-      href: '/admin/advisor-cms/quick-actions',
-      color: 'yellow',
-      stats: `${stats.quickActions} actions`,
-      badge: null,
-    },
-    {
-      title: 'Advisor Directory',
-      description: 'Manage the public advisor directory listing',
-      icon: Users,
-      href: '/admin/advisor-cms/directory',
-      color: 'cyan',
-      stats: `${stats.activeAdvisors} active of ${stats.totalAdvisors}`,
-      badge: stats.totalAdvisors - stats.activeAdvisors > 0 ? `${stats.totalAdvisors - stats.activeAdvisors} inactive` : null,
-    },
-    {
-      title: 'Video Library',
-      description: 'Manage Vimeo videos shown to advisors',
-      icon: Video,
-      href: '/admin/advisor-cms/videos',
-      color: 'purple',
-      stats: `${stats.activeVideos} active`,
-      badge: stats.videos - stats.activeVideos > 0 ? `${stats.videos - stats.activeVideos} hidden` : null,
-    },
-    {
-      title: 'Enrollment Links',
-      description: 'Manage enrollment page links for advisors',
-      icon: Link2,
-      href: '/admin/advisor-cms/enrollment',
-      color: 'blue',
-      stats: `${stats.activeEnrollmentLinks} active`,
-      badge: stats.enrollmentLinks - stats.activeEnrollmentLinks > 0 ? `${stats.enrollmentLinks - stats.activeEnrollmentLinks} hidden` : null,
-    },
-    {
-      title: 'Meetings & Events',
-      description: 'Schedule and manage advisor meetings',
-      icon: Video,
-      href: '/admin/advisor-cms/meetings',
-      color: 'cyan',
-      stats: `${stats.upcomingMeetings} upcoming`,
-      badge: stats.upcomingMeetings > 0 ? 'Live' : null,
-    },
-    {
-      title: 'Announcements',
-      description: 'Banner announcements and alerts',
-      icon: Megaphone,
-      href: '/admin/advisor-cms/announcements',
-      color: 'red',
-      stats: `${stats.activeAnnouncements} active`,
-      badge: null,
-    },
-    {
-      title: 'Portal Settings',
-      description: 'Manage portal-wide configuration values',
-      icon: Settings,
-      href: '/admin/advisor-cms/settings',
-      color: 'slate',
-      stats: 'Key-value config',
-      badge: null,
-    },
-    {
-      title: 'Widget Config',
-      description: 'Dashboard widget visibility and layout',
-      icon: Settings,
-      href: '/admin/advisor-cms/widgets',
-      color: 'slate',
-      stats: 'Configure layout',
-      badge: null,
+      groupLabel: 'Configuration & Directory',
+      groupDescription: 'Portal-wide settings and the public advisor directory',
+      items: [
+        {
+          title: 'Portal Settings',
+          description: 'URLs, contact info, and global config values',
+          icon: Settings,
+          href: '/admin/advisor-cms/settings',
+          color: 'slate',
+          stats: 'Key-value config',
+          badge: null,
+        },
+        {
+          title: 'Widget Config',
+          description: 'Dashboard widget visibility and layout',
+          icon: Settings,
+          href: '/admin/advisor-cms/widgets',
+          color: 'slate',
+          stats: 'Configure layout',
+          badge: null,
+        },
+        {
+          title: 'Advisor Directory',
+          description: 'Public advisor listing — agent IDs, states, contact info',
+          icon: Users,
+          href: '/admin/advisor-cms/directory',
+          color: 'cyan',
+          stats: `${stats.activeAdvisors} active of ${stats.totalAdvisors}`,
+          badge: stats.totalAdvisors - stats.activeAdvisors > 0 ? `${stats.totalAdvisors - stats.activeAdvisors} inactive` : null,
+        },
+      ],
     },
   ];
 
@@ -337,13 +369,20 @@ export default function AdvisorCMSHub() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <AdminBreadcrumb currentPage="Advisor Portal CMS" />
-            <h1 className="text-2xl font-bold text-gray-900 mt-2">
-              Advisor Portal Command Center
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Manage content, navigation, and configuration for the Advisor Portal
-            </p>
+            <AdminBreadcrumb currentPage="Advisor Portal" />
+            <div className="flex items-center gap-3 mt-2">
+              <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Advisor Portal Command Center
+                </h1>
+                <p className="text-sm text-primary-600 font-medium">
+                  advisor.mpb.health — all changes apply exclusively to the Advisor Portal
+                </p>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -444,44 +483,54 @@ export default function AdvisorCMSHub() {
           </Card>
         </div>
 
-        {/* Management Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {managementSections.map((section) => {
-            const Icon = section.icon;
-            return (
-              <Link
-                key={section.href}
-                to={section.href}
-                className={cn(
-                  'block p-5 rounded-xl border-2 transition-all duration-200 hover:shadow-lg group',
-                  colorClasses[section.color]
-                )}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center', iconColorClasses[section.color])}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  {section.badge && (
-                    <Badge variant="secondary" className="text-xs">
-                      {section.badge}
-                    </Badge>
-                  )}
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
-                  {section.title}
-                </h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  {section.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-500">
-                    {section.stats}
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
-            );
-          })}
+        {/* Management Cards — grouped by function */}
+        <div className="space-y-8">
+          {sectionGroups.map((group) => (
+            <div key={group.groupLabel}>
+              <div className="mb-4">
+                <h2 className="text-base font-semibold text-gray-900">{group.groupLabel}</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{group.groupDescription}</p>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {group.items.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <Link
+                      key={section.href}
+                      to={section.href}
+                      className={cn(
+                        'block p-5 rounded-xl border-2 transition-all duration-200 hover:shadow-lg group',
+                        colorClasses[section.color]
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center', iconColorClasses[section.color])}>
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        {section.badge && (
+                          <Badge variant="secondary" className="text-xs">
+                            {section.badge}
+                          </Badge>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
+                        {section.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {section.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">
+                          {section.stats}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Recent Activity */}

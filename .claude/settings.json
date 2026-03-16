@@ -106,7 +106,8 @@
       "Bash(cat 'c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website\\\\.env')",
       "Bash(ls 'c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website')",
       "Bash(cat \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website\\\\.vercel\\\\project.json\")",
-      "mcp__claude_ai_Vercel__deploy_to_vercel"
+      "mcp__claude_ai_Vercel__deploy_to_vercel",
+      "Bash(ls \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website\\\\src\\\\pages\\\\advisor\")"
     ]
   }
 }

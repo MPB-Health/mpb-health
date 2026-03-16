@@ -37,7 +37,7 @@ interface CognitoForm {
   id: string;
   slug: string;
   label: string;
-  category: 'employer' | 'member';
+  category: 'employer' | 'member' | 'advisor';
   description: string | null;
   icon: string;
   estimated_minutes: number;
@@ -70,7 +70,7 @@ export default function FormsManager() {
   const [editingItem, setEditingItem] = useState<CognitoForm | null>(null);
   const [form, setForm] = useState<Partial<CognitoForm>>({});
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState<'all' | 'employer' | 'member'>('all');
+  const [filterCategory, setFilterCategory] = useState<'all' | 'employer' | 'member' | 'advisor'>('all');
   const [showPreview, setShowPreview] = useState<string | null>(null);
 
   useEffect(() => {
@@ -320,7 +320,7 @@ export default function FormsManager() {
             />
           </div>
           <div className="flex gap-2">
-            {(['all', 'employer', 'member'] as const).map((cat) => (
+            {(['all', 'employer', 'member', 'advisor'] as const).map((cat) => (
               <Button
                 key={cat}
                 variant={filterCategory === cat ? 'default' : 'outline'}
@@ -499,11 +499,12 @@ export default function FormsManager() {
                     </label>
                     <select
                       value={form.category || 'member'}
-                      onChange={(e) => setForm({ ...form, category: e.target.value as any })}
+                      onChange={(e) => setForm({ ...form, category: e.target.value as 'employer' | 'member' | 'advisor' })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     >
                       <option value="employer">Employer</option>
                       <option value="member">Member</option>
+                      <option value="advisor">Advisor</option>
                     </select>
                   </div>
                   <div>
@@ -568,6 +569,7 @@ export default function FormsManager() {
                     >
                       <option value="member-forms">Member Forms</option>
                       <option value="employer-forms">Employer Forms</option>
+                      <option value="advisor-forms">Advisor Forms</option>
                       <option value="onboarding">Onboarding</option>
                     </select>
                   </div>

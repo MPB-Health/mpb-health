@@ -84,8 +84,16 @@ export default function TicketsList() {
   const [bulkActing, setBulkActing] = useState(false);
   const [showBulkActionConfirm, setShowBulkActionConfirm] = useState<{ action: string; label: string } | null>(null);
 
-  // Clear selection when tickets change
-  useEffect(() => { setSelectedIds(new Set()); }, [tickets]);
+  // Reconcile selection when tickets change — remove IDs that no longer exist
+  // (preserves selection across background refetches / realtime updates)
+  useEffect(() => {
+    if (selectedIds.size === 0) return;
+    const validIds = new Set(tickets.map((t) => t.id));
+    setSelectedIds((prev) => {
+      const next = new Set([...prev].filter((id) => validIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [tickets]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {

@@ -257,6 +257,9 @@ export default function MainLayout() {
       return;
     }
 
+    // Safety timeout — if CMS is slow/down, stop showing loading after 3s
+    const timeout = setTimeout(() => setNavLoading(false), 3000);
+
     try {
       // Use getNavMenuItems() to get hierarchical data with children
       const items = await navigationService.getNavMenuItems();
@@ -270,6 +273,7 @@ export default function MainLayout() {
       console.error('Failed to load navigation from CMS:', error);
       // Will use fallback navigation
     } finally {
+      clearTimeout(timeout);
       setNavLoading(false);
     }
   }, []);

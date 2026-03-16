@@ -5,9 +5,9 @@ import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
-const PASSWORD_UPDATE_TIMEOUT_MS = 45_000; // 45 seconds
+const PASSWORD_UPDATE_TIMEOUT_MS = 15_000; // 15 seconds — auth should respond well within this
 const RETRY_DELAY_MS = 2000;
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 1; // 1 retry max → 2 attempts × 15s + 2s = ~32s worst case
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -139,6 +139,8 @@ export default function ChangePassword() {
       const message =
         /503|502|504|service unavailable|timeout|not configured/i.test(raw)
           ? 'Service temporarily unavailable. Please try again in a moment. If this persists, contact support.'
+          : /session.*not.*found|auth.*session.*missing|invalid.*session|session.*expired/i.test(raw)
+          ? 'Your session has expired. Please sign in again to set your password.'
           : raw;
       setError(message);
       toast.error(message);

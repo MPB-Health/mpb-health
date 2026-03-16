@@ -110,7 +110,8 @@
       "Bash(ls \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website\\\\src\\\\pages\\\\advisor\")",
       "Bash(find /c/Users/VinnieRTannous/OneDrive*/Documents/GitHub/mpbhealth-monorepo/supabase/migrations -name *test*advisor* -o -name *advisor*test*)",
       "Bash(find /c/Users/VinnieRTannous/OneDrive*/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src -name \"*password*\" -o -name \"*change*password*\")",
-      "Bash(find /c/Users/VinnieRTannous/OneDrive*/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src/pages -type f -name *.tsx)"
+      "Bash(find /c/Users/VinnieRTannous/OneDrive*/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src/pages -type f -name *.tsx)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src\" -name \"*.tsx\")"
     ]
   }
 }

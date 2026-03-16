@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -131,15 +131,18 @@ export default function Tickets() {
   }, [authLoading, profile, loadStats]);
 
   // Deep-link: auto-open ticket detail from ?tid= query param (e.g. from notification)
+  // Read tid once on mount; don't include searchParams in deps to avoid re-running
+  // when we mutate the URL to remove the param.
+  const pendingTidRef = useRef(searchParams.get('tid'));
   useEffect(() => {
-    const tid = searchParams.get('tid');
+    const tid = pendingTidRef.current;
     if (tid && !authLoading && profile && !selectedTicket) {
+      pendingTidRef.current = null;
       openTicketDetail(tid);
       // Remove tid from URL so refreshing doesn't re-open
-      searchParams.delete('tid');
-      setSearchParams(searchParams, { replace: true });
+      setSearchParams((prev) => { prev.delete('tid'); return prev; }, { replace: true });
     }
-  }, [searchParams, authLoading, profile]);
+  }, [authLoading, profile]);
 
   const openTicketDetail = async (ticketId: string) => {
     setDetailLoading(true);

@@ -365,11 +365,8 @@ export default function Dashboard() {
       .ilike('email', profile.email)
       .maybeSingle()
       .then(({ data, error }) => {
-        if (!cancelled && !error && data?.has_advisor_page_access === true) {
-          setHasAdvisorPageAccess(true);
-        } else {
-          setHasAdvisorPageAccess(false);
-        }
+        if (cancelled) return;
+        setHasAdvisorPageAccess(!error && data?.has_advisor_page_access === true);
       });
     return () => { cancelled = true; };
   }, [profile?.email]);

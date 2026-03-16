@@ -101,7 +101,12 @@
       "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core/src\" -type f \\\\\\( -name \"*ticket*\" -o -name \"*service*\" \\\\\\))",
       "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core\" -type f -name \"*.ts\" -o -name \"*.tsx\")",
       "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src\" -type f -name \"*TicketAuth*\")",
-      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src/hooks\" -type f -name \"*.ts\" -o -name \"*.tsx\")"
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src/hooks\" -type f -name \"*.ts\" -o -name \"*.tsx\")",
+      "Bash(cat 'c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website\\\\.env.local')",
+      "Bash(cat 'c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website\\\\.env')",
+      "Bash(ls 'c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website')",
+      "Bash(cat \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\apps\\\\website\\\\.vercel\\\\project.json\")",
+      "mcp__claude_ai_Vercel__deploy_to_vercel"
     ]
   }
 }

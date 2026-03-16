@@ -232,7 +232,7 @@ export default function MainLayout() {
   useEffect(() => {
     if (profile?.user_id && profile.user_id !== lastAdminCheckId.current) {
       lastAdminCheckId.current = profile.user_id;
-      checkIsAdmin(profile.user_id).then(setIsAdminUser);
+      checkIsAdmin(profile.user_id).then(setIsAdminUser).catch(() => setIsAdminUser(false));
     }
   }, [profile?.user_id]);
 

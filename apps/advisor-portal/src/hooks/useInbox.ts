@@ -23,7 +23,10 @@ export function useConversations(options: {
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!profile?.org_id) return;
+    if (!profile?.org_id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await conversationService.getConversations(profile!.org_id, options);
@@ -117,7 +120,10 @@ export function useInboxSummary() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!profile?.org_id) return;
+    if (!profile?.org_id) {
+      setLoading(false);
+      return;
+    }
     try {
       const data = await conversationService.getInboxSummary(profile!.org_id);
       setSummary(data);
@@ -141,7 +147,10 @@ export function useTemplates(channel?: 'sms' | 'email' | 'both') {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!profile?.org_id) return;
+    if (!profile?.org_id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await templateService.getTemplates(profile!.org_id, { channel });
@@ -166,7 +175,10 @@ export function useSequences(status?: 'draft' | 'active' | 'paused' | 'archived'
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!profile?.org_id) return;
+    if (!profile?.org_id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await sequenceService.getSequences(profile!.org_id, { status });

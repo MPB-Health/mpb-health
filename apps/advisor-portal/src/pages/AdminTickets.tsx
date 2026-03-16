@@ -174,7 +174,10 @@ export default function AdminTickets() {
   // Role check
   useEffect(() => {
     if (profile?.user_id) {
-      isAdmin(profile.user_id).then(setAdminCheck);
+      isAdmin(profile.user_id).then(setAdminCheck).catch(() => setAdminCheck(false));
+    } else if (profile !== undefined) {
+      // profile loaded but has no user_id — not an admin
+      setAdminCheck(false);
     }
   }, [profile?.user_id]);
 

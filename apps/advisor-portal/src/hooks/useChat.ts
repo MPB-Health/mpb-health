@@ -14,7 +14,7 @@ export function useChat() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchConversations = useCallback(async () => {
-    if (!profile?.id) return;
+    if (!profile?.id) { setLoading(false); return; }
     try {
       setLoading(true);
       const data = await chatService.listConversations();
@@ -83,7 +83,7 @@ export function useChatMessages(conversationId: string | null) {
   const oldestMessageRef = useRef<string | null>(null);
 
   const fetchMessages = useCallback(async () => {
-    if (!conversationId || !profile?.id) return;
+    if (!conversationId || !profile?.id) { setLoading(false); return; }
     try {
       setLoading(true);
       const result = await chatService.listMessages(conversationId);

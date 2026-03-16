@@ -1,73 +1,4 @@
-import { supabase } from '@mpbhealth/database';
-
-/**
- * How many seconds before the JWT's `exp` claim we force a synchronous
- * refresh. 30 s covers typical network RTT to Supabase edge functions on
- * slow connections, so the token never expires while the HTTP request is
- * in-flight.
- *
- * Background: `getSession()` auto-refresh is ASYNCHRONOUS — it fires a
- * background refresh when the token is within 60 s of expiry but returns
- * the CURRENT (soon-to-expire) token immediately. With `noOpLock` bypassing
- * the Web Locks API, concurrent refresh attempts can race and one leg ends
- * up with a stale token. A 30-second synchronous buffer eliminates both
- * problems: we get a guaranteed-fresh token before building the auth header.
- */
-const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
-
-/**
- * Singleton refresh promise — prevents multiple simultaneous calls from each
- * triggering their own `refreshSession()`. With Supabase's `noOpLock`, the
- * refresh token is single-use; a second concurrent refresh races and whichever
- * call is second gets a token that has already been rotated, causing a 401.
- *
- * By sharing one pending Promise, concurrent callers all await the same
- * in-flight refresh and receive the same fresh session.
- */
-let _pendingRefresh: Promise<Awaited<ReturnType<typeof supabase.auth.refreshSession>>> | null = null;
-
-async function refreshOnce() {
-  if (!_pendingRefresh) {
-    _pendingRefresh = supabase.auth.refreshSession().finally(() => {
-      _pendingRefresh = null;
-    });
-  }
-  return _pendingRefresh;
-}
-
-/**
- * Ensure the current session has a non-expired access token before calling
- * an Edge Function. Returns null when there is no session (user is not
- * authenticated).
- *
- * Uses a singleton refresh promise so that concurrent callers (e.g. loadTickets
- * + loadStats + getCategories firing at the same time) share one refresh round-
- * trip instead of each consuming the single-use refresh token and racing.
- */
-async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
-  // getSession() will attempt a background refresh when the token is within
-  // 60 s of expiry, but returns the CURRENT token without awaiting the refresh.
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return null;
-
-  // Force a SYNCHRONOUS refresh if:
-  //  - expires_at is absent (defensive — treat as unknown/stale), OR
-  //  - token has already expired or expires within TOKEN_EXPIRY_BUFFER_SECONDS.
-  const nowSec = Math.floor(Date.now() / 1000);
-  const needsRefresh = !session.expires_at || session.expires_at < nowSec + TOKEN_EXPIRY_BUFFER_SECONDS;
-
-  if (needsRefresh) {
-    const { data: refreshed, error: refreshError } = await refreshOnce();
-    if (refreshError || !refreshed.session?.access_token) {
-      // Refresh failed — session is invalid. Return null to trigger re-auth
-      // in the caller rather than firing a request with a bad token.
-      return null;
-    }
-    return { Authorization: `Bearer ${refreshed.session.access_token}` };
-  }
-
-  return { Authorization: `Bearer ${session.access_token}` };
-}
+import { supabase, getResolvedAuthHeader } from '@mpbhealth/database';
 
 /**
  * Generate a short random correlation ID for request tracing.
@@ -75,6 +6,18 @@ async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null
  */
 function newCorrelationId(): string {
   return `tid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/** Check if the error is a 401 (JWT rejected by gateway or function). */
+function is401Error(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as Record<string, unknown>;
+  const ctx = e.context;
+  if (ctx && typeof ctx === 'object' && 'status' in ctx) {
+    return (ctx as { status: number }).status === 401;
+  }
+  if (typeof e.status === 'number') return e.status === 401;
+  return false;
 }
 
 /**
@@ -326,28 +269,38 @@ export class TicketService {
     body: Record<string, unknown> = {},
     opts: { allowUnauthenticated?: boolean } = {},
   ): Promise<T> {
-    const authHeader = await getResolvedAuthHeader();
     const correlationId = newCorrelationId();
 
+    const doInvoke = async (auth: { Authorization: string }) => {
+      const invokePromise = supabase.functions.invoke<T>('ticket-proxy', {
+        body: { action, ...body },
+        headers: { ...auth, 'x-request-id': correlationId },
+      });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Request timed out [${correlationId}]`)), TicketService.REQUEST_TIMEOUT_MS),
+      );
+      return Promise.race([invokePromise, timeoutPromise]);
+    };
+
+    const authHeader = await getResolvedAuthHeader();
     if (!authHeader) {
       if (opts.allowUnauthenticated) return null as unknown as T;
       throw new Error(`Authentication required — please sign in again [${correlationId}]`);
     }
 
-    // Wrap the invoke in a timeout so the UI never hangs indefinitely
-    const invokePromise = supabase.functions.invoke<T>('ticket-proxy', {
-      body: { action, ...body },
-      headers: {
-        ...authHeader,
-        'x-request-id': correlationId,
-      },
-    });
+    let { data, error } = await doInvoke(authHeader);
 
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`Request timed out [${correlationId}]`)), TicketService.REQUEST_TIMEOUT_MS),
-    );
-
-    const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+    // On 401, retry once with a freshly refreshed token (handles stale-token races)
+    if (error && is401Error(error)) {
+      const refreshed = await getResolvedAuthHeader();
+      if (refreshed) {
+        const retry = await doInvoke(refreshed);
+        if (!retry.error) {
+          data = retry.data;
+          error = null;
+        }
+      }
+    }
 
     if (error) {
       const msg = await extractFunctionError(error);

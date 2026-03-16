@@ -1,9 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@mpbhealth/database';
+import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useAdvisor } from '../contexts/AdvisorContext';
+
+const PASSWORD_UPDATE_TIMEOUT_MS = 45_000; // 45 seconds
+const RETRY_DELAY_MS = 2000;
+const MAX_RETRIES = 2;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out. Please try again.`)), ms),
+    ),
+  ]);
+}
+
+function isRetryableError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /503|502|504|timeout|network|ECONNRESET|fetch failed/i.test(msg);
+}
 
 export default function ChangePassword() {
   const navigate = useNavigate();
@@ -31,6 +49,12 @@ export default function ChangePassword() {
     e.preventDefault();
     setError('');
 
+    if (!isSupabaseConfigured) {
+      setError('Authentication service is not configured. Please contact support or try again later.');
+      toast.error('Service unavailable');
+      return;
+    }
+
     if (!isPasswordStrong) {
       setError('Please create a stronger password');
       return;
@@ -44,50 +68,78 @@ export default function ChangePassword() {
     setLoading(true);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (updateError) throw updateError;
-
-      // Clear the must_change_password flag
-      if (profile?.id) {
-        const { error: flagError } = await supabase
-          .from('advisor_profiles')
-          .update({ must_change_password: false })
-          .eq('id', profile.id);
-
-        if (flagError) {
-          console.error('Failed to clear must_change_password flag:', flagError);
+      // Update password with timeout and retry on transient failures (503, timeout, etc.)
+      let lastError: unknown = null;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const updatePromise = supabase.auth.updateUser({ password });
+          const { error: updateError } = await withTimeout(
+            updatePromise,
+            PASSWORD_UPDATE_TIMEOUT_MS,
+            'Password update',
+          );
+          if (updateError) throw updateError;
+          lastError = null;
+          break;
+        } catch (err) {
+          lastError = err;
+          if (attempt < MAX_RETRIES && isRetryableError(err)) {
+            await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+            continue;
+          }
+          throw err;
         }
+      }
+      if (lastError) throw lastError;
+
+      // Clear the must_change_password flag (non-blocking — don't fail the flow)
+      if (profile?.id) {
+        void (async () => {
+          try {
+            const { error: flagError } = await supabase
+              .from('advisor_profiles')
+              .update({ must_change_password: false })
+              .eq('id', profile.id);
+            if (flagError) console.error('Failed to clear must_change_password flag:', flagError);
+          } catch {
+            // Non-blocking
+          }
+        })();
       }
 
       setSuccess(true);
       toast.success('Password updated successfully!');
 
-      // Sync password to ITSTS support system (fire-and-forget)
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        supabase.functions.invoke('sync-user-to-itsts', {
-          body: {
-            email: user.email,
-            first_name: user.user_metadata?.first_name || '',
-            last_name: user.user_metadata?.last_name || '',
-            roles: [],
-            action: 'password_change',
-            password,
-          },
-        }).catch(() => {});
-      }
+      // Sync password to ITSTS (deferred fire-and-forget — avoids 503 blocking UX)
+      const syncToItsts = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.email) return;
+        const body = {
+          email: user.email,
+          first_name: user.user_metadata?.first_name || '',
+          last_name: user.user_metadata?.last_name || '',
+          roles: [] as string[],
+          action: 'password_change' as const,
+          password,
+        };
+        try {
+          await supabase.functions.invoke('sync-user-to-itsts', { body });
+        } catch {
+          await new Promise((r) => setTimeout(r, 5000));
+          supabase.functions.invoke('sync-user-to-itsts', { body }).catch(() => {});
+        }
+      };
+      setTimeout(() => syncToItsts().catch(() => {}), 3000);
 
-      // Refresh profile in the background — don't block navigation.
       refreshProfile().catch(() => {});
 
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 1500);
+      setTimeout(() => navigate('/', { replace: true }), 1500);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to change password';
+      const raw = err instanceof Error ? err.message : 'Failed to change password';
+      const message =
+        /503|502|504|service unavailable|timeout|not configured/i.test(raw)
+          ? 'Service temporarily unavailable. Please try again in a moment. If this persists, contact support.'
+          : raw;
       setError(message);
       toast.error(message);
     } finally {
@@ -241,7 +293,7 @@ export default function ChangePassword() {
 
             <button
               type="submit"
-              disabled={loading || !isPasswordStrong || !passwordsMatch}
+              disabled={loading || !isPasswordStrong || !passwordsMatch || !isSupabaseConfigured}
               className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (

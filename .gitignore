@@ -58,3 +58,6 @@ nul
 .env*.local
 .env.vercel-pull
 *.env.vercel-pull
+
+.vercel
+.env*.local

@@ -1,4 +1,4 @@
-import { supabase } from '@mpbhealth/database';
+import { supabase, getResolvedAuthHeader } from '@mpbhealth/database';
 import type {
   ChatConversation,
   ChatMember,
@@ -8,61 +8,35 @@ import type {
   CreateChannelOptions,
 } from './types';
 
-// ============================================================================
-// Auth helper — reuses the same pattern as TicketService
-// ============================================================================
-
-const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
-let _pendingRefresh: ReturnType<typeof supabase.auth.refreshSession> | null = null;
-
-function refreshOnce() {
-  if (!_pendingRefresh) {
-    _pendingRefresh = supabase.auth.refreshSession().finally(() => {
-      _pendingRefresh = null;
-    });
-  }
-  return _pendingRefresh;
-}
-
-async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) return null;
-
-  const nowSec = Math.floor(Date.now() / 1000);
-  const needsRefresh = !session.expires_at || session.expires_at < nowSec + TOKEN_EXPIRY_BUFFER_SECONDS;
-
-  if (needsRefresh) {
-    const { data: refreshed, error } = await refreshOnce();
-    if (error || !refreshed?.session) return null;
-    return { Authorization: `Bearer ${refreshed.session.access_token}` };
-  }
-
-  return { Authorization: `Bearer ${session.access_token}` };
-}
-
 function newCorrelationId(): string {
   return `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function is401Error(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as Record<string, unknown>;
+  const ctx = e.context;
+  if (ctx && typeof ctx === 'object' && 'status' in ctx) {
+    return (ctx as { status: number }).status === 401;
+  }
+  if (typeof e.status === 'number') return e.status === 401;
+  return false;
+}
+
 async function extractFunctionError(error: unknown): Promise<string> {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'object' && error !== null) {
-    const e = error as Record<string, unknown>;
-    if (typeof e.message === 'string') return e.message;
-    if (typeof e.context === 'object' && e.context !== null) {
-      const ctx = e.context as Record<string, unknown>;
-      if (typeof ctx.body === 'string') {
-        try {
-          const parsed = JSON.parse(ctx.body);
-          if (parsed.error) return parsed.error;
-        } catch { /* ignore */ }
+  if (error && typeof error === 'object' && 'context' in error) {
+    try {
+      const ctx = (error as Record<string, unknown>).context;
+      const ctxWithJson = ctx as { json?: () => Promise<{ error?: string }> };
+      if (ctxWithJson?.json && typeof ctxWithJson.json === 'function') {
+        const body = await ctxWithJson.json();
+        if (body?.error) return body.error;
       }
+    } catch {
+      // context already consumed or not JSON
     }
   }
-  return 'Unknown error';
+  return error instanceof Error ? error.message : 'Unknown error';
 }
 
 // ============================================================================
@@ -82,19 +56,30 @@ export class ChatService {
 
     const correlationId = newCorrelationId();
 
-    const invokePromise = supabase.functions.invoke<T>('chat-service', {
-      body: { action, ...body },
-      headers: {
-        ...authHeader,
-        'x-request-id': correlationId,
-      },
-    });
+    const doInvoke = async (auth: { Authorization: string }) => {
+      const invokePromise = supabase.functions.invoke<T>('chat-service', {
+        body: { action, ...body },
+        headers: { ...auth, 'x-request-id': correlationId },
+      });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`[${correlationId}] Request timed out`)), ChatService.REQUEST_TIMEOUT_MS),
+      );
+      return Promise.race([invokePromise, timeoutPromise]);
+    };
 
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`[${correlationId}] Request timed out`)), ChatService.REQUEST_TIMEOUT_MS),
-    );
+    let { data, error } = await doInvoke(authHeader);
 
-    const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+    // On 401, retry once with a freshly refreshed token (handles stale-token races)
+    if (error && is401Error(error)) {
+      const refreshed = await getResolvedAuthHeader();
+      if (refreshed) {
+        const retry = await doInvoke(refreshed);
+        if (!retry.error) {
+          data = retry.data;
+          error = null;
+        }
+      }
+    }
 
     if (error) {
       const msg = await extractFunctionError(error);

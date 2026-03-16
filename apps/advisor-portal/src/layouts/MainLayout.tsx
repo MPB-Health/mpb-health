@@ -284,6 +284,13 @@ export default function MainLayout() {
   useEffect(() => {
     loadNavigation();
 
+    // Skip Realtime subscription when redirecting to change-password — prevents
+    // "WebSocket closed before connection established" when MainLayout unmounts
+    // immediately after mount (must_change_password redirect).
+    if (profile?.must_change_password) {
+      return;
+    }
+
     // Subscribe to real-time navigation changes
     const channel = navigationService.subscribeToNavMenuChanges((items) => {
       // Items already come as a tree structure from subscribeToNavMenuChanges
@@ -296,7 +303,7 @@ export default function MainLayout() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadNavigation]);
+  }, [loadNavigation, profile?.must_change_password]);
 
   // Use CMS navigation if available, otherwise fallback.
   // Database order_index controls ordering — no hardcoded overrides.

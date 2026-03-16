@@ -93,6 +93,9 @@ export type {
   AdvisorStats,
 } from './types/advisor';
 
+// Shared auth helper (single refresh singleton across all services)
+export { refreshSessionOnce, getResolvedAuthHeader } from './authHelper';
+
 // Hooks
 export {
   useSupabaseQuery,

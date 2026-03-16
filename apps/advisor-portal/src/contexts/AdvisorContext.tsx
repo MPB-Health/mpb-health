@@ -259,9 +259,10 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [profile?.id]);
 
-  // Subscribe to bulletins
+  // Subscribe to bulletins — skip when must_change_password to avoid WebSocket
+  // "closed before connection established" during redirect to /change-password.
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || profile.must_change_password) return;
 
     const channel = contentService.subscribeToBulletins(() => {
       loadBulletinCount();
@@ -270,7 +271,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.id]);
+  }, [profile?.id, profile?.must_change_password]);
 
   return (
     <AdvisorContext.Provider

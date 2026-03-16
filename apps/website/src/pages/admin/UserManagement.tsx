@@ -163,6 +163,8 @@ const UserManagement: React.FC = () => {
   const [massResetModal, setMassResetModal] = useState(false);
   const [sendingMassReset, setSendingMassReset] = useState(false);
   const [massResetResult, setMassResetResult] = useState<{ sent: number; errors: number } | null>(null);
+  const [massResetTargets, setMassResetTargets] = useState<Set<string>>(new Set());
+  const [massResetSearch, setMassResetSearch] = useState('');
 
   useEffect(() => {
     checkTableAndLoadData();
@@ -648,41 +650,40 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleMassPasswordReset = async (mode: 'selected' | 'all_advisors') => {
+  const handleMassPasswordReset = async () => {
     setSendingMassReset(true);
     setMassResetResult(null);
-    const redirectTo = AUTH_URLS.advisor.resetPassword;
 
-    const targets =
-      mode === 'selected'
-        ? users.filter((u) => selectedIds.has(u.id))
-        : users.filter((u) => u.roles.includes('advisor'));
+    try {
+      const body = { advisor_ids: Array.from(massResetTargets) };
 
-    let sent = 0;
-    let errors = 0;
+      const { data, error } = await invokeEdgeFunction<{ summary: { total: number; sent: number; errors: number } }>(
+        'mass-password-reset',
+        body,
+      );
 
-    for (const u of targets) {
-      try {
-        const { error } = await supabase.auth.resetPasswordForEmail(u.email, { redirectTo });
-        if (error) {
-          errors++;
-        } else {
-          sent++;
-        }
-      } catch {
-        errors++;
+      if (error) {
+        toast.error(`Failed: ${error.message}`);
+        return;
       }
+
+      if (!data) {
+        toast.error('No response from server');
+        return;
+      }
+
+      setMassResetResult({ sent: data.summary.sent, errors: data.summary.errors });
+
+      if (data.summary.errors === 0) {
+        toast.success(`Password reset emails sent to ${data.summary.sent} advisor${data.summary.sent !== 1 ? 's' : ''}`);
+      } else {
+        toast(`Sent ${data.summary.sent}, ${data.summary.errors} failed`, { icon: '⚠️' });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send reset emails');
+    } finally {
+      setSendingMassReset(false);
     }
-
-    setMassResetResult({ sent, errors });
-
-    if (errors === 0) {
-      toast.success(`Password reset emails sent to ${sent} advisor${sent !== 1 ? 's' : ''}`);
-    } else {
-      toast(`Sent ${sent}, ${errors} failed`, { icon: '⚠️' });
-    }
-
-    setSendingMassReset(false);
   };
 
   // Filter users by search + role tab
@@ -769,7 +770,13 @@ const UserManagement: React.FC = () => {
                 <Mail className="h-4 w-4 mr-2" />
                 Send Invites
               </Button>
-              <Button onClick={() => { setMassResetModal(true); setMassResetResult(null); }} variant="outline">
+              <Button onClick={() => {
+                const allAdvisors = users.filter((u) => u.roles.includes('advisor'));
+                setMassResetTargets(new Set(allAdvisors.map((u) => u.id)));
+                setMassResetSearch('');
+                setMassResetResult(null);
+                setMassResetModal(true);
+              }} variant="outline">
                 <Key className="h-4 w-4 mr-2" />
                 Reset Passwords
               </Button>
@@ -888,7 +895,13 @@ const UserManagement: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => { setMassResetModal(true); setMassResetResult(null); }}
+              onClick={() => {
+                // Pre-select only the advisors currently checked in the table
+                setMassResetTargets(new Set(selectedIds));
+                setMassResetSearch('');
+                setMassResetResult(null);
+                setMassResetModal(true);
+              }}
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-white text-teal-700 rounded-lg text-sm font-semibold hover:bg-teal-50 transition-colors"
             >
               <Key className="h-4 w-4" />
@@ -1438,85 +1451,202 @@ const UserManagement: React.FC = () => {
       )}
 
       {/* Mass Password Reset Modal */}
-      {massResetModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-            <div className="p-6 border-b border-neutral-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-50 rounded-lg">
-                  <Key className="h-5 w-5 text-amber-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-neutral-900">Mass Password Reset</h2>
-                  <p className="text-sm text-neutral-600">
-                    {selectedIds.size > 0
-                      ? `Send reset emails to ${selectedIds.size} selected advisor${selectedIds.size > 1 ? 's' : ''}`
-                      : 'Send password reset emails to all advisors'}
-                  </p>
+      {massResetModal && (() => {
+        const allAdvisors = users.filter((u) => u.roles.includes('advisor'));
+        const q = massResetSearch.toLowerCase().trim();
+        const visibleAdvisors = q
+          ? allAdvisors.filter((u) => {
+              const p = advisorProfiles.get(u.id);
+              const name = p ? `${p.first_name} ${p.last_name}`.toLowerCase() : (u.full_name || '').toLowerCase();
+              return name.includes(q) || u.email.toLowerCase().includes(q);
+            })
+          : allAdvisors;
+        const allVisible = visibleAdvisors.length > 0 && visibleAdvisors.every((u) => massResetTargets.has(u.id));
+        const someVisible = visibleAdvisors.some((u) => massResetTargets.has(u.id));
+
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="p-6 border-b border-neutral-200 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-50 rounded-lg">
+                    <Key className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-neutral-900">Mass Password Reset</h2>
+                    <p className="text-sm text-neutral-600">
+                      {massResetTargets.size === 0
+                        ? 'No advisors selected'
+                        : `${massResetTargets.size} advisor${massResetTargets.size !== 1 ? 's' : ''} will receive a reset email`}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="p-6 space-y-4">
               {!massResetResult ? (
-                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-sm text-amber-800">
-                    This will send a <strong>Supabase password reset email</strong> to{' '}
-                    {selectedIds.size > 0
-                      ? `the ${selectedIds.size} selected advisor${selectedIds.size > 1 ? 's' : ''}`
-                      : 'every advisor in the system'}
-                    . Each advisor will receive a unique link to set a new password.
-                  </p>
-                  <p className="text-xs text-amber-700 mt-2">
-                    Note: The default temporary password is <strong>MPBHealth2025!</strong> (capital M, P, B, H).
-                  </p>
-                </div>
+                <>
+                  {/* Search + select-all */}
+                  <div className="px-6 pt-4 pb-2 shrink-0 space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                      <input
+                        type="text"
+                        placeholder="Search advisors..."
+                        value={massResetSearch}
+                        onChange={(e) => setMassResetSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (allVisible) {
+                            setMassResetTargets((prev) => {
+                              const next = new Set(prev);
+                              visibleAdvisors.forEach((u) => next.delete(u.id));
+                              return next;
+                            });
+                          } else {
+                            setMassResetTargets((prev) => {
+                              const next = new Set(prev);
+                              visibleAdvisors.forEach((u) => next.add(u.id));
+                              return next;
+                            });
+                          }
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-800"
+                      >
+                        {allVisible ? (
+                          <CheckSquare className="h-4 w-4" />
+                        ) : someVisible ? (
+                          <MinusSquare className="h-4 w-4" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                        {allVisible ? 'Deselect all' : 'Select all'} ({visibleAdvisors.length})
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setMassResetTargets(new Set(allAdvisors.map((u) => u.id)))}
+                          className="text-xs text-neutral-500 hover:text-neutral-700 underline underline-offset-2"
+                        >
+                          Select everyone
+                        </button>
+                        <span className="text-neutral-300">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setMassResetTargets(new Set())}
+                          className="text-xs text-neutral-500 hover:text-neutral-700 underline underline-offset-2"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Advisor list */}
+                  <div className="flex-1 overflow-y-auto px-6 pb-2 min-h-0">
+                    {visibleAdvisors.length === 0 ? (
+                      <p className="text-sm text-neutral-400 text-center py-8">No advisors found</p>
+                    ) : (
+                      <ul className="divide-y divide-neutral-100">
+                        {visibleAdvisors.map((u) => {
+                          const p = advisorProfiles.get(u.id);
+                          const name = p ? `${p.first_name} ${p.last_name}`.trim() : u.full_name || u.email;
+                          const checked = massResetTargets.has(u.id);
+                          return (
+                            <li key={u.id}>
+                              <button
+                                type="button"
+                                onClick={() => setMassResetTargets((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(u.id)) next.delete(u.id); else next.add(u.id);
+                                  return next;
+                                })}
+                                className={cn(
+                                  'w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-left transition-colors hover:bg-neutral-50',
+                                  checked && 'bg-amber-50/50',
+                                )}
+                              >
+                                {checked
+                                  ? <CheckSquare className="h-4 w-4 text-amber-600 shrink-0" />
+                                  : <Square className="h-4 w-4 text-neutral-400 shrink-0" />}
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-neutral-900 truncate">{name}</p>
+                                  <p className="text-xs text-neutral-500 truncate">{u.email}</p>
+                                </div>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Info banner */}
+                  <div className="px-6 pb-2 shrink-0">
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800">
+                        Each selected advisor receives a unique password reset link via email. Links expire in 24 hours.
+                      </p>
+                    </div>
+                  </div>
+                </>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="p-6 grid grid-cols-2 gap-4">
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-green-700">{massResetResult.sent}</p>
+                    <p className="text-3xl font-bold text-green-700">{massResetResult.sent}</p>
                     <p className="text-xs text-green-600 mt-1">Emails Sent</p>
                   </div>
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-red-700">{massResetResult.errors}</p>
+                    <p className="text-3xl font-bold text-red-700">{massResetResult.errors}</p>
                     <p className="text-xs text-red-600 mt-1">Failed</p>
                   </div>
                 </div>
               )}
-            </div>
 
-            <div className="p-6 border-t border-neutral-200 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => { setMassResetModal(false); setMassResetResult(null); }}
-                disabled={sendingMassReset}
-              >
-                {massResetResult ? 'Close' : 'Cancel'}
-              </Button>
-              {!massResetResult && (
-                <button
-                  type="button"
-                  onClick={() => handleMassPasswordReset(selectedIds.size > 0 ? 'selected' : 'all_advisors')}
-                  disabled={sendingMassReset}
-                  className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {sendingMassReset ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Key className="h-4 w-4" />
-                      {selectedIds.size > 0 ? `Reset ${selectedIds.size} Selected` : 'Reset All Advisors'}
-                    </>
+              {/* Footer */}
+              <div className="p-6 border-t border-neutral-200 flex justify-between items-center shrink-0">
+                <span className="text-xs text-neutral-500">
+                  {massResetTargets.size} of {users.filter((u) => u.roles.includes('advisor')).length} advisors selected
+                </span>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => { setMassResetModal(false); setMassResetResult(null); }}
+                    disabled={sendingMassReset}
+                  >
+                    {massResetResult ? 'Close' : 'Cancel'}
+                  </Button>
+                  {!massResetResult && (
+                    <button
+                      type="button"
+                      onClick={handleMassPasswordReset}
+                      disabled={sendingMassReset || massResetTargets.size === 0}
+                      className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {sendingMassReset ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Key className="h-4 w-4" />
+                          Reset {massResetTargets.size} Advisor{massResetTargets.size !== 1 ? 's' : ''}
+                        </>
+                      )}
+                    </button>
                   )}
-                </button>
-              )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </AdminLayout>
   );
 };

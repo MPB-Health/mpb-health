@@ -4,8 +4,12 @@ import { createClientLogger } from '@mpbhealth/utils';
 
 const log = createClientLogger('Database');
 
-export const supabaseUrl = ((import.meta as any).env?.VITE_SUPABASE_URL as string | undefined) || '';
-const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined;
+// .trim() removes accidental trailing CRLF/LF from copy-pasted env vars (Vercel, etc.)
+// Without trim, WebSocket URLs get %0D%0A and fail to connect
+const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
+const rawKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined;
+export const supabaseUrl = (rawUrl || '').trim();
+const supabaseAnonKey = (rawKey || '').trim() || undefined;
 
 const hasValidConfig = Boolean(
   supabaseUrl &&

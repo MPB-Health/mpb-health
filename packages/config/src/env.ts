@@ -26,8 +26,8 @@ export function getEnv<K extends keyof Env>(key: K): Env[K] | undefined {
 }
 
 export const env = {
-  supabaseUrl: getEnv('VITE_SUPABASE_URL') || '',
-  supabaseAnonKey: getEnv('VITE_SUPABASE_ANON_KEY') || '',
+  supabaseUrl: (getEnv('VITE_SUPABASE_URL') || '').trim(),
+  supabaseAnonKey: (getEnv('VITE_SUPABASE_ANON_KEY') || '').trim(),
   gaMeasurementId: getEnv('VITE_GA_MEASUREMENT_ID'),
   fbPixelId: getEnv('VITE_FB_PIXEL_ID'),
   nodeEnv: getEnv('NODE_ENV') || 'development',

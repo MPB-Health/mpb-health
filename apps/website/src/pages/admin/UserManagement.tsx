@@ -215,21 +215,40 @@ const UserManagement: React.FC = () => {
     return AUTH_URLS.member.authConfirm; // member
   };
 
-  // Send password reset email
+  // Send password reset email — routed through edge function to avoid Supabase
+  // client-side rate limits on /auth/v1/recover (429 after a few calls/hour).
   const handleSendPasswordReset = async (email: string, userId: string, roles: UserRole[]) => {
+    // Non-advisors don't have an advisor_profiles row; fall back to client-side
+    // for admin/crm/member resets (they're infrequent, won't hit rate limits).
+    if (!roles.includes('advisor')) {
+      setSendingReset(userId);
+      try {
+        const redirectTo = getResetRedirectUrl(roles);
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) throw error;
+        toast.success(`Password reset email sent to ${email}`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to send password reset email');
+      } finally {
+        setSendingReset(null);
+      }
+      return;
+    }
+
     setSendingReset(userId);
     try {
-      const redirectTo = getResetRedirectUrl(roles);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
-      });
-
+      const { data, error } = await invokeEdgeFunction<{ summary: { sent: number; errors: number } }>(
+        'mass-password-reset',
+        { advisor_ids: [userId] },
+      );
       if (error) throw error;
-
-      toast.success(`Password reset email sent to ${email}`);
-    } catch (error: unknown) {
-      console.error('Error sending reset:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to send password reset email');
+      if (data?.summary.sent) {
+        toast.success(`Password reset email sent to ${email}`);
+      } else {
+        toast.error('Failed to send reset email');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send password reset email');
     } finally {
       setSendingReset(null);
     }

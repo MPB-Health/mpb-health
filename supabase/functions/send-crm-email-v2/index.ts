@@ -122,7 +122,15 @@ serve(async (req) => {
     const userEmail = authUser.email || null;
 
     // Parse request body
-    const body: RequestBody = await req.json();
+    let body: RequestBody;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } },
+      );
+    }
     const {
       to,
       cc,
@@ -302,21 +310,27 @@ serve(async (req) => {
         .in('id', attachment_ids);
     }
 
-    // Update thread if applicable
+    // Update thread if applicable (fetch-then-update for increment and array merge)
     if (thread_id && emailLog) {
-      await supabase
+      const { data: thread } = await supabase
         .from('crm_email_threads')
-        .update({
-          message_count: supabase.rpc('increment', { row_id: thread_id, column_name: 'message_count' }),
-          last_message_at: new Date().toISOString(),
-          last_message_preview: bodyPreview.substring(0, 100),
-          participants: supabase.rpc('array_append_unique', {
-            row_id: thread_id,
-            column_name: 'participants',
-            values: to,
-          }),
-        })
-        .eq('id', thread_id);
+        .select('message_count, participants')
+        .eq('id', thread_id)
+        .single();
+
+      if (thread) {
+        const newCount = (thread.message_count ?? 0) + 1;
+        const mergedParticipants = [...new Set([...(thread.participants || []), ...to])];
+        await supabase
+          .from('crm_email_threads')
+          .update({
+            message_count: newCount,
+            last_message_at: new Date().toISOString(),
+            last_message_preview: bodyPreview.substring(0, 100),
+            participants: mergedParticipants,
+          })
+          .eq('id', thread_id);
+      }
     }
 
     // Create activity log for lead

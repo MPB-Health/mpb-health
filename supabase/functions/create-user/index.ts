@@ -260,8 +260,9 @@ Deno.serve(async (req: Request) => {
 
     if (createUserError) {
       log.error("Create user error:", createUserError);
+      const msg = createUserError.message || "Failed to create user";
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to create user" }),
+        JSON.stringify({ success: false, error: msg }),
         { status: 400, headers },
       );
     }

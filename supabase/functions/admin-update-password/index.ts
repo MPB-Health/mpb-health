@@ -94,9 +94,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (password.length < 8) {
+    if (password.length < 12) {
       return new Response(
-        JSON.stringify({ error: "Password must be at least 8 characters" }),
+        JSON.stringify({ error: "Password must be at least 12 characters with uppercase, lowercase, digits, and symbols" }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
@@ -128,8 +128,9 @@ Deno.serve(async (req: Request) => {
 
     if (updateError) {
       log.error('Error updating password:', updateError);
+      const msg = updateError.message || 'Failed to update password';
       return new Response(
-        JSON.stringify({ error: "Failed to update password" }),
+        JSON.stringify({ error: msg }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }

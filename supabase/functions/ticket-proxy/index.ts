@@ -742,7 +742,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const body: ProxyRequest = await req.json();
+    let body: ProxyRequest;
+    try {
+      body = await req.json();
+    } catch (parseErr) {
+      log.warn("Invalid request body", { correlationId, error: parseErr });
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid request body", correlationId }),
+        { status: 400, headers },
+      );
+    }
     const { action } = body;
 
     // ── Health-check ping (no DB access required) ────────────────────────
@@ -932,33 +941,63 @@ Deno.serve(async (req: Request) => {
           );
         }
         {
-          // Fetch advisor profile first to tag ticket with correct origin + agent_id
-          const { data: ap } = await itstsAdmin
-            .from("profiles")
-            .select("full_name, agent_id, company_name")
-            .eq("id", itstsUserId!)
-            .maybeSingle();
-          result = await createTicket(itstsAdmin, itstsUserId!, {
-            subject: body.subject,
-            description: body.description,
-            category: body.category,
-            priority: body.priority,
-            origin: "advisor",
-            agentId: ap?.agent_id || null,
-          });
-          fireNotification({
-            event: "created",
-            ticket_id: result.ticket_id,
-            ticket_number: result.ticket_number,
-            subject: body.subject,
-            priority: body.priority || "medium",
-            status: "new",
-            category: body.category || null,
-            advisor_email: user.email,
-            advisor_name: ap?.full_name || user.email,
-            agent_id: ap?.agent_id || null,
-            company_name: ap?.company_name || null,
-          });
+          try {
+            // Fetch advisor profile first to tag ticket with correct origin + agent_id
+            const { data: ap, error: profileErr } = await itstsAdmin
+              .from("profiles")
+              .select("full_name, agent_id, company_name")
+              .eq("id", itstsUserId!)
+              .maybeSingle();
+            if (profileErr) {
+              log.error("Profile fetch failed in create", { correlationId, error: profileErr });
+              return new Response(
+                JSON.stringify({ success: false, error: "Support system temporarily unavailable. Please try again.", correlationId }),
+                { status: 503, headers },
+              );
+            }
+            result = await createTicket(itstsAdmin, itstsUserId!, {
+              subject: body.subject,
+              description: body.description ?? "",
+              category: body.category,
+              priority: body.priority,
+              origin: "advisor",
+              agentId: ap?.agent_id || null,
+            });
+            fireNotification({
+              event: "created",
+              ticket_id: result.ticket_id,
+              ticket_number: result.ticket_number,
+              subject: body.subject,
+              priority: body.priority || "medium",
+              status: "new",
+              category: body.category || null,
+              advisor_email: user.email,
+              advisor_name: ap?.full_name || user.email,
+              agent_id: ap?.agent_id || null,
+              company_name: ap?.company_name || null,
+            });
+          } catch (createErr) {
+            const errMsg = createErr instanceof Error ? createErr.message : String(createErr);
+            const pgErr = createErr && typeof createErr === "object" && "code" in createErr ? (createErr as { code?: string; message?: string }) : null;
+            log.error("Create ticket failed", { correlationId, error: errMsg, code: pgErr?.code, details: pgErr?.message });
+            // Map known DB errors to user-safe messages
+            if (pgErr?.code === "23503") {
+              return new Response(
+                JSON.stringify({ success: false, error: "Support account not found. Your account may not be synced yet — please try again in a moment or contact support.", correlationId }),
+                { status: 404, headers },
+              );
+            }
+            if (pgErr?.code === "23505" || errMsg.includes("duplicate key")) {
+              return new Response(
+                JSON.stringify({ success: false, error: "A ticket with this content was already created. Please check your tickets list.", correlationId }),
+                { status: 409, headers },
+              );
+            }
+            return new Response(
+              JSON.stringify({ success: false, error: "Could not create ticket. Please try again or contact support.", correlationId }),
+              { status: 503, headers },
+            );
+          }
         }
         break;
       case "reply":
@@ -1145,7 +1184,10 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers },
     );
   } catch (error) {
-    log.error("Ticket proxy error", { correlationId, error });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const errStack = error instanceof Error ? error.stack : undefined;
+    const pgCode = error && typeof error === "object" && "code" in error ? (error as { code?: string }).code : undefined;
+    log.error("Ticket proxy error", { correlationId, error: errMsg, stack: errStack, code: pgCode });
     return new Response(
       JSON.stringify({
         success: false,

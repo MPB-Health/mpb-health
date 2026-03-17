@@ -46,31 +46,73 @@ async function extractFunctionError(error: unknown): Promise<string> {
 export class ChatService {
   private static REQUEST_TIMEOUT_MS = 30_000; // 30 seconds
 
-  // Central edge function call method
+  /**
+   * Central edge function call method.
+   *
+   * @param action  The chat-service action string.
+   * @param body    Additional fields merged into the request body.
+   * @param signal  Optional AbortSignal — callers (hooks) pass this so in-flight
+   *                requests can be abandoned when the component unmounts or a newer
+   *                request supersedes this one.
+   */
   private async call<T extends { success: boolean }>(
     action: string,
     body: Record<string, unknown> = {},
+    signal?: AbortSignal,
   ): Promise<T> {
+    // Bail early if already aborted (e.g. rapid navigation)
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
     const authHeader = await getResolvedAuthHeader();
     if (!authHeader) throw new Error('Not authenticated');
 
     const correlationId = newCorrelationId();
 
     const doInvoke = async (auth: { Authorization: string }) => {
+      // Check again after async auth resolution
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
       const invokePromise = supabase.functions.invoke<T>('chat-service', {
         body: { action, ...body },
         headers: { ...auth, 'x-request-id': correlationId },
       });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`[${correlationId}] Request timed out`)), ChatService.REQUEST_TIMEOUT_MS),
-      );
-      return Promise.race([invokePromise, timeoutPromise]);
+
+      // Timeout with proper cleanup
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`[${correlationId}] Request timed out`)),
+          ChatService.REQUEST_TIMEOUT_MS,
+        );
+      });
+
+      // Also race against the abort signal if provided
+      const abortPromise = signal
+        ? new Promise<never>((_, reject) => {
+            if (signal.aborted) {
+              reject(new DOMException('Aborted', 'AbortError'));
+              return;
+            }
+            signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+          })
+        : null;
+
+      const racers: Promise<unknown>[] = [invokePromise, timeoutPromise];
+      if (abortPromise) racers.push(abortPromise);
+
+      try {
+        return await (Promise.race(racers) as Promise<Awaited<typeof invokePromise>>);
+      } finally {
+        // Always clear the timeout timer — prevents leak when request wins the race
+        clearTimeout(timer);
+      }
     };
 
     let { data, error } = await doInvoke(authHeader);
 
     // On 401, retry once with a freshly refreshed token (handles stale-token races)
     if (error && is401Error(error)) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
       const refreshed = await getResolvedAuthHeader();
       if (refreshed) {
         const retry = await doInvoke(refreshed);
@@ -99,9 +141,11 @@ export class ChatService {
   // CONVERSATIONS
   // =========================================================================
 
-  async listConversations(): Promise<ChatConversation[]> {
+  async listConversations(signal?: AbortSignal): Promise<ChatConversation[]> {
     const result = await this.call<{ success: boolean; conversations: ChatConversation[] }>(
       'list_conversations',
+      {},
+      signal,
     );
     return result.conversations;
   }
@@ -126,11 +170,13 @@ export class ChatService {
 
   async listMessages(
     conversationId: string,
-    opts: { limit?: number; before?: string } = {},
+    opts: { limit?: number; before?: string; signal?: AbortSignal } = {},
   ): Promise<ListMessagesResult> {
+    const { signal, ...rest } = opts;
     const result = await this.call<{ success: boolean; messages: ChatMessage[]; has_more: boolean }>(
       'list_messages',
-      { conversation_id: conversationId, ...opts },
+      { conversation_id: conversationId, ...rest },
+      signal,
     );
     return { messages: result.messages, has_more: result.has_more };
   }
@@ -170,8 +216,8 @@ export class ChatService {
   // READ TRACKING
   // =========================================================================
 
-  async markRead(conversationId: string): Promise<void> {
-    await this.call('mark_read', { conversation_id: conversationId });
+  async markRead(conversationId: string, signal?: AbortSignal): Promise<void> {
+    await this.call('mark_read', { conversation_id: conversationId }, signal);
   }
 
   // =========================================================================

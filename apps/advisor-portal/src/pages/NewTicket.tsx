@@ -101,23 +101,27 @@ export default function NewTicket() {
 
   useEffect(() => {
     if (authLoading || !profile) return;
+    let cancelled = false;
 
     ticketService
       .getCategories()
-      .then((cats) => setCategories(cats.length ? cats : FALLBACK_CATEGORIES))
-      .catch(() => setCategories(FALLBACK_CATEGORIES))
-      .finally(() => setCatLoading(false));
+      .then((cats) => { if (!cancelled) setCategories(cats.length ? cats : FALLBACK_CATEGORIES); })
+      .catch(() => { if (!cancelled) setCategories(FALLBACK_CATEGORIES); })
+      .finally(() => { if (!cancelled) setCatLoading(false); });
 
     Promise.all([
       ticketService.getMyTickets({ perPage: 20, page: 1 }),
       ticketService.getTicketStats(),
     ])
       .then(([list, s]) => {
+        if (cancelled) return;
         setTickets(list.tickets);
         setStats({ open: s.open, pending: s.pending, resolved: s.resolved, total: s.total });
       })
       .catch(() => {})
-      .finally(() => setHistoryLoading(false));
+      .finally(() => { if (!cancelled) setHistoryLoading(false); });
+
+    return () => { cancelled = true; };
   }, [authLoading, profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {

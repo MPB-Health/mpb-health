@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Hash, Lock, ArrowLeft, Users, Search, MessageSquare } from 'lucide-react';
+import { Hash, Lock, ArrowLeft, Users, Search, MessageSquare, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '@mpbhealth/ui';
 import { useChat, useChatMessages } from '../hooks/useChat';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -14,7 +14,7 @@ export default function Chat() {
   const { conversationId } = useParams<{ conversationId?: string }>();
   const navigate = useNavigate();
   const { profile } = useAdvisor();
-  const { conversations, channels, directMessages, loading: convLoading, totalUnread } = useChat();
+  const { conversations, channels, directMessages, loading: convLoading, error: convError, totalUnread, refresh: refreshConversations } = useChat();
   const { messages, loading: msgLoading, hasMore, sending, loadMore, sendMessage, deleteMessage } =
     useChatMessages(conversationId || null);
 
@@ -95,6 +95,8 @@ export default function Chat() {
           onSelect={handleSelectConversation}
           onCreateDM={() => setShowNewDmSearch(true)}
           loading={convLoading}
+          error={convError}
+          onRetry={refreshConversations}
         />
       </div>
 

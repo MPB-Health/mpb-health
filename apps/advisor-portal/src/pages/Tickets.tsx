@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -68,7 +68,15 @@ export default function Tickets() {
   const [replyError, setReplyError] = useState('');
   const perPage = 20;
 
+  // Unmount guard — prevents setState on unmounted component
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
+  // Track the latest ticket-list fetch so rapid filter changes cancel prior calls
+  const ticketFetchId = useRef(0);
+
   const loadTickets = useCallback(async () => {
+    const id = ++ticketFetchId.current;
     setLoading(true);
     setError('');
     try {
@@ -79,18 +87,24 @@ export default function Tickets() {
         page,
         perPage,
       });
+      // Only apply result if this is still the latest request and component is mounted
+      if (id !== ticketFetchId.current || !mountedRef.current) return;
       setTickets(result.tickets);
       setTotal(result.total);
     } catch (err) {
+      if (id !== ticketFetchId.current || !mountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to load tickets');
     } finally {
-      setLoading(false);
+      if (id === ticketFetchId.current && mountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [statusFilter, priorityFilter, searchDebounced, page]);
 
   const loadStats = useCallback(async () => {
     try {
       const s = await ticketService.getTicketStats();
+      if (!mountedRef.current) return;
       setStats(s);
     } catch {
       // Stats are non-critical
@@ -132,11 +146,13 @@ export default function Tickets() {
     setDetailLoading(true);
     try {
       const detail = await executeWithAuth(() => ticketService.getTicketDetail(ticketId));
+      if (!mountedRef.current) return;
       setSelectedTicket(detail);
     } catch (err) {
+      if (!mountedRef.current) return;
       console.error('Failed to load ticket detail:', err);
     } finally {
-      setDetailLoading(false);
+      if (mountedRef.current) setDetailLoading(false);
     }
   };
 
@@ -146,13 +162,16 @@ export default function Tickets() {
     setReplyError('');
     try {
       await executeWithAuth(() => ticketService.replyToTicket(selectedTicket.ticket.id, replyContent.trim()));
+      if (!mountedRef.current) return;
       const detail = await executeWithAuth(() => ticketService.getTicketDetail(selectedTicket.ticket.id));
+      if (!mountedRef.current) return;
       setSelectedTicket(detail);
       setReplyContent('');
     } catch (err) {
+      if (!mountedRef.current) return;
       setReplyError(err instanceof Error ? err.message : 'Failed to send reply');
     } finally {
-      setReplySending(false);
+      if (mountedRef.current) setReplySending(false);
     }
   };
 

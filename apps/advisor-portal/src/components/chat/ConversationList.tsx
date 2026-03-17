@@ -1,5 +1,5 @@
 import { useState, memo } from 'react';
-import { Hash, Lock, MessageSquare, Search, Plus, Users } from 'lucide-react';
+import { Hash, Lock, MessageSquare, Search, Plus, Users, RefreshCw, AlertCircle } from 'lucide-react';
 import type { ChatConversation } from '@mpbhealth/advisor-core';
 
 function formatTime(dateStr: string | null) {
@@ -93,6 +93,8 @@ interface ConversationListProps {
   onSelect: (id: string) => void;
   onCreateDM?: () => void;
   loading: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export default function ConversationList({
@@ -102,6 +104,8 @@ export default function ConversationList({
   onSelect,
   onCreateDM,
   loading,
+  error,
+  onRetry,
 }: ConversationListProps) {
   const [search, setSearch] = useState('');
 
@@ -133,6 +137,21 @@ export default function ConversationList({
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-5 h-5 border-2 border-th-accent-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+            <AlertCircle className="w-6 h-6 text-red-400 mb-2" />
+            <p className="text-xs text-th-text-secondary mb-3">{error}</p>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-th-accent-600 hover:bg-th-bg-secondary rounded-lg transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Retry
+              </button>
+            )}
           </div>
         ) : (
           <>

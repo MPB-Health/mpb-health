@@ -4,6 +4,15 @@ import type { ChatConversation, ChatMessage, ListMessagesResult } from '@mpbheal
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+/** Returns true for errors produced by AbortController cancellation. */
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError';
+}
+
+// ============================================================================
 // useChat — conversation list with unread badges + realtime
 // ============================================================================
 
@@ -13,31 +22,63 @@ export function useChat() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Track the active AbortController so we can cancel on re-fetch or unmount
+  const abortRef = useRef<AbortController | null>(null);
+  // Guard against state updates after unmount
+  const mountedRef = useRef(true);
+
   const fetchConversations = useCallback(async () => {
-    if (!profile?.id) { setLoading(false); return; }
+    if (!profile?.id) {
+      setLoading(false);
+      return;
+    }
+
+    // Cancel any in-flight request before starting a new one (deduplication)
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       setLoading(true);
-      const data = await chatService.listConversations();
+      const data = await chatService.listConversations(controller.signal);
+      if (!mountedRef.current || controller.signal.aborted) return;
       setConversations(data);
       setError(null);
     } catch (err) {
+      if (isAbortError(err) || !mountedRef.current) return;
       console.error('[useChat] Failed to load conversations:', err);
       setError('Failed to load conversations');
     } finally {
-      setLoading(false);
+      if (mountedRef.current && !controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [profile?.id]);
 
-  // Initial fetch
+  // Initial fetch + cleanup
   useEffect(() => {
     fetchConversations();
+
+    return () => {
+      // Cancel in-flight request when deps change or component unmounts
+      abortRef.current?.abort();
+    };
   }, [fetchConversations]);
+
+  // Unmount guard
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Realtime: conversation updates (last_message_at, preview)
   useEffect(() => {
     if (!profile?.id) return;
 
     const channel = chatService.subscribeToConversationUpdates((updated) => {
+      if (!mountedRef.current) return;
       setConversations((prev) =>
         prev
           .map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
@@ -82,41 +123,73 @@ export function useChatMessages(conversationId: string | null) {
   const [sending, setSending] = useState(false);
   const oldestMessageRef = useRef<string | null>(null);
 
+  // Cancellation & unmount safety
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+
   const fetchMessages = useCallback(async () => {
-    if (!conversationId || !profile?.id) { setLoading(false); return; }
+    if (!conversationId || !profile?.id) {
+      setLoading(false);
+      return;
+    }
+
+    // Cancel previous in-flight fetch
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       setLoading(true);
-      const result = await chatService.listMessages(conversationId);
+      const result = await chatService.listMessages(conversationId, {
+        signal: controller.signal,
+      });
+      if (!mountedRef.current || controller.signal.aborted) return;
       setMessages(result.messages);
       setHasMore(result.has_more);
       if (result.messages.length > 0) {
         oldestMessageRef.current = result.messages[0].created_at;
       }
     } catch (err) {
+      if (isAbortError(err) || !mountedRef.current) return;
       console.error('[useChatMessages] Failed to load messages:', err);
     } finally {
-      setLoading(false);
+      if (mountedRef.current && !controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [conversationId, profile?.id]);
 
-  // Initial fetch
+  // Initial fetch — reset state and cancel prior request
   useEffect(() => {
     setMessages([]);
     oldestMessageRef.current = null;
     fetchMessages();
+
+    return () => {
+      abortRef.current?.abort();
+    };
   }, [fetchMessages]);
+
+  // Unmount guard
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Realtime: new messages in this conversation
   useEffect(() => {
     if (!conversationId || !profile?.id) return;
 
     const channel = chatService.subscribeToMessages(conversationId, (newMsg) => {
+      if (!mountedRef.current) return;
       setMessages((prev) => {
         // Avoid duplicates
         if (prev.some((m) => m.id === newMsg.id)) return prev;
         return [...prev, newMsg];
       });
-      // Auto-mark as read since we're viewing the conversation
+      // Auto-mark as read since we're viewing the conversation (fire-and-forget)
       chatService.markRead(conversationId).catch(() => {});
     });
 
@@ -131,12 +204,14 @@ export function useChatMessages(conversationId: string | null) {
       const result = await chatService.listMessages(conversationId, {
         before: oldestMessageRef.current,
       });
+      if (!mountedRef.current) return;
       setMessages((prev) => [...result.messages, ...prev]);
       setHasMore(result.has_more);
       if (result.messages.length > 0) {
         oldestMessageRef.current = result.messages[0].created_at;
       }
     } catch (err) {
+      if (isAbortError(err) || !mountedRef.current) return;
       console.error('[useChatMessages] Failed to load more:', err);
     }
   }, [conversationId, hasMore]);
@@ -147,13 +222,14 @@ export function useChatMessages(conversationId: string | null) {
       setSending(true);
       try {
         const msg = await chatService.sendMessage(conversationId, content, replyToId);
+        if (!mountedRef.current) return;
         // The realtime subscription will add it, but add optimistically for instant feel
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
       } finally {
-        setSending(false);
+        if (mountedRef.current) setSending(false);
       }
     },
     [conversationId],
@@ -163,6 +239,7 @@ export function useChatMessages(conversationId: string | null) {
     async (messageId: string) => {
       if (!conversationId) return;
       await chatService.deleteMessage(messageId);
+      if (!mountedRef.current) return;
       setMessages((prev) =>
         prev.map((m) =>
           m.id === messageId ? { ...m, is_deleted: true, content: null } : m,

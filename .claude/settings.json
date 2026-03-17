@@ -125,7 +125,27 @@
       "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src\" -name \"*.tsx\" -type f -exec wc -l {} +)",
       "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo\" -name \"*.tsx\" -o -name \"*.ts\")",
       "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo\" -name \"*.tsx\")",
-      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps\" -name \"*.tsx\" -type f -exec wc -l {} +)"
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps\" -name \"*.tsx\" -type f -exec wc -l {} +)",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/functions' -maxdepth 1 -type d)",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/functions' -name 'index.ts' -exec wc -l {} +)",
+      "Bash(grep -l \"Anthropic\\\\|openai\\\\|Gemini\\\\|claude\" 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/functions'/*/index.ts)",
+      "Bash(grep -r \"deno.cron\\\\|scheduled\\\\|setInterval\" 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase' --include=*.ts)",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations' -type f -name '*.sql')",
+      "Bash(ls -d 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/functions'/*)",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo\" -name \"advisor-core\" -o -name \"champion-core\")",
+      "Bash(openssl rand:*)",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src/\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/pages/\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/services/\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/utils/\")",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/components/\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src\" -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) -exec wc -l {} +)",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src/lib/\")",
+      "Bash(curl -s -X POST https://dtmnkzllidaiqyheguhl.supabase.co/functions/v1/ticket-proxy -H \"Content-Type: application/json\" -H \"x-warmup-secret: 13d861bc678ca6e157beb695273de250d0b63f21bae75cad\" -d '{\"\"action\"\":\"\"ping\"\"}')",
+      "Bash(curl -s -X POST https://dtmnkzllidaiqyheguhl.supabase.co/functions/v1/ticket-proxy -H \"Content-Type: application/json\" -d '{\"\"action\"\":\"\"list\"\"}')",
+      "Bash(curl -s -X POST https://dtmnkzllidaiqyheguhl.supabase.co/functions/v1/ticket-proxy -H \"Content-Type: application/json\" -H \"Authorization: Bearer fake-token-here\" -d '{\"\"action\"\":\"\"list\"\"}')",
+      "Bash(curl -s -X POST https://dtmnkzllidaiqyheguhl.supabase.co/functions/v1/ticket-proxy -H \"Content-Type: application/json\" -H \"x-warmup-secret: wrong-secret\" -d '{\"\"action\"\":\"\"list\"\"}')"
     ]
   }
 }

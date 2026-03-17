@@ -139,14 +139,25 @@ export default function ResetPassword() {
 
       if (updateError) throw updateError;
 
+      // Get user for flag clear and ITSTS sync
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+      // Clear must_change_password flag so MainLayout won't redirect to
+      // /change-password after the user logs in with their new password.
+      if (currentUser) {
+        // Use RPC (SECURITY DEFINER) to clear flag — bypasses RLS and ensures
+        // the update succeeds even when PASSWORD_RECOVERY session has different semantics.
+        const { error: flagErr } = await supabase.rpc('clear_must_change_password_after_reset');
+        if (flagErr) console.error('Failed to clear must_change_password:', flagErr);
+      }
+
       // Sync password to ITSTS support system (fire-and-forget)
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
+      if (currentUser?.email) {
         supabase.functions.invoke('sync-user-to-itsts', {
           body: {
-            email: user.email,
-            first_name: user.user_metadata?.first_name || '',
-            last_name: user.user_metadata?.last_name || '',
+            email: currentUser.email,
+            first_name: currentUser.user_metadata?.first_name || '',
+            last_name: currentUser.user_metadata?.last_name || '',
             roles: [],
             action: 'password_change',
             password,

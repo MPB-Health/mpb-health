@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import {
@@ -38,6 +38,7 @@ import {
 } from '@mpbhealth/advisor-core';
 import { isAdmin } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useTicketAuth } from '../components/TicketAuthWrapper';
 import toast from 'react-hot-toast';
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
@@ -57,7 +58,9 @@ const PRIORITY_CONFIG: Record<TicketPriority, { label: string; color: string }> 
 
 export default function AdminTickets() {
   const { profile } = useAdvisor();
+  const { executeWithAuth } = useTicketAuth();
   const [adminCheck, setAdminCheck] = useState<boolean | null>(null);
+  const filterMetadataRequestedRef = useRef(false);
 
   // Data
   const [tickets, setTickets] = useState<AdminTicket[]>([]);
@@ -141,7 +144,8 @@ export default function AdminTickets() {
       loadTickets();
       loadStats();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Bulk action failed');
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
+      toast.error('Could not complete bulk action. Please try again.');
     } finally {
       setBulkActing(false);
     }
@@ -190,11 +194,20 @@ export default function AdminTickets() {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Silent auto-retry so admin users never see a broken page
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const retryCountRef = useRef(0);
+  const mountedRef = useRef(true);
+  const MAX_PAGE_RETRIES = 4;
+  const PAGE_RETRY_DELAYS = [2_000, 5_000, 10_000, 20_000];
+
+  useEffect(() => () => { mountedRef.current = false; clearTimeout(retryTimerRef.current); }, []);
+
   const loadTickets = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const result = await ticketService.getAllTickets({
+      const result = await executeWithAuth(() => ticketService.getAllTickets({
         status: statusFilter || undefined,
         priority: priorityFilter || undefined,
         search: searchDebounced || undefined,
@@ -203,24 +216,46 @@ export default function AdminTickets() {
         sortOrder,
         page,
         perPage,
-      });
+      }));
+      if (!mountedRef.current) return;
       setTickets(result.tickets);
       setTotal(result.total);
+      retryCountRef.current = 0;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load tickets');
+      if (!mountedRef.current) return;
+
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+        window.location.href = '/login';
+        return;
+      }
+
+      // Auto-retry silently
+      if (retryCountRef.current < MAX_PAGE_RETRIES) {
+        const delay = PAGE_RETRY_DELAYS[retryCountRef.current] ?? 20_000;
+        retryCountRef.current++;
+        retryTimerRef.current = setTimeout(() => {
+          if (mountedRef.current) loadTickets();
+        }, delay);
+        return;
+      }
+
+      setError('We\u2019re having trouble loading tickets right now. Please check your internet connection and try again.');
     } finally {
-      setLoading(false);
+      if (mountedRef.current && (retryCountRef.current === 0 || retryCountRef.current >= MAX_PAGE_RETRIES)) {
+        setLoading(false);
+      }
     }
-  }, [statusFilter, priorityFilter, advisorFilter, sortBy, sortOrder, searchDebounced, page]);
+  }, [statusFilter, priorityFilter, advisorFilter, sortBy, sortOrder, searchDebounced, page, executeWithAuth]);
 
   const loadStats = useCallback(async () => {
     try {
-      const s = await ticketService.getAllTicketStats();
+      const s = await executeWithAuth(() => ticketService.getAllTicketStats());
+      if (!mountedRef.current) return;
       setStats(s);
     } catch {
-      // Stats are non-critical
+      // Stats are non-critical — never surface errors
     }
-  }, []);
+  }, [executeWithAuth]);
 
   useEffect(() => {
     if (adminCheck) loadTickets();
@@ -230,13 +265,34 @@ export default function AdminTickets() {
     if (adminCheck) loadStats();
   }, [adminCheck, loadStats]);
 
-  // Pre-load categories and requesters
+  // Build the requester dropdown from already-loaded tickets (no extra API call).
   useEffect(() => {
-    if (adminCheck) {
-      ticketService.getCategories().then(setCreateCategories).catch(() => {});
-      ticketService.getRequesters().then(setRequesters).catch(() => {});
+    if (tickets.length > 0) {
+      setRequesters(ticketService.extractRequesters(tickets));
     }
-  }, [adminCheck]);
+  }, [tickets]);
+
+  // Defer category metadata until after the initial ticket payload resolves.
+  useEffect(() => {
+    if (!adminCheck || loading || filterMetadataRequestedRef.current) return;
+
+    filterMetadataRequestedRef.current = true;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      ticketService.getCategories()
+        .then((categories) => {
+          if (!cancelled) setCreateCategories(categories);
+        })
+        .catch(() => {
+          if (!cancelled) filterMetadataRequestedRef.current = false;
+        });
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [adminCheck, loading]);
 
   const handleBulkClose = async () => {
     setBulkClosing(true);
@@ -247,7 +303,8 @@ export default function AdminTickets() {
       loadTickets();
       loadStats();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to bulk close tickets');
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
+      toast.error('Could not close tickets. Please try again.');
     } finally {
       setBulkClosing(false);
     }
@@ -277,8 +334,8 @@ export default function AdminTickets() {
       setSelectedTicket(detail);
       setReplyContent('');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to send reply';
-      setReplyError(msg);
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
+      setReplyError('Your reply could not be sent. Please try again.');
     } finally {
       setReplySending(false);
     }
@@ -295,7 +352,8 @@ export default function AdminTickets() {
       loadTickets();
       toast.success('Status updated');
     } catch (err) {
-      setUpdateError(err instanceof Error ? err.message : 'Failed to update status');
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
+      setUpdateError('Could not update status. Please try again.');
     } finally {
       setUpdating(false);
     }
@@ -312,7 +370,8 @@ export default function AdminTickets() {
       loadTickets();
       toast.success('Priority updated');
     } catch (err) {
-      setUpdateError(err instanceof Error ? err.message : 'Failed to update priority');
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
+      setUpdateError('Could not update priority. Please try again.');
     } finally {
       setUpdating(false);
     }
@@ -342,7 +401,8 @@ export default function AdminTickets() {
       loadTickets();
       loadStats();
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create ticket');
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
+      setCreateError('Could not create ticket. Please try again.');
     } finally {
       setCreating(false);
     }
@@ -729,11 +789,18 @@ export default function AdminTickets() {
         )}
       </div>
 
-      {/* Error */}
+      {/* Error — friendly, non-technical */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
+        <div className="flex flex-col items-center gap-3 py-10 px-4 bg-white rounded-xl border border-neutral-200">
+          <RefreshCw className="w-8 h-8 text-neutral-300" />
+          <p className="text-sm text-neutral-600 text-center max-w-sm">{error}</p>
+          <button
+            type="button"
+            onClick={() => { retryCountRef.current = 0; setError(''); loadTickets(); loadStats(); }}
+            className="mt-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       )}
 

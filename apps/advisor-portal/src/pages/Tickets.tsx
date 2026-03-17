@@ -70,46 +70,81 @@ export default function Tickets() {
 
   // Unmount guard — prevents setState on unmounted component
   const mountedRef = useRef(true);
+  const categoriesRequestedRef = useRef(false);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
   // Track the latest ticket-list fetch so rapid filter changes cancel prior calls
   const ticketFetchId = useRef(0);
+
+  // Silent auto-retry: if loadTickets fails even after TicketService's built-in
+  // retries, schedule another attempt after a short delay so the user never
+  // sees a broken page — it just keeps trying in the background.
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const retryCountRef = useRef(0);
+  const MAX_PAGE_RETRIES = 4;
+  const PAGE_RETRY_DELAYS = [2_000, 5_000, 10_000, 20_000];
+
+  // Clean up retry timer on unmount
+  useEffect(() => () => { clearTimeout(retryTimerRef.current); }, []);
 
   const loadTickets = useCallback(async () => {
     const id = ++ticketFetchId.current;
     setLoading(true);
     setError('');
     try {
-      const result = await ticketService.getMyTickets({
+      const result = await executeWithAuth(() => ticketService.getMyTickets({
         status: statusFilter || undefined,
         priority: priorityFilter || undefined,
         search: searchDebounced || undefined,
         page,
         perPage,
-      });
+      }));
       // Only apply result if this is still the latest request and component is mounted
       if (id !== ticketFetchId.current || !mountedRef.current) return;
       setTickets(result.tickets);
       setTotal(result.total);
+      retryCountRef.current = 0; // reset on success
     } catch (err) {
       if (id !== ticketFetchId.current || !mountedRef.current) return;
-      setError(err instanceof Error ? err.message : 'Failed to load tickets');
+
+      // Session completely gone — redirect to login silently
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+        window.location.href = '/login';
+        return;
+      }
+
+      // Auto-retry silently in the background instead of showing error
+      if (retryCountRef.current < MAX_PAGE_RETRIES) {
+        const delay = PAGE_RETRY_DELAYS[retryCountRef.current] ?? 20_000;
+        retryCountRef.current++;
+        retryTimerRef.current = setTimeout(() => {
+          if (mountedRef.current) loadTickets();
+        }, delay);
+        // Keep showing spinner — user doesn't know anything is wrong
+        return;
+      }
+
+      // All retries exhausted — show a gentle, non-technical message
+      setError('We\u2019re having trouble loading your tickets right now. Please check your internet connection and try again.');
     } finally {
       if (id === ticketFetchId.current && mountedRef.current) {
-        setLoading(false);
+        // Only stop loading if we're NOT silently retrying
+        if (retryCountRef.current === 0 || retryCountRef.current >= MAX_PAGE_RETRIES) {
+          setLoading(false);
+        }
       }
     }
-  }, [statusFilter, priorityFilter, searchDebounced, page]);
+  }, [statusFilter, priorityFilter, searchDebounced, page, executeWithAuth]);
 
   const loadStats = useCallback(async () => {
     try {
-      const s = await ticketService.getTicketStats();
+      const s = await executeWithAuth(() => ticketService.getTicketStats());
       if (!mountedRef.current) return;
       setStats(s);
     } catch {
-      // Stats are non-critical
+      // Stats are non-critical — never surface errors for these
     }
-  }, []);
+  }, [executeWithAuth]);
 
   // Debounce search input — reset page and trigger server-side search
   useEffect(() => {
@@ -120,12 +155,31 @@ export default function Tickets() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Load distinct categories from ITSTS for the filter dropdown
+  // Keep category metadata out of the critical path so the initial ticket list renders first.
   useEffect(() => {
-    if (!authLoading && profile) {
-      executeWithAuth(() => ticketService.getCategories()).then(setCategories).catch(() => {});
-    }
-  }, [authLoading, profile, executeWithAuth]);
+    if (authLoading || !profile || loading || categoriesRequestedRef.current) return;
+
+    categoriesRequestedRef.current = true;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      executeWithAuth(() => ticketService.getCategories())
+        .then((nextCategories) => {
+          if (!cancelled && mountedRef.current) {
+            setCategories(nextCategories);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            categoriesRequestedRef.current = false;
+          }
+        });
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [authLoading, profile, loading, executeWithAuth]);
 
   // Clear the loading spinner when auth is resolved but there is no profile
   // (user is not logged in). Without this, loading stays true forever because
@@ -169,7 +223,11 @@ export default function Tickets() {
       setReplyContent('');
     } catch (err) {
       if (!mountedRef.current) return;
-      setReplyError(err instanceof Error ? err.message : 'Failed to send reply');
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+        window.location.href = '/login';
+        return;
+      }
+      setReplyError('Your reply could not be sent. Please try again.');
     } finally {
       if (mountedRef.current) setReplySending(false);
     }
@@ -398,9 +456,16 @@ export default function Tickets() {
 
       {/* Ticket List */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
+        <div className="flex flex-col items-center gap-3 py-10 px-4 bg-white rounded-xl border border-neutral-200">
+          <RefreshCw className="w-8 h-8 text-neutral-300" />
+          <p className="text-sm text-neutral-600 text-center max-w-sm">{error}</p>
+          <button
+            type="button"
+            onClick={() => { retryCountRef.current = 0; setError(''); loadTickets(); loadStats(); }}
+            className="mt-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       )}
 

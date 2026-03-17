@@ -305,67 +305,115 @@ export class TicketService {
   /**
    * Central invocation wrapper for all ticket-proxy calls.
    *
-   * Responsibilities:
-   *  - Resolves a guaranteed-fresh auth token (30 s expiry buffer).
-   *  - Generates a per-request correlation ID (`x-request-id`) so every
-   *    call can be traced in Supabase Edge Function logs.
-   *  - Normalises error handling: 401/auth errors trigger re-auth messages;
-   *    all errors include the correlation ID for operators to cross-reference.
+   * Built-in resilience:
+   *  1. Resolves a guaranteed-fresh auth token (30 s expiry buffer).
+   *  2. 20 s timeout per attempt so the UI never hangs.
+   *  3. Automatic silent retry (up to 3 attempts) with exponential back-off
+   *     for transient failures (timeouts, network errors, 5xx).
+   *  4. On auth errors, refreshes the session and retries silently.
+   *  5. Only throws after all retries are exhausted.
    *
-   * @param action  The ProxyAction string (must match the function's switch).
-   * @param body    Additional fields merged into the request body.
-   * @param opts    Optional overrides — `allowUnauthenticated` skips the auth
-   *                guard and returns null instead of throwing.
+   * The end user should never see a technical error; pages should receive
+   * either data or a clean, recoverable error.
    */
+  private static CALL_TIMEOUT_MS = 20_000;
+  private static MAX_RETRIES = 2; // 3 total attempts
+  private static RETRY_BACKOFF = [1_000, 3_000]; // ms between retries
+
   private async call<T extends { success: boolean }>(
     action: string,
     body: Record<string, unknown> = {},
-    opts: { allowUnauthenticated?: boolean } = {},
+    opts: { allowUnauthenticated?: boolean; timeoutMs?: number } = {},
   ): Promise<T> {
-    const authHeader = await getResolvedAuthHeader();
     const correlationId = newCorrelationId();
+    const timeoutMs = opts.timeoutMs ?? TicketService.CALL_TIMEOUT_MS;
 
-    if (!authHeader) {
-      if (opts.allowUnauthenticated) return null as unknown as T;
-      throw new Error(`Authentication required — please sign in again [${correlationId}]`);
-    }
+    let lastError: Error | null = null;
 
-    const { data, error } = await supabase.functions.invoke<T>('ticket-proxy', {
-      body: { action, ...body },
-      headers: {
-        ...authHeader,
-        'x-request-id': correlationId,
-      },
-    });
-
-    if (error) {
-      const msg = await extractFunctionError(error);
-      const isAuthError = /authorization|unauthorized|auth/i.test(msg);
-      if (isAuthError) {
-        throw new Error(`Authentication expired — please sign in again [${correlationId}]`);
+    for (let attempt = 0; attempt <= TicketService.MAX_RETRIES; attempt++) {
+      // Back-off before retries (not before the first attempt)
+      if (attempt > 0) {
+        const delay = TicketService.RETRY_BACKOFF[attempt - 1] ?? 3_000;
+        await new Promise((r) => setTimeout(r, delay));
       }
-      throw new Error(`${msg} [${correlationId}]`);
+
+      // Resolve auth — on retry, force a fresh token in case the previous was stale
+      const authHeader = attempt === 0
+        ? await getResolvedAuthHeader()
+        : await (async () => {
+            await refreshOnce();
+            return getResolvedAuthHeader();
+          })();
+
+      if (!authHeader) {
+        if (opts.allowUnauthenticated) return null as unknown as T;
+        // No session at all — redirect will happen at the context level.
+        // Don't retry; auth is genuinely missing.
+        throw new Error('SESSION_EXPIRED');
+      }
+
+      try {
+        const invokePromise = supabase.functions.invoke<T>('ticket-proxy', {
+          body: { action, ...body },
+          headers: {
+            ...authHeader,
+            'x-request-id': correlationId,
+          },
+        });
+
+        const result = await Promise.race([
+          invokePromise,
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs),
+          ),
+        ]);
+
+        const { data, error } = result;
+
+        if (error) {
+          const msg = await extractFunctionError(error);
+          const isAuthError = /authorization|unauthorized|auth/i.test(msg);
+
+          if (isAuthError) {
+            // Auth error → force refresh and retry on next iteration
+            lastError = new Error('SESSION_EXPIRED');
+            continue;
+          }
+
+          // Non-auth server error → retry
+          lastError = new Error(msg);
+          continue;
+        }
+
+        if (!data?.success) {
+          const errMsg = (data as Record<string, unknown>)?.error as string | undefined;
+          lastError = new Error(errMsg ?? 'Request failed');
+          // Business-logic errors (validation, not-found) should NOT be retried
+          if (errMsg && !/timeout|network|internal|server|503|502|504/i.test(errMsg)) {
+            throw lastError;
+          }
+          continue;
+        }
+
+        // Success
+        return data;
+      } catch (err) {
+        if (err instanceof Error && err.message === 'TIMEOUT') {
+          lastError = err;
+          continue; // retry on timeout
+        }
+        // Re-throw business logic errors (they broke out of the loop above)
+        throw err;
+      }
     }
 
-    if (!data?.success) {
-      const errMsg = (data as Record<string, unknown>)?.error as string | undefined;
-      throw new Error(`${errMsg ?? 'Request failed'} [${correlationId}]`);
-    }
-
-    return data;
+    // All retries exhausted — throw the last error
+    throw lastError ?? new Error('Request failed');
   }
 
   // ── Advisor read methods ───────────────────────────────────────────────
 
   async getMyTickets(opts: ListTicketsOptions = {}): Promise<TicketListResult> {
-    // Unauthenticated → return empty list; no noisy 401 in console.
-    const authHeader = await getResolvedAuthHeader();
-    if (!authHeader) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Authentication required — please sign in again');
-      return { tickets: [], total: 0, page: opts.page ?? 1, per_page: opts.perPage ?? 20 };
-    }
-
     const data = await this.call<TicketListResult & { success: boolean }>('list', {
       status: opts.status,
       priority: opts.priority,
@@ -530,13 +578,12 @@ export class TicketService {
   }
 
   /**
-   * Get distinct requesters from admin ticket list.
-   * Extracts unique advisors from the full ticket list.
+   * Extract distinct requesters from an already-loaded ticket array.
+   * Avoids a separate 200-ticket round-trip to the edge function.
    */
-  async getRequesters(): Promise<TicketRequester[]> {
-    const result = await this.getAllTickets({ perPage: 200 });
+  extractRequesters(tickets: AdminTicket[]): TicketRequester[] {
     const seen = new Map<string, TicketRequester>();
-    for (const t of result.tickets) {
+    for (const t of tickets) {
       if (!seen.has(t.requester_email)) {
         seen.set(t.requester_email, {
           id: t.requester_email,

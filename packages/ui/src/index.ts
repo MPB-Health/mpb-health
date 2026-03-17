@@ -55,7 +55,7 @@ export { SkeletonLine, SkeletonAvatar, SkeletonMetric, SkeletonCard, SkeletonTab
 export type { SkeletonLineProps, SkeletonAvatarProps, SkeletonMetricProps, SkeletonCardProps, SkeletonTableProps } from './components/Skeleton';
 
 export { AppLayout } from './components/AppLayout';
-export type { AppLayoutProps, NavItem, NavSection, NavLinkRenderProps, ChildNavLinkRenderProps } from './components/AppLayout';
+export type { AppLayoutProps, NavItem, NavLinkRenderProps, ChildNavLinkRenderProps } from './components/AppLayout';
 
 export { Breadcrumbs } from './components/Breadcrumbs';
 export type { BreadcrumbsProps, BreadcrumbItem } from './components/Breadcrumbs';

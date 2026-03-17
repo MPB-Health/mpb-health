@@ -229,7 +229,7 @@ export class ContentService {
     const result = await query;
     if (result.error) throw result.error;
 
-    const data = (result.data || []) as Array<Partial<Bulletin> & {
+    const data = ((result.data || []) as unknown) as Array<Partial<Bulletin> & {
       id: string;
       category?: BulletinCategory;
     }>;

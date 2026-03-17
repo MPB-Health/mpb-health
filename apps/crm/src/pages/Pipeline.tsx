@@ -17,7 +17,7 @@ export default function Pipeline() {
 
   const loadLeads = async () => {
     setLoading(true);
-    const grouped = await leadService.getLeadsByStage();
+    const { grouped } = await leadService.getLeadsByStage();
     setLeadsByStage(grouped);
     setLoading(false);
   };

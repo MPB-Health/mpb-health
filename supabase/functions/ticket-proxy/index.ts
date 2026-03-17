@@ -193,28 +193,28 @@ async function getTicketStats(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
 ) {
-  const { data: tickets, error } = await itstsAdmin
-    .from("tickets")
-    .select("status")
-    .eq("requester_id", userId);
+  const statuses = ["new", "open", "pending", "resolved", "closed"] as const;
 
-  if (error) throw error;
+  const results = await Promise.all(
+    statuses.map((status) =>
+      itstsAdmin
+        .from("tickets")
+        .select("*", { count: "exact", head: true })
+        .eq("requester_id", userId)
+        .eq("status", status)
+    ),
+  );
 
-  const stats = {
-    total: tickets?.length || 0,
-    new: 0,
-    open: 0,
-    pending: 0,
-    resolved: 0,
-    closed: 0,
-  };
-
-  for (const t of tickets || []) {
-    const s = t.status as keyof typeof stats;
-    if (s in stats) stats[s]++;
+  const counts: Record<string, number> = {};
+  let total = 0;
+  for (let i = 0; i < statuses.length; i++) {
+    if (results[i].error) throw results[i].error;
+    const c = results[i].count ?? 0;
+    counts[statuses[i]] = c;
+    total += c;
   }
 
-  return stats;
+  return { total, ...counts };
 }
 
 // ── Admin helpers ──────────────────────────────────────────────────────────
@@ -342,18 +342,27 @@ async function getTicketDetailAdmin(
 async function getAllTicketStats(
   itstsAdmin: ReturnType<typeof createClient>,
 ) {
-  const { data: tickets, error } = await itstsAdmin
-    .from("tickets")
-    .select("status");
+  const statuses = ["new", "open", "pending", "resolved", "closed"] as const;
 
-  if (error) throw error;
+  const results = await Promise.all(
+    statuses.map((status) =>
+      itstsAdmin
+        .from("tickets")
+        .select("*", { count: "exact", head: true })
+        .eq("status", status)
+    ),
+  );
 
-  const stats = { total: tickets?.length || 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 };
-  for (const t of tickets || []) {
-    const s = t.status as keyof typeof stats;
-    if (s in stats) stats[s]++;
+  const counts: Record<string, number> = {};
+  let total = 0;
+  for (let i = 0; i < statuses.length; i++) {
+    if (results[i].error) throw results[i].error;
+    const c = results[i].count ?? 0;
+    counts[statuses[i]] = c;
+    total += c;
   }
-  return stats;
+
+  return { total, ...counts };
 }
 
 async function addComment(
@@ -584,6 +593,17 @@ Deno.serve(async (req: Request) => {
     keyPrefix: 'ticket-proxy',
   });
   if (rateLimitResponse) return rateLimitResponse;
+
+  // ── Cron warm-up bypass (no auth required, just a shared secret) ─────
+  const warmupSecret = Deno.env.get("WARMUP_CRON_SECRET");
+  const reqWarmup = req.headers.get("x-warmup-secret");
+  if (warmupSecret && reqWarmup === warmupSecret) {
+    log.info("Warm-up ping received", { correlationId });
+    return new Response(
+      JSON.stringify({ success: true, warm: true, correlationId }),
+      { status: 200, headers },
+    );
+  }
 
   try {
     // Verify caller from monorepo

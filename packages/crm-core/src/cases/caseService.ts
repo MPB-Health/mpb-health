@@ -8,6 +8,7 @@ import type {
   CaseUpdateInput,
   CaseCommentCreateInput,
 } from './caseTypes';
+import { sanitizeSearchInput } from '../utils/sanitize';
 
 export class CaseService {
   constructor(private supabase: SupabaseClient) {}
@@ -54,8 +55,9 @@ export class CaseService {
         query = query.lte('created_at', filters.dateTo);
       }
       if (filters.search) {
+        const safe = sanitizeSearchInput(filters.search);
         query = query.or(
-          `subject.ilike.%${filters.search}%,case_number.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+          `subject.ilike.%${safe}%,case_number.ilike.%${safe}%,description.ilike.%${safe}%`
         );
       }
 

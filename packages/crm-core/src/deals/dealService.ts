@@ -8,6 +8,7 @@ import type {
   DealUpdateInput,
   DealStageHistory,
 } from './dealTypes';
+import { sanitizeSearchInput } from '../utils/sanitize';
 
 export class DealService {
   constructor(private supabase: SupabaseClient) {}
@@ -65,8 +66,9 @@ export class DealService {
         query = query.lte('created_at', filters.dateTo);
       }
       if (filters.search) {
+        const safe = sanitizeSearchInput(filters.search);
         query = query.or(
-          `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+          `name.ilike.%${safe}%,description.ilike.%${safe}%`
         );
       }
       if (filters.tags && filters.tags.length > 0) {

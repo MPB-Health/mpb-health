@@ -16,7 +16,7 @@ interface UnifiedLoginPageProps {
   showOnboarding?: boolean;
 }
 
-const accentMap: Record<string, 'blue' | 'teal' | 'purple' | 'red'> = {
+const accentMap: Record<string, 'blue' | 'teal' | 'cyan' | 'red'> = {
   member: 'blue',
   advisor: 'teal',
   admin: 'blue',

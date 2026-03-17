@@ -8,6 +8,10 @@
  * (browsers will block the response when it doesn't match).
  */
 
+const isDev =
+  Deno.env.get("ENVIRONMENT") === "development" ||
+  Deno.env.get("DENO_ENV") === "development";
+
 const ALLOWED_ORIGINS: string[] = [
   // Production
   "https://www.mpbhealth.com",
@@ -27,11 +31,15 @@ const ALLOWED_ORIGINS: string[] = [
   // Vercel preview / branch deploys (any subdomain)
   // Matched via pattern below, not listed literally.
 
-  // Local development
-  "http://localhost:3000",
-  "http://localhost:4173",
-  "http://localhost:5173",
-  "http://localhost:8080",
+  // Local development (only in dev mode)
+  ...(isDev
+    ? [
+        "http://localhost:3000",
+        "http://localhost:4173",
+        "http://localhost:5173",
+        "http://localhost:8080",
+      ]
+    : []),
 ];
 
 /**
@@ -48,8 +56,8 @@ function isOriginAllowed(origin: string): boolean {
     return true;
   }
 
-  // Allow any localhost port for local development
-  if (/^http:\/\/localhost:\d+$/.test(origin)) {
+  // Allow any localhost port for local development (only in dev mode)
+  if (isDev && /^http:\/\/localhost:\d+$/.test(origin)) {
     return true;
   }
 

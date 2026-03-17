@@ -254,6 +254,9 @@ const BOOKING_URL = 'https://outlook-sdf.office.com/bookwithme/user/b5a563c9279c
 export async function sendLeadWelcomeEmail(data: {
   firstName: string;
   email: string;
+  planData?: unknown;
+  householdSize?: number;
+  membershipPriorities?: string[];
 }): Promise<EmailResponse> {
   const welcomePageUrl = `https://mpb.health/welcome?name=${encodeURIComponent(data.firstName)}`;
   const videoUrl = 'https://vimeo.com/1115561411';

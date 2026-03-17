@@ -96,9 +96,9 @@ export const AUTH_URLS = {
     login: 'https://admin.mpb.health/login',
   },
   crm: {
-    origin: 'https://crm.mpbhealth.com',
-    resetPassword: 'https://crm.mpbhealth.com/reset-password',
-    login: 'https://crm.mpbhealth.com/login',
+    origin: 'https://crm.mpb.health',
+    resetPassword: 'https://crm.mpb.health/reset-password',
+    login: 'https://crm.mpb.health/login',
   },
   member: {
     origin: 'https://mpb.health',

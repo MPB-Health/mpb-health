@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useOrg } from './contexts/OrgContext';
 import { PermissionGate, AccessDenied } from './components/PermissionGate';
+import { lazyRetry } from './utils/lazyRetry';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -19,80 +20,80 @@ import SentEmails from './pages/SentEmails';
 import EmailSchedules from './pages/EmailSchedules';
 
 // Lazy-loaded CRM module pages
-const Accounts = lazy(() => import('./pages/Accounts'));
-const AccountDetail = lazy(() => import('./pages/AccountDetail'));
-const Contacts = lazy(() => import('./pages/Contacts'));
-const ContactDetail = lazy(() => import('./pages/ContactDetail'));
-const Deals = lazy(() => import('./pages/Deals'));
-const DealDetail = lazy(() => import('./pages/DealDetail'));
-const DealPipeline = lazy(() => import('./pages/DealPipeline'));
-const Products = lazy(() => import('./pages/Products'));
-const ProductDetail = lazy(() => import('./pages/ProductDetail'));
-const Quotes = lazy(() => import('./pages/Quotes'));
-const QuoteDetail = lazy(() => import('./pages/QuoteDetail'));
-const Invoices = lazy(() => import('./pages/Invoices'));
-const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'));
-const Campaigns = lazy(() => import('./pages/Campaigns'));
-const CampaignDetail = lazy(() => import('./pages/CampaignDetail'));
+const Accounts = lazyRetry(() => import('./pages/Accounts'));
+const AccountDetail = lazyRetry(() => import('./pages/AccountDetail'));
+const Contacts = lazyRetry(() => import('./pages/Contacts'));
+const ContactDetail = lazyRetry(() => import('./pages/ContactDetail'));
+const Deals = lazyRetry(() => import('./pages/Deals'));
+const DealDetail = lazyRetry(() => import('./pages/DealDetail'));
+const DealPipeline = lazyRetry(() => import('./pages/DealPipeline'));
+const Products = lazyRetry(() => import('./pages/Products'));
+const ProductDetail = lazyRetry(() => import('./pages/ProductDetail'));
+const Quotes = lazyRetry(() => import('./pages/Quotes'));
+const QuoteDetail = lazyRetry(() => import('./pages/QuoteDetail'));
+const Invoices = lazyRetry(() => import('./pages/Invoices'));
+const InvoiceDetail = lazyRetry(() => import('./pages/InvoiceDetail'));
+const Campaigns = lazyRetry(() => import('./pages/Campaigns'));
+const CampaignDetail = lazyRetry(() => import('./pages/CampaignDetail'));
 // Print views (standalone, without MainLayout)
-const QuotePrintView = lazy(() => import('./pages/QuotePrintView'));
-const InvoicePrintView = lazy(() => import('./pages/InvoicePrintView'));
+const QuotePrintView = lazyRetry(() => import('./pages/QuotePrintView'));
+const InvoicePrintView = lazyRetry(() => import('./pages/InvoicePrintView'));
 
 // CRM Studio pages
-const StudioHome = lazy(() => import('./pages/studio/StudioHome'));
-const CustomModuleList = lazy(() => import('./pages/studio/CustomModuleList'));
-const CustomModuleDetail = lazy(() => import('./pages/studio/CustomModuleDetail'));
+const StudioHome = lazyRetry(() => import('./pages/studio/StudioHome'));
+const CustomModuleList = lazyRetry(() => import('./pages/studio/CustomModuleList'));
+const CustomModuleDetail = lazyRetry(() => import('./pages/studio/CustomModuleDetail'));
 
 // Quick Rate Estimate Leads (from website quote system)
-const QuickRateEstimateLeads = lazy(() => import('./pages/QuickRateEstimateLeads'));
+const QuickRateEstimateLeads = lazyRetry(() => import('./pages/QuickRateEstimateLeads'));
 
 // Email System
-const Inbox = lazy(() => import('./pages/Inbox'));
-const EmailSignatures = lazy(() => import('./pages/EmailSignatures'));
-const EmailSequences = lazy(() => import('./pages/EmailSequences'));
+const Inbox = lazyRetry(() => import('./pages/Inbox'));
+const EmailSignatures = lazyRetry(() => import('./pages/EmailSignatures'));
+const EmailSequences = lazyRetry(() => import('./pages/EmailSequences'));
 
 // Enterprise Features
-const MeetingScheduler = lazy(() => import('./pages/MeetingScheduler'));
-const SalesActivityDashboard = lazy(() => import('./pages/SalesActivityDashboard'));
-const EmailDeliverability = lazy(() => import('./pages/EmailDeliverability'));
+const MeetingScheduler = lazyRetry(() => import('./pages/MeetingScheduler'));
+const SalesActivityDashboard = lazyRetry(() => import('./pages/SalesActivityDashboard'));
+const EmailDeliverability = lazyRetry(() => import('./pages/EmailDeliverability'));
 
 // Connected Inbox (Outlook-class)
-const MailAccounts = lazy(() => import('./pages/MailAccounts'));
-const MailRules = lazy(() => import('./pages/MailRules'));
-const DomainAddons = lazy(() => import('./pages/DomainAddons'));
-const ConnectedInbox = lazy(() => import('./pages/ConnectedInbox'));
+const MailAccounts = lazyRetry(() => import('./pages/MailAccounts'));
+const MailRules = lazyRetry(() => import('./pages/MailRules'));
+const DomainAddons = lazyRetry(() => import('./pages/DomainAddons'));
+const ConnectedInbox = lazyRetry(() => import('./pages/ConnectedInbox'));
 
 // Vendors & Orders
-const Vendors = lazy(() => import('./pages/Vendors'));
-const VendorDetail = lazy(() => import('./pages/VendorDetail'));
-const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
-const PurchaseOrderDetail = lazy(() => import('./pages/PurchaseOrderDetail'));
-const SalesOrders = lazy(() => import('./pages/SalesOrders'));
-const SalesOrderDetail = lazy(() => import('./pages/SalesOrderDetail'));
-const PriceBooks = lazy(() => import('./pages/PriceBooks'));
-const PriceBookDetail = lazy(() => import('./pages/PriceBookDetail'));
+const Vendors = lazyRetry(() => import('./pages/Vendors'));
+const VendorDetail = lazyRetry(() => import('./pages/VendorDetail'));
+const PurchaseOrders = lazyRetry(() => import('./pages/PurchaseOrders'));
+const PurchaseOrderDetail = lazyRetry(() => import('./pages/PurchaseOrderDetail'));
+const SalesOrders = lazyRetry(() => import('./pages/SalesOrders'));
+const SalesOrderDetail = lazyRetry(() => import('./pages/SalesOrderDetail'));
+const PriceBooks = lazyRetry(() => import('./pages/PriceBooks'));
+const PriceBookDetail = lazyRetry(() => import('./pages/PriceBookDetail'));
 
 // Cases / Support
-const Cases = lazy(() => import('./pages/Cases'));
-const CaseDetail = lazy(() => import('./pages/CaseDetail'));
+const Cases = lazyRetry(() => import('./pages/Cases'));
+const CaseDetail = lazyRetry(() => import('./pages/CaseDetail'));
 
 // Documents & Calls
-const Documents = lazy(() => import('./pages/Documents'));
-const Calls = lazy(() => import('./pages/Calls'));
+const Documents = lazyRetry(() => import('./pages/Documents'));
+const Calls = lazyRetry(() => import('./pages/Calls'));
 
 // Sales Forecasting
-const Forecasting = lazy(() => import('./pages/Forecasting'));
-const DealVelocity = lazy(() => import('./pages/DealVelocity'));
+const Forecasting = lazyRetry(() => import('./pages/Forecasting'));
+const DealVelocity = lazyRetry(() => import('./pages/DealVelocity'));
 
 // Approval Workflows
-const Approvals = lazy(() => import('./pages/Approvals'));
-const ApprovalProcesses = lazy(() => import('./pages/ApprovalProcesses'));
+const Approvals = lazyRetry(() => import('./pages/Approvals'));
+const ApprovalProcesses = lazyRetry(() => import('./pages/ApprovalProcesses'));
 
 // Web Form Builder
-const WebForms = lazy(() => import('./pages/WebForms'));
-const FormBuilder = lazy(() => import('./pages/FormBuilder'));
-const FormSubmissions = lazy(() => import('./pages/FormSubmissions'));
-const PublicForm = lazy(() => import('./pages/PublicForm'));
+const WebForms = lazyRetry(() => import('./pages/WebForms'));
+const FormBuilder = lazyRetry(() => import('./pages/FormBuilder'));
+const FormSubmissions = lazyRetry(() => import('./pages/FormSubmissions'));
+const PublicForm = lazyRetry(() => import('./pages/PublicForm'));
 
 // Loading component for Suspense
 function PageLoader() {
@@ -730,9 +731,11 @@ export default function App() {
                 <Route
                   path="/approvals"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Approvals />
-                    </Suspense>
+                    <Guarded permission="approvals.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Approvals />
+                      </Suspense>
+                    </Guarded>
                   }
                 />
                 <Route
@@ -790,17 +793,21 @@ export default function App() {
                 <Route
                   path="/custom/:moduleApiName"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <CustomModuleList />
-                    </Suspense>
+                    <Guarded permission="custom_modules.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <CustomModuleList />
+                      </Suspense>
+                    </Guarded>
                   }
                 />
                 <Route
                   path="/custom/:moduleApiName/:id"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <CustomModuleDetail />
-                    </Suspense>
+                    <Guarded permission="custom_modules.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <CustomModuleDetail />
+                      </Suspense>
+                    </Guarded>
                   }
                 />
               </Routes>

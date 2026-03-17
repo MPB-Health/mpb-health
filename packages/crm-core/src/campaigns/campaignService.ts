@@ -10,6 +10,7 @@ import type {
   CampaignStats,
   MemberStatus,
 } from './campaignTypes';
+import { sanitizeSearchInput } from '../utils/sanitize';
 
 export class CampaignService {
   constructor(private supabase: SupabaseClient) {}
@@ -71,8 +72,9 @@ export class CampaignService {
         query = query.overlaps('tags', filters.tags);
       }
       if (filters.search) {
+        const safe = sanitizeSearchInput(filters.search);
         query = query.or(
-          `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+          `name.ilike.%${safe}%,description.ilike.%${safe}%`
         );
       }
 

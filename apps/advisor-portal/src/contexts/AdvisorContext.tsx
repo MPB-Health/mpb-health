@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import {
   profileService,
@@ -10,7 +10,7 @@ import {
   type Bulletin,
 } from '@mpbhealth/advisor-core';
 import { secureAuthService } from '@mpbhealth/auth';
-import { clearNavCache } from '../layouts/MainLayout';
+import { clearNavCache } from '../utils/navCache';
 
 interface AdvisorContextType {
   // Profile
@@ -119,7 +119,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   };
 
   // Load training data
-  const refreshTraining = async () => {
+  const refreshTraining = useCallback(async () => {
     if (!profile) return;
 
     try {
@@ -139,7 +139,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Failed to load training data:', err);
     }
-  };
+  }, [profile]);
 
   // Load bulletin count
   const loadBulletinCount = async () => {
@@ -154,13 +154,13 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   };
 
   // Refresh profile
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     setProfileLoading(true);
     await loadProfile();
-  };
+  }, []);
 
   // Handle authentication errors by refreshing session
-  const handleAuthError = async () => {
+  const handleAuthError = useCallback(async () => {
     try {
       setProfileLoading(true);
       // Try to refresh the session
@@ -168,7 +168,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       if (error) {
         throw error;
       }
-      
+
       if (!session?.user) {
         // No valid session, redirect to login
         setProfile(null);
@@ -186,10 +186,10 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     } finally {
       setProfileLoading(false);
     }
-  };
+  }, []);
 
   // Logout
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       // Use secure logout service for proper session cleanup and security logging
       if (profile?.user_id) {
@@ -209,7 +209,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     // Redirect to login page within the advisor portal
     window.location.href = '/login';
-  };
+  }, [profile?.user_id]);
 
   // Track whether the initial session has been handled to prevent duplicate loads.
   const initialHandled = useRef(false);
@@ -273,23 +273,36 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     };
   }, [profile?.id, profile?.must_change_password]);
 
+  const value = useMemo<AdvisorContextType>(() => ({
+    profile,
+    loading,
+    profileLoading,
+    error,
+    trainingModules,
+    trainingProgress,
+    trainingStats,
+    unreadBulletinCount,
+    refreshProfile,
+    refreshTraining,
+    logout,
+    handleAuthError,
+  }), [
+    profile,
+    loading,
+    profileLoading,
+    error,
+    trainingModules,
+    trainingProgress,
+    trainingStats,
+    unreadBulletinCount,
+    refreshProfile,
+    refreshTraining,
+    logout,
+    handleAuthError,
+  ]);
+
   return (
-    <AdvisorContext.Provider
-      value={{
-        profile,
-        loading,
-        profileLoading,
-        error,
-        trainingModules,
-        trainingProgress,
-        trainingStats,
-        unreadBulletinCount,
-        refreshProfile,
-        refreshTraining,
-        logout,
-        handleAuthError,
-      }}
-    >
+    <AdvisorContext.Provider value={value}>
       {children}
     </AdvisorContext.Provider>
   );

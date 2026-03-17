@@ -6,6 +6,7 @@ import type {
   LeadUpdateInput,
   BulkUpdateResult,
 } from './leadTypes';
+import { sanitizeSearchInput } from '../utils/sanitize';
 
 export class LeadService {
   constructor(private supabase: SupabaseClient) {}
@@ -40,8 +41,9 @@ export class LeadService {
         query = query.lte('created_at', filters.dateTo);
       }
       if (filters.search) {
+        const safe = sanitizeSearchInput(filters.search);
         query = query.or(
-          `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`
+          `first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,email.ilike.%${safe}%,phone.ilike.%${safe}%`
         );
       }
       if (filters.tags && filters.tags.length > 0) {
@@ -68,18 +70,22 @@ export class LeadService {
   }
 
   /**
-   * Get leads grouped by pipeline stage
+   * Get leads grouped by pipeline stage with pagination
    */
-  async getLeadsByStage(): Promise<Record<string, Lead[]>> {
+  async getLeadsByStage(
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<{ grouped: Record<string, Lead[]>; total: number }> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error, count } = await this.supabase
         .from('zoho_lead_submissions')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
       if (error) {
         console.error('Failed to get leads by stage:', error);
-        return {};
+        return { grouped: {}, total: 0 };
       }
 
       const grouped: Record<string, Lead[]> = {};
@@ -91,10 +97,10 @@ export class LeadService {
         grouped[stage].push(lead as Lead);
       }
 
-      return grouped;
+      return { grouped, total: count || 0 };
     } catch (error) {
       console.error('Get leads by stage error:', error);
-      return {};
+      return { grouped: {}, total: 0 };
     }
   }
 

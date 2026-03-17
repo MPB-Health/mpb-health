@@ -429,8 +429,41 @@ class SecureAuthService {
     }
   }
 
+  // In-memory tracker for captcha-fallback rate limiting (per session)
+  private captchaFallbackAttempts: { count: number; lastAttempt: number } = { count: 0, lastAttempt: 0 };
+
+  /**
+   * TODO: CAPTCHA verification is NOT implemented. This stub always returns true
+   * when no rate-limit triggers. Integrate a real provider (e.g. Cloudflare
+   * Turnstile, hCaptcha, or reCAPTCHA) before removing the fallback below.
+   *
+   * Fallback behaviour: after 3 unverified calls within a session, enforce a
+   * 30-second cooldown between subsequent attempts so bots cannot bypass the
+   * missing CAPTCHA indefinitely.
+   */
   private async verifyCaptcha(_token: string): Promise<boolean> {
     try {
+      const now = Date.now();
+      const FALLBACK_MAX_ATTEMPTS = 3;
+      const FALLBACK_COOLDOWN_MS = 30_000; // 30 seconds
+
+      this.captchaFallbackAttempts.count++;
+      const elapsed = now - this.captchaFallbackAttempts.lastAttempt;
+      this.captchaFallbackAttempts.lastAttempt = now;
+
+      if (this.captchaFallbackAttempts.count > FALLBACK_MAX_ATTEMPTS && elapsed < FALLBACK_COOLDOWN_MS) {
+        console.warn(
+          `CAPTCHA fallback rate-limit hit: ${this.captchaFallbackAttempts.count} attempts, ` +
+          `only ${Math.round(elapsed / 1000)}s since last attempt (need ${FALLBACK_COOLDOWN_MS / 1000}s).`
+        );
+        return false;
+      }
+
+      // Reset counter if the caller waited long enough
+      if (elapsed >= FALLBACK_COOLDOWN_MS) {
+        this.captchaFallbackAttempts.count = 1;
+      }
+
       return true;
     } catch (error) {
       console.error('CAPTCHA verification failed:', error);

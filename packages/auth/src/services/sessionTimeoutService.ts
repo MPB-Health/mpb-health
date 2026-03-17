@@ -35,6 +35,7 @@ class SessionTimeoutService {
   private isInitialized: boolean = false;
   private lastThrottledUpdate: number = 0;
   private userId: string | null = null;
+  private hasLoggedExpiry: boolean = false;
 
   constructor(config: Partial<SessionTimeoutConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -50,6 +51,7 @@ class SessionTimeoutService {
 
     this.userId = userId || null;
     this.lastActivity = Date.now();
+    this.hasLoggedExpiry = false;
     this.isInitialized = true;
 
     // Add activity listeners
@@ -108,6 +110,7 @@ class SessionTimeoutService {
    */
   extendSession(): void {
     this.lastActivity = Date.now();
+    this.hasLoggedExpiry = false;
     this.notifyCallbacks();
   }
 
@@ -175,8 +178,9 @@ class SessionTimeoutService {
   private checkTimeout(): void {
     const state = this.getState();
 
-    if (state.isTimedOut) {
-      // Log the session expiration event
+    if (state.isTimedOut && !this.hasLoggedExpiry) {
+      // Log the session expiration event exactly once per timeout cycle
+      this.hasLoggedExpiry = true;
       this.logSessionExpired();
     }
 

@@ -1,7 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import * as Icons from 'lucide-react';
-import { Clock, Share2, ArrowRight } from 'lucide-react';
+import {
+  Clock,
+  Share2,
+  ArrowRight,
+  Briefcase,
+  FileText,
+  RefreshCw,
+  Edit,
+  UserMinus,
+  type LucideIcon,
+} from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/button';
 import { getEmployerForms } from '../config/forms.config';
@@ -27,7 +36,7 @@ export default function EmployerFormsIndex() {
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mb-6 border border-white/20">
-                <Icons.Briefcase className="w-10 h-10 text-white" />
+                <Briefcase className="w-10 h-10 text-white" />
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
@@ -45,7 +54,8 @@ export default function EmployerFormsIndex() {
           <div className="mx-auto max-w-7xl">
             <div className="grid md:grid-cols-2 gap-6">
               {employerForms.map((form) => {
-                const Icon = (Icons as any)[form.icon] || Icons.FileText;
+                const employerIconMap: Record<string, LucideIcon> = { Briefcase, FileText, RefreshCw, Edit, UserMinus };
+                const Icon = employerIconMap[form.icon] || FileText;
 
                 return (
                   <Card key={form.slug} className="p-6 hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-300">

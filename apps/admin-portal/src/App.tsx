@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AdminProvider } from './contexts/AdminContext';
+import { AdminProvider, useAdmin } from './contexts/AdminContext';
 import MainLayout from './layouts/MainLayout';
 import { lazyRetry } from './utils/lazyRetry';
 
@@ -209,6 +209,14 @@ class RouteErrorBoundary extends React.Component<
   }
 }
 
+// ── Route-level permission guard ──────────────────────────────────────────
+function RequirePermission({ permission, children }: { permission: string; children: React.ReactNode }) {
+  const { hasPermission, loading } = useAdmin();
+  if (loading) return <LoadingSpinner />;
+  if (!hasPermission(permission)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <AdminProvider>
@@ -220,11 +228,11 @@ export default function App() {
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
-              <Route path="users" element={<Users />} />
-              <Route path="advisor-access" element={<AdvisorAccess />} />
-              <Route path="users/:userId" element={<UserDetail />} />
-              <Route path="enrollments" element={<Enrollments />} />
-              <Route path="enrollments/:enrollmentId" element={<EnrollmentDetail />} />
+              <Route path="users" element={<RequirePermission permission="users.manage"><Users /></RequirePermission>} />
+              <Route path="advisor-access" element={<RequirePermission permission="users.manage"><AdvisorAccess /></RequirePermission>} />
+              <Route path="users/:userId" element={<RequirePermission permission="users.manage"><UserDetail /></RequirePermission>} />
+              <Route path="enrollments" element={<RequirePermission permission="enrollments.manage"><Enrollments /></RequirePermission>} />
+              <Route path="enrollments/:enrollmentId" element={<RequirePermission permission="enrollments.manage"><EnrollmentDetail /></RequirePermission>} />
               <Route path="plans" element={<PlansList />} />
               <Route path="plans/new" element={<PlanEditor />} />
               <Route path="plans/:id" element={<PlanEditor />} />
@@ -250,17 +258,17 @@ export default function App() {
               <Route path="content/announcements" element={<AnnouncementManager />} />
               <Route path="content/widgets" element={<WidgetManager />} />
               <Route path="content/handbooks" element={<HandbookManager />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="settings/payments" element={<PaymentProcessors />} />
-              <Route path="settings/sms" element={<SmsAccounts />} />
-              <Route path="settings/promo-codes" element={<PromoCodes />} />
-              <Route path="settings/code-inventory" element={<CodeInventory />} />
-              <Route path="settings/resources" element={<AdminResources />} />
-              <Route path="settings/esignature" element={<ESignature />} />
-              <Route path="settings/ticket-categories" element={<TicketCategoriesSettings />} />
+              <Route path="settings" element={<RequirePermission permission="settings.manage"><Settings /></RequirePermission>} />
+              <Route path="settings/payments" element={<RequirePermission permission="settings.manage"><PaymentProcessors /></RequirePermission>} />
+              <Route path="settings/sms" element={<RequirePermission permission="settings.manage"><SmsAccounts /></RequirePermission>} />
+              <Route path="settings/promo-codes" element={<RequirePermission permission="settings.manage"><PromoCodes /></RequirePermission>} />
+              <Route path="settings/code-inventory" element={<RequirePermission permission="settings.manage"><CodeInventory /></RequirePermission>} />
+              <Route path="settings/resources" element={<RequirePermission permission="settings.manage"><AdminResources /></RequirePermission>} />
+              <Route path="settings/esignature" element={<RequirePermission permission="settings.manage"><ESignature /></RequirePermission>} />
+              <Route path="settings/ticket-categories" element={<RequirePermission permission="settings.manage"><TicketCategoriesSettings /></RequirePermission>} />
               <Route path="support/tickets" element={<TicketsList />} />
               <Route path="support/tickets/:ticketId" element={<TicketDetail />} />
-              <Route path="audit-logs" element={<AuditLogs />} />
+              <Route path="audit-logs" element={<RequirePermission permission="settings.manage"><AuditLogs /></RequirePermission>} />
               {/* Command center routes */}
               <Route path="members" element={<Members />} />
               <Route path="members/:memberId" element={<MemberDetail />} />

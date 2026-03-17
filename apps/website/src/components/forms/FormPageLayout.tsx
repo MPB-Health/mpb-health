@@ -1,7 +1,28 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Clock, CheckCircle2, Shield, ChevronDown, ChevronUp, HelpCircle, X } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import {
+  Clock,
+  CheckCircle2,
+  Shield,
+  ChevronDown,
+  ChevronUp,
+  HelpCircle,
+  X,
+  FileText,
+  Briefcase,
+  RefreshCw,
+  Edit,
+  Edit3,
+  UserMinus,
+  Users,
+  XCircle,
+  MessageSquare,
+  UserPlus,
+  Pill,
+  Calendar,
+  CreditCard,
+  type LucideIcon,
+} from 'lucide-react';
 import { FormEmbed } from './FormEmbed';
 import { ShareBar } from './ShareBar';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,7 +47,11 @@ export function FormPageLayout({
   const { user } = useAuth();
   const [tipsOpen, setTipsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const Icon = (Icons as any)[icon] || Icons.FileText;
+  const formIconMap: Record<string, LucideIcon> = {
+    FileText, Briefcase, RefreshCw, Edit, Edit3, UserMinus, Users,
+    Shield, XCircle, MessageSquare, UserPlus, Pill, Calendar, CreditCard,
+  };
+  const Icon = formIconMap[icon] || FileText;
 
   const userEmail = user?.email;
 

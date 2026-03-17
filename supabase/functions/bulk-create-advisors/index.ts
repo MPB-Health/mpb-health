@@ -86,7 +86,8 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json();
     const advisors: AdvisorRecord[] = body.advisors;
-    const genericPassword: string = body.password || "MPBHealth2025!";
+    // If a shared password is provided use it; otherwise each advisor gets a unique random one
+    const sharedPassword: string | null = body.password || null;
 
     if (!Array.isArray(advisors) || advisors.length === 0) {
       return new Response(
@@ -147,10 +148,13 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
+        // Generate a unique secure password per advisor if no shared password was provided
+        const advisorPassword = sharedPassword || crypto.randomUUID().slice(0, 16) + "!A1";
+
         const { data: authUser, error: createError } =
           await supabaseAdmin.auth.admin.createUser({
             email: cleanEmail,
-            password: genericPassword,
+            password: advisorPassword,
             email_confirm: true,
             user_metadata: {
               full_name: `${first_name} ${last_name}`.trim(),
@@ -233,7 +237,7 @@ Deno.serve(async (req: Request) => {
           last_name: last_name || "",
           roles: ["advisor"],
           action: "create",
-          password: genericPassword,
+          password: advisorPassword,
           agent_id: agent_id || undefined,
           company_name: company_name || undefined,
         }).catch(() => {});

@@ -588,3 +588,6 @@ export type {
   SavedViewUpdateInput,
 } from './saved-views/savedViewTypes';
 export * from './saved-views';
+
+// Utilities
+export { sanitizeSearchInput } from './utils/sanitize';

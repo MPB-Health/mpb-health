@@ -71,6 +71,15 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
+
+      // Restrict to internal staff domains only — prevents use as a spam relay
+      const lower = addr.toLowerCase();
+      if (!lower.endsWith('@mympb.com') && !lower.endsWith('@mpb.health')) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Recipient not allowed' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
     }
 
     // Send via Resend

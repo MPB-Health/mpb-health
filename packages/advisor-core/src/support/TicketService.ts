@@ -273,7 +273,7 @@ export class TicketService {
 
         const { data: signedData, error: signedError } = await supabase.storage
           .from(TicketService.ATTACHMENTS_BUCKET)
-          .createSignedUrl(path, 60 * 60 * 24 * 365);
+          .createSignedUrl(path, 60 * 60 * 24);
 
         if (signedError || !signedData?.signedUrl) {
           throw signedError || new Error('Failed to create secure attachment URL.');

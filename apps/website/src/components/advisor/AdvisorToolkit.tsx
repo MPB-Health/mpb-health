@@ -1,7 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import * as LucideIcons from 'lucide-react';
-import { ChevronDown, ExternalLink, Briefcase, Info } from 'lucide-react';
+import {
+  ChevronDown,
+  ExternalLink,
+  Briefcase,
+  Info,
+  Link as LinkIcon,
+  FolderOpen,
+  FileText,
+  Building2,
+  Users,
+  Newspaper,
+  BookOpen,
+  Shield,
+  Calendar,
+  Phone,
+  Mail,
+  Star,
+  Heart,
+  MessageSquare,
+  UserPlus,
+  UserMinus,
+  Edit,
+  Edit3,
+  CreditCard,
+  Pill,
+  XCircle,
+  RefreshCw,
+  Folder,
+  type LucideIcon,
+} from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/Badge';
@@ -12,10 +40,39 @@ import {
   QUICK_LINK_CATEGORIES,
 } from '../../lib/advisorCMSService';
 
+// Icon map for CMS-driven dynamic icon rendering (avoids wildcard import)
+const iconMap: Record<string, LucideIcon> = {
+  FolderOpen,
+  FileText,
+  Building2,
+  Users,
+  Newspaper,
+  BookOpen,
+  Shield,
+  Calendar,
+  Phone,
+  Mail,
+  Star,
+  Heart,
+  MessageSquare,
+  UserPlus,
+  UserMinus,
+  Edit,
+  Edit3,
+  CreditCard,
+  Pill,
+  XCircle,
+  RefreshCw,
+  Briefcase,
+  ExternalLink,
+  Info,
+  Folder,
+  Link: LinkIcon,
+};
+
 // Helper to dynamically render Lucide icons by name
 const DynamicIcon = ({ name, className }: { name: string; className?: string }) => {
-  const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
-  const IconComponent = icons[name] || LucideIcons.Link;
+  const IconComponent = iconMap[name] || LinkIcon;
   return <IconComponent className={className} />;
 };
 

@@ -18,6 +18,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger } from "../_shared/logger.ts";
+import { escapeHtml } from "../_shared/security.ts";
 
 const log = createLogger("send-ticket-notification");
 
@@ -160,24 +161,33 @@ function ctaButton(href: string, label: string): string {
 function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmail: string): EmailMessage[] {
   const ticketUrl = `${appUrl}/tickets`;
   const adminUrl = `${appUrl}/admin/tickets`;
-  const priorityLabel = PRIORITY_LABELS[p.priority || "medium"] || p.priority || "Medium";
-  const statusLabel = STATUS_LABELS[p.status || "new"] || p.status || "New";
+  const priorityLabel = PRIORITY_LABELS[p.priority || "medium"] || escapeHtml(p.priority || "Medium");
+  const statusLabel = STATUS_LABELS[p.status || "new"] || escapeHtml(p.status || "New");
+
+  // Escape all user-supplied values before interpolating into HTML
+  const safeAdvisorName = escapeHtml(p.advisor_name);
+  const safeAdvisorEmail = escapeHtml(p.advisor_email);
+  const safeSubject = escapeHtml(p.subject);
+  const safeAgentId = p.agent_id ? escapeHtml(p.agent_id) : null;
+  const safeCompanyName = p.company_name ? escapeHtml(p.company_name) : null;
+  const safeActorName = p.actor_name ? escapeHtml(p.actor_name) : null;
+  const safeCategory = p.category ? escapeHtml(p.category) : null;
 
   const agentLine = [
-    p.agent_id ? `Agent ID: <strong>${p.agent_id}</strong>` : null,
-    p.company_name ? `Company: <strong>${p.company_name}</strong>` : null,
+    safeAgentId ? `Agent ID: <strong>${safeAgentId}</strong>` : null,
+    safeCompanyName ? `Company: <strong>${safeCompanyName}</strong>` : null,
   ].filter(Boolean).join(" &nbsp;·&nbsp; ");
 
   const advisorBlock = `
     <table role="presentation" cellspacing="0" cellpadding="0" style="margin:16px 0;width:100%;">
-      ${ticketMetaRow("Advisor", `${p.advisor_name} (${p.advisor_email})`)}
-      ${p.agent_id ? ticketMetaRow("Agent ID", p.agent_id) : ""}
-      ${p.company_name ? ticketMetaRow("Company", p.company_name) : ""}
+      ${ticketMetaRow("Advisor", `${safeAdvisorName} (${safeAdvisorEmail})`)}
+      ${safeAgentId ? ticketMetaRow("Agent ID", safeAgentId) : ""}
+      ${safeCompanyName ? ticketMetaRow("Company", safeCompanyName) : ""}
       ${ticketMetaRow("Ticket #", `${p.ticket_number}`)}
-      ${ticketMetaRow("Subject", p.subject)}
+      ${ticketMetaRow("Subject", safeSubject)}
       ${ticketMetaRow("Priority", priorityLabel)}
       ${ticketMetaRow("Status", statusLabel)}
-      ${p.category ? ticketMetaRow("Category", p.category) : ""}
+      ${safeCategory ? ticketMetaRow("Category", safeCategory) : ""}
     </table>`;
 
   const messages: EmailMessage[] = [];
@@ -194,13 +204,13 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
           `Your support ticket has been received and will be reviewed shortly.`,
           `<h2 style="margin:0 0 8px;font-size:20px;color:#111827;">Your ticket has been received</h2>
            <p style="margin:0 0 20px;color:#374151;font-size:15px;">
-             Hi ${p.advisor_name.split(" ")[0]}, we've received your support request and will get back to you shortly.
+             Hi ${escapeHtml(p.advisor_name.split(" ")[0])}, we've received your support request and will get back to you shortly.
            </p>
            <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 20px;width:100%;">
              ${ticketMetaRow("Ticket #", `${p.ticket_number}`)}
-             ${ticketMetaRow("Subject", p.subject)}
+             ${ticketMetaRow("Subject", safeSubject)}
              ${ticketMetaRow("Priority", priorityLabel)}
-             ${p.category ? ticketMetaRow("Category", p.category) : ""}
+             ${safeCategory ? ticketMetaRow("Category", safeCategory) : ""}
            </table>
            <p style="color:#6b7280;font-size:14px;margin:0 0 4px;">
              You can track this ticket and reply directly in the Advisor Portal.
@@ -216,7 +226,7 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
         subject: `🎫 New Ticket #${p.ticket_number} — ${p.subject} [${priorityLabel}]`,
         html: wrap(
           `New Ticket #${p.ticket_number}`,
-          `New support ticket submitted by ${p.advisor_name}`,
+          `New support ticket submitted by ${safeAdvisorName}`,
           `<h2 style="margin:0 0 8px;font-size:20px;color:#111827;">New support ticket submitted</h2>
            <p style="margin:0 0 20px;color:#374151;font-size:15px;">
              A new ticket has been submitted via the Advisor Portal.
@@ -239,14 +249,14 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
           `A support ticket has been opened on your behalf.`,
           `<h2 style="margin:0 0 8px;font-size:20px;color:#111827;">A support ticket was opened for you</h2>
            <p style="margin:0 0 20px;color:#374151;font-size:15px;">
-             Hi ${p.advisor_name.split(" ")[0]}, our support team has opened the following ticket on your behalf.
-             ${p.actor_name ? `It was created by <strong>${p.actor_name}</strong>.` : ""}
+             Hi ${escapeHtml(p.advisor_name.split(" ")[0])}, our support team has opened the following ticket on your behalf.
+             ${safeActorName ? `It was created by <strong>${safeActorName}</strong>.` : ""}
            </p>
            <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 20px;width:100%;">
              ${ticketMetaRow("Ticket #", `${p.ticket_number}`)}
-             ${ticketMetaRow("Subject", p.subject)}
+             ${ticketMetaRow("Subject", safeSubject)}
              ${ticketMetaRow("Priority", priorityLabel)}
-             ${p.category ? ticketMetaRow("Category", p.category) : ""}
+             ${safeCategory ? ticketMetaRow("Category", safeCategory) : ""}
            </table>
            <p style="color:#6b7280;font-size:14px;margin:0 0 4px;">
              View the ticket in your portal and add any additional details.
@@ -261,17 +271,17 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
     // ── Advisor replied to their ticket (alert support team) ─────────────────
     case "advisor_replied": {
       const preview = p.comment
-        ? p.comment.slice(0, 300) + (p.comment.length > 300 ? "…" : "")
+        ? escapeHtml(p.comment.slice(0, 300) + (p.comment.length > 300 ? "…" : ""))
         : "";
       messages.push({
         to: supportEmail,
         subject: `💬 Advisor replied — Ticket #${p.ticket_number}: ${p.subject}`,
         html: wrap(
           `Advisor Reply — Ticket #${p.ticket_number}`,
-          `${p.advisor_name} replied to ticket #${p.ticket_number}`,
+          `${safeAdvisorName} replied to ticket #${p.ticket_number}`,
           `<h2 style="margin:0 0 8px;font-size:20px;color:#111827;">Advisor replied to a ticket</h2>
            <p style="margin:0 0 20px;color:#374151;font-size:15px;">
-             ${p.advisor_name} has added a reply to their support ticket.
+             ${safeAdvisorName} has added a reply to their support ticket.
              ${agentLine ? `<br/><span style="color:#6b7280;font-size:13px;">${agentLine}</span>` : ""}
            </p>
            ${advisorBlock}
@@ -289,7 +299,7 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
     // ── Staff/admin replied to advisor ticket ─────────────────────────────────
     case "staff_replied": {
       const preview = p.comment
-        ? p.comment.slice(0, 500) + (p.comment.length > 500 ? "…" : "")
+        ? escapeHtml(p.comment.slice(0, 500) + (p.comment.length > 500 ? "…" : ""))
         : "";
       messages.push({
         to: p.advisor_email,
@@ -299,11 +309,11 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
           `Support team replied to your ticket.`,
           `<h2 style="margin:0 0 8px;font-size:20px;color:#111827;">New reply on your support ticket</h2>
            <p style="margin:0 0 20px;color:#374151;font-size:15px;">
-             Hi ${p.advisor_name.split(" ")[0]}, the support team has replied to your ticket.
+             Hi ${escapeHtml(p.advisor_name.split(" ")[0])}, the support team has replied to your ticket.
            </p>
            <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 16px;width:100%;">
              ${ticketMetaRow("Ticket #", `${p.ticket_number}`)}
-             ${ticketMetaRow("Subject", p.subject)}
+             ${ticketMetaRow("Subject", safeSubject)}
            </table>
            ${preview ? `
            <div style="margin:8px 0 20px;padding:16px;background:#f0f9ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;">
@@ -327,9 +337,9 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
         changeLines.push(
           ticketMetaRow(
             "Status",
-            `<span style="color:#6b7280;text-decoration:line-through;">${STATUS_LABELS[p.old_status] || p.old_status}</span>
+            `<span style="color:#6b7280;text-decoration:line-through;">${STATUS_LABELS[p.old_status] || escapeHtml(p.old_status)}</span>
              &nbsp;→&nbsp;
-             <strong style="color:#111827;">${STATUS_LABELS[p.new_status] || p.new_status}</strong>`,
+             <strong style="color:#111827;">${STATUS_LABELS[p.new_status] || escapeHtml(p.new_status)}</strong>`,
           ),
         );
       }
@@ -337,9 +347,9 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
         changeLines.push(
           ticketMetaRow(
             "Priority",
-            `<span style="color:#6b7280;text-decoration:line-through;">${PRIORITY_LABELS[p.old_priority] || p.old_priority}</span>
+            `<span style="color:#6b7280;text-decoration:line-through;">${PRIORITY_LABELS[p.old_priority] || escapeHtml(p.old_priority)}</span>
              &nbsp;→&nbsp;
-             <strong style="color:#111827;">${PRIORITY_LABELS[p.new_priority] || p.new_priority}</strong>`,
+             <strong style="color:#111827;">${PRIORITY_LABELS[p.new_priority] || escapeHtml(p.new_priority)}</strong>`,
           ),
         );
       }
@@ -354,11 +364,11 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
           `Your support ticket status has been updated.`,
           `<h2 style="margin:0 0 8px;font-size:20px;color:#111827;">Your ticket has been updated</h2>
            <p style="margin:0 0 20px;color:#374151;font-size:15px;">
-             Hi ${p.advisor_name.split(" ")[0]}, your support ticket has been updated by our team.
+             Hi ${escapeHtml(p.advisor_name.split(" ")[0])}, your support ticket has been updated by our team.
            </p>
            <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 8px;width:100%;">
              ${ticketMetaRow("Ticket #", `${p.ticket_number}`)}
-             ${ticketMetaRow("Subject", p.subject)}
+             ${ticketMetaRow("Subject", safeSubject)}
              ${changeLines.join("")}
            </table>
            ${p.new_status === "resolved" ? `
@@ -645,6 +655,17 @@ async function sendInAppAndPush(
   }
 }
 
+// ── Constant-time string comparison ───────────────────────────────────────────
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -656,7 +677,7 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const provided = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
-  if (!expectedKey || provided !== expectedKey) {
+  if (!expectedKey || !timingSafeEqual(provided, expectedKey)) {
     return new Response("Unauthorized", { status: 401 });
   }
 

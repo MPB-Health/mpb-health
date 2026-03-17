@@ -8,7 +8,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
-import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
+import { checkRateLimit, getClientIdentifier, escapeHtml } from '../_shared/security.ts';
 
 const log = createLogger('web-form-submit');
 
@@ -56,7 +56,9 @@ serve(async (req) => {
     // Create service-role client to bypass RLS for reading form config and writing submission
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     // Fetch the form
     const { data: form, error: formError } = await supabase
@@ -203,7 +205,7 @@ serve(async (req) => {
       if (RESEND_API_KEY) {
         const fieldSummary = fields
           .filter((f) => f.type !== 'heading' && f.type !== 'paragraph' && data[f.id])
-          .map((f) => `<tr><td style="padding:4px 8px;font-weight:bold;">${f.label}</td><td style="padding:4px 8px;">${data[f.id]}</td></tr>`)
+          .map((f) => `<tr><td style="padding:4px 8px;font-weight:bold;">${escapeHtml(f.label)}</td><td style="padding:4px 8px;">${escapeHtml(String(data[f.id]))}</td></tr>`)
           .join('');
 
         fetch('https://api.resend.com/emails', {
@@ -217,7 +219,7 @@ serve(async (req) => {
             to: settings.notificationEmail,
             subject: `New form submission: ${form.name}`,
             html: `<h2>New Form Submission</h2>
-<p>A new submission was received on <strong>${form.name}</strong>.</p>
+<p>A new submission was received on <strong>${escapeHtml(form.name)}</strong>.</p>
 <table style="border-collapse:collapse;border:1px solid #ddd;">${fieldSummary}</table>
 <p style="color:#888;font-size:12px;">Submitted at ${new Date().toISOString()}</p>`,
           }),

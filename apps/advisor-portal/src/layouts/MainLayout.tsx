@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -67,6 +68,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
 import { useSupportSSO } from '../hooks/useSupportSSO';
 import { GlobalSearch } from '../components/GlobalSearch';
+import { setClearQueryCache } from '../utils/navCache';
 
 // Icon mapping for dynamic icons from CMS
 // NOTE: Keep this as named imports only — never use `import * as LucideIcons`
@@ -198,32 +200,28 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
     }));
 }
 
-// Cache for CMS navigation
-let cachedNavItems: NavItem[] | null = null;
-let cacheTimestamp: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-/** Clear cached CMS navigation (called on logout so stale nav doesn't persist). */
-export function clearNavCache() {
-  cachedNavItems = null;
-  cacheTimestamp = 0;
-}
-
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, unreadBulletinCount, logout, loading } = useAdvisor();
+  const { profile, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
   const { openSupport, loading: ssoLoading } = useSupportSSO();
+  const queryClient = useQueryClient();
 
-  // Admin role check for conditional nav items
-  const [isAdminUser, setIsAdminUser] = useState(false);
-  useEffect(() => {
-    if (profile?.user_id) {
-      checkIsAdmin(profile.user_id).then(setIsAdminUser);
-    }
-  }, [profile?.user_id]);
+  // Register the query-cache clear function so logout can purge nav cache
+  const clearQuery = useCallback(() => {
+    queryClient.removeQueries({ queryKey: ['cmsNavigation'] });
+  }, [queryClient]);
+  setClearQueryCache(clearQuery);
+
+  // Admin role check via React Query (deduped + cached)
+  const { data: isAdminUser = false } = useQuery({
+    queryKey: ['isAdmin', profile?.user_id],
+    queryFn: () => checkIsAdmin(profile!.user_id),
+    enabled: !!profile?.user_id,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
@@ -233,52 +231,25 @@ export default function MainLayout() {
     return buildPortalSSOUrl(getPortalUrl(portal), supabase);
   }, []);
 
-  // Dynamic navigation from CMS with caching
-  const [cmsNavItems, setCmsNavItems] = useState<NavItem[]>(cachedNavItems || []);
-  const [navLoading, setNavLoading] = useState(!cachedNavItems);
-
-  // Load navigation from CMS (with hierarchy for submenus)
-  const loadNavigation = useCallback(async () => {
-    // Check cache first
-    if (cachedNavItems && Date.now() - cacheTimestamp < CACHE_DURATION) {
-      setCmsNavItems(cachedNavItems);
-      setNavLoading(false);
-      return;
-    }
-
-    try {
-      // Use getNavMenuItems() to get hierarchical data with children
+  // CMS navigation via React Query — automatic dedup, caching, and stale-while-revalidate
+  const { data: cmsNavItems = [] } = useQuery<NavItem[]>({
+    queryKey: ['cmsNavigation'],
+    queryFn: async () => {
       const items = await navigationService.getNavMenuItems();
-      if (items && items.length > 0) {
-        const mappedItems = mapMenuItemsToNavItems(items);
-        cachedNavItems = mappedItems;
-        cacheTimestamp = Date.now();
-        setCmsNavItems(mappedItems);
-      }
-    } catch (error) {
-      console.error('Failed to load navigation from CMS:', error);
-      // Will use fallback navigation
-    } finally {
-      setNavLoading(false);
-    }
-  }, []);
+      return items && items.length > 0 ? mapMenuItemsToNavItems(items) : [];
+    },
+    staleTime: 5 * 60 * 1000,       // 5 min — nav rarely changes
+    refetchOnWindowFocus: false,
+  });
 
+  // Real-time nav subscription — updates React Query cache on CMS changes
   useEffect(() => {
-    loadNavigation();
-
-    // Subscribe to real-time navigation changes
     const channel = navigationService.subscribeToNavMenuChanges((items) => {
-      // Items already come as a tree structure from subscribeToNavMenuChanges
       const mappedItems = mapMenuItemsToNavItems(items);
-      cachedNavItems = mappedItems;
-      cacheTimestamp = Date.now();
-      setCmsNavItems(mappedItems);
+      queryClient.setQueryData(['cmsNavigation'], mappedItems);
     });
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [loadNavigation]);
+    return () => { channel.unsubscribe(); };
+  }, [queryClient]);
 
   // External training links that override CMS/fallback values
   const EXTERNAL_TRAINING_LINKS: Record<string, { href: string; external: true }> = {
@@ -386,8 +357,8 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // Redirect to login if not authenticated
-  if (!loading && !profile) {
+  // Redirect to login only when auth check is done AND profile fetch is done AND no profile
+  if (!loading && !profile && !profileLoading) {
     return <Navigate to="/login" replace />;
   }
 
@@ -396,13 +367,7 @@ export default function MainLayout() {
     return <Navigate to="/change-password" replace />;
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-surface-secondary">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
-      </div>
-    );
-  }
+  const isShellLoading = loading || (!profile && profileLoading);
 
   // Add badge to Bulletins nav item
   const navWithBadges: NavItem[] = navigation.map((item) => {
@@ -421,6 +386,16 @@ export default function MainLayout() {
 
   const userSection = (
     <div className="space-y-1">
+      {isShellLoading ? (
+        /* Skeleton user row while profile loads */
+        <div className="flex items-center gap-3 px-3 py-2.5">
+          <div className="w-8 h-8 rounded-full bg-[rgb(var(--sidebar-text)_/_0.12)] animate-pulse" />
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="h-3.5 w-24 rounded bg-[rgb(var(--sidebar-text)_/_0.12)] animate-pulse" />
+            <div className="h-2.5 w-16 rounded bg-[rgb(var(--sidebar-text)_/_0.08)] animate-pulse" />
+          </div>
+        </div>
+      ) : (
       <NavLink
         to="/profile"
         className={({ isActive }) =>
@@ -453,8 +428,10 @@ export default function MainLayout() {
           </p>
         </div>
       </NavLink>
+      )}
 
       <button
+        type="button"
         onClick={openSupport}
         disabled={ssoLoading}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150 disabled:opacity-50"
@@ -464,6 +441,7 @@ export default function MainLayout() {
       </button>
 
       <button
+        type="button"
         onClick={logout}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150"
       >
@@ -489,6 +467,7 @@ export default function MainLayout() {
       ) : (
         <div className="relative group">
           <button
+            type="button"
             disabled
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-400 text-white rounded-full text-sm font-medium cursor-not-allowed opacity-75"
           >
@@ -595,7 +574,13 @@ export default function MainLayout() {
           )
         }
       >
-        <Outlet />
+        {isShellLoading ? (
+          <div className="flex items-center justify-center py-32">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-th-accent-600" />
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </AppLayout>
       </div>
     </>

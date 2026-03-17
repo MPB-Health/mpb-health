@@ -7,6 +7,7 @@ import type {
   ContactUpdateInput,
   ConvertLeadInput,
 } from './contactTypes';
+import { sanitizeSearchInput } from '../utils/sanitize';
 
 export class ContactService {
   constructor(private supabase: SupabaseClient) {}
@@ -50,8 +51,9 @@ export class ContactService {
         query = query.lte('created_at', filters.dateTo);
       }
       if (filters.search) {
+        const safe = sanitizeSearchInput(filters.search);
         query = query.or(
-          `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,mobile.ilike.%${filters.search}%`
+          `first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,email.ilike.%${safe}%,phone.ilike.%${safe}%,mobile.ilike.%${safe}%`
         );
       }
       if (filters.tags && filters.tags.length > 0) {

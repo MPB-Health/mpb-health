@@ -1,7 +1,21 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import * as Icons from 'lucide-react';
-import { Clock, Share2, ArrowRight } from 'lucide-react';
+import {
+  Clock,
+  Share2,
+  ArrowRight,
+  Users,
+  FileText,
+  Shield,
+  XCircle,
+  MessageSquare,
+  Edit3,
+  UserPlus,
+  Pill,
+  Calendar,
+  CreditCard,
+  type LucideIcon,
+} from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/button';
 import { MEMBER_FORM_CATEGORIES, getFormBySlug } from '../config/forms.config';
@@ -25,7 +39,7 @@ export default function MemberFormsIndex() {
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mb-6 border border-white/20">
-                <Icons.Users className="w-10 h-10 text-white" />
+                <Users className="w-10 h-10 text-white" />
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
@@ -56,7 +70,11 @@ export default function MemberFormsIndex() {
                   <div className="grid md:grid-cols-2 gap-6">
                     {categoryForms.map((form) => {
                       if (!form) return null;
-                      const Icon = (Icons as any)[form.icon] || Icons.FileText;
+                      const memberIconMap: Record<string, LucideIcon> = {
+                        Users, FileText, Shield, XCircle, MessageSquare,
+                        Edit3, UserPlus, Pill, Calendar, CreditCard,
+                      };
+                      const Icon = memberIconMap[form.icon] || FileText;
 
                       return (
                         <Card key={form.slug} className="p-6 hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-300">

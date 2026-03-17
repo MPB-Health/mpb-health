@@ -1,6 +1,43 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import * as LucideIcons from 'lucide-react';
+import {
+  Home,
+  Layers,
+  Users,
+  Building2,
+  Briefcase,
+  GitCompare,
+  CircleHelp,
+  Sparkles,
+  Award,
+  BookOpen,
+  Newspaper,
+  Library,
+  Mic2,
+  Calendar,
+  Heart,
+  HelpCircle,
+  Info,
+  Mail,
+  LayoutDashboard,
+  Wrench,
+  ExternalLink,
+  FileText,
+  UserCog,
+  Zap,
+  UserPlus,
+  MessageSquare,
+  Star,
+  Phone,
+  LifeBuoy,
+  ClipboardList,
+  UserMinus,
+  Shield,
+  MapPin,
+  Calculator,
+  MessageCircle,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface NavigationItem {
@@ -23,10 +60,18 @@ interface MegaMenuV2Props {
   featuredContent?: React.ReactNode;
 }
 
+// Icon map for navigation-driven dynamic icon rendering (avoids wildcard import)
+const navIconMap: Record<string, LucideIcon> = {
+  Home, Layers, Users, Building2, Briefcase, GitCompare, CircleHelp,
+  Sparkles, Award, BookOpen, Newspaper, Library, Mic2, Calendar, Heart,
+  HelpCircle, Info, Mail, LayoutDashboard, Wrench, ExternalLink, FileText,
+  UserCog, Zap, UserPlus, MessageSquare, Star, Phone, LifeBuoy,
+  ClipboardList, UserMinus, Shield, MapPin, Calculator, MessageCircle,
+};
+
 const getIconComponent = (iconName?: string) => {
   if (!iconName) return null;
-  const Icon = (LucideIcons as any)[iconName];
-  return Icon || null;
+  return navIconMap[iconName] || null;
 };
 
 export const MegaMenuV2: React.FC<MegaMenuV2Props> = ({

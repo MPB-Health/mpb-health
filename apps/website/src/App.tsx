@@ -26,6 +26,7 @@ import { Plans } from './pages/Plans';
 import Login from './pages/Login';
 import Forbidden from './pages/Forbidden';
 import Logout from './pages/Logout';
+import NotFound from './pages/NotFound';
 
 // Lazy-loaded routes - loaded on demand
 const LandingMVP = lazyAuto(() => import('./pages/LandingMVP'));
@@ -299,16 +300,16 @@ const App = () => {
                   <Route path="/welcome" element={<Welcome />} />
 
                   {/* Protected Member Routes */}
-                  <Route path="/member" element={<MemberDashboard />} />
-                  <Route path="/member/portal" element={<MemberPortalDashboard />} />
-                  <Route path="/member/portal/claims" element={<Claims />} />
-                  <Route path="/member/forms" element={<MemberFormsIndex />} />
-                  <Route path="/member/forms/feedback" element={<MemberFeedbackProtected />} />
-                  <Route path="/member/forms/refer-friend" element={<ReferFriendProtected />} />
-                  <Route path="/member/forms/review" element={<ReviewUsProtected />} />
-                  <Route path="/member/forms/change-advisor" element={<ChangeAdvisorProtected />} />
-                  <Route path="/member/forms/welcome-call" element={<WelcomeCallProtected />} />
-                  <Route path="/member/forms/welcome-survey" element={<WelcomeSurveyProtected />} />
+                  <Route path="/member" element={<ProtectedRoute requiredRole="member"><MemberDashboard /></ProtectedRoute>} />
+                  <Route path="/member/portal" element={<ProtectedRoute requiredRole="member"><MemberPortalDashboard /></ProtectedRoute>} />
+                  <Route path="/member/portal/claims" element={<ProtectedRoute requiredRole="member"><Claims /></ProtectedRoute>} />
+                  <Route path="/member/forms" element={<ProtectedRoute requiredRole="member"><MemberFormsIndex /></ProtectedRoute>} />
+                  <Route path="/member/forms/feedback" element={<ProtectedRoute requiredRole="member"><MemberFeedbackProtected /></ProtectedRoute>} />
+                  <Route path="/member/forms/refer-friend" element={<ProtectedRoute requiredRole="member"><ReferFriendProtected /></ProtectedRoute>} />
+                  <Route path="/member/forms/review" element={<ProtectedRoute requiredRole="member"><ReviewUsProtected /></ProtectedRoute>} />
+                  <Route path="/member/forms/change-advisor" element={<ProtectedRoute requiredRole="member"><ChangeAdvisorProtected /></ProtectedRoute>} />
+                  <Route path="/member/forms/welcome-call" element={<ProtectedRoute requiredRole="member"><WelcomeCallProtected /></ProtectedRoute>} />
+                  <Route path="/member/forms/welcome-survey" element={<ProtectedRoute requiredRole="member"><WelcomeSurveyProtected /></ProtectedRoute>} />
                   <Route path="/advisor-directory" element={<AdvisorDirectory />} />
 
                   {/* Forms Index Pages */}
@@ -349,7 +350,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-training"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorTrainingAdmin />
                       </ProtectedRoute>
                     }
@@ -357,7 +358,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-content"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorContentAdmin />
                       </ProtectedRoute>
                     }
@@ -373,16 +374,15 @@ const App = () => {
                   <Route
                     path="/admin"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdminDashboard />
                       </ProtectedRoute>
                     }
                   />
                   <Route
-
                     path="/admin/newsletter-subscribers"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <NewsletterSubscribers />
                       </ProtectedRoute>
                     }
@@ -390,7 +390,7 @@ const App = () => {
                   <Route
                     path="/admin/gemini-blog-generator"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <GeminiBlogGenerator />
                       </ProtectedRoute>
                     }
@@ -398,7 +398,7 @@ const App = () => {
                   <Route
                     path="/admin/newsletter-campaigns"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <NewsletterCampaignManager />
                       </ProtectedRoute>
                     }
@@ -406,15 +406,15 @@ const App = () => {
                   <Route
                     path="/admin/faq"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <FAQAdmin />
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/admin/list-bill-setup" element={<ListBillSetupProtected />} />
-                  <Route path="/admin/list-bill-conversion" element={<ListBillConversionProtected />} />
-                  <Route path="/admin/list-bill-update" element={<ListBillUpdateProtected />} />
-                  <Route path="/admin/employee-removal" element={<EmployeeRemovalProtected />} />
+                  <Route path="/admin/list-bill-setup" element={<ProtectedRoute requiredRole="admin"><ListBillSetupProtected /></ProtectedRoute>} />
+                  <Route path="/admin/list-bill-conversion" element={<ProtectedRoute requiredRole="admin"><ListBillConversionProtected /></ProtectedRoute>} />
+                  <Route path="/admin/list-bill-update" element={<ProtectedRoute requiredRole="admin"><ListBillUpdateProtected /></ProtectedRoute>} />
+                  <Route path="/admin/employee-removal" element={<ProtectedRoute requiredRole="admin"><EmployeeRemovalProtected /></ProtectedRoute>} />
 
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogArticle />} />
@@ -427,7 +427,7 @@ const App = () => {
                   <Route
                     path="/admin/blog"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <BlogAdmin />
                       </ProtectedRoute>
                     }
@@ -435,7 +435,7 @@ const App = () => {
                   <Route
                     path="/admin/resources"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <ResourceAdmin />
                       </ProtectedRoute>
                     }
@@ -460,7 +460,7 @@ const App = () => {
                   <Route
                     path="/admin/zoho-salesiq"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <ZohoSalesIQDashboard />
                       </ProtectedRoute>
                     }
@@ -470,7 +470,7 @@ const App = () => {
                   <Route
                     path="/admin/reports"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <ReportsAnalytics />
                       </ProtectedRoute>
                     }
@@ -478,7 +478,7 @@ const App = () => {
                   <Route
                     path="/admin/coverage"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <MembershipManagement />
                       </ProtectedRoute>
                     }
@@ -486,7 +486,7 @@ const App = () => {
                   <Route
                     path="/admin/providers"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <ProviderDirectory />
                       </ProtectedRoute>
                     }
@@ -494,7 +494,7 @@ const App = () => {
                   <Route
                     path="/admin/notifications"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <NotificationsAdmin />
                       </ProtectedRoute>
                     }
@@ -502,7 +502,7 @@ const App = () => {
                   <Route
                     path="/admin/settings"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <SystemSettings />
                       </ProtectedRoute>
                     }
@@ -510,7 +510,7 @@ const App = () => {
                   <Route
                     path="/admin/handbooks"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <HandbookHub />
                       </ProtectedRoute>
                     }
@@ -518,7 +518,7 @@ const App = () => {
                   <Route
                     path="/admin/users"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <UserManagement />
                       </ProtectedRoute>
                     }
@@ -526,7 +526,7 @@ const App = () => {
                   <Route
                     path="/admin/users/bulk-import"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <BulkAdvisorImport />
                       </ProtectedRoute>
                     }
@@ -536,7 +536,7 @@ const App = () => {
                   <Route
                     path="/admin/crm"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <CRMDashboard />
                       </ProtectedRoute>
                     }
@@ -544,7 +544,7 @@ const App = () => {
                   <Route
                     path="/admin/crm/pipeline"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <LeadPipeline />
                       </ProtectedRoute>
                     }
@@ -552,7 +552,7 @@ const App = () => {
                   <Route
                     path="/admin/crm/leads"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <LeadsList />
                       </ProtectedRoute>
                     }
@@ -560,7 +560,7 @@ const App = () => {
                   <Route
                     path="/admin/crm/leads/:id"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <LeadDetail />
                       </ProtectedRoute>
                     }
@@ -568,7 +568,7 @@ const App = () => {
                   <Route
                     path="/admin/crm/templates"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <CRMTemplates />
                       </ProtectedRoute>
                     }
@@ -576,7 +576,7 @@ const App = () => {
                   <Route
                     path="/admin/crm/calendar"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <CRMCalendar />
                       </ProtectedRoute>
                     }
@@ -584,7 +584,7 @@ const App = () => {
                   <Route
                     path="/admin/crm/reports"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <CRMReports />
                       </ProtectedRoute>
                     }
@@ -594,7 +594,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSHub />
                       </ProtectedRoute>
                     }
@@ -602,7 +602,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/navigation"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSNavigation />
                       </ProtectedRoute>
                     }
@@ -610,7 +610,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/bulletins"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSBulletins />
                       </ProtectedRoute>
                     }
@@ -618,7 +618,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/forms"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSForms />
                       </ProtectedRoute>
                     }
@@ -626,7 +626,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/training"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSTraining />
                       </ProtectedRoute>
                     }
@@ -634,7 +634,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/quick-actions"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSQuickActions />
                       </ProtectedRoute>
                     }
@@ -642,7 +642,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/directory"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSDirectory />
                       </ProtectedRoute>
                     }
@@ -650,7 +650,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/videos"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSVideos />
                       </ProtectedRoute>
                     }
@@ -658,7 +658,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/enrollment"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSEnrollment />
                       </ProtectedRoute>
                     }
@@ -666,7 +666,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-cms/settings"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSSettings />
                       </ProtectedRoute>
                     }
@@ -675,7 +675,7 @@ const App = () => {
                   <Route
                     path="/admin/advisor-portal-cms-legacy"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <AdvisorPortalCMSLegacy />
                       </ProtectedRoute>
                     }
@@ -685,7 +685,7 @@ const App = () => {
                   <Route
                     path="/admin/forms"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiredRole="admin">
                         <FormsManager />
                       </ProtectedRoute>
                     }
@@ -697,7 +697,7 @@ const App = () => {
                   {/* Dynamic Form Routes - for forms created via CMS */}
                   <Route path="/forms/:slug" element={<DynamicFormPage />} />
 
-                  <Route path="*" element={<Landing />} />
+                  <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
               </LazyLoadErrorBoundary>

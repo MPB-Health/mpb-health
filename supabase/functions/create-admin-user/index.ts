@@ -93,13 +93,10 @@ async function sendInviteEmail(email: string, firstName: string, tempPassword: s
   }
 }
 
-function generateTempPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  let password = "";
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
+function generateTempPassword(length = 20): string {
+  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+  const values = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(values, (v) => charset[v % charset.length]).join("");
 }
 
 Deno.serve(async (req: Request) => {

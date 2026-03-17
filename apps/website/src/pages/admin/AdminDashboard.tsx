@@ -43,7 +43,7 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
   // Use shared stats from AdminLayout context - automatically refreshes every 2 minutes
   const { stats } = useAdminStats();
 
-  const adminSections = [
+  const adminSections: Array<{ title: string; icon: React.FC<{ className?: string }>; description: string; href: string; color: string; badge?: number; urgent?: boolean }> = [
     {
       title: 'Reports & Analytics',
       icon: BarChart3,

@@ -43,6 +43,7 @@
     "react-dom": "catalog:",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^9.1.0",
+    "@tanstack/react-query": "^5.90.21",
     "react-router-dom": "catalog:"
   },
   "devDependencies": {
@@ -50,7 +51,6 @@
     "@mpbhealth/tailwind-config": "workspace:*",
     "@mpbhealth/typescript-config": "workspace:*",
     "@tailwindcss/typography": "^0.5.19",
-    "@tanstack/react-query": "^5.90.21",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",

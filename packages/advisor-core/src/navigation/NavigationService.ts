@@ -36,6 +36,26 @@ export interface QuickLink {
 }
 
 export class NavigationService {
+  private sortQuickLinks(links: QuickLink[]): QuickLink[] {
+    return [...links].sort((a, b) => a.order_index - b.order_index || a.label.localeCompare(b.label));
+  }
+
+  private selectPreferredQuickLinks(
+    links: QuickLink[],
+    preferredCategories: string[],
+    limit?: number,
+  ): QuickLink[] {
+    const activeLinks = this.sortQuickLinks(links.filter((link) => link.is_active));
+    const preferredLinks = preferredCategories.flatMap((category) =>
+      activeLinks.filter((link) => link.category === category),
+    );
+    const selectedLinks = preferredLinks.length > 0 ? preferredLinks : activeLinks;
+
+    return typeof limit === 'number'
+      ? selectedLinks.slice(0, limit)
+      : selectedLinks;
+  }
+
   // Get all navigation menu items
   async getNavMenuItems(): Promise<NavMenuItem[]> {
     const { data, error } = await supabase
@@ -130,31 +150,23 @@ export class NavigationService {
     return data || [];
   }
 
+  selectDashboardQuickLinks(links: QuickLink[], limit = 8): QuickLink[] {
+    return this.selectPreferredQuickLinks(links, ['dashboard_actions', 'resource_center', 'resources'], limit);
+  }
+
+  selectResourceCenterQuickLinks(links: QuickLink[], limit?: number): QuickLink[] {
+    return this.selectPreferredQuickLinks(links, ['resource_center', 'resources', 'dashboard_actions'], limit);
+  }
+
   // Get quick links for dashboard (dashboard_actions category, or if not found, first 6 active links)
   async getDashboardQuickActions(): Promise<QuickLink[]> {
-    // First try to get dashboard-specific actions
-    const { data: dashboardActions, error: dashboardError } = await supabase
-      .from('advisor_quick_links')
-      .select('*')
-      .eq('is_active', true)
-      .eq('category', 'dashboard_actions')
-      .order('order_index', { ascending: true })
-      .limit(8);
+    const links = await this.getQuickLinks();
+    return this.selectDashboardQuickLinks(links, 8);
+  }
 
-    if (!dashboardError && dashboardActions && dashboardActions.length > 0) {
-      return dashboardActions;
-    }
-
-    // Fallback: get first 6 active links regardless of category
-    const { data: fallbackLinks, error: fallbackError } = await supabase
-      .from('advisor_quick_links')
-      .select('*')
-      .eq('is_active', true)
-      .order('order_index', { ascending: true })
-      .limit(8);
-
-    if (fallbackError) throw fallbackError;
-    return fallbackLinks || [];
+  async getResourceCenterQuickLinks(limit?: number): Promise<QuickLink[]> {
+    const links = await this.getQuickLinks();
+    return this.selectResourceCenterQuickLinks(links, limit);
   }
 
   // Get quick links grouped by category

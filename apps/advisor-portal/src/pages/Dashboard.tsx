@@ -252,7 +252,7 @@ export default function Dashboard() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set(announcementService.getDismissedIds()));
 
-  // CMS-driven dashboard quick actions (dashboard_actions category)
+  // CMS-driven resource center links shown on the dashboard.
   const [cmsQuickLinks, setCmsQuickLinks] = useState<QuickLink[]>([]);
 
   // Fetch all independent dashboard data in parallel on mount
@@ -273,7 +273,7 @@ export default function Dashboard() {
       ]),
       enrollmentService.getLinks(),
       formsService.getForms('member'),
-      navigationService.getDashboardQuickActions(),
+      navigationService.getResourceCenterQuickLinks(8),
     ]).then(([annResult, settingsResult, linksResult, formsResult, quickLinksResult]) => {
       if (cancelled) return;
       if (annResult.status === 'fulfilled') setAnnouncements(annResult.value);
@@ -305,8 +305,7 @@ export default function Dashboard() {
       ]).then(setPortalSettings).catch(() => {});
     });
     const quickLinksChannel = navigationService.subscribeToQuickLinkChanges((all) => {
-      const dashboardLinks = all.filter((l) => l.category === 'dashboard_actions');
-      setCmsQuickLinks(dashboardLinks);
+      setCmsQuickLinks(navigationService.selectResourceCenterQuickLinks(all, 8));
     });
     return () => {
       supabase.removeChannel(enrollChannel);
@@ -371,7 +370,7 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, [profile?.email]);
 
-  // Use CMS dashboard_actions when available; fall back to hardcoded list
+  // Use CMS-backed resource center links when available; fall back to hardcoded cards.
   const displayQuickLinks: FallbackQuickLink[] = cmsQuickLinks.length > 0
     ? cmsQuickLinks.map((l) => ({
         label: l.label,

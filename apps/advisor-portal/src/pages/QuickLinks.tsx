@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ExternalLink, X, Smartphone, ArrowRight, Video, Calendar } from 'lucide-react';
 import { supabaseUrl } from '@mpbhealth/database';
+import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 
 const STORAGE_BASE = `${supabaseUrl}/storage/v1/object/public/advisor-documents`;
 
@@ -12,7 +13,7 @@ interface QuickLinkItem {
   popup?: boolean;
 }
 
-const quickLinks: QuickLinkItem[] = [
+const fallbackQuickLinks: QuickLinkItem[] = [
   {
     label: 'RX, Labs & Imaging Quote',
     url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2026',
@@ -128,6 +129,46 @@ function LinkCard({
 
 export default function QuickLinks() {
   const [popupLink, setPopupLink] = useState<{ label: string; url: string } | null>(null);
+  const [cmsQuickLinks, setCmsQuickLinks] = useState<QuickLink[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    navigationService.getResourceCenterQuickLinks().then((links) => {
+      if (!cancelled) {
+        setCmsQuickLinks(links);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setLoading(false);
+      }
+    });
+
+    const channel = navigationService.subscribeToQuickLinkChanges((all) => {
+      if (!cancelled) {
+        setCmsQuickLinks(navigationService.selectResourceCenterQuickLinks(all));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      channel.unsubscribe();
+    };
+  }, []);
+
+  const displayQuickLinks: QuickLinkItem[] = cmsQuickLinks.length > 0
+    ? cmsQuickLinks.map((link) => ({
+        label: link.label,
+        url: link.url,
+        image: link.image_url
+          ? (link.image_url.startsWith('http') ? link.image_url : `${supabaseUrl}${link.image_url}`)
+          : '',
+        description: link.description ?? '',
+        popup: link.is_popup,
+      }))
+    : fallbackQuickLinks;
 
   return (
     <div className="space-y-6">
@@ -219,19 +260,25 @@ export default function QuickLinks() {
         </div>
       </a>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {quickLinks.map((link) => (
-          <LinkCard
-            key={link.url}
-            label={link.label}
-            url={link.url}
-            image={link.image}
-            description={link.description}
-            isPopup={link.popup}
-            onPopupClick={() => setPopupLink({ label: link.label, url: link.url })}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-12 text-sm text-th-text-tertiary">
+          Loading resources...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {displayQuickLinks.map((link) => (
+            <LinkCard
+              key={`${link.label}-${link.url}`}
+              label={link.label}
+              url={link.url}
+              image={link.image}
+              description={link.description}
+              isPopup={link.popup}
+              onPopupClick={() => setPopupLink({ label: link.label, url: link.url })}
+            />
+          ))}
+        </div>
+      )}
 
       {popupLink && (
         <div className="fixed inset-0 z-50 overflow-y-auto">

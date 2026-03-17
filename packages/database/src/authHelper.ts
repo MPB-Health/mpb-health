@@ -65,7 +65,7 @@ export async function getResolvedAuthHeader(): Promise<{ Authorization: string }
 export async function invokeWithResolvedAuth<TData = unknown>(
   functionName: string,
   options: InvokeFunctionOptions = {},
-) {
+): Promise<{ data: TData | null; error: { message: string } | null }> {
   const authHeaders = await getResolvedAuthHeader();
   if (!authHeaders) {
     throw new Error('Your session has expired. Please sign in again.');

@@ -170,7 +170,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
-  const { dashboardStats, tasksDueToday, overdueTasks, zohoConfigured } = useCRM();
+  const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
+  const zohoConfigured = !!import.meta.env.VITE_ZOHO_API_KEY;
 
   // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(user?.id);

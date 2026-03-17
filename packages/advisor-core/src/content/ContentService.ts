@@ -2,6 +2,34 @@ import { supabase } from '@mpbhealth/database';
 import type { SOPDocument, SOPCategory, Handbook, Bulletin, BulletinCategory } from '../types';
 
 export class ContentService {
+  private getBulletinSelect(includeContent = true) {
+    const baseFields = [
+      'id',
+      'title',
+      'slug',
+      'excerpt',
+      'content_type',
+      'category_id',
+      'published_date',
+      'featured_image_url',
+      'is_published',
+      'is_featured',
+      'view_count',
+      'metadata',
+      'created_at',
+      'updated_at',
+    ];
+
+    if (includeContent) {
+      baseFields.splice(4, 0, 'content');
+    }
+
+    return `
+      ${baseFields.join(', ')},
+      category:advisor_content_categories(id, name, slug, description, display_order)
+    `;
+  }
+
   // ========== SOP Documents ==========
 
   // Get all SOP documents
@@ -162,28 +190,40 @@ export class ContentService {
   async getBulletins(filters?: {
     category_id?: string;
     search?: string;
-  }, advisorId?: string): Promise<Bulletin[]> {
+  }, advisorId?: string, options?: {
+    includeContent?: boolean;
+    limit?: number;
+  }): Promise<Bulletin[]> {
     const now = new Date().toISOString();
+    const includeContent = options?.includeContent ?? true;
 
     let query = supabase
       .from('advisor_content')
-      .select(`
-        *,
-        category:advisor_content_categories(id, name, slug, description, display_order)
-      `)
+      .select(this.getBulletinSelect(includeContent))
       .eq('content_type', 'bulletin')
       .eq('is_published', true)
       .lte('published_date', now)
       .order('published_date', { ascending: false });
+
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
 
     if (filters?.category_id) {
       query = query.eq('category_id', filters.category_id);
     }
 
     if (filters?.search) {
-      query = query.or(
-        `title.ilike.%${filters.search}%,content.ilike.%${filters.search}%,excerpt.ilike.%${filters.search}%`
-      );
+      const searchClauses = [
+        `title.ilike.%${filters.search}%`,
+        `excerpt.ilike.%${filters.search}%`,
+      ];
+
+      if (includeContent) {
+        searchClauses.push(`content.ilike.%${filters.search}%`);
+      }
+
+      query = query.or(searchClauses.join(','));
     }
 
     const { data, error } = await query;
@@ -203,6 +243,7 @@ export class ContentService {
 
     return (data || []).map(bulletin => ({
       ...bulletin,
+      content: bulletin.content ?? '',
       is_read: readContentIds.includes(bulletin.id),
     }));
   }
@@ -214,22 +255,7 @@ export class ContentService {
 
   // Get bulletins for the slider (most recent first)
   async getFeaturedBulletins(limit = 5): Promise<Bulletin[]> {
-    const now = new Date().toISOString();
-
-    const { data, error } = await supabase
-      .from('advisor_content')
-      .select(`
-        *,
-        category:advisor_content_categories(id, name, slug, description, display_order)
-      `)
-      .eq('content_type', 'bulletin')
-      .eq('is_published', true)
-      .lte('published_date', now)
-      .order('published_date', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    return data || [];
+    return this.getBulletins({}, undefined, { includeContent: false, limit });
   }
 
   // Get a single bulletin

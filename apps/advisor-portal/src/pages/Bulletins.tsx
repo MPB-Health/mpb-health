@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useDeferredValue } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
@@ -24,37 +24,55 @@ export default function Bulletins() {
   const { profile, unreadBulletinCount } = useAdvisor();
   const navigate = useNavigate();
   const [bulletins, setBulletins] = useState<Bulletin[]>([]);
-  const [featuredBulletins, setFeaturedBulletins] = useState<Bulletin[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [bulletinsData, featuredData] = await Promise.all([
-          contentService.getBulletins({}, profile?.id),
-          contentService.getFeaturedBulletins(3),
-        ]);
-        setBulletins(bulletinsData);
-        setFeaturedBulletins(featuredData);
-      } catch (err) {
-        console.error('Failed to load bulletins:', err);
-      } finally {
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const loadBulletins = useCallback(async (showLoader = false) => {
+    if (showLoader) {
+      setLoading(true);
+    }
+
+    try {
+      const bulletinsData = await contentService.getBulletins(
+        {},
+        profile?.id,
+        { includeContent: false },
+      );
+      setBulletins(bulletinsData);
+    } catch (err) {
+      console.error('Failed to load bulletins:', err);
+    } finally {
+      if (showLoader) {
         setLoading(false);
       }
-    };
-
-    loadData();
+    }
   }, [profile?.id]);
+
+  useEffect(() => {
+    loadBulletins(true);
+  }, [loadBulletins]);
 
   // Realtime: refresh when admin publishes, edits, or removes bulletins
   useEffect(() => {
     const channel = contentService.subscribeToBulletins(() => {
-      contentService.getBulletins({}, profile?.id).then(setBulletins).catch(() => {});
-      contentService.getFeaturedBulletins(3).then(setFeaturedBulletins).catch(() => {});
+      loadBulletins();
     });
     return () => { supabase.removeChannel(channel); };
-  }, [profile?.id]);
+  }, [loadBulletins]);
+
+  const featuredBulletins = bulletins.slice(0, 3);
+
+  useEffect(() => {
+    setCurrentSlide((prev) => {
+      if (featuredBulletins.length === 0) {
+        return 0;
+      }
+
+      return prev >= featuredBulletins.length ? 0 : prev;
+    });
+  }, [featuredBulletins.length]);
 
   useEffect(() => {
     if (featuredBulletins.length <= 1) return;
@@ -72,11 +90,12 @@ export default function Bulletins() {
     setCurrentSlide((prev) => (prev - 1 + featuredBulletins.length) % featuredBulletins.length);
   }, [featuredBulletins.length]);
 
+  const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
   const filteredBulletins = bulletins.filter((b) => {
-    if (!searchQuery) return true;
+    if (!normalizedSearchQuery) return true;
     return (
-      b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.excerpt?.toLowerCase().includes(searchQuery.toLowerCase())
+      b.title.toLowerCase().includes(normalizedSearchQuery) ||
+      b.excerpt?.toLowerCase().includes(normalizedSearchQuery)
     );
   });
 
@@ -149,6 +168,9 @@ export default function Bulletins() {
                       <img
                         src={bulletin.featured_image_url}
                         alt={`Featured image for ${bulletin.title}`}
+                        loading={index === currentSlide ? 'eager' : 'lazy'}
+                        decoding="async"
+                        fetchPriority={index === currentSlide ? 'high' : 'auto'}
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0E2D41]/90" />
@@ -240,7 +262,7 @@ export default function Bulletins() {
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search bulletins by title or content..."
+              placeholder="Search bulletins by title or summary..."
               className="w-full pl-9 pr-8 py-2.5 bg-surface-tertiary rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-[#0A4E8E]/30 text-sm transition-shadow"
             />
             {searchQuery && (
@@ -275,13 +297,15 @@ export default function Bulletins() {
                   isUnread
                     ? 'border-[#0C71C3]/30 ring-1 ring-[#0C71C3]/10'
                     : 'border-th-border'
-                }`}
+                } [content-visibility:auto] [contain-intrinsic-size:360px]`}
               >
                 {bulletin.featured_image_url ? (
                   <div className="relative h-44 overflow-hidden">
                     <img
                       src={bulletin.featured_image_url}
                       alt={`Featured image for ${bulletin.title}`}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />

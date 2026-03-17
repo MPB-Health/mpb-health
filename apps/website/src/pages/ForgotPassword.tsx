@@ -30,7 +30,7 @@ const ForgotPassword: React.FC = () => {
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
       const redirectTo = isLocalDev
         ? `${window.location.origin}/auth/confirm`
-        : AUTH_URLS.admin.authConfirm;
+        : AUTH_URLS.member.authConfirm;
 
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,

@@ -198,7 +198,8 @@ export default function Users() {
         body: { advisor_ids: ids },
       });
       if (error) throw error;
-      if (data && !data.success) throw new Error(data.error || 'Reset failed');
+      if (!data) throw new Error('No response received');
+      if (!data.success) throw new Error(data.error || 'Reset failed');
       setMassResetResult({
         sent: data.sent ?? 0,
         errors: data.errors?.length ?? 0,

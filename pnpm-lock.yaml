@@ -906,25 +906,6 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0(eslint@9.39.2(jiti@1.21.7))
 
-  packages/integrations:
-    dependencies:
-      '@mpbhealth/database':
-        specifier: workspace:*
-        version: link:../database
-    devDependencies:
-      '@mpbhealth/typescript-config':
-        specifier: workspace:*
-        version: link:../typescript-config
-      '@types/node':
-        specifier: ^20.19.35
-        version: 20.19.35
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
   packages/plans-core:
     dependencies:
       '@mpbhealth/database':
@@ -933,22 +914,6 @@ importers:
       '@supabase/supabase-js':
         specifier: 'catalog:'
         version: 2.98.0
-    devDependencies:
-      '@mpbhealth/typescript-config':
-        specifier: workspace:*
-        version: link:../typescript-config
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
-  packages/services:
-    dependencies:
-      '@mpbhealth/database':
-        specifier: workspace:*
-        version: link:../database
     devDependencies:
       '@mpbhealth/typescript-config':
         specifier: workspace:*

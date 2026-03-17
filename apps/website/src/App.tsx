@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import { AUTH_URLS } from '@mpbhealth/config';
 import { lazyAuto } from './utils/lazyUtils';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -73,21 +74,6 @@ const NewsletterUnsubscribe = lazyAuto(() => import('./pages/NewsletterUnsubscri
 
 // Member Portal
 const MemberDashboard = lazyAuto(() => import('./pages/MemberDashboard'));
-const MemberPortalDashboard = lazyAuto(() => import('./pages/member/MemberPortalDashboard'));
-const Claims = lazyAuto(() => import('./pages/member/Claims'));
-const MemberFormsIndex = lazyAuto(() => import('./pages/member/MemberFormsIndex'));
-const MemberPortal = lazyAuto(() => import('./pages/MemberPortal'));
-
-// Member Forms
-const MemberFeedbackProtected = lazyAuto(() => import('./pages/member/forms/MemberFeedbackProtected'));
-const ReferFriendProtected = lazyAuto(() => import('./pages/member/forms/ReferFriendProtected'));
-const ReviewUsProtected = lazyAuto(() => import('./pages/member/forms/ReviewUsProtected'));
-const ChangeAdvisorProtected = lazyAuto(() => import('./pages/member/forms/ChangeAdvisorProtected'));
-const WelcomeCallProtected = lazyAuto(() => import('./pages/member/forms/WelcomeCallProtected'));
-const WelcomeSurveyProtected = lazyAuto(() => import('./pages/member/forms/WelcomeSurveyProtected'));
-
-// Forms
-const EmployerFormsIndex = lazyAuto(() => import('./pages/EmployerFormsIndex'));
 const MemberFormsIndexPublic = lazyAuto(() => import('./pages/MemberFormsIndex'));
 const ListBillSetupForm = lazyAuto(() => import('./pages/forms/ListBillSetupForm'));
 const ListBillConversionForm = lazyAuto(() => import('./pages/forms/ListBillConversionForm'));
@@ -113,23 +99,8 @@ const ResetPassword = lazyAuto(() => import('./pages/ResetPassword'));
 const ForgotPassword = lazyAuto(() => import('./pages/ForgotPassword'));
 const MFAEnrollment = lazyAuto(() => import('./pages/MFAEnrollment'));
 
-// Advisor Portal
+// Advisor Directory (public page on website)
 const AdvisorDirectory = lazyAuto(() => import('./pages/AdvisorDirectory'));
-const AdvisorLogin = lazyAuto(() => import('./pages/advisor/AdvisorLogin'));
-const AdvisorOnboarding = lazyAuto(() => import('./pages/advisor/AdvisorOnboarding'));
-const AdvisorDashboard = lazyAuto(() => import('./pages/advisor/AdvisorDashboard'));
-const AdvisorTraining = lazyAuto(() => import('./pages/advisor/AdvisorTraining'));
-const TrainingUniversity = lazyAuto(() => import('./pages/advisor/TrainingUniversity'));
-const TrainingModuleView = lazyAuto(() => import('./pages/advisor/TrainingModuleView'));
-const SOPLibrary = lazyAuto(() => import('./pages/advisor/SOPLibrary'));
-const AdvisorProfile = lazyAuto(() => import('./pages/advisor/AdvisorProfile'));
-const AdvisorContentHub = lazyAuto(() => import('./pages/advisor/AdvisorContentHub'));
-const AdvisorContentDetail = lazyAuto(() => import('./pages/advisor/AdvisorContentDetail'));
-const AdvisorBulletins = lazyAuto(() => import('./pages/advisor/AdvisorBulletins'));
-const AdvisorMeetings = lazyAuto(() => import('./pages/advisor/AdvisorMeetings'));
-const AdvisorForms = lazyAuto(() => import('./pages/advisor/AdvisorForms'));
-const AdvisorResourcesLanding = lazyAuto(() => import('./pages/advisor/AdvisorResourcesLanding'));
-const AdvisorPlanDetail = lazyAuto(() => import('./pages/advisor/AdvisorPlanDetail'));
 
 // Admin Portal
 const AdminLogin = lazyAuto(() => import('./pages/admin/AdminLogin'));
@@ -248,6 +219,20 @@ const RecoveryHashRedirector: React.FC = () => {
   return null;
 };
 
+const AdvisorPortalRedirect: React.FC = () => {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const advisorPath = location.pathname === '/advisor'
+      ? ''
+      : location.pathname.replace(/^\/advisor/, '');
+
+    window.location.replace(`${AUTH_URLS.advisor.origin}${advisorPath}${location.search}${location.hash}`);
+  }, [location.hash, location.pathname, location.search]);
+
+  return null;
+};
+
 const App = () => {
   React.useEffect(() => {
     // Initialize Google Analytics and other tracking scripts
@@ -344,27 +329,9 @@ const App = () => {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/auth/confirm" element={<AuthConfirm />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/advisor/login" element={<AdvisorLogin />} />
+                  <Route path="/advisor/*" element={<AdvisorPortalRedirect />} />
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/mfa-enrollment" element={<MFAEnrollment />} />
-
-                  {/* Advisor Routes */}
-                  <Route path="/advisor/onboarding" element={<AdvisorOnboarding />} />
-                  <Route path="/advisor/dashboard" element={<AdvisorDashboard />} />
-                  <Route path="/advisor" element={<AdvisorDashboard />} />
-                  <Route path="/advisor/bulletins" element={<AdvisorBulletins />} />
-                  <Route path="/advisor/university" element={<TrainingUniversity />} />
-                  <Route path="/advisor/training" element={<AdvisorTraining />} />
-                  <Route path="/advisor/training/module/:moduleId" element={<TrainingModuleView />} />
-                  <Route path="/advisor/sops" element={<SOPLibrary />} />
-                  <Route path="/advisor/profile" element={<AdvisorProfile />} />
-                  <Route path="/advisor/content" element={<AdvisorContentHub />} />
-                  <Route path="/advisor/content/:slug" element={<AdvisorContentDetail />} />
-                  <Route path="/advisor/resources" element={<AdvisorResourcesLanding />} />
-                  <Route path="/advisor/resources/:slug" element={<AdvisorPlanDetail />} />
-                  <Route path="/advisor/meetings" element={<AdvisorMeetings />} />
-                  <Route path="/advisor/forms" element={<AdvisorForms />} />
-                  <Route path="/advisor/toolkit" element={<AdvisorForms />} />
 
                   {/* Admin Training Management */}
                   <Route

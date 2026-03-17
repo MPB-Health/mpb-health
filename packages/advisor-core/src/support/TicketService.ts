@@ -172,6 +172,16 @@ export interface AdminTicketListResult {
 
 export interface AdminListTicketsOptions extends ListTicketsOptions {
   search?: string;
+  requesterId?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface TicketRequester {
+  id: string;
+  name: string;
+  email: string;
+  agent_id?: string | null;
 }
 
 export interface CreateTicketOptions {
@@ -420,6 +430,9 @@ export class TicketService {
       status: opts.status,
       priority: opts.priority,
       search: opts.search,
+      requester_id: opts.requesterId,
+      sort_by: opts.sortBy,
+      sort_order: opts.sortOrder,
       page: opts.page ?? 1,
       per_page: opts.perPage ?? 20,
     });
@@ -460,6 +473,98 @@ export class TicketService {
       priority: opts.priority,
     });
     return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
+  }
+
+  // ── Bulk admin operations ───────────────────────────────────────────────
+
+  /**
+   * Update status/priority on multiple tickets at once.
+   * Uses sequential `update_ticket` calls because the proxy doesn't expose
+   * a dedicated bulk endpoint. Returns the number of successfully updated tickets.
+   */
+  async bulkUpdateTickets(
+    ticketIds: string[],
+    opts: UpdateTicketOptions,
+  ): Promise<number> {
+    let count = 0;
+    const results = await Promise.allSettled(
+      ticketIds.map((id) =>
+        this.call<{ success: boolean }>('update_ticket', {
+          ticket_id: id,
+          status: opts.status,
+          priority: opts.priority,
+        }),
+      ),
+    );
+    for (const r of results) {
+      if (r.status === 'fulfilled') count++;
+    }
+    return count;
+  }
+
+  /**
+   * Delete multiple tickets. Closes them since the proxy doesn't support
+   * hard-delete; this is the safest admin bulk action.
+   */
+  async bulkDeleteTickets(ticketIds: string[]): Promise<number> {
+    return this.bulkUpdateTickets(ticketIds, { status: 'closed' });
+  }
+
+  /**
+   * Close all non-closed tickets. Fetches open/pending/new tickets and
+   * closes them in bulk.
+   */
+  async bulkCloseAll(): Promise<number> {
+    const openStatuses: TicketStatus[] = ['new', 'open', 'pending', 'resolved'];
+    let totalClosed = 0;
+
+    for (const status of openStatuses) {
+      // Fetch up to 200 tickets per status
+      const result = await this.getAllTickets({ status, perPage: 200 });
+      if (result.tickets.length === 0) continue;
+      const ids = result.tickets.map((t) => t.id);
+      totalClosed += await this.bulkUpdateTickets(ids, { status: 'closed' });
+    }
+
+    return totalClosed;
+  }
+
+  /**
+   * Get distinct requesters from admin ticket list.
+   * Extracts unique advisors from the full ticket list.
+   */
+  async getRequesters(): Promise<TicketRequester[]> {
+    const result = await this.getAllTickets({ perPage: 200 });
+    const seen = new Map<string, TicketRequester>();
+    for (const t of result.tickets) {
+      if (!seen.has(t.requester_email)) {
+        seen.set(t.requester_email, {
+          id: t.requester_email,
+          name: t.requester_name,
+          email: t.requester_email,
+          agent_id: t.requester_agent_id,
+        });
+      }
+    }
+    return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Knowledge base — returns resolved tickets as searchable articles.
+   * Re-uses the admin list endpoint with a resolved/closed status filter.
+   */
+  async getKnowledgeBase(opts: {
+    search?: string;
+    category?: string;
+    page?: number;
+    perPage?: number;
+  } = {}): Promise<AdminTicketListResult> {
+    return this.getAllTickets({
+      status: 'resolved',
+      search: opts.search,
+      page: opts.page,
+      perPage: opts.perPage,
+    });
   }
 
   /** Fire-and-forget warm-up ping to keep the ticket-proxy edge function warm.

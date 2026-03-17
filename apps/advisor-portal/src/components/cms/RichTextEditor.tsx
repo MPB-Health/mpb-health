@@ -51,13 +51,13 @@ const createImageUploadExtension = (
         new Plugin({
           key: new PluginKey('imageUpload'),
           props: {
-            handleDrop(view, event, _slice, moved) {
+            handleDrop(view: any, event: DragEvent, _slice: any, moved: boolean) {
               if (moved || !event.dataTransfer?.files.length) return false;
-              const images = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+              const images = Array.from(event.dataTransfer.files).filter((f: File) => f.type.startsWith('image/'));
               if (images.length === 0) return false;
               event.preventDefault();
               onUploadStart?.();
-              images.forEach(async (image) => {
+              images.forEach(async (image: File) => {
                 const validation = validateImageFile(image);
                 if (!validation.valid) { onUploadEnd?.(); return; }
                 const result = await uploadFn(image);
@@ -70,12 +70,12 @@ const createImageUploadExtension = (
               });
               return true;
             },
-            handlePaste(view, event) {
-              const images = Array.from(event.clipboardData?.items || []).filter(i => i.type.startsWith('image/'));
+            handlePaste(view: any, event: ClipboardEvent) {
+              const images = Array.from(event.clipboardData?.items || []).filter((i: DataTransferItem) => i.type.startsWith('image/'));
               if (images.length === 0) return false;
               event.preventDefault();
               onUploadStart?.();
-              images.forEach(async (item) => {
+              images.forEach(async (item: DataTransferItem) => {
                 const file = item.getAsFile();
                 if (!file) { onUploadEnd?.(); return; }
                 const validation = validateImageFile(file);
@@ -259,7 +259,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
       createImageUploadExtension(handleImageUpload, () => setIsUploading(true), () => setIsUploading(false)),
     ],
     content,
-    onUpdate: ({ editor }) => { const html = editor.getHTML(); onChange(html); setSourceContent(html); },
+    onUpdate: ({ editor: e }) => { const html = (e as Editor).getHTML(); onChange(html); setSourceContent(html); },
     editorProps: { attributes: { class: 'editor-content focus:outline-none min-h-[300px] p-4' } },
   });
 

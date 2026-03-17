@@ -948,7 +948,8 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers },
     );
   } catch (error) {
-    log.error("Ticket proxy error", { correlationId, error });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    log.error(`Ticket proxy error [${correlationId}]: ${errMsg}`);
     return new Response(
       JSON.stringify({
         success: false,

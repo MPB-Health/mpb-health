@@ -74,6 +74,21 @@ const NewsletterUnsubscribe = lazyAuto(() => import('./pages/NewsletterUnsubscri
 
 // Member Portal
 const MemberDashboard = lazyAuto(() => import('./pages/MemberDashboard'));
+const MemberPortalDashboard = lazyAuto(() => import('./pages/member/MemberPortalDashboard'));
+const Claims = lazyAuto(() => import('./pages/member/Claims'));
+const MemberFormsIndex = lazyAuto(() => import('./pages/member/MemberFormsIndex'));
+const MemberPortal = lazyAuto(() => import('./pages/MemberPortal'));
+
+// Member Forms
+const MemberFeedbackProtected = lazyAuto(() => import('./pages/member/forms/MemberFeedbackProtected'));
+const ReferFriendProtected = lazyAuto(() => import('./pages/member/forms/ReferFriendProtected'));
+const ReviewUsProtected = lazyAuto(() => import('./pages/member/forms/ReviewUsProtected'));
+const ChangeAdvisorProtected = lazyAuto(() => import('./pages/member/forms/ChangeAdvisorProtected'));
+const WelcomeCallProtected = lazyAuto(() => import('./pages/member/forms/WelcomeCallProtected'));
+const WelcomeSurveyProtected = lazyAuto(() => import('./pages/member/forms/WelcomeSurveyProtected'));
+
+// Forms
+const EmployerFormsIndex = lazyAuto(() => import('./pages/EmployerFormsIndex'));
 const MemberFormsIndexPublic = lazyAuto(() => import('./pages/MemberFormsIndex'));
 const ListBillSetupForm = lazyAuto(() => import('./pages/forms/ListBillSetupForm'));
 const ListBillConversionForm = lazyAuto(() => import('./pages/forms/ListBillConversionForm'));

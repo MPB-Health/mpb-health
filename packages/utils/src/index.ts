@@ -2,7 +2,7 @@
 export { formatCurrency, formatPhone, formatDate, formatNumber } from './formatters';
 
 // Validators
-export { isValidEmail, isValidPhone } from './validators';
+export { isValidEmail, isValidPhone, isValidZipCode } from './validators';
 
 // CSV utilities
 export { parseCSV, generateCSV, downloadCSV } from './csv';
@@ -18,15 +18,20 @@ export {
   sanitizeInput,
   stripHtml,
   sanitizeFilename,
+  sanitizeSlug,
+  sanitizeRichText,
   sanitizePHI,
   sanitizeUrl,
+  detectXSSPatterns,
+  sanitizeWithDetection,
+  type XSSDetectionResult,
 } from './sanitizer';
 
 // String utilities
 export { slugify, truncate, capitalize } from './strings';
 
 // Date utilities
-export { parseDate, formatRelativeTime } from './dates';
+export { parseDate, formatRelativeTime, isDateInPast, isDateInFuture } from './dates';
 
 // Logger
 export { logger, createClientLogger, type LogLevel } from './logger';

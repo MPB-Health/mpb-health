@@ -92,23 +92,26 @@ export default function ChangePassword() {
       }
       if (lastError) throw lastError;
 
-      // Clear the must_change_password flag (non-blocking — don't fail the flow)
+      // Clear the must_change_password flag BEFORE refreshing profile.
+      // This MUST complete before refreshProfile() or MainLayout will
+      // see the old flag and redirect back to /change-password (loop).
       if (profile?.id) {
-        void (async () => {
-          try {
-            const { error: flagError } = await supabase
-              .from('advisor_profiles')
-              .update({ must_change_password: false })
-              .eq('id', profile.id);
-            if (flagError) console.error('Failed to clear must_change_password flag:', flagError);
-          } catch {
-            // Non-blocking
-          }
-        })();
+        try {
+          const { error: flagError } = await supabase
+            .from('advisor_profiles')
+            .update({ must_change_password: false })
+            .eq('id', profile.id);
+          if (flagError) console.error('Failed to clear must_change_password flag:', flagError);
+        } catch {
+          // If this fails, still continue — user changed their password
+        }
       }
 
       setSuccess(true);
       toast.success('Password updated successfully!');
+
+      // Refresh profile so context picks up must_change_password=false
+      await refreshProfile().catch(() => {});
 
       // Sync password to ITSTS (deferred fire-and-forget — avoids 503 blocking UX)
       const syncToItsts = async () => {
@@ -130,8 +133,6 @@ export default function ChangePassword() {
         }
       };
       setTimeout(() => syncToItsts().catch(() => {}), 3000);
-
-      refreshProfile().catch(() => {});
 
       setTimeout(() => navigate('/', { replace: true }), 1500);
     } catch (err) {

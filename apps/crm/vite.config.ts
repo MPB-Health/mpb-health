@@ -63,7 +63,7 @@ export default defineConfig(({ mode }) => {
             // Drag and drop
             'dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
             // UI libraries
-            'ui-vendor': ['lucide-react', 'clsx', 'tailwind-merge'],
+            'ui-vendor': ['lucide-react'],
             // Toast notifications
             'toast': ['react-hot-toast'],
             // Date utilities

@@ -34,6 +34,7 @@ const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
   admin: 'Admin',
   advisor: 'Advisor',
   member: 'Member',
+  crm_user: 'CRM User',
 };
 
 const PORTAL_ROLE_COLORS: Record<PortalRole, string> = {
@@ -41,6 +42,7 @@ const PORTAL_ROLE_COLORS: Record<PortalRole, string> = {
   admin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   advisor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   member: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  crm_user: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
 };
 
 const ADVISOR_STATUS_OPTIONS: AdvisorProfileSummary['status'][] = [
@@ -810,13 +812,13 @@ export default function UserDetail() {
                     <label key={perm.id} className="flex items-start space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={formData.permissions.includes(perm.name)}
-                        onChange={() => togglePermission(perm.name)}
+                        checked={formData.permissions.includes(perm.key)}
+                        onChange={() => togglePermission(perm.key)}
                         disabled={!editMode}
                         className="mt-1 w-4 h-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                       />
                       <div>
-                        <p className="text-sm font-medium text-th-text-secondary">{perm.name}</p>
+                        <p className="text-sm font-medium text-th-text-secondary">{perm.key}</p>
                         <p className="text-xs text-th-text-tertiary">{perm.description}</p>
                       </div>
                     </label>

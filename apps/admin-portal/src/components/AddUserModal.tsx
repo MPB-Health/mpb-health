@@ -265,12 +265,12 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
                           >
                             <input
                               type="checkbox"
-                              checked={form.permissions.includes(perm.name)}
-                              onChange={() => togglePermission(perm.name)}
+                              checked={form.permissions.includes(perm.key)}
+                              onChange={() => togglePermission(perm.key)}
                               className="mt-0.5 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                             />
                             <div>
-                              <p className="text-th-text-secondary">{perm.name}</p>
+                              <p className="text-th-text-secondary">{perm.key}</p>
                               {perm.description && (
                                 <p className="text-xs text-th-text-tertiary">
                                   {perm.description}

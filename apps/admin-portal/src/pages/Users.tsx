@@ -21,12 +21,11 @@ import { useAdmin } from '../contexts/AdminContext';
 import AddUserModal from '../components/AddUserModal';
 import InviteUserModal from '../components/InviteUserModal';
 
-type PortalTab = 'admin' | 'advisor' | 'crm' | 'member' | 'all';
+type PortalTab = 'admin' | 'advisor' | 'member' | 'all';
 
 const PORTAL_TABS: { id: PortalTab; label: string }[] = [
   { id: 'admin', label: 'Admin' },
   { id: 'advisor', label: 'Advisor' },
-  { id: 'crm', label: 'CRM' },
   { id: 'member', label: 'Member' },
   { id: 'all', label: 'All Portals' },
 ];
@@ -35,7 +34,6 @@ const PORTAL_ROLE_COLORS: Record<string, string> = {
   super_admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
   admin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   advisor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  crm_user: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
   member: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
 };
 
@@ -72,7 +70,7 @@ export default function Users() {
 
   // Admin portal users (from admin_users table)
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
-  // Cross-portal users (via get_all_users_with_roles RPC)
+  // Cross-portal users (from users_with_roles view)
   const [crossUsers, setCrossUsers] = useState<CrossPortalUser[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -124,8 +122,6 @@ export default function Users() {
       loadAdminUsers();
     } else if (activeTab === 'advisor') {
       loadCrossPortalUsers('advisor');
-    } else if (activeTab === 'crm') {
-      loadCrossPortalUsers('crm_user');
     } else if (activeTab === 'member') {
       loadCrossPortalUsers('member');
     } else {

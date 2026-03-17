@@ -103,7 +103,7 @@ port = 54324
 [storage]
 enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
-file_size_limit = "200MiB"
+file_size_limit = "50MiB"
 
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]
@@ -145,12 +145,9 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-# IMPORTANT: These values mirror production. DO NOT change to localhost/dev values.
-# Running `supabase config push` with local dev values would overwrite production auth config
-# and break all redirect URLs for every portal (advisor, admin, crm, member).
-site_url = "https://mpb.health/"
+site_url = "http://127.0.0.1:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://mpb.health/**", "https://www.mpb.health/**", "https://advisor.mpb.health/**", "https://admin.mpb.health/**", "https://crm.mpbhealth.com/**", "https://crm.mpb.health/**", "https://app.mpbhealth.com/**", "https://app.mpb.health/**"]
+additional_redirect_urls = ["https://127.0.0.1:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:<port>/auth/v1).
@@ -169,31 +166,28 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-# Matches production value (6). Advisors set passwords via reset flow, not signup form.
-minimum_password_length = 6
+minimum_password_length = 12
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
-# Production uses no enforced complexity (empty string) — advisors receive reset links.
-password_requirements = ""
+# HIPAA/SOC 2: Require uppercase, lowercase, digits, and symbols
+password_requirements = "lower_upper_letters_digits_symbols"
 
 [auth.rate_limit]
-# NOTE: Values below match production (dtmnkzllidaiqyheguhl) as of 2026-03-16.
-# Run `supabase config push --project-ref dtmnkzllidaiqyheguhl --dry-run` before any push
-# to verify no unintended changes to sessions/site_url/redirects would go to production.
+# SOC 2 CC6.1: Strict rate limiting for brute force protection
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
 email_sent = 2
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
-sms_sent = 30
-# Number of anonymous sign-ins that can be made per hour per IP address. (Min 1 required)
-anonymous_users = 30
+sms_sent = 10
+# Number of anonymous sign-ins that can be made per hour per IP address.
+anonymous_users = 0
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
-token_refresh = 150
+token_refresh = 30
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address.
-sign_in_sign_ups = 30
+sign_in_sign_ups = 10
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
-token_verifications = 30
-# Number of Web3 logins that can be made in a 5 minute interval per IP address. (Min 1 required)
-web3 = 30
+token_verifications = 10
+# Number of Web3 logins that can be made in a 5 minute interval per IP address.
+web3 = 0
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
 # SOC 2 CC6.1: CAPTCHA for bot prevention on auth endpoints
@@ -214,7 +208,7 @@ enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = true
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "1m"
+max_frequency = "1s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
@@ -256,11 +250,12 @@ max_frequency = "5s"
 # 4152127777 = "123456"
 
 # Configure logged in session timeouts.
-# NOTE: Production currently has these disabled ("0s" = no forced logout).
-# Set to "0s" to match production and avoid forcing 190 active advisors to re-login on push.
+# HIPAA §164.312(a)(1): Session management with inactivity timeout
 [auth.sessions]
-timebox = "0s"
-inactivity_timeout = "0s"
+# Force log out after the specified duration (max 8 hours for HIPAA).
+timebox = "8h"
+# Force log out if the user has been inactive longer than the specified duration (15 min HIPAA).
+inactivity_timeout = "15m"
 
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
 # [auth.hook.before_user_created]
@@ -381,24 +376,6 @@ verify_jwt = true
 # requests never carry a user JWT. Disable gateway JWT verification and rely
 # on the function's own secret/signature check instead.
 [functions.send-ticket-notification]
-verify_jwt = false
-
-# push-service is called server-side by send-ticket-notification (via service
-# role key). Disable gateway JWT verification — the function validates the
-# service role key itself (line 192). User-facing actions still go through
-# verifyAuth() internally.
-[functions.push-service]
-verify_jwt = false
-
-# mass-password-reset is called from the admin portal (super_admin only). JWT is verified
-# by the function itself after gateway validation.
-[functions.mass-password-reset]
-verify_jwt = true
-
-# advisor-forgot-password is a public endpoint — called from the unauthenticated
-# forgot-password page. No JWT required; the function uses Admin API internally
-# and rate-limits by IP to prevent abuse.
-[functions.advisor-forgot-password]
 verify_jwt = false
 
 # [edge_runtime.secrets]

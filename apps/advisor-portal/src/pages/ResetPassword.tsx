@@ -1,18 +1,34 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 
+/**
+ * ResetPassword — handles two recovery flows:
+ *
+ * 1. token_hash flow (preferred, scanner-proof):
+ *    URL: /reset-password?token_hash=xxx&type=recovery
+ *    Calls supabase.auth.verifyOtp() to exchange the token for a session.
+ *    Email scanners fetch HTML but don't execute JS, so the token survives.
+ *
+ * 2. Legacy hash flow (Supabase default):
+ *    URL: /reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+ *    Supabase client auto-detects and processes via detectSessionInUrl.
+ *    Falls back to PASSWORD_RECOVERY auth state event.
+ */
 export default function ResetPassword() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const sessionEstablished = useRef(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -21,46 +37,72 @@ export default function ResetPassword() {
       return;
     }
 
-    let hasValidSession = false;
+    let cancelled = false;
 
-    // Listen FIRST so we don't miss events that fire during checkSession()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      // Accept both PASSWORD_RECOVERY and SIGNED_IN — Supabase can fire either
-      // (or both) when exchanging the recovery token from the email link.
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        hasValidSession = true;
+    const verifyToken = async () => {
+      // ── Flow 1: token_hash in query params (scanner-proof) ──
+      const tokenHash = searchParams.get('token_hash');
+      const type = searchParams.get('type');
+
+      if (tokenHash && type === 'recovery') {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        });
+
+        if (cancelled) return;
+
+        if (otpError) {
+          const msg = otpError.message.includes('expired')
+            ? 'This password reset link has expired. Please request a new one.'
+            : 'This password reset link is invalid or has already been used. Please request a new one.';
+          toast.error(msg);
+          navigate('/forgot-password', { replace: true });
+          return;
+        }
+
+        sessionEstablished.current = true;
+        setVerifying(false);
+        return;
       }
-    });
 
-    const checkSession = async () => {
+      // ── Flow 2: Hash-based tokens (legacy Supabase default) ──
+      // Supabase client auto-processes hash fragments via detectSessionInUrl.
+      // Check for existing session first.
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          hasValidSession = true;
+          sessionEstablished.current = true;
+          if (!cancelled) setVerifying(false);
           return;
         }
-
-        // Give the auth state change listener time to fire — use 4 s to handle
-        // slow mobile connections where the token exchange can take a moment.
-        setTimeout(() => {
-          if (!hasValidSession) {
-            toast.error('Invalid or expired reset link');
-            navigate('/forgot-password');
-          }
-        }, 4000);
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        toast.error('Failed to verify session');
-        navigate('/forgot-password');
+        if (err instanceof Error && err.name === 'AbortError') return;
       }
+
+      // Wait for PASSWORD_RECOVERY event from hash processing
+      setTimeout(() => {
+        if (!cancelled && !sessionEstablished.current) {
+          toast.error('Invalid or expired reset link');
+          navigate('/forgot-password', { replace: true });
+        }
+      }, 3000);
     };
 
-    checkSession();
+    verifyToken();
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        sessionEstablished.current = true;
+        setVerifying(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [navigate, searchParams]);
 
   // Password strength checks
   const passwordChecks = {
@@ -112,19 +154,6 @@ export default function ResetPassword() {
         }).catch(() => {});
       }
 
-      // Clear must_change_password flag so the advisor isn't re-routed to
-      // /change-password after logging in with their new password.
-      // Must happen BEFORE signOut() while the session is still valid.
-      if (user?.id) {
-        await supabase
-          .from('advisor_profiles')
-          .update({ must_change_password: false })
-          .eq('id', user.id)
-          .then(({ error: flagErr }) => {
-            if (flagErr) console.error('Failed to clear must_change_password:', flagErr);
-          });
-      }
-
       setSuccess(true);
       toast.success('Password updated successfully!');
 
@@ -145,6 +174,19 @@ export default function ResetPassword() {
       setLoading(false);
     }
   };
+
+  // Verifying token state
+  if (verifying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+        <div className="text-center">
+          <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-700">Verifying your reset link...</p>
+          <p className="text-sm text-gray-500 mt-1">Please wait a moment.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (

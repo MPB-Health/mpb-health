@@ -1,10 +1,25 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { LoginLayout } from '@mpbhealth/ui';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Show success toast when redirected after a successful password reset
+  useEffect(() => {
+    if (searchParams.get('reset') === '1') {
+      toast.success('Password reset successfully. Please sign in with your new password.', {
+        duration: 5000,
+        id: 'reset-success', // prevent duplicates
+      });
+      // Clean the URL without triggering a re-render loop
+      searchParams.delete('reset');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
   const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -58,7 +73,7 @@ export default function Login() {
       formFooter={
         <p className="text-center text-sm text-th-text-tertiary">
           Need help?{' '}
-          <a href="/contact" className="text-th-accent-600 hover:text-th-accent-700 font-medium">
+          <a href="#" className="text-th-accent-600 hover:text-th-accent-700 font-medium">
             Contact Support
           </a>
         </p>

@@ -9,7 +9,6 @@
 // deno-lint-ignore-file
 // @ts-types="npm:@supabase/supabase-js@2"
 import { type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { getCorsHeaders } from "./cors.ts";
 
 // ============================================================================
 // Rate Limiter (in-memory, per-instance)
@@ -40,12 +39,10 @@ const DEFAULT_RATE_LIMIT: RateLimitConfig = {
 /**
  * Check if a request should be rate limited.
  * Returns null if allowed, or a Response if rate limited.
- * When req is provided, CORS headers are added so browsers can read the error.
  */
 export function checkRateLimit(
   identifier: string,
-  config: RateLimitConfig = DEFAULT_RATE_LIMIT,
-  req?: Request
+  config: RateLimitConfig = DEFAULT_RATE_LIMIT
 ): Response | null {
   const key = `${config.keyPrefix}:${identifier}`;
   const now = Date.now();
@@ -69,22 +66,21 @@ export function checkRateLimit(
   entry.count++;
   if (entry.count > config.maxRequests) {
     const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "Retry-After": String(retryAfter),
-      "X-RateLimit-Limit": String(config.maxRequests),
-      "X-RateLimit-Remaining": "0",
-      "X-RateLimit-Reset": String(Math.ceil(entry.resetAt / 1000)),
-    };
-    if (req) {
-      Object.assign(headers, getCorsHeaders(req));
-    }
     return new Response(
       JSON.stringify({
         error: "Too many requests",
         retryAfter,
       }),
-      { status: 429, headers }
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(retryAfter),
+          "X-RateLimit-Limit": String(config.maxRequests),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Math.ceil(entry.resetAt / 1000)),
+        },
+      }
     );
   }
 

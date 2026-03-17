@@ -9,28 +9,27 @@
    Brand palette: #0A4E8E, #0C71C3, #A4CC43, #E2EAF0, #0E2D41
    ============================================================================ */
 
-/* Use `html:root` (specificity 0,1,1) to beat theme-tokens.css `:root` (0,1,0).
-   This guarantees our overrides always win regardless of CSS load order. */
-html:root {
-  /* Accent palette — MPB Health brand blue, refined for premium feel */
-  --accent-50: 239 246 255;
-  --accent-100: 219 234 254;
-  --accent-200: 191 219 254;
-  --accent-300: 147 197 253;
-  --accent-400: 96 165 250;
+/* Use `html` (same specificity as :root but declared later) so these values
+   always beat the dark --sidebar-bg from the imported theme-tokens.css,
+   regardless of whether dark mode is active. */
+html {
+  --accent-50: 232 244 253;
+  --accent-100: 209 233 251;
+  --accent-200: 163 211 247;
+  --accent-300: 117 189 243;
+  --accent-400: 71 167 239;
   --accent-500: 12 113 195;
-  --accent-600: 10 88 156;
-  --accent-700: 10 78 142;
-  --accent-800: 14 64 118;
-  --accent-900: 8 51 97;
+  --accent-600: 10 78 142;
+  --accent-700: 15 101 161;
+  --accent-800: 10 78 142;
+  --accent-900: 8 61 113;
 
-  /* Sidebar — icy white with a hint of blue, premium feel */
-  --sidebar-bg: 248 250 255;
-  --sidebar-hover: 237 242 254;
-  --sidebar-text: 71 85 105;
+  /* Sidebar — always white with dark readable text */
+  --sidebar-bg: 255 255 255;
+  --sidebar-hover: 241 245 249;
+  --sidebar-text: 51 65 85;
   --sidebar-text-active: 15 23 42;
   --sidebar-active-bg: 12 113 195;
-  --sidebar-border: 226 232 248;
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -41,14 +40,14 @@ html:root {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Dark mode: keep sidebar light — advisor portal always uses a light sidebar. */
-html:root.dark {
-  --sidebar-bg: 248 250 255;
-  --sidebar-hover: 237 242 254;
-  --sidebar-text: 71 85 105;
+/* Dark mode: keep sidebar white — the advisor portal uses a light sidebar
+   in all themes so text always stays visible. */
+html.dark {
+  --sidebar-bg: 255 255 255;
+  --sidebar-hover: 241 245 249;
+  --sidebar-text: 51 65 85;
   --sidebar-text-active: 15 23 42;
   --sidebar-active-bg: 12 113 195;
-  --sidebar-border: 226 232 248;
 }
 
 body {
@@ -107,16 +106,6 @@ body {
   background-color: var(--lane-color);
 }
 
-/* Brand preview - uses CSS custom properties for dynamic theming (set via JS) */
-.brand-preview-bg {
-  background-color: var(--brand-preview-bg, #4f46e5);
-}
-
-.brand-preview-btn {
-  background-color: var(--brand-preview-btn, #818cf8);
-  color: white;
-}
-
 /* ============================================================================
    Document Card - Fix for thumbnail gap caused by text content
    The text (H3, P) was affecting thumbnail placement due to baseline alignment.
@@ -161,4 +150,18 @@ button.document-card > *,
 button[class*="document-card"] > * {
   display: block !important;
   vertical-align: top;
+}
+
+/* Ticker scroll animation for bulletin headlines */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-scroll {
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.ticker-scroll:hover {
+  animation-play-state: paused;
 }

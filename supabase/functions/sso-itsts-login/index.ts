@@ -165,15 +165,11 @@ Deno.serve(async (req: Request) => {
 
       if (createError) {
         if (createError.message?.includes("already been registered")) {
-          // Auth user exists but no profile — use O(1) email lookup instead of scanning all users
-          try {
-            const { data: existingUser } = await itstsAdmin.auth.admin.getUserByEmail(user.email!);
-            if (existingUser?.user) {
-              itstsUserId = existingUser.user.id;
-            }
-          } catch { /* getUserByEmail may not exist on older versions */ }
-          if (itstsUserId) {
-            // found — proceed below
+          // Auth user exists but no profile — find and create profile
+          const { data: users } = await itstsAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+          const existingAuth = users?.users?.find((u: any) => u.email === user.email);
+          if (existingAuth) {
+            itstsUserId = existingAuth.id;
           } else {
             log.error("Could not find ITSTS auth user after 'already registered' error", { email: user.email });
             return new Response(

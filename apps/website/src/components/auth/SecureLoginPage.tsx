@@ -135,9 +135,9 @@ export function SecureLoginPage({
       } else {
         navigate(redirectPath);
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      setError(err.message || 'An error occurred during login');
     } finally {
       setLoading(false);
     }

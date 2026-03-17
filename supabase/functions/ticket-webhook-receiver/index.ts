@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger } from "../_shared/logger.ts";
-import { checkRateLimit, getClientIdentifier, verifyHmacSignature } from "../_shared/security.ts";
+import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
 
 const log = createLogger("ticket-webhook-receiver");
 
@@ -21,12 +21,26 @@ interface TicketWebhookPayload {
 
 const WEBHOOK_SECRET = Deno.env.get("ITSTS_WEBHOOK_SECRET");
 
-async function verifyWebhookSignature(req: Request, body: string): Promise<boolean> {
+/**
+ * Constant-time comparison to prevent timing attacks on webhook signatures.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+  return result === 0;
+}
+
+function verifyWebhookSignature(req: Request): boolean {
   if (!WEBHOOK_SECRET) return false; // SECURITY: Fail closed - reject if secret not configured
   const sig = req.headers.get("x-webhook-signature");
   if (!sig) return false;
-  // Use HMAC-SHA256 of the request body instead of comparing the raw secret
-  return verifyHmacSignature(body, sig, WEBHOOK_SECRET);
+  return timingSafeEqual(sig, WEBHOOK_SECRET);
 }
 
 function getNotificationTitle(payload: TicketWebhookPayload): string {
@@ -88,13 +102,12 @@ Deno.serve(async (req: Request) => {
   });
   if (rateLimitResponse) return rateLimitResponse;
 
-  const rawBody = await req.text();
-  if (!(await verifyWebhookSignature(req, rawBody))) {
+  if (!verifyWebhookSignature(req)) {
     return new Response("Invalid signature", { status: 401 });
   }
 
   try {
-    const payload: TicketWebhookPayload = JSON.parse(rawBody);
+    const payload: TicketWebhookPayload = await req.json();
 
     if (!payload.requester_email || !payload.ticket_id) {
       return new Response(
@@ -116,14 +129,9 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Find the user by email (O(1) lookup instead of scanning all users)
-    let user: { id: string; email?: string } | undefined;
-    try {
-      const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(payload.requester_email);
-      user = existingUser?.user ?? undefined;
-    } catch {
-      user = undefined;
-    }
+    // Find the user by email
+    const { data: users } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const user = users?.users?.find((u) => u.email === payload.requester_email);
 
     if (!user) {
       log.info("User not found in monorepo, skipping notification", { email: payload.requester_email });

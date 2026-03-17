@@ -30,7 +30,7 @@ export const DEV_PORTS = {
   training: 5177,
 } as const;
 
-export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website';
+export type PortalKey = 'admin' | 'crm' | 'advisors';
 
 export interface PortalInfo {
   key: PortalKey;
@@ -54,11 +54,6 @@ export const PORTALS: Record<PortalKey, PortalInfo> = {
     name: 'Advisor Portal',
     description: 'Training, meetings, and resources',
   },
-  website: {
-    key: 'website',
-    name: 'Website Backend',
-    description: 'CMS, blog & site settings',
-  },
 } as const;
 
 /**
@@ -77,9 +72,7 @@ export function getPortalUrl(portal: keyof typeof DOMAINS): string {
     }
   }
   
-  const baseUrl = `https://${DOMAINS[portal]}`;
-  // Website backend lives at /admin on the main website domain
-  return portal === 'website' ? `${baseUrl}/admin` : baseUrl;
+  return `https://${DOMAINS[portal]}`;
 }
 
 /**
@@ -101,7 +94,6 @@ export const AUTH_URLS = {
     origin: 'https://admin.mpb.health',
     resetPassword: 'https://admin.mpb.health/reset-password',
     login: 'https://admin.mpb.health/login',
-    authConfirm: 'https://admin.mpb.health/auth/confirm',
   },
   crm: {
     origin: 'https://crm.mpbhealth.com',
@@ -126,7 +118,6 @@ export const AUTH_SAFE_REDIRECT_DESTINATIONS: ReadonlySet<string> = new Set([
   AUTH_URLS.advisor.login,
   AUTH_URLS.admin.resetPassword,
   AUTH_URLS.admin.login,
-  AUTH_URLS.admin.authConfirm,
   AUTH_URLS.crm.resetPassword,
   AUTH_URLS.crm.login,
   AUTH_URLS.member.resetPassword,

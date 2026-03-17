@@ -268,12 +268,12 @@ export default function AcceptInvite() {
         {/* Header */}
         <div className="text-center mb-8">
           <img
-            src="https://mpb.health/assets/MPB-Health-No-background.png?v=2"
+            src="https://mpb.health/assets/MPB-Health-No-background.png"
             alt="MPB Health"
             className="h-12 mx-auto mb-4"
           />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            You&apos;re Invited!
+            You're Invited!
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
             Join <strong>{invite?.org_name}</strong> as a{' '}

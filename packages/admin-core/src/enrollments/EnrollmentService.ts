@@ -1,5 +1,5 @@
 import { supabase } from '@mpbhealth/database';
-import type { Enrollment } from '../types';
+import type { Enrollment, EnrollmentDocument } from '../types';
 
 export class EnrollmentService {
   private enrollmentsTableUnavailable = false;

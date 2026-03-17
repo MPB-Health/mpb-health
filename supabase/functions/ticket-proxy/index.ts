@@ -18,15 +18,10 @@ type ProxyAction =
   | "reply"
   | "update_ticket"
   | "get_categories"
-  | "create_for_advisor"
-  | "list_kb"
-  | "list_requesters"
-  | "bulk_close"
-  | "bulk_update"
-  | "bulk_delete";
+  | "create_for_advisor";
 
-const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor", "list_requesters", "bulk_close", "bulk_update", "bulk_delete"];
-const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories", "list_kb"];
+const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor"];
+const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_COMMENT_LENGTH = 10_000;
@@ -51,10 +46,6 @@ interface ProxyRequest {
   per_page?: number;
   content?: string;
   is_internal?: boolean;
-  requester_id?: string;
-  sort_by?: string;
-  sort_order?: string;
-  ticket_ids?: string[];
 }
 
 function getItstsClient(): ReturnType<typeof createClient> | null {
@@ -109,15 +100,10 @@ async function getOrCreateItstsUserId(
   if (!createErr && created?.user?.id) {
     uid = created.user.id;
   } else {
-    // User already exists in auth but the profile row is missing.
-    // Use getUserByEmail (O(1) lookup) instead of listUsers(1000) which
-    // was scanning all auth users and blocking admin replies.
-    try {
-      const { data: existingUser } = await itstsAdmin.auth.admin.getUserByEmail(email);
-      uid = existingUser?.user?.id ?? null;
-    } catch {
-      uid = null;
-    }
+    // User may already exist in auth but the profile row is missing.
+    // Scan the first page of auth users to find them.
+    const { data: list } = await itstsAdmin.auth.admin.listUsers({ perPage: 1000 });
+    uid = list?.users?.find((u: { email?: string; id: string }) => u.email === email)?.id ?? null;
   }
 
   if (!uid) {
@@ -162,48 +148,30 @@ async function listTickets(
   return { tickets: data || [], total: count || 0, page: opts.page, per_page: opts.perPage };
 }
 
-async function listKnowledgeBase(
-  itstsAdmin: ReturnType<typeof createClient>,
-  opts: { search?: string; category?: string; page: number; perPage: number },
-) {
-  let query = itstsAdmin
-    .from("tickets")
-    .select("id, ticket_number, subject, description, status, priority, category, created_at", { count: "exact" })
-    .eq("is_imported", true)
-    .in("status", ["resolved", "closed"])
-    .order("created_at", { ascending: false })
-    .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
-
-  if (opts.category) query = query.eq("category", opts.category);
-  if (opts.search) {
-    const safe = opts.search.replace(/[%_\\]/g, "").slice(0, 100);
-    if (safe) {
-      query = query.or(`subject.ilike.%${safe}%,description.ilike.%${safe}%`);
-    }
-  }
-
-  const { data, count, error } = await query;
-  if (error) throw error;
-  return { tickets: data || [], total: count || 0, page: opts.page, per_page: opts.perPage };
-}
-
 async function getTicketDetail(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
   ticketId: string,
 ) {
-  // Fetch ticket + comments in parallel (was sequential — saves ~50-100ms)
-  const [ticketResult, commentsResult] = await Promise.all([
-    itstsAdmin.from("tickets").select("*").eq("id", ticketId).eq("requester_id", userId).single(),
-    itstsAdmin.from("ticket_comments").select("id, body, is_internal, created_at, author_id").eq("ticket_id", ticketId).eq("is_internal", false).order("created_at", { ascending: true }),
-  ]);
+  const { data: ticket, error } = await itstsAdmin
+    .from("tickets")
+    .select("*")
+    .eq("id", ticketId)
+    .eq("requester_id", userId)
+    .single();
 
-  if (ticketResult.error) throw ticketResult.error;
-  const ticket = ticketResult.data;
-  const comments = commentsResult.data || [];
+  if (error) throw error;
+
+  // Fetch comments/replies for this ticket
+  const { data: comments } = await itstsAdmin
+    .from("ticket_comments")
+    .select("id, content, is_internal, created_at, author_id")
+    .eq("ticket_id", ticketId)
+    .eq("is_internal", false)
+    .order("created_at", { ascending: true });
 
   // Fetch author names for comments
-  const authorIds = [...new Set(comments.map((c) => c.author_id).filter(Boolean))];
+  const authorIds = [...new Set((comments || []).map((c) => c.author_id).filter(Boolean))];
   let authorMap: Record<string, string> = {};
   if (authorIds.length > 0) {
     const { data: profiles } = await itstsAdmin
@@ -213,12 +181,8 @@ async function getTicketDetail(
     authorMap = Object.fromEntries((profiles || []).map((p) => [p.id, p.full_name]));
   }
 
-  const enrichedComments = comments.map((c) => ({
-    id: c.id,
-    content: c.body,
-    is_internal: c.is_internal,
-    created_at: c.created_at,
-    author_id: c.author_id,
+  const enrichedComments = (comments || []).map((c) => ({
+    ...c,
     author_name: authorMap[c.author_id] || "Support Agent",
   }));
 
@@ -269,22 +233,16 @@ async function checkAdminRole(
 
 async function listAllTickets(
   itstsAdmin: ReturnType<typeof createClient>,
-  opts: { status?: string; priority?: string; search?: string; requester_id?: string; sort_by?: string; sort_order?: string; page: number; perPage: number },
+  opts: { status?: string; priority?: string; search?: string; page: number; perPage: number },
 ) {
-  const sortColumn = ["created_at", "updated_at", "ticket_number", "priority", "status"].includes(opts.sort_by || "")
-    ? opts.sort_by!
-    : "created_at";
-  const ascending = opts.sort_order === "asc";
-
   let query = itstsAdmin
     .from("tickets")
     .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at, requester_id", { count: "exact" })
-    .order(sortColumn, { ascending })
+    .order("created_at", { ascending: false })
     .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
 
   if (opts.status) query = query.eq("status", opts.status);
   if (opts.priority) query = query.eq("priority", opts.priority);
-  if (opts.requester_id) query = query.eq("requester_id", opts.requester_id);
   if (opts.search) {
     const safe = sanitizeSearch(opts.search);
     if (safe) {
@@ -326,44 +284,52 @@ async function getTicketDetailAdmin(
   itstsAdmin: ReturnType<typeof createClient>,
   ticketId: string,
 ) {
-  // Fetch ticket + comments in parallel (was 4 sequential queries — saves ~150-300ms)
-  const [ticketResult, commentsResult] = await Promise.all([
-    itstsAdmin.from("tickets").select("*").eq("id", ticketId).single(),
-    itstsAdmin.from("ticket_comments").select("id, body, is_internal, created_at, author_id").eq("ticket_id", ticketId).order("created_at", { ascending: true }),
-  ]);
+  const { data: ticket, error } = await itstsAdmin
+    .from("tickets")
+    .select("*")
+    .eq("id", ticketId)
+    .single();
 
-  if (ticketResult.error) throw ticketResult.error;
-  const ticket = ticketResult.data;
-  const comments = commentsResult.data || [];
+  if (error) throw error;
 
-  // Fetch requester profile + comment author profiles in parallel
-  const authorIds = [...new Set(comments.map((c: { author_id: string }) => c.author_id).filter(Boolean))];
+  // Requester info
+  let requesterName = "Unknown";
+  let requesterEmail = "";
+  let requesterAgentId: string | null = null;
+  let requesterCompany: string | null = null;
+  if (ticket.requester_id) {
+    const { data: profile } = await itstsAdmin
+      .from("profiles")
+      .select("full_name, email, agent_id, company_name")
+      .eq("id", ticket.requester_id)
+      .maybeSingle();
+    if (profile) {
+      requesterName = profile.full_name;
+      requesterEmail = profile.email;
+      requesterAgentId = profile.agent_id || null;
+      requesterCompany = profile.company_name || null;
+    }
+  }
 
-  const [requesterResult, authorResult] = await Promise.all([
-    ticket.requester_id
-      ? itstsAdmin.from("profiles").select("full_name, email, agent_id, company_name").eq("id", ticket.requester_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-    authorIds.length > 0
-      ? itstsAdmin.from("profiles").select("id, full_name").in("id", authorIds)
-      : Promise.resolve({ data: [] }),
-  ]);
+  // All comments including internal notes (admin sees everything)
+  const { data: comments } = await itstsAdmin
+    .from("ticket_comments")
+    .select("id, content, is_internal, created_at, author_id")
+    .eq("ticket_id", ticketId)
+    .order("created_at", { ascending: true });
 
-  const profile = requesterResult.data;
-  const requesterName = profile?.full_name || "Unknown";
-  const requesterEmail = profile?.email || "";
-  const requesterAgentId = profile?.agent_id || null;
-  const requesterCompany = profile?.company_name || null;
+  const authorIds = [...new Set((comments || []).map((c: { author_id: string }) => c.author_id).filter(Boolean))];
+  let authorMap: Record<string, string> = {};
+  if (authorIds.length > 0) {
+    const { data: profiles } = await itstsAdmin
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", authorIds);
+    authorMap = Object.fromEntries((profiles || []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+  }
 
-  const authorMap: Record<string, string> = Object.fromEntries(
-    ((authorResult.data as { id: string; full_name: string }[]) || []).map((p) => [p.id, p.full_name]),
-  );
-
-  const enrichedComments = comments.map((c: Record<string, unknown>) => ({
-    id: c.id,
-    content: c.body,
-    is_internal: c.is_internal,
-    created_at: c.created_at,
-    author_id: c.author_id,
+  const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
+    ...c,
     author_name: authorMap[c.author_id as string] || "Support Agent",
   }));
 
@@ -405,7 +371,7 @@ async function addComment(
     .from("ticket_comments")
     .insert({
       ticket_id: ticketId,
-      body: content,
+      content,
       author_id: authorId,
       is_internal: isInternal,
     });
@@ -494,7 +460,7 @@ async function replyToTicket(
     .from("ticket_comments")
     .insert({
       ticket_id: ticketId,
-      body: content.trim(),
+      content: content.trim(),
       author_id: advisorId,
       is_internal: false,
     });
@@ -560,118 +526,26 @@ async function updateTicket(
   };
 }
 
-async function getCategories(_itstsAdmin: ReturnType<typeof createClient>) {
-  // Read from the advisor-portal ticket_categories table (dtmnkzllidaiqyheguhl)
-  // so categories are managed centrally, not derived from free-text ticket data.
-  const primaryUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const primary = createClient(primaryUrl, serviceKey);
-
-  const { data, error } = await primary
-    .from("ticket_categories")
-    .select("name")
-    .eq("is_active", true)
-    .order("display_order", { ascending: true });
+async function getCategories(itstsAdmin: ReturnType<typeof createClient>) {
+  const { data, error } = await itstsAdmin
+    .from("tickets")
+    .select("category")
+    .not("category", "is", null);
 
   if (error) throw error;
 
-  const categories = (data || []).map((r: { name: string }) => r.name);
+  const categories = [...new Set(
+    (data || []).map((t: { category: string }) => t.category).filter((c: string) => c?.trim()),
+  )].sort() as string[];
+
   return { categories };
 }
 
-async function listRequesters(
-  itstsAdmin: ReturnType<typeof createClient>,
-) {
-  // Get distinct requester_ids from tickets, then look up their profiles
-  const { data: tickets, error } = await itstsAdmin
-    .from("tickets")
-    .select("requester_id");
-  if (error) throw error;
-
-  const uniqueIds = [...new Set((tickets || []).map((t: { requester_id: string }) => t.requester_id).filter(Boolean))];
-  if (uniqueIds.length === 0) return { requesters: [] };
-
-  const { data: profiles, error: profileErr } = await itstsAdmin
-    .from("profiles")
-    .select("id, full_name, email, agent_id")
-    .in("id", uniqueIds)
-    .order("full_name", { ascending: true });
-  if (profileErr) throw profileErr;
-
-  return {
-    requesters: (profiles || []).map((p: { id: string; full_name: string; email: string; agent_id?: string }) => ({
-      id: p.id,
-      name: p.full_name || p.email,
-      email: p.email,
-      agent_id: p.agent_id || null,
-    })),
-  };
-}
-
-async function bulkCloseAll(
-  itstsAdmin: ReturnType<typeof createClient>,
-) {
-  const { count, error } = await itstsAdmin
-    .from("tickets")
-    .update({ status: "closed", updated_at: new Date().toISOString() })
-    .neq("status", "closed")
-    .select("id", { count: "exact", head: true });
-
-  if (error) throw error;
-  return { closed_count: count || 0 };
-}
-
-async function bulkUpdateTickets(
-  itstsAdmin: ReturnType<typeof createClient>,
-  ticketIds: string[],
-  opts: { status?: string; priority?: string },
-) {
-  if (!ticketIds.length) return { updated_count: 0 };
-  if (!opts.status && !opts.priority) throw new Error("At least one of status or priority is required");
-
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (opts.status) updates.status = opts.status;
-  if (opts.priority) updates.priority = opts.priority;
-
-  const { count, error } = await itstsAdmin
-    .from("tickets")
-    .update(updates)
-    .in("id", ticketIds)
-    .select("id", { count: "exact", head: true });
-
-  if (error) throw error;
-  return { updated_count: count || 0 };
-}
-
-async function bulkDeleteTickets(
-  itstsAdmin: ReturnType<typeof createClient>,
-  ticketIds: string[],
-) {
-  if (!ticketIds.length) return { deleted_count: 0 };
-
-  // Delete comments first (foreign key)
-  await itstsAdmin
-    .from("ticket_comments")
-    .delete()
-    .in("ticket_id", ticketIds);
-
-  const { count, error } = await itstsAdmin
-    .from("tickets")
-    .delete()
-    .in("id", ticketIds)
-    .select("id", { count: "exact", head: true });
-
-  if (error) throw error;
-  return { deleted_count: count || 0 };
-}
-
-// ── Email notification (fire-and-forget with timeout) ─────────────────────────
+// ── Email notification (fire-and-forget) ──────────────────────────────────────
 function fireNotification(payload: Record<string, unknown>): void {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceRoleKey) return;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10_000); // 10s timeout
   fetch(`${supabaseUrl}/functions/v1/send-ticket-notification`, {
     method: "POST",
     headers: {
@@ -679,9 +553,7 @@ function fireNotification(payload: Record<string, unknown>): void {
       "Authorization": `Bearer ${serviceRoleKey}`,
     },
     body: JSON.stringify(payload),
-    signal: controller.signal,
-  }).catch(() => { /* fire-and-forget — never block the response */ })
-    .finally(() => clearTimeout(timeoutId));
+  }).catch(() => { /* fire-and-forget — never block the response */ });
 }
 
 Deno.serve(async (req: Request) => {
@@ -693,11 +565,9 @@ Deno.serve(async (req: Request) => {
   // Accept x-request-id from the client (TicketService sends one for every
   // call) or generate a fallback. Echoed back in the response so clients can
   // match request ↔ log entry.
-  // Sanitize client-provided correlation ID to prevent log injection
-  const rawRequestId = req.headers.get("x-request-id");
-  const correlationId = rawRequestId
-    ? rawRequestId.replace(/[^a-zA-Z0-9\-_.:]/g, "").slice(0, 128)
-    : `sf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  const correlationId =
+    req.headers.get("x-request-id") ??
+    `sf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
   const corsHeaders = getCorsHeaders(req);
   const headers: Record<string, string> = {
@@ -742,16 +612,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    let body: ProxyRequest;
-    try {
-      body = await req.json();
-    } catch (parseErr) {
-      log.warn("Invalid request body", { correlationId, error: parseErr });
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid request body", correlationId }),
-        { status: 400, headers },
-      );
-    }
+    const body: ProxyRequest = await req.json();
     const { action } = body;
 
     // ── Health-check ping (no DB access required) ────────────────────────
@@ -768,19 +629,14 @@ Deno.serve(async (req: Request) => {
 
     // ── ITSTS not configured → return graceful stubs for read actions ──────
     if (!itstsAdmin) {
-      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all", "list_kb", "list_requesters", "bulk_close", "bulk_update", "bulk_delete"];
+      const READ_STUB_ACTIONS = ["list", "stats", "get_categories", "list_all", "stats_all"];
       if (READ_STUB_ACTIONS.includes(action as string)) {
         const stubs: Record<string, unknown> = {
-          list:             { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats:            { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
-          get_categories:   { categories: [] },
-          list_all:         { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats_all:        { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
-          list_kb:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          list_requesters:  { requesters: [] },
-          bulk_close:       { closed_count: 0 },
-          bulk_update:      { updated_count: 0 },
-          bulk_delete:      { deleted_count: 0 },
+          list:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+          stats:         { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+          get_categories:{ categories: [] },
+          list_all:      { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+          stats_all:     { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
         };
         return new Response(
           JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId }),
@@ -864,18 +720,9 @@ Deno.serve(async (req: Request) => {
           status: body.status,
           priority: body.priority,
           search: body.search,
-          requester_id: body.requester_id,
-          sort_by: body.sort_by,
-          sort_order: body.sort_order,
           page: body.page || 1,
           perPage: body.per_page || 20,
         });
-        break;
-      case "list_requesters":
-        result = await listRequesters(itstsAdmin);
-        break;
-      case "bulk_close":
-        result = await bulkCloseAll(itstsAdmin);
         break;
       case "detail_admin":
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
@@ -941,63 +788,33 @@ Deno.serve(async (req: Request) => {
           );
         }
         {
-          try {
-            // Fetch advisor profile first to tag ticket with correct origin + agent_id
-            const { data: ap, error: profileErr } = await itstsAdmin
-              .from("profiles")
-              .select("full_name, agent_id, company_name")
-              .eq("id", itstsUserId!)
-              .maybeSingle();
-            if (profileErr) {
-              log.error("Profile fetch failed in create", { correlationId, error: profileErr });
-              return new Response(
-                JSON.stringify({ success: false, error: "Support system temporarily unavailable. Please try again.", correlationId }),
-                { status: 503, headers },
-              );
-            }
-            result = await createTicket(itstsAdmin, itstsUserId!, {
-              subject: body.subject,
-              description: body.description ?? "",
-              category: body.category,
-              priority: body.priority,
-              origin: "advisor",
-              agentId: ap?.agent_id || null,
-            });
-            fireNotification({
-              event: "created",
-              ticket_id: result.ticket_id,
-              ticket_number: result.ticket_number,
-              subject: body.subject,
-              priority: body.priority || "medium",
-              status: "new",
-              category: body.category || null,
-              advisor_email: user.email,
-              advisor_name: ap?.full_name || user.email,
-              agent_id: ap?.agent_id || null,
-              company_name: ap?.company_name || null,
-            });
-          } catch (createErr) {
-            const errMsg = createErr instanceof Error ? createErr.message : String(createErr);
-            const pgErr = createErr && typeof createErr === "object" && "code" in createErr ? (createErr as { code?: string; message?: string }) : null;
-            log.error("Create ticket failed", { correlationId, error: errMsg, code: pgErr?.code, details: pgErr?.message });
-            // Map known DB errors to user-safe messages
-            if (pgErr?.code === "23503") {
-              return new Response(
-                JSON.stringify({ success: false, error: "Support account not found. Your account may not be synced yet — please try again in a moment or contact support.", correlationId }),
-                { status: 404, headers },
-              );
-            }
-            if (pgErr?.code === "23505" || errMsg.includes("duplicate key")) {
-              return new Response(
-                JSON.stringify({ success: false, error: "A ticket with this content was already created. Please check your tickets list.", correlationId }),
-                { status: 409, headers },
-              );
-            }
-            return new Response(
-              JSON.stringify({ success: false, error: "Could not create ticket. Please try again or contact support.", correlationId }),
-              { status: 503, headers },
-            );
-          }
+          // Fetch advisor profile first to tag ticket with correct origin + agent_id
+          const { data: ap } = await itstsAdmin
+            .from("profiles")
+            .select("full_name, agent_id, company_name")
+            .eq("id", itstsUserId!)
+            .maybeSingle();
+          result = await createTicket(itstsAdmin, itstsUserId!, {
+            subject: body.subject,
+            description: body.description,
+            category: body.category,
+            priority: body.priority,
+            origin: "advisor",
+            agentId: ap?.agent_id || null,
+          });
+          fireNotification({
+            event: "created",
+            ticket_id: result.ticket_id,
+            ticket_number: result.ticket_number,
+            subject: body.subject,
+            priority: body.priority || "medium",
+            status: "new",
+            category: body.category || null,
+            advisor_email: user.email,
+            advisor_name: ap?.full_name || user.email,
+            agent_id: ap?.agent_id || null,
+            company_name: ap?.company_name || null,
+          });
         }
         break;
       case "reply":
@@ -1037,14 +854,6 @@ Deno.serve(async (req: Request) => {
       case "get_categories":
         result = await getCategories(itstsAdmin);
         break;
-      case "list_kb":
-        result = await listKnowledgeBase(itstsAdmin, {
-          search: body.search,
-          category: body.category,
-          page: body.page || 1,
-          perPage: body.per_page || 20,
-        });
-        break;
 
       // ── Admin write actions ──
       case "update_ticket":
@@ -1076,51 +885,6 @@ Deno.serve(async (req: Request) => {
           });
         }
         break;
-      case "bulk_update": {
-        if (!body.ticket_ids?.length) {
-          return new Response(
-            JSON.stringify({ success: false, error: "ticket_ids array is required" }),
-            { status: 400, headers },
-          );
-        }
-        for (const tid of body.ticket_ids) {
-          if (!UUID_RE.test(tid)) {
-            return new Response(
-              JSON.stringify({ success: false, error: `Invalid ticket_id: ${tid}` }),
-              { status: 400, headers },
-            );
-          }
-        }
-        if (!body.status && !body.priority) {
-          return new Response(
-            JSON.stringify({ success: false, error: "At least one of status or priority is required" }),
-            { status: 400, headers },
-          );
-        }
-        result = await bulkUpdateTickets(itstsAdmin, body.ticket_ids, {
-          status: body.status,
-          priority: body.priority,
-        });
-        break;
-      }
-      case "bulk_delete": {
-        if (!body.ticket_ids?.length) {
-          return new Response(
-            JSON.stringify({ success: false, error: "ticket_ids array is required" }),
-            { status: 400, headers },
-          );
-        }
-        for (const tid of body.ticket_ids) {
-          if (!UUID_RE.test(tid)) {
-            return new Response(
-              JSON.stringify({ success: false, error: `Invalid ticket_id: ${tid}` }),
-              { status: 400, headers },
-            );
-          }
-        }
-        result = await bulkDeleteTickets(itstsAdmin, body.ticket_ids);
-        break;
-      }
       case "create_for_advisor": {
         if (!body.advisor_email) {
           return new Response(
@@ -1184,10 +948,7 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers },
     );
   } catch (error) {
-    const errMsg = error instanceof Error ? error.message : String(error);
-    const errStack = error instanceof Error ? error.stack : undefined;
-    const pgCode = error && typeof error === "object" && "code" in error ? (error as { code?: string }).code : undefined;
-    log.error("Ticket proxy error", { correlationId, error: errMsg, stack: errStack, code: pgCode });
+    log.error("Ticket proxy error", { correlationId, error });
     return new Response(
       JSON.stringify({
         success: false,

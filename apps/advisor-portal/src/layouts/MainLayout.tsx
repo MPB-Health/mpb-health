@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
@@ -54,19 +54,16 @@ import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhea
 import { getPortalUrl } from '@mpbhealth/config';
 import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
-import { navigationService, ticketService, type NavMenuItem } from '@mpbhealth/advisor-core';
+import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { NotificationCenter } from '../components/notifications';
-
-// Lazy-load shell components that are conditionally/rarely used
-const CommandPalette = lazy(() => import('../components/command-palette').then(m => ({ default: m.CommandPalette })));
-const MobileBottomNav = lazy(() => import('../components/mobile').then(m => ({ default: m.MobileBottomNav })));
-const PWAInstallPrompt = lazy(() => import('../components/pwa').then(m => ({ default: m.PWAInstallPrompt })));
-const OnboardingWizard = lazy(() => import('../components/onboarding').then(m => ({ default: m.OnboardingWizard })));
-const KeyboardShortcutsModal = lazy(() => import('../components/command-palette').then(m => ({ default: m.KeyboardShortcutsModal })));
+import { CommandPalette } from '../components/command-palette';
+import { MobileBottomNav } from '../components/mobile';
+import { PWAInstallPrompt } from '../components/pwa';
+import { OnboardingWizard } from '../components/onboarding';
+import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { useChat } from '../hooks/useChat';
 import { useUserPreferences } from '../hooks/useSettings';
 import { useSupportSSO } from '../hooks/useSupportSSO';
 import { GlobalSearch } from '../components/GlobalSearch';
@@ -156,17 +153,13 @@ const fallbackNavigation: NavItem[] = [
     href: '/training', 
     icon: GraduationCap,
     children: [
-      { name: 'MPB Training', href: '/training/mpb-cards' },
-      { name: 'Secure HSA Training', href: '/training/secure-hsa' },
-      { name: 'CARE+ Training', href: '/training/care-plus' },
+      { name: 'MPB Training', href: '/training/mpb' },
       { name: 'Sedera Training', href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
       { name: 'Zion Training', href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
     ],
   },
   { name: 'Video Library', href: '/videos', icon: Video },
-  { name: 'Events', href: '/events/manage', icon: Calendar },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
-  { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'Support Tickets', href: '/tickets', icon: Headphones },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
@@ -181,7 +174,7 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
       href: item.url || '/',
       icon: getIconComponent(item.icon),
       badge: item.badge_text ? (
-        <span
+        <span 
           className={`ml-auto text-white text-xs rounded-full px-2 py-0.5 ${
             item.badge_color === 'red' ? 'bg-red-500' :
             item.badge_color === 'green' ? 'bg-green-500' :
@@ -200,7 +193,6 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
             .map(child => ({
               name: child.label,
               href: child.url || '/',
-              external: child.is_external || undefined,
             }))
         : undefined,
     }));
@@ -211,7 +203,7 @@ let cachedNavItems: NavItem[] | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-/** Clear the navigation cache — call on logout to prevent stale nav across sessions. */
+/** Clear cached CMS navigation (called on logout so stale nav doesn't persist). */
 export function clearNavCache() {
   cachedNavItems = null;
   cacheTimestamp = 0;
@@ -219,20 +211,17 @@ export function clearNavCache() {
 
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
-  const { totalUnread: chatUnreadCount } = useChat();
+  const { profile, unreadBulletinCount, logout, loading } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
   const { openSupport, loading: ssoLoading } = useSupportSSO();
 
-  // Admin role check for conditional nav items (memoized to avoid redundant calls)
+  // Admin role check for conditional nav items
   const [isAdminUser, setIsAdminUser] = useState(false);
-  const lastAdminCheckId = useRef<string | null>(null);
   useEffect(() => {
-    if (profile?.user_id && profile.user_id !== lastAdminCheckId.current) {
-      lastAdminCheckId.current = profile.user_id;
-      checkIsAdmin(profile.user_id).then(setIsAdminUser).catch(() => setIsAdminUser(false));
+    if (profile?.user_id) {
+      checkIsAdmin(profile.user_id).then(setIsAdminUser);
     }
   }, [profile?.user_id]);
 
@@ -257,9 +246,6 @@ export default function MainLayout() {
       return;
     }
 
-    // Safety timeout — if CMS is slow/down, stop showing loading after 3s
-    const timeout = setTimeout(() => setNavLoading(false), 3000);
-
     try {
       // Use getNavMenuItems() to get hierarchical data with children
       const items = await navigationService.getNavMenuItems();
@@ -273,27 +259,12 @@ export default function MainLayout() {
       console.error('Failed to load navigation from CMS:', error);
       // Will use fallback navigation
     } finally {
-      clearTimeout(timeout);
       setNavLoading(false);
     }
   }, []);
 
-  // Warm up ticket-proxy Edge Function once we have session (reduces cold-start on /tickets)
-  useEffect(() => {
-    if (!loading && (profile || profileLoading)) {
-      ticketService.ping().catch(() => {});
-    }
-  }, [loading, profile, profileLoading]);
-
   useEffect(() => {
     loadNavigation();
-
-    // Skip Realtime subscription when redirecting to change-password — prevents
-    // "WebSocket closed before connection established" when MainLayout unmounts
-    // immediately after mount (must_change_password redirect).
-    if (profile?.must_change_password) {
-      return;
-    }
 
     // Subscribe to real-time navigation changes
     const channel = navigationService.subscribeToNavMenuChanges((items) => {
@@ -305,23 +276,61 @@ export default function MainLayout() {
     });
 
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
     };
-  }, [loadNavigation, profile?.must_change_password]);
+  }, [loadNavigation]);
 
-  // Use CMS navigation if available, otherwise fallback.
-  // Database order_index controls ordering — no hardcoded overrides.
+  // External training links that override CMS/fallback values
+  const EXTERNAL_TRAINING_LINKS: Record<string, { href: string; external: true }> = {
+    'Sedera Training': { href: 'https://sedera.my.salesforce-sites.com/Affiliate/apex/Affiliate_Contact_Form?Contact.Parent_Affiliate_Account__c=0011N00001vSpDl', external: true },
+    'Zion Training': { href: 'https://zionhealthshare.thinkific.com/courses/zionhealthshare', external: true },
+  };
+
+  // Use CMS navigation if available, otherwise fallback. Inject Quick Links after Forms if not already present.
   const navigation = useMemo(() => {
     let base = cmsNavItems.length > 0 ? cmsNavItems : fallbackNavigation;
 
-    // Admin-only: Ticket Management (role-gated, not CMS-managed)
+    // Override Sedera/Zion training links to external URLs
+    base = base.map(item => {
+      if (item.children) {
+        return {
+          ...item,
+          children: item.children.map(child => {
+            const override = EXTERNAL_TRAINING_LINKS[child.name];
+            return override ? { ...child, ...override } : child;
+          }),
+        };
+      }
+      return item;
+    });
+
+    // Inject items that may not exist in CMS nav
+    if (!base.some((item) => item.href === '/quick-links' || item.name === 'Resource Center')) {
+      base.push({ name: 'Resource Center', href: '/quick-links', icon: Link });
+    }
+    if (!base.some((item) => item.href === '/videos' || item.name === 'Video Library')) {
+      base.push({ name: 'Video Library', href: '/videos', icon: Video });
+    }
+    if (!base.some((item) => item.href === '/tickets' || item.name === 'Support Tickets')) {
+      base.push({ name: 'Support Tickets', href: '/tickets', icon: Headphones });
+    }
+
+    // Admin-only: Ticket Management
     if (isAdminUser) {
       if (!base.some((item) => item.href === '/admin/tickets' || item.name === 'Ticket Management')) {
-        base = [...base, { name: 'Ticket Management', href: '/admin/tickets', icon: ShieldCheck }];
+        base.push({ name: 'Ticket Management', href: '/admin/tickets', icon: ShieldCheck });
       }
     } else {
       base = base.filter((item) => item.name !== 'Ticket Management');
     }
+
+    // Enforce sidebar order
+    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Ticket Management', 'Contact'];
+    base = [...base].sort((a, b) => {
+      const ai = ORDER.indexOf(a.name);
+      const bi = ORDER.indexOf(b.name);
+      return (ai === -1 ? ORDER.length : ai) - (bi === -1 ? ORDER.length : bi);
+    });
 
     return base;
   }, [cmsNavItems, isAdminUser]);
@@ -377,8 +386,8 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // Redirect to login if not authenticated (only after auth check completes and we're not loading profile)
-  if (!loading && !profile && !profileLoading) {
+  // Redirect to login if not authenticated
+  if (!loading && !profile) {
     return <Navigate to="/login" replace />;
   }
 
@@ -387,7 +396,15 @@ export default function MainLayout() {
     return <Navigate to="/change-password" replace />;
   }
 
-  // Add badges to nav items
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-surface-secondary">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
+      </div>
+    );
+  }
+
+  // Add badge to Bulletins nav item
   const navWithBadges: NavItem[] = navigation.map((item) => {
     if (item.name === 'Bulletins' && unreadBulletinCount > 0) {
       return {
@@ -395,16 +412,6 @@ export default function MainLayout() {
         badge: (
           <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
             {unreadBulletinCount}
-          </span>
-        ),
-      };
-    }
-    if (item.name === 'Chat' && chatUnreadCount > 0) {
-      return {
-        ...item,
-        badge: (
-          <span className="ml-auto bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">
-            {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
           </span>
         ),
       };
@@ -424,51 +431,30 @@ export default function MainLayout() {
           }`
         }
       >
-        {profileLoading ? (
-          <>
-            <div className="w-8 h-8 rounded-full bg-[rgb(var(--sidebar-text)_/_0.12)] animate-pulse" />
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="h-4 w-24 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded animate-pulse" />
-              <div className="h-3 w-16 bg-[rgb(var(--sidebar-text)_/_0.08)] rounded animate-pulse" />
-            </div>
-          </>
-        ) : profile?.avatar_url ? (
-          <>
-            <img
-              src={profile.avatar_url}
-              alt=""
-              aria-hidden="true"
-              role="presentation"
-              className="w-8 h-8 rounded-full object-cover"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-[rgb(var(--sidebar-text-active))]">
-                {profile?.first_name} {profile?.last_name}
-              </p>
-              <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] truncate">
-                {profile?.specialization}
-              </p>
-            </div>
-          </>
+        {profile?.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt=""
+            aria-hidden="true"
+            role="presentation"
+            className="w-8 h-8 rounded-full object-cover"
+          />
         ) : (
-          <>
-            <div className="w-8 h-8 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-[rgb(var(--sidebar-text))]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-[rgb(var(--sidebar-text-active))]">
-                {profile?.first_name} {profile?.last_name}
-              </p>
-              <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] truncate">
-                {profile?.specialization}
-              </p>
-            </div>
-          </>
+          <div className="w-8 h-8 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-[rgb(var(--sidebar-text))]" />
+          </div>
         )}
+        <div className="flex-1 min-w-0">
+          <p className="truncate text-[rgb(var(--sidebar-text-active))]">
+            {profile?.first_name} {profile?.last_name}
+          </p>
+          <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] truncate">
+            {profile?.specialization}
+          </p>
+        </div>
       </NavLink>
 
       <button
-        type="button"
         onClick={openSupport}
         disabled={ssoLoading}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150 disabled:opacity-50"
@@ -478,7 +464,6 @@ export default function MainLayout() {
       </button>
 
       <button
-        type="button"
         onClick={logout}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150"
       >
@@ -504,7 +489,6 @@ export default function MainLayout() {
       ) : (
         <div className="relative group">
           <button
-            type="button"
             disabled
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-400 text-white rounded-full text-sm font-medium cursor-not-allowed opacity-75"
           >
@@ -527,35 +511,29 @@ export default function MainLayout() {
 
   return (
     <>
-      {/* Lazy-loaded shell components — only parsed when needed */}
-      <Suspense fallback={null}>
-        <CommandPalette />
-      </Suspense>
+      {/* Command Palette (Cmd+K) */}
+      <CommandPalette />
 
-      <Suspense fallback={null}>
-        <OnboardingWizard />
-      </Suspense>
+      {/* Onboarding Wizard for new users */}
+      <OnboardingWizard />
 
-      <Suspense fallback={null}>
-        <KeyboardShortcutsModal
-          isOpen={showShortcutsModal}
-          onClose={() => setShowShortcutsModal(false)}
-        />
-      </Suspense>
+      {/* Keyboard Shortcuts Modal (press ?) */}
+      <KeyboardShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+      />
 
-      <Suspense fallback={null}>
-        <MobileBottomNav />
-      </Suspense>
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
 
-      <Suspense fallback={null}>
-        <PWAInstallPrompt />
-      </Suspense>
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
 
       {/* Add padding for mobile bottom nav */}
       <div className="pb-16 lg:pb-0">
         <AppLayout
         appName="Advisor Portal"
-        logoSrc="/assets/MPB-Health-No-background.png?v=2"
+        logoSrc="/assets/MPB-Health-No-background.png"
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
         portalSwitcher={
@@ -564,7 +542,6 @@ export default function MainLayout() {
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
-            canAccessWebsite={canAccessAdmin}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />

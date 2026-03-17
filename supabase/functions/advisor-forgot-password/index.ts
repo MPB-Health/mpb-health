@@ -8,55 +8,102 @@ const log = createLogger("advisor-forgot-password");
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM = Deno.env.get("RESEND_FROM_EMAIL") || "MPB Health <onboarding@mpb.health>";
 const ADVISOR_RESET_URL = "https://advisor.mpb.health/reset-password";
+const LOGO_URL = "https://mpb.health/assets/MPB-Health-No-background.png";
 
-function buildResetEmail(email: string, resetLink: string): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head><meta charset="utf-8"><title>Reset Your MPB Health Password</title></head>
-      <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f5f5f5;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 0;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-                <tr>
-                  <td style="background:linear-gradient(135deg,#0d9488,#0891b2);padding:30px 40px;border-radius:8px 8px 0 0;text-align:center;">
-                    <h1 style="color:#ffffff;font-size:24px;margin:0;">Password Reset</h1>
-                    <p style="color:rgba(255,255,255,0.9);font-size:14px;margin:8px 0 0 0;">MPB Health Advisor Portal</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:40px;">
-                    <p style="color:#333;font-size:16px;margin:0 0 20px 0;">Hello,</p>
-                    <p style="color:#333;font-size:16px;margin:0 0 20px 0;">
-                      We received a request to reset the password for the MPB Health Advisor Portal account
-                      associated with <strong>${email}</strong>. Click the button below to set a new password.
-                    </p>
-                    <div style="text-align:center;margin:30px 0;">
-                      <a href="${resetLink}" style="display:inline-block;background:linear-gradient(135deg,#0d9488,#0891b2);color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:bold;font-size:16px;">
+function buildResetEmail(email: string, resetLink: string): { html: string; text: string } {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your Password — MPB Health Advisor Portal</title>
+  </head>
+  <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f4f5f7;-webkit-font-smoothing:antialiased;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f5f7;padding:48px 16px;">
+      <tr>
+        <td align="center">
+          <table width="560" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px;width:100%;background-color:#ffffff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+            <!-- Logo Header -->
+            <tr>
+              <td style="padding:32px 40px 16px 40px;text-align:center;">
+                <img src="${LOGO_URL}" alt="MPB Health" width="160" style="display:block;margin:0 auto;max-width:160px;height:auto;" />
+              </td>
+            </tr>
+            <!-- Divider -->
+            <tr>
+              <td style="padding:0 40px;">
+                <div style="height:1px;background-color:#e5e7eb;"></div>
+              </td>
+            </tr>
+            <!-- Content -->
+            <tr>
+              <td style="padding:32px 40px;">
+                <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 16px 0;text-align:center;">Reset Your Password</h1>
+                <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 16px 0;">
+                  We received a request to reset the password for the Advisor Portal account
+                  associated with <strong style="color:#111827;">${email}</strong>.
+                </p>
+                <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 28px 0;">
+                  Click the button below to choose a new password. This link is valid for 24 hours and can only be used once.
+                </p>
+                <!-- CTA Button -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td align="center">
+                      <a href="${resetLink}" target="_blank" style="display:inline-block;background-color:#0d9488;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:8px;font-weight:600;font-size:15px;letter-spacing:0.01em;mso-padding-alt:0;text-align:center;">
+                        <!--[if mso]><i style="mso-font-width:150%;mso-text-raise:30px;" hidden>&nbsp;</i><![endif]-->
                         Reset My Password
+                        <!--[if mso]><i style="mso-font-width:150%;" hidden>&nbsp;</i><![endif]-->
                       </a>
-                    </div>
-                    <div style="background-color:#fef3c7;border:1px solid #fde68a;padding:12px 16px;border-radius:8px;margin:20px 0;">
-                      <p style="margin:0;color:#92400e;font-size:14px;">
-                        <strong>This link expires in 24 hours.</strong> If you did not request a password reset, you can safely ignore this email.
-                      </p>
-                    </div>
-                    <p style="color:#666;font-size:14px;margin:20px 0 0 0;">Need help? Contact your MPB Health team.</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:20px 40px;background-color:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;border-radius:0 0 8px 8px;">
-                    <p style="color:#999;font-size:12px;margin:0;">This is an automated message from MPB Health. Please do not reply.</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-    </html>
-  `;
+                    </td>
+                  </tr>
+                </table>
+                <!-- Fallback link -->
+                <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:20px 0 0 0;text-align:center;word-break:break-all;">
+                  If the button doesn't work, copy and paste this link into your browser:<br/>
+                  <a href="${resetLink}" style="color:#0d9488;text-decoration:underline;">${resetLink}</a>
+                </p>
+              </td>
+            </tr>
+            <!-- Security note -->
+            <tr>
+              <td style="padding:0 40px 32px 40px;">
+                <div style="background-color:#fefce8;border:1px solid #fef08a;padding:14px 16px;border-radius:8px;">
+                  <p style="margin:0;color:#854d0e;font-size:13px;line-height:1.5;">
+                    If you did not request this password reset, no action is needed — your account remains secure.
+                  </p>
+                </div>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:20px 40px;background-color:#f9fafb;border-top:1px solid #f3f4f6;text-align:center;border-radius:0 0 12px 12px;">
+                <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:0;">
+                  MPB Health, Inc. &middot; Advisor Portal<br/>
+                  This is an automated message. Please do not reply.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+  const text = `Reset Your Password — MPB Health Advisor Portal
+
+We received a request to reset the password for the Advisor Portal account associated with ${email}.
+
+Reset your password using the link below. This link is valid for 24 hours and can only be used once.
+
+${resetLink}
+
+If you did not request this password reset, no action is needed — your account remains secure.
+
+— MPB Health, Inc.`;
+
+  return { html, text };
 }
 
 Deno.serve(async (req: Request) => {
@@ -111,8 +158,18 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true }), { status: 200, headers });
     }
 
-    const resetLink = linkData.properties.action_link;
-    const html = buildResetEmail(email, resetLink);
+    // SCANNER-PROOF: Use token_hash instead of action_link.
+    // action_link is a Supabase server-side endpoint that email scanners will click,
+    // consuming the single-use token before the human gets to it.
+    // Instead, we send the user directly to the advisor portal with the token_hash
+    // in query params. Scanners fetch HTML but don't execute JavaScript, so the
+    // token is never exchanged until a real browser calls verifyOtp().
+    const hashedToken = linkData.properties.hashed_token;
+    const resetLink = hashedToken
+      ? `${ADVISOR_RESET_URL}?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`
+      : linkData.properties.action_link; // fallback if hashed_token unavailable
+
+    const { html, text } = buildResetEmail(email, resetLink);
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -123,8 +180,9 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         from: RESEND_FROM,
         to: [email],
-        subject: "Reset Your MPB Health Advisor Portal Password",
+        subject: "Reset Your Password — MPB Health Advisor Portal",
         html,
+        text,
       }),
     });
 

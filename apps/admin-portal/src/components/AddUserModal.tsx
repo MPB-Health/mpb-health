@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { X, User, Mail, Shield, Loader2, Building2, Phone, Briefcase, Hash } from 'lucide-react';
+import { X, User, Mail, Shield, Loader2 } from 'lucide-react';
 import { userService, type Permission } from '@mpbhealth/admin-core';
 import { supabase } from '@mpbhealth/database';
 
@@ -10,59 +10,30 @@ interface AddUserModalProps {
   onSuccess: () => void;
 }
 
-type Portal = 'admin' | 'advisor' | 'crm';
-type AdminRole = 'super_admin' | 'admin' | 'manager' | 'staff';
-type UserRole = 'super_admin' | 'admin' | 'manager' | 'staff' | 'advisor' | 'crm_user';
-
 interface FormData {
   email: string;
   first_name: string;
   last_name: string;
-  portal: Portal;
-  role: UserRole;
+  role: 'super_admin' | 'admin' | 'manager' | 'staff';
   permissions: string[];
   send_invite: boolean;
-  // Advisor-specific fields
-  phone: string;
-  specialization: string;
-  agent_id: string;
-  company_name: string;
 }
 
 const DEFAULT_FORM: FormData = {
   email: '',
   first_name: '',
   last_name: '',
-  portal: 'admin',
   role: 'staff',
   permissions: [],
   send_invite: true,
-  phone: '',
-  specialization: '',
-  agent_id: '',
-  company_name: '',
 };
 
-const PORTALS = [
-  { value: 'admin' as Portal, label: 'Admin Portal', description: 'Internal admin users' },
-  { value: 'advisor' as Portal, label: 'Advisor Portal', description: 'Health share advisors' },
-  { value: 'crm' as Portal, label: 'CRM', description: 'CRM portal users' },
-];
-
-const ADMIN_ROLES = [
+const ROLES = [
   { value: 'staff', label: 'Staff', description: 'Basic access to admin portal' },
   { value: 'manager', label: 'Manager', description: 'Can manage templates and view reports' },
   { value: 'admin', label: 'Admin', description: 'Full admin access except user management' },
   { value: 'super_admin', label: 'Super Admin', description: 'Full access including user management' },
 ] as const;
-
-function getDefaultRoleForPortal(portal: Portal): UserRole {
-  switch (portal) {
-    case 'admin': return 'staff';
-    case 'advisor': return 'advisor';
-    case 'crm': return 'crm_user';
-  }
-}
 
 export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) {
   const [form, setForm] = useState<FormData>(DEFAULT_FORM);
@@ -88,19 +59,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
     }
   };
 
-  const handlePortalChange = (portal: Portal) => {
-    setForm((prev) => ({
-      ...prev,
-      portal,
-      role: getDefaultRoleForPortal(portal),
-      permissions: [],
-      phone: '',
-      specialization: '',
-      agent_id: '',
-      company_name: '',
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -111,31 +69,19 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
 
     setSaving(true);
     try {
-      // Use the generic create-user edge function for all portals
-      const body: Record<string, unknown> = {
-        email: form.email,
-        first_name: form.first_name,
-        last_name: form.last_name,
-        roles: [form.role],
-        send_invite: form.send_invite,
-      };
-
-      // Include admin permissions for admin portal users
-      if (form.portal === 'admin') {
-        body.permissions = form.permissions;
-      }
-
-      // Include advisor-specific fields
-      if (form.portal === 'advisor') {
-        if (form.phone) body.phone = form.phone;
-        if (form.specialization) body.specialization = form.specialization;
-        if (form.agent_id) body.agent_id = form.agent_id;
-        if (form.company_name) body.company_name = form.company_name;
-      }
-
+      // Call edge function to create auth user
       const { data: createResult, error: createError } = await supabase.functions.invoke(
-        'create-user',
-        { body },
+        'create-admin-user',
+        {
+          body: {
+            email: form.email,
+            first_name: form.first_name,
+            last_name: form.last_name,
+            role: form.role,
+            permissions: form.permissions,
+            send_invite: form.send_invite,
+          },
+        }
       );
 
       if (createError) {
@@ -151,11 +97,10 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
           createResult?.email_error || 'User created but invitation email failed. Check Supabase logs and RESEND_API_KEY.'
         );
       } else {
-        const portalLabel = PORTALS.find((p) => p.value === form.portal)?.label || 'portal';
         toast.success(
           form.send_invite
-            ? `${portalLabel} user created and invitation sent!`
-            : `${portalLabel} user created successfully!`
+            ? 'User created and invitation sent!'
+            : 'User created successfully!'
         );
       }
       onSuccess();
@@ -179,8 +124,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
 
   if (!isOpen) return null;
 
-  const portalLabel = PORTALS.find((p) => p.value === form.portal)?.label || 'portal';
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -192,7 +135,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
             </div>
             <div>
               <h2 className="text-lg font-semibold text-th-text-primary">Add New User</h2>
-              <p className="text-sm text-th-text-tertiary">Create a user for {portalLabel}</p>
+              <p className="text-sm text-th-text-tertiary">Create an admin portal user</p>
             </div>
           </div>
           <button
@@ -206,31 +149,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Portal Selector */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-th-text-secondary flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Portal
-            </h3>
-            <div className="grid grid-cols-3 gap-3">
-              {PORTALS.map((portal) => (
-                <button
-                  key={portal.value}
-                  type="button"
-                  onClick={() => handlePortalChange(portal.value)}
-                  className={`p-3 rounded-lg border text-left transition-colors ${
-                    form.portal === portal.value
-                      ? 'border-th-accent-500 bg-th-accent-50 dark:bg-th-accent-900/20'
-                      : 'border-th-border hover:border-th-accent-300'
-                  }`}
-                >
-                  <p className="font-medium text-th-text-primary text-sm">{portal.label}</p>
-                  <p className="text-xs text-th-text-tertiary">{portal.description}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Basic Info */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-th-text-secondary flex items-center gap-2">
@@ -282,113 +200,44 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
             </div>
           </div>
 
-          {/* Role Selection — only for admin portal (advisor/crm have fixed roles) */}
-          {form.portal === 'admin' && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-th-text-secondary flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                Role
-              </h3>
+          {/* Role Selection */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-th-text-secondary flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Role
+            </h3>
 
-              <div className="grid grid-cols-2 gap-3">
-                {ADMIN_ROLES.map((role) => (
-                  <label
-                    key={role.value}
-                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      form.role === role.value
-                        ? 'border-th-accent-500 bg-th-accent-50 dark:bg-th-accent-900/20'
-                        : 'border-th-border hover:border-th-accent-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={role.value}
-                      checked={form.role === role.value}
-                      onChange={(e) =>
-                        setForm({ ...form, role: e.target.value as AdminRole })
-                      }
-                      className="mt-1"
-                    />
-                    <div>
-                      <p className="font-medium text-th-text-primary">{role.label}</p>
-                      <p className="text-xs text-th-text-tertiary">{role.description}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              {ROLES.map((role) => (
+                <label
+                  key={role.value}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    form.role === role.value
+                      ? 'border-th-accent-500 bg-th-accent-50 dark:bg-th-accent-900/20'
+                      : 'border-th-border hover:border-th-accent-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={role.value}
+                    checked={form.role === role.value}
+                    onChange={(e) =>
+                      setForm({ ...form, role: e.target.value as FormData['role'] })
+                    }
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="font-medium text-th-text-primary">{role.label}</p>
+                    <p className="text-xs text-th-text-tertiary">{role.description}</p>
+                  </div>
+                </label>
+              ))}
             </div>
-          )}
+          </div>
 
-          {/* Advisor-specific fields */}
-          {form.portal === 'advisor' && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-th-text-secondary flex items-center gap-2">
-                <Briefcase className="w-4 h-4" />
-                Advisor Profile
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                    <Phone className="w-3.5 h-3.5 inline mr-1" />
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="(555) 123-4567"
-                    className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                    <Hash className="w-3.5 h-3.5 inline mr-1" />
-                    Agent ID
-                  </label>
-                  <input
-                    type="text"
-                    value={form.agent_id}
-                    onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
-                    placeholder="AG-12345"
-                    className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                    Specialization
-                  </label>
-                  <input
-                    type="text"
-                    value={form.specialization}
-                    onChange={(e) => setForm({ ...form, specialization: e.target.value })}
-                    placeholder="Health Share"
-                    className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                    <Building2 className="w-3.5 h-3.5 inline mr-1" />
-                    Company
-                  </label>
-                  <input
-                    type="text"
-                    value={form.company_name}
-                    onChange={(e) => setForm({ ...form, company_name: e.target.value })}
-                    placeholder="Agency name"
-                    className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Permissions (only show for admin portal, not super_admin) */}
-          {form.portal === 'admin' && form.role !== 'super_admin' && (
+          {/* Permissions (only show if not super_admin) */}
+          {form.role !== 'super_admin' && (
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-th-text-secondary">
                 Additional Permissions
@@ -416,12 +265,12 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
                           >
                             <input
                               type="checkbox"
-                              checked={form.permissions.includes(perm.key)}
-                              onChange={() => togglePermission(perm.key)}
+                              checked={form.permissions.includes(perm.name)}
+                              onChange={() => togglePermission(perm.name)}
                               className="mt-0.5 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                             />
                             <div>
-                              <p className="text-th-text-secondary">{perm.key}</p>
+                              <p className="text-th-text-secondary">{perm.name}</p>
                               {perm.description && (
                                 <p className="text-xs text-th-text-tertiary">
                                   {perm.description}
@@ -452,7 +301,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
                 Send invitation email
               </p>
               <p className="text-xs text-th-text-tertiary">
-                User will receive an email with their login credentials
+                User will receive an email with a link to set their password
               </p>
             </label>
           </div>

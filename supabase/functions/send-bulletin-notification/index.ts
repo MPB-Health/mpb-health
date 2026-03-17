@@ -43,7 +43,7 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const APP_URL = Deno.env.get('APP_URL') || 'https://advisor.mpb.health';
+    const APP_URL = Deno.env.get('APP_URL') || 'https://mpbhealth.com';
     const FROM_EMAIL = Deno.env.get('BULLETIN_FROM_EMAIL') || 'advisors@mpb.health';
     const FROM_NAME = Deno.env.get('BULLETIN_FROM_NAME') || 'MPB Health Advisor Portal';
 
@@ -188,10 +188,6 @@ Manage notification preferences: ${unsubscribeUrl}
         subject: `New Bulletin: ${bulletin_title}`,
         html: htmlContent,
         text: textContent,
-        tracking: {
-          open: true,
-          click: true,
-        },
         tags: [
           { name: 'type', value: 'bulletin' },
           { name: 'bulletin_id', value: bulletin_id },

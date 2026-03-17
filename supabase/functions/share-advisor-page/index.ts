@@ -68,10 +68,6 @@ serve(async (req) => {
         to: [recipientEmail],
         subject: `${advisorName} shared their MPB Health Advisor Page with you`,
         html,
-        tracking: {
-          open: true,
-          click: true,
-        },
       }),
     });
 

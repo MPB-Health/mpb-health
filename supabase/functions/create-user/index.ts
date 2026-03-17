@@ -87,12 +87,12 @@ async function sendInviteEmail(
   }
 
   const portalUrl = roles.includes("advisor")
-    ? "https://advisor.mpb.health"
+    ? "https://advisor.mpbhealth.com"
     : roles.includes("admin") || roles.includes("super_admin")
       ? "https://admin.mpb.health"
       : roles.includes("crm_user")
-        ? "https://crm.mpb.health"
-        : "https://app.mpb.health";
+        ? "https://crm.mpbhealth.com"
+        : "https://app.mpbhealth.com";
 
   const roleLabels = roles
     .map((r) => r.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
@@ -143,10 +143,6 @@ async function sendInviteEmail(
       to: [email],
       subject: "Welcome to MPB Health – Your Account Is Ready",
       html,
-      tracking: {
-        open: true,
-        click: true,
-      },
     }),
   });
 
@@ -260,9 +256,8 @@ Deno.serve(async (req: Request) => {
 
     if (createUserError) {
       log.error("Create user error:", createUserError);
-      const msg = createUserError.message || "Failed to create user";
       return new Response(
-        JSON.stringify({ success: false, error: msg }),
+        JSON.stringify({ success: false, error: "Failed to create user" }),
         { status: 400, headers },
       );
     }
@@ -281,33 +276,6 @@ Deno.serve(async (req: Request) => {
 
     if (roleError) {
       log.error("User roles insert error:", roleError);
-    }
-
-    // Add org membership so user can access CRM and other org-gated portals
-    const DEFAULT_ORG_ID = "a0000000-0000-0000-0000-000000000001";
-    const orgRole = roles.includes("super_admin") || roles.includes("admin")
-      ? "admin"
-      : roles.includes("manager")
-        ? "manager"
-        : "member";
-
-    const { error: orgError } = await supabaseAdmin
-      .from("org_memberships")
-      .upsert(
-        {
-          user_id: userId,
-          org_id: DEFAULT_ORG_ID,
-          role: orgRole,
-          status: "active",
-          invited_by: caller.id,
-          invited_at: new Date().toISOString(),
-          joined_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,org_id" },
-      );
-
-    if (orgError) {
-      log.error("Org membership insert error:", orgError);
     }
 
     if (shouldProvisionAdvisorProfile(roles)) {

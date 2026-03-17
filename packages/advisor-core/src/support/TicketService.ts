@@ -1,4 +1,73 @@
-import { supabase, getResolvedAuthHeader } from '@mpbhealth/database';
+import { supabase } from '@mpbhealth/database';
+
+/**
+ * How many seconds before the JWT's `exp` claim we force a synchronous
+ * refresh. 30 s covers typical network RTT to Supabase edge functions on
+ * slow connections, so the token never expires while the HTTP request is
+ * in-flight.
+ *
+ * Background: `getSession()` auto-refresh is ASYNCHRONOUS — it fires a
+ * background refresh when the token is within 60 s of expiry but returns
+ * the CURRENT (soon-to-expire) token immediately. With `noOpLock` bypassing
+ * the Web Locks API, concurrent refresh attempts can race and one leg ends
+ * up with a stale token. A 30-second synchronous buffer eliminates both
+ * problems: we get a guaranteed-fresh token before building the auth header.
+ */
+const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
+
+/**
+ * Singleton refresh promise — prevents multiple simultaneous calls from each
+ * triggering their own `refreshSession()`. With Supabase's `noOpLock`, the
+ * refresh token is single-use; a second concurrent refresh races and whichever
+ * call is second gets a token that has already been rotated, causing a 401.
+ *
+ * By sharing one pending Promise, concurrent callers all await the same
+ * in-flight refresh and receive the same fresh session.
+ */
+let _pendingRefresh: Promise<Awaited<ReturnType<typeof supabase.auth.refreshSession>>> | null = null;
+
+async function refreshOnce() {
+  if (!_pendingRefresh) {
+    _pendingRefresh = supabase.auth.refreshSession().finally(() => {
+      _pendingRefresh = null;
+    });
+  }
+  return _pendingRefresh;
+}
+
+/**
+ * Ensure the current session has a non-expired access token before calling
+ * an Edge Function. Returns null when there is no session (user is not
+ * authenticated).
+ *
+ * Uses a singleton refresh promise so that concurrent callers (e.g. loadTickets
+ * + loadStats + getCategories firing at the same time) share one refresh round-
+ * trip instead of each consuming the single-use refresh token and racing.
+ */
+async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
+  // getSession() will attempt a background refresh when the token is within
+  // 60 s of expiry, but returns the CURRENT token without awaiting the refresh.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return null;
+
+  // Force a SYNCHRONOUS refresh if:
+  //  - expires_at is absent (defensive — treat as unknown/stale), OR
+  //  - token has already expired or expires within TOKEN_EXPIRY_BUFFER_SECONDS.
+  const nowSec = Math.floor(Date.now() / 1000);
+  const needsRefresh = !session.expires_at || session.expires_at < nowSec + TOKEN_EXPIRY_BUFFER_SECONDS;
+
+  if (needsRefresh) {
+    const { data: refreshed, error: refreshError } = await refreshOnce();
+    if (refreshError || !refreshed.session?.access_token) {
+      // Refresh failed — session is invalid. Return null to trigger re-auth
+      // in the caller rather than firing a request with a bad token.
+      return null;
+    }
+    return { Authorization: `Bearer ${refreshed.session.access_token}` };
+  }
+
+  return { Authorization: `Bearer ${session.access_token}` };
+}
 
 /**
  * Generate a short random correlation ID for request tracing.
@@ -6,18 +75,6 @@ import { supabase, getResolvedAuthHeader } from '@mpbhealth/database';
  */
 function newCorrelationId(): string {
   return `tid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-/** Check if the error is a 401 (JWT rejected by gateway or function). */
-function is401Error(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
-  const e = err as Record<string, unknown>;
-  const ctx = e.context;
-  if (ctx && typeof ctx === 'object' && 'status' in ctx) {
-    return (ctx as { status: number }).status === 401;
-  }
-  if (typeof e.status === 'number') return e.status === 401;
-  return false;
 }
 
 /**
@@ -30,9 +87,8 @@ async function extractFunctionError(error: unknown): Promise<string> {
   if (error && typeof error === 'object' && 'context' in error) {
     try {
       const ctx = (error as Record<string, unknown>).context;
-      const ctxWithJson = ctx as { json?: () => Promise<{ error?: string }> };
-      if (ctxWithJson?.json && typeof ctxWithJson.json === 'function') {
-        const body = await ctxWithJson.json();
+      if (ctx && typeof ctx === 'object' && 'json' in ctx && typeof (ctx as any).json === 'function') {
+        const body = await (ctx as any).json();
         if (body?.error) return body.error;
       }
     } catch {
@@ -116,16 +172,6 @@ export interface AdminTicketListResult {
 
 export interface AdminListTicketsOptions extends ListTicketsOptions {
   search?: string;
-  requesterId?: string;
-  sortBy?: 'created_at' | 'updated_at' | 'ticket_number' | 'priority' | 'status';
-  sortOrder?: 'asc' | 'desc';
-}
-
-export interface TicketRequester {
-  id: string;
-  name: string;
-  email: string;
-  agent_id: string | null;
 }
 
 export interface CreateTicketOptions {
@@ -192,7 +238,7 @@ export class TicketService {
     try {
       for (const file of attachments) {
         if (file.size > TicketService.ATTACHMENT_MAX_SIZE) {
-          throw new Error(`File "${file.name}" exceeds the 15 MB limit.`);
+          throw new Error(`File \"${file.name}\" exceeds the 15 MB limit.`);
         }
 
         const safeName = this.sanitizeFileName(file.name);
@@ -261,46 +307,26 @@ export class TicketService {
    * @param opts    Optional overrides — `allowUnauthenticated` skips the auth
    *                guard and returns null instead of throwing.
    */
-  /** Request timeout — prevents infinite hangs if the edge function or ITSTS is down */
-  private static REQUEST_TIMEOUT_MS = 30_000; // 30 seconds
-
   private async call<T extends { success: boolean }>(
     action: string,
     body: Record<string, unknown> = {},
     opts: { allowUnauthenticated?: boolean } = {},
   ): Promise<T> {
+    const authHeader = await getResolvedAuthHeader();
     const correlationId = newCorrelationId();
 
-    const doInvoke = async (auth: { Authorization: string }) => {
-      const invokePromise = supabase.functions.invoke<T>('ticket-proxy', {
-        body: { action, ...body },
-        headers: { ...auth, 'x-request-id': correlationId },
-      });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`Request timed out [${correlationId}]`)), TicketService.REQUEST_TIMEOUT_MS),
-      );
-      return Promise.race([invokePromise, timeoutPromise]);
-    };
-
-    const authHeader = await getResolvedAuthHeader();
     if (!authHeader) {
       if (opts.allowUnauthenticated) return null as unknown as T;
       throw new Error(`Authentication required — please sign in again [${correlationId}]`);
     }
 
-    let { data, error } = await doInvoke(authHeader);
-
-    // On 401, retry once with a freshly refreshed token (handles stale-token races)
-    if (error && is401Error(error)) {
-      const refreshed = await getResolvedAuthHeader();
-      if (refreshed) {
-        const retry = await doInvoke(refreshed);
-        if (!retry.error) {
-          data = retry.data;
-          error = null;
-        }
-      }
-    }
+    const { data, error } = await supabase.functions.invoke<T>('ticket-proxy', {
+      body: { action, ...body },
+      headers: {
+        ...authHeader,
+        'x-request-id': correlationId,
+      },
+    });
 
     if (error) {
       const msg = await extractFunctionError(error);
@@ -322,18 +348,22 @@ export class TicketService {
   // ── Advisor read methods ───────────────────────────────────────────────
 
   async getMyTickets(opts: ListTicketsOptions = {}): Promise<TicketListResult> {
-    // Use this.call() which already resolves auth via getResolvedAuthHeader().
-    // Previously this called getResolvedAuthHeader() separately, causing
-    // duplicate token refresh races when fired concurrently with getTicketStats().
+    // Unauthenticated → return empty list; no noisy 401 in console.
+    const authHeader = await getResolvedAuthHeader();
+    if (!authHeader) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Authentication required — please sign in again');
+      return { tickets: [], total: 0, page: opts.page ?? 1, per_page: opts.perPage ?? 20 };
+    }
+
     const data = await this.call<TicketListResult & { success: boolean }>('list', {
       status: opts.status,
       priority: opts.priority,
       search: opts.search,
       page: opts.page ?? 1,
       per_page: opts.perPage ?? 20,
-    }, { allowUnauthenticated: true });
+    });
 
-    if (!data) return { tickets: [], total: 0, page: opts.page ?? 1, per_page: opts.perPage ?? 20 };
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 
@@ -357,17 +387,6 @@ export class TicketService {
     } catch {
       return [];
     }
-  }
-
-  async getKnowledgeBase(opts: { search?: string; category?: string; page?: number; perPage?: number } = {}): Promise<TicketListResult> {
-    const data = await this.call<TicketListResult & { success: boolean }>('list_kb', {
-      search: opts.search,
-      category: opts.category,
-      page: opts.page ?? 1,
-      per_page: opts.perPage ?? 20,
-    }, { allowUnauthenticated: true });
-    if (!data) return { tickets: [], total: 0, page: opts.page ?? 1, per_page: opts.perPage ?? 20 };
-    return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 
   // ── Advisor write methods ──────────────────────────────────────────────
@@ -401,9 +420,6 @@ export class TicketService {
       status: opts.status,
       priority: opts.priority,
       search: opts.search,
-      requester_id: opts.requesterId,
-      sort_by: opts.sortBy,
-      sort_order: opts.sortOrder,
       page: opts.page ?? 1,
       per_page: opts.perPage ?? 20,
     });
@@ -444,32 +460,6 @@ export class TicketService {
       priority: opts.priority,
     });
     return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
-  }
-
-  async getRequesters(): Promise<TicketRequester[]> {
-    const data = await this.call<{ success: boolean; requesters: TicketRequester[] }>('list_requesters');
-    return data.requesters ?? [];
-  }
-
-  async bulkCloseAll(): Promise<number> {
-    const data = await this.call<{ success: boolean; closed_count: number }>('bulk_close');
-    return data.closed_count;
-  }
-
-  async bulkUpdateTickets(ticketIds: string[], opts: UpdateTicketOptions): Promise<number> {
-    const data = await this.call<{ success: boolean; updated_count: number }>('bulk_update', {
-      ticket_ids: ticketIds,
-      status: opts.status,
-      priority: opts.priority,
-    });
-    return data.updated_count;
-  }
-
-  async bulkDeleteTickets(ticketIds: string[]): Promise<number> {
-    const data = await this.call<{ success: boolean; deleted_count: number }>('bulk_delete', {
-      ticket_ids: ticketIds,
-    });
-    return data.deleted_count;
   }
 
   /** Fire-and-forget warm-up ping to keep the ticket-proxy edge function warm.

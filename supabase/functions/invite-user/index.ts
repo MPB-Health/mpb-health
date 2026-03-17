@@ -51,7 +51,7 @@ async function sendInviteEmail(
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                 <tr>
                   <td style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px 40px; border-radius: 12px 12px 0 0; text-align: center;">
-                    <img src="https://mpb.health/assets/MPB-Health-No-background.png?v=2" alt="MPB Health" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+                    <img src="https://mpb.health/assets/MPB-Health-No-background.png" alt="MPB Health" style="max-width: 180px; height: auto; margin-bottom: 15px;">
                     <h1 style="color: #ffffff; font-size: 24px; margin: 0;">You're Invited!</h1>
                   </td>
                 </tr>
@@ -110,10 +110,6 @@ async function sendInviteEmail(
       to: [email],
       subject: `You've been invited to join ${orgName} on MPB Health`,
       html,
-      tracking: {
-        open: true,
-        click: true,
-      },
     }),
   });
 

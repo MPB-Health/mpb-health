@@ -49,42 +49,37 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // 1. Core React runtime + router (include transitive deps to avoid circular chunks)
+            // 1. Core React runtime — tiny, cached forever
             if (id.includes('node_modules/react/') ||
                 id.includes('node_modules/react-dom/') ||
-                id.includes('node_modules/scheduler/') ||
                 id.includes('node_modules/react-router-dom/') ||
-                id.includes('node_modules/react-router/') ||
-                id.includes('node_modules/@remix-run/')) {
+                id.includes('node_modules/react-router/')) {
               return 'react-vendor';
             }
-            // 2. Tiptap rich-text editor — large, rarely changes
-            if (id.includes('node_modules/@tiptap') ||
-                id.includes('node_modules/prosemirror') ||
-                id.includes('node_modules/@prosemirror') ||
-                id.includes('node_modules/lowlight') ||
-                id.includes('node_modules/highlight.js')) {
-              return 'tiptap';
-            }
-            // 3. lucide-react icons
+            // 2. lucide-react — tree-shaken named imports; keep in its own chunk
+            //    so it caches independently from app code
             if (id.includes('node_modules/lucide-react')) {
               return 'lucide';
             }
-            // 4. Supabase client
+            // 3. Supabase client — large, rarely changes
             if (id.includes('node_modules/@supabase')) {
               return 'supabase';
             }
-            // 5. Internal monorepo UI package
+            // 4. Internal monorepo UI package
             if (id.includes('packages/ui/src') || id.includes('@mpbhealth/ui')) {
               return 'mpb-ui';
             }
-            // 6. Internal advisor-core service layer
+            // 5. Internal advisor-core service layer
             if (id.includes('packages/advisor-core') || id.includes('@mpbhealth/advisor-core')) {
               return 'advisor-core';
             }
-            // 7. Date utilities
+            // 6. Date utilities
             if (id.includes('node_modules/date-fns')) {
               return 'date-utils';
+            }
+            // 7. Toast notifications
+            if (id.includes('node_modules/react-hot-toast')) {
+              return 'toast';
             }
             // 8. Remaining node_modules → vendor catch-all
             if (id.includes('node_modules/')) {

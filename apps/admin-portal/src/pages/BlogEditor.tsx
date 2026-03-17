@@ -103,26 +103,11 @@ export default function BlogEditor() {
         published_at: publish ? new Date().toISOString() : null,
       };
 
-      const createInput: Omit<BlogPost, 'id' | 'created_at' | 'updated_at' | 'view_count'> = {
-        title: postData.title,
-        slug: postData.slug,
-        content: postData.content,
-        excerpt: postData.excerpt || null,
-        category: postData.category,
-        tags: postData.tags,
-        featured_image: postData.featured_image || null,
-        author_id: postData.author_id ?? '',
-        author_name: postData.author_name,
-        status: postData.status,
-        published_at: postData.published_at,
-      };
-      const updateInput: Partial<typeof createInput> = { ...createInput };
-
       if (isNew) {
-        await contentService.createBlogPost(createInput);
+        await contentService.createBlogPost(postData as any);
         toast.success(publish ? 'Post published!' : 'Post saved as draft');
       } else {
-        await contentService.updateBlogPost(postId, updateInput);
+        await contentService.updateBlogPost(postId, postData as any);
         if (publish && formData.status !== 'published') {
           await contentService.publishPost(postId);
         }

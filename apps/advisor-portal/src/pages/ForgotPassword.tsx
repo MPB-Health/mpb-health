@@ -4,6 +4,12 @@ import { supabase } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
+/**
+ * Sends password reset via the advisor-forgot-password edge function.
+ * This bypasses Supabase's built-in email (which is rate-limited to 2/hr and uses
+ * a default template) and instead sends a branded Resend email with a scanner-proof
+ * token_hash URL that only real browsers (executing JS) can exchange for a session.
+ */
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,14 +20,12 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      // Route through server-side edge function so 190+ simultaneous reset requests
-      // don't hit Supabase client-side rate limits (/auth/v1/recover → 429).
-      // The edge function uses Admin API + Resend — no Supabase email rate limit.
-      const { error } = await supabase.functions.invoke('advisor-forgot-password', {
+      const { data, error } = await supabase.functions.invoke('advisor-forgot-password', {
         body: { email },
       });
 
       if (error) throw error;
+      if (data && !data.success) throw new Error(data.error || 'Failed to send reset email');
 
       setSent(true);
       toast.success('Password reset email sent!');
@@ -43,10 +47,10 @@ export default function ForgotPassword() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h1>
             <p className="text-gray-600 mb-6">
-              We&apos;ve sent a password reset link to <span className="font-medium">{email}</span>
+              We've sent a password reset link to <span className="font-medium">{email}</span>
             </p>
             <p className="text-sm text-gray-500 mb-6">
-              Didn&apos;t receive the email? Check your spam folder or{' '}
+              Didn't receive the email? Check your spam folder or{' '}
               <button
                 onClick={() => setSent(false)}
                 className="text-blue-600 hover:text-blue-700 font-medium"
@@ -74,7 +78,7 @@ export default function ForgotPassword() {
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Forgot your password?</h1>
             <p className="text-gray-600">
-              No worries, we&apos;ll send you reset instructions.
+              No worries, we'll send you reset instructions.
             </p>
           </div>
 

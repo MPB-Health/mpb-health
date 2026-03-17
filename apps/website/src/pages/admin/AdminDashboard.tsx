@@ -326,10 +326,10 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
               <Link
                 key={section.href}
                 to={section.href}
-                className={`group relative bg-white rounded-xl shadow-sm border ${(section as { urgent?: boolean }).urgent ? 'border-red-300 ring-2 ring-red-200' : 'border-neutral-200'} p-5 hover:shadow-md transition-all duration-300`}
+                className={`group relative bg-white rounded-xl shadow-sm border ${section.urgent ? 'border-red-300 ring-2 ring-red-200' : 'border-neutral-200'} p-5 hover:shadow-md transition-all duration-300`}
               >
                 {section.badge !== undefined && section.badge > 0 && (
-                  <span className={`absolute top-3 right-3 inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white rounded-full ${(section as { urgent?: boolean }).urgent ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`}>
+                  <span className={`absolute top-3 right-3 inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white rounded-full ${section.urgent ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`}>
                     {section.badge}
                   </span>
                 )}

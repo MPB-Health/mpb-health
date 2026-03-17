@@ -8,8 +8,7 @@ import {
   Heart,
   Sparkles,
   CheckCircle2,
-  HelpCircle,
-  Briefcase
+  HelpCircle
 } from 'lucide-react';
 
 export default function Login() {
@@ -37,8 +36,8 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Three Card Layout */}
-        <div className="w-full max-w-5xl grid md:grid-cols-3 gap-6 lg:gap-8">
+        {/* Two Card Layout */}
+        <div className="w-full max-w-4xl grid md:grid-cols-2 gap-6 lg:gap-8">
           
           {/* Card 1: Existing Members */}
           <div className="group relative bg-white rounded-2xl shadow-lg shadow-blue-900/5 border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-blue-900/10 transition-all duration-300">
@@ -132,48 +131,6 @@ export default function Login() {
 
               <p className="mt-4 text-center text-sm text-gray-500">
                 No commitment required
-              </p>
-            </div>
-          </div>
-
-          {/* Card 3: Advisor Portal */}
-          <div className="group relative bg-white rounded-2xl shadow-lg shadow-violet-900/5 border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-violet-900/10 transition-all duration-300">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-500 to-purple-600" />
-            <div className="p-8">
-              <div className="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Briefcase className="w-7 h-7 text-violet-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                Advisors
-              </h2>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Access the advisor portal to manage your book of business, training, meetings, and member support.
-              </p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-3 text-sm text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-violet-500 flex-shrink-0" />
-                  <span>Training and resources</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-violet-500 flex-shrink-0" />
-                  <span>Submit and track support tickets</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm text-gray-600">
-                  <CheckCircle2 className="w-5 h-5 text-violet-500 flex-shrink-0" />
-                  <span>Member and meeting tools</span>
-                </li>
-              </ul>
-              <a
-                href="https://advisor.mpb.health/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-              >
-                Launch Advisor Portal
-                <ExternalLink className="w-5 h-5" />
-              </a>
-              <p className="mt-4 text-center text-sm text-gray-500">
-                Opens in a new window
               </p>
             </div>
           </div>

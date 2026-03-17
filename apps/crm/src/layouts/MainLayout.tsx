@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
-import type { NavItem, NavSection, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
+import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
@@ -37,17 +37,7 @@ import {
   Settings2,
   Calculator,
   Command,
-  TrendingUp,
-  Gauge,
-  CheckCircle2,
-  FileInput,
-  Truck,
-  ClipboardList,
-  ShoppingCart,
-  BookOpen,
-  Briefcase,
-  FolderOpen,
-  PhoneCall,
+  Download,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -74,13 +64,13 @@ interface ExtendedNavItem extends Omit<NavItem, 'children'> {
 // Navigation Configuration with Grouped Sections
 // ============================================================================
 
-interface LocalNavSection {
+interface NavSection {
   id: string;
   label?: string; // Optional section label
   items: ExtendedNavItem[];
 }
 
-const navigationSections: LocalNavSection[] = [
+const navigationSections: NavSection[] = [
   {
     id: 'main',
     items: [
@@ -92,8 +82,9 @@ const navigationSections: LocalNavSection[] = [
     label: 'Lead Management',
     items: [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
-      { name: "Julia's Quick Rate Leads", href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
+      { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
+      { name: 'Import from Zoho', href: '/import/zoho', icon: Download, permission: 'settings.manage' },
     ],
   },
   {
@@ -104,30 +95,15 @@ const navigationSections: LocalNavSection[] = [
       { name: 'Contacts', href: '/contacts', icon: UserCircle, permission: 'contacts.read' },
       { name: 'Deals', href: '/deals', icon: DollarSign, permission: 'deals.read' },
       { name: 'Deal Pipeline', href: '/deal-pipeline', icon: GitBranch, permission: 'deals.read' },
-      { name: 'Vendors', href: '/vendors', icon: Truck, permission: 'vendors.read' },
     ],
   },
   {
     id: 'sales',
     label: 'Sales & Billing',
     items: [
-      { name: 'Forecasting', href: '/forecasting', icon: TrendingUp, permission: 'deals.read' },
-      { name: 'Deal Velocity', href: '/forecasting/velocity', icon: Gauge, permission: 'deals.read' },
       { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
-      { name: 'Price Books', href: '/price-books', icon: BookOpen, permission: 'products.read' },
       { name: 'Quotes', href: '/quotes', icon: FileCheck, permission: 'quotes.read' },
-      { name: 'Sales Orders', href: '/sales-orders', icon: ShoppingCart, permission: 'sales_orders.read' },
       { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
-      { name: 'Purchase Orders', href: '/purchase-orders', icon: ClipboardList, permission: 'purchase_orders.read' },
-    ],
-  },
-  {
-    id: 'support',
-    label: 'Service & Support',
-    items: [
-      { name: 'Cases', href: '/cases', icon: Briefcase, permission: 'cases.read' },
-      { name: 'Documents', href: '/documents', icon: FolderOpen, permission: 'documents.read' },
-      { name: 'Calls', href: '/calls', icon: PhoneCall, permission: 'leads.read' },
     ],
   },
   {
@@ -135,7 +111,6 @@ const navigationSections: LocalNavSection[] = [
     label: 'Marketing',
     items: [
       { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
-      { name: 'Web Forms', href: '/web-forms', icon: FileInput, permission: 'campaigns.read' },
     ],
   },
   {
@@ -145,7 +120,6 @@ const navigationSections: LocalNavSection[] = [
       { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
       { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
       { name: 'Meetings', href: '/meetings', icon: Video, permission: 'tasks.read' },
-      { name: 'Approvals', href: '/approvals', icon: CheckCircle2 },
     ],
   },
   {
@@ -160,8 +134,7 @@ const navigationSections: LocalNavSection[] = [
     id: 'email',
     label: 'Email',
     items: [
-      { name: 'Connected Inbox', href: '/email/connected', icon: Inbox, permission: 'email.read' },
-      { name: 'CRM Inbox', href: '/email/inbox', icon: Inbox, permission: 'email.read' },
+      { name: 'Inbox', href: '/email/inbox', icon: Inbox, permission: 'email.read' },
       {
         name: 'Email',
         href: '#',
@@ -172,9 +145,6 @@ const navigationSections: LocalNavSection[] = [
           { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
           { name: 'Sequences', href: '/email/sequences', permission: 'email.read' },
           { name: 'Deliverability', href: '/email/deliverability', permission: 'email.read' },
-          { name: 'Accounts', href: '/email/accounts', permission: 'email.read' },
-          { name: 'Rules', href: '/email/rules', permission: 'email.read' },
-          { name: 'Domains', href: '/email/domains', permission: 'settings.manage' },
         ],
       },
       { name: 'Signatures', href: '/email/signatures', icon: PenTool, permission: 'email.read' },
@@ -186,7 +156,6 @@ const navigationSections: LocalNavSection[] = [
     items: [
       { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
       { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
-      { name: 'Approval Processes', href: '/settings/approval-processes', icon: CheckCircle2, permission: 'settings.manage' },
       { name: 'Studio', href: '/studio', icon: Settings2, permission: 'settings.manage' },
       { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
     ],
@@ -201,7 +170,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
-  const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
+  const { dashboardStats, tasksDueToday, overdueTasks, zohoConfigured } = useCRM();
 
   // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(user?.id);
@@ -214,34 +183,28 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const totalPendingTasks = tasksDueToday.length + overdueTasks.length;
 
-  const mapNavItem = (item: ExtendedNavItem): NavItem => ({
-    name: item.name,
-    href: item.href,
-    icon: item.icon,
-    children: item.children
-      ?.filter((child) => !child.permission || can(child.permission))
-      .map((child) => ({ name: child.name, href: child.href })),
-    badge:
-      item.name === 'Tasks' && totalPendingTasks > 0 ? (
-        <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">
-          {totalPendingTasks}
-        </span>
-      ) : undefined,
-  });
-
-  // Filtered sections passed to AppLayout for labeled sidebar groups
-  const visibleNavSections: NavSection[] = navigationSections
-    .map((section) => ({
-      id: section.id,
-      label: section.label,
-      items: section.items
-        .filter((item) => !item.permission || can(item.permission))
-        .map(mapNavItem),
-    }))
-    .filter((section) => section.items.length > 0);
-
-  // Flat list kept for backward compat (used by renderNavLink checks, etc.)
-  const visibleNav: NavItem[] = visibleNavSections.flatMap((s) => s.items);
+  // Filter nav items based on permissions and feature flags
+  const visibleNav: NavItem[] = navigation
+    .filter((item) => {
+      // Hide Zoho-specific items when Zoho is not configured
+      if (item.href === '/import/zoho' && !zohoConfigured) return false;
+      if (!item.permission) return true;
+      return can(item.permission);
+    })
+    .map((item) => ({
+      name: item.name,
+      href: item.href,
+      icon: item.icon,
+      children: item.children
+        ?.filter((child) => !child.permission || can(child.permission))
+        .map((child) => ({ name: child.name, href: child.href })),
+      badge:
+        item.name === 'Tasks' && totalPendingTasks > 0 ? (
+          <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">
+            {totalPendingTasks}
+          </span>
+        ) : undefined,
+    }));
 
   const renderNavLink = (item: NavItem, props: NavLinkRenderProps) => {
     const isActive = location.pathname === item.href ||
@@ -368,16 +331,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       <AppLayout
         appName="CRM"
-        logoSrc="/assets/MPB-Health-No-background.png?v=2"
+        logoSrc="/assets/MPB-Health-No-background.png"
         navigation={visibleNav}
-        navSections={visibleNavSections}
         portalSwitcher={
           <PortalSwitcher
             currentPortal="crm"
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
-            canAccessWebsite={canAccessAdmin}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />

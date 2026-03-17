@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminStatsBar } from './AdminStatsBar';
+import { AdminNotificationTicker } from './AdminNotificationTicker';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
 import { getRealTimeStats, getTodayHourlyBreakdown } from '../../lib/realTimeAnalyticsService';
@@ -232,6 +233,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             loading={loading}
             onRefresh={loadAdminStats}
           />
+
+          {/* Notification Ticker - real-time CRM activity feed */}
+          <AdminNotificationTicker />
 
           {/* Main Content */}
           <main className="flex-1 overflow-y-auto">

@@ -27,7 +27,7 @@ function buildInviteEmail(
   password: string,
   agentId: string | null,
 ): string {
-  const loginUrl = "https://advisor.mpb.health/login";
+  const loginUrl = "https://advisor-portal-chi.vercel.app/login";
 
   return `
     <!DOCTYPE html>
@@ -225,10 +225,6 @@ Deno.serve(async (req: Request) => {
             to: [advisor.email],
             subject: "Your MPB Health Advisor Portal Account is Ready",
             html,
-            tracking: {
-              open: true,
-              click: true,
-            },
           }),
         });
 

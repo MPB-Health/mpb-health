@@ -4,11 +4,6 @@
 //
 // Deploy: supabase functions deploy send-website-email
 // Secret required: RESEND_API_KEY  (set via `supabase secrets set RESEND_API_KEY=...`)
-//
-// Click tracking: We send tracking: { open: true, click: true } so Resend tracks link clicks.
-// For clicks to appear in Resend dashboard:
-// 1. In Resend Dashboard → Domains → select mpb.health → Configuration → enable "Click tracking"
-// 2. (Optional) Add webhook for email.clicked to receive click events in your system
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
@@ -84,10 +79,6 @@ serve(async (req) => {
       to: recipients,
       subject,
       html,
-      tracking: {
-        open: true,
-        click: true,
-      },
     };
     if (text) payload.text = text;
     if (replyTo) payload.reply_to = replyTo;

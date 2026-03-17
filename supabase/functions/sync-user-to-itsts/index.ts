@@ -122,11 +122,8 @@ async function handleCreate(
   if (createError) {
     if (createError.message?.includes("already been registered")) {
       log.info("Auth user exists but no profile, upserting profile", { email: req.email });
-      let existingAuth: { id: string; email?: string } | undefined;
-      try {
-        const { data: existingUser } = await itstsAdmin.auth.admin.getUserByEmail(req.email);
-        existingAuth = existingUser?.user ?? undefined;
-      } catch { /* fallback */ }
+      const { data: users } = await itstsAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const existingAuth = users?.users?.find((u) => u.email === req.email);
       if (existingAuth) {
         await itstsAdmin
           .from("profiles")

@@ -83,10 +83,6 @@ async function sendInviteEmail(email: string, firstName: string, tempPassword: s
       to: [email],
       subject: "Welcome to MPB Health Admin Portal",
       html,
-      tracking: {
-        open: true,
-        click: true,
-      },
     }),
   });
 
@@ -232,29 +228,6 @@ Deno.serve(async (req: Request) => {
     if (roleError) {
       log.error('User role insert error:', roleError);
       // Continue anyway, user is created
-    }
-
-    // Add org membership so user can access org-gated portals (CRM, etc.)
-    const DEFAULT_ORG_ID = "a0000000-0000-0000-0000-000000000001";
-    const orgRole = role === "super_admin" || role === "admin" ? "admin" : role === "manager" ? "manager" : "member";
-
-    const { error: orgError } = await supabaseAdmin
-      .from("org_memberships")
-      .upsert(
-        {
-          user_id: userId,
-          org_id: DEFAULT_ORG_ID,
-          role: orgRole,
-          status: "active",
-          invited_by: caller.id,
-          invited_at: new Date().toISOString(),
-          joined_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,org_id" },
-      );
-
-    if (orgError) {
-      log.error("Org membership insert error:", orgError);
     }
 
     let emailSent = false;

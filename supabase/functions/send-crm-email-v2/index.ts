@@ -7,10 +7,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
-import { createLogger } from '../_shared/logger.ts';
 import { checkRateLimit, getClientIdentifier, requireAuth } from '../_shared/security.ts';
-
-const log = createLogger('send-crm-email-v2');
 
 // ============================================================================
 // Types
@@ -107,7 +104,7 @@ serve(async (req) => {
       maxRequests: 10,
       windowSeconds: 60,
       keyPrefix: 'send-crm-email-v2',
-    }, req);
+    });
     if (rateLimitResponse) return rateLimitResponse;
 
     // SECURITY: Require authentication - no unauthenticated email sending
@@ -122,15 +119,7 @@ serve(async (req) => {
     const userEmail = authUser.email || null;
 
     // Parse request body
-    let body: RequestBody;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid JSON body' }),
-        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } },
-      );
-    }
+    const body: RequestBody = await req.json();
     const {
       to,
       cc,
@@ -199,10 +188,6 @@ serve(async (req) => {
       to,
       subject,
       html: finalHtml,
-      tracking: {
-        open: track_opens,
-        click: track_clicks,
-      },
     };
 
     // Optional fields
@@ -310,27 +295,21 @@ serve(async (req) => {
         .in('id', attachment_ids);
     }
 
-    // Update thread if applicable (fetch-then-update for increment and array merge)
+    // Update thread if applicable
     if (thread_id && emailLog) {
-      const { data: thread } = await supabase
+      await supabase
         .from('crm_email_threads')
-        .select('message_count, participants')
-        .eq('id', thread_id)
-        .single();
-
-      if (thread) {
-        const newCount = (thread.message_count ?? 0) + 1;
-        const mergedParticipants = [...new Set([...(thread.participants || []), ...to])];
-        await supabase
-          .from('crm_email_threads')
-          .update({
-            message_count: newCount,
-            last_message_at: new Date().toISOString(),
-            last_message_preview: bodyPreview.substring(0, 100),
-            participants: mergedParticipants,
-          })
-          .eq('id', thread_id);
-      }
+        .update({
+          message_count: supabase.rpc('increment', { row_id: thread_id, column_name: 'message_count' }),
+          last_message_at: new Date().toISOString(),
+          last_message_preview: bodyPreview.substring(0, 100),
+          participants: supabase.rpc('array_append_unique', {
+            row_id: thread_id,
+            column_name: 'participants',
+            values: to,
+          }),
+        })
+        .eq('id', thread_id);
     }
 
     // Create activity log for lead

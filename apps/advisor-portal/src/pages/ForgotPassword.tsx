@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@mpbhealth/database';
+import { supabaseUrl } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
@@ -20,12 +20,20 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('advisor-forgot-password', {
-        body: { email },
+      // Call the edge function directly via fetch — NOT through supabase.functions.invoke().
+      // invoke() calls getSession() internally to attach an auth header, but on the
+      // forgot-password page there is no valid session. If a stale session exists in
+      // localStorage, the SDK tries to refresh it and hangs indefinitely.
+      const res = await fetch(`${supabaseUrl}/functions/v1/advisor-forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) throw error;
-      if (data && !data.success) throw new Error(data.error || 'Failed to send reset email');
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send reset email');
+      }
 
       setSent(true);
       toast.success('Password reset email sent!');

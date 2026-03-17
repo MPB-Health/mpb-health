@@ -186,6 +186,13 @@ export default function TicketsList() {
       });
       setTickets(result.tickets);
       setTotal(result.total);
+      setRequesters((previous) => {
+        const merged = new Map(previous.map((requester) => [requester.id, requester]));
+        ticketService.extractRequesters(result.tickets).forEach((requester) => {
+          merged.set(requester.id, requester);
+        });
+        return [...merged.values()].sort((a, b) => a.name.localeCompare(b.name));
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tickets');
     } finally {
@@ -207,7 +214,6 @@ export default function TicketsList() {
 
   useEffect(() => {
     ticketService.getCategories().then(setCreateCategories).catch(() => {});
-    ticketService.getRequesters().then(setRequesters).catch(() => {});
   }, []);
 
   const handleBulkClose = async () => {

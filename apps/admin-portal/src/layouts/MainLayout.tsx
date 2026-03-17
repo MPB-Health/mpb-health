@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Users,
   UserPlus,
+  Heart,
   FileText,
   Settings,
   ClipboardList,
@@ -10,6 +11,10 @@ import {
   Bell,
   Package,
   LifeBuoy,
+  TrendingUp,
+  MessageSquare,
+  Server,
+  BarChart3,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
@@ -21,11 +26,21 @@ import { useAdmin } from '../contexts/AdminContext';
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Users', href: '/users', icon: Users },
+  { name: 'Members', href: '/members', icon: Heart },
   {
     name: 'Enrollments',
     href: '/enrollments',
     icon: UserPlus,
     // badge is set dynamically below
+  },
+  {
+    name: 'CRM',
+    href: '#',
+    icon: TrendingUp,
+    children: [
+      { name: 'Dashboard', href: '/crm/dashboard' },
+      { name: 'Leads', href: '/crm/leads' },
+    ],
   },
   { name: 'Plan Management', href: '/plans', icon: Package },
   {
@@ -53,6 +68,17 @@ const navigation: NavItem[] = [
       { name: 'Navigation', href: '/content/navigation' },
     ],
   },
+  {
+    name: 'Messaging',
+    href: '#',
+    icon: MessageSquare,
+    children: [
+      { name: 'Chat Moderation', href: '/messaging/chat' },
+      { name: 'Push Notifications', href: '/messaging/push' },
+    ],
+  },
+  { name: 'System Health', href: '/system/health', icon: Server },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Audit Logs', href: '/audit-logs', icon: ClipboardList },
   {
     name: 'Settings',
@@ -139,8 +165,8 @@ export default function MainLayout() {
           className={({ isActive }) =>
             `${props.className} ${
               isActive
-                ? 'bg-white/15 text-white'
-                : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+                ? 'bg-[rgb(var(--sidebar-active-bg))] text-[rgb(var(--sidebar-text-active))] shadow-sm'
+                : 'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]'
             }`
           }
         >
@@ -155,8 +181,8 @@ export default function MainLayout() {
           className={({ isActive }) =>
             `${props.className} ${
               isActive
-                ? 'bg-white/15 text-white'
-                : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+                ? 'bg-[rgb(var(--sidebar-active-bg))] text-[rgb(var(--sidebar-text-active))] shadow-sm'
+                : 'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]'
             }`
           }
         >
@@ -178,23 +204,23 @@ export default function MainLayout() {
       userSection={
         <div className="space-y-2">
           <div className="flex items-center space-x-3 px-3 py-2">
-            <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center shrink-0">
-              <span className="text-sm font-medium text-white">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[rgb(var(--sidebar-hover))]">
+              <span className="text-sm font-medium text-[rgb(var(--sidebar-text-active))]">
                 {user?.first_name?.[0]}
                 {user?.last_name?.[0]}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
+              <p className="text-sm font-medium text-[rgb(var(--sidebar-text-active))] truncate">
                 {user?.first_name} {user?.last_name}
               </p>
-              <p className="text-xs text-white/50 capitalize">{user?.role}</p>
+              <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] capitalize">{user?.role}</p>
             </div>
           </div>
 
           <button
             onClick={logout}
-            className="flex items-center space-x-3 px-3 py-2 w-full rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.08] transition-colors"
+            className="flex items-center space-x-3 px-3 py-2 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors"
           >
             <LogOut className="w-[18px] h-[18px]" />
             <span>Sign Out</span>

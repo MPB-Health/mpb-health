@@ -27,7 +27,7 @@ import {
 } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
 
-const ALL_PORTAL_ROLES: PortalRole[] = ['super_admin', 'admin', 'advisor', 'member'];
+const ALL_PORTAL_ROLES: PortalRole[] = ['super_admin', 'admin', 'advisor', 'member', 'crm_user'];
 
 const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
   super_admin: 'Super Admin',

@@ -10,6 +10,10 @@ import {
   CheckSquare,
   Square,
   ChevronDown,
+  KeyRound,
+  X,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   userService,
@@ -17,6 +21,7 @@ import {
   type CrossPortalUser,
   type PortalRole,
 } from '@mpbhealth/admin-core';
+import { supabase } from '@mpbhealth/database';
 import { useAdmin } from '../contexts/AdminContext';
 import AddUserModal from '../components/AddUserModal';
 import InviteUserModal from '../components/InviteUserModal';
@@ -35,6 +40,7 @@ const PORTAL_ROLE_COLORS: Record<string, string> = {
   admin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   advisor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   member: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  crm_user: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
 };
 
 function getRoleColor(role: string) {
@@ -78,12 +84,17 @@ export default function Users() {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Bulk selection (admin tab only)
+  // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+
+  // Mass password reset
+  const [showMassResetModal, setShowMassResetModal] = useState(false);
+  const [massResetLoading, setMassResetLoading] = useState(false);
+  const [massResetResult, setMassResetResult] = useState<{ sent: number; errors: number; total: number } | null>(null);
 
   const loadAdminUsers = useCallback(async () => {
     setLoading(true);
@@ -131,6 +142,9 @@ export default function Users() {
 
   // ── Bulk actions ────────────────────────────────────────────────────────────
 
+  const currentList = activeTab === 'admin' ? adminUsers : crossUsers;
+  const currentListIds = currentList.map((u) => u.id);
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -141,10 +155,10 @@ export default function Users() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === adminUsers.length) {
+    if (selectedIds.size === currentListIds.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(adminUsers.map((u) => u.id)));
+      setSelectedIds(new Set(currentListIds));
     }
   };
 
@@ -161,7 +175,77 @@ export default function Users() {
     }
   };
 
+  // ── Mass password reset ─────────────────────────────────────────────────────
+
+  const handleMassPasswordReset = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) {
+      toast.error('No users selected');
+      return;
+    }
+    setMassResetLoading(true);
+    setMassResetResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('mass-password-reset', {
+        body: { advisor_ids: ids },
+      });
+      if (error) throw error;
+      if (data && !data.success) throw new Error(data.error || 'Reset failed');
+      setMassResetResult({
+        sent: data.sent ?? 0,
+        errors: data.errors?.length ?? 0,
+        total: data.total ?? ids.length,
+      });
+      toast.success(`Password reset emails sent to ${data.sent ?? 0} user(s)`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to send mass password reset';
+      toast.error(msg);
+    } finally {
+      setMassResetLoading(false);
+    }
+  };
+
+  const openMassReset = () => {
+    setBulkMenuOpen(false);
+    setMassResetResult(null);
+    setShowMassResetModal(true);
+  };
+
   // ── Render helpers ──────────────────────────────────────────────────────────
+
+  const renderSelectCheckbox = (id: string, label: string) => (
+    <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => toggleSelect(id)}
+        aria-label={`Select ${label}`}
+        className="text-th-text-tertiary hover:text-th-text-primary"
+      >
+        {selectedIds.has(id) ? (
+          <CheckSquare className="w-4 h-4 text-th-accent-600" />
+        ) : (
+          <Square className="w-4 h-4" />
+        )}
+      </button>
+    </td>
+  );
+
+  const renderSelectAllHeader = () => (
+    <th className="py-3 px-4 w-10">
+      <button
+        type="button"
+        onClick={toggleSelectAll}
+        aria-label="Select all"
+        className="text-th-text-tertiary hover:text-th-text-primary"
+      >
+        {selectedIds.size === currentListIds.length && currentListIds.length > 0 ? (
+          <CheckSquare className="w-4 h-4" />
+        ) : (
+          <Square className="w-4 h-4" />
+        )}
+      </button>
+    </th>
+  );
 
   const renderAdminTable = () => (
     <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
@@ -173,22 +257,7 @@ export default function Users() {
         <table className="w-full">
           <thead className="bg-surface-secondary border-b border-th-border">
             <tr>
-              {isSuperAdmin && (
-                <th className="py-3 px-4 w-10">
-                  <button
-                    type="button"
-                    onClick={toggleSelectAll}
-                    aria-label="Select all"
-                    className="text-th-text-tertiary hover:text-th-text-primary"
-                  >
-                    {selectedIds.size === adminUsers.length && adminUsers.length > 0 ? (
-                      <CheckSquare className="w-4 h-4" />
-                    ) : (
-                      <Square className="w-4 h-4" />
-                    )}
-                  </button>
-                </th>
-              )}
+              {isSuperAdmin && renderSelectAllHeader()}
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">User</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Role</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Status</th>
@@ -203,22 +272,7 @@ export default function Users() {
                 className="hover:bg-surface-tertiary cursor-pointer"
                 onClick={() => navigate(`/users/${user.id}`)}
               >
-                {isSuperAdmin && (
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => toggleSelect(user.id)}
-                      aria-label={`Select ${user.first_name} ${user.last_name}`}
-                      className="text-th-text-tertiary hover:text-th-text-primary"
-                    >
-                      {selectedIds.has(user.id) ? (
-                        <CheckSquare className="w-4 h-4 text-th-accent-600" />
-                      ) : (
-                        <Square className="w-4 h-4" />
-                      )}
-                    </button>
-                  </td>
-                )}
+                {isSuperAdmin && renderSelectCheckbox(user.id, `${user.first_name} ${user.last_name}`)}
                 <td className="py-3 px-4">
                   <div className="flex items-center space-x-3">
                     {user.avatar_url ? (
@@ -260,7 +314,7 @@ export default function Users() {
                 <td className="py-3 px-4 text-right">
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}`); }}
                     aria-label="User actions"
                     className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
                   >
@@ -290,6 +344,7 @@ export default function Users() {
         <table className="w-full">
           <thead className="bg-surface-secondary border-b border-th-border">
             <tr>
+              {isSuperAdmin && renderSelectAllHeader()}
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">User</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Portal Roles</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Joined</th>
@@ -304,6 +359,7 @@ export default function Users() {
                 className="hover:bg-surface-tertiary cursor-pointer"
                 onClick={() => navigate(`/users/${user.id}`)}
               >
+                {isSuperAdmin && renderSelectCheckbox(user.id, user.full_name ?? user.email)}
                 <td className="py-3 px-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-surface-tertiary rounded-full flex items-center justify-center">
@@ -373,8 +429,8 @@ export default function Users() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          {/* Bulk actions (admin tab only, super_admin only) */}
-          {activeTab === 'admin' && isSuperAdmin && selectedIds.size > 0 && (
+          {/* Bulk actions (any tab, super_admin only) */}
+          {isSuperAdmin && selectedIds.size > 0 && (
             <div className="relative">
               <button
                 type="button"
@@ -385,27 +441,40 @@ export default function Users() {
                 <ChevronDown className="w-4 h-4" />
               </button>
               {bulkMenuOpen && (
-                <div className="absolute right-0 mt-1 w-40 bg-surface-primary border border-th-border rounded-lg shadow-lg z-10">
+                <div className="absolute right-0 mt-1 w-52 bg-surface-primary border border-th-border rounded-lg shadow-lg z-10">
+                  {activeTab === 'admin' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleBulkAction('active')}
+                        className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
+                      >
+                        Activate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleBulkAction('suspended')}
+                        className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
+                      >
+                        Suspend
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleBulkAction('inactive')}
+                        className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
+                      >
+                        Deactivate
+                      </button>
+                      <div className="border-t border-th-border my-1" />
+                    </>
+                  )}
                   <button
                     type="button"
-                    onClick={() => handleBulkAction('active')}
-                    className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
+                    onClick={openMassReset}
+                    className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary flex items-center space-x-2"
                   >
-                    Activate
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBulkAction('suspended')}
-                    className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
-                  >
-                    Suspend
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBulkAction('inactive')}
-                    className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
-                  >
-                    Deactivate
+                    <KeyRound className="w-4 h-4" />
+                    <span>Send Password Reset</span>
                   </button>
                 </div>
               )}
@@ -506,6 +575,87 @@ export default function Users() {
         onClose={() => setShowInviteModal(false)}
         onSuccess={() => {}}
       />
+
+      {/* Mass Password Reset Modal */}
+      {showMassResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-surface-primary rounded-xl border border-th-border shadow-2xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-th-border">
+              <div className="flex items-center space-x-3">
+                <KeyRound className="w-5 h-5 text-th-accent-600" />
+                <h2 className="text-lg font-semibold text-th-text-primary">Mass Password Reset</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMassResetModal(false)}
+                aria-label="Close modal"
+                className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {!massResetResult ? (
+                <>
+                  <div className="flex items-start space-x-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                      This will send a password reset email to <strong>{selectedIds.size}</strong> selected user(s).
+                      Each user will receive a branded email with a secure reset link.
+                    </p>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowMassResetModal(false)}
+                      className="px-4 py-2 border border-th-border text-th-text-secondary rounded-lg hover:bg-surface-secondary transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleMassPasswordReset}
+                      disabled={massResetLoading}
+                      className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors disabled:opacity-50"
+                    >
+                      {massResetLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                      <span>{massResetLoading ? 'Sending...' : 'Send Reset Emails'}</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-center space-y-3">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="p-3 bg-surface-secondary rounded-lg">
+                        <p className="text-2xl font-bold text-th-text-primary">{massResetResult.total}</p>
+                        <p className="text-xs text-th-text-tertiary">Total</p>
+                      </div>
+                      <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <p className="text-2xl font-bold text-green-600">{massResetResult.sent}</p>
+                        <p className="text-xs text-green-600">Sent</p>
+                      </div>
+                      <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                        <p className="text-2xl font-bold text-red-600">{massResetResult.errors}</p>
+                        <p className="text-xs text-red-600">Failed</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setShowMassResetModal(false); setSelectedIds(new Set()); }}
+                      className="px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

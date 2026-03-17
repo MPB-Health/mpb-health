@@ -21,7 +21,7 @@ import {
   type CrossPortalUser,
   type PortalRole,
 } from '@mpbhealth/admin-core';
-import { supabase } from '@mpbhealth/database';
+import { invokeWithResolvedAuth } from '@mpbhealth/database';
 import { useAdmin } from '../contexts/AdminContext';
 import AddUserModal from '../components/AddUserModal';
 import InviteUserModal from '../components/InviteUserModal';
@@ -186,7 +186,7 @@ export default function Users() {
     setMassResetLoading(true);
     setMassResetResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('mass-password-reset', {
+      const { data, error } = await invokeWithResolvedAuth('mass-password-reset', {
         body: { advisor_ids: ids },
       });
       if (error) throw error;

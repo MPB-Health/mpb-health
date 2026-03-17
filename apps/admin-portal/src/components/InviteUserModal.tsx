@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { X, Mail, Shield, Loader2, Send } from 'lucide-react';
-import { supabase } from '@mpbhealth/database';
+import { invokeWithResolvedAuth } from '@mpbhealth/database';
 
 interface InviteUserModalProps {
   isOpen: boolean;
@@ -48,7 +48,7 @@ export default function InviteUserModal({
     setSending(true);
     try {
       // Call edge function to send invitation
-      const { data: result, error } = await supabase.functions.invoke('invite-user', {
+      const { data: result, error } = await invokeWithResolvedAuth('invite-user', {
         body: {
           org_id: orgId,
           org_name: orgName,

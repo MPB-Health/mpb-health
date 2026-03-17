@@ -14,6 +14,8 @@
 
 import { supabase } from './client';
 
+type InvokeFunctionOptions = NonNullable<Parameters<typeof supabase.functions.invoke>[1]>;
+
 /** Seconds before JWT expiry that we proactively force a synchronous refresh. */
 const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
 
@@ -53,4 +55,27 @@ export async function getResolvedAuthHeader(): Promise<{ Authorization: string }
   }
 
   return { Authorization: `Bearer ${session.access_token}` };
+}
+
+/**
+ * Invoke a Supabase Edge Function with a freshly resolved bearer token.
+ * Throws when the user is no longer authenticated so callers can surface a
+ * clear re-login message instead of an opaque 401 from the function.
+ */
+export async function invokeWithResolvedAuth<TData = unknown>(
+  functionName: string,
+  options: InvokeFunctionOptions = {},
+) {
+  const authHeaders = await getResolvedAuthHeader();
+  if (!authHeaders) {
+    throw new Error('Your session has expired. Please sign in again.');
+  }
+
+  return supabase.functions.invoke<TData>(functionName, {
+    ...options,
+    headers: {
+      ...(options.headers ?? {}),
+      ...authHeaders,
+    },
+  });
 }

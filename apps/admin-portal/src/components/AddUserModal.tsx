@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { X, User, Mail, Shield, Loader2 } from 'lucide-react';
 import { userService, type Permission } from '@mpbhealth/admin-core';
-import { supabase } from '@mpbhealth/database';
+import { invokeWithResolvedAuth } from '@mpbhealth/database';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -70,7 +70,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
     setSaving(true);
     try {
       // Call edge function to create auth user
-      const { data: createResult, error: createError } = await supabase.functions.invoke(
+      const { data: createResult, error: createError } = await invokeWithResolvedAuth(
         'create-admin-user',
         {
           body: {

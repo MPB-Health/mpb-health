@@ -19,7 +19,6 @@ import { StateEligibilityBanner } from './components/blocks/StateEligibilityBann
 import { ZohoSalesIQMonitor } from './components/ZohoSalesIQMonitor';
 import { SilentErrorBoundary } from './components/ErrorBoundary';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
-import { LeadNotificationWrapper } from './components/notifications/LeadNotificationWrapper';
 
 // Critical routes - loaded immediately
 import { Landing } from './pages/Landing';
@@ -263,7 +262,6 @@ const App = () => {
         <NavigationProvider>
           <TerminalProvider>
             <Router>
-            <LeadNotificationWrapper>
             <AnalyticsTracker>
             <RecoveryHashRedirector />
             <ScrollToTop />
@@ -713,7 +711,6 @@ const App = () => {
             </SilentErrorBoundary>
           </div>
             </AnalyticsTracker>
-            </LeadNotificationWrapper>
             </Router>
           </TerminalProvider>
         </NavigationProvider>

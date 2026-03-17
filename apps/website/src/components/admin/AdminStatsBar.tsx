@@ -10,7 +10,6 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { LeadNotificationBell } from './LeadNotificationBell';
 
 interface AdminStatsBarProps {
   stats: {
@@ -142,8 +141,6 @@ export const AdminStatsBar: React.FC<AdminStatsBarProps> = ({
           {/* Actions */}
           <div className="flex items-center gap-2">
             {/* Lead Notifications */}
-            <LeadNotificationBell />
-
             {/* Refresh Button */}
             <button
               onClick={onRefresh}

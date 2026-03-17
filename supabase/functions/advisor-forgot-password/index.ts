@@ -169,36 +169,10 @@ Deno.serve(async (req: Request) => {
       ? `${ADVISOR_RESET_URL}?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`
       : linkData.properties.action_link; // fallback if hashed_token unavailable
 
-    // Internal domains (@mympb.com) use Supabase built-in email (trusted by M365).
-    // External domains use Resend (branded, scanner-proof).
-    const isInternalDomain = email.endsWith("@mympb.com");
-
-    if (isInternalDomain) {
-      // Supabase Admin API resetPasswordForEmail — no rate limit, uses Supabase SMTP
-      // which is already trusted by the @mympb.com M365 tenant.
-      const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: "recovery",
-        email,
-        options: { redirectTo: ADVISOR_RESET_URL },
-      });
-      // The generateLink above already created the token. Now send via Supabase's
-      // built-in email by calling resetPasswordForEmail with the admin client.
-      // This bypasses client-side rate limits because we use service role.
-      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-      const emailClient = createClient(supabaseUrl, supabaseAnonKey);
-      const { error: emailError } = await emailClient.auth.resetPasswordForEmail(email, {
-        redirectTo: ADVISOR_RESET_URL,
-      });
-      if (emailError) {
-        log.warn(`Supabase built-in email failed for ${email}: ${emailError.message}, falling back to Resend`);
-        // Fall through to Resend below
-      } else {
-        log.info(`Password reset email sent to ${email} via Supabase built-in (internal domain)`);
-        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
-      }
-    }
-
-    // Send via Resend (branded email for external advisors)
+    // Send via Resend (branded, scanner-proof) for ALL domains.
+    // Previously internal domains (@mympb.com) used Supabase built-in email, but
+    // M365 email scanners follow the Supabase verify link and consume the single-use
+    // token before the user can click it, causing an infinite forgot-password loop.
     const { html, text } = buildResetEmail(email, resetLink);
 
     const res = await fetch("https://api.resend.com/emails", {

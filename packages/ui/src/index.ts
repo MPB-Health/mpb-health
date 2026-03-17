@@ -2,9 +2,6 @@
 export { Button } from './components/Button';
 export type { ButtonProps } from './components/Button';
 
-export { DataTable } from './components/DataTable';
-export type { DataTableProps, Column as DataTableColumn } from './components/DataTable';
-
 export { Input } from './components/Input';
 export type { InputProps } from './components/Input';
 
@@ -35,12 +32,6 @@ export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './
 // Login
 export { LoginLayout } from './components/LoginLayout';
 export type { LoginLayoutProps } from './components/LoginLayout';
-export { LoginVisualPanel } from './components/LoginVisualPanel';
-export type { LoginVisualPanelProps } from './components/LoginVisualPanel';
-
-// Layout Components
-export { GlassCard } from './components/GlassCard';
-export type { GlassCardProps } from './components/GlassCard';
 
 export { GradientHeader } from './components/GradientHeader';
 export type { GradientHeaderProps } from './components/GradientHeader';

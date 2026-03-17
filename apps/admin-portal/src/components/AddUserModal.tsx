@@ -10,6 +10,13 @@ interface AddUserModalProps {
   onSuccess: () => void;
 }
 
+interface CreateAdminUserResponse {
+  success: boolean;
+  error?: string;
+  email_sent?: boolean;
+  email_error?: string;
+}
+
 interface FormData {
   email: string;
   first_name: string;
@@ -70,7 +77,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
     setSaving(true);
     try {
       // Call edge function to create auth user
-      const { data: createResult, error: createError } = await invokeWithResolvedAuth(
+      const { data: createResult, error: createError } = await invokeWithResolvedAuth<CreateAdminUserResponse>(
         'create-admin-user',
         {
           body: {

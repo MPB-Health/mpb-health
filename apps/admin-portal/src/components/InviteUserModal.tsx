@@ -11,6 +11,11 @@ interface InviteUserModalProps {
   orgName?: string;
 }
 
+interface InviteUserResponse {
+  success: boolean;
+  error?: string;
+}
+
 interface FormData {
   email: string;
   role: 'admin' | 'manager' | 'advisor';
@@ -48,7 +53,7 @@ export default function InviteUserModal({
     setSending(true);
     try {
       // Call edge function to send invitation
-      const { data: result, error } = await invokeWithResolvedAuth('invite-user', {
+      const { data: result, error } = await invokeWithResolvedAuth<InviteUserResponse>('invite-user', {
         body: {
           org_id: orgId,
           org_name: orgName,

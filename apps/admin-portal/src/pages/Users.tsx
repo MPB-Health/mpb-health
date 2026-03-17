@@ -28,6 +28,14 @@ import InviteUserModal from '../components/InviteUserModal';
 
 type PortalTab = 'admin' | 'advisor' | 'member' | 'all';
 
+interface MassPasswordResetResponse {
+  success: boolean;
+  error?: string;
+  sent?: number;
+  errors?: unknown[];
+  total?: number;
+}
+
 const PORTAL_TABS: { id: PortalTab; label: string }[] = [
   { id: 'admin', label: 'Admin' },
   { id: 'advisor', label: 'Advisor' },
@@ -186,7 +194,7 @@ export default function Users() {
     setMassResetLoading(true);
     setMassResetResult(null);
     try {
-      const { data, error } = await invokeWithResolvedAuth('mass-password-reset', {
+      const { data, error } = await invokeWithResolvedAuth<MassPasswordResetResponse>('mass-password-reset', {
         body: { advisor_ids: ids },
       });
       if (error) throw error;

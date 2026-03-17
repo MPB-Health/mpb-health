@@ -297,12 +297,13 @@ export class UserService {
     return users[0] ?? null;
   }
 
-  /** Send a password reset email via Supabase Auth (redirects to advisor portal) */
+  /** Send a password reset email via edge function (scanner-proof, uses Resend) */
   async sendPasswordReset(email: string): Promise<void> {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://advisor.mpb.health/reset-password',
+    const { data, error } = await supabase.functions.invoke('advisor-forgot-password', {
+      body: { email },
     });
     if (error) throw error;
+    if (data && !data.success) throw new Error(data.error || 'Failed to send reset email');
   }
 
   /** Directly set a new password for a user (super_admin only — calls admin-update-password edge function) */

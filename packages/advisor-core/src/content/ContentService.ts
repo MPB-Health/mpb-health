@@ -226,12 +226,17 @@ export class ContentService {
       query = query.or(searchClauses.join(','));
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
+    const result = await query;
+    if (result.error) throw result.error;
+
+    const data = (result.data || []) as Array<Partial<Bulletin> & {
+      id: string;
+      category?: BulletinCategory;
+    }>;
 
     // If advisorId provided, fetch read status
     let readContentIds: string[] = [];
-    if (advisorId && data && data.length > 0) {
+    if (advisorId && data.length > 0) {
       const { data: views } = await supabase
         .from('advisor_content_views')
         .select('content_id')
@@ -241,11 +246,11 @@ export class ContentService {
       readContentIds = views?.map(v => v.content_id) || [];
     }
 
-    return (data || []).map(bulletin => ({
+    return data.map(bulletin => ({
       ...bulletin,
       content: bulletin.content ?? '',
       is_read: readContentIds.includes(bulletin.id),
-    }));
+    })) as Bulletin[];
   }
 
   // Get active bulletins (published and current)

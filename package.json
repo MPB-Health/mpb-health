@@ -32,5 +32,10 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "dompurify": ">=3.3.2"
+    }
   }
 }

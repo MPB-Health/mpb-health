@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   Bell,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   ArrowRight,
   Newspaper,
@@ -26,7 +24,6 @@ export default function Bulletins() {
   const [bulletins, setBulletins] = useState<Bulletin[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [currentSlide, setCurrentSlide] = useState(0);
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const loadBulletins = useCallback(async (showLoader = false) => {
@@ -62,34 +59,7 @@ export default function Bulletins() {
     return () => { supabase.removeChannel(channel); };
   }, [loadBulletins]);
 
-  const featuredBulletins = bulletins.slice(0, 3);
-
-  useEffect(() => {
-    setCurrentSlide((prev) => {
-      if (featuredBulletins.length === 0) {
-        return 0;
-      }
-
-      return prev >= featuredBulletins.length ? 0 : prev;
-    });
-  }, [featuredBulletins.length]);
-
-  useEffect(() => {
-    if (featuredBulletins.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % featuredBulletins.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [featuredBulletins.length]);
-
-  const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % featuredBulletins.length);
-  }, [featuredBulletins.length]);
-
-  const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + featuredBulletins.length) % featuredBulletins.length);
-  }, [featuredBulletins.length]);
-
+  const latestBulletin = bulletins[0];
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
   const filteredBulletins = bulletins.filter((b) => {
     if (!normalizedSearchQuery) return true;
@@ -147,111 +117,53 @@ export default function Bulletins() {
         </div>
       </GradientHeader>
 
-      {/* Featured slider */}
-      {featuredBulletins.length > 0 && (
-        <div className="relative rounded-2xl overflow-hidden shadow-lg border border-th-border">
-          <div className="relative h-[280px] md:h-[320px]">
-            {featuredBulletins.map((bulletin, index) => (
-              <div
-                key={bulletin.id}
-                className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                  index === currentSlide
-                    ? 'opacity-100 translate-x-0'
-                    : index < currentSlide
-                    ? 'opacity-0 -translate-x-full'
-                    : 'opacity-0 translate-x-full'
-                }`}
-              >
-                <div className="flex h-full">
-                  {bulletin.featured_image_url && (
-                    <div className="hidden md:block w-2/5 relative">
-                      <img
-                        src={bulletin.featured_image_url}
-                        alt={`Featured image for ${bulletin.title}`}
-                        loading={index === currentSlide ? 'eager' : 'lazy'}
-                        decoding="async"
-                        fetchPriority={index === currentSlide ? 'high' : 'auto'}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0E2D41]/90" />
-                    </div>
-                  )}
-                  <div className={`flex flex-col justify-center p-8 md:p-10 bg-gradient-to-br from-[#0E2D41] to-[#0A4E8E] ${
-                    bulletin.featured_image_url ? 'md:w-3/5' : 'w-full'
-                  }`}>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#A4CC43]/20 text-[#A4CC43]">
-                        <Sparkles className="w-3 h-3" />
-                        Featured
-                      </span>
-                      <span className="text-white/40 text-xs">
-                        {format(new Date(bulletin.published_date), 'MMMM d, yyyy')}
-                      </span>
-                    </div>
-                    <h2 className="text-xl md:text-2xl font-bold text-white mb-3 line-clamp-2 leading-snug">
-                      {bulletin.title}
-                    </h2>
-                    {bulletin.excerpt && (
-                      <p className="text-white/60 text-sm line-clamp-3 mb-5 max-w-xl leading-relaxed">
-                        {bulletin.excerpt}
-                      </p>
-                    )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => navigate(`/bulletins/${bulletin.slug}`)}
-                      className="bg-white text-[#0A4E8E] hover:bg-white/90 shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02]"
-                    >
-                      Read Bulletin
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
+      {/* Latest bulletin marquee — single prominent banner so advisors don't miss it */}
+      {latestBulletin && (
+        <button
+          type="button"
+          onClick={() => navigate(`/bulletins/${latestBulletin.slug}`)}
+          className="w-full text-left relative rounded-2xl overflow-hidden shadow-lg border border-th-border group transition-shadow hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#0A4E8E]/50"
+        >
+          <div className="flex h-[140px] md:h-[160px]">
+            {latestBulletin.featured_image_url ? (
+              <div className="hidden md:block w-2/5 relative shrink-0">
+                <img
+                  src={latestBulletin.featured_image_url}
+                  alt=""
+                  loading="eager"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0E2D41]/90" />
               </div>
-            ))}
+            ) : null}
+            <div className={`flex flex-col justify-center p-6 md:p-8 bg-gradient-to-br from-[#0E2D41] to-[#0A4E8E] ${
+              latestBulletin.featured_image_url ? 'md:w-3/5' : 'w-full'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#A4CC43]/20 text-[#A4CC43] uppercase tracking-wider">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  Latest
+                </span>
+                <span className="text-white/50 text-xs">
+                  {format(new Date(latestBulletin.published_date), 'MMMM d, yyyy')}
+                </span>
+              </div>
+              <h2 className="text-lg md:text-xl font-bold text-white line-clamp-2 leading-snug group-hover:text-white/95">
+                {latestBulletin.title}
+              </h2>
+              {latestBulletin.excerpt && (
+                <p className="text-white/60 text-sm line-clamp-2 mt-1 max-w-2xl">
+                  {latestBulletin.excerpt}
+                </p>
+              )}
+              <span className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-white/90 group-hover:text-white">
+                Read Bulletin
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </div>
           </div>
-
-          {featuredBulletins.length > 1 && (
-            <>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm"
-                aria-label="Previous slide"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm"
-                aria-label="Next slide"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                {featuredBulletins.map((_, index) => (
-                  <button
-                    type="button"
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    aria-label={`Go to slide ${index + 1}`}
-                    className={`rounded-full transition-all ${
-                      index === currentSlide
-                        ? 'w-8 h-2 bg-white'
-                        : 'w-2 h-2 bg-white/40 hover:bg-white/60'
-                    }`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        </button>
       )}
 
       {/* Search bar */}
@@ -283,10 +195,14 @@ export default function Bulletins() {
         </div>
       </div>
 
-      {/* Articles grid */}
-      {filteredBulletins.length > 0 ? (
+      {/* Previous bulletins grid — latest is shown in marquee above */}
+      {(() => {
+        const gridBulletins = latestBulletin
+          ? filteredBulletins.filter((b) => b.id !== latestBulletin.id)
+          : filteredBulletins;
+        return gridBulletins.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredBulletins.map((bulletin) => {
+          {gridBulletins.map((bulletin) => {
             const isUnread = !bulletin.is_read;
 
             return (
@@ -382,12 +298,14 @@ export default function Bulletins() {
             );
           })}
         </div>
-      ) : (
+        ) : (
         <div className="bg-surface-primary rounded-xl border border-th-border p-16 text-center">
           <Newspaper className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
-          <h3 className="text-lg font-semibold text-th-text-primary mb-1">No bulletins found</h3>
+          <h3 className="text-lg font-semibold text-th-text-primary mb-1">
+            {searchQuery ? 'No bulletins found' : latestBulletin ? 'No other bulletins' : 'No bulletins at this time'}
+          </h3>
           <p className="text-th-text-tertiary text-sm">
-            {searchQuery ? 'Try adjusting your search' : 'No bulletins at this time. Check back soon!'}
+            {searchQuery ? 'Try adjusting your search' : latestBulletin ? 'Your latest bulletin is shown above.' : 'Check back soon!'}
           </p>
           {searchQuery && (
             <Button
@@ -401,7 +319,8 @@ export default function Bulletins() {
             </Button>
           )}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -170,7 +170,7 @@ export default function NewTicket() {
         actions={
           <Link
             to="/tickets"
-            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-th-accent-500 hover:bg-th-accent-600 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Tickets

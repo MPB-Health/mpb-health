@@ -241,7 +241,9 @@ export default function Tickets() {
         window.location.href = '/login';
         return;
       }
-      setReplyError('Your reply could not be sent. Please try again.');
+      console.error('Ticket reply failed:', err);
+      const msg = err instanceof Error ? err.message : 'Failed to send reply';
+      setReplyError(msg.length > 200 ? 'Your reply could not be sent. Please try again.' : msg);
     } finally {
       if (mountedRef.current) setReplySending(false);
     }
@@ -383,7 +385,7 @@ export default function Tickets() {
         actions={
           <Link
             to="/tickets/new"
-            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-th-accent-500 hover:bg-th-accent-600 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
           >
             <PlusCircle className="w-4 h-4" />
             New Ticket

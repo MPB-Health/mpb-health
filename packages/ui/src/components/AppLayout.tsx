@@ -156,7 +156,7 @@ export function AppLayout({
                 )}
               </div>
               {logoSrc ? (
-                <img src={logoSrc} alt={appName} className="h-10 w-auto object-contain" />
+                <img src={logoSrc} alt={appName} className="h-8 w-auto object-contain" />
               ) : (
                 <div className="w-12 h-12 rounded-lg gradient-accent flex items-center justify-center shrink-0">
                   <span className="text-white font-bold text-sm">{appName.slice(0, 3).toUpperCase()}</span>

@@ -758,7 +758,7 @@ export default function Dashboard() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm text-th-text-primary">PHCS Search</p>
-                <p className="text-xs text-th-text-tertiary">MultiPlan provider network</p>
+                <p className="text-xs text-th-text-tertiary">Search the PHCS Specific Services for in-network healthcare providers</p>
               </div>
               <ArrowRight className="w-4 h-4 text-th-text-tertiary group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
             </a>

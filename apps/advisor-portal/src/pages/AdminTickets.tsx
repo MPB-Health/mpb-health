@@ -335,7 +335,9 @@ export default function AdminTickets() {
       setReplyContent('');
     } catch (err) {
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
-      setReplyError('Your reply could not be sent. Please try again.');
+      console.error('Ticket reply failed:', err);
+      const msg = err instanceof Error ? err.message : 'Failed to send reply';
+      setReplyError(msg.length > 200 ? 'Your reply could not be sent. Please try again.' : msg);
     } finally {
       setReplySending(false);
     }
@@ -620,7 +622,7 @@ export default function AdminTickets() {
               type="button"
               variant="ghost"
               onClick={() => setShowBulkCloseConfirm(true)}
-              className="text-white hover:bg-white/20"
+              className="text-th-text-primary hover:bg-surface-secondary"
             >
               <Archive className="w-4 h-4" />
               Bulk Close All

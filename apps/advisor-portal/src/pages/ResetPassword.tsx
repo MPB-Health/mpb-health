@@ -166,16 +166,13 @@ export default function ResetPassword() {
       }
 
       setSuccess(true);
-      toast.success('Password updated successfully!');
+      toast.success('Password updated successfully! Taking you to your dashboard...');
 
-      // Sign out to clear the PASSWORD_RECOVERY session so the user must
-      // re-authenticate via the login page. Without this, active session guards
-      // may silently redirect the user past /login after the password change.
-      await supabase.auth.signOut();
-
-      // Replace history entry so back-button cannot return to the reset form.
+      // Session is valid after updateUser() — navigate directly to the dashboard.
+      // Do NOT sign out here: signing out clears the service-worker-cached token
+      // and causes a 400 on the next page load when the stale token is replayed.
       setTimeout(() => {
-        navigate('/login?reset=1', { replace: true });
+        navigate('/', { replace: true });
       }, 2000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to reset password';
@@ -209,7 +206,7 @@ export default function ResetPassword() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Password reset!</h1>
             <p className="text-gray-600 mb-4">
-              Your password has been successfully reset. Redirecting to login...
+              Your password has been successfully reset. Redirecting to your dashboard...
             </p>
             <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto" />
           </div>

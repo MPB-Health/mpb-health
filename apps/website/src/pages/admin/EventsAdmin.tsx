@@ -15,6 +15,7 @@ import {
   Layers,
   Search,
   Star,
+  Images,
 } from 'lucide-react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { supabase } from '../../lib/supabase';
@@ -102,6 +103,7 @@ const emptyForm = {
   featured_image_url: '',
   video_url: '',
   tags: [] as string[],
+  gallery_images: [] as string[],
   is_featured: false,
   is_published: false,
 };
@@ -114,6 +116,7 @@ const EventsAdmin: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<AdminEvent | null>(null);
   const [formData, setFormData] = useState(emptyForm);
   const [tagInput, setTagInput] = useState('');
+  const [galleryInput, setGalleryInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -169,10 +172,12 @@ const EventsAdmin: React.FC = () => {
       featured_image_url: event.featured_image_url || '',
       video_url: event.video_url || '',
       tags: event.tags || [],
+      gallery_images: event.gallery_images || [],
       is_featured: event.is_featured,
       is_published: event.is_published,
     });
     setTagInput('');
+    setGalleryInput('');
     setShowForm(true);
   };
 
@@ -194,6 +199,17 @@ const EventsAdmin: React.FC = () => {
 
   const removeTag = (tag: string) =>
     setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
+
+  const addGalleryImage = () => {
+    const url = galleryInput.trim();
+    if (url && !formData.gallery_images.includes(url)) {
+      setFormData(prev => ({ ...prev, gallery_images: [...prev.gallery_images, url] }));
+      setGalleryInput('');
+    }
+  };
+
+  const removeGalleryImage = (url: string) =>
+    setFormData(prev => ({ ...prev, gallery_images: prev.gallery_images.filter(u => u !== url) }));
 
   const handleSave = async (publish?: boolean) => {
     if (!formData.title || !formData.content || !formData.event_date || !formData.organizer) {
@@ -221,7 +237,7 @@ const EventsAdmin: React.FC = () => {
         featured_image_url: formData.featured_image_url || null,
         video_url: formData.video_url || null,
         tags: formData.tags,
-        gallery_images: [],
+        gallery_images: formData.gallery_images,
         is_featured: formData.is_featured,
         is_published: isPublished,
       };
@@ -707,6 +723,55 @@ const EventsAdmin: React.FC = () => {
                   <button
                     type="button"
                     onClick={addTag}
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Gallery Images */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <span className="flex items-center gap-1.5">
+                    <Images className="w-4 h-4" />
+                    Gallery Images
+                  </span>
+                </label>
+                {formData.gallery_images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {formData.gallery_images.map((url, idx) => (
+                      <div key={idx} className="relative group aspect-video rounded-lg overflow-hidden bg-slate-100">
+                        <img
+                          src={url}
+                          alt={`Gallery ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                        <button
+                          type="button"
+                          aria-label="Remove image"
+                          onClick={() => removeGalleryImage(url)}
+                          className="absolute top-1 right-1 w-5 h-5 bg-red-600 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={galleryInput}
+                    onChange={e => setGalleryInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addGalleryImage())}
+                    placeholder="Paste image URL and press Enter..."
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={addGalleryImage}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50"
                   >
                     Add

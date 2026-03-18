@@ -1,12 +1,167 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Calendar, MapPin, ArrowLeft, Share2, ExternalLink } from 'lucide-react';
+import { Calendar, MapPin, ArrowLeft, Share2, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createClientLogger } from '@mpbhealth/utils';
 import { supabase, CmsEvent } from '../lib/supabase';
 import { sanitizeHtml } from '@mpbhealth/utils';
 
 const log = createClientLogger('EventArticle');
+
+function ImageCarousel({ images, title }: { images: string[]; title: string }) {
+  const [current, setCurrent] = useState(0);
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+
+  const prev = useCallback(() => setCurrent(i => (i - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setCurrent(i => (i + 1) % images.length), [images.length]);
+
+  useEffect(() => {
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(-${current * 100}%)`;
+    }
+  }, [current]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(delta) > 40) delta > 0 ? next() : prev();
+    touchStartX.current = null;
+  };
+
+  if (images.length === 0) return null;
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mb-12">
+      <h2 className="text-xl font-semibold text-neutral-800 mb-4">Event Gallery</h2>
+
+      {/* Main carousel */}
+      <div
+        className="relative rounded-xl overflow-hidden bg-neutral-900 select-none max-h-[380px]"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        <div
+          ref={trackRef}
+          className="flex transition-transform duration-300 ease-in-out"
+        >
+          {images.map((src, idx) => (
+            <div
+              key={idx}
+              className="w-full flex-shrink-0 cursor-pointer aspect-video"
+              onClick={() => setLightbox(idx)}
+            >
+              <img
+                src={src}
+                alt={`${title} — photo ${idx + 1}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous image"
+              onClick={prev}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next image"
+              onClick={next}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
+        {/* Counter badge */}
+        {images.length > 1 && (
+          <span className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-white text-xs rounded-full">
+            {current + 1} / {images.length}
+          </span>
+        )}
+      </div>
+
+      {/* Dot / thumbnail strip */}
+      {images.length > 1 && (
+        <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+          {images.map((src, idx) => (
+            <button
+              key={idx}
+              type="button"
+              aria-label={`Go to photo ${idx + 1}`}
+              onClick={() => setCurrent(idx)}
+              className={`flex-shrink-0 w-14 h-10 rounded-md overflow-hidden border-2 transition-all ${
+                idx === current ? 'border-primary opacity-100' : 'border-transparent opacity-50 hover:opacity-80'
+              }`}
+            >
+              <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox !== null && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+            onClick={() => setLightbox(null)}
+          >
+            <img
+              src={images[lightbox]}
+              alt={`${title} — photo ${lightbox + 1}`}
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            />
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setLightbox(null)}
+              className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 rotate-[225deg]" />
+            </button>
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous"
+                  onClick={e => { e.stopPropagation(); setLightbox(i => (i! - 1 + images.length) % images.length); }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next"
+                  onClick={e => { e.stopPropagation(); setLightbox(i => (i! + 1) % images.length); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 const LOCATION_TYPE_LABEL: Record<string, string> = {
   in_person: 'In Person',
@@ -214,6 +369,7 @@ export const EventArticle: React.FC = () => {
               </a>
             )}
             <button
+              type="button"
               onClick={handleShare}
               className="inline-flex items-center gap-2 px-4 py-2 text-neutral-600 hover:text-primary border border-neutral-300 rounded-lg hover:border-primary transition-colors"
             >
@@ -236,6 +392,10 @@ export const EventArticle: React.FC = () => {
               />
             </div>
           </div>
+        )}
+
+        {event.gallery_images && event.gallery_images.length > 0 && (
+          <ImageCarousel images={event.gallery_images} title={event.title} />
         )}
 
         {event.video_url && (() => {

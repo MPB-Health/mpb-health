@@ -212,7 +212,7 @@ export function clearNavCache() {
 
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, unreadBulletinCount, logout, loading } = useAdvisor();
+  const { profile, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
@@ -373,8 +373,11 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // Redirect to login if not authenticated
-  if (!loading && !profile) {
+  // Redirect to login if not authenticated.
+  // Also guard on profileLoading: INITIAL_SESSION sets loading=false before
+  // loadProfile() completes, so profile is transiently null while the fetch
+  // is in-flight. Without this guard a page refresh would redirect to /login.
+  if (!loading && !profileLoading && !profile) {
     return <Navigate to="/login" replace />;
   }
 

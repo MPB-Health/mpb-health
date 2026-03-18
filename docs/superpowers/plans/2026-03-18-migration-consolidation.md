@@ -10,6 +10,146 @@
 
 ---
 
+## PHASE 1 AUDIT FINDINGS (Completed 2026-03-18)
+
+> Pass 1 read-only audit complete. All findings below are verified. No production changes made.
+
+### Task 1 Findings: True Duplicate Pairs
+
+| Pair | Verdict | File to Archive | Risk |
+|------|---------|----------------|------|
+| member_portal_system | Byte-identical | `20251107000000_create_member_portal_system.sql` | Low |
+| catherine_superadmin | Byte-identical | `20251107202205_create_catherine_superadmin.sql` | Low |
+| must_change_password RPC | B supersedes A (PLPGSQL > SQL) | `20260317_create_clear_must_change_password_rpc.sql` | Medium |
+| admin_analytics | B supersedes A (8 tables vs 5) | `20251107191530_create_admin_analytics_tables.sql` | High |
+| user_roles (Pair 5) | **FALSE ALARM** — `20260115000000` is `handbooks_cms.sql` not user_roles | None | None |
+| resource_library anon | B more comprehensive | `20251031174152_fix_resource_library_anon_access.sql` | Low |
+| comprehensive RLS | Byte-identical | `20251107212450_20251108000100_fix_rls_policies_comprehensive.sql` | Low |
+| care_plus_pricing | No duplicate found | None | None |
+
+**Critical finding:** Neither `must_change_password` RPC migration (`20260317` nor `20260325`) has been applied to production (both absent from `schema_migrations`). The function `clear_must_change_password_after_reset()` may not exist in the database.
+
+### Task 2 Findings: Malformed Filenames
+
+| File | Issue | Tracked in Prod | Safe to Rename |
+|------|-------|----------------|---------------|
+| `20251028200450_20251028141000_...` | Double timestamp | YES (as `20251028200450`) | **NO** |
+| `20251107212450_20251108000100_...` | Double timestamp | YES (as `20251107212450`) | **NO** |
+| `20251118212222_20251118000000_...` | Double timestamp | YES (as `20251118212222`) | **NO** |
+| `20251120162640_20251120000000_...` | Double timestamp | YES (as `20251120162640`) | **NO** |
+| `20260317_create_clear_must_change_password_rpc.sql` | Missing seconds | NOT PRESENT (never applied) | YES |
+
+The 4 double-timestamp files must stay as-is forever (production tracks their outer timestamp). They go to archive with their ugly names — that's fine.
+
+### Task 3 Findings: RLS Churn Hotspots
+
+28 migrations, 5 distinct waves of RLS fixes:
+- **Wave 1** (Oct 27): 8-part security cluster — structural RLS + index fixes
+- **Wave 2** (Oct 31–Nov 8): Anonymous access 401 errors — anon vs public role confusion
+- **Wave 3** (Nov 25–Jan 19): Zoho + resource library regressions
+- **Wave 4** (Feb 11): org_memberships infinite recursion
+- **Wave 5** (Mar 9–10): Supabase linter audit — 50+ tables in one migration
+
+**Worst churn tables:** `zoho_lead_submissions` (7 touches), `advisors` (6), `resource_library` (5), `faq_items` (5), `educational_content` (5)
+
+**RLS is provisionally stable as of 2026-03-10**, but fragile: 3 admin access helper functions with inconsistent usage across 60+ tables, no automated RLS test suite.
+
+**Danger lurking:** Three admin helpers (`current_user_has_admin_access`, `current_user_has_advisor_command_access`, `current_user_has_extended_admin_access`) are used inconsistently — wrong helper on a table = silent 403 in production.
+
+### Task 4 Findings: Role System
+
+Three eras, four unification attempts, still carrying legacy burden:
+
+| Table | Role | Still Active |
+|-------|------|-------------|
+| `user_roles` | Canonical source (multi-role, UNIQUE(user_id,role)) | YES — source of truth |
+| `profiles.role` | Synced replica (single highest role, text) | YES — legacy code reads it |
+| `admin_users.role` | Synced replica (highest admin tier) | YES — admin portal reads it |
+| `org_memberships.role` | Org-scoped role (independent dimension) | YES — CRM/champion uses it |
+
+**Key technical debt:**
+- Naming mismatch: profiles uses `superadmin`, enum uses `super_admin` (CASE statements hide this)
+- 3 orphaned enum values: `manager`, `staff`, `guest` — exist in enum but can't be assigned via modern RPC
+- Bidirectional trigger sync between `user_roles` ↔ `admin_users` (unidirectional for profiles)
+- 5 RLS helper functions, each with subtly different allowed roles — not consolidated
+
+### Task 5 Findings: Data Migration Sprawl
+
+| Category | Count | Verdict |
+|----------|-------|---------|
+| Bulletin content migrations | 26 | DATA-ONLY — all safe to consolidate to seed |
+| Resource library population | 4 | DATA-ONLY — safe to consolidate |
+| Pricing chart operations | 13 | DATA-ONLY — safe to consolidate |
+| Training/course seeds | 1 | DATA-ONLY — safe to consolidate |
+| ARM/SOB reference material | 1 | MIXED — must stay (has ALTER TABLE) |
+| WordPress courses | 1 | SCHEMA — must stay (has CREATE TABLE) |
+
+**44 of 46 reviewed migrations are DATA-ONLY** — candidates for a consolidated `seed.sql`.
+
+Note: `resource_library`, `blog_articles`, `sop_documents` are all actively referenced in `apps/website` and `packages/`. The Task 5 search (which only checked `apps/advisor-portal/src/`) returned false negatives — these tables are used.
+
+### Task 6 Findings: Dead Objects in Production
+
+**Dead tables (9, high confidence):**
+- `solution_benefits`, `solution_features`, `solution_testimonials`, `specialized_solutions` — speculative marketing features never built
+- `content_calendar` — zero references in any app/package
+- `pharmacies` — only appears as English text in marketing copy
+- `provider_reviews` — `providers` and `provider_locations` used; reviews are not
+- `member_import_logs` — no query anywhere
+- `medication_reminders` — no query anywhere
+
+**Uncertain tables (verify before dropping):**
+- `benefit_usage` — no direct query, possibly intended for future member portal
+- `daily_analytics_summary` — may be written by a pg_cron job
+
+**Dead functions (7, high confidence):**
+- `setup_catherine_superadmin_profile`, `setup_superadmin_profile`, `setup_test_advisor_profile` — one-shot migration helpers, already ran
+- `get_trending_keywords`, `render_email_signature`, `share_note_with_role`, `get_sops_by_category` — no callers in any app/package
+
+**Uncertain functions (verify cron/triggers before touching):**
+- `aggregate_daily_analytics`, `cleanup_old_page_views`, `cleanup_old_security_alert_logs` — likely pg_cron targets
+- `sync_roles_to_legacy`, `sync_admin_users_role_to_user_roles` — may be trigger bodies
+
+### Task 7: Safe Archive Boundary — DETERMINED
+
+**Boundary: 2026-01-01**
+
+Archive all migrations with timestamp prefix `< 20260101000000` (~170 files).
+
+**Rationale:**
+- All pre-2026 schema is stable, applied to production, and captured in any fresh dump
+- The 2026 RLS consolidation (Mar 9-10) fixed pre-2026 policy fragmentation — the baseline will reflect the fixed state
+- 2026 migrations include the CRM system, role unification, and email infrastructure — keeping these visible aids understanding
+- Pushing the boundary to 2026-02-01 or later would archive too-recently-written code
+
+**Exceptions:**
+- The 4 double-timestamp pre-2026 files go to archive as-is (cannot be renamed)
+- `20260317_create_clear_must_change_password_rpc.sql` → archive (never applied, superseded by `20260325` version)
+
+### Task 8: Archive Structure Design — FINALIZED
+
+```
+supabase/
+  migrations/
+    archive/                             ← historical record, not replayed on reset
+      README.md                          ← explains purpose + date range + baseline reference
+      [~170 pre-2026 .sql files]
+    20260101000000_baseline_schema.sql   ← NEW: canonical starting point (generated from prod dump)
+    20260107000000_add_media_settings.sql
+    ... (~94 active 2026+ migrations)
+  itsts-migrations/                      ← UNTOUCHED (3 files)
+  functions/
+  config.toml
+```
+
+**Future migration naming convention:**
+- Format: `YYYYMMDDHHMMSS_<verb>_<subject>[_<qualifier>].sql`
+- Allowed verbs: `create`, `add`, `drop`, `alter`, `fix`, `seed`, `backfill`, `migrate`, `rename`, `index`
+- **Forbidden patterns**: `_partN`, `_final`, `_corrected`, `_comprehensive`, double timestamps, `_v2`/`_v3`, data row updates without `seed_` prefix
+- One concern per file
+
+---
+
 ## EXECUTIVE SUMMARY
 
 **What is wrong:**

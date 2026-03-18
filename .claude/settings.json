@@ -201,7 +201,28 @@
       "Read(//c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/$app/src/**)",
       "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/docs/superpowers/\")",
       "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/docs/superpowers/plans/\")",
-      "Bash(ls \"C:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")"
+      "Bash(ls \"C:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")",
+      "Read(//c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/$HOME/.config/superpowers/worktrees/mpbhealth-monorepo/**)",
+      "Bash(git -C \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo\" worktree list)",
+      "Bash(WT=\"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages\" echo \"=== crm-core/dist full listing ===\" ls \"$WT/crm-core/dist/\" echo \"\" echo \"=== ui/dist missing styles.css check ===\" ls \"$WT/ui/dist/\")",
+      "Bash(echo \"WARNING: styles.css missing from ui/dist/\" echo \"\" echo \"=== config/dist ===\" ls \"$WT/config/dist/\" echo \"\" echo \"=== utils/dist ===\" ls \"$WT/utils/dist/\")",
+      "Bash(git -C \"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18\" log --oneline -5)",
+      "Bash(cat \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/pnpm-workspace.yaml\")",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps' 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages' -name package.json)",
+      "Bash(ls \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/\" \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")",
+      "Bash(diff - \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/package.json\")",
+      "Read(//c/dev/**)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations/\" -type f -name \"*.sql\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations/\" -type f \\\\\\( -name \"*bulletin*\" -o -name \"*resource_library*\" -o -name \"*pricing*\" -o -name \"*sop_documents*\" -o -name \"*seed_training*\" -o -name \"*wordpress_courses*\" \\\\\\))",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/migrations/' -type f -name *20260216280000* -o -name *20260216290000* -o -name *20260216300000* -o -name *20260216310000* -o -name *20260216320000* -o -name *20260216330000* -o -name *20260209*)",
+      "Bash(python3 -c \"import sys,json; cfg=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:cfg[''''compilerOptions''''].get\\(k\\) for k in [''''baseUrl'''',''''paths'''',''''moduleResolution'''',''''noEmit'''']}, indent=2\\)\\)\")",
+      "Bash(grep -r import.meta.env C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/ --include=*.ts --include=*.tsx -l)",
+      "Bash(grep -rh \"import\\\\.meta\\\\.env\\\\.\\\\|process\\\\.env\\\\.\" C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages/config/src/ C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages/database/src/ --include=*.ts)",
+      "Bash(find C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages/advisor-core/src/ -name *.ts -o -name *.tsx)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\apps\\advisor-portal",
+      "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\docs"
     ]
   }
 }

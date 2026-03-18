@@ -269,7 +269,22 @@
       "Bash(node /tmp/crossref.js)",
       "Bash(node \"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/node_modules/.bin/tsx\" --version)",
       "Bash(node \"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/crossref.js\")",
-      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src\" -type f -name \"*.tsx\" -o -name \"*.ts\")"
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(ls -la \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src\")",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src\" -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(ls -la \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src/pages\")",
+      "Bash(ls \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src/pages\")",
+      "Bash(ls -la \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/admin-portal/src/components\")",
+      "Bash(grep -h \"^CREATE TABLE IF NOT EXISTS\" *.sql)",
+      "Bash(ls -1 \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/itsts-migrations/\")",
+      "Bash(ls -1 \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/\")",
+      "Bash(find \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/admin-core/src\" -type f -name \"*.ts\" -o -name \"*.tsx\")",
+      "Bash(ls -1 \"/c/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/supabase/functions/_shared/\")",
+      "Bash(cat 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/lib/supabase.ts')",
+      "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/lib' -type f)",
+      "Bash(grep -rn on_hold C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/advisor-portal/src/ --include=*.ts --include=*.tsx)",
+      "Bash(grep -rn on_hold C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/admin-portal/src/ --include=*.ts --include=*.tsx)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/components/admin\" -type f)"
     ],
     "additionalDirectories": [
       "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\apps\\advisor-portal",

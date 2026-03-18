@@ -27,13 +27,14 @@ const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
 
 const VideoCard: React.FC<{ video: VideoTestimonial }> = ({ video }) => {
   const [playing, setPlaying] = useState(false);
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const thumbnailUrl = `https://img.youtube.com/vi/${video.youtubeId}/maxresdefault.jpg`;
   const embedUrl = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0`;
 
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
       {/* Video area */}
-      <div className="relative aspect-video bg-neutral-900">
+      <div className="relative aspect-video bg-gradient-to-br from-blue-900 to-neutral-900">
         {playing ? (
           <iframe
             src={embedUrl}
@@ -44,18 +45,21 @@ const VideoCard: React.FC<{ video: VideoTestimonial }> = ({ video }) => {
           />
         ) : (
           <>
-            <img
-              src={thumbnailUrl}
-              alt={`${video.member} — ${video.title}`}
-              className="absolute inset-0 w-full h-full object-cover"
-              onError={(e) => {
-                // Fall back to lower-res thumbnail if maxresdefault not available
-                const target = e.currentTarget;
-                if (target.src.includes('maxresdefault')) {
-                  target.src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
-                }
-              }}
-            />
+            {!thumbnailFailed && (
+              <img
+                src={thumbnailUrl}
+                alt={`${video.member} — ${video.title}`}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (target.src.includes('maxresdefault')) {
+                    target.src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                  } else {
+                    setThumbnailFailed(true);
+                  }
+                }}
+              />
+            )}
             {/* Dark overlay for readability */}
             <div className="absolute inset-0 bg-black/20" />
             {/* Play button */}

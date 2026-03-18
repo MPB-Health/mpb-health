@@ -248,13 +248,23 @@ const EventsAdmin: React.FC = () => {
     if (!files.length) return;
     setGalleryUploading(true);
     try {
-      const urls = await Promise.all(files.map(f => uploadImageToStorage(f, 'gallery')));
-      setFormData(prev => ({
-        ...prev,
-        gallery_images: [...prev.gallery_images, ...urls.filter(u => !prev.gallery_images.includes(u))],
-      }));
+      const results = await Promise.allSettled(files.map(f => uploadImageToStorage(f, 'gallery')));
+      const succeeded = results
+        .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+        .map(r => r.value);
+      const failCount = results.filter(r => r.status === 'rejected').length;
+
+      if (succeeded.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          gallery_images: [...prev.gallery_images, ...succeeded.filter(u => !prev.gallery_images.includes(u))],
+        }));
+      }
+      if (failCount > 0) {
+        setNotification({ type: 'error', message: `${failCount} image${failCount > 1 ? 's' : ''} failed to upload` });
+      }
     } catch {
-      setNotification({ type: 'error', message: 'Failed to upload one or more images' });
+      setNotification({ type: 'error', message: 'Failed to upload images' });
     } finally {
       setGalleryUploading(false);
       if (galleryFileRef.current) galleryFileRef.current.value = '';
@@ -535,7 +545,8 @@ const EventsAdmin: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleSave(true)}
-                    disabled={saving}
+                    disabled={saving || galleryUploading}
+                    title={galleryUploading ? 'Wait for images to finish uploading' : undefined}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
                     <Globe className="w-4 h-4" />
@@ -545,7 +556,8 @@ const EventsAdmin: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSave()}
-                  disabled={saving}
+                  disabled={saving || galleryUploading}
+                  title={galleryUploading ? 'Wait for images to finish uploading' : undefined}
                   className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
                 >
                   <Save className="w-4 h-4" />

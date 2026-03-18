@@ -263,12 +263,18 @@
       "Bash(git -C \"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18\" show --stat db64b85)",
       "Bash(grep -oE \"\\\\.from\\\\\\([''''\\\\`\"\"]\\([a-z_]+\\)[''''\\\\`\"\"]\\\\\\)\")",
       "Bash(grep -oE \"[''''\\\\`\"\"][^''''\\\\`\"\"]+[''''\\\\`\"\"]\")",
-      "Bash(grep -oE \"\\\\.rpc\\\\\\([''''\\\\`\"\"]\\([a-z_]+\\)[''''\\\\`\"\"]\\\\\\)\")"
+      "Bash(grep -oE \"\\\\.rpc\\\\\\([''''\\\\`\"\"]\\([a-z_]+\\)[''''\\\\`\"\"]\\\\\\)\")",
+      "Bash(python3 /tmp/crossref.py)",
+      "Bash(python3 -:*)",
+      "Bash(node /tmp/crossref.js)",
+      "Bash(node \"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/node_modules/.bin/tsx\" --version)"
     ],
     "additionalDirectories": [
       "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\apps\\advisor-portal",
       "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\docs",
-      "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18"
+      "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18",
+      "\\tmp",
+      "c:\\tmp"
     ]
   }
 }

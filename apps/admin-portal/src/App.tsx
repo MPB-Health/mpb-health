@@ -43,6 +43,8 @@ const NavigationManager = lazyRetry(() => import('./pages/NavigationManager'));
 const AnnouncementManager = lazyRetry(() => import('./pages/AnnouncementManager'));
 const WidgetManager = lazyRetry(() => import('./pages/WidgetManager'));
 const HandbookManager = lazyRetry(() => import('./pages/HandbookManager'));
+const EventsAdmin = lazyRetry(() => import('./pages/EventsAdmin'));
+const EventEditor = lazyRetry(() => import('./pages/EventEditor'));
 // Command center pages
 const Members = lazyRetry(() => import('./pages/Members'));
 const MemberDetail = lazyRetry(() => import('./pages/MemberDetail'));
@@ -258,6 +260,9 @@ export default function App() {
               <Route path="content/announcements" element={<AnnouncementManager />} />
               <Route path="content/widgets" element={<WidgetManager />} />
               <Route path="content/handbooks" element={<HandbookManager />} />
+              <Route path="content/events" element={<EventsAdmin />} />
+              <Route path="content/events/new" element={<EventEditor />} />
+              <Route path="content/events/:eventId" element={<EventEditor />} />
               <Route path="settings" element={<RequirePermission permission="settings.manage"><Settings /></RequirePermission>} />
               <Route path="settings/payments" element={<RequirePermission permission="settings.manage"><PaymentProcessors /></RequirePermission>} />
               <Route path="settings/sms" element={<RequirePermission permission="settings.manage"><SmsAccounts /></RequirePermission>} />

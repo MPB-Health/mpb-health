@@ -226,6 +226,18 @@ export {
   type PushAdminStats,
 } from './messaging/PushAdminService';
 
+// Events management
+export {
+  EventsAdminService,
+  eventsAdminService,
+  type AdminEvent,
+  type EventCreateInput,
+  type EventUpdateInput,
+  type EventFilters,
+  type EventLocationType,
+  type EventType,
+} from './content/EventsAdminService';
+
 // Support / Ticket management (re-exports from advisor-core via thin wrapper)
 export {
   TicketService,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import {
@@ -16,6 +16,8 @@ import {
   Search,
   Star,
   Images,
+  Upload,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { supabase } from '../../lib/supabase';
@@ -108,6 +110,17 @@ const emptyForm = {
   is_published: false,
 };
 
+const BUCKET = 'event-images';
+
+async function uploadImageToStorage(file: File, folder: string): Promise<string> {
+  const ext = file.name.split('.').pop() ?? 'jpg';
+  const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data, error } = await supabase.storage.from(BUCKET).upload(filename, file, { upsert: false });
+  if (error) throw new Error(error.message);
+  const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(data.path);
+  return publicUrl;
+}
+
 const EventsAdmin: React.FC = () => {
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,6 +132,10 @@ const EventsAdmin: React.FC = () => {
   const [galleryInput, setGalleryInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [featuredUploading, setFeaturedUploading] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const featuredFileRef = useRef<HTMLInputElement>(null);
+  const galleryFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (notification) {
@@ -210,6 +227,39 @@ const EventsAdmin: React.FC = () => {
 
   const removeGalleryImage = (url: string) =>
     setFormData(prev => ({ ...prev, gallery_images: prev.gallery_images.filter(u => u !== url) }));
+
+  const handleFeaturedUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFeaturedUploading(true);
+    try {
+      const url = await uploadImageToStorage(file, 'featured');
+      setFormData(prev => ({ ...prev, featured_image_url: url }));
+    } catch {
+      setNotification({ type: 'error', message: 'Failed to upload image' });
+    } finally {
+      setFeaturedUploading(false);
+      if (featuredFileRef.current) featuredFileRef.current.value = '';
+    }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setGalleryUploading(true);
+    try {
+      const urls = await Promise.all(files.map(f => uploadImageToStorage(f, 'gallery')));
+      setFormData(prev => ({
+        ...prev,
+        gallery_images: [...prev.gallery_images, ...urls.filter(u => !prev.gallery_images.includes(u))],
+      }));
+    } catch {
+      setNotification({ type: 'error', message: 'Failed to upload one or more images' });
+    } finally {
+      setGalleryUploading(false);
+      if (galleryFileRef.current) galleryFileRef.current.value = '';
+    }
+  };
 
   const handleSave = async (publish?: boolean) => {
     if (!formData.title || !formData.content || !formData.event_date || !formData.organizer) {
@@ -644,7 +694,37 @@ const EventsAdmin: React.FC = () => {
 
               {/* Featured Image */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Featured Image URL</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Featured Image</label>
+
+                {/* Upload button */}
+                <input
+                  ref={featuredFileRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                  aria-label="Upload featured image"
+                  className="hidden"
+                  onChange={handleFeaturedUpload}
+                />
+                <button
+                  type="button"
+                  onClick={() => featuredFileRef.current?.click()}
+                  disabled={featuredUploading}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                >
+                  <Upload className="w-4 h-4" />
+                  {featuredUploading ? 'Uploading…' : 'Click to upload image'}
+                  <span className="text-slate-400 text-xs">(JPEG, PNG, WebP — max 10 MB)</span>
+                </button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-2 my-2">
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <LinkIcon className="w-3 h-3" /> or paste a URL
+                  </span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+
                 <input
                   type="url"
                   value={formData.featured_image_url}
@@ -652,12 +732,24 @@ const EventsAdmin: React.FC = () => {
                   placeholder="https://..."
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
+
+                {/* Preview */}
                 {formData.featured_image_url && (
-                  <img
-                    src={formData.featured_image_url}
-                    alt="Preview"
-                    className="mt-2 w-full h-32 object-cover rounded-lg"
-                  />
+                  <div className="relative mt-2 group">
+                    <img
+                      src={formData.featured_image_url}
+                      alt="Preview"
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Remove featured image"
+                      onClick={() => setFormData(p => ({ ...p, featured_image_url: '' }))}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -738,6 +830,8 @@ const EventsAdmin: React.FC = () => {
                     Gallery Images
                   </span>
                 </label>
+
+                {/* Thumbnail grid */}
                 {formData.gallery_images.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mb-3">
                     {formData.gallery_images.map((url, idx) => (
@@ -760,6 +854,37 @@ const EventsAdmin: React.FC = () => {
                     ))}
                   </div>
                 )}
+
+                {/* Upload button */}
+                <input
+                  ref={galleryFileRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                  aria-label="Upload gallery images"
+                  multiple
+                  className="hidden"
+                  onChange={handleGalleryUpload}
+                />
+                <button
+                  type="button"
+                  onClick={() => galleryFileRef.current?.click()}
+                  disabled={galleryUploading}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50 mb-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  {galleryUploading ? 'Uploading…' : 'Click to upload images'}
+                  <span className="text-slate-400 text-xs">(select multiple)</span>
+                </button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-2 my-2">
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <LinkIcon className="w-3 h-3" /> or paste a URL
+                  </span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+
                 <div className="flex gap-2">
                   <input
                     type="url"

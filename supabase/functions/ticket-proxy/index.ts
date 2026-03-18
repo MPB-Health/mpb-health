@@ -165,7 +165,7 @@ async function getTicketDetail(
   // Fetch comments/replies for this ticket
   const { data: comments } = await itstsAdmin
     .from("ticket_comments")
-    .select("id, content, is_internal, created_at, author_id")
+    .select("id, content:body, is_internal, created_at, author_id")
     .eq("ticket_id", ticketId)
     .eq("is_internal", false)
     .order("created_at", { ascending: true });
@@ -314,7 +314,7 @@ async function getTicketDetailAdmin(
   // All comments including internal notes (admin sees everything)
   const { data: comments } = await itstsAdmin
     .from("ticket_comments")
-    .select("id, content, is_internal, created_at, author_id")
+    .select("id, content:body, is_internal, created_at, author_id")
     .eq("ticket_id", ticketId)
     .order("created_at", { ascending: true });
 
@@ -380,7 +380,7 @@ async function addComment(
     .from("ticket_comments")
     .insert({
       ticket_id: ticketId,
-      content,
+      body: content,
       author_id: authorId,
       is_internal: isInternal,
     });
@@ -469,7 +469,7 @@ async function replyToTicket(
     .from("ticket_comments")
     .insert({
       ticket_id: ticketId,
-      content: content.trim(),
+      body: content.trim(),
       author_id: advisorId,
       is_internal: false,
     });

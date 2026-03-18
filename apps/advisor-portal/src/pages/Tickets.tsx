@@ -210,6 +210,20 @@ export default function Tickets() {
     }
   };
 
+  // Poll for new staff replies every 30s while ticket detail is open.
+  // Silent background poll — no loading indicator, no spinner.
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const interval = setInterval(() => {
+      executeWithAuth(() =>
+        ticketService.getTicketDetail(selectedTicket.ticket.id)
+      )
+        .then((detail) => { if (mountedRef.current) setSelectedTicket(detail); })
+        .catch(() => {});
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [selectedTicket?.ticket.id, executeWithAuth]);
+
   const handleSendReply = async () => {
     if (!selectedTicket || !replyContent.trim()) return;
     setReplySending(true);

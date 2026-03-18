@@ -570,6 +570,17 @@ Deno.serve(async (req: Request) => {
     return handleCorsPreflightRequest(req);
   }
 
+  // ── Warmup (cron) bypass ──────────────────────────────────────────────────
+  // Allows pg_cron to keep the function warm without a user JWT.
+  const warmupSecret = Deno.env.get("WARMUP_CRON_SECRET");
+  const warmupHeader = req.headers.get("x-warmup-secret");
+  if (warmupSecret && warmupHeader === warmupSecret) {
+    return new Response(
+      JSON.stringify({ warm: true, ts: new Date().toISOString() }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   // ── Correlation ID ──────────────────────────────────────────────────────
   // Accept x-request-id from the client (TicketService sends one for every
   // call) or generate a fallback. Echoed back in the response so clients can

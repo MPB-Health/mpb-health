@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useCallback } from 'react';
-import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -68,7 +68,6 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
 import { useSupportSSO } from '../hooks/useSupportSSO';
 import { GlobalSearch } from '../components/GlobalSearch';
-import { setClearQueryCache } from '../utils/navCache';
 
 // Icon mapping for dynamic icons from CMS
 // NOTE: Keep this as named imports only — never use `import * as LucideIcons`
@@ -200,28 +199,32 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
     }));
 }
 
+// Cache for CMS navigation
+let cachedNavItems: NavItem[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+/** Clear cached CMS navigation (called on logout so stale nav doesn't persist). */
+export function clearNavCache() {
+  cachedNavItems = null;
+  cacheTimestamp = 0;
+}
+
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
+  const { profile, unreadBulletinCount, logout, loading } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
   const { openSupport, loading: ssoLoading } = useSupportSSO();
-  const queryClient = useQueryClient();
 
-  // Register the query-cache clear function so logout can purge nav cache
-  const clearQuery = useCallback(() => {
-    queryClient.removeQueries({ queryKey: ['cmsNavigation'] });
-  }, [queryClient]);
-  setClearQueryCache(clearQuery);
-
-  // Admin role check via React Query (deduped + cached)
-  const { data: isAdminUser = false } = useQuery({
-    queryKey: ['isAdmin', profile?.user_id],
-    queryFn: () => checkIsAdmin(profile!.user_id),
-    enabled: !!profile?.user_id,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Admin role check for conditional nav items
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  useEffect(() => {
+    if (profile?.user_id) {
+      checkIsAdmin(profile.user_id).then(setIsAdminUser);
+    }
+  }, [profile?.user_id]);
 
   // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
@@ -231,24 +234,37 @@ export default function MainLayout() {
     return buildPortalSSOUrl(getPortalUrl(portal), supabase);
   }, []);
 
-  // CMS navigation via React Query — automatic dedup, caching, and stale-while-revalidate
-  const { data: cmsNavItems = [] } = useQuery<NavItem[]>({
-    queryKey: ['cmsNavigation'],
+  // Dynamic navigation from CMS — React Query for deduplication and shared cache
+  const queryClient = useQueryClient();
+  const { data: navItems, isLoading: navLoading } = useQuery({
+    queryKey: ['advisor-nav-menu'],
     queryFn: async () => {
       const items = await navigationService.getNavMenuItems();
-      return items && items.length > 0 ? mapMenuItemsToNavItems(items) : [];
+      if (items && items.length > 0) {
+        const mapped = mapMenuItemsToNavItems(items);
+        cachedNavItems = mapped;
+        cacheTimestamp = Date.now();
+        return mapped;
+      }
+      return (cachedNavItems ?? []) as NavItem[];
     },
-    staleTime: 5 * 60 * 1000,       // 5 min — nav rarely changes
-    refetchOnWindowFocus: false,
+    staleTime: CACHE_DURATION,
+    gcTime: CACHE_DURATION * 2,
+    placeholderData: cachedNavItems && cachedNavItems.length > 0 ? cachedNavItems : undefined,
   });
 
-  // Real-time nav subscription — updates React Query cache on CMS changes
+  const cmsNavItems: NavItem[] = (navItems && navItems.length > 0) ? navItems : (cachedNavItems ?? []);
+
   useEffect(() => {
     const channel = navigationService.subscribeToNavMenuChanges((items) => {
       const mappedItems = mapMenuItemsToNavItems(items);
-      queryClient.setQueryData(['cmsNavigation'], mappedItems);
+      cachedNavItems = mappedItems;
+      cacheTimestamp = Date.now();
+      queryClient.setQueryData(['advisor-nav-menu'], mappedItems);
     });
-    return () => { channel.unsubscribe(); };
+    return () => {
+      channel.unsubscribe();
+    };
   }, [queryClient]);
 
   // External training links that override CMS/fallback values
@@ -259,14 +275,14 @@ export default function MainLayout() {
 
   // Use CMS navigation if available, otherwise fallback. Inject Quick Links after Forms if not already present.
   const navigation = useMemo(() => {
-    let base = cmsNavItems.length > 0 ? cmsNavItems : fallbackNavigation;
+    let base: NavItem[] = cmsNavItems.length > 0 ? cmsNavItems : fallbackNavigation;
 
     // Override Sedera/Zion training links to external URLs
-    base = base.map(item => {
+    base = base.map((item: NavItem) => {
       if (item.children) {
         return {
           ...item,
-          children: item.children.map(child => {
+          children: item.children.map((child: { name: string; href: string; external?: boolean }) => {
             const override = EXTERNAL_TRAINING_LINKS[child.name];
             return override ? { ...child, ...override } : child;
           }),
@@ -276,28 +292,28 @@ export default function MainLayout() {
     });
 
     // Inject items that may not exist in CMS nav
-    if (!base.some((item) => item.href === '/quick-links' || item.name === 'Resource Center')) {
+    if (!base.some((item: NavItem) => item.href === '/quick-links' || item.name === 'Resource Center')) {
       base.push({ name: 'Resource Center', href: '/quick-links', icon: Link });
     }
-    if (!base.some((item) => item.href === '/videos' || item.name === 'Video Library')) {
+    if (!base.some((item: NavItem) => item.href === '/videos' || item.name === 'Video Library')) {
       base.push({ name: 'Video Library', href: '/videos', icon: Video });
     }
-    if (!base.some((item) => item.href === '/tickets' || item.name === 'Support Tickets')) {
+    if (!base.some((item: NavItem) => item.href === '/tickets' || item.name === 'Support Tickets')) {
       base.push({ name: 'Support Tickets', href: '/tickets', icon: Headphones });
     }
 
     // Admin-only: Ticket Management
     if (isAdminUser) {
-      if (!base.some((item) => item.href === '/admin/tickets' || item.name === 'Ticket Management')) {
+      if (!base.some((item: NavItem) => item.href === '/admin/tickets' || item.name === 'Ticket Management')) {
         base.push({ name: 'Ticket Management', href: '/admin/tickets', icon: ShieldCheck });
       }
     } else {
-      base = base.filter((item) => item.name !== 'Ticket Management');
+      base = base.filter((item: NavItem) => item.name !== 'Ticket Management');
     }
 
     // Enforce sidebar order
     const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Ticket Management', 'Contact'];
-    base = [...base].sort((a, b) => {
+    base = [...base].sort((a: NavItem, b: NavItem) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);
       return (ai === -1 ? ORDER.length : ai) - (bi === -1 ? ORDER.length : bi);
@@ -357,8 +373,8 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // Redirect to login only when auth check is done AND profile fetch is done AND no profile
-  if (!loading && !profile && !profileLoading) {
+  // Redirect to login if not authenticated
+  if (!loading && !profile) {
     return <Navigate to="/login" replace />;
   }
 
@@ -367,10 +383,12 @@ export default function MainLayout() {
     return <Navigate to="/change-password" replace />;
   }
 
-  const isShellLoading = loading || (!profile && profileLoading);
-
-  // Add badge to Bulletins nav item
-  const navWithBadges: NavItem[] = navigation.map((item) => {
+  // Shell-first: render layout with fallback nav/skeleton instead of blocking on profile
+  const showShell = loading;
+  const displayNav = showShell ? fallbackNavigation : navigation;
+  const navWithBadges: NavItem[] = showShell
+    ? (displayNav as NavItem[])
+    : navigation.map((item: NavItem) => {
     if (item.name === 'Bulletins' && unreadBulletinCount > 0) {
       return {
         ...item,
@@ -382,20 +400,22 @@ export default function MainLayout() {
       };
     }
     return item;
-  });
+      });
 
-  const userSection = (
-    <div className="space-y-1">
-      {isShellLoading ? (
-        /* Skeleton user row while profile loads */
-        <div className="flex items-center gap-3 px-3 py-2.5">
-          <div className="w-8 h-8 rounded-full bg-[rgb(var(--sidebar-text)_/_0.12)] animate-pulse" />
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <div className="h-3.5 w-24 rounded bg-[rgb(var(--sidebar-text)_/_0.12)] animate-pulse" />
-            <div className="h-2.5 w-16 rounded bg-[rgb(var(--sidebar-text)_/_0.08)] animate-pulse" />
-          </div>
+  const userSection = showShell ? (
+    <div className="space-y-1 animate-pulse">
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        <div className="w-8 h-8 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full" />
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="h-4 bg-[rgb(var(--sidebar-text)_/_0.2)] rounded w-24" />
+          <div className="h-3 bg-[rgb(var(--sidebar-text)_/_0.15)] rounded w-16" />
         </div>
-      ) : (
+      </div>
+      <div className="h-10 bg-[rgb(var(--sidebar-text)_/_0.1)] rounded-xl mx-3" />
+      <div className="h-10 bg-[rgb(var(--sidebar-text)_/_0.1)] rounded-xl mx-3" />
+    </div>
+  ) : (
+    <div className="space-y-1">
       <NavLink
         to="/profile"
         className={({ isActive }) =>
@@ -428,10 +448,8 @@ export default function MainLayout() {
           </p>
         </div>
       </NavLink>
-      )}
 
       <button
-        type="button"
         onClick={openSupport}
         disabled={ssoLoading}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150 disabled:opacity-50"
@@ -441,7 +459,6 @@ export default function MainLayout() {
       </button>
 
       <button
-        type="button"
         onClick={logout}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150"
       >
@@ -451,7 +468,12 @@ export default function MainLayout() {
     </div>
   );
 
-  const topBarActions = (
+  const topBarActions = showShell ? (
+    <div className="flex items-center gap-2">
+      <div className="h-9 w-24 bg-[rgb(var(--sidebar-text)_/_0.1)] rounded-full animate-pulse" />
+      <div className="h-9 w-9 bg-[rgb(var(--sidebar-text)_/_0.1)] rounded-full animate-pulse" />
+    </div>
+  ) : (
     <>
       {/* Meeting Button */}
       {meetingInfo.isMeetingDay ? (
@@ -467,7 +489,6 @@ export default function MainLayout() {
       ) : (
         <div className="relative group">
           <button
-            type="button"
             disabled
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-400 text-white rounded-full text-sm font-medium cursor-not-allowed opacity-75"
           >
@@ -574,13 +595,7 @@ export default function MainLayout() {
           )
         }
       >
-        {isShellLoading ? (
-          <div className="flex items-center justify-center py-32">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-th-accent-600" />
-          </div>
-        ) : (
-          <Outlet />
-        )}
+        <Outlet />
       </AppLayout>
       </div>
     </>

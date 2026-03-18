@@ -43,7 +43,30 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
   // Use shared stats from AdminLayout context - automatically refreshes every 2 minutes
   const { stats } = useAdminStats();
 
+<<<<<<< Current (Your changes)
   const adminSections: Array<{ title: string; icon: React.FC<{ className?: string }>; description: string; href: string; color: string; badge?: number; urgent?: boolean }> = [
+=======
+  type AdminSection = {
+    title: string;
+    icon: React.ComponentType<{ className?: string }>;
+    description: string;
+    href: string;
+    color: string;
+    badge?: number;
+    urgent?: boolean;
+  };
+
+  const adminSections: AdminSection[] = [
+    {
+      title: 'Support Tickets',
+      icon: AlertCircle,
+      description: 'Manage support ticket requests',
+      href: '/admin/support',
+      color: 'red',
+      badge: stats.pending_support_tickets,
+      urgent: stats.pending_support_tickets > 0
+    },
+>>>>>>> Incoming (Background Agent changes)
     {
       title: 'Reports & Analytics',
       icon: BarChart3,

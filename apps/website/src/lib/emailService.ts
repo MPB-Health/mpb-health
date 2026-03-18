@@ -254,9 +254,23 @@ const BOOKING_URL = 'https://outlook-sdf.office.com/bookwithme/user/b5a563c9279c
 export async function sendLeadWelcomeEmail(data: {
   firstName: string;
   email: string;
+<<<<<<< Current (Your changes)
   planData?: unknown;
   householdSize?: number;
   membershipPriorities?: string[];
+=======
+  planData?: {
+    all_plan_rates?: unknown;
+    traditional_cost_estimate?: unknown;
+    best_match_plan?: unknown;
+    best_match_percentage?: unknown;
+    household_size?: number;
+    household_type?: string;
+    membership_priorities?: unknown[];
+  };
+  householdSize?: number;
+  membershipPriorities?: unknown[];
+>>>>>>> Incoming (Background Agent changes)
 }): Promise<EmailResponse> {
   const welcomePageUrl = `https://mpb.health/welcome?name=${encodeURIComponent(data.firstName)}`;
   const videoUrl = 'https://vimeo.com/1115561411';

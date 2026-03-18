@@ -260,7 +260,10 @@
       "Bash(grep -rn \"sendEmail\\\\|emailService\" C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/website/src/ --include=*.tsx --include=*.ts)",
       "Bash(grep -rn \"createClient\\\\|storageKey\" C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/website/src/contexts/ --include=*.tsx --include=*.ts)",
       "Bash(grep -rn \"storageKey\\\\|mpb-auth-token\" C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/ --include=*.ts --include=*.tsx)",
-      "Bash(git -C \"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18\" show --stat db64b85)"
+      "Bash(git -C \"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18\" show --stat db64b85)",
+      "Bash(grep -oE \"\\\\.from\\\\\\([''''\\\\`\"\"]\\([a-z_]+\\)[''''\\\\`\"\"]\\\\\\)\")",
+      "Bash(grep -oE \"[''''\\\\`\"\"][^''''\\\\`\"\"]+[''''\\\\`\"\"]\")",
+      "Bash(grep -oE \"\\\\.rpc\\\\\\([''''\\\\`\"\"]\\([a-z_]+\\)[''''\\\\`\"\"]\\\\\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\apps\\advisor-portal",

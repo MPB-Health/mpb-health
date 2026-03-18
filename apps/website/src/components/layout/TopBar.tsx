@@ -53,6 +53,18 @@ export const TopBar = () => {
 
             <div className="hidden sm:block h-4 w-px bg-neutral-600"></div>
 
+            <a
+              href="https://advisor.mpb.health"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-1.5 hover:text-cyan-400 transition-colors font-medium group"
+            >
+              <span>Advisor Login</span>
+              <ExternalLink className="h-3 w-3 group-hover:scale-110 transition-transform" />
+            </a>
+
+            <div className="hidden sm:block h-4 w-px bg-neutral-600"></div>
+
             <Link
               to="/download-app"
               className="hidden sm:flex items-center space-x-1.5 hover:text-cyan-400 transition-colors font-medium group"

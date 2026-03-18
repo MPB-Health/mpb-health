@@ -126,6 +126,7 @@ const NewsletterSubscribers = lazyAuto(() => import('./pages/admin/NewsletterSub
 const GeminiBlogGenerator = lazyAuto(() => import('./pages/admin/GeminiBlogGenerator'));
 const NewsletterCampaignManager = lazyAuto(() => import('./pages/admin/NewsletterCampaignManager'));
 const FAQAdmin = lazyAuto(() => import('./pages/admin/FAQAdmin'));
+const EventsAdmin = lazyAuto(() => import('./pages/admin/EventsAdmin'));
 const ListBillSetupProtected = lazyAuto(() => import('./pages/admin/ListBillSetupProtected'));
 const ListBillConversionProtected = lazyAuto(() => import('./pages/admin/ListBillConversionProtected'));
 const ListBillUpdateProtected = lazyAuto(() => import('./pages/admin/ListBillUpdateProtected'));
@@ -429,6 +430,14 @@ const App = () => {
                     element={
                       <ProtectedRoute requiredRole="admin">
                         <BlogAdmin />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/events"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <EventsAdmin />
                       </ProtectedRoute>
                     }
                   />

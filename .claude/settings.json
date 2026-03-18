@@ -223,7 +223,17 @@
       "Bash(grep -r import.meta.env C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/ C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages/config/src/ C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages/database/src/ --include=*.ts --include=*.tsx)",
       "Bash(grep -r VITE_MAILCHIMP C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/ C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages/ --include=*.ts --include=*.tsx)",
       "Bash(grep -r \"VITE_CAPTCHA_ENABLED\\\\|captcha\\\\|CAPTCHA\" C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages/auth/src/ --include=*.ts --include=*.tsx)",
-      "Bash(grep -rn \"VITE_MAILCHIMP_AUDIENCE_ID\\\\|VITE_MAILCHIMP_SERVER_PREFIX\" C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/ --include=*.ts --include=*.tsx)"
+      "Bash(grep -rn \"VITE_MAILCHIMP_AUDIENCE_ID\\\\|VITE_MAILCHIMP_SERVER_PREFIX\" C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/ --include=*.ts --include=*.tsx)",
+      "Bash(ls supabase/migrations/20260317_*)",
+      "Bash(mkdir -p supabase/migrations/archive)",
+      "Bash(mv supabase/migrations/2025*.sql supabase/migrations/archive/)",
+      "Bash(mv \"supabase/migrations/20260317_create_clear_must_change_password_rpc.sql\" supabase/migrations/archive/)",
+      "Bash(supabase db:*)",
+      "Bash(pg_dump --version)",
+      "Bash(ls \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\supabase\\\\migrations\\\\20260101000000_baseline_schema.sql\")",
+      "mcp__claude_ai_Supabase__generate_typescript_types",
+      "Bash(head -5 \"c:\\\\Users\\\\VinnieRTannous\\\\OneDrive - mympb.com \\(1\\)\\\\Documents\\\\GitHub\\\\mpbhealth-monorepo\\\\packages\\\\database\\\\src\\\\types\\\\supabase.ts\")",
+      "Bash(ls \"C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/packages/ui/src/\"*.css)"
     ],
     "additionalDirectories": [
       "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\apps\\advisor-portal",

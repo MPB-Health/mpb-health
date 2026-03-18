@@ -199,6 +199,33 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_access: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string | null
+          has_advisor_page_access: boolean
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name?: string | null
+          has_advisor_page_access?: boolean
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          has_advisor_page_access?: boolean
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       advisor_announcements: {
         Row: {
           content: string | null
@@ -1336,8 +1363,10 @@ export type Database = {
           description: string | null
           icon: string | null
           id: string
+          image_url: string | null
           is_active: boolean | null
           is_external: boolean | null
+          is_popup: boolean | null
           label: string
           order_index: number | null
           requires_auth: boolean | null
@@ -1351,8 +1380,10 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           is_external?: boolean | null
+          is_popup?: boolean | null
           label: string
           order_index?: number | null
           requires_auth?: boolean | null
@@ -1366,8 +1397,10 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           is_external?: boolean | null
+          is_popup?: boolean | null
           label?: string
           order_index?: number | null
           requires_auth?: boolean | null
@@ -1465,11 +1498,14 @@ export type Database = {
       }
       advisor_videos: {
         Row: {
+          category: string
           created_at: string
           description: string | null
+          duration: string | null
           id: string
           is_active: boolean
           order_index: number
+          tags: string[] | null
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -1477,11 +1513,14 @@ export type Database = {
           vimeo_id: string
         }
         Insert: {
+          category?: string
           created_at?: string
           description?: string | null
+          duration?: string | null
           id?: string
           is_active?: boolean
           order_index?: number
+          tags?: string[] | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -1489,11 +1528,14 @@ export type Database = {
           vimeo_id: string
         }
         Update: {
+          category?: string
           created_at?: string
           description?: string | null
+          duration?: string | null
           id?: string
           is_active?: boolean
           order_index?: number
+          tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
@@ -2099,6 +2141,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       automation_execution_log: {
         Row: {
@@ -3333,72 +3417,6 @@ export type Database = {
           views?: number | null
         }
         Relationships: []
-      }
-      content_calendar: {
-        Row: {
-          assigned_category: string | null
-          assigned_keywords: string[] | null
-          blog_post_id: string | null
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          generation_log_id: string | null
-          id: string
-          notes: string | null
-          priority: string | null
-          status: string | null
-          target_date: string | null
-          topic: string
-          updated_at: string | null
-        }
-        Insert: {
-          assigned_category?: string | null
-          assigned_keywords?: string[] | null
-          blog_post_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          generation_log_id?: string | null
-          id?: string
-          notes?: string | null
-          priority?: string | null
-          status?: string | null
-          target_date?: string | null
-          topic: string
-          updated_at?: string | null
-        }
-        Update: {
-          assigned_category?: string | null
-          assigned_keywords?: string[] | null
-          blog_post_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          generation_log_id?: string | null
-          id?: string
-          notes?: string | null
-          priority?: string | null
-          status?: string | null
-          target_date?: string | null
-          topic?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_calendar_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_calendar_generation_log_id_fkey"
-            columns: ["generation_log_id"]
-            isOneToOne: false
-            referencedRelation: "blog_generation_logs"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       conversations: {
         Row: {
@@ -8739,6 +8757,7 @@ export type Database = {
           tags: string[] | null
           title: string
           updated_at: string | null
+          video_url: string | null
         }
         Insert: {
           content?: string
@@ -8762,6 +8781,7 @@ export type Database = {
           tags?: string[] | null
           title: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Update: {
           content?: string
@@ -8785,6 +8805,7 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -9056,6 +9077,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           features: Json | null
+          flipbook_url: string | null
           icon: string | null
           id: string
           is_active: boolean | null
@@ -9071,6 +9093,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           features?: Json | null
+          flipbook_url?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
@@ -9086,6 +9109,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           features?: Json | null
+          flipbook_url?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
@@ -10738,47 +10762,6 @@ export type Database = {
           },
         ]
       }
-      medication_reminders: {
-        Row: {
-          created_at: string
-          id: string
-          is_sent: boolean | null
-          member_id: string
-          prescription_id: string | null
-          reminder_date: string
-          reminder_type: string
-          sent_at: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_sent?: boolean | null
-          member_id: string
-          prescription_id?: string | null
-          reminder_date: string
-          reminder_type: string
-          sent_at?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_sent?: boolean | null
-          member_id?: string
-          prescription_id?: string | null
-          reminder_date?: string
-          reminder_type?: string
-          sent_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "medication_reminders_prescription_id_fkey"
-            columns: ["prescription_id"]
-            isOneToOne: false
-            referencedRelation: "prescriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       meeting_invitations: {
         Row: {
           advisor_id: string
@@ -11080,45 +11063,6 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           version?: number | null
-        }
-        Relationships: []
-      }
-      member_import_logs: {
-        Row: {
-          advisor_id: string
-          completed_at: string | null
-          created_at: string | null
-          error_details: Json | null
-          failed_rows: number | null
-          file_name: string
-          id: string
-          status: string | null
-          successful_rows: number | null
-          total_rows: number | null
-        }
-        Insert: {
-          advisor_id: string
-          completed_at?: string | null
-          created_at?: string | null
-          error_details?: Json | null
-          failed_rows?: number | null
-          file_name: string
-          id?: string
-          status?: string | null
-          successful_rows?: number | null
-          total_rows?: number | null
-        }
-        Update: {
-          advisor_id?: string
-          completed_at?: string | null
-          created_at?: string | null
-          error_details?: Json | null
-          failed_rows?: number | null
-          file_name?: string
-          id?: string
-          status?: string | null
-          successful_rows?: number | null
-          total_rows?: number | null
         }
         Relationships: []
       }
@@ -12911,57 +12855,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pharmacies: {
-        Row: {
-          address_line1: string
-          address_line2: string | null
-          city: string
-          created_at: string
-          has_drive_through: boolean | null
-          id: string
-          is_24_hour: boolean | null
-          is_network: boolean | null
-          latitude: number | null
-          longitude: number | null
-          name: string
-          phone: string
-          state: string
-          zip_code: string
-        }
-        Insert: {
-          address_line1: string
-          address_line2?: string | null
-          city: string
-          created_at?: string
-          has_drive_through?: boolean | null
-          id?: string
-          is_24_hour?: boolean | null
-          is_network?: boolean | null
-          latitude?: number | null
-          longitude?: number | null
-          name: string
-          phone: string
-          state: string
-          zip_code: string
-        }
-        Update: {
-          address_line1?: string
-          address_line2?: string | null
-          city?: string
-          created_at?: string
-          has_drive_through?: boolean | null
-          id?: string
-          is_24_hour?: boolean | null
-          is_network?: boolean | null
-          latitude?: number | null
-          longitude?: number | null
-          name?: string
-          phone?: string
-          state?: string
-          zip_code?: string
-        }
-        Relationships: []
-      }
       plan_category_features: {
         Row: {
           category_id: string
@@ -13332,13 +13225,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "prescriptions_pharmacy_id_fkey"
-            columns: ["pharmacy_id"]
-            isOneToOne: false
-            referencedRelation: "pharmacies"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "prescriptions_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
@@ -13688,53 +13574,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "provider_locations_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      provider_reviews: {
-        Row: {
-          created_at: string
-          id: string
-          is_verified: boolean | null
-          member_id: string
-          provider_id: string
-          rating: number
-          review_text: string | null
-          updated_at: string
-          visit_date: string | null
-          would_recommend: boolean | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_verified?: boolean | null
-          member_id: string
-          provider_id: string
-          rating: number
-          review_text?: string | null
-          updated_at?: string
-          visit_date?: string | null
-          would_recommend?: boolean | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_verified?: boolean | null
-          member_id?: string
-          provider_id?: string
-          rating?: number
-          review_text?: string | null
-          updated_at?: string
-          visit_date?: string | null
-          would_recommend?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "provider_reviews_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
@@ -15067,123 +14906,6 @@ export type Database = {
           },
         ]
       }
-      solution_benefits: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          icon: string | null
-          id: string
-          order_index: number | null
-          solution_id: string | null
-          title: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          order_index?: number | null
-          solution_id?: string | null
-          title: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          order_index?: number | null
-          solution_id?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "solution_benefits_solution_id_fkey"
-            columns: ["solution_id"]
-            isOneToOne: false
-            referencedRelation: "specialized_solutions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      solution_features: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          icon: string | null
-          id: string
-          order_index: number | null
-          solution_id: string | null
-          title: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          order_index?: number | null
-          solution_id?: string | null
-          title: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          order_index?: number | null
-          solution_id?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "solution_features_solution_id_fkey"
-            columns: ["solution_id"]
-            isOneToOne: false
-            referencedRelation: "specialized_solutions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      solution_testimonials: {
-        Row: {
-          avatar_url: string | null
-          content: string
-          created_at: string | null
-          id: string
-          name: string
-          order_index: number | null
-          role: string | null
-          solution_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          content: string
-          created_at?: string | null
-          id?: string
-          name: string
-          order_index?: number | null
-          role?: string | null
-          solution_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          content?: string
-          created_at?: string | null
-          id?: string
-          name?: string
-          order_index?: number | null
-          role?: string | null
-          solution_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "solution_testimonials_solution_id_fkey"
-            columns: ["solution_id"]
-            isOneToOne: false
-            referencedRelation: "specialized_solutions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sop_categories: {
         Row: {
           created_at: string | null
@@ -15304,54 +15026,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      specialized_solutions: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          hero_description: string | null
-          hero_image_url: string | null
-          hero_title: string | null
-          icon: string | null
-          id: string
-          is_published: boolean | null
-          order_index: number | null
-          slug: string
-          subtitle: string | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          hero_description?: string | null
-          hero_image_url?: string | null
-          hero_title?: string | null
-          icon?: string | null
-          id?: string
-          is_published?: boolean | null
-          order_index?: number | null
-          slug: string
-          subtitle?: string | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          hero_description?: string | null
-          hero_image_url?: string | null
-          hero_title?: string | null
-          icon?: string | null
-          id?: string
-          is_published?: boolean | null
-          order_index?: number | null
-          slug?: string
-          subtitle?: string | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       support_tickets: {
         Row: {
@@ -17106,6 +16780,10 @@ export type Database = {
       }
       cleanup_old_page_views: { Args: never; Returns: undefined }
       cleanup_old_security_alert_logs: { Args: never; Returns: number }
+      clear_must_change_password_after_reset: {
+        Args: never
+        Returns: undefined
+      }
       complete_priority_item: {
         Args: { p_item_id: string; p_reason?: string }
         Returns: boolean
@@ -17702,21 +17380,6 @@ export type Database = {
           query: string
           result_count: number
           searched_at: string
-        }[]
-      }
-      get_sops_by_category: {
-        Args: { p_category?: string }
-        Returns: {
-          category: string
-          content: string
-          created_at: string
-          description: string
-          file_url: string
-          id: string
-          tags: string[]
-          title: string
-          updated_at: string
-          version: string
         }[]
       }
       get_trending_keywords: {

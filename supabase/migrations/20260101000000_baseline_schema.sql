@@ -1,0 +1,54 @@
+-- ============================================================
+-- BASELINE SCHEMA — MPB Health Advisor Portal
+-- ============================================================
+-- Canonical starting point for new local environments.
+-- Replaces the 88 pre-2026 migrations archived in supabase/migrations/archive/
+--
+-- Source:        dtmnkzllidaiqyheguhl (production)
+-- Baseline date: 2026-01-01
+-- Authored:      2026-03-18 (Pass 2 migration consolidation)
+--
+-- Production:    Already marked applied in supabase_migrations.schema_migrations
+--                (version '20260101000000' inserted 2026-03-18)
+-- ============================================================
+--
+-- HOW TO POPULATE THIS FILE
+-- =========================
+-- Prerequisites: Docker Desktop running + Supabase CLI v2.75+ linked
+--
+--   supabase db dump --linked --schema public \
+--     -f supabase/migrations/20260101000000_baseline_schema.sql
+--
+-- Then re-insert this header comment at the top.
+--
+-- BEFORE RUNNING db push ON ANY NEW ENVIRONMENT:
+-- The baseline is pre-applied on production. Mark it applied on the target:
+--
+--   INSERT INTO supabase_migrations.schema_migrations (version)
+--   VALUES ('20260101000000')
+--   ON CONFLICT DO NOTHING;
+--
+-- ============================================================
+-- SCHEMA SNAPSHOT AT BASELINE DATE
+-- ============================================================
+-- Tables:    274  |  Functions: 217  |  Enums: 16
+-- Indexes: 1305   |  RLS policies: 720
+--
+-- Systems covered by this baseline (from 88 archived pre-2026 migrations):
+--   Advisor portal core, navigation, resource library, FAQ, blog/content,
+--   lead submissions, Zoho tracking, plans/pricing/benefits, member portal,
+--   analytics, SEO, onboarding, training, newsletter, notifications,
+--   RBAC foundation (profiles.role, user_roles, admin_users),
+--   CMS settings, storage buckets (advisor-documents, avatars, attachments)
+--
+-- Systems NOT in baseline (in active 2026 migrations):
+--   CRM, Champion org system, email infrastructure, role unification,
+--   audit logs, advisor access table, inbound email system
+-- ============================================================
+--
+-- PLACEHOLDER — replace body with supabase db dump output when Docker is available.
+--
+-- Temporary workaround for local dev without Docker:
+--   1. mv supabase/migrations/archive/*.sql supabase/migrations/
+--   2. supabase db reset --local
+--   3. mv the archive files back

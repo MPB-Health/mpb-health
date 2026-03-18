@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   Video,
@@ -528,16 +528,14 @@ export default function Dashboard() {
 
             {/* Quick-access actions */}
             <div className="flex flex-col sm:flex-row gap-2">
-              <a
-                href="https://mympb.zohodesk.com/portal/en/signin"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/tickets/new"
                 className="group flex items-center gap-2.5 px-4 py-2.5 bg-th-accent-600 hover:bg-th-accent-700 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all"
               >
                 <LifeBuoy className="w-4 h-4" />
                 Support Ticket
                 <ArrowRight className="w-3.5 h-3.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-              </a>
+              </Link>
               {showMyAdvisorPage && (
                 <a
                   href={

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -105,6 +106,8 @@ const CRMDashboard: React.FC = () => {
         title="CRM Dashboard | MPB Health Admin"
         description="Manage leads and track conversions"
       />
+
+      <MigratedToAdminPortal adminPath="/crm/dashboard" sectionName="CRM Dashboard" />
 
       <div className="p-6">
         <AdminBreadcrumb

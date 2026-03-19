@@ -33,6 +33,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { AUTH_URLS } from '@mpbhealth/config';
@@ -705,6 +706,8 @@ const UserManagement: React.FC = () => {
         <title>User Management - Admin - MPB Health</title>
         <meta name="description" content="Manage user roles and access levels" />
       </Helmet>
+
+      <MigratedToAdminPortal adminPath="/users" sectionName="User Management" />
 
       <div>
         <AdminBreadcrumb currentPage="User Management" />

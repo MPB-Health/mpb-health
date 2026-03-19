@@ -49,7 +49,7 @@ serve(async (req) => {
       maxRequests: 5,
       windowSeconds: 60,
       keyPrefix: 'send-website-email',
-    });
+    }, corsHeaders);
     if (rateLimitResponse) return rateLimitResponse;
 
     const body: RequestBody = await req.json();

@@ -33,7 +33,7 @@ serve(async (req) => {
       maxRequests: 10,
       windowSeconds: 60,
       keyPrefix: 'web-form-submit',
-    });
+    }, corsHeaders);
     if (rateLimitResponse) return rateLimitResponse;
 
     if (req.method !== 'POST') {

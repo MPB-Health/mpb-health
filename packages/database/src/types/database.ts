@@ -157,6 +157,7 @@ export interface CmsEvent {
   is_featured: boolean;
   tags: string[];
   video_url: string | null;
+  gallery_images: string[] | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

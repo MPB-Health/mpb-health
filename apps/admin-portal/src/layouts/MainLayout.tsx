@@ -41,6 +41,7 @@ const navigation: NavItem[] = [
     icon: TrendingUp,
     children: [
       { name: 'Dashboard', href: '/crm/dashboard' },
+      { name: 'Pipeline', href: '/crm/pipeline' },
       { name: 'Leads', href: '/crm/leads' },
     ],
   },
@@ -73,6 +74,7 @@ const navigation: NavItem[] = [
       { name: 'Widgets', href: '/content/widgets' },
       { name: 'Handbooks', href: '/content/handbooks' },
       { name: 'FAQ', href: '/content/faq' },
+      { name: 'Enrollment Links', href: '/content/enrollment-links' },
       { name: 'Portal Settings', href: '/content/portal-settings' },
     ],
   },
@@ -142,14 +144,6 @@ export default function MainLayout() {
   // Redirect to login if not authenticated
   if (!loading && !user) {
     return <Navigate to="/login" replace />;
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-surface-secondary">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
-      </div>
-    );
   }
 
   // Build navigation with dynamic badge
@@ -227,30 +221,44 @@ export default function MainLayout() {
         ) : undefined
       }
       userSection={
-        <div className="space-y-2">
-          <div className="flex items-center space-x-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[rgb(var(--sidebar-hover))]">
-              <span className="text-sm font-medium text-[rgb(var(--sidebar-text-active))]">
-                {user?.first_name?.[0]}
-                {user?.last_name?.[0]}
-              </span>
+        loading ? (
+          <div className="space-y-2 animate-pulse">
+            <div className="flex items-center space-x-3 px-3 py-2">
+              <div className="w-8 h-8 rounded-full bg-[rgb(var(--sidebar-text)_/_0.12)]" />
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="h-4 bg-[rgb(var(--sidebar-text)_/_0.2)] rounded w-24" />
+                <div className="h-3 bg-[rgb(var(--sidebar-text)_/_0.15)] rounded w-16" />
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[rgb(var(--sidebar-text-active))] truncate">
-                {user?.first_name} {user?.last_name}
-              </p>
-              <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] capitalize">{user?.role}</p>
-            </div>
+            <div className="h-9 bg-[rgb(var(--sidebar-text)_/_0.1)] rounded-xl mx-3" />
           </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3 px-3 py-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[rgb(var(--sidebar-hover))]">
+                <span className="text-sm font-medium text-[rgb(var(--sidebar-text-active))]">
+                  {user?.first_name?.[0]}
+                  {user?.last_name?.[0]}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[rgb(var(--sidebar-text-active))] truncate">
+                  {user?.first_name} {user?.last_name}
+                </p>
+                <p className="text-xs text-[rgb(var(--sidebar-text)_/_0.7)] capitalize">{user?.role}</p>
+              </div>
+            </div>
 
-          <button
-            onClick={logout}
-            className="flex items-center space-x-3 px-3 py-2 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors"
-          >
-            <LogOut className="w-[18px] h-[18px]" />
-            <span>Sign Out</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="flex items-center space-x-3 px-3 py-2 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-colors"
+            >
+              <LogOut className="w-[18px] h-[18px]" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        )
       }
     >
       <Outlet />

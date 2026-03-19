@@ -38,6 +38,7 @@ import { Textarea } from '../../components/ui/Textarea';
 import { Badge } from '../../components/ui/Badge';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 import {
   handbooksService,
   type HandbookRecord,
@@ -380,6 +381,8 @@ const HandbookHub: React.FC = () => {
         <title>Member Handbooks - Admin - MPB Health</title>
         <meta name="description" content="Manage member handbooks - add, edit, hide, and share" />
       </Helmet>
+
+      <MigratedToAdminPortal adminPath="/content/handbooks" sectionName="Member Handbooks" />
 
       <div>
         <AdminBreadcrumb currentPage="Member Handbooks" />

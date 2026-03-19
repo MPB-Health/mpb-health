@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
     maxRequests: 10,
     windowSeconds: 60,
     keyPrefix: 'bulk-create-advisors',
-  });
+  }, headers);
   if (rateLimitResponse) return rateLimitResponse;
 
   try {

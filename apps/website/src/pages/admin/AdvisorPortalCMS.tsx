@@ -52,6 +52,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Textarea } from '../../components/ui/Textarea';
 import { RichTextEditor } from '../../components/ui/RichTextEditor';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import {
   advisorCMSService,
@@ -754,6 +755,8 @@ export default function AdvisorPortalCMS() {
 
   return (
     <AdminLayout activeView="advisor-portal-cms" onViewChange={(view) => navigate(`/admin?view=${view}`)}>
+      <MigratedToAdminPortal adminPath="/content/training" sectionName="Advisor Portal CMS" />
+
       <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
         <AdminBreadcrumb
           items={[

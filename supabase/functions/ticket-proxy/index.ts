@@ -602,7 +602,7 @@ Deno.serve(async (req: Request) => {
     maxRequests: 60,
     windowSeconds: 60,
     keyPrefix: 'ticket-proxy',
-  });
+  }, corsHeaders);
   if (rateLimitResponse) return rateLimitResponse;
 
   try {

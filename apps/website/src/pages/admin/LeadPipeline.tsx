@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import { Button } from '../../components/ui/button';
 import { LeadCard } from '../../components/admin/crm/LeadCard';
@@ -255,6 +256,8 @@ const LeadPipeline: React.FC = () => {
         title="Lead Pipeline | MPB Health Admin"
         description="Visual lead pipeline management"
       />
+
+      <MigratedToAdminPortal adminPath="/crm/pipeline" sectionName="CRM Pipeline" />
 
       <div className="p-6">
         <AdminBreadcrumb

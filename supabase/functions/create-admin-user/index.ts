@@ -104,13 +104,15 @@ Deno.serve(async (req: Request) => {
     return handleCorsPreflightRequest(req);
   }
 
+  const corsHeaders = getCorsHeaders(req);
+
   // Rate limit: admin user creation endpoint
   const clientIp = getClientIdentifier(req);
   const rateLimitResponse = checkRateLimit(clientIp, {
     maxRequests: 30,
     windowSeconds: 60,
     keyPrefix: 'create-admin-user',
-  });
+  }, corsHeaders);
   if (rateLimitResponse) return rateLimitResponse;
 
   try {

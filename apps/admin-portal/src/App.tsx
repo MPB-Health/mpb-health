@@ -48,8 +48,9 @@ const EventEditor = lazyRetry(() => import('./pages/EventEditor'));
 // Operations / Marketing pages
 const LeadSubmissions = lazyRetry(() => import('./pages/LeadSubmissions'));
 const NewsletterAdmin = lazyRetry(() => import('./pages/NewsletterAdmin'));
-// FAQ & Portal Settings
+// FAQ, Enrollment Links & Portal Settings
 const FAQAdmin = lazyRetry(() => import('./pages/FAQAdmin'));
+const EnrollmentLinks = lazyRetry(() => import('./pages/EnrollmentLinks'));
 const PortalSettings = lazyRetry(() => import('./pages/PortalSettings'));
 // Analytics
 const AnalyticsOverview = lazyRetry(() => import('./pages/AnalyticsOverview'));
@@ -59,6 +60,7 @@ const MemberDetail = lazyRetry(() => import('./pages/MemberDetail'));
 const CRMDashboard = lazyRetry(() => import('./pages/CRMDashboard'));
 const CRMLeads = lazyRetry(() => import('./pages/CRMLeads'));
 const CRMLeadDetail = lazyRetry(() => import('./pages/CRMLeadDetail'));
+const CRMPipeline = lazyRetry(() => import('./pages/CRMPipeline'));
 const SystemHealth = lazyRetry(() => import('./pages/SystemHealth'));
 const ChatModeration = lazyRetry(() => import('./pages/ChatModeration'));
 const PushNotifications = lazyRetry(() => import('./pages/PushNotifications'));
@@ -272,6 +274,7 @@ export default function App() {
               <Route path="content/events/new" element={<EventEditor />} />
               <Route path="content/events/:eventId" element={<EventEditor />} />
               <Route path="content/faq" element={<FAQAdmin />} />
+              <Route path="content/enrollment-links" element={<EnrollmentLinks />} />
               <Route path="content/portal-settings" element={<PortalSettings />} />
               {/* Operations */}
               <Route path="operations/leads" element={<LeadSubmissions />} />
@@ -295,6 +298,7 @@ export default function App() {
               <Route path="crm/dashboard" element={<CRMDashboard />} />
               <Route path="crm/leads" element={<CRMLeads />} />
               <Route path="crm/leads/:leadId" element={<CRMLeadDetail />} />
+              <Route path="crm/pipeline" element={<CRMPipeline />} />
               <Route path="system/health" element={<SystemHealth />} />
               <Route path="messaging/chat" element={<ChatModeration />} />
               <Route path="messaging/push" element={<PushNotifications />} />

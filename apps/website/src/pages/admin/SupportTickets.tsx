@@ -21,6 +21,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/button';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 
 interface SupportTicket {
   id: string;
@@ -209,6 +210,8 @@ const SupportTickets: React.FC = () => {
         <title>Support Tickets - Admin - MPB Health</title>
         <meta name="description" content="Manage member support tickets and requests" />
       </Helmet>
+
+      <MigratedToAdminPortal adminPath="/support/tickets" sectionName="Support Tickets" />
 
       <div>
         <AdminBreadcrumb currentPage="Support Tickets" />

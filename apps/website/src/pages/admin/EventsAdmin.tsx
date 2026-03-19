@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 
 import {
@@ -123,6 +124,7 @@ async function uploadImageToStorage(file: File, folder: string): Promise<string>
 }
 
 const EventsAdmin: React.FC = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -362,7 +364,7 @@ const EventsAdmin: React.FC = () => {
   );
 
   return (
-    <AdminLayout>
+    <AdminLayout activeView="events" onViewChange={(view) => navigate(`/admin?view=${view}`)}>
       <Helmet>
         <title>Events Management | MPB Admin</title>
       </Helmet>

@@ -14,12 +14,6 @@ const isDev =
 
 const ALLOWED_ORIGINS: string[] = [
   // Production
-  "https://www.mpbhealth.com",
-  "https://mpbhealth.com",
-  "https://app.mpbhealth.com",
-  "https://crm.mpbhealth.com",
-  "https://admin.mpbhealth.com",
-  "https://advisor.mpbhealth.com",
   "https://www.mpb.health",
   "https://mpb.health",
   "https://app.mpb.health",

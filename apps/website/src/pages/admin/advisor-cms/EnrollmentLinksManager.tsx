@@ -22,6 +22,7 @@ import { Input } from '../../../components/ui/Input';
 import { Badge } from '../../../components/ui/Badge';
 import { Textarea } from '../../../components/ui/Textarea';
 import { AdminLayout } from '../../../components/admin/AdminLayout';
+import MigratedToAdminPortal from '../../../components/admin/MigratedToAdminPortal';
 import { AdminBreadcrumb } from '../../../components/admin/AdminBreadcrumb';
 import { supabase } from '../../../lib/supabase';
 import { toast } from 'sonner';
@@ -222,6 +223,8 @@ export default function EnrollmentLinksManager() {
 
   return (
     <AdminLayout activeView="advisor-portal-cms" onViewChange={(view) => navigate(`/admin?view=${view}`)}>
+      <MigratedToAdminPortal adminPath="/content/enrollment-links" sectionName="Enrollment Links Manager" />
+
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

@@ -42,7 +42,8 @@ const DEFAULT_RATE_LIMIT: RateLimitConfig = {
  */
 export function checkRateLimit(
   identifier: string,
-  config: RateLimitConfig = DEFAULT_RATE_LIMIT
+  config: RateLimitConfig = DEFAULT_RATE_LIMIT,
+  corsHeaders?: Record<string, string>,
 ): Response | null {
   const key = `${config.keyPrefix}:${identifier}`;
   const now = Date.now();
@@ -74,6 +75,7 @@ export function checkRateLimit(
       {
         status: 429,
         headers: {
+          ...(corsHeaders ?? {}),
           "Content-Type": "application/json",
           "Retry-After": String(retryAfter),
           "X-RateLimit-Limit": String(config.maxRequests),

@@ -274,6 +274,15 @@ export {
   type AnalyticsOverviewStats,
 } from './analytics/AnalyticsOverviewService';
 
+// Enrollment links (advisor portal enrollment page)
+export {
+  EnrollmentLinksAdminService,
+  enrollmentLinksAdminService,
+  type EnrollmentLink,
+  type EnrollmentLinkCreateInput,
+  type EnrollmentLinkUpdateInput,
+} from './content/EnrollmentLinksAdminService';
+
 // Portal settings (key-value store)
 export {
   PortalSettingsAdminService,

@@ -535,18 +535,22 @@ async function updateTicket(
   };
 }
 
-async function getCategories(itstsAdmin: ReturnType<typeof createClient>) {
-  const { data, error } = await itstsAdmin
-    .from("tickets")
-    .select("category")
-    .not("category", "is", null);
+async function getCategories(_itstsAdmin: ReturnType<typeof createClient>) {
+  // Read from the primary project's ticket_categories table (authoritative list)
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey) return { categories: [] };
+
+  const primary = createClient(supabaseUrl, serviceRoleKey);
+  const { data, error } = await primary
+    .from("ticket_categories")
+    .select("name")
+    .eq("is_active", true)
+    .order("display_order", { ascending: true });
 
   if (error) throw error;
 
-  const categories = [...new Set(
-    (data || []).map((t: { category: string }) => t.category).filter((c: string) => c?.trim()),
-  )].sort() as string[];
-
+  const categories = (data || []).map((r: { name: string }) => r.name);
   return { categories };
 }
 

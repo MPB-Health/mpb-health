@@ -223,6 +223,19 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Safety timeout: if onAuthStateChange never fires (edge case with
+    // corrupted local storage or stale service-worker token), force the app
+    // out of the loading state so the user isn't stuck on an infinite spinner.
+    const timeout = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          console.warn('[AdvisorContext] Auth timed out after 8 s — forcing load complete');
+          return false;
+        }
+        return prev;
+      });
+    }, 8_000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && !initialHandled.current)) {
@@ -243,7 +256,10 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Load data when profile is available — deferred so the initial render

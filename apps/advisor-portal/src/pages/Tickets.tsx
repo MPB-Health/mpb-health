@@ -81,8 +81,8 @@ export default function Tickets() {
   // sees a broken page — it just keeps trying in the background.
   const retryTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const retryCountRef = useRef(0);
-  const MAX_PAGE_RETRIES = 4;
-  const PAGE_RETRY_DELAYS = [2_000, 5_000, 10_000, 20_000];
+  const MAX_PAGE_RETRIES = 3;
+  const PAGE_RETRY_DELAYS = [1_500, 3_000, 5_000];
 
   // Clean up retry timer on unmount
   useEffect(() => () => { clearTimeout(retryTimerRef.current); }, []);

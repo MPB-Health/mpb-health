@@ -324,7 +324,16 @@
       "Bash(grep -v \"^type$\\\\|^from$\\\\|^import$\")",
       "Bash(gh secret:*)",
       "Bash(gh repo:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src/pages\" -iname \"*ticket*\" -type f)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src\" -path \"*service*\" -o -path \"*lib*\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src\" -name \"*TicketAuth*\" -o -name \"ticket*service*\")",
+      "Bash(ls -la \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src/components/\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo\" -name \"*advisor-core*\" -type d)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core/src\" -name \"*ticket*\" -type f)",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core\" -name \"*.ts\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/packages/advisor-core\" -name \"*ticket*\" -o -name \"*Ticket*\")",
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/advisor-portal/src\" -name \"*Context*\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\apps\\advisor-portal",

@@ -97,7 +97,21 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    // Safety timeout: if org loading hangs (network, stale token), force
+    // orgLoading=false so ProtectedRoute stops showing "Loading workspace…"
+    const timeout = setTimeout(() => {
+      setOrgLoading((prev) => {
+        if (prev) {
+          console.warn('[OrgContext] Org loading timed out after 10 s');
+          return false;
+        }
+        return prev;
+      });
+    }, 10_000);
+
     loadOrgs();
+
+    return () => clearTimeout(timeout);
   }, [loadOrgs]);
 
   // --- Load role for active org ---
@@ -142,7 +156,19 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [activeOrgId]);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      setPermissionsLoading((prev) => {
+        if (prev) {
+          console.warn('[OrgContext] Permission loading timed out after 10 s');
+          return false;
+        }
+        return prev;
+      });
+    }, 10_000);
+
     loadPermissions();
+
+    return () => clearTimeout(timeout);
   }, [loadPermissions]);
 
   // --- Permission checks ---

@@ -23,6 +23,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Safety timeout: never stay stuck on loading spinner.
+    // If getSession() hangs (stale token, network) force loading=false.
+    const timeout = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          console.warn('[CRM Auth] Timed out after 8 s — treating as unauthenticated');
+          return false;
+        }
+        return prev;
+      });
+    }, 8_000);
+
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
@@ -47,7 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

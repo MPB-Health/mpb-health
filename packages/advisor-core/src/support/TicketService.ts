@@ -316,9 +316,9 @@ export class TicketService {
    * The end user should never see a technical error; pages should receive
    * either data or a clean, recoverable error.
    */
-  private static CALL_TIMEOUT_MS = 20_000;
+  private static CALL_TIMEOUT_MS = 10_000;
   private static MAX_RETRIES = 2; // 3 total attempts
-  private static RETRY_BACKOFF = [1_000, 3_000]; // ms between retries
+  private static RETRY_BACKOFF = [800, 2_000]; // ms between retries
 
   private async call<T extends { success: boolean }>(
     action: string,

@@ -77,6 +77,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    // Safety timeout: never stay stuck on a loading spinner.
+    const timeout = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          console.warn('[AuthContext] Auth timed out after 8 s — treating as unauthenticated');
+          setRolesLoading(false);
+          return false;
+        }
+        return prev;
+      });
+    }, 8_000);
+
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
@@ -103,7 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetchRoles(session?.user?.id);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [fetchRoles]);
 
   const signIn = async (email: string, password: string) => {

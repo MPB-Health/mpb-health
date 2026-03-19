@@ -175,10 +175,25 @@ export default function AdminTickets() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
-  // Role check
+  // Role check — with 5 s timeout so the spinner never stays forever
   useEffect(() => {
     if (profile?.user_id) {
-      isAdmin(profile.user_id).then(setAdminCheck).catch(() => setAdminCheck(false));
+      const timeout = setTimeout(() => {
+        setAdminCheck((prev) => {
+          if (prev === null) {
+            console.warn('[AdminTickets] isAdmin() timed out after 5 s — denying access');
+            return false;
+          }
+          return prev;
+        });
+      }, 5_000);
+
+      isAdmin(profile.user_id)
+        .then(setAdminCheck)
+        .catch(() => setAdminCheck(false))
+        .finally(() => clearTimeout(timeout));
+
+      return () => clearTimeout(timeout);
     } else if (profile !== undefined) {
       // profile loaded but has no user_id — not an admin
       setAdminCheck(false);
@@ -198,8 +213,8 @@ export default function AdminTickets() {
   const retryTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const retryCountRef = useRef(0);
   const mountedRef = useRef(true);
-  const MAX_PAGE_RETRIES = 4;
-  const PAGE_RETRY_DELAYS = [2_000, 5_000, 10_000, 20_000];
+  const MAX_PAGE_RETRIES = 3;
+  const PAGE_RETRY_DELAYS = [1_500, 3_000, 5_000];
 
   useEffect(() => () => { mountedRef.current = false; clearTimeout(retryTimerRef.current); }, []);
 

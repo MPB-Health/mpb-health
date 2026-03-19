@@ -220,7 +220,7 @@ export const ResourceAdmin: React.FC = () => {
   };
 
   return (
-    <AdminLayout activeView="resources" onViewChange={(view) => navigate(`/admin?view=${view}`)}>
+    <AdminLayout activeView="resources" onViewChange={(view) => navigate(`/admin?view=${view}`, { replace: true })}>
       <Helmet>
         <title>Resource Admin | MPB Health</title>
       </Helmet>

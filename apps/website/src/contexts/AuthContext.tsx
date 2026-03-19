@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { userRolesService, type UserRole } from '../lib/userRolesService';
@@ -33,19 +33,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [rolesLoading, setRolesLoading] = useState(true);
+  const initialRolesLoaded = useRef(false);
 
   // Fetch roles for the current user
   const fetchRoles = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setUserRoles([]);
       setRolesLoading(false);
+      initialRolesLoaded.current = false;
       return;
     }
 
-    setRolesLoading(true);
+    // Only show loading spinner on initial load, not on token refreshes.
+    // Setting rolesLoading=true on refreshes causes ProtectedRoute to unmount
+    // the entire page, destroying form state and making pages "close".
+    if (!initialRolesLoaded.current) {
+      setRolesLoading(true);
+    }
     try {
       const roles = await userRolesService.getUserRoles(userId);
       setUserRoles(roles);
+      initialRolesLoaded.current = true;
     } catch (error) {
       console.error('Error fetching user roles:', error);
       setUserRoles([]);

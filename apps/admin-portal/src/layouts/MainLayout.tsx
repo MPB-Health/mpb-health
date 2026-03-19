@@ -15,6 +15,8 @@ import {
   MessageSquare,
   Server,
   BarChart3,
+  Inbox,
+  LineChart,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
@@ -59,6 +61,7 @@ const navigation: NavItem[] = [
       { name: 'Bulletins', href: '/content/bulletins' },
       { name: 'Blog Posts', href: '/content/blog' },
       { name: 'Events', href: '/content/events' },
+      { name: 'Announcements', href: '/content/announcements' },
       { name: 'Resources', href: '/content/resources' },
       { name: 'Training Modules', href: '/content/training' },
       { name: 'SOPs', href: '/content/sops' },
@@ -67,6 +70,27 @@ const navigation: NavItem[] = [
       { name: 'Forms', href: '/content/forms' },
       { name: 'Contact Directory', href: '/content/contacts' },
       { name: 'Navigation', href: '/content/navigation' },
+      { name: 'Widgets', href: '/content/widgets' },
+      { name: 'Handbooks', href: '/content/handbooks' },
+      { name: 'FAQ', href: '/content/faq' },
+      { name: 'Portal Settings', href: '/content/portal-settings' },
+    ],
+  },
+  {
+    name: 'Operations',
+    href: '#',
+    icon: Inbox,
+    children: [
+      { name: 'Lead Submissions', href: '/operations/leads' },
+      { name: 'Newsletter', href: '/operations/newsletter' },
+    ],
+  },
+  {
+    name: 'Analytics',
+    href: '#',
+    icon: LineChart,
+    children: [
+      { name: 'Overview', href: '/analytics/overview' },
     ],
   },
   {

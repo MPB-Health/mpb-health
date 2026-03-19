@@ -45,6 +45,14 @@ const WidgetManager = lazyRetry(() => import('./pages/WidgetManager'));
 const HandbookManager = lazyRetry(() => import('./pages/HandbookManager'));
 const EventsAdmin = lazyRetry(() => import('./pages/EventsAdmin'));
 const EventEditor = lazyRetry(() => import('./pages/EventEditor'));
+// Operations / Marketing pages
+const LeadSubmissions = lazyRetry(() => import('./pages/LeadSubmissions'));
+const NewsletterAdmin = lazyRetry(() => import('./pages/NewsletterAdmin'));
+// FAQ & Portal Settings
+const FAQAdmin = lazyRetry(() => import('./pages/FAQAdmin'));
+const PortalSettings = lazyRetry(() => import('./pages/PortalSettings'));
+// Analytics
+const AnalyticsOverview = lazyRetry(() => import('./pages/AnalyticsOverview'));
 // Command center pages
 const Members = lazyRetry(() => import('./pages/Members'));
 const MemberDetail = lazyRetry(() => import('./pages/MemberDetail'));
@@ -263,6 +271,13 @@ export default function App() {
               <Route path="content/events" element={<EventsAdmin />} />
               <Route path="content/events/new" element={<EventEditor />} />
               <Route path="content/events/:eventId" element={<EventEditor />} />
+              <Route path="content/faq" element={<FAQAdmin />} />
+              <Route path="content/portal-settings" element={<PortalSettings />} />
+              {/* Operations */}
+              <Route path="operations/leads" element={<LeadSubmissions />} />
+              <Route path="operations/newsletter" element={<NewsletterAdmin />} />
+              {/* Analytics */}
+              <Route path="analytics/overview" element={<AnalyticsOverview />} />
               <Route path="settings" element={<RequirePermission permission="settings.manage"><Settings /></RequirePermission>} />
               <Route path="settings/payments" element={<RequirePermission permission="settings.manage"><PaymentProcessors /></RequirePermission>} />
               <Route path="settings/sms" element={<RequirePermission permission="settings.manage"><SmsAccounts /></RequirePermission>} />

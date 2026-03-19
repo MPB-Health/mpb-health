@@ -284,7 +284,8 @@
       "Bash(find 'c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/lib' -type f)",
       "Bash(grep -rn on_hold C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/advisor-portal/src/ --include=*.ts --include=*.tsx)",
       "Bash(grep -rn on_hold C:/Users/VinnieRTannous/.config/superpowers/worktrees/mpbhealth-monorepo/audit-2026-03-18/apps/admin-portal/src/ --include=*.ts --include=*.tsx)",
-      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/components/admin\" -type f)"
+      "Bash(find \"c:/Users/VinnieRTannous/OneDrive - mympb.com \\(1\\)/Documents/GitHub/mpbhealth-monorepo/apps/website/src/components/admin\" -type f)",
+      "Bash(supabase functions:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\VinnieRTannous\\.config\\superpowers\\worktrees\\mpbhealth-monorepo\\audit-2026-03-18\\apps\\advisor-portal",

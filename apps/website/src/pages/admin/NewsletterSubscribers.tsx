@@ -7,6 +7,7 @@ import { bulkSyncToMailchimp } from '../../lib/mailchimpService';
 import { SEOHead } from '../../components/SEOHead';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 
 const NewsletterSubscribers = () => {
   const navigate = useNavigate();
@@ -138,6 +139,8 @@ const NewsletterSubscribers = () => {
         title="Newsletter Subscribers - Admin Dashboard"
         description="Manage newsletter subscribers"
       />
+
+      <MigratedToAdminPortal adminPath="/operations/newsletter" sectionName="Newsletter Subscribers" />
 
       <div>
         <AdminBreadcrumb currentPage="Newsletter Subscribers" />

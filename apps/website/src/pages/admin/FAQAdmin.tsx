@@ -9,6 +9,7 @@ import { Label } from '../../components/ui/Label';
 import { supabase } from '../../lib/supabase';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { sanitizeHtml } from '@mpbhealth/utils';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 
 interface FAQItem {
   id: string;
@@ -234,6 +235,8 @@ const FAQAdmin: React.FC = () => {
         <title>FAQ Management - Admin - MPB Health</title>
         <meta name="description" content="Manage FAQ items and Why Choose HealthSharing content" />
       </Helmet>
+
+      <MigratedToAdminPortal adminPath="/content/faq" sectionName="FAQ Management" />
 
       <div>
           <div className="mb-8 flex items-center justify-between">

@@ -238,6 +238,49 @@ export {
   type EventType,
 } from './content/EventsAdminService';
 
+// Newsletter management
+export {
+  NewsletterAdminService,
+  newsletterAdminService,
+  type NewsletterSubscriber,
+  type NewsletterStats,
+  type NewsletterStatus,
+} from './content/NewsletterAdminService';
+
+// Lead submissions
+export {
+  LeadSubmissionService,
+  leadSubmissionService,
+  type LeadSubmission,
+  type LeadSubmissionFilters,
+  type LeadSubmissionStats,
+} from './leads/LeadSubmissionService';
+
+// FAQ management
+export {
+  FAQAdminService,
+  faqAdminService,
+  type FAQItem,
+  type FAQCreateInput,
+  type FAQUpdateInput,
+  type FAQStats,
+} from './content/FAQAdminService';
+
+// Analytics overview
+export {
+  AnalyticsOverviewService,
+  analyticsOverviewService,
+  type TrafficDay,
+  type AnalyticsOverviewStats,
+} from './analytics/AnalyticsOverviewService';
+
+// Portal settings (key-value store)
+export {
+  PortalSettingsAdminService,
+  portalSettingsAdminService,
+  type PortalSetting,
+} from './content/PortalSettingsAdminService';
+
 // Support / Ticket management (re-exports from advisor-core via thin wrapper)
 export {
   TicketService,

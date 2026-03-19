@@ -20,6 +20,7 @@ import {
 import { SEOHead } from '../../components/SEOHead';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { AdminBreadcrumb } from '../../components/admin/AdminBreadcrumb';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 import { Button } from '../../components/ui/button';
 import { LeadFilters } from '../../components/admin/crm/LeadFilters';
 import { BulkActionsBar } from '../../components/admin/crm/BulkActionsBar';
@@ -165,6 +166,8 @@ const LeadsList: React.FC = () => {
         title="All Leads | CRM | MPB Health Admin"
         description="View and manage all leads"
       />
+
+      <MigratedToAdminPortal adminPath="/operations/leads" sectionName="Lead Submissions" />
 
       <div className="p-6 max-w-full">
         <AdminBreadcrumb

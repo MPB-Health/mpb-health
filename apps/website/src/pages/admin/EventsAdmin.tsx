@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { supabase } from '../../lib/supabase';
+import MigratedToAdminPortal from '../../components/admin/MigratedToAdminPortal';
 
 type EventLocationType = 'in_person' | 'virtual' | 'hybrid';
 type EventType =
@@ -365,6 +366,8 @@ const EventsAdmin: React.FC = () => {
       <Helmet>
         <title>Events Management | MPB Admin</title>
       </Helmet>
+
+      <MigratedToAdminPortal adminPath="/content/events" sectionName="Events Management" />
 
       {/* Notification */}
       {notification && (

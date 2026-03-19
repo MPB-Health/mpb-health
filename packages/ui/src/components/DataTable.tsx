@@ -184,4 +184,6 @@ function DataTable<T extends Record<string, unknown>>({
 
 DataTable.displayName = 'DataTable';
 
-export { DataTable };
+const MemoizedDataTable = React.memo(DataTable) as typeof DataTable;
+
+export { MemoizedDataTable as DataTable };

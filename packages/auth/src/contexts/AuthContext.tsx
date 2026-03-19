@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@mpbhealth/database';
 import { userRolesService, type UserRole } from '../services/userRolesService';
@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const canAccessAdminPortal = isAdmin;
   const canAccessAdvisorPortal = isAdvisor;
 
-  const value = {
+  const value = useMemo<AuthContextType>(() => ({
     user,
     session,
     loading,
@@ -135,7 +135,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
     signOut,
-  };
+  }), [
+    user, session, loading, userRoles, rolesLoading, hasRole,
+    isSuperAdmin, isAdmin, isAdvisor, canAccessAdminPortal,
+    canAccessAdvisorPortal, refreshRoles,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

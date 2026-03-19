@@ -54,6 +54,15 @@ const EnrollmentLinks = lazyRetry(() => import('./pages/EnrollmentLinks'));
 const PortalSettings = lazyRetry(() => import('./pages/PortalSettings'));
 // Analytics
 const AnalyticsOverview = lazyRetry(() => import('./pages/AnalyticsOverview'));
+// CRM extended pages
+const CRMTemplates = lazyRetry(() => import('./pages/CRMTemplates'));
+const CRMCalendar = lazyRetry(() => import('./pages/CRMCalendar'));
+// Operations extended
+const LeadAssignment = lazyRetry(() => import('./pages/LeadAssignment'));
+// Widget config
+const WidgetConfig = lazyRetry(() => import('./pages/WidgetConfig'));
+// Notification rules
+const NotificationRules = lazyRetry(() => import('./pages/NotificationRules'));
 // Command center pages
 const Members = lazyRetry(() => import('./pages/Members'));
 const MemberDetail = lazyRetry(() => import('./pages/MemberDetail'));
@@ -299,6 +308,11 @@ export default function App() {
               <Route path="crm/leads" element={<CRMLeads />} />
               <Route path="crm/leads/:leadId" element={<CRMLeadDetail />} />
               <Route path="crm/pipeline" element={<CRMPipeline />} />
+              <Route path="crm/templates" element={<CRMTemplates />} />
+              <Route path="crm/calendar" element={<CRMCalendar />} />
+              <Route path="operations/lead-assignment" element={<LeadAssignment />} />
+              <Route path="content/widgets-config" element={<WidgetConfig />} />
+              <Route path="settings/notifications" element={<NotificationRules />} />
               <Route path="system/health" element={<SystemHealth />} />
               <Route path="messaging/chat" element={<ChatModeration />} />
               <Route path="messaging/push" element={<PushNotifications />} />

@@ -42,6 +42,21 @@ function cacheKey(userId: string, orgId: string): string {
 // Core Functions
 // ---------------------------------------------------------------------------
 
+/** Race a promise against a timeout. Returns the promise result or throws on timeout. */
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`[PermissionService] ${label} timed out after ${ms} ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+
+const QUERY_TIMEOUT_MS = 8_000;
+
 /** Load the full permission set for the current user in a given org */
 export async function loadUserPermissions(orgId: string): Promise<UserPermissionSet | null> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -52,13 +67,17 @@ export async function loadUserPermissions(orgId: string): Promise<UserPermission
   if (cached && Date.now() < cached.expiry) return cached.data;
 
   // Get the user's role in this org
-  const { data: membership, error: memError } = await supabase
-    .from('org_memberships')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('org_id', orgId)
-    .eq('status', 'active')
-    .single();
+  const { data: membership, error: memError } = await withTimeout(
+    supabase
+      .from('org_memberships')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('org_id', orgId)
+      .eq('status', 'active')
+      .single(),
+    QUERY_TIMEOUT_MS,
+    'membership lookup',
+  );
 
   if (memError || !membership) {
     console.error('[PermissionService] No active membership:', memError);
@@ -66,13 +85,17 @@ export async function loadUserPermissions(orgId: string): Promise<UserPermission
   }
 
   // Get all permission keys for that role in this org
-  const { data: rolePerms, error: rpError } = await supabase
-    .from('role_permissions')
-    .select(`
-      permission:permissions!permission_id (key)
-    `)
-    .eq('org_id', orgId)
-    .eq('role', membership.role);
+  const { data: rolePerms, error: rpError } = await withTimeout(
+    supabase
+      .from('role_permissions')
+      .select(`
+        permission:permissions!permission_id (key)
+      `)
+      .eq('org_id', orgId)
+      .eq('role', membership.role),
+    QUERY_TIMEOUT_MS,
+    'role permissions lookup',
+  );
 
   if (rpError) {
     console.error('[PermissionService] Failed to load permissions:', rpError);

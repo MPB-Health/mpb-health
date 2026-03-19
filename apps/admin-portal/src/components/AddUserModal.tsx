@@ -49,22 +49,19 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
   const [loadingPermissions, setLoadingPermissions] = useState(true);
 
   useEffect(() => {
-    if (isOpen) {
-      loadPermissions();
-      setForm(DEFAULT_FORM);
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
 
-  const loadPermissions = async () => {
-    try {
-      const perms = await userService.getPermissionsByCategory();
-      setPermissions(perms);
-    } catch (err) {
-      console.error('Failed to load permissions:', err);
-    } finally {
-      setLoadingPermissions(false);
-    }
-  };
+    setForm(DEFAULT_FORM);
+    setLoadingPermissions(true);
+
+    let cancelled = false;
+    userService.getPermissionsByCategory()
+      .then((perms) => { if (!cancelled) setPermissions(perms); })
+      .catch((err) => { if (!cancelled) console.error('Failed to load permissions:', err); })
+      .finally(() => { if (!cancelled) setLoadingPermissions(false); });
+
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

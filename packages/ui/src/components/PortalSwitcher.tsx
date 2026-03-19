@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, LayoutDashboard, Users, GraduationCap, Globe, Check } from 'lucide-react';
 import { cn } from '../utils';
 
@@ -83,14 +83,14 @@ export function PortalSwitcher({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter available portals based on access
-  const availablePortals = PORTAL_OPTIONS.filter((portal) => {
+  // Filter available portals based on access (memoized to avoid re-filtering every render)
+  const availablePortals = useMemo(() => PORTAL_OPTIONS.filter((portal) => {
     if (portal.key === 'admin') return canAccessAdmin;
     if (portal.key === 'crm') return canAccessCRM;
     if (portal.key === 'advisors') return canAccessAdvisor;
     if (portal.key === 'website') return !!canAccessWebsite;
     return false;
-  });
+  }), [canAccessAdmin, canAccessCRM, canAccessAdvisor, canAccessWebsite]);
 
   // Don't show the switcher if user only has access to one portal
   if (availablePortals.length <= 1) {

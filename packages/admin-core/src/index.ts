@@ -290,6 +290,44 @@ export {
   type PortalSetting,
 } from './content/PortalSettingsAdminService';
 
+// CRM email templates
+export {
+  EmailTemplateAdminService,
+  emailTemplateAdminService,
+  type EmailTemplate,
+  type EmailTemplateCreateInput,
+  type EmailTemplateUpdateInput,
+  type EmailTemplateStats,
+} from './crm/EmailTemplateAdminService';
+
+// CRM calendar
+export {
+  CalendarAdminService,
+  calendarAdminService,
+  type CalendarEvent,
+  type CalendarEventCreateInput,
+  type CalendarEventUpdateInput,
+} from './crm/CalendarAdminService';
+
+// Lead assignment workflow
+export {
+  LeadAssignmentService,
+  leadAssignmentService,
+  type AssignableLead,
+  type AdvisorOption,
+  type LeadAssignmentStats,
+} from './operations/LeadAssignmentService';
+
+// Notification rules
+export {
+  NotificationRuleService,
+  notificationRuleService,
+  type NotificationRule,
+  type NotificationEventLog,
+  type NotificationRuleStats,
+  type NotificationRuleUpdateInput,
+} from './settings/NotificationRuleService';
+
 // Support / Ticket management (re-exports from advisor-core via thin wrapper)
 export {
   TicketService,

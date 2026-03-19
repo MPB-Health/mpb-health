@@ -43,6 +43,8 @@ const navigation: NavItem[] = [
       { name: 'Dashboard', href: '/crm/dashboard' },
       { name: 'Pipeline', href: '/crm/pipeline' },
       { name: 'Leads', href: '/crm/leads' },
+      { name: 'Templates', href: '/crm/templates' },
+      { name: 'Calendar', href: '/crm/calendar' },
     ],
   },
   { name: 'Plan Management', href: '/plans', icon: Package },
@@ -72,6 +74,7 @@ const navigation: NavItem[] = [
       { name: 'Contact Directory', href: '/content/contacts' },
       { name: 'Navigation', href: '/content/navigation' },
       { name: 'Widgets', href: '/content/widgets' },
+      { name: 'Widget Config', href: '/content/widgets-config' },
       { name: 'Handbooks', href: '/content/handbooks' },
       { name: 'FAQ', href: '/content/faq' },
       { name: 'Enrollment Links', href: '/content/enrollment-links' },
@@ -84,6 +87,7 @@ const navigation: NavItem[] = [
     icon: Inbox,
     children: [
       { name: 'Lead Submissions', href: '/operations/leads' },
+      { name: 'Lead Assignment', href: '/operations/lead-assignment' },
       { name: 'Newsletter', href: '/operations/newsletter' },
     ],
   },
@@ -120,6 +124,7 @@ const navigation: NavItem[] = [
       { name: 'Resources', href: '/settings/resources' },
       { name: 'E-Signature', href: '/settings/esignature' },
       { name: 'Ticket Categories', href: '/settings/ticket-categories' },
+      { name: 'Notifications', href: '/settings/notifications' },
     ],
   },
 ];

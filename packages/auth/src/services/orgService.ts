@@ -144,16 +144,26 @@ export async function getUserOrgs(): Promise<OrgWithMembership[]> {
   // both tables and merge to handle either case.
   const orgIds = memberships.map((m) => m.org_id);
 
-  const [orgResult, legacyOrgResult] = await Promise.all([
-    supabase
-      .from('organizations')
-      .select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at')
-      .in('id', orgIds),
-    supabase
-      .from('orgs')
-      .select('id, name, slug, logo_url, settings, created_at, updated_at')
-      .in('id', orgIds),
+  // 8 s timeout so org loading never hangs the UI indefinitely
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('[OrgService] Org queries timed out after 8 s')), 8_000);
+  });
+
+  const [orgResult, legacyOrgResult] = await Promise.race([
+    Promise.all([
+      supabase
+        .from('organizations')
+        .select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at')
+        .in('id', orgIds),
+      supabase
+        .from('orgs')
+        .select('id, name, slug, logo_url, settings, created_at, updated_at')
+        .in('id', orgIds),
+    ]),
+    timeout,
   ]);
+  clearTimeout(timer!);
 
   // Build a unified map — prefer `organizations` data when available
   const orgMap = new Map<string, any>();

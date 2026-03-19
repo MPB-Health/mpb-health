@@ -97,21 +97,35 @@ export function AddTaskModal({ open, onClose, leadId, onSuccess }: AddTaskModalP
     },
   });
 
+  // Reset search state when modal opens/closes
+  useEffect(() => {
+    if (!open) return;
+    setLeadSearch('');
+    setLeadResults([]);
+    setSelectedLead(null);
+    setShowLeadDropdown(false);
+  }, [open]);
+
   // Lead search with debounce
   const searchLeads = useCallback(async (query: string) => {
     if (query.length < 2) {
       setLeadResults([]);
       return;
     }
-    const { leads } = await leadService.getLeads({ search: query }, 5, 0);
-    setLeadResults(leads);
-    setShowLeadDropdown(true);
+    try {
+      const { leads } = await leadService.getLeads({ search: query }, 5, 0);
+      setLeadResults(leads);
+      setShowLeadDropdown(true);
+    } catch {
+      // Search is non-critical — silently fail
+    }
   }, [leadService]);
 
   useEffect(() => {
+    if (!open) return;
     const timer = setTimeout(() => searchLeads(leadSearch), 300);
     return () => clearTimeout(timer);
-  }, [leadSearch, searchLeads]);
+  }, [leadSearch, searchLeads, open]);
 
   const selectLead = (lead: Lead) => {
     setSelectedLead(lead);

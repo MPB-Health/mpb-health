@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../utils';
 
@@ -47,21 +47,20 @@ const Accordion: React.FC<AccordionProps> = ({
   const isControlled = controlledValue !== undefined;
   const openItems = isControlled ? controlledValue : internalOpenItems;
 
-  const toggle = (value: string) => {
-    const newOpenItems = type === 'single'
-      ? openItems.includes(value) ? [] : [value]
-      : openItems.includes(value)
-        ? openItems.filter(item => item !== value)
-        : [...openItems, value];
+  const toggle = useCallback((value: string) => {
+    const compute = (prev: string[]) => {
+      if (type === 'single') return prev.includes(value) ? [] : [value];
+      return prev.includes(value) ? prev.filter(item => item !== value) : [...prev, value];
+    };
 
     if (isControlled) {
-      onValueChange?.(newOpenItems);
+      onValueChange?.(compute(openItems));
     } else {
-      setInternalOpenItems(newOpenItems);
+      setInternalOpenItems((prev) => compute(prev));
     }
-  };
+  }, [type, isControlled, openItems, onValueChange]);
 
-  const open = (value: string) => {
+  const open = useCallback((value: string) => {
     if (openItems.includes(value)) return;
 
     const newOpenItems = type === 'single' ? [value] : [...openItems, value];
@@ -71,10 +70,12 @@ const Accordion: React.FC<AccordionProps> = ({
     } else {
       setInternalOpenItems(newOpenItems);
     }
-  };
+  }, [type, isControlled, openItems, onValueChange]);
+
+  const ctxValue = useMemo(() => ({ openItems, toggle, open }), [openItems, toggle, open]);
 
   return (
-    <AccordionContext.Provider value={{ openItems, toggle, open }}>
+    <AccordionContext.Provider value={ctxValue}>
       <div className={cn('space-y-2', className)}>
         {children}
       </div>

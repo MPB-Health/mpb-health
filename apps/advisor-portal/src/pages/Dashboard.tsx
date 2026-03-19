@@ -279,7 +279,7 @@ export default function Dashboard() {
       if (annResult.status === 'fulfilled') setAnnouncements(annResult.value);
       if (settingsResult.status === 'fulfilled') setPortalSettings(settingsResult.value);
       if (linksResult.status === 'fulfilled') setCmsEnrollLinks(linksResult.value);
-      if (formsResult.status === 'fulfilled') setMemberForms(formsResult.value);
+      if (formsResult.status === 'fulfilled') setMemberForms([...formsResult.value].sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label)));
       if (quickLinksResult.status === 'fulfilled') setCmsQuickLinks(quickLinksResult.value);
       setMemberFormsLoading(false);
     });
@@ -294,7 +294,7 @@ export default function Dashboard() {
   useEffect(() => {
     const enrollChannel = enrollmentService.subscribeToChanges(setCmsEnrollLinks);
     const formsChannel = formsService.subscribeToFormChanges(() => {
-      formsService.getForms('member').then(setMemberForms).catch(() => {});
+      formsService.getForms('member').then(forms => setMemberForms([...forms].sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label)))).catch(() => {});
     });
     const settingsChannel = portalSettingsService.subscribeToSettingChanges(() => {
       portalSettingsService.getMultipleSettings([
@@ -858,38 +858,85 @@ export default function Dashboard() {
             memberForms.map((form) => (
               <div
                 key={form.id}
-                className="flex items-center gap-4 px-5 py-3 hover:bg-surface-tertiary/50 transition-colors"
+                className="px-4 sm:px-5 py-3 hover:bg-surface-tertiary/50 transition-colors"
               >
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
-                  <FileTextIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                    <FileTextIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-th-text-primary truncate">
+                      {form.name || form.label}
+                    </p>
+                    {form.description && (
+                      <p className="text-xs text-th-text-tertiary truncate hidden sm:block">{form.description}</p>
+                    )}
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCopyFormLink(form.slug)}
+                      title="Copy shareable link"
+                      className={copiedFormSlug === form.slug ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200' : ''}
+                    >
+                      {copiedFormSlug === form.slug ? (
+                        <><CheckCheck className="w-3.5 h-3.5" /> Copied</>
+                      ) : (
+                        <><Copy className="w-3.5 h-3.5" /> Copy Link</>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const url = `${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`;
+                        if (navigator.share) {
+                          navigator.share({ title: form.name || form.label, url }).catch(() => {});
+                        } else {
+                          navigator.clipboard.writeText(url);
+                          setCopiedFormSlug(form.slug);
+                          setTimeout(() => setCopiedFormSlug(null), 2000);
+                        }
+                      }}
+                      title="Share form"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      Share
+                    </Button>
+                    <a
+                      href={`${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open
+                    </a>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-th-text-primary truncate">
-                    {form.name || form.label}
-                  </p>
-                  {form.description && (
-                    <p className="text-xs text-th-text-tertiary truncate">{form.description}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Mobile action buttons — stacked below the name */}
+                <div className="flex sm:hidden items-center gap-2 mt-2 ml-11">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => handleCopyFormLink(form.slug)}
-                    title="Copy shareable link"
-                    className={copiedFormSlug === form.slug ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200' : ''}
+                    className={`text-xs ${copiedFormSlug === form.slug ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200' : ''}`}
                   >
                     {copiedFormSlug === form.slug ? (
-                      <><CheckCheck className="w-3.5 h-3.5" /> Copied</>
+                      <><CheckCheck className="w-3 h-3" /> Copied</>
                     ) : (
-                      <><Copy className="w-3.5 h-3.5" /> Copy Link</>
+                      <><Copy className="w-3 h-3" /> Copy</>
                     )}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="text-xs"
                     onClick={() => {
                       const url = `${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`;
                       if (navigator.share) {
@@ -900,18 +947,17 @@ export default function Dashboard() {
                         setTimeout(() => setCopiedFormSlug(null), 2000);
                       }
                     }}
-                    title="Share form"
                   >
-                    <Share2 className="w-3.5 h-3.5" />
+                    <Share2 className="w-3 h-3" />
                     Share
                   </Button>
                   <a
                     href={`${WEBSITE_BASE_URL}${form.slug.startsWith('/') ? form.slug : '/' + form.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white gradient-accent rounded-lg hover:opacity-90 transition-opacity"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-3 h-3" />
                     Open
                   </a>
                 </div>

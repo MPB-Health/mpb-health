@@ -138,7 +138,7 @@ export default function Forms({ section }: FormsProps) {
   // Get section config if section is specified
   const currentSection = section ? sectionConfig[section] : null;
 
-  const filteredForms = forms.filter((form) => {
+  const filteredForms = [...forms].sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label)).filter((form) => {
     // Apply section filter first if specified
     if (currentSection && !currentSection.filter(form)) {
       return false;

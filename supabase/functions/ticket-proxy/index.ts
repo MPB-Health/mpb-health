@@ -605,17 +605,6 @@ Deno.serve(async (req: Request) => {
   });
   if (rateLimitResponse) return rateLimitResponse;
 
-  // ── Cron warm-up bypass (no auth required, just a shared secret) ─────
-  const warmupSecret = Deno.env.get("WARMUP_CRON_SECRET");
-  const reqWarmup = req.headers.get("x-warmup-secret");
-  if (warmupSecret && reqWarmup === warmupSecret) {
-    log.info("Warm-up ping received", { correlationId });
-    return new Response(
-      JSON.stringify({ success: true, warm: true, correlationId }),
-      { status: 200, headers },
-    );
-  }
-
   try {
     // Verify caller from monorepo
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

@@ -121,7 +121,7 @@ function wrap(title: string, preheader: string, body: string, appUrl: string): s
                 MPB Health · Advisor Support System
               </p>
               <p style="color:#9ca3af;margin:0;font-size:11px;">
-                <a href="${appUrl}/tickets" style="color:#6b7280;text-decoration:underline;">Advisor Portal</a>
+                <a href="${ticketListUrl}" style="color:#6b7280;text-decoration:underline;">Advisor Portal</a>
                 &nbsp;&bull;&nbsp;
                 <a href="${appUrl}/settings?tab=notifications" style="color:#6b7280;text-decoration:underline;">Notification preferences</a>
               </p>
@@ -159,7 +159,8 @@ function ctaButton(href: string, label: string): string {
 // ── Per-event email generators ─────────────────────────────────────────────────
 
 function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmail: string): EmailMessage[] {
-  const ticketUrl = `${appUrl}/tickets`;
+  const ticketUrl = `${appUrl}/tickets?tid=${p.ticket_id}`;
+  const ticketListUrl = `${appUrl}/tickets`;
   const adminUrl = `${appUrl}/admin/tickets`;
   const priorityLabel = PRIORITY_LABELS[p.priority || "medium"] || escapeHtml(p.priority || "Medium");
   const statusLabel = STATUS_LABELS[p.status || "new"] || escapeHtml(p.status || "New");
@@ -215,7 +216,7 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
            <p style="color:#6b7280;font-size:14px;margin:0 0 4px;">
              You can track this ticket and reply directly in the Advisor Portal.
            </p>
-           ${ctaButton(ticketUrl, "View My Tickets")}`,
+           ${ctaButton(ticketUrl, "View Ticket #" + p.ticket_number)}`,
           appUrl,
         ),
       });

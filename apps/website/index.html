@@ -39,12 +39,10 @@
 
     <!-- Defer third-party scripts to load after main app -->
     <script>
+      // Public site hostnames only — align with packages/config DOMAINS.website (www) + apex mpb.health
       function isProductionHostname() {
         var hostname = window.location.hostname;
-        return (
-          hostname === 'mpb.health' ||
-          hostname === 'www.mpb.health'
-        );
+        return hostname === 'mpb.health' || hostname === 'www.mpb.health';
       }
 
       // Load third-party scripts after page interactive

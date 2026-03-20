@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@mpbhealth/database';
+import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
 import { userRolesService, type UserRole } from '../services/userRolesService';
+
+const USER_ROLES_FETCH_MS = 15_000;
 
 interface AuthContextType {
   user: User | null;
@@ -42,10 +45,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setRolesLoading(true);
     try {
-      const roles = await userRolesService.getUserRoles(userId);
+      const roles = await withTimeout(
+        userRolesService.getUserRoles(userId),
+        USER_ROLES_FETCH_MS,
+        'user_roles'
+      );
       setUserRoles(roles);
     } catch (error) {
-      console.error('Error fetching user roles:', error);
+      if (isTimeoutError(error)) {
+        console.error('User roles fetch timed out — releasing UI', error);
+      } else {
+        console.error('Error fetching user roles:', error);
+      }
       setUserRoles([]);
     } finally {
       setRolesLoading(false);

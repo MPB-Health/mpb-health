@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -22,6 +24,7 @@
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
     "@supabase/supabase-js": "catalog:",
+    "@tanstack/react-query": "^5.90.21",
     "@tiptap/extension-color": "catalog:",
     "@tiptap/extension-image": "catalog:",
     "@tiptap/extension-link": "catalog:",
@@ -52,6 +55,8 @@
     "postcss": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "^3.2.4",
+    "jsdom": "^25.0.1"
   }
 }

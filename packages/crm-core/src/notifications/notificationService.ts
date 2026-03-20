@@ -23,7 +23,9 @@ export class NotificationService {
   }
 
   /**
-   * Subscribe to real-time lead submission updates
+   * Subscribe to real-time lead submission updates.
+   * Callbacks may fire in rapid succession; UI layers that trigger heavy work
+   * (full dashboard refetch, etc.) should debounce/coalesce — see CRM `CRMProvider`.
    */
   subscribeToLeadSubmissions(onNewLead: NewLeadCallback): RealtimeChannel {
     this.newLeadCallbacks.push(onNewLead);

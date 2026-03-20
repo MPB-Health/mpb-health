@@ -3,11 +3,11 @@
 // Full-screen or slideout modal for composing emails
 // ============================================================================
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Maximize2, Minimize2 } from 'lucide-react';
-import { useState } from 'react';
-import { EmailComposer } from './EmailComposer';
+import { EmailComposer, type EmailComposerHandle } from './EmailComposer';
+import { acquireBodyScrollLock } from '../../utils/bodyScrollLock';
 
 // ============================================================================
 // Types
@@ -53,39 +53,24 @@ export function EmailComposerModal({
   onSaved,
 }: EmailComposerModalProps) {
   const [isMaximized, setIsMaximized] = useState(false);
+  const composerRef = useRef<EmailComposerHandle>(null);
 
-  // Lock body scroll when open
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-
-  // Escape key handler
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Don't close immediately - let the composer handle discard confirmation
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
+    return acquireBodyScrollLock();
+  }, [open]);
 
   if (!open) return null;
+
+  const requestClose = () => {
+    composerRef.current?.discard();
+  };
 
   const modalContent = (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) requestClose();
       }}
     >
       <div
@@ -123,7 +108,7 @@ export function EmailComposerModal({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="p-2 text-th-text-tertiary hover:text-th-text-secondary hover:bg-surface-secondary rounded-lg transition-colors"
               title="Close"
             >
@@ -135,6 +120,7 @@ export function EmailComposerModal({
         {/* Composer Content */}
         <div className="flex-1 overflow-hidden">
           <EmailComposer
+            ref={composerRef}
             mode={mode}
             draftId={draftId}
             replyToEmailId={replyToEmailId}
@@ -153,7 +139,6 @@ export function EmailComposerModal({
             onSaved={(savedDraftId) => {
               onSaved?.(savedDraftId);
             }}
-            onDiscard={onClose}
             onClose={onClose}
           />
         </div>

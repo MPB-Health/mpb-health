@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
 import { Modal } from './Modal';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
@@ -10,6 +11,9 @@ import type {
   AccountWithRelations,
   ContactWithRelations,
 } from '@mpbhealth/crm-core';
+
+const LOAD_ACCOUNTS_MS = 25_000;
+const LOAD_CONTACTS_MS = 25_000;
 
 interface AddDealModalProps {
   open: boolean;
@@ -36,6 +40,10 @@ export function AddDealModal({
   const [contacts, setContacts] = useState<ContactWithRelations[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [accountsLoadError, setAccountsLoadError] = useState<string | null>(null);
+  const [accountsRetryToken, setAccountsRetryToken] = useState(0);
+  const [contactsLoadError, setContactsLoadError] = useState<string | null>(null);
+  const [contactsRetryToken, setContactsRetryToken] = useState(0);
 
   // Form state
   const [name, setName] = useState('');
@@ -50,36 +58,75 @@ export function AddDealModal({
   const [tags, setTags] = useState('');
   const [description, setDescription] = useState('');
 
-  // Load accounts
   useEffect(() => {
     if (!open) return;
 
-    const loadAccounts = async () => {
+    let cancelled = false;
+
+    (async () => {
       setLoadingAccounts(true);
-      const { accounts } = await accountService.getAccounts({}, 100, 0);
-      setAccounts(accounts);
-      setLoadingAccounts(false);
+      setAccountsLoadError(null);
+      try {
+        const { accounts: list } = await withTimeout(
+          accountService.getAccounts({}, 100, 0),
+          LOAD_ACCOUNTS_MS,
+          'add_deal_modal_accounts'
+        );
+        if (!cancelled) setAccounts(list);
+      } catch (e) {
+        if (cancelled) return;
+        if (isTimeoutError(e)) {
+          setAccountsLoadError('Loading accounts timed out.');
+        } else {
+          setAccountsLoadError('Could not load accounts.');
+        }
+        console.error(e);
+      } finally {
+        if (!cancelled) setLoadingAccounts(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
     };
+  }, [open, accountService, accountsRetryToken]);
 
-    loadAccounts();
-  }, [open, accountService]);
-
-  // Load contacts when account changes
   useEffect(() => {
     if (!accountId) {
       setContacts([]);
+      setContactsLoadError(null);
       return;
     }
 
-    const loadContacts = async () => {
-      setLoadingContacts(true);
-      const { contacts } = await contactService.getContacts({ account_id: accountId }, 100, 0);
-      setContacts(contacts);
-      setLoadingContacts(false);
-    };
+    let cancelled = false;
 
-    loadContacts();
-  }, [accountId, contactService]);
+    (async () => {
+      setLoadingContacts(true);
+      setContactsLoadError(null);
+      try {
+        const { contacts: list } = await withTimeout(
+          contactService.getContacts({ account_id: accountId }, 100, 0),
+          LOAD_CONTACTS_MS,
+          'add_deal_modal_contacts'
+        );
+        if (!cancelled) setContacts(list);
+      } catch (e) {
+        if (cancelled) return;
+        if (isTimeoutError(e)) {
+          setContactsLoadError('Loading contacts timed out.');
+        } else {
+          setContactsLoadError('Could not load contacts.');
+        }
+        console.error(e);
+      } finally {
+        if (!cancelled) setLoadingContacts(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, contactService, contactsRetryToken]);
 
   // Initialize form when deal prop changes or modal opens
   useEffect(() => {
@@ -275,6 +322,21 @@ export function AddDealModal({
               </option>
             ))}
           </select>
+          {loadingAccounts && (
+            <p className="text-xs text-th-text-tertiary mt-1">Loading accounts…</p>
+          )}
+          {accountsLoadError && (
+            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <p>{accountsLoadError}</p>
+              <button
+                type="button"
+                onClick={() => setAccountsRetryToken((t) => t + 1)}
+                className="mt-1 font-medium text-th-accent-700 underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Contact */}
@@ -296,6 +358,21 @@ export function AddDealModal({
               </option>
             ))}
           </select>
+          {loadingContacts && accountId && (
+            <p className="text-xs text-th-text-tertiary mt-1">Loading contacts…</p>
+          )}
+          {contactsLoadError && accountId && (
+            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <p>{contactsLoadError}</p>
+              <button
+                type="button"
+                onClick={() => setContactsRetryToken((t) => t + 1)}
+                className="mt-1 font-medium text-th-accent-700 underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Expected Close Date */}

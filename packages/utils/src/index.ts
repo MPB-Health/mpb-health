@@ -36,5 +36,17 @@ export { parseDate, formatRelativeTime, isDateInPast, isDateInFuture } from './d
 // Logger
 export { logger, createClientLogger, type LogLevel } from './logger';
 
+// Async / timeouts (portal-critical fetch hygiene)
+export { TimeoutError, isTimeoutError, withTimeout, abortAfterMs } from './async';
+
+// Portal diagnostics (CustomEvent + dev console thresholds; wire to APM in apps)
+export {
+  emitPortalDiagnostic,
+  subscribePortalDiagnostics,
+  PORTAL_DIAG_THRESHOLDS,
+  type PortalDiagnosticKind,
+  type PortalDiagnosticPayload,
+} from './portalDiagnostics';
+
 // Validation schemas (Zod-based)
 export * from './validation';

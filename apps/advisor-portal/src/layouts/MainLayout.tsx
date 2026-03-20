@@ -204,6 +204,9 @@ let cachedNavItems: NavItem[] | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+/** Stable TanStack Query key for CMS nav — use everywhere we read/write this cache. */
+export const ADVISOR_NAV_MENU_QUERY_KEY = ['advisor-nav-menu'] as const;
+
 /** Clear cached CMS navigation (called on logout so stale nav doesn't persist). */
 export function clearNavCache() {
   cachedNavItems = null;
@@ -237,7 +240,7 @@ export default function MainLayout() {
   // Dynamic navigation from CMS — React Query for deduplication and shared cache
   const queryClient = useQueryClient();
   const { data: navItems, isLoading: navLoading } = useQuery({
-    queryKey: ['advisor-nav-menu'],
+    queryKey: ADVISOR_NAV_MENU_QUERY_KEY,
     queryFn: async () => {
       const items = await navigationService.getNavMenuItems();
       if (items && items.length > 0) {
@@ -260,7 +263,7 @@ export default function MainLayout() {
       const mappedItems = mapMenuItemsToNavItems(items);
       cachedNavItems = mappedItems;
       cacheTimestamp = Date.now();
-      queryClient.setQueryData(['advisor-nav-menu'], mappedItems);
+      queryClient.setQueryData(ADVISOR_NAV_MENU_QUERY_KEY, mappedItems);
     });
     return () => {
       channel.unsubscribe();

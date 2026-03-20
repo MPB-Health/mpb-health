@@ -1,6 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { acquireBodyScrollLock } from '../utils/bodyScrollLock';
+import { emitPortalDiagnostic } from '@mpbhealth/utils';
 
 interface ModalProps {
   open: boolean;
@@ -48,17 +50,26 @@ export function Modal({
     return () => document.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  // Lock body scroll when open
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    if (!open) return;
+    return acquireBodyScrollLock();
   }, [open]);
+
+  // First-frame timing for modal shell (dev diagnostics + future APM).
+  useEffect(() => {
+    if (!open) return;
+    const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+    const id = requestAnimationFrame(() => {
+      const durationMs = typeof performance !== 'undefined' ? performance.now() - t0 : 0;
+      emitPortalDiagnostic({
+        kind: 'modal_open',
+        app: 'crm',
+        durationMs,
+        detail: title.slice(0, 80),
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [open, title]);
 
   if (!open) return null;
 

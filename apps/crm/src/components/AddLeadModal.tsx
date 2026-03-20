@@ -12,7 +12,7 @@ interface AddLeadModalProps {
 }
 
 export function AddLeadModal({ open, onClose, onSuccess }: AddLeadModalProps) {
-  const { leadService, refreshLeads, refreshDashboard } = useCRM();
+  const { leadService, refreshLeads, refreshDashboard, refreshTasks } = useCRM();
   const { activeOrgId } = useOrg();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +52,7 @@ export function AddLeadModal({ open, onClose, onSuccess }: AddLeadModalProps) {
     }).catch(console.error);
     refreshLeads();
     refreshDashboard();
+    refreshTasks();
     onSuccess?.(result.leadId!);
     onClose();
   };

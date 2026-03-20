@@ -17,6 +17,15 @@ interface PermissionGateProps {
   children: ReactNode;
 }
 
+function PermissionLoadingPanel() {
+  return (
+    <div className="min-h-[40vh] flex flex-col items-center justify-center px-4 py-12">
+      <div className="animate-spin rounded-full h-10 w-10 border-2 border-th-accent-600 border-t-transparent mb-4" aria-hidden />
+      <p className="text-sm text-th-text-secondary text-center">Checking permissions…</p>
+    </div>
+  );
+}
+
 export function PermissionGate({
   permission,
   anyOf,
@@ -24,9 +33,32 @@ export function PermissionGate({
   fallback = null,
   children,
 }: PermissionGateProps) {
-  const { can, canAny, canAll, permissionsLoading } = useOrg();
+  const { can, canAny, canAll, permissionsLoading, permissionsError, refreshPermissions, orgRole } =
+    useOrg();
 
-  if (permissionsLoading) return null;
+  if (permissionsLoading) {
+    return <PermissionLoadingPanel />;
+  }
+
+  // Org owners/admins bypass permission rows; do not block them when the permission query fails.
+  const isElevatedOrgRole = orgRole === 'owner' || orgRole === 'admin';
+
+  if (permissionsError && !isElevatedOrgRole) {
+    return (
+      <div className="min-h-[40vh] flex flex-col items-center justify-center text-center px-4 py-12 max-w-md mx-auto">
+        <p className="text-sm text-th-text-secondary mb-4">{permissionsError}</p>
+        <button
+          type="button"
+          onClick={() => {
+            void refreshPermissions();
+          }}
+          className="px-4 py-2 text-sm font-medium rounded-lg bg-th-accent-600 text-white hover:bg-th-accent-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   let allowed = false;
 
@@ -37,7 +69,6 @@ export function PermissionGate({
   } else if (allOf) {
     allowed = canAll(allOf);
   } else {
-    // No permission specified — allow by default
     allowed = true;
   }
 

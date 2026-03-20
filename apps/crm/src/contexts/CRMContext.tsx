@@ -1,190 +1,39 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import type { SupabaseClient, User } from '@supabase/supabase-js';
+/**
+ * CRM shell data + actions. Server state for dashboard / leads / tasks / calendar is backed by
+ * TanStack Query (dedupe, stale-while-revalidate, targeted invalidation). Service factories live
+ * in CRMServiceContext — use `useCRMService()` when you only need API clients and must avoid
+ * rerenders from dashboard/leads/etc.
+ */
+
 import {
-  createLeadService,
-  createPipelineService,
-  createActivityService,
-  createTaskService,
-  createNotificationService,
-  createCalendarService,
-  createInsightsService,
-  createPreferencesService,
-  createTemplateService,
-  createEmailService,
-  createNotificationCenterService,
-  createTickerService,
-  createAutomationService,
-  createReportingService,
-  createScoringService,
-  createDealService,
-  createAccountService,
-  createContactService,
-  createProductService,
-  createQuoteService,
-  createInvoiceService,
-  createCampaignService,
-  // Championship Email Services
-  createComposerService,
-  createSignatureService,
-  createDraftService,
-  // Studio services
-  createModuleService,
-  createFieldService,
-  createLayoutService,
-  createViewService,
-  createValidationService,
-  createDynamicRecordService,
-  // Import service
-  createImportService,
-  type Lead,
-  type PipelineStage,
-  type CRMDashboardStats,
-  type LeadTask,
-  type LeadActivity,
-  type CalendarEvent,
-  type LeadService,
-  type PipelineService,
-  type ActivityService,
-  type TaskService,
-  type NotificationService,
-  type CalendarService,
-  type InsightsService,
-  type PreferencesService,
-  type TemplateService,
-  type EmailService,
-  type NotificationCenterService,
-  type TickerService,
-  type AutomationService,
-  type ReportingService,
-  type ScoringService,
-  type DealService,
-  type DealStage,
-  type AccountService,
-  type ContactService,
-  type ProductService,
-  type QuoteService,
-  type InvoiceService,
-  type CampaignService,
-  // Championship Email types
-  type ComposerService,
-  type SignatureService,
-  type DraftService,
-  // Studio types
-  type ModuleService,
-  type FieldService,
-  type LayoutService,
-  type ViewService,
-  type ValidationService,
-  type DynamicRecordService,
-  // Import types
-  type ImportService,
-  // Forecasting
-  createForecastingService,
-  type ForecastingService,
-  // Vendors & Orders
-  createVendorService,
-  type VendorService,
-  createPurchaseOrderService,
-  type PurchaseOrderService,
-  createSalesOrderService,
-  type SalesOrderService,
-  createPriceBookService,
-  type PriceBookService,
-  // Cases
-  createCaseService,
-  type CaseService,
-  // Documents
-  createDocumentService,
-  type DocumentService,
-  // Saved Views
-  createSavedViewService,
-  type SavedViewService,
-  // Approvals
-  createApprovalService,
-  type ApprovalService,
-  // Web Forms
-  createFormService,
-  type FormService,
-  // Connected Inbox (Outlook-class)
-  createMailAccountService,
-  createMailSyncService,
-  createMailRulesService,
-  createDomainService,
-  type MailAccountService,
-  type MailSyncService,
-  type MailRulesService,
-  type DomainService,
+  createContext,
+  useContext,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
+import { QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
+import type {
+  Lead,
+  PipelineStage,
+  CRMDashboardStats,
+  LeadTask,
+  LeadActivity,
+  CalendarEvent,
+  DealStage,
 } from '@mpbhealth/crm-core';
-import { supabase, supabaseUrl } from '../lib/supabase';
+import { crmQueryClient } from '../query/crmQueryClient';
+import { attachCRMQueryDiagnostics } from '../query/crmQueryDiagnostics';
+import { crmQueryKeys } from '../query/crmQueryKeys';
+import { CRMServiceProvider, useCRMService, type CRMServiceContextType } from './CRMServiceContext';
 import { useOrg } from './OrgContext';
-import { useAuth } from './AuthContext';
 
-interface CRMContextType {
-  // Core dependencies
-  supabase: SupabaseClient;
-  orgId: string | null;
-  user: User | null;
+/** Coalesce realtime-driven invalidations */
+const REALTIME_INVALIDATION_DEBOUNCE_MS = 1_200;
 
-  // Services
-  leadService: LeadService;
-  pipelineService: PipelineService;
-  activityService: ActivityService;
-  taskService: TaskService;
-  notificationService: NotificationService;
-  calendarService: CalendarService;
-  insightsService: InsightsService;
-  preferencesService: PreferencesService;
-  templateService: TemplateService;
-  emailService: EmailService;
-  notificationCenterService: NotificationCenterService;
-  tickerService: TickerService;
-  automationService: AutomationService;
-  reportingService: ReportingService;
-  scoringService: ScoringService;
-  dealService: DealService;
-  accountService: AccountService;
-  contactService: ContactService;
-  productService: ProductService;
-  quoteService: QuoteService;
-  invoiceService: InvoiceService;
-  campaignService: CampaignService;
-  // Championship Email services
-  composerService: ComposerService;
-  signatureService: SignatureService;
-  draftService: DraftService;
-  // Studio services
-  moduleService: ModuleService;
-  fieldService: FieldService;
-  layoutService: LayoutService;
-  viewService: ViewService;
-  validationService: ValidationService;
-  dynamicRecordService: DynamicRecordService;
-  // Import service
-  importService: ImportService;
-  // Forecasting service
-  forecastingService: ForecastingService;
-  // Vendors & Orders
-  vendorService: VendorService;
-  purchaseOrderService: PurchaseOrderService;
-  salesOrderService: SalesOrderService;
-  priceBookService: PriceBookService;
-  // Case service
-  caseService: CaseService;
-  // Document service
-  documentService: DocumentService;
-  // Saved Views service
-  savedViewService: SavedViewService;
-  // Approval service
-  approvalService: ApprovalService;
-  // Web Form service
-  formService: FormService;
-  // Connected Inbox services
-  mailAccountService: MailAccountService;
-  mailSyncService: MailSyncService;
-  mailRulesService: MailRulesService;
-  domainService: DomainService;
-
-  // State
+export interface CRMContextType extends CRMServiceContextType {
   dashboardStats: CRMDashboardStats | null;
   pipelineStages: PipelineStage[];
   dealStages: DealStage[];
@@ -193,12 +42,8 @@ interface CRMContextType {
   overdueTasks: LeadTask[];
   recentActivities: LeadActivity[];
   calendarEvents: CalendarEvent[];
-
-  // Loading states
   loading: boolean;
   refreshing: boolean;
-
-  // Actions
   refreshDashboard: () => Promise<void>;
   refreshLeads: () => Promise<void>;
   refreshTasks: () => Promise<void>;
@@ -207,184 +52,171 @@ interface CRMContextType {
 
 const CRMContext = createContext<CRMContextType | null>(null);
 
-export function CRMProvider({ children }: { children: ReactNode }) {
+function CRMQueryDataProvider({ children }: { children: ReactNode }) {
+  const svc = useCRMService();
+  const queryClient = useQueryClient();
   const { activeOrgId, orgLoading } = useOrg();
-  const { user } = useAuth();
+  const orgReady = !!activeOrgId && !orgLoading;
 
-  // Initialize services
-  const [services] = useState(() => ({
-    leadService: createLeadService(supabase),
-    pipelineService: createPipelineService(supabase),
-    activityService: createActivityService(supabase),
-    taskService: createTaskService(supabase),
-    notificationService: createNotificationService(supabase),
-    calendarService: createCalendarService(supabase),
-    insightsService: createInsightsService(supabase, supabaseUrl),
-    preferencesService: createPreferencesService(supabase),
-    templateService: createTemplateService(supabase),
-    emailService: createEmailService(supabase, supabaseUrl),
-    notificationCenterService: createNotificationCenterService(supabase),
-    tickerService: createTickerService(supabase),
-    automationService: createAutomationService(supabase, supabaseUrl),
-    reportingService: createReportingService(supabase),
-    scoringService: createScoringService(supabase),
-    dealService: createDealService(supabase),
-    accountService: createAccountService(supabase),
-    contactService: createContactService(supabase),
-    productService: createProductService(supabase),
-    quoteService: createQuoteService(supabase),
-    invoiceService: createInvoiceService(supabase),
-    campaignService: createCampaignService(supabase),
-    // Championship Email services
-    composerService: createComposerService(supabase, supabaseUrl),
-    signatureService: createSignatureService(supabase),
-    draftService: createDraftService(supabase),
-    // Studio services
-    moduleService: createModuleService(supabase),
-    fieldService: createFieldService(supabase),
-    layoutService: createLayoutService(supabase),
-    viewService: createViewService(supabase),
-    validationService: createValidationService(supabase),
-    dynamicRecordService: createDynamicRecordService(supabase),
-    importService: createImportService(supabase),
-    forecastingService: createForecastingService(supabase),
-    vendorService: createVendorService(supabase),
-    purchaseOrderService: createPurchaseOrderService(supabase),
-    salesOrderService: createSalesOrderService(supabase),
-    priceBookService: createPriceBookService(supabase),
-    caseService: createCaseService(supabase),
-    documentService: createDocumentService(supabase),
-    savedViewService: createSavedViewService(supabase),
-    approvalService: createApprovalService(supabase),
-    formService: createFormService(supabase),
-    // Connected Inbox services
-    mailAccountService: createMailAccountService(supabase, supabaseUrl),
-    mailSyncService: createMailSyncService(supabase, supabaseUrl),
-    mailRulesService: createMailRulesService(supabase),
-    domainService: createDomainService(supabase, supabaseUrl),
-  }));
-
-  // State
-  const [dashboardStats, setDashboardStats] = useState<CRMDashboardStats | null>(null);
-  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
-  const [dealStages, setDealStages] = useState<DealStage[]>([]);
-  const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
-  const [tasksDueToday, setTasksDueToday] = useState<LeadTask[]>([]);
-  const [overdueTasks, setOverdueTasks] = useState<LeadTask[]>([]);
-  const [recentActivities, setRecentActivities] = useState<LeadActivity[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  // Refresh functions
-  const refreshDashboard = useCallback(async () => {
-    setRefreshing(true);
-    try {
+  const dashboardQuery = useQuery({
+    queryKey: crmQueryKeys.dashboard(activeOrgId),
+    queryFn: async () => {
       const [stats, stages, dStages, activities] = await Promise.all([
-        services.pipelineService.getDashboardStats(),
-        services.pipelineService.getPipelineStages(),
-        services.dealService.getStages(),
-        services.activityService.getRecentActivities(10),
+        svc.pipelineService.getDashboardStats(),
+        svc.pipelineService.getPipelineStages(),
+        svc.dealService.getStages(),
+        svc.activityService.getRecentActivities(10),
       ]);
+      return { stats, stages, dStages, activities };
+    },
+    enabled: orgReady,
+    staleTime: 45_000,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-      setDashboardStats(stats);
-      setPipelineStages(stages);
-      setDealStages(dStages);
-      setRecentActivities(activities);
-    } catch (error) {
-      console.error('Error refreshing dashboard:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [services]);
+  const leadsQuery = useQuery({
+    queryKey: crmQueryKeys.recentLeads(activeOrgId),
+    queryFn: async () => {
+      const { leads } = await svc.leadService.getLeads({}, 10, 0);
+      return leads;
+    },
+    enabled: orgReady,
+    staleTime: 45_000,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const tasksQuery = useQuery({
+    queryKey: crmQueryKeys.tasks(activeOrgId),
+    queryFn: async () => {
+      const [today, overdue] = await Promise.all([
+        svc.taskService.getTasksDueToday(),
+        svc.taskService.getOverdueTasks(),
+      ]);
+      return { today, overdue };
+    },
+    enabled: orgReady,
+    staleTime: 45_000,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const calendarQuery = useQuery({
+    queryKey: crmQueryKeys.calendar(activeOrgId),
+    queryFn: () => svc.calendarService.getUpcomingEvents(30),
+    enabled: orgReady,
+    staleTime: 45_000,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const refreshDashboard = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: crmQueryKeys.dashboard(activeOrgId) });
+  }, [queryClient, activeOrgId]);
 
   const refreshLeads = useCallback(async () => {
-    try {
-      const { leads } = await services.leadService.getLeads({}, 10, 0);
-      setRecentLeads(leads);
-    } catch (error) {
-      console.error('Error refreshing leads:', error);
-    }
-  }, [services]);
+    await queryClient.invalidateQueries({ queryKey: crmQueryKeys.recentLeads(activeOrgId) });
+  }, [queryClient, activeOrgId]);
 
   const refreshTasks = useCallback(async () => {
-    try {
-      const [today, overdue] = await Promise.all([
-        services.taskService.getTasksDueToday(),
-        services.taskService.getOverdueTasks(),
-      ]);
-      setTasksDueToday(today);
-      setOverdueTasks(overdue);
-    } catch (error) {
-      console.error('Error refreshing tasks:', error);
-    }
-  }, [services]);
+    await queryClient.invalidateQueries({ queryKey: crmQueryKeys.tasks(activeOrgId) });
+  }, [queryClient, activeOrgId]);
 
   const refreshCalendar = useCallback(async () => {
-    try {
-      const events = await services.calendarService.getUpcomingEvents(30);
-      setCalendarEvents(events);
-    } catch (error) {
-      console.error('Error refreshing calendar:', error);
-    }
-  }, [services]);
+    await queryClient.invalidateQueries({ queryKey: crmQueryKeys.calendar(activeOrgId) });
+  }, [queryClient, activeOrgId]);
 
-  // Reload all data when active org changes (RLS will scope results server-side)
+  const realtimeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    if (orgLoading || !activeOrgId) return;
+    if (!orgReady) return;
 
-    const loadInitialData = async () => {
-      setLoading(true);
-      await Promise.all([
-        refreshDashboard(),
-        refreshLeads(),
-        refreshTasks(),
-        refreshCalendar(),
-      ]);
-      setLoading(false);
-    };
-
-    loadInitialData();
-  }, [activeOrgId, orgLoading, refreshDashboard, refreshLeads, refreshTasks, refreshCalendar]);
-
-  // Set up real-time notifications
-  useEffect(() => {
     const handleNewLead = () => {
-      refreshLeads();
-      refreshDashboard();
+      if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
+      realtimeDebounceRef.current = setTimeout(() => {
+        realtimeDebounceRef.current = null;
+        void queryClient.invalidateQueries({ queryKey: crmQueryKeys.recentLeads(activeOrgId) });
+        void queryClient.invalidateQueries({ queryKey: crmQueryKeys.dashboard(activeOrgId) });
+      }, REALTIME_INVALIDATION_DEBOUNCE_MS);
     };
 
-    services.notificationService.subscribeToLeadSubmissions(handleNewLead);
+    svc.notificationService.subscribeToLeadSubmissions(handleNewLead);
 
     return () => {
-      services.notificationService.unsubscribeAll();
+      if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
+      svc.notificationService.unsubscribeAll();
     };
-  }, [services, refreshLeads, refreshDashboard]);
+  }, [orgReady, activeOrgId, svc.notificationService, queryClient]);
 
+  const loading =
+    !activeOrgId ||
+    orgLoading ||
+    dashboardQuery.isPending ||
+    leadsQuery.isPending;
+
+  const refreshing =
+    (dashboardQuery.isFetching && !dashboardQuery.isPending) ||
+    (leadsQuery.isFetching && !leadsQuery.isPending) ||
+    (tasksQuery.isFetching && !tasksQuery.isPending) ||
+    (calendarQuery.isFetching && !calendarQuery.isPending);
+
+  const contextValue = useMemo<CRMContextType>(
+    () => ({
+      ...svc,
+      dashboardStats: dashboardQuery.data?.stats ?? null,
+      pipelineStages: dashboardQuery.data?.stages ?? [],
+      dealStages: dashboardQuery.data?.dStages ?? [],
+      recentActivities: dashboardQuery.data?.activities ?? [],
+      recentLeads: leadsQuery.data ?? [],
+      tasksDueToday: tasksQuery.data?.today ?? [],
+      overdueTasks: tasksQuery.data?.overdue ?? [],
+      calendarEvents: calendarQuery.data ?? [],
+      loading,
+      refreshing,
+      refreshDashboard,
+      refreshLeads,
+      refreshTasks,
+      refreshCalendar,
+    }),
+    [
+      svc,
+      dashboardQuery.data,
+      leadsQuery.data,
+      tasksQuery.data,
+      calendarQuery.data,
+      loading,
+      refreshing,
+      refreshDashboard,
+      refreshLeads,
+      refreshTasks,
+      refreshCalendar,
+    ]
+  );
+
+  return <CRMContext.Provider value={contextValue}>{children}</CRMContext.Provider>;
+}
+
+function CRMQueryDiagnosticsMount() {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    attachCRMQueryDiagnostics(queryClient, import.meta.env.DEV);
+  }, [queryClient]);
+  return null;
+}
+
+export function CRMProvider({ children }: { children: ReactNode }) {
   return (
-    <CRMContext.Provider
-      value={{
-        supabase,
-        orgId: activeOrgId,
-        user,
-        ...services,
-        dashboardStats,
-        pipelineStages,
-        dealStages,
-        recentLeads,
-        tasksDueToday,
-        overdueTasks,
-        recentActivities,
-        calendarEvents,
-        loading,
-        refreshing,
-        refreshDashboard,
-        refreshLeads,
-        refreshTasks,
-        refreshCalendar,
-      }}
-    >
-      {children}
-    </CRMContext.Provider>
+    <QueryClientProvider client={crmQueryClient}>
+      <CRMQueryDiagnosticsMount />
+      <CRMServiceProvider>
+        <CRMQueryDataProvider>{children}</CRMQueryDataProvider>
+      </CRMServiceProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -395,3 +227,5 @@ export function useCRM() {
   }
   return context;
 }
+
+export { useCRMService } from './CRMServiceContext';

@@ -2,7 +2,9 @@
 // Permission Service — Checks org-scoped permissions for the current user
 // ============================================================================
 
+import type { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js';
 import { supabase } from '@mpbhealth/database';
+import { withTimeout } from '@mpbhealth/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,6 +21,12 @@ export interface UserPermissionSet {
   orgId: string;
   role: string;
   permissions: string[];
+}
+
+interface OrgPermissionsSnapshotRpc {
+  error?: string | null;
+  membership?: { role: string } | null;
+  permissions?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -42,20 +50,101 @@ function cacheKey(userId: string, orgId: string): string {
 // Core Functions
 // ---------------------------------------------------------------------------
 
-/** Race a promise against a timeout. Returns the promise result or throws on timeout. */
-async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`[PermissionService] ${label} timed out after ${ms} ms`)), ms);
-  });
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    clearTimeout(timer!);
+const QUERY_TIMEOUT_MS = 8_000;
+
+async function loadUserPermissionsViaPostgrest(orgId: string): Promise<UserPermissionSet | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const membershipPromise = supabase
+    .from('org_memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('org_id', orgId)
+    .eq('status', 'active')
+    .single();
+
+  const membershipResult = await withTimeout(
+    Promise.resolve(membershipPromise) as Promise<PostgrestSingleResponse<{ role: string }>>,
+    QUERY_TIMEOUT_MS,
+    'membership lookup'
+  );
+  const { data: membership, error: memError } = membershipResult;
+
+  if (memError || !membership) {
+    console.error('[PermissionService] No active membership:', memError);
+    return null;
   }
+
+  const rolePermsPromise = supabase
+    .from('role_permissions')
+    .select(`
+        permission:permissions!permission_id (key)
+      `)
+    .eq('org_id', orgId)
+    .eq('role', membership.role);
+
+  const rolePermsResult = await withTimeout(
+    Promise.resolve(rolePermsPromise) as Promise<
+      PostgrestResponse<{ permission: { key: string } | null }[]>
+    >,
+    QUERY_TIMEOUT_MS,
+    'role permissions lookup'
+  );
+  const { data: rolePerms, error: rpError } = rolePermsResult;
+
+  if (rpError) {
+    console.error('[PermissionService] Failed to load permissions:', rpError);
+    return null;
+  }
+
+  // Supabase nested select typing can infer an extra array dimension; normalize at runtime.
+  const rows = (rolePerms ?? []) as unknown as { permission: { key: string } | null }[];
+  const permissions = rows
+    .map((rp) => rp.permission?.key)
+    .filter((k): k is string => typeof k === 'string' && k.length > 0);
+
+  return {
+    orgId,
+    role: membership.role,
+    permissions,
+  };
 }
 
-const QUERY_TIMEOUT_MS = 8_000;
+async function loadUserPermissionsFromSnapshotRpc(orgId: string): Promise<UserPermissionSet | null> {
+  const rpcCall = supabase.rpc('get_my_org_permissions_snapshot', { p_org_id: orgId });
+  const { data, error } = await withTimeout(
+    Promise.resolve(rpcCall) as Promise<PostgrestSingleResponse<OrgPermissionsSnapshotRpc | null>>,
+    QUERY_TIMEOUT_MS,
+    'rpc_org_permissions_snapshot'
+  );
+
+  if (error) {
+    console.warn('[PermissionService] RPC get_my_org_permissions_snapshot:', error.message);
+    return null;
+  }
+
+  const snap = data as OrgPermissionsSnapshotRpc | null;
+  if (!snap) return null;
+
+  if (snap.error === 'not_authenticated' || snap.error === 'no_membership') {
+    return null;
+  }
+
+  const role = snap.membership?.role;
+  if (!role) return null;
+
+  const raw = snap.permissions;
+  const permissions = Array.isArray(raw)
+    ? raw.filter((k): k is string => typeof k === 'string' && k.length > 0)
+    : [];
+
+  return {
+    orgId,
+    role,
+    permissions,
+  };
+}
 
 /** Load the full permission set for the current user in a given org */
 export async function loadUserPermissions(orgId: string): Promise<UserPermissionSet | null> {
@@ -66,49 +155,19 @@ export async function loadUserPermissions(orgId: string): Promise<UserPermission
   const cached = permissionCache.get(key);
   if (cached && Date.now() < cached.expiry) return cached.data;
 
-  // Get the user's role in this org
-  const { data: membership, error: memError } = await withTimeout(
-    supabase
-      .from('org_memberships')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('org_id', orgId)
-      .eq('status', 'active')
-      .single(),
-    QUERY_TIMEOUT_MS,
-    'membership lookup',
-  );
-
-  if (memError || !membership) {
-    console.error('[PermissionService] No active membership:', memError);
-    return null;
+  let permSet: UserPermissionSet | null = null;
+  try {
+    permSet = await loadUserPermissionsFromSnapshotRpc(orgId);
+  } catch (e) {
+    console.warn('[PermissionService] Snapshot RPC failed, falling back to PostgREST', e);
+  }
+  if (!permSet) {
+    permSet = await loadUserPermissionsViaPostgrest(orgId);
   }
 
-  // Get all permission keys for that role in this org
-  const { data: rolePerms, error: rpError } = await withTimeout(
-    supabase
-      .from('role_permissions')
-      .select(`
-        permission:permissions!permission_id (key)
-      `)
-      .eq('org_id', orgId)
-      .eq('role', membership.role),
-    QUERY_TIMEOUT_MS,
-    'role permissions lookup',
-  );
-
-  if (rpError) {
-    console.error('[PermissionService] Failed to load permissions:', rpError);
-    return null;
+  if (permSet) {
+    permissionCache.set(key, { data: permSet, expiry: Date.now() + CACHE_TTL_MS });
   }
-
-  const permSet: UserPermissionSet = {
-    orgId,
-    role: membership.role,
-    permissions: (rolePerms || []).map((rp: any) => rp.permission?.key).filter(Boolean),
-  };
-
-  permissionCache.set(key, { data: permSet, expiry: Date.now() + CACHE_TTL_MS });
   return permSet;
 }
 

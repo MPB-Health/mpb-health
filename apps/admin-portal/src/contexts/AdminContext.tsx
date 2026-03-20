@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
+import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
 import {
   userService,
   analyticsService,
@@ -31,6 +32,9 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
+const ADMIN_USER_FETCH_MS = 20_000;
+const ADMIN_METRICS_FETCH_MS = 25_000;
+
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,8 +42,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [pendingEnrollments, setPendingEnrollments] = useState(0);
 
-  // Load user
-  const loadUser = async () => {
+  const loadUser = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
@@ -48,10 +51,26 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const adminUser = await userService.getUser(session.user.id);
+      let adminUser: AdminUser | null;
+      try {
+        adminUser = await withTimeout(
+          userService.getUser(session.user.id),
+          ADMIN_USER_FETCH_MS,
+          'admin_user_profile'
+        );
+      } catch (e) {
+        if (isTimeoutError(e)) {
+          console.error('[AdminContext] User profile fetch timed out');
+          setError('Loading your profile timed out. Try refreshing the page.');
+        } else {
+          throw e;
+        }
+        setUser(null);
+        return;
+      }
       setUser(adminUser);
+      setError(null);
 
-      // Record login (fire-and-forget — must never block loading state)
       if (adminUser) {
         userService.recordLogin(adminUser.id).catch(() => {});
       }
@@ -60,42 +79,45 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Load metrics
-  const refreshMetrics = async () => {
+  const refreshMetrics = useCallback(async () => {
     try {
-      const [dashboardMetrics, enrollmentStats] = await Promise.all([
-        analyticsService.getDashboardMetrics(),
-        enrollmentService.getStats(),
-      ]);
+      const [dashboardMetrics, enrollmentStats] = await withTimeout(
+        Promise.all([
+          analyticsService.getDashboardMetrics(),
+          enrollmentService.getStats(),
+        ]),
+        ADMIN_METRICS_FETCH_MS,
+        'admin_dashboard_metrics'
+      );
       setMetrics(dashboardMetrics);
       setPendingEnrollments(enrollmentStats.pending);
     } catch (err) {
-      console.error('Failed to load metrics:', err);
+      if (isTimeoutError(err)) {
+        console.error('[AdminContext] Metrics fetch timed out');
+      } else {
+        console.error('Failed to load metrics:', err);
+      }
     }
-  };
+  }, []);
 
-  // Refresh user
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     setLoading(true);
     await loadUser();
-  };
+  }, [loadUser]);
 
-  // Logout
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
-  };
+  }, []);
 
-  // Check permission
-  const hasPermission = (permission: string): boolean => {
+  const hasPermission = useCallback((permission: string): boolean => {
     if (!user) return false;
     if (user.role === 'super_admin') return true;
     return user.permissions.includes(permission);
-  };
+  }, [user]);
 
-  // Role checks
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const isSuperAdmin = user?.role === 'super_admin';
 
@@ -136,16 +158,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Load metrics when user is available
   useEffect(() => {
     if (user) {
       refreshMetrics();
     }
-  }, [user?.id]);
+  }, [user?.id, refreshMetrics]);
 
-  // Subscribe to enrollment updates (debounced to prevent hammering).
-  // Guarded on user — subscribing before auth resolves is pointless and can
-  // cause requests against an unauthenticated session.
   const metricsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!user) return;
@@ -161,27 +179,38 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       if (metricsDebounceRef.current) clearTimeout(metricsDebounceRef.current);
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, refreshMetrics]);
 
-  return (
-    <AdminContext.Provider
-      value={{
-        user,
-        loading,
-        error,
-        metrics,
-        pendingEnrollments,
-        refreshUser,
-        refreshMetrics,
-        logout,
-        hasPermission,
-        isAdmin,
-        isSuperAdmin,
-      }}
-    >
-      {children}
-    </AdminContext.Provider>
+  const adminContextValue = useMemo<AdminContextType>(
+    () => ({
+      user,
+      loading,
+      error,
+      metrics,
+      pendingEnrollments,
+      refreshUser,
+      refreshMetrics,
+      logout,
+      hasPermission,
+      isAdmin,
+      isSuperAdmin,
+    }),
+    [
+      user,
+      loading,
+      error,
+      metrics,
+      pendingEnrollments,
+      refreshUser,
+      refreshMetrics,
+      logout,
+      hasPermission,
+      isAdmin,
+      isSuperAdmin,
+    ]
   );
+
+  return <AdminContext.Provider value={adminContextValue}>{children}</AdminContext.Provider>;
 }
 
 export function useAdmin() {

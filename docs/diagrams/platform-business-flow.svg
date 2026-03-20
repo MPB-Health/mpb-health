@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" role="img" aria-labelledby="title desc">
+  <title id="title">MPB Health — Platform and user journey</title>
+  <desc id="desc">Website as hub for leads and enrollments; CRM for sales; Admin as CMS and control plane; Advisor portal for field teams; all connected to shared data.</desc>
+  <defs>
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&amp;family=DM+Sans:ital,wght@0,400;0,600;1,400&amp;display=swap');
+    </style>
+    <linearGradient id="bgWash" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdf8f3"/>
+      <stop offset="45%" stop-color="#eef6f4"/>
+      <stop offset="100%" stop-color="#e8f0ee"/>
+    </linearGradient>
+    <linearGradient id="hubGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a5c5c"/>
+      <stop offset="100%" stop-color="#0f3d3f"/>
+    </linearGradient>
+    <linearGradient id="webGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c45c3e"/>
+      <stop offset="100%" stop-color="#9e3d2a"/>
+    </linearGradient>
+    <linearGradient id="crmGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a6b8f"/>
+      <stop offset="100%" stop-color="#1d4d6d"/>
+    </linearGradient>
+    <linearGradient id="adminGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6b5cae"/>
+      <stop offset="100%" stop-color="#453a7a"/>
+    </linearGradient>
+    <linearGradient id="advGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d8f6b"/>
+      <stop offset="100%" stop-color="#1e6b4f"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c45c3e" stop-opacity="0.35"/>
+      <stop offset="50%" stop-color="#1a5c5c" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#2a6b8f" stop-opacity="0.35"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#0f3d3f" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#1a5c5c" opacity="0.55"/>
+    </marker>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#bgWash)"/>
+
+  <g opacity="0.07" stroke="#1a5c5c" stroke-width="1">
+    <path d="M0 180 H1400 M0 360 H1400 M0 540 H1400 M0 720 H1400"/>
+    <path d="M200 0 V900 M400 0 V900 M600 0 V900 M800 0 V900 M1000 0 V900 M1200 0 V900"/>
+  </g>
+  <circle cx="1180" cy="120" r="200" fill="#c45c3e" opacity="0.06"/>
+  <circle cx="180" cy="760" r="160" fill="#1a5c5c" opacity="0.05"/>
+
+  <!-- Flow lines to hub (under cards) -->
+  <g fill="none" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrowHead)">
+    <path d="M 230 440 Q 400 490 530 600" stroke="#c45c3e" opacity="0.45"/>
+    <path d="M 1170 440 Q 1000 490 870 600" stroke="#2a6b8f" opacity="0.45"/>
+    <path d="M 230 500 Q 380 560 520 620" stroke="#6b5cae" opacity="0.4"/>
+    <path d="M 1170 500 Q 1020 560 880 620" stroke="#2d8f6b" opacity="0.4"/>
+  </g>
+
+  <text x="70" y="72" font-family="'Fraunces', Georgia, serif" font-size="34" fill="#0f2929" font-weight="700">MPB Health platform</text>
+  <text x="70" y="108" font-family="'DM Sans', system-ui, sans-serif" font-size="17" fill="#3d5c5c">How public web, sales, operations, and advisors connect through one system</text>
+
+  <g transform="translate(520, 520)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="360" height="200" rx="20" fill="url(#hubGrad)"/>
+    <rect x="0" y="0" width="360" height="200" rx="20" fill="none" stroke="#c9a227" stroke-opacity="0.5" stroke-width="2"/>
+    <text x="180" y="48" text-anchor="middle" font-family="'Fraunces', Georgia, serif" font-size="22" fill="#fdf8f3" font-weight="700">Shared platform core</text>
+    <text x="180" y="82" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#b8d9d4">Supabase, PostgreSQL, APIs, auth</text>
+    <text x="180" y="118" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-size="13" fill="#e0f0ee" opacity="0.95">Single source of truth for leads, contacts,</text>
+    <text x="180" y="140" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-size="13" fill="#e0f0ee" opacity="0.95">enrollments, content, and configuration</text>
+    <text x="180" y="178" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-size="12" fill="#c9a227" font-style="italic">Every app reads and writes the same layer</text>
+  </g>
+
+  <g transform="translate(70, 220)" filter="url(#cardShadow)">
+    <rect width="320" height="220" rx="18" fill="url(#webGrad)"/>
+    <text x="24" y="44" font-family="'Fraunces', Georgia, serif" font-size="20" fill="#ffffff" font-weight="700">Public website</text>
+    <text x="24" y="68" font-family="'DM Sans', system-ui, sans-serif" font-size="13" fill="#fde8e0">www.mpb.health</text>
+    <text x="24" y="108" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Marketing and education hub</text>
+    <text x="24" y="132" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Lead capture and quote flows</text>
+    <text x="24" y="156" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Enrollment journeys</text>
+    <text x="24" y="192" font-family="'DM Sans', system-ui, sans-serif" font-size="12" fill="#ffd8cc" font-style="italic">Front door: data lands in the core</text>
+  </g>
+
+  <g transform="translate(1010, 220)" filter="url(#cardShadow)">
+    <rect width="320" height="220" rx="18" fill="url(#crmGrad)"/>
+    <text x="24" y="44" font-family="'Fraunces', Georgia, serif" font-size="20" fill="#ffffff" font-weight="700">CRM</text>
+    <text x="24" y="68" font-family="'DM Sans', system-ui, sans-serif" font-size="13" fill="#cfe8f5">crm.mpb.health</text>
+    <text x="24" y="108" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Sales pipeline and ownership</text>
+    <text x="24" y="132" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Leads and contacts from forms</text>
+    <text x="24" y="156" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Quote follow-up and activity</text>
+    <text x="24" y="192" font-family="'DM Sans', system-ui, sans-serif" font-size="12" fill="#a8d4f0" font-style="italic">Same submissions as the public site</text>
+  </g>
+
+  <g transform="translate(70, 500)" filter="url(#cardShadow)">
+    <rect width="320" height="220" rx="18" fill="url(#adminGrad)"/>
+    <text x="24" y="44" font-family="'Fraunces', Georgia, serif" font-size="20" fill="#ffffff" font-weight="700">Admin portal</text>
+    <text x="24" y="68" font-family="'DM Sans', system-ui, sans-serif" font-size="13" fill="#e2daf8">admin.mpb.health</text>
+    <text x="24" y="108" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Platform and tenant controls</text>
+    <text x="24" y="132" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- CMS for all customer-facing apps</text>
+    <text x="24" y="156" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Policies, copy, and governance</text>
+    <text x="24" y="192" font-family="'DM Sans', system-ui, sans-serif" font-size="12" fill="#d4c8ff" font-style="italic">HQ publishes; every surface consumes</text>
+  </g>
+
+  <g transform="translate(1010, 500)" filter="url(#cardShadow)">
+    <rect width="320" height="220" rx="18" fill="url(#advGrad)"/>
+    <text x="24" y="44" font-family="'Fraunces', Georgia, serif" font-size="20" fill="#ffffff" font-weight="700">Advisor portal</text>
+    <text x="24" y="68" font-family="'DM Sans', system-ui, sans-serif" font-size="13" fill="#c5f0e0">advisors.mpb.health</text>
+    <text x="24" y="108" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Marketing materials and form links</text>
+    <text x="24" y="132" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Communications and support tickets</text>
+    <text x="24" y="156" font-family="'DM Sans', system-ui, sans-serif" font-size="14" fill="#ffffff" opacity="0.95">- Plan information and field tools</text>
+    <text x="24" y="192" font-family="'DM Sans', system-ui, sans-serif" font-size="12" fill="#b8f5de" font-style="italic">Command center for agents and advisors</text>
+  </g>
+
+  <text x="700" y="860" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-size="12" fill="#5a7a7a" opacity="0.85">MPB Health monorepo | vector diagram for slides and docs</text>
+</svg>

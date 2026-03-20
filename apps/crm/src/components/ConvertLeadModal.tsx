@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
 import { Modal } from './Modal';
 import { useOrg } from '../contexts/OrgContext';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
@@ -15,6 +16,8 @@ import {
 const contactService = createContactService(supabase);
 const accountService = createAccountService(supabase);
 
+const LOAD_ACCOUNTS_MS = 25_000;
+
 interface ConvertLeadModalProps {
   open: boolean;
   onClose: () => void;
@@ -28,6 +31,8 @@ export function ConvertLeadModal({ open, onClose, onSuccess, lead }: ConvertLead
   const [accounts, setAccounts] = useState<AccountWithRelations[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [accountsLoadError, setAccountsLoadError] = useState<string | null>(null);
+  const [accountsRetryToken, setAccountsRetryToken] = useState(0);
 
   // Form state
   const [accountMode, setAccountMode] = useState<'new' | 'existing'>('new');
@@ -35,23 +40,44 @@ export function ConvertLeadModal({ open, onClose, onSuccess, lead }: ConvertLead
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load accounts for dropdown
-  const loadAccounts = useCallback(async () => {
-    setLoadingAccounts(true);
-    const { accounts: data } = await accountService.getAccounts({}, 200, 0);
-    setAccounts(data);
-    setLoadingAccounts(false);
-  }, []);
-
   useEffect(() => {
-    if (open) {
-      loadAccounts();
-      // Pre-fill account name with lead name if creating new
-      if (lead) {
-        setNewAccountName(`${lead.first_name} ${lead.last_name}`);
+    if (!open) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setLoadingAccounts(true);
+      setAccountsLoadError(null);
+      try {
+        const { accounts: data } = await withTimeout(
+          accountService.getAccounts({}, 200, 0),
+          LOAD_ACCOUNTS_MS,
+          'convert_modal_accounts'
+        );
+        if (!cancelled) {
+          setAccounts(data);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        if (isTimeoutError(e)) {
+          setAccountsLoadError('Loading accounts timed out. Check your connection and try again.');
+        } else {
+          setAccountsLoadError('Could not load accounts.');
+        }
+        console.error(e);
+      } finally {
+        if (!cancelled) setLoadingAccounts(false);
       }
+    })();
+
+    if (lead) {
+      setNewAccountName(`${lead.first_name} ${lead.last_name}`);
     }
-  }, [open, loadAccounts, lead]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, lead?.id, accountsRetryToken]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -296,6 +322,18 @@ export function ConvertLeadModal({ open, onClose, onSuccess, lead }: ConvertLead
               )}
               {loadingAccounts && (
                 <p className="text-xs text-th-text-tertiary mt-1">Loading accounts...</p>
+              )}
+              {accountsLoadError && (
+                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <p>{accountsLoadError}</p>
+                  <button
+                    type="button"
+                    onClick={() => setAccountsRetryToken((t) => t + 1)}
+                    className="mt-1 font-medium text-th-accent-700 underline"
+                  >
+                    Retry
+                  </button>
+                </div>
               )}
             </div>
           )}

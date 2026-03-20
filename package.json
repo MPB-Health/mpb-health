@@ -16,17 +16,20 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:crm": "pnpm --filter @mpbhealth/crm test",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/database/src/types/database.ts",
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "diagrams:png": "node scripts/export-diagram-pngs.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
     "@playwright/test": "^1.49.0",
+    "@resvg/resvg-js": "^2.6.2",
     "prettier": "^3.8.1",
     "turbo": "^2.8.11"
   },

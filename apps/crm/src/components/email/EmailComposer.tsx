@@ -3,7 +3,7 @@
 // Championship email system with rich text editing via Tiptap
 // ============================================================================
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import './EmailComposer.css';
 import StarterKit from '@tiptap/starter-kit';
@@ -67,6 +67,11 @@ interface EmailComposerProps {
   onSaved?: (draftId: string) => void;
   onDiscard?: () => void;
   onClose?: () => void;
+}
+
+export interface EmailComposerHandle {
+  /** Same as Discard / header close — runs confirm when there is unsaved content. */
+  discard: () => void;
 }
 
 interface RecipientFieldProps {
@@ -487,7 +492,8 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
 // Main Email Composer Component
 // ============================================================================
 
-export function EmailComposer({
+export const EmailComposer = forwardRef<EmailComposerHandle, EmailComposerProps>(function EmailComposer(
+  {
   mode = 'compose',
   draftId,
   replyToEmailId,
@@ -503,7 +509,9 @@ export function EmailComposer({
   onSaved,
   onDiscard,
   onClose,
-}: EmailComposerProps) {
+  },
+  ref
+) {
   const { templateService, composerService, signatureService, draftService, mailAccountService, mailSyncService } = useCRM();
   const { activeOrgId } = useOrg();
 
@@ -774,8 +782,7 @@ export function EmailComposer({
     }
   };
 
-  // Discard draft
-  const handleDiscard = () => {
+  const handleDiscard = useCallback(() => {
     if (
       editor?.getText().trim() ||
       to.length > 0 ||
@@ -788,7 +795,24 @@ export function EmailComposer({
     }
     onDiscard?.();
     onClose?.();
-  };
+  }, [editor, to, subject, attachments, onDiscard, onClose]);
+
+  useImperativeHandle(ref, () => ({ discard: handleDiscard }), [handleDiscard]);
+
+  useEffect(() => {
+    const onDocKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showScheduleModal) {
+        e.preventDefault();
+        setShowScheduleModal(false);
+        return;
+      }
+      e.preventDefault();
+      handleDiscard();
+    };
+    document.addEventListener('keydown', onDocKey, true);
+    return () => document.removeEventListener('keydown', onDocKey, true);
+  }, [handleDiscard, showScheduleModal]);
 
   // Apply template
   const applyTemplate = (template: CRMTemplate) => {
@@ -1131,7 +1155,7 @@ export function EmailComposer({
       )}
     </div>
   );
-}
+});
 
 // ============================================================================
 // Utility Functions

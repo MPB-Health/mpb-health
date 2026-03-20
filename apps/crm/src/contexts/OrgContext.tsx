@@ -2,10 +2,9 @@
 // OrgContext — Organization + Permission context for CRM app
 // ============================================================================
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo, type ReactNode } from 'react';
 import {
   getUserOrgs,
-  getUserOrgRole,
   loadUserPermissions,
   hasPermission as checkPermission,
   invalidatePermissionCache,
@@ -16,7 +15,7 @@ import {
   type OrgRole,
   type UserPermissionSet,
 } from '@mpbhealth/auth';
-import { createClientLogger } from '@mpbhealth/utils';
+import { createClientLogger, emitPortalDiagnostic } from '@mpbhealth/utils';
 import { useAuth } from './AuthContext';
 
 const log = createClientLogger('OrgContext');
@@ -34,6 +33,8 @@ interface OrgContextType {
   // Permission state
   permissionSet: UserPermissionSet | null;
   permissionsLoading: boolean;
+  /** Set when the last permission load failed (non-timeout); use for retry UX */
+  permissionsError: string | null;
 
   // Permission checks
   can: (permissionKey: string) => boolean;
@@ -63,6 +64,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   // Permission state
   const [permissionSet, setPermissionSet] = useState<UserPermissionSet | null>(null);
   const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [permissionsError, setPermissionsError] = useState<string | null>(null);
   const orgIdRef = useRef(activeOrgId);
 
   // --- Load orgs ---
@@ -114,40 +116,55 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timeout);
   }, [loadOrgs]);
 
-  // --- Load role for active org ---
-  useEffect(() => {
-    if (!activeOrgId || !user) {
-      setOrgRole(null);
-      return;
-    }
-    getUserOrgRole(activeOrgId)
-      .then((role) => {
-        log.info('[OrgContext] User role loaded:', role);
-        setOrgRole(role);
-      })
-      .catch((err) => {
-        console.error('[OrgContext] Failed to load role:', err);
-        setOrgRole(null);
-      });
-  }, [activeOrgId, user]);
+  // Org role is set from the same batched permission snapshot as permissionSet (see loadPermissions).
 
   // --- Load permissions when org changes ---
   const loadPermissions = useCallback(async () => {
     if (!activeOrgId) {
       setPermissionSet(null);
+      setOrgRole(null);
       setPermissionsLoading(false);
+      setPermissionsError(null);
       return;
     }
 
     orgIdRef.current = activeOrgId;
     setPermissionsLoading(true);
+    setPermissionsError(null);
+    const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
     try {
       const ps = await loadUserPermissions(activeOrgId);
       if (orgIdRef.current === activeOrgId) {
         setPermissionSet(ps);
+        setOrgRole(ps ? (ps.role as OrgRole) : null);
+        if (ps) {
+          log.info('[OrgContext] Permissions + role loaded for org:', activeOrgId, ps.role);
+        }
+        setPermissionsError(null);
+        const durationMs = typeof performance !== 'undefined' ? performance.now() - t0 : 0;
+        emitPortalDiagnostic({
+          kind: 'permission_load',
+          app: 'crm',
+          durationMs,
+          success: !!ps,
+          detail: activeOrgId,
+        });
       }
     } catch (err) {
       console.error('[OrgContext] Failed to load permissions:', err);
+      if (orgIdRef.current === activeOrgId) {
+        setPermissionSet(null);
+        setOrgRole(null);
+        setPermissionsError(err instanceof Error ? err.message : 'Failed to load permissions');
+        const durationMs = typeof performance !== 'undefined' ? performance.now() - t0 : 0;
+        emitPortalDiagnostic({
+          kind: 'permission_load',
+          app: 'crm',
+          durationMs,
+          success: false,
+          detail: activeOrgId,
+        });
+      }
     } finally {
       if (orgIdRef.current === activeOrgId) {
         setPermissionsLoading(false);
@@ -160,6 +177,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       setPermissionsLoading((prev) => {
         if (prev) {
           console.warn('[OrgContext] Permission loading timed out after 10 s');
+          setPermissionsError('Permission check is taking too long. Try again or refresh the page.');
           return false;
         }
         return prev;
@@ -223,27 +241,42 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
   const activeOrg = orgs.find((o) => o.id === activeOrgId) ?? null;
 
-  return (
-    <OrgContext.Provider
-      value={{
-        orgs,
-        activeOrg,
-        activeOrgId,
-        orgRole,
-        orgLoading,
-        permissionSet,
-        permissionsLoading,
-        can,
-        canAny,
-        canAll,
-        switchOrg,
-        refreshOrgs,
-        refreshPermissions,
-      }}
-    >
-      {children}
-    </OrgContext.Provider>
+  const orgContextValue = useMemo<OrgContextType>(
+    () => ({
+      orgs,
+      activeOrg,
+      activeOrgId,
+      orgRole,
+      orgLoading,
+      permissionSet,
+      permissionsLoading,
+      permissionsError,
+      can,
+      canAny,
+      canAll,
+      switchOrg,
+      refreshOrgs,
+      refreshPermissions,
+    }),
+    [
+      orgs,
+      activeOrg,
+      activeOrgId,
+      orgRole,
+      orgLoading,
+      permissionSet,
+      permissionsLoading,
+      permissionsError,
+      can,
+      canAny,
+      canAll,
+      switchOrg,
+      refreshOrgs,
+      refreshPermissions,
+    ]
   );
+
+  return <OrgContext.Provider value={orgContextValue}>{children}</OrgContext.Provider>;
 }
 
 export function useOrg() {

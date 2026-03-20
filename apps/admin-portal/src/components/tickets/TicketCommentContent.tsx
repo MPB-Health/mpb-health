@@ -13,7 +13,7 @@ export function TicketCommentContent({ content, contentFormat }: TicketCommentCo
   if (contentFormat === 'html') {
     return (
       <div
-        className="text-sm text-neutral-700 prose prose-sm max-w-none [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+        className="text-sm text-neutral-700 prose prose-sm max-w-none [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:border [&_img]:border-neutral-200"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
       />
     );

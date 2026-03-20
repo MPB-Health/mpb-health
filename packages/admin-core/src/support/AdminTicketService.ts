@@ -8,6 +8,7 @@
 export {
   TicketService,
   ticketService,
+  appendTicketAttachmentsHtml,
   type AdminTicket,
   type AdminTicketDetail,
   type AdminTicketListResult,
@@ -21,4 +22,5 @@ export {
   type UpdateTicketOptions,
   type CreateTicketOptions,
   type CreateTicketResult,
+  type TicketAttachmentUploadResult,
 } from '@mpbhealth/advisor-core';

@@ -202,10 +202,41 @@ export interface CreateTicketResult {
   ticket_number: number;
 }
 
-interface TicketAttachmentUploadResult {
+export interface TicketAttachmentUploadResult {
   fileName: string;
   accessUrl: string;
   size: number;
+}
+
+/**
+ * Appends a sanitized attachment list to ticket reply HTML (after inline images / body).
+ */
+export function appendTicketAttachmentsHtml(
+  baseHtml: string,
+  uploads: TicketAttachmentUploadResult[],
+): string {
+  if (!uploads.length) return baseHtml;
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const items = uploads
+    .map((u) => {
+      const name = esc(u.fileName);
+      const href = esc(u.accessUrl);
+      const kb = Math.max(1, Math.round(u.size / 1024));
+      return `<li><a href="${href}" rel="noopener noreferrer" target="_blank">${name}</a> <span class="text-neutral-500">(${kb} KB)</span></li>`;
+    })
+    .join('');
+  const block = `<p><strong>Attachments</strong></p><ul>${items}</ul>`;
+  const trimmed = baseHtml.trim();
+  if (
+    !trimmed ||
+    trimmed === '<p></p>' ||
+    trimmed === '<p><br></p>' ||
+    trimmed === '<p><br class="ProseMirror-trailingBreak"></p>'
+  ) {
+    return block;
+  }
+  return `${trimmed}\n${block}`;
 }
 
 export interface UpdateTicketOptions {
@@ -235,6 +266,24 @@ export class TicketService {
       return `- ${upload.fileName} (${kb} KB): ${upload.accessUrl}`;
     });
     return ['Attachments uploaded by advisor:', ...lines].join('\n');
+  }
+
+  /**
+   * Upload files to `ticket-attachments` storage for a reply (same layout as new-ticket uploads).
+   * Returns signed URLs suitable for embedding in HTML (short expiry — same as new tickets).
+   */
+  async uploadFilesForTicketReply(
+    ticketId: string,
+    attachments: File[],
+  ): Promise<TicketAttachmentUploadResult[]> {
+    return this.uploadAttachments(ticketId, attachments);
+  }
+
+  /** Upload one image and return a signed URL for inline &lt;img src&gt; in the rich editor. */
+  async uploadImageForTicketReply(ticketId: string, file: File): Promise<string> {
+    const [first] = await this.uploadAttachments(ticketId, [file]);
+    if (!first?.accessUrl) throw new Error('Image upload failed.');
+    return first.accessUrl;
   }
 
   private async uploadAttachments(ticketId: string, attachments: File[]): Promise<TicketAttachmentUploadResult[]> {

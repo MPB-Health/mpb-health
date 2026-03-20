@@ -3,12 +3,14 @@ import {
   useEffect,
   useImperativeHandle,
   forwardRef,
+  useRef,
 } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Italic, List, Link as LinkIcon } from 'lucide-react';
+import { Bold, Italic, List, Link as LinkIcon, Image as ImageIcon, Paperclip } from 'lucide-react';
 
 export interface TicketRichReplyEditorRef {
   getHtml: () => string;
@@ -21,14 +23,28 @@ interface TicketRichReplyEditorProps {
   disabled?: boolean;
   variant?: 'default' | 'admin';
   onDraftChange?: (hasContent: boolean) => void;
+  /** Upload an image to storage; returns signed URL for inline embed. */
+  uploadImage?: (file: File) => Promise<string>;
+  /** Add non-inline files (shown as links after send). */
+  onAttachFiles?: (files: File[]) => void;
 }
 
 /** Rich reply for advisor tickets (default) or admin ticket management (admin tokens). */
 export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, TicketRichReplyEditorProps>(
   function TicketRichReplyEditor(
-    { placeholder = 'Type your message…', disabled = false, variant = 'default', onDraftChange },
+    {
+      placeholder = 'Type your message…',
+      disabled = false,
+      variant = 'default',
+      onDraftChange,
+      uploadImage,
+      onAttachFiles,
+    },
     ref,
   ) {
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -41,6 +57,10 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
           openOnClick: false,
           autolink: true,
           HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+        }),
+        Image.configure({
+          inline: true,
+          allowBase64: false,
         }),
         Placeholder.configure({ placeholder }),
       ],
@@ -97,6 +117,32 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
       editor.chain().focus().extendMarkRange('link').setLink({ href: trimmed }).run();
     }, [editor]);
 
+    const onPickImage = useCallback(
+      async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file || !uploadImage || !editor) return;
+        if (!file.type.startsWith('image/')) return;
+        try {
+          const url = await uploadImage(file);
+          if (url) editor.chain().focus().setImage({ src: url, alt: file.name }).run();
+        } catch {
+          // Parent may toast
+        }
+      },
+      [editor, uploadImage],
+    );
+
+    const onPickFiles = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const list = e.target.files;
+        e.target.value = '';
+        if (!list?.length || !onAttachFiles) return;
+        onAttachFiles(Array.from(list));
+      },
+      [onAttachFiles],
+    );
+
     if (!editor) {
       return (
         <div
@@ -117,6 +163,22 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
 
     return (
       <div className={shell}>
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          aria-hidden
+          onChange={onPickImage}
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          aria-hidden
+          onChange={onPickFiles}
+        />
         <div className={`${bar} ${barBg}`}>
           <button
             type="button"
@@ -145,6 +207,28 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
           <button type="button" onClick={setLink} className="p-1.5 rounded hover:bg-neutral-100" title="Link">
             <LinkIcon className="w-4 h-4" />
           </button>
+          {uploadImage && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => imageInputRef.current?.click()}
+              className="p-1.5 rounded hover:bg-neutral-100 disabled:opacity-50"
+              title="Insert image"
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
+          )}
+          {onAttachFiles && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => fileInputRef.current?.click()}
+              className="p-1.5 rounded hover:bg-neutral-100 disabled:opacity-50"
+              title="Attach files"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <EditorContent editor={editor} />
       </div>

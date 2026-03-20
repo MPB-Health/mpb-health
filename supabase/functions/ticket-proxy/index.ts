@@ -26,6 +26,8 @@ const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_COMMENT_LENGTH = 10_000;
+/** Rich HTML replies may include long signed URLs for inline images and attachment links */
+const MAX_HTML_COMMENT_LENGTH = 120_000;
 const MAX_SUBJECT_LENGTH = 255;
 
 /** Strip characters that could manipulate PostgREST filter syntax */
@@ -805,15 +807,16 @@ Deno.serve(async (req: Request) => {
         }
         const fmt = normalizeContentFormat(body.content_format);
         const raw = body.content ?? "";
-        if (raw.length > MAX_COMMENT_LENGTH) {
+        const maxLen = fmt === "html" ? MAX_HTML_COMMENT_LENGTH : MAX_COMMENT_LENGTH;
+        if (raw.length > maxLen) {
           return new Response(
-            JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            JSON.stringify({ success: false, error: `Content required (max ${maxLen} chars)` }),
             { status: 400, headers },
           );
         }
         if (fmt === "plain" && !raw.trim()) {
           return new Response(
-            JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            JSON.stringify({ success: false, error: `Content required (max ${maxLen} chars)` }),
             { status: 400, headers },
           );
         }
@@ -911,15 +914,16 @@ Deno.serve(async (req: Request) => {
         }
         const fmt = normalizeContentFormat(body.content_format);
         const raw = body.content ?? "";
-        if (raw.length > MAX_COMMENT_LENGTH) {
+        const maxLenReply = fmt === "html" ? MAX_HTML_COMMENT_LENGTH : MAX_COMMENT_LENGTH;
+        if (raw.length > maxLenReply) {
           return new Response(
-            JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            JSON.stringify({ success: false, error: `Content required (max ${maxLenReply} chars)` }),
             { status: 400, headers },
           );
         }
         if (fmt === "plain" && !raw.trim()) {
           return new Response(
-            JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            JSON.stringify({ success: false, error: `Content required (max ${maxLenReply} chars)` }),
             { status: 400, headers },
           );
         }

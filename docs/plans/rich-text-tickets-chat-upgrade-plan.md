@@ -7,7 +7,7 @@
 - **ITSTS:** migration `supabase/itsts-migrations/20260321120000_ticket_comment_content_format.sql` adds `content_format` (`plain` | `html`).
 - **Edge:** `ticket-proxy` reads/writes `content_format`, sanitizes HTML via `supabase/functions/_shared/ticketHtmlSanitize.ts` (`npm:sanitize-html`), plain-text previews for email notifications.
 - **Client:** `@mpbhealth/advisor-core` `TicketComment` + `replyToTicket` / `addComment` accept optional `content_format`.
-- **UI:** When `VITE_RICH_TICKET_EDITOR=true`, **Admin** [`TicketDetail`](../apps/admin-portal/src/pages/TicketDetail.tsx) and **Advisor** [`Tickets`](../apps/advisor-portal/src/pages/Tickets.tsx) / [`AdminTickets`](../apps/advisor-portal/src/pages/AdminTickets.tsx) use Tiptap + `sanitizeHtml` for display; otherwise legacy `<textarea>` and plain.
+- **UI:** When `VITE_RICH_TICKET_EDITOR=true`, **Admin** [`TicketDetail`](../apps/admin-portal/src/pages/TicketDetail.tsx) and **Advisor** [`Tickets`](../apps/advisor-portal/src/pages/Tickets.tsx) / [`AdminTickets`](../apps/advisor-portal/src/pages/AdminTickets.tsx) use Tiptap (`TicketRichReplyEditor`: bold/italic/list/link, **image** + **file** attachments via `ticket-attachments` storage) + `sanitizeHtml` for display; otherwise legacy `<textarea>` and plain.
 - **Flag:** `VITE_RICH_TICKET_EDITOR` — see each app’s `.env.example`; local dev defaults to on via `.env.development` (production: set in CI / host).
 
 **Deploy order:** Apply ITSTS migration → deploy `ticket-proxy` → enable flag in staging/prod.

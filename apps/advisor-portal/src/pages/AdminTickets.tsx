@@ -29,6 +29,7 @@ import {
 import { Button, GradientHeader, MetricCard } from '@mpbhealth/ui';
 import {
   ticketService,
+  appendTicketAttachmentsHtml,
   type AdminTicket,
   type AdminTicketDetail,
   type TicketStats,
@@ -48,6 +49,9 @@ import {
 } from '../components/tickets/TicketRichReplyEditor';
 
 const richTicketEditor = import.meta.env.VITE_RICH_TICKET_EDITOR === 'true';
+
+const MAX_REPLY_ATTACHMENTS = 10;
+const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
@@ -170,6 +174,7 @@ export default function AdminTickets() {
   const richReplyRef = useRef<TicketRichReplyEditorRef>(null);
   const [richHasContent, setRichHasContent] = useState(false);
   const [replyEditorKey, setReplyEditorKey] = useState(0);
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
 
   // Ticket status / priority update
   const [updating, setUpdating] = useState(false);
@@ -342,6 +347,7 @@ export default function AdminTickets() {
       const detail = await ticketService.getTicketDetailAdmin(ticketId);
       setSelectedTicket(detail);
       setReplyContent('');
+      setReplyAttachments([]);
     } catch (err) {
       console.error('Failed to load ticket detail:', err);
     } finally {
@@ -349,13 +355,48 @@ export default function AdminTickets() {
     }
   };
 
+  const mergeReplyAttachments = (files: File[]) => {
+    setReplyAttachments((prev) => {
+      const next = [...prev];
+      for (const f of files) {
+        if (next.length >= MAX_REPLY_ATTACHMENTS) {
+          toast.error(`You can attach up to ${MAX_REPLY_ATTACHMENTS} files per reply.`);
+          break;
+        }
+        if (f.size > MAX_REPLY_FILE_BYTES) {
+          toast.error(`"${f.name}" exceeds the 15 MB limit.`);
+          continue;
+        }
+        const dup = next.some((x) => x.name === f.name && x.size === f.size && x.lastModified === f.lastModified);
+        if (!dup) next.push(f);
+      }
+      return next;
+    });
+  };
+
+  const uploadTicketImage = async (file: File) => {
+    if (!selectedTicket) throw new Error('No ticket');
+    try {
+      return await ticketService.uploadImageForTicketReply(selectedTicket.ticket.id, file);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Image upload failed');
+      throw e;
+    }
+  };
+
   const handleSendReply = async () => {
     if (!selectedTicket) return;
     if (richTicketEditor) {
+      const rawHtml = richReplyRef.current?.getHtml() ?? '';
+      const hasInlineImage = /<img[\s>]/i.test(rawHtml);
       const text = richReplyRef.current?.getText().trim() ?? '';
-      if (!text) return;
-      const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
-      if (!html.replace(/<[^>]+>/g, '').trim()) return;
+      const hasFiles = replyAttachments.length > 0;
+      if (!text && !hasInlineImage && !hasFiles) return;
+      if (text || hasInlineImage) {
+        const html = sanitizeHtml(rawHtml);
+        const stripped = html.replace(/<[^>]+>/g, '').trim();
+        if (!stripped && !hasInlineImage && !hasFiles) return;
+      } else if (!hasFiles) return;
     } else if (!replyContent.trim()) {
       return;
     }
@@ -363,7 +404,15 @@ export default function AdminTickets() {
     setReplyError('');
     try {
       if (richTicketEditor) {
-        const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+        let html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+        if (replyAttachments.length > 0) {
+          const uploads = await ticketService.uploadFilesForTicketReply(
+            selectedTicket.ticket.id,
+            replyAttachments,
+          );
+          html = appendTicketAttachmentsHtml(html, uploads);
+        }
+        html = sanitizeHtml(html);
         await ticketService.addComment(selectedTicket.ticket.id, html, false, 'html');
       } else {
         await ticketService.addComment(selectedTicket.ticket.id, replyContent.trim(), false, 'plain');
@@ -372,6 +421,7 @@ export default function AdminTickets() {
       const detail = await ticketService.getTicketDetailAdmin(selectedTicket.ticket.id);
       setSelectedTicket(detail);
       setReplyContent('');
+      setReplyAttachments([]);
       setReplyEditorKey((k) => k + 1);
       richReplyRef.current?.clear();
     } catch (err) {
@@ -616,14 +666,40 @@ export default function AdminTickets() {
           <div className="p-6">
             <h3 className="text-sm font-medium text-th-text-primary mb-3">Send Reply</h3>
             {richTicketEditor ? (
-              <TicketRichReplyEditor
-                key={`${ticket.id}-reply-${replyEditorKey}`}
-                ref={richReplyRef}
-                variant="admin"
-                placeholder="Type your reply..."
-                disabled={replySending}
-                onDraftChange={setRichHasContent}
-              />
+              <>
+                <TicketRichReplyEditor
+                  key={`${ticket.id}-reply-${replyEditorKey}`}
+                  ref={richReplyRef}
+                  variant="admin"
+                  placeholder="Type your reply..."
+                  disabled={replySending}
+                  onDraftChange={setRichHasContent}
+                  uploadImage={uploadTicketImage}
+                  onAttachFiles={mergeReplyAttachments}
+                />
+                {replyAttachments.length > 0 && (
+                  <ul className="mt-2 flex flex-wrap gap-2 text-xs text-th-text-secondary">
+                    {replyAttachments.map((file, idx) => (
+                      <li
+                        key={`${file.name}-${file.size}-${idx}`}
+                        className="inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-md bg-th-bg-secondary border border-th-border"
+                      >
+                        <span className="truncate max-w-[200px]">{file.name}</span>
+                        <button
+                          type="button"
+                          className="p-0.5 rounded hover:bg-th-bg-tertiary"
+                          aria-label={`Remove ${file.name}`}
+                          onClick={() =>
+                            setReplyAttachments((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             ) : (
               <textarea
                 value={replyContent}
@@ -644,7 +720,10 @@ export default function AdminTickets() {
                 type="button"
                 variant="primary"
                 onClick={handleSendReply}
-                disabled={replySending || (richTicketEditor ? !richHasContent : !replyContent.trim())}
+                disabled={
+                  replySending ||
+                  (richTicketEditor ? !richHasContent && replyAttachments.length === 0 : !replyContent.trim())
+                }
               >
                 {replySending ? (
                   <>

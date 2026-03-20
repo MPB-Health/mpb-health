@@ -19,10 +19,13 @@ import {
   PlusCircle,
   Send,
   MessageSquare,
+  X,
 } from 'lucide-react';
 import { GradientHeader, MetricCard } from '@mpbhealth/ui';
+import toast from 'react-hot-toast';
 import {
   ticketService,
+  appendTicketAttachmentsHtml,
   type Ticket,
   type TicketDetail,
   type TicketStats,
@@ -37,6 +40,9 @@ import {
 } from '../components/tickets/TicketRichReplyEditor';
 
 const richTicketEditor = import.meta.env.VITE_RICH_TICKET_EDITOR === 'true';
+
+const MAX_REPLY_ATTACHMENTS = 10;
+const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
@@ -77,6 +83,7 @@ export default function Tickets() {
   const richReplyRef = useRef<TicketRichReplyEditorRef>(null);
   const [richHasContent, setRichHasContent] = useState(false);
   const [replyEditorKey, setReplyEditorKey] = useState(0);
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
   const perPage = 20;
 
   // Unmount guard — prevents setState on unmounted component
@@ -235,33 +242,75 @@ export default function Tickets() {
     return () => clearInterval(interval);
   }, [selectedTicket?.ticket.id, executeWithAuth]);
 
+  const mergeReplyAttachments = (files: File[]) => {
+    setReplyAttachments((prev) => {
+      const next = [...prev];
+      for (const f of files) {
+        if (next.length >= MAX_REPLY_ATTACHMENTS) {
+          toast.error(`You can attach up to ${MAX_REPLY_ATTACHMENTS} files per reply.`);
+          break;
+        }
+        if (f.size > MAX_REPLY_FILE_BYTES) {
+          toast.error(`"${f.name}" exceeds the 15 MB limit.`);
+          continue;
+        }
+        const dup = next.some((x) => x.name === f.name && x.size === f.size && x.lastModified === f.lastModified);
+        if (!dup) next.push(f);
+      }
+      return next;
+    });
+  };
+
+  const uploadTicketImage = async (file: File) => {
+    if (!selectedTicket) throw new Error('No ticket');
+    try {
+      return await ticketService.uploadImageForTicketReply(selectedTicket.ticket.id, file);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Image upload failed');
+      throw e;
+    }
+  };
+
   const handleSendReply = async () => {
     if (!selectedTicket) return;
     if (richTicketEditor) {
+      const rawHtml = richReplyRef.current?.getHtml() ?? '';
+      const hasInlineImage = /<img[\s>]/i.test(rawHtml);
       const text = richReplyRef.current?.getText().trim() ?? '';
-      if (!text) return;
-      const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
-      if (!html.replace(/<[^>]+>/g, '').trim()) return;
+      const hasFiles = replyAttachments.length > 0;
+      if (!text && !hasInlineImage && !hasFiles) return;
+      if (text || hasInlineImage) {
+        const html = sanitizeHtml(rawHtml);
+        const stripped = html.replace(/<[^>]+>/g, '').trim();
+        if (!stripped && !hasInlineImage && !hasFiles) return;
+      } else if (!hasFiles) return;
     } else if (!replyContent.trim()) {
       return;
     }
     setReplySending(true);
     setReplyError('');
     try {
-      await executeWithAuth(() =>
-        richTicketEditor
-          ? ticketService.replyToTicket(
+      await executeWithAuth(async () => {
+        if (richTicketEditor) {
+          let html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+          if (replyAttachments.length > 0) {
+            const uploads = await ticketService.uploadFilesForTicketReply(
               selectedTicket.ticket.id,
-              sanitizeHtml(richReplyRef.current?.getHtml() ?? ''),
-              'html',
-            )
-          : ticketService.replyToTicket(selectedTicket.ticket.id, replyContent.trim(), 'plain'),
-      );
+              replyAttachments,
+            );
+            html = appendTicketAttachmentsHtml(html, uploads);
+          }
+          html = sanitizeHtml(html);
+          return ticketService.replyToTicket(selectedTicket.ticket.id, html, 'html');
+        }
+        return ticketService.replyToTicket(selectedTicket.ticket.id, replyContent.trim(), 'plain');
+      });
       if (!mountedRef.current) return;
       const detail = await executeWithAuth(() => ticketService.getTicketDetail(selectedTicket.ticket.id));
       if (!mountedRef.current) return;
       setSelectedTicket(detail);
       setReplyContent('');
+      setReplyAttachments([]);
       setReplyEditorKey((k) => k + 1);
       richReplyRef.current?.clear();
     } catch (err) {
@@ -293,7 +342,7 @@ export default function Tickets() {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => { setSelectedTicket(null); setReplyContent(''); setReplyError(''); }}
+            onClick={() => { setSelectedTicket(null); setReplyContent(''); setReplyError(''); setReplyAttachments([]); }}
             className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
             aria-label="Back to tickets"
           >
@@ -367,14 +416,40 @@ export default function Tickets() {
               Add a Reply
             </h3>
             {richTicketEditor ? (
-              <TicketRichReplyEditor
-                key={`${ticket.id}-reply-${replyEditorKey}`}
-                ref={richReplyRef}
-                variant="default"
-                placeholder="Type your message..."
-                disabled={replySending}
-                onDraftChange={setRichHasContent}
-              />
+              <>
+                <TicketRichReplyEditor
+                  key={`${ticket.id}-reply-${replyEditorKey}`}
+                  ref={richReplyRef}
+                  variant="default"
+                  placeholder="Type your message..."
+                  disabled={replySending}
+                  onDraftChange={setRichHasContent}
+                  uploadImage={uploadTicketImage}
+                  onAttachFiles={mergeReplyAttachments}
+                />
+                {replyAttachments.length > 0 && (
+                  <ul className="mt-2 flex flex-wrap gap-2 text-xs text-neutral-600">
+                    {replyAttachments.map((file, idx) => (
+                      <li
+                        key={`${file.name}-${file.size}-${idx}`}
+                        className="inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-md bg-neutral-100 border border-neutral-200"
+                      >
+                        <span className="truncate max-w-[200px]">{file.name}</span>
+                        <button
+                          type="button"
+                          className="p-0.5 rounded hover:bg-neutral-200"
+                          aria-label={`Remove ${file.name}`}
+                          onClick={() =>
+                            setReplyAttachments((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             ) : (
               <textarea
                 value={replyContent}
@@ -394,7 +469,10 @@ export default function Tickets() {
             <div className="flex justify-end mt-3">
               <button
                 onClick={handleSendReply}
-                disabled={replySending || (richTicketEditor ? !richHasContent : !replyContent.trim())}
+                disabled={
+                  replySending ||
+                  (richTicketEditor ? !richHasContent && replyAttachments.length === 0 : !replyContent.trim())
+                }
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {replySending ? (

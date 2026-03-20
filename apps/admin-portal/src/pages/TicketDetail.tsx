@@ -13,9 +13,11 @@ import {
   Send,
   User,
   Lock,
+  X,
 } from 'lucide-react';
 import {
   ticketService,
+  appendTicketAttachmentsHtml,
   type AdminTicketDetail,
   type TicketStatus,
   type TicketPriority,
@@ -29,6 +31,9 @@ import {
 } from '../components/tickets/TicketRichReplyEditor';
 
 const richTicketEditor = import.meta.env.VITE_RICH_TICKET_EDITOR === 'true';
+
+const MAX_REPLY_ATTACHMENTS = 10;
+const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
@@ -61,6 +66,7 @@ export default function TicketDetail() {
   const richReplyRef = useRef<TicketRichReplyEditorRef>(null);
   const [richHasContent, setRichHasContent] = useState(false);
   const [replyEditorKey, setReplyEditorKey] = useState(0);
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
 
   // Status / priority update
   const [updating, setUpdating] = useState(false);
@@ -82,14 +88,49 @@ export default function TicketDetail() {
 
   useEffect(() => { loadDetail(); }, [loadDetail]);
 
+  const mergeReplyAttachments = (files: File[]) => {
+    setReplyAttachments((prev) => {
+      const next = [...prev];
+      for (const f of files) {
+        if (next.length >= MAX_REPLY_ATTACHMENTS) {
+          toast.error(`You can attach up to ${MAX_REPLY_ATTACHMENTS} files per reply.`);
+          break;
+        }
+        if (f.size > MAX_REPLY_FILE_BYTES) {
+          toast.error(`"${f.name}" exceeds the 15 MB limit.`);
+          continue;
+        }
+        const dup = next.some((x) => x.name === f.name && x.size === f.size && x.lastModified === f.lastModified);
+        if (!dup) next.push(f);
+      }
+      return next;
+    });
+  };
+
+  const uploadTicketImage = async (file: File) => {
+    if (!detail) throw new Error('No ticket');
+    try {
+      return await ticketService.uploadImageForTicketReply(detail.ticket.id, file);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Image upload failed');
+      throw e;
+    }
+  };
+
   const handleSendReply = async () => {
     if (!detail) return;
     const wasInternal = isInternalNote;
     if (richTicketEditor) {
+      const rawHtml = richReplyRef.current?.getHtml() ?? '';
+      const hasInlineImage = /<img[\s>]/i.test(rawHtml);
       const text = richReplyRef.current?.getText().trim() ?? '';
-      if (!text) return;
-      const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
-      if (!html.replace(/<[^>]+>/g, '').trim()) return;
+      const hasFiles = replyAttachments.length > 0;
+      if (!text && !hasInlineImage && !hasFiles) return;
+      if (text || hasInlineImage) {
+        const html = sanitizeHtml(rawHtml);
+        const stripped = html.replace(/<[^>]+>/g, '').trim();
+        if (!stripped && !hasInlineImage && !hasFiles) return;
+      } else if (!hasFiles) return;
     } else if (!replyContent.trim()) {
       return;
     }
@@ -97,7 +138,12 @@ export default function TicketDetail() {
     setReplyError('');
     try {
       if (richTicketEditor) {
-        const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+        let html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+        if (replyAttachments.length > 0) {
+          const uploads = await ticketService.uploadFilesForTicketReply(detail.ticket.id, replyAttachments);
+          html = appendTicketAttachmentsHtml(html, uploads);
+        }
+        html = sanitizeHtml(html);
         await ticketService.addComment(detail.ticket.id, html, wasInternal, 'html');
       } else {
         await ticketService.addComment(detail.ticket.id, replyContent.trim(), wasInternal, 'plain');
@@ -105,6 +151,7 @@ export default function TicketDetail() {
       const refreshed = await ticketService.getTicketDetailAdmin(detail.ticket.id);
       setDetail(refreshed);
       setReplyContent('');
+      setReplyAttachments([]);
       setIsInternalNote(false);
       setReplyEditorKey((k) => k + 1);
       richReplyRef.current?.clear();
@@ -339,7 +386,7 @@ export default function TicketDetail() {
           {/* Reply type toggle */}
           <div className="flex items-center gap-1 mb-3 bg-neutral-100 rounded-lg p-1 w-fit">
             <button
-              onClick={() => setIsInternalNote(false)}
+              onClick={() => { setIsInternalNote(false); setReplyAttachments([]); }}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 !isInternalNote ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
               }`}
@@ -347,7 +394,7 @@ export default function TicketDetail() {
               Send Reply
             </button>
             <button
-              onClick={() => setIsInternalNote(true)}
+              onClick={() => { setIsInternalNote(true); setReplyAttachments([]); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 isInternalNote ? 'bg-amber-100 text-amber-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
               }`}
@@ -358,18 +405,44 @@ export default function TicketDetail() {
           </div>
 
           {richTicketEditor ? (
-            <TicketRichReplyEditor
-              key={`${detail.ticket.id}-reply-${replyEditorKey}-${isInternalNote}`}
-              ref={richReplyRef}
-              variant={isInternalNote ? 'internal' : 'default'}
-              placeholder={
-                isInternalNote
-                  ? 'Add an internal note (not visible to advisor)...'
-                  : 'Type your reply...'
-              }
-              disabled={replySending}
-              onDraftChange={setRichHasContent}
-            />
+            <>
+              <TicketRichReplyEditor
+                key={`${detail.ticket.id}-reply-${replyEditorKey}-${isInternalNote}`}
+                ref={richReplyRef}
+                variant={isInternalNote ? 'internal' : 'default'}
+                placeholder={
+                  isInternalNote
+                    ? 'Add an internal note (not visible to advisor)...'
+                    : 'Type your reply...'
+                }
+                disabled={replySending}
+                onDraftChange={setRichHasContent}
+                uploadImage={uploadTicketImage}
+                onAttachFiles={mergeReplyAttachments}
+              />
+              {replyAttachments.length > 0 && (
+                <ul className="mt-2 flex flex-wrap gap-2 text-xs text-neutral-600">
+                  {replyAttachments.map((file, idx) => (
+                    <li
+                      key={`${file.name}-${file.size}-${idx}`}
+                      className="inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-md bg-neutral-100 border border-neutral-200"
+                    >
+                      <span className="truncate max-w-[200px]">{file.name}</span>
+                      <button
+                        type="button"
+                        className="p-0.5 rounded hover:bg-neutral-200"
+                        aria-label={`Remove ${file.name}`}
+                        onClick={() =>
+                          setReplyAttachments((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           ) : (
             <textarea
               value={replyContent}
@@ -403,7 +476,9 @@ export default function TicketDetail() {
                 onClick={handleSendReply}
                 disabled={
                   replySending ||
-                  (richTicketEditor ? !richHasContent : !replyContent.trim())
+                  (richTicketEditor
+                    ? !richHasContent && replyAttachments.length === 0
+                    : !replyContent.trim())
                 }
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed transition-colors ${
                   isInternalNote

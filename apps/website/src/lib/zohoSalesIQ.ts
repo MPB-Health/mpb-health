@@ -60,7 +60,7 @@ declare global {
 
 class ZohoSalesIQManager {
   private widgetCode = 'siq341f0a21deffa52db946003babb9a87b';
-  private scriptUrl = 'https://salesiq.zohopublic.com/widget';
+  private scriptUrl = 'https://salesiq.zohopublic.com/widget?wc=siq341f0a21deffa52db946003babb9a87b';
   private loadTimeout = 15000;
   private isDevelopmentEnvironment = false;
   private status: ZohoSalesIQStatus = {

@@ -30,6 +30,8 @@ You can find these values in the ITSTS Supabase project dashboard under
 
 Apply `supabase/itsts-migrations/20260321120000_ticket_comment_content_format.sql` to the **ITSTS** project (adds `content_format` on `ticket_comments` for sanitized HTML vs plain text). Deploy this **before** deploying the updated `ticket-proxy` edge function that reads/writes this column.
 
+**Advisor-visible replies:** In ITSTS, only `ticket_comments` rows that are **not** internal notes appear in the Advisor Portal (`is_internal` is false or null). If staff posts a reply as an **internal note**, the advisor will see “No replies yet” while admins still see the thread in Ticket Management. For customer-visible replies, ensure internal-only is off.
+
 ### Advisor profile fields (legacy section)
 
 The ITSTS `profiles` table needs new columns for rich profile data.

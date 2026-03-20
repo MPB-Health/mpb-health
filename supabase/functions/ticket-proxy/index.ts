@@ -171,13 +171,22 @@ async function getTicketDetail(
 
   if (error) throw error;
 
-  // Fetch comments/replies for this ticket
-  const { data: comments } = await itstsAdmin
+  // Fetch comments/replies visible to the requester (not internal notes).
+  // Use OR so legacy rows with is_internal NULL still appear (PostgREST: eq.false excludes NULL).
+  const { data: comments, error: commentsError } = await itstsAdmin
     .from("ticket_comments")
     .select("id, content:body, is_internal, created_at, author_id, content_format")
     .eq("ticket_id", ticketId)
-    .eq("is_internal", false)
+    .or("is_internal.eq.false,is_internal.is.null")
     .order("created_at", { ascending: true });
+
+  if (commentsError) {
+    log.error("ticket_comments fetch failed (advisor detail)", {
+      ticketId,
+      message: commentsError.message,
+    });
+    throw new Error(`Failed to load conversation: ${commentsError.message}`);
+  }
 
   // Fetch author names for comments
   const authorIds = [...new Set((comments || []).map((c) => c.author_id).filter(Boolean))];
@@ -322,11 +331,19 @@ async function getTicketDetailAdmin(
   }
 
   // All comments including internal notes (admin sees everything)
-  const { data: comments } = await itstsAdmin
+  const { data: comments, error: commentsError } = await itstsAdmin
     .from("ticket_comments")
     .select("id, content:body, is_internal, created_at, author_id, content_format")
     .eq("ticket_id", ticketId)
     .order("created_at", { ascending: true });
+
+  if (commentsError) {
+    log.error("ticket_comments fetch failed (admin detail)", {
+      ticketId,
+      message: commentsError.message,
+    });
+    throw new Error(`Failed to load conversation: ${commentsError.message}`);
+  }
 
   const authorIds = [...new Set((comments || []).map((c: { author_id: string }) => c.author_id).filter(Boolean))];
   let authorMap: Record<string, string> = {};

@@ -81,6 +81,7 @@ const STATUS_LABELS: Record<string, string> = {
 // ── Email HTML builder ────────────────────────────────────────────────────────
 
 function wrap(title: string, preheader: string, body: string, appUrl: string): string {
+  const ticketListUrl = `${appUrl}/tickets`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -160,7 +161,6 @@ function ctaButton(href: string, label: string): string {
 
 function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmail: string): EmailMessage[] {
   const ticketUrl = `${appUrl}/tickets?tid=${p.ticket_id}`;
-  const ticketListUrl = `${appUrl}/tickets`;
   const adminUrl = `${appUrl}/admin/tickets`;
   const priorityLabel = PRIORITY_LABELS[p.priority || "medium"] || escapeHtml(p.priority || "Medium");
   const statusLabel = STATUS_LABELS[p.status || "new"] || escapeHtml(p.status || "New");

@@ -40,6 +40,14 @@ import { isAdmin } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useTicketAuth } from '../components/TicketAuthWrapper';
 import toast from 'react-hot-toast';
+import { sanitizeHtml } from '@mpbhealth/utils';
+import { TicketCommentContent } from '../components/tickets/TicketCommentContent';
+import {
+  TicketRichReplyEditor,
+  type TicketRichReplyEditorRef,
+} from '../components/tickets/TicketRichReplyEditor';
+
+const richTicketEditor = import.meta.env.VITE_RICH_TICKET_EDITOR === 'true';
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
@@ -159,6 +167,9 @@ export default function AdminTickets() {
   const [replyContent, setReplyContent] = useState('');
   const [replySending, setReplySending] = useState(false);
   const [replyError, setReplyError] = useState('');
+  const richReplyRef = useRef<TicketRichReplyEditorRef>(null);
+  const [richHasContent, setRichHasContent] = useState(false);
+  const [replyEditorKey, setReplyEditorKey] = useState(0);
 
   // Ticket status / priority update
   const [updating, setUpdating] = useState(false);
@@ -339,15 +350,30 @@ export default function AdminTickets() {
   };
 
   const handleSendReply = async () => {
-    if (!selectedTicket || !replyContent.trim()) return;
+    if (!selectedTicket) return;
+    if (richTicketEditor) {
+      const text = richReplyRef.current?.getText().trim() ?? '';
+      if (!text) return;
+      const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+      if (!html.replace(/<[^>]+>/g, '').trim()) return;
+    } else if (!replyContent.trim()) {
+      return;
+    }
     setReplySending(true);
     setReplyError('');
     try {
-      await ticketService.addComment(selectedTicket.ticket.id, replyContent.trim());
+      if (richTicketEditor) {
+        const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+        await ticketService.addComment(selectedTicket.ticket.id, html, false, 'html');
+      } else {
+        await ticketService.addComment(selectedTicket.ticket.id, replyContent.trim(), false, 'plain');
+      }
       // Refresh detail
       const detail = await ticketService.getTicketDetailAdmin(selectedTicket.ticket.id);
       setSelectedTicket(detail);
       setReplyContent('');
+      setReplyEditorKey((k) => k + 1);
+      richReplyRef.current?.clear();
     } catch (err) {
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
       console.error('Ticket reply failed:', err);
@@ -574,7 +600,11 @@ export default function AdminTickets() {
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </span>
                       </div>
-                      <p className="text-sm text-th-text-primary whitespace-pre-wrap">{comment.content}</p>
+                      <TicketCommentContent
+                        variant="admin"
+                        content={comment.content}
+                        contentFormat={comment.content_format}
+                      />
                     </div>
                   </div>
                 ))}
@@ -585,13 +615,24 @@ export default function AdminTickets() {
           {/* Reply form */}
           <div className="p-6">
             <h3 className="text-sm font-medium text-th-text-primary mb-3">Send Reply</h3>
-            <textarea
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Type your reply..."
-              rows={4}
-              className="w-full rounded-lg border border-th-border bg-surface-primary px-4 py-3 text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-colors resize-none"
-            />
+            {richTicketEditor ? (
+              <TicketRichReplyEditor
+                key={`${ticket.id}-reply-${replyEditorKey}`}
+                ref={richReplyRef}
+                variant="admin"
+                placeholder="Type your reply..."
+                disabled={replySending}
+                onDraftChange={setRichHasContent}
+              />
+            ) : (
+              <textarea
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Type your reply..."
+                rows={4}
+                className="w-full rounded-lg border border-th-border bg-surface-primary px-4 py-3 text-sm text-th-text-primary placeholder:text-th-text-tertiary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-colors resize-none"
+              />
+            )}
             {replyError && (
               <div className="flex items-center gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -603,7 +644,7 @@ export default function AdminTickets() {
                 type="button"
                 variant="primary"
                 onClick={handleSendReply}
-                disabled={replySending || !replyContent.trim()}
+                disabled={replySending || (richTicketEditor ? !richHasContent : !replyContent.trim())}
               >
                 {replySending ? (
                   <>

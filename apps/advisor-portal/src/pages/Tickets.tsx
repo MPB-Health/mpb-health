@@ -29,6 +29,14 @@ import {
   type TicketStatus,
   type TicketPriority,
 } from '@mpbhealth/advisor-core';
+import { sanitizeHtml } from '@mpbhealth/utils';
+import { TicketCommentContent } from '../components/tickets/TicketCommentContent';
+import {
+  TicketRichReplyEditor,
+  type TicketRichReplyEditorRef,
+} from '../components/tickets/TicketRichReplyEditor';
+
+const richTicketEditor = import.meta.env.VITE_RICH_TICKET_EDITOR === 'true';
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
@@ -66,6 +74,9 @@ export default function Tickets() {
   const [replyContent, setReplyContent] = useState('');
   const [replySending, setReplySending] = useState(false);
   const [replyError, setReplyError] = useState('');
+  const richReplyRef = useRef<TicketRichReplyEditorRef>(null);
+  const [richHasContent, setRichHasContent] = useState(false);
+  const [replyEditorKey, setReplyEditorKey] = useState(0);
   const perPage = 20;
 
   // Unmount guard — prevents setState on unmounted component
@@ -225,16 +236,34 @@ export default function Tickets() {
   }, [selectedTicket?.ticket.id, executeWithAuth]);
 
   const handleSendReply = async () => {
-    if (!selectedTicket || !replyContent.trim()) return;
+    if (!selectedTicket) return;
+    if (richTicketEditor) {
+      const text = richReplyRef.current?.getText().trim() ?? '';
+      if (!text) return;
+      const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+      if (!html.replace(/<[^>]+>/g, '').trim()) return;
+    } else if (!replyContent.trim()) {
+      return;
+    }
     setReplySending(true);
     setReplyError('');
     try {
-      await executeWithAuth(() => ticketService.replyToTicket(selectedTicket.ticket.id, replyContent.trim()));
+      await executeWithAuth(() =>
+        richTicketEditor
+          ? ticketService.replyToTicket(
+              selectedTicket.ticket.id,
+              sanitizeHtml(richReplyRef.current?.getHtml() ?? ''),
+              'html',
+            )
+          : ticketService.replyToTicket(selectedTicket.ticket.id, replyContent.trim(), 'plain'),
+      );
       if (!mountedRef.current) return;
       const detail = await executeWithAuth(() => ticketService.getTicketDetail(selectedTicket.ticket.id));
       if (!mountedRef.current) return;
       setSelectedTicket(detail);
       setReplyContent('');
+      setReplyEditorKey((k) => k + 1);
+      richReplyRef.current?.clear();
     } catch (err) {
       if (!mountedRef.current) return;
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
@@ -323,7 +352,7 @@ export default function Tickets() {
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </span>
                       </div>
-                      <p className="text-sm text-neutral-700 whitespace-pre-wrap">{comment.content}</p>
+                      <TicketCommentContent content={comment.content} contentFormat={comment.content_format} />
                     </div>
                   </div>
                 ))}
@@ -337,14 +366,25 @@ export default function Tickets() {
               <MessageSquare className="w-4 h-4 text-neutral-400" />
               Add a Reply
             </h3>
-            <textarea
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Type your message..."
-              rows={4}
-              maxLength={10000}
-              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-colors resize-none"
-            />
+            {richTicketEditor ? (
+              <TicketRichReplyEditor
+                key={`${ticket.id}-reply-${replyEditorKey}`}
+                ref={richReplyRef}
+                variant="default"
+                placeholder="Type your message..."
+                disabled={replySending}
+                onDraftChange={setRichHasContent}
+              />
+            ) : (
+              <textarea
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Type your message..."
+                rows={4}
+                maxLength={10000}
+                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-colors resize-none"
+              />
+            )}
             {replyError && (
               <div className="flex items-center gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -354,7 +394,7 @@ export default function Tickets() {
             <div className="flex justify-end mt-3">
               <button
                 onClick={handleSendReply}
-                disabled={replySending || !replyContent.trim()}
+                disabled={replySending || (richTicketEditor ? !richHasContent : !replyContent.trim())}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {replySending ? (

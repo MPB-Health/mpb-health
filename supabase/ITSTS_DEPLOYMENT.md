@@ -26,6 +26,12 @@ You can find these values in the ITSTS Supabase project dashboard under
 
 ## 2. Apply ITSTS Migration (separate project)
 
+### Ticket comment rich text (`content_format`)
+
+Apply `supabase/itsts-migrations/20260321120000_ticket_comment_content_format.sql` to the **ITSTS** project (adds `content_format` on `ticket_comments` for sanitized HTML vs plain text). Deploy this **before** deploying the updated `ticket-proxy` edge function that reads/writes this column.
+
+### Advisor profile fields (legacy section)
+
 The ITSTS `profiles` table needs new columns for rich profile data.
 Apply the migration at `supabase/itsts-migrations/20260225100000_add_advisor_profile_fields.sql`
 to the ITSTS Supabase project:
@@ -68,7 +74,11 @@ npx supabase functions deploy create-user
 npx supabase functions deploy bulk-create-advisors
 ```
 
-## 5. Bulk Sync Existing Users
+## 5. Enable rich ticket UI (Admin + Advisor portals)
+
+After migration + `ticket-proxy` are live, set **`VITE_RICH_TICKET_EDITOR=true`** in the build environment for **admin-portal** and **advisor-portal** (Vercel/host env vars). Local `pnpm dev` picks up `apps/*/ .env.development` so the Tiptap editor is on by default in development.
+
+## 6. Bulk Sync Existing Users
 
 After everything is deployed, run the bulk sync to backfill all existing
 users into ITSTS (including their advisor profile data):

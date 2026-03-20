@@ -113,9 +113,14 @@ export interface Ticket {
   updated_at: string;
 }
 
+/** Stored in ITSTS `ticket_comments.content_format` — plain legacy, html = sanitized rich text */
+export type TicketContentFormat = 'plain' | 'html';
+
 export interface TicketComment {
   id: string;
   content: string;
+  /** Defaults to plain when omitted (legacy API responses). */
+  content_format?: TicketContentFormat;
   is_internal: boolean;
   created_at: string;
   author_id: string;
@@ -467,8 +472,16 @@ export class TicketService {
     return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
   }
 
-  async replyToTicket(ticketId: string, content: string): Promise<void> {
-    await this.call<{ success: boolean }>('reply', { ticket_id: ticketId, content });
+  async replyToTicket(
+    ticketId: string,
+    content: string,
+    contentFormat: TicketContentFormat = 'plain',
+  ): Promise<void> {
+    await this.call<{ success: boolean }>('reply', {
+      ticket_id: ticketId,
+      content,
+      content_format: contentFormat,
+    });
   }
 
   // ── Admin read methods ─────────────────────────────────────────────────
@@ -499,8 +512,18 @@ export class TicketService {
 
   // ── Admin write methods ────────────────────────────────────────────────
 
-  async addComment(ticketId: string, content: string, isInternal = false): Promise<void> {
-    await this.call<{ success: boolean }>('add_comment', { ticket_id: ticketId, content, is_internal: isInternal });
+  async addComment(
+    ticketId: string,
+    content: string,
+    isInternal = false,
+    contentFormat: TicketContentFormat = 'plain',
+  ): Promise<void> {
+    await this.call<{ success: boolean }>('add_comment', {
+      ticket_id: ticketId,
+      content,
+      is_internal: isInternal,
+      content_format: contentFormat,
+    });
   }
 
   async updateTicket(ticketId: string, opts: UpdateTicketOptions): Promise<void> {

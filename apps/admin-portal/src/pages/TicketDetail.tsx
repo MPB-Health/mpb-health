@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import {
@@ -21,6 +21,14 @@ import {
   type TicketPriority,
 } from '@mpbhealth/admin-core';
 import toast from 'react-hot-toast';
+import { sanitizeHtml } from '@mpbhealth/utils';
+import { TicketCommentContent } from '../components/tickets/TicketCommentContent';
+import {
+  TicketRichReplyEditor,
+  type TicketRichReplyEditorRef,
+} from '../components/tickets/TicketRichReplyEditor';
+
+const richTicketEditor = import.meta.env.VITE_RICH_TICKET_EDITOR === 'true';
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
@@ -50,6 +58,9 @@ export default function TicketDetail() {
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [replySending, setReplySending] = useState(false);
   const [replyError, setReplyError] = useState('');
+  const richReplyRef = useRef<TicketRichReplyEditorRef>(null);
+  const [richHasContent, setRichHasContent] = useState(false);
+  const [replyEditorKey, setReplyEditorKey] = useState(0);
 
   // Status / priority update
   const [updating, setUpdating] = useState(false);
@@ -72,16 +83,32 @@ export default function TicketDetail() {
   useEffect(() => { loadDetail(); }, [loadDetail]);
 
   const handleSendReply = async () => {
-    if (!detail || !replyContent.trim()) return;
+    if (!detail) return;
+    const wasInternal = isInternalNote;
+    if (richTicketEditor) {
+      const text = richReplyRef.current?.getText().trim() ?? '';
+      if (!text) return;
+      const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+      if (!html.replace(/<[^>]+>/g, '').trim()) return;
+    } else if (!replyContent.trim()) {
+      return;
+    }
     setReplySending(true);
     setReplyError('');
     try {
-      await ticketService.addComment(detail.ticket.id, replyContent.trim(), isInternalNote);
+      if (richTicketEditor) {
+        const html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+        await ticketService.addComment(detail.ticket.id, html, wasInternal, 'html');
+      } else {
+        await ticketService.addComment(detail.ticket.id, replyContent.trim(), wasInternal, 'plain');
+      }
       const refreshed = await ticketService.getTicketDetailAdmin(detail.ticket.id);
       setDetail(refreshed);
       setReplyContent('');
       setIsInternalNote(false);
-      toast.success(isInternalNote ? 'Internal note added' : 'Reply sent');
+      setReplyEditorKey((k) => k + 1);
+      richReplyRef.current?.clear();
+      toast.success(wasInternal ? 'Internal note added' : 'Reply sent');
     } catch (err) {
       setReplyError(err instanceof Error ? err.message : 'Failed to send reply');
     } finally {
@@ -296,7 +323,10 @@ export default function TicketDetail() {
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-sm text-neutral-700 whitespace-pre-wrap">{comment.content}</p>
+                    <TicketCommentContent
+                      content={comment.content}
+                      contentFormat={comment.content_format}
+                    />
                   </div>
                 </div>
               ))}
@@ -327,17 +357,32 @@ export default function TicketDetail() {
             </button>
           </div>
 
-          <textarea
-            value={replyContent}
-            onChange={(e) => setReplyContent(e.target.value)}
-            placeholder={isInternalNote ? 'Add an internal note (not visible to advisor)...' : 'Type your reply...'}
-            rows={4}
-            className={`w-full rounded-lg border px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:outline-none transition-colors resize-none ${
-              isInternalNote
-                ? 'border-amber-300 bg-amber-50 focus:border-amber-400 focus:ring-amber-400/20'
-                : 'border-neutral-300 bg-white focus:border-blue-500 focus:ring-blue-500/20'
-            }`}
-          />
+          {richTicketEditor ? (
+            <TicketRichReplyEditor
+              key={`${detail.ticket.id}-reply-${replyEditorKey}-${isInternalNote}`}
+              ref={richReplyRef}
+              variant={isInternalNote ? 'internal' : 'default'}
+              placeholder={
+                isInternalNote
+                  ? 'Add an internal note (not visible to advisor)...'
+                  : 'Type your reply...'
+              }
+              disabled={replySending}
+              onDraftChange={setRichHasContent}
+            />
+          ) : (
+            <textarea
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder={isInternalNote ? 'Add an internal note (not visible to advisor)...' : 'Type your reply...'}
+              rows={4}
+              className={`w-full rounded-lg border px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:outline-none transition-colors resize-none ${
+                isInternalNote
+                  ? 'border-amber-300 bg-amber-50 focus:border-amber-400 focus:ring-amber-400/20'
+                  : 'border-neutral-300 bg-white focus:border-blue-500 focus:ring-blue-500/20'
+              }`}
+            />
+          )}
 
           {replyError && (
             <div className="flex items-center gap-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -356,7 +401,10 @@ export default function TicketDetail() {
             <div className="ml-auto">
               <button
                 onClick={handleSendReply}
-                disabled={replySending || !replyContent.trim()}
+                disabled={
+                  replySending ||
+                  (richTicketEditor ? !richHasContent : !replyContent.trim())
+                }
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed transition-colors ${
                   isInternalNote
                     ? 'bg-amber-500 hover:bg-amber-600 text-white'

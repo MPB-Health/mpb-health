@@ -36,7 +36,11 @@ Enterprise health benefits management platform built with React, TypeScript, Sup
 ```bash
 # Install dependencies
 pnpm install
+```
 
+**Admin Portal & Advisor Portal:** copy `apps/admin-portal/.env.example` and `apps/advisor-portal/.env.example` to `.env` in each app and add your Supabase URL and anon key. Rich ticket messaging defaults to **on** in local dev via committed `.env.development`; production builds need `VITE_RICH_TICKET_EDITOR=true` in the host/CI environment if you want Tiptap there (see `supabase/ITSTS_DEPLOYMENT.md`).
+
+```bash
 # Start all apps in development
 pnpm dev
 

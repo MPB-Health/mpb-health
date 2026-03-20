@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { htmlToPlainPreview, sanitizeTicketHtml } from "../_shared/ticketHtmlSanitize.ts";
 
 const log = createLogger("ticket-proxy");
 
@@ -45,7 +46,13 @@ interface ProxyRequest {
   page?: number;
   per_page?: number;
   content?: string;
+  /** When "html", content is sanitized server-side before insert. Default plain (legacy). */
+  content_format?: "plain" | "html";
   is_internal?: boolean;
+}
+
+function normalizeContentFormat(raw: unknown): "plain" | "html" {
+  return raw === "html" ? "html" : "plain";
 }
 
 function getItstsClient(): ReturnType<typeof createClient> | null {
@@ -165,7 +172,7 @@ async function getTicketDetail(
   // Fetch comments/replies for this ticket
   const { data: comments } = await itstsAdmin
     .from("ticket_comments")
-    .select("id, content:body, is_internal, created_at, author_id")
+    .select("id, content:body, is_internal, created_at, author_id, content_format")
     .eq("ticket_id", ticketId)
     .eq("is_internal", false)
     .order("created_at", { ascending: true });
@@ -181,9 +188,10 @@ async function getTicketDetail(
     authorMap = Object.fromEntries((profiles || []).map((p) => [p.id, p.full_name]));
   }
 
-  const enrichedComments = (comments || []).map((c) => ({
+  const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
     ...c,
-    author_name: authorMap[c.author_id] || "Support Agent",
+    author_name: authorMap[c.author_id as string] || "Support Agent",
+    content_format: (c.content_format as string) || "plain",
   }));
 
   return { ticket, comments: enrichedComments };
@@ -314,7 +322,7 @@ async function getTicketDetailAdmin(
   // All comments including internal notes (admin sees everything)
   const { data: comments } = await itstsAdmin
     .from("ticket_comments")
-    .select("id, content:body, is_internal, created_at, author_id")
+    .select("id, content:body, is_internal, created_at, author_id, content_format")
     .eq("ticket_id", ticketId)
     .order("created_at", { ascending: true });
 
@@ -331,6 +339,7 @@ async function getTicketDetailAdmin(
   const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
     ...c,
     author_name: authorMap[c.author_id as string] || "Support Agent",
+    content_format: (c.content_format as string) || "plain",
   }));
 
   return {
@@ -372,17 +381,24 @@ async function addComment(
   authorEmail: string,
   authorFullName: string,
   isInternal = false,
+  contentFormat: "plain" | "html" = "plain",
 ) {
   // Find or auto-provision admin's ITSTS profile
   const authorId = await getOrCreateItstsUserId(itstsAdmin, authorEmail, authorFullName);
+
+  const body = contentFormat === "html"
+    ? sanitizeTicketHtml(content)
+    : content.trim();
+  if (!body) throw new Error("Content required");
 
   const { error: commentError } = await itstsAdmin
     .from("ticket_comments")
     .insert({
       ticket_id: ticketId,
-      body: content,
+      body,
       author_id: authorId,
       is_internal: isInternal,
+      content_format: contentFormat,
     });
 
   if (commentError) throw commentError;
@@ -454,6 +470,7 @@ async function replyToTicket(
   advisorId: string,
   ticketId: string,
   content: string,
+  contentFormat: "plain" | "html" = "plain",
 ) {
   // Verify the ticket belongs to this advisor before allowing a reply
   const { data: ticket, error: ticketErr } = await itstsAdmin
@@ -465,13 +482,19 @@ async function replyToTicket(
 
   if (ticketErr || !ticket) throw new Error("Ticket not found or access denied");
 
+  const body = contentFormat === "html"
+    ? sanitizeTicketHtml(content)
+    : content.trim();
+  if (!body) throw new Error("Content required");
+
   const { error } = await itstsAdmin
     .from("ticket_comments")
     .insert({
       ticket_id: ticketId,
-      body: content.trim(),
+      body,
       author_id: advisorId,
       is_internal: false,
+      content_format: contentFormat,
     });
 
   if (error) throw error;
@@ -558,7 +581,10 @@ async function getCategories(_itstsAdmin: ReturnType<typeof createClient>) {
 function fireNotification(payload: Record<string, unknown>): void {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceRoleKey) return;
+  if (!supabaseUrl || !serviceRoleKey) {
+    log.warn("send-ticket-notification skipped: missing env");
+    return;
+  }
   fetch(`${supabaseUrl}/functions/v1/send-ticket-notification`, {
     method: "POST",
     headers: {
@@ -566,7 +592,17 @@ function fireNotification(payload: Record<string, unknown>): void {
       "Authorization": `Bearer ${serviceRoleKey}`,
     },
     body: JSON.stringify(payload),
-  }).catch(() => { /* fire-and-forget — never block the response */ });
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        log.error("send-ticket-notification failed", {
+          status: res.status,
+          body: body.slice(0, 500),
+        });
+      }
+    })
+    .catch((err) => log.error("send-ticket-notification fetch error", { err: String(err) }));
 }
 
 Deno.serve(async (req: Request) => {
@@ -767,9 +803,23 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers },
           );
         }
-        if (!body.content || body.content.trim().length === 0 || body.content.length > MAX_COMMENT_LENGTH) {
+        const fmt = normalizeContentFormat(body.content_format);
+        const raw = body.content ?? "";
+        if (raw.length > MAX_COMMENT_LENGTH) {
           return new Response(
             JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            { status: 400, headers },
+          );
+        }
+        if (fmt === "plain" && !raw.trim()) {
+          return new Response(
+            JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            { status: 400, headers },
+          );
+        }
+        if (fmt === "html" && !sanitizeTicketHtml(raw)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Content required" }),
             { status: 400, headers },
           );
         }
@@ -782,9 +832,20 @@ Deno.serve(async (req: Request) => {
         const adminFullName = adminRow
           ? `${adminRow.first_name} ${adminRow.last_name}`.trim()
           : user.email;
-        result = await addComment(itstsAdmin, body.ticket_id, body.content.trim(), user.email, adminFullName, Boolean(body.is_internal));
+        result = await addComment(
+          itstsAdmin,
+          body.ticket_id,
+          raw,
+          user.email,
+          adminFullName,
+          Boolean(body.is_internal),
+          fmt,
+        );
         // Internal notes are never sent to the advisor — skip notification
         if (!body.is_internal && result._notif?.requester_email) {
+          const commentPreview = fmt === "html"
+            ? htmlToPlainPreview(sanitizeTicketHtml(raw), 500)
+            : raw.slice(0, 500);
           fireNotification({
             event: "staff_replied",
             ticket_id: body.ticket_id!,
@@ -796,7 +857,7 @@ Deno.serve(async (req: Request) => {
             advisor_name: result._notif.requester_name,
             agent_id: null,
             company_name: null,
-            comment: body.content?.slice(0, 500),
+            comment: commentPreview,
             actor_name: user.email,
           });
         }
@@ -841,20 +902,37 @@ Deno.serve(async (req: Request) => {
           });
         }
         break;
-      case "reply":
+      case "reply": {
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
           return new Response(
             JSON.stringify({ success: false, error: "Valid ticket_id required" }),
             { status: 400, headers },
           );
         }
-        if (!body.content || body.content.trim().length === 0 || body.content.length > MAX_COMMENT_LENGTH) {
+        const fmt = normalizeContentFormat(body.content_format);
+        const raw = body.content ?? "";
+        if (raw.length > MAX_COMMENT_LENGTH) {
           return new Response(
             JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
             { status: 400, headers },
           );
         }
-        result = await replyToTicket(itstsAdmin, itstsUserId!, body.ticket_id, body.content);
+        if (fmt === "plain" && !raw.trim()) {
+          return new Response(
+            JSON.stringify({ success: false, error: `Content required (max ${MAX_COMMENT_LENGTH} chars)` }),
+            { status: 400, headers },
+          );
+        }
+        if (fmt === "html" && !sanitizeTicketHtml(raw)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Content required" }),
+            { status: 400, headers },
+          );
+        }
+        result = await replyToTicket(itstsAdmin, itstsUserId!, body.ticket_id, raw, fmt);
+        const commentPreview = fmt === "html"
+          ? htmlToPlainPreview(sanitizeTicketHtml(raw), 500)
+          : raw.slice(0, 500);
         {
           const [{ data: rTicket }, { data: rAp }] = await Promise.all([
             itstsAdmin.from("tickets").select("ticket_number, subject, priority, status").eq("id", body.ticket_id!).maybeSingle(),
@@ -871,10 +949,11 @@ Deno.serve(async (req: Request) => {
             advisor_name: rAp?.full_name || user.email,
             agent_id: rAp?.agent_id || null,
             company_name: rAp?.company_name || null,
-            comment: body.content?.slice(0, 500),
+            comment: commentPreview,
           });
         }
         break;
+      }
       case "get_categories":
         result = await getCategories(itstsAdmin);
         break;

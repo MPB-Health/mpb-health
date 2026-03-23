@@ -73,6 +73,39 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
               ? 'min-h-[120px] px-3 py-2 text-sm text-th-text-primary focus:outline-none prose prose-sm max-w-none [&_.is-editor-empty:first-child::before]:text-th-text-tertiary'
               : 'min-h-[120px] px-3 py-2 text-sm text-neutral-900 focus:outline-none prose prose-sm max-w-none [&_.is-editor-empty:first-child::before]:text-neutral-400',
         },
+        handlePaste: (_view, event) => {
+          const items = event.clipboardData?.items;
+          if (!items || !uploadImage) return false;
+          for (const item of Array.from(items)) {
+            if (item.type.startsWith('image/')) {
+              const file = item.getAsFile();
+              if (!file) continue;
+              event.preventDefault();
+              uploadImage(file)
+                .then((url) => {
+                  if (url) editor?.chain().focus().setImage({ src: url, alt: file.name || 'pasted image' }).run();
+                })
+                .catch(() => { /* parent may toast */ });
+              return true;
+            }
+          }
+          return false;
+        },
+        handleDrop: (_view, event) => {
+          const files = event.dataTransfer?.files;
+          if (!files?.length || !uploadImage) return false;
+          const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
+          if (!imageFiles.length) return false;
+          event.preventDefault();
+          for (const file of imageFiles) {
+            uploadImage(file)
+              .then((url) => {
+                if (url) editor?.chain().focus().setImage({ src: url, alt: file.name }).run();
+              })
+              .catch(() => { /* parent may toast */ });
+          }
+          return true;
+        },
       },
       onUpdate: ({ editor: ed }) => {
         onDraftChange?.(!ed.isEmpty);

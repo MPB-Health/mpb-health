@@ -30,7 +30,7 @@ import {
   type TicketRichReplyEditorRef,
 } from '../components/tickets/TicketRichReplyEditor';
 
-const richTicketEditor = import.meta.env.VITE_RICH_TICKET_EDITOR === 'true';
+const richTicketEditor = true;
 
 const MAX_REPLY_ATTACHMENTS = 10;
 const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;

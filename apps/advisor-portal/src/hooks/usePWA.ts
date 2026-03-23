@@ -58,7 +58,8 @@ export function usePWA() {
     }));
   }, []);
 
-  // Listen for beforeinstallprompt event
+  // Defer the browser mini-infobar until the user taps our install control (install() → prompt()).
+  // Chrome may log "Banner not shown: beforeinstallpromptevent.preventDefault()..." — that is expected.
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();

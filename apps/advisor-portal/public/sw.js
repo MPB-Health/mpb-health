@@ -2,8 +2,8 @@
 // Service Worker for MPB Health Advisor Portal PWA
 // ============================================================================
 
-const CACHE_NAME = 'advisor-portal-v4';
-const RUNTIME_CACHE = 'advisor-runtime-v4';
+const CACHE_NAME = 'advisor-portal-v5';
+const RUNTIME_CACHE = 'advisor-runtime-v5';
 let hasBroadcastedReload = false;
 
 // Files to cache on install (app shell)
@@ -244,6 +244,14 @@ async function navigationStrategy(request) {
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
+    } else if (networkResponse.status >= 500) {
+      // Origin returned 5xx (e.g. 503 from host or transient outage). Prefer cached
+      // SPA shell so client-side routes like /tickets still load instead of a bare error.
+      const cachedRoute = await caches.match(request);
+      const indexResponse = cachedRoute || (await caches.match('/index.html'));
+      if (indexResponse) {
+        return indexResponse;
+      }
     }
 
     return networkResponse;

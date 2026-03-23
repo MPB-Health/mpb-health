@@ -83,6 +83,11 @@ export default function UserDetail() {
   const [editAdvisorStatus, setEditAdvisorStatus] = useState<AdvisorProfileSummary['status'] | ''>('');
   const [savingAdvisorStatus, setSavingAdvisorStatus] = useState(false);
 
+  // Email management
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
+
   // Password management
   const [passwordNew, setPasswordNew] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -269,7 +274,109 @@ export default function UserDetail() {
     }
   };
 
+  // ── Email handler ────────────────────────────────────────────────────────────
+
+  const handleUpdateEmail = async () => {
+    if (!userId || !newEmail.trim()) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    const currentEmail = user?.email ?? crossUser?.email;
+    if (newEmail.trim().toLowerCase() === currentEmail?.toLowerCase()) {
+      toast.error('New email is the same as the current email');
+      return;
+    }
+    if (!confirm(`Change this user's email from ${currentEmail} to ${newEmail.trim()}? They will need to use the new email to sign in.`)) {
+      return;
+    }
+    setSavingEmail(true);
+    try {
+      await userService.updateUserEmail(userId, newEmail.trim());
+      // Update local state
+      if (user) setUser({ ...user, email: newEmail.trim() });
+      if (crossUser) setCrossUser({ ...crossUser, email: newEmail.trim() });
+      if (advisorProfile) setAdvisorProfile({ ...advisorProfile, email: newEmail.trim() });
+      setEditingEmail(false);
+      setNewEmail('');
+      toast.success('Email updated successfully');
+    } catch {
+      toast.error('Failed to update email');
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
   // ── Shared section renderers ─────────────────────────────────────────────────
+
+  const renderEmailSection = () => {
+    const currentEmail = user?.email ?? crossUser?.email;
+    if (!currentEmail || !isSuperAdmin) return null;
+    return (
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <div className="flex items-center space-x-2 mb-6">
+          <Mail className="w-5 h-5 text-th-text-tertiary" />
+          <h2 className="text-lg font-semibold text-th-text-primary">Email Address</h2>
+        </div>
+        {!editingEmail ? (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-th-text-primary">{currentEmail}</p>
+              <p className="text-xs text-th-text-tertiary mt-0.5">
+                This is the email used to sign in across all portals
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setEditingEmail(true); setNewEmail(currentEmail); }}
+              className="px-4 py-2 border border-th-border rounded-lg text-sm text-th-text-secondary hover:bg-surface-secondary transition-colors"
+            >
+              Change Email
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="new-email" className="block text-xs text-th-text-tertiary mb-1">
+                New Email Address
+              </label>
+              <input
+                id="new-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="new@example.com"
+                className="w-full max-w-md px-3 py-2 bg-surface-primary border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={handleUpdateEmail}
+                disabled={savingEmail || !newEmail.trim()}
+                className="px-4 py-2 bg-th-accent-600 text-white text-sm rounded-lg hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+              >
+                {savingEmail ? 'Updating...' : 'Update Email'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEditingEmail(false); setNewEmail(''); }}
+                className="px-4 py-2 border border-th-border text-th-text-secondary text-sm rounded-lg hover:bg-surface-secondary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Changing the email will update the sign-in email for all portals (admin, advisor, CRM).
+              The user will need to use the new email to log in.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderPasswordSection = () => (
     <div className="bg-surface-primary rounded-xl border border-th-border p-6">
@@ -602,6 +709,7 @@ export default function UserDetail() {
           </div>
         </div>
 
+        {renderEmailSection()}
         {renderPasswordSection()}
         {renderPortalAccessSection()}
         {renderAdvisorProfileSection()}
@@ -831,6 +939,7 @@ export default function UserDetail() {
       </div>
 
       {renderPortalAccessSection()}
+      {renderEmailSection()}
       {renderPasswordSection()}
       {renderAdvisorProfileSection()}
     </div>

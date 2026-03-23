@@ -297,6 +297,25 @@ export class UserService {
     return users[0] ?? null;
   }
 
+  /**
+   * Update a user's auth email (super_admin only).
+   * Also syncs the new email to admin_users and/or advisor_profiles if those records exist.
+   */
+  async updateUserEmail(userId: string, newEmail: string): Promise<void> {
+    // 1. Update auth email via edge function
+    const { data, error } = await supabase.functions.invoke('admin-update-user', {
+      body: { userId, email: newEmail },
+    });
+    if (error) throw error;
+    if (data && !data.success) throw new Error(data.error || 'Failed to update email');
+
+    // 2. Sync admin_users table (ignore error if user isn't an admin)
+    await supabase.from('admin_users').update({ email: newEmail }).eq('id', userId);
+
+    // 3. Sync advisor_profiles table (ignore error if user isn't an advisor)
+    await supabase.from('advisor_profiles').update({ email: newEmail }).eq('id', userId);
+  }
+
   /** Send a password reset email via edge function (scanner-proof, uses Resend) */
   async sendPasswordReset(email: string): Promise<void> {
     const { data, error } = await supabase.functions.invoke('advisor-forgot-password', {

@@ -204,32 +204,44 @@ export default function EventEditor() {
           <span>Back to Events</span>
         </button>
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save Draft</span>
-          </button>
           {isPublished && !isNew ? (
-            <button
-              onClick={() => handleSave(false)}
-              disabled={saving}
-              className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
-            >
-              <EyeOff className="w-4 h-4" />
-              <span>Unpublish</span>
-            </button>
+            <>
+              <button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
+              >
+                <EyeOff className="w-4 h-4" />
+                <span>Unpublish</span>
+              </button>
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving}
+                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save</span>
+              </button>
+            </>
           ) : (
-            <button
-              onClick={() => handleSave(true)}
-              disabled={saving}
-              className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
-            >
-              <Globe className="w-4 h-4" />
-              <span>Publish</span>
-            </button>
+            <>
+              <button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Draft</span>
+              </button>
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving}
+                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+              >
+                <Globe className="w-4 h-4" />
+                <span>Publish</span>
+              </button>
+            </>
           )}
         </div>
       </div>

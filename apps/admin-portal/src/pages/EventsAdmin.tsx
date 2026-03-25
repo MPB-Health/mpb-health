@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -46,6 +46,19 @@ export default function EventsAdmin() {
   const [publishedFilter, setPublishedFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setActiveMenu(null);
+      }
+    };
+    if (activeMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activeMenu]);
 
   useEffect(() => {
     const load = async () => {
@@ -169,7 +182,7 @@ export default function EventsAdmin() {
       </div>
 
       {/* Table */}
-      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+      <div className="bg-surface-primary rounded-xl border border-th-border overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
@@ -196,7 +209,7 @@ export default function EventsAdmin() {
               </tr>
             </thead>
             <tbody className="divide-y divide-th-border-subtle">
-              {events.map((event) => (
+              {events.map((event, index) => (
                 <tr key={event.id} className="hover:bg-surface-tertiary">
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-3">
@@ -255,7 +268,7 @@ export default function EventsAdmin() {
                     )}
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <div className="relative">
+                    <div className="relative" ref={activeMenu === event.id ? menuRef : undefined}>
                       <button
                         onClick={() =>
                           setActiveMenu(activeMenu === event.id ? null : event.id)
@@ -266,7 +279,7 @@ export default function EventsAdmin() {
                         <MoreVertical className="w-5 h-5" />
                       </button>
                       {activeMenu === event.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-surface-primary rounded-lg shadow-lg border border-th-border py-1 z-10">
+                        <div className={`absolute right-0 w-48 bg-surface-primary rounded-lg shadow-lg border border-th-border py-1 z-10 ${index >= events.length - 2 ? 'bottom-full mb-2' : 'mt-2'}`}>
                           <button
                             onClick={() =>
                               navigate(`/events/${event.id}`)

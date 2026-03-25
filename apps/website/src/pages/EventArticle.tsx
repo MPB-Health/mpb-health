@@ -37,8 +37,6 @@ function ImageCarousel({ images, title }: { images: string[]; title: string }) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mb-12">
-      <h2 className="text-xl font-semibold text-neutral-800 mb-4">Event Gallery</h2>
-
       {/* Main carousel */}
       <div
         className="relative rounded-xl overflow-hidden bg-neutral-900 select-none max-h-[380px]"

@@ -394,10 +394,6 @@ export const EventArticle: React.FC = () => {
           </div>
         )}
 
-        {event.gallery_images && event.gallery_images.length > 0 && (
-          <ImageCarousel images={event.gallery_images} title={event.title} />
-        )}
-
         {event.video_url && (() => {
           const ytMatch = event.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
           const vimeoMatch = event.video_url.match(/vimeo\.com\/(\d+)/);
@@ -450,6 +446,10 @@ export const EventArticle: React.FC = () => {
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.content) }}
           />
         </div>
+
+        {event.gallery_images && event.gallery_images.length > 0 && (
+          <ImageCarousel images={event.gallery_images} title={event.title} />
+        )}
 
         {relatedEvents.length > 0 && (
           <div className="bg-neutral-50 py-16">

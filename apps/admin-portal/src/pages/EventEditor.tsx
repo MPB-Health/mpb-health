@@ -144,17 +144,17 @@ export default function EventEditor() {
       const payload: EventCreateInput = {
         title: formData.title,
         slug: formData.slug || generateSlug(formData.title),
-        excerpt: formData.excerpt || null,
+        excerpt: formData.excerpt || '',
         content: formData.content,
         event_date: formData.event_date,
         event_end_date: formData.event_end_date || null,
         event_type: formData.event_type,
         location_type: formData.location_type,
-        location: formData.location || null,
+        location: formData.location || '',
         organizer: formData.organizer,
         registration_url: formData.registration_url || null,
         max_attendees: formData.max_attendees ? Number(formData.max_attendees) : null,
-        featured_image_url: formData.featured_image_url || null,
+        featured_image_url: formData.featured_image_url || '',
         video_url: formData.video_url || null,
         tags: formData.tags,
         gallery_images: formData.gallery_images,
@@ -167,16 +167,15 @@ export default function EventEditor() {
         await eventsAdminService.createEvent(payload);
         toast.success(shouldPublish ? 'Event published!' : 'Event saved as draft');
       } else {
-        await eventsAdminService.updateEvent(eventId, {
-          ...payload,
-          is_published: shouldPublish,
-        });
+        const { created_by: _cb, ...updatePayload } = payload;
+        await eventsAdminService.updateEvent(eventId, updatePayload);
         toast.success('Event updated!');
       }
 
       navigate('/events');
-    } catch {
-      toast.error('Failed to save event');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Failed to save event: ${message}`);
     } finally {
       setSaving(false);
     }

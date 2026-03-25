@@ -120,7 +120,7 @@ export default function EventsAdmin() {
           </p>
         </div>
         <button
-          onClick={() => navigate('/content/events/new')}
+          onClick={() => navigate('/events/new')}
           className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -269,7 +269,7 @@ export default function EventsAdmin() {
                         <div className="absolute right-0 mt-2 w-48 bg-surface-primary rounded-lg shadow-lg border border-th-border py-1 z-10">
                           <button
                             onClick={() =>
-                              navigate(`/content/events/${event.id}`)
+                              navigate(`/events/${event.id}`)
                             }
                             className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-th-text-secondary hover:bg-surface-tertiary"
                           >
@@ -313,7 +313,7 @@ export default function EventsAdmin() {
             <CalendarDays className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
             <p className="text-th-text-tertiary">No events found</p>
             <button
-              onClick={() => navigate('/content/events/new')}
+              onClick={() => navigate('/events/new')}
               className="mt-4 text-th-accent-600 hover:text-th-accent-700 font-medium"
             >
               Create your first event

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Globe, EyeOff, Star } from 'lucide-react';
+import { ArrowLeft, Save, Globe, EyeOff, Star, ImageIcon, X, Loader2, Video } from 'lucide-react';
 import {
   eventsAdminService,
   type EventCreateInput,
@@ -9,6 +9,9 @@ import {
   type EventLocationType,
 } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
+import RichTextEditor from '../components/RichTextEditor';
+import { ImageUploader } from '../components/cms/ImageUploader';
+import { uploadEventImage, validateImageFile } from '../components/cms/imageUploadService';
 
 const EVENT_TYPE_OPTIONS: { value: EventType; label: string }[] = [
   { value: 'conference', label: 'Conference' },
@@ -31,6 +34,14 @@ function generateSlug(title: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
+}
+
+function parseVideoId(url: string): { type: 'youtube' | 'vimeo'; id: string } | null {
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return { type: 'youtube', id: ytMatch[1] };
+  const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/);
+  if (vimeoMatch) return { type: 'vimeo', id: vimeoMatch[1] };
+  return null;
 }
 
 export default function EventEditor() {
@@ -58,6 +69,7 @@ export default function EventEditor() {
     featured_image_url: '',
     video_url: '',
     tags: [] as string[],
+    gallery_images: [] as string[],
     is_featured: false,
   });
   const [tagInput, setTagInput] = useState('');
@@ -84,13 +96,14 @@ export default function EventEditor() {
             featured_image_url: event.featured_image_url || '',
             video_url: event.video_url || '',
             tags: event.tags || [],
+            gallery_images: event.gallery_images || [],
             is_featured: event.is_featured,
           });
           setIsPublished(event.is_published);
         }
       } catch {
         toast.error('Failed to load event');
-        navigate('/content/events');
+        navigate('/events');
       } finally {
         setLoading(false);
       }
@@ -144,7 +157,7 @@ export default function EventEditor() {
         featured_image_url: formData.featured_image_url || null,
         video_url: formData.video_url || null,
         tags: formData.tags,
-        gallery_images: [],
+        gallery_images: formData.gallery_images,
         is_published: shouldPublish,
         is_featured: formData.is_featured,
         created_by: user?.id || null,
@@ -161,7 +174,7 @@ export default function EventEditor() {
         toast.success('Event updated!');
       }
 
-      navigate('/content/events');
+      navigate('/events');
     } catch {
       toast.error('Failed to save event');
     } finally {
@@ -177,12 +190,14 @@ export default function EventEditor() {
     );
   }
 
+  const videoInfo = formData.video_url ? parseVideoId(formData.video_url) : null;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigate('/content/events')}
+          onClick={() => navigate('/events')}
           className="flex items-center space-x-2 text-th-text-secondary hover:text-th-text-primary"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -264,20 +279,72 @@ export default function EventEditor() {
               />
             </div>
 
-            {/* Content */}
+            {/* Content — Rich Text Editor */}
             <div>
               <label className="block text-sm font-medium text-th-text-secondary mb-1">
                 Content *
               </label>
-              <textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Full event description... (Markdown supported)"
-                rows={16}
-                className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 font-mono text-sm text-th-text-primary placeholder-th-text-tertiary"
+              <RichTextEditor
+                content={formData.content}
+                onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
+                placeholder="Full event description..."
+                minHeight="350px"
               />
             </div>
           </div>
+
+          {/* Featured Image */}
+          <div className="bg-surface-primary rounded-xl border border-th-border p-6 space-y-4">
+            <h3 className="font-semibold text-th-text-primary">Featured Image</h3>
+            <ImageUploader
+              value={formData.featured_image_url}
+              onChange={(url) => setFormData((prev) => ({ ...prev, featured_image_url: url }))}
+              slug={formData.slug}
+            />
+          </div>
+
+          {/* Video */}
+          <div className="bg-surface-primary rounded-xl border border-th-border p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Video className="w-5 h-5 text-th-text-secondary" />
+              <h3 className="font-semibold text-th-text-primary">Video</h3>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                YouTube or Video URL
+              </label>
+              <input
+                type="url"
+                value={formData.video_url}
+                onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
+              />
+              <p className="text-xs text-th-text-tertiary mt-1">Paste a YouTube or Vimeo URL. It will be embedded on the event page.</p>
+            </div>
+            {videoInfo && (
+              <div className="aspect-video rounded-lg overflow-hidden border border-th-border">
+                <iframe
+                  src={
+                    videoInfo.type === 'youtube'
+                      ? `https://www.youtube.com/embed/${videoInfo.id}`
+                      : `https://player.vimeo.com/video/${videoInfo.id}`
+                  }
+                  title="Video preview"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Photo Gallery */}
+          <EventGallerySection
+            images={formData.gallery_images}
+            onChange={(images) => setFormData((prev) => ({ ...prev, gallery_images: images }))}
+            slug={formData.slug}
+          />
         </div>
 
         {/* Sidebar */}
@@ -396,42 +463,6 @@ export default function EventEditor() {
             </div>
           </div>
 
-          {/* Media */}
-          <div className="bg-surface-primary rounded-xl border border-th-border p-5 space-y-4">
-            <h3 className="font-semibold text-th-text-primary">Media</h3>
-            <div>
-              <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                Featured Image URL
-              </label>
-              <input
-                type="url"
-                value={formData.featured_image_url}
-                onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
-                placeholder="https://..."
-                className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
-              />
-              {formData.featured_image_url && (
-                <img
-                  src={formData.featured_image_url}
-                  alt="Preview"
-                  className="mt-2 w-full h-32 object-cover rounded-lg"
-                />
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                Video URL
-              </label>
-              <input
-                type="url"
-                value={formData.video_url}
-                onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                placeholder="https://..."
-                className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
-              />
-            </div>
-          </div>
-
           {/* Tags */}
           <div className="bg-surface-primary rounded-xl border border-th-border p-5 space-y-3">
             <h3 className="font-semibold text-th-text-primary">Tags</h3>
@@ -492,6 +523,137 @@ export default function EventEditor() {
             </label>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function EventGallerySection({
+  images,
+  onChange,
+  slug,
+}: {
+  images: string[];
+  onChange: (images: string[]) => void;
+  slug: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [urlInput, setUrlInput] = useState('');
+
+  const handleFilesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    const newUrls: string[] = [];
+
+    for (const file of files) {
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(`${file.name}: ${validation.error}`);
+        continue;
+      }
+      const result = await uploadEventImage(file, { slug: `${slug}-gallery` });
+      if (result.success && result.url) {
+        newUrls.push(result.url);
+      } else {
+        toast.error(`${file.name}: ${result.error || 'Upload failed'}`);
+      }
+    }
+
+    if (newUrls.length > 0) {
+      onChange([...images, ...newUrls]);
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    onChange(images.filter((_, i) => i !== index));
+  };
+
+  const addUrl = () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    onChange([...images, trimmed]);
+    setUrlInput('');
+  };
+
+  return (
+    <div className="bg-surface-primary rounded-xl border border-th-border p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-th-text-primary">Photo Gallery</h3>
+        <span className="text-sm text-th-text-tertiary">{images.length} photo{images.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {images.map((url, i) => (
+            <div key={`${url}-${i}`} className="relative group aspect-square">
+              <img
+                src={url}
+                alt={`Gallery ${i + 1}`}
+                className="w-full h-full object-cover rounded-lg border border-th-border"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                title="Remove photo"
+                className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div
+        onClick={() => !uploading && fileInputRef.current?.click()}
+        className="border-2 border-dashed border-th-border rounded-lg p-6 text-center cursor-pointer hover:border-th-accent-400 hover:bg-surface-tertiary transition-all"
+      >
+        {uploading ? (
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-6 w-6 text-th-accent-600 animate-spin" />
+            <span className="text-sm text-th-text-secondary">Uploading...</span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <ImageIcon className="h-6 w-6 text-th-text-tertiary" />
+            <span className="text-sm text-th-text-secondary">Click to add photos</span>
+            <span className="text-xs text-th-text-tertiary">PNG, JPG, WebP up to 5MB each — select multiple</span>
+          </div>
+        )}
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        multiple
+        onChange={handleFilesSelect}
+        className="hidden"
+        aria-label="Upload gallery photos"
+      />
+
+      <div className="flex gap-2">
+        <input
+          type="url"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addUrl())}
+          placeholder="Or paste image URL..."
+          className="flex-1 px-3 py-2 text-sm bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
+        />
+        <button
+          type="button"
+          onClick={addUrl}
+          disabled={!urlInput.trim()}
+          className="px-3 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary text-sm disabled:opacity-50"
+        >
+          Add
+        </button>
       </div>
     </div>
   );

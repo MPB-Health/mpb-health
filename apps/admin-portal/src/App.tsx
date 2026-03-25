@@ -279,9 +279,9 @@ export default function App() {
               <Route path="content/announcements" element={<AnnouncementManager />} />
               <Route path="content/widgets" element={<WidgetManager />} />
               <Route path="content/handbooks" element={<HandbookManager />} />
-              <Route path="content/events" element={<EventsAdmin />} />
-              <Route path="content/events/new" element={<EventEditor />} />
-              <Route path="content/events/:eventId" element={<EventEditor />} />
+              <Route path="events" element={<EventsAdmin />} />
+              <Route path="events/new" element={<EventEditor />} />
+              <Route path="events/:eventId" element={<EventEditor />} />
               <Route path="content/faq" element={<FAQAdmin />} />
               <Route path="content/enrollment-links" element={<EnrollmentLinks />} />
               <Route path="content/portal-settings" element={<PortalSettings />} />

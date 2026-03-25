@@ -17,6 +17,7 @@ import {
   BarChart3,
   Inbox,
   LineChart,
+  CalendarDays,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
@@ -48,6 +49,7 @@ const navigation: NavItem[] = [
     ],
   },
   { name: 'Plan Management', href: '/plans', icon: Package },
+  { name: 'Events', href: '/events', icon: CalendarDays },
   {
     name: 'Support',
     href: '#',
@@ -63,7 +65,6 @@ const navigation: NavItem[] = [
     children: [
       { name: 'Bulletins', href: '/content/bulletins' },
       { name: 'Blog Posts', href: '/content/blog' },
-      { name: 'Events', href: '/content/events' },
       { name: 'Announcements', href: '/content/announcements' },
       { name: 'Resources', href: '/content/resources' },
       { name: 'Training Modules', href: '/content/training' },

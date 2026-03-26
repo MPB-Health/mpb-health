@@ -8,17 +8,20 @@ interface VideoTestimonial {
   member: string;
   title: string;
   description: string;
+  thumbnail?: string;
 }
+
+const YOUTUBE_THUMB_FALLBACKS = ['maxresdefault', 'sddefault', 'hqdefault', 'mqdefault'];
 
 const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
   {
-    youtubeId: 'jCnSANDcmFM',
+    youtubeId: 'nu4KS8IyTmM',
     member: 'James Lee',
     title: 'Member Testimonial',
     description: 'James shares his firsthand experience as an MPB Health member.',
   },
   {
-    youtubeId: 'BRANDEE_POLAND_VIDEO_ID',
+    youtubeId: 'R18V5bhSOEo',
     member: 'Brandee Poland',
     title: 'Member Experience',
     description: 'Brandee talks about how MPB Health made a difference for her.',
@@ -28,7 +31,7 @@ const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
 const VideoCard: React.FC<{ video: VideoTestimonial }> = ({ video }) => {
   const [playing, setPlaying] = useState(false);
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
-  const thumbnailUrl = `https://img.youtube.com/vi/${video.youtubeId}/maxresdefault.jpg`;
+  const thumbnailUrl = video.thumbnail || `https://img.youtube.com/vi/${video.youtubeId}/${YOUTUBE_THUMB_FALLBACKS[0]}.jpg`;
   const embedUrl = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0`;
 
   return (
@@ -51,9 +54,15 @@ const VideoCard: React.FC<{ video: VideoTestimonial }> = ({ video }) => {
                 alt={`${video.member} — ${video.title}`}
                 className="absolute inset-0 w-full h-full object-cover"
                 onError={(e) => {
+                  if (video.thumbnail) {
+                    setThumbnailFailed(true);
+                    return;
+                  }
                   const target = e.currentTarget;
-                  if (target.src.includes('maxresdefault')) {
-                    target.src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                  const currentRes = YOUTUBE_THUMB_FALLBACKS.find((r) => target.src.includes(r));
+                  const nextIdx = currentRes ? YOUTUBE_THUMB_FALLBACKS.indexOf(currentRes) + 1 : YOUTUBE_THUMB_FALLBACKS.length;
+                  if (nextIdx < YOUTUBE_THUMB_FALLBACKS.length) {
+                    target.src = `https://img.youtube.com/vi/${video.youtubeId}/${YOUTUBE_THUMB_FALLBACKS[nextIdx]}.jpg`;
                   } else {
                     setThumbnailFailed(true);
                   }

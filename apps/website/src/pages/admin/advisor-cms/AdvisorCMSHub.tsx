@@ -59,6 +59,8 @@ interface CMSStats {
   activeToolkitDocuments: number;
   pricingCharts: number;
   activePricingCharts: number;
+  referenceMaterials: number;
+  activeReferenceMaterials: number;
   lastUpdated: string | null;
 }
 
@@ -99,6 +101,8 @@ export default function AdvisorCMSHub() {
     activeToolkitDocuments: 0,
     pricingCharts: 0,
     activePricingCharts: 0,
+    referenceMaterials: 0,
+    activeReferenceMaterials: 0,
     lastUpdated: null,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -167,6 +171,12 @@ export default function AdvisorCMSHub() {
         return PRICING_CATS.some(c => lower === c || lower.includes(c));
       }) || [];
       const activePricingCharts = pricingDocs.filter(d => d.is_active).length;
+      const REF_CATS = ['reference materials', 'reference-materials'];
+      const refDocs = toolkitResult.data?.filter(d => {
+        const lower = (d.category || '').toLowerCase();
+        return REF_CATS.some(c => lower === c || lower.includes(c));
+      }) || [];
+      const activeReferenceMaterials = refDocs.filter(d => d.is_active).length;
 
       setStats({
         navigationItems: navResult.count || 0,
@@ -191,6 +201,8 @@ export default function AdvisorCMSHub() {
         activeToolkitDocuments,
         pricingCharts: pricingDocs.length,
         activePricingCharts,
+        referenceMaterials: refDocs.length,
+        activeReferenceMaterials,
         lastUpdated: new Date().toISOString(),
       });
 
@@ -349,6 +361,15 @@ export default function AdvisorCMSHub() {
           color: 'orange',
           stats: `${stats.activePricingCharts} active`,
           badge: stats.pricingCharts - stats.activePricingCharts > 0 ? `${stats.pricingCharts - stats.activePricingCharts} hidden` : null,
+        },
+        {
+          title: 'Reference Materials',
+          description: 'Detailed reference documentation',
+          icon: BookOpen,
+          href: '/admin/advisor-cms/reference-materials',
+          color: 'indigo',
+          stats: `${stats.activeReferenceMaterials} active`,
+          badge: stats.referenceMaterials - stats.activeReferenceMaterials > 0 ? `${stats.referenceMaterials - stats.activeReferenceMaterials} hidden` : null,
         },
       ],
     },

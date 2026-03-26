@@ -7,3 +7,4 @@ export { default as TrainingManager } from './TrainingManager';
 export { default as QuickActionsManager } from './QuickActionsManager';
 export { default as AdvisorToolkitManager } from './AdvisorToolkitManager';
 export { default as PricingChartsManager } from './PricingChartsManager';
+export { default as ReferenceMaterialsManager } from './ReferenceMaterialsManager';

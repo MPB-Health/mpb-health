@@ -23,6 +23,7 @@ import {
   Briefcase,
   BarChart2,
   FileImage,
+  ClipboardList,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/button';
@@ -64,6 +65,8 @@ interface CMSStats {
   activeReferenceMaterials: number;
   flyers: number;
   activeFlyers: number;
+  sharingGuidelines: number;
+  activeSharingGuidelines: number;
   lastUpdated: string | null;
 }
 
@@ -108,6 +111,8 @@ export default function AdvisorCMSHub() {
     activeReferenceMaterials: 0,
     flyers: 0,
     activeFlyers: 0,
+    sharingGuidelines: 0,
+    activeSharingGuidelines: 0,
     lastUpdated: null,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -188,6 +193,12 @@ export default function AdvisorCMSHub() {
         return FLYER_CATS.some(c => lower === c || lower.includes(c));
       }) || [];
       const activeFlyers = flyerDocs.filter(d => d.is_active).length;
+      const SHARING_CATS = ['sharing guidelines', 'sharing-guidelines'];
+      const sharingDocs = toolkitResult.data?.filter(d => {
+        const lower = (d.category || '').toLowerCase();
+        return SHARING_CATS.some(c => lower === c || lower.includes(c));
+      }) || [];
+      const activeSharingGuidelines = sharingDocs.filter(d => d.is_active).length;
 
       setStats({
         navigationItems: navResult.count || 0,
@@ -216,6 +227,8 @@ export default function AdvisorCMSHub() {
         activeReferenceMaterials,
         flyers: flyerDocs.length,
         activeFlyers,
+        sharingGuidelines: sharingDocs.length,
+        activeSharingGuidelines,
         lastUpdated: new Date().toISOString(),
       });
 
@@ -392,6 +405,15 @@ export default function AdvisorCMSHub() {
           color: 'rose',
           stats: `${stats.activeFlyers} active`,
           badge: stats.flyers - stats.activeFlyers > 0 ? `${stats.flyers - stats.activeFlyers} hidden` : null,
+        },
+        {
+          title: 'Sharing Guidelines',
+          description: 'Health sharing guidelines and documentation',
+          icon: ClipboardList,
+          href: '/admin/advisor-cms/sharing-guidelines',
+          color: 'teal',
+          stats: `${stats.activeSharingGuidelines} active`,
+          badge: stats.sharingGuidelines - stats.activeSharingGuidelines > 0 ? `${stats.sharingGuidelines - stats.activeSharingGuidelines} hidden` : null,
         },
       ],
     },

@@ -1,5 +1,19 @@
+import { useState, useEffect } from 'react';
 import { InputField, SelectField, TextareaField, SubmitButton } from './FormField';
+import { SaveIndicator } from './SaveIndicator';
 import { useForm } from '../hooks/useForm';
+import { supabase } from '../lib/supabase';
+import { AlertCircle, RotateCcw } from 'lucide-react';
+import {
+  createCarrierService,
+  PLAN_TYPE_LABELS,
+  TOBACCO_STATUS_LABELS,
+  GROUP_TYPE_LABELS,
+  type InsuranceCarrier,
+} from '@mpbhealth/crm-core';
+import type { SaveStatus } from '../hooks/useSaveStatus';
+
+const carrierService = createCarrierService(supabase);
 
 interface LeadFormValues {
   first_name: string;
@@ -8,6 +22,8 @@ interface LeadFormValues {
   phone: string;
   household_size: string;
   zip_code: string;
+  state: string;
+  city: string;
   current_insurance: string;
   monthly_premium: string;
   coverage_preference: string;
@@ -15,7 +31,14 @@ interface LeadFormValues {
   contact_preference: string;
   source_cta: string;
   tags: string;
-  // Edit-only fields
+  plan_type: string;
+  carrier_id: string;
+  tobacco_status: string;
+  group_type: string;
+  original_effective_date: string;
+  premium_amount: string;
+  subsidy_amount: string;
+  member_responsibility: string;
   priority: string;
   lead_score: string;
   next_followup_at: string;
@@ -27,6 +50,9 @@ interface LeadFormProps {
   onCancel: () => void;
   submitLabel?: string;
   isEdit?: boolean;
+  onDirty?: () => void;
+  saveStatus?: SaveStatus;
+  saveErrorMessage?: string | null;
 }
 
 const COVERAGE_OPTIONS = [
@@ -67,27 +93,69 @@ const PRIORITY_OPTIONS = [
   { value: 'urgent', label: 'Urgent' },
 ];
 
+const PLAN_TYPE_OPTIONS = [
+  { value: '', label: 'Select Plan Type...' },
+  ...Object.entries(PLAN_TYPE_LABELS).map(([value, label]) => ({ value, label: String(label) })),
+];
+
+const TOBACCO_OPTIONS = [
+  { value: '', label: 'Select...' },
+  ...Object.entries(TOBACCO_STATUS_LABELS).map(([value, label]) => ({ value, label: String(label) })),
+];
+
+const GROUP_TYPE_OPTIONS = [
+  { value: '', label: 'Select...' },
+  ...Object.entries(GROUP_TYPE_LABELS).map(([value, label]) => ({ value, label: String(label) })),
+];
+
 const defaultValues: LeadFormValues = {
-  first_name: '',
-  last_name: '',
-  email: '',
-  phone: '',
-  household_size: '',
-  zip_code: '',
-  current_insurance: '',
-  monthly_premium: '',
-  coverage_preference: '',
-  primary_concern: '',
-  contact_preference: 'phone',
-  source_cta: '',
-  tags: '',
-  priority: 'medium',
-  lead_score: '0',
-  next_followup_at: '',
+  first_name: '', last_name: '', email: '', phone: '',
+  household_size: '', zip_code: '', state: '', city: '',
+  current_insurance: '', monthly_premium: '', coverage_preference: '',
+  primary_concern: '', contact_preference: 'phone', source_cta: '', tags: '',
+  plan_type: '', carrier_id: '', tobacco_status: '', group_type: '',
+  original_effective_date: '', premium_amount: '', subsidy_amount: '',
+  member_responsibility: '', priority: 'medium', lead_score: '0', next_followup_at: '',
 };
 
-export function LeadForm({ initialValues, onSubmit, onCancel, submitLabel = 'Save', isEdit }: LeadFormProps) {
-  const { values, errors, loading, handleChange, handleSubmit } = useForm<LeadFormValues>({
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="pt-2">
+      <h3 className="text-xs font-semibold text-th-text-tertiary uppercase tracking-wider mb-3 flex items-center gap-2">
+        <span className="h-px flex-1 bg-th-border" />
+        <span>{label}</span>
+        <span className="h-px flex-1 bg-th-border" />
+      </h3>
+    </div>
+  );
+}
+
+export function LeadForm({
+  initialValues,
+  onSubmit,
+  onCancel,
+  submitLabel = 'Save',
+  isEdit,
+  onDirty,
+  saveStatus = 'idle',
+  saveErrorMessage,
+}: LeadFormProps) {
+  const [carriers, setCarriers] = useState<InsuranceCarrier[]>([]);
+  const [loadingCarriers, setLoadingCarriers] = useState(true);
+
+  useEffect(() => {
+    carrierService.getCarriers({ is_active: true }).then((data: InsuranceCarrier[]) => {
+      setCarriers(data);
+      setLoadingCarriers(false);
+    }).catch(() => setLoadingCarriers(false));
+  }, []);
+
+  const carrierOptions = [
+    { value: '', label: loadingCarriers ? 'Loading carriers...' : 'Select Carrier...' },
+    ...carriers.map((c) => ({ value: c.id, label: c.name })),
+  ];
+
+  const { values, errors, loading, submitError, handleChange, handleSubmit, retry } = useForm<LeadFormValues>({
     initialValues: { ...defaultValues, ...initialValues } as LeadFormValues,
     validate: (vals) => {
       const errs: Partial<Record<keyof LeadFormValues, string>> = {};
@@ -100,164 +168,107 @@ export function LeadForm({ initialValues, onSubmit, onCancel, submitLabel = 'Sav
     onSubmit,
   });
 
+  const wrappedChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    onDirty?.();
+    handleChange(e);
+  };
+
+  const displayError = submitError || (saveStatus === 'error' ? saveErrorMessage : null);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Name row */}
+      {/* ─── Identity ─── */}
+      <SectionDivider label="Identity" />
       <div className="grid grid-cols-2 gap-4">
-        <InputField
-          label="First Name"
-          name="first_name"
-          value={values.first_name}
-          onChange={handleChange}
-          error={errors.first_name}
-          required
-          placeholder="John"
-        />
-        <InputField
-          label="Last Name"
-          name="last_name"
-          value={values.last_name}
-          onChange={handleChange}
-          error={errors.last_name}
-          required
-          placeholder="Doe"
-        />
+        <InputField label="First Name" name="first_name" value={values.first_name} onChange={wrappedChange} error={errors.first_name} required placeholder="John" />
+        <InputField label="Last Name" name="last_name" value={values.last_name} onChange={wrappedChange} error={errors.last_name} required placeholder="Doe" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <InputField label="Email" name="email" type="email" value={values.email} onChange={wrappedChange} error={errors.email} required placeholder="john@example.com" />
+        <InputField label="Phone" name="phone" type="tel" value={values.phone} onChange={wrappedChange} placeholder="(555) 123-4567" />
       </div>
 
-      {/* Contact row */}
-      <div className="grid grid-cols-2 gap-4">
-        <InputField
-          label="Email"
-          name="email"
-          type="email"
-          value={values.email}
-          onChange={handleChange}
-          error={errors.email}
-          required
-          placeholder="john@example.com"
-        />
-        <InputField
-          label="Phone"
-          name="phone"
-          type="tel"
-          value={values.phone}
-          onChange={handleChange}
-          placeholder="(555) 123-4567"
-        />
+      {/* ─── Location ─── */}
+      <SectionDivider label="Location" />
+      <div className="grid grid-cols-3 gap-4">
+        <InputField label="City" name="city" value={values.city} onChange={wrappedChange} placeholder="Denver" />
+        <InputField label="State" name="state" value={values.state} onChange={wrappedChange} placeholder="CO" />
+        <InputField label="Zip Code" name="zip_code" value={values.zip_code} onChange={wrappedChange} placeholder="80202" />
       </div>
 
-      {/* Location row */}
+      {/* ─── Plan & Coverage ─── */}
+      <SectionDivider label="Plan & Coverage" />
       <div className="grid grid-cols-2 gap-4">
-        <InputField
-          label="Zip Code"
-          name="zip_code"
-          value={values.zip_code}
-          onChange={handleChange}
-          placeholder="12345"
-        />
-        <InputField
-          label="Household Size"
-          name="household_size"
-          type="number"
-          value={values.household_size}
-          onChange={handleChange}
-          placeholder="1"
-        />
+        <SelectField label="Plan Type" name="plan_type" value={values.plan_type} onChange={wrappedChange} options={PLAN_TYPE_OPTIONS} />
+        <SelectField label="Carrier" name="carrier_id" value={values.carrier_id} onChange={wrappedChange} options={carrierOptions} disabled={loadingCarriers} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <SelectField label="Coverage Preference" name="coverage_preference" value={values.coverage_preference} onChange={wrappedChange} options={COVERAGE_OPTIONS} />
+        <SelectField label="Group Type" name="group_type" value={values.group_type} onChange={wrappedChange} options={GROUP_TYPE_OPTIONS} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <InputField label="Current Insurance" name="current_insurance" value={values.current_insurance} onChange={wrappedChange} placeholder="e.g. Blue Cross" />
+        <InputField label="Monthly Premium" name="monthly_premium" value={values.monthly_premium} onChange={wrappedChange} placeholder="e.g. $350" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <SelectField label="Tobacco Status" name="tobacco_status" value={values.tobacco_status} onChange={wrappedChange} options={TOBACCO_OPTIONS} />
+        <InputField label="Original Effective Date" name="original_effective_date" type="date" value={values.original_effective_date} onChange={wrappedChange} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <InputField label="Household Size" name="household_size" type="number" value={values.household_size} onChange={wrappedChange} placeholder="1" />
+        <SelectField label="Primary Concern" name="primary_concern" value={values.primary_concern} onChange={wrappedChange} options={CONCERN_OPTIONS} />
       </div>
 
-      {/* Insurance info */}
-      <div className="grid grid-cols-2 gap-4">
-        <InputField
-          label="Current Insurance"
-          name="current_insurance"
-          value={values.current_insurance}
-          onChange={handleChange}
-          placeholder="e.g. Blue Cross"
-        />
-        <InputField
-          label="Monthly Premium"
-          name="monthly_premium"
-          value={values.monthly_premium}
-          onChange={handleChange}
-          placeholder="e.g. $350"
-        />
-      </div>
-
-      {/* Preferences */}
-      <div className="grid grid-cols-2 gap-4">
-        <SelectField
-          label="Coverage Preference"
-          name="coverage_preference"
-          value={values.coverage_preference}
-          onChange={handleChange}
-          options={COVERAGE_OPTIONS}
-        />
-        <SelectField
-          label="Primary Concern"
-          name="primary_concern"
-          value={values.primary_concern}
-          onChange={handleChange}
-          options={CONCERN_OPTIONS}
-        />
-      </div>
-
-      <SelectField
-        label="Contact Preference"
-        name="contact_preference"
-        value={values.contact_preference}
-        onChange={handleChange}
-        options={CONTACT_PREF_OPTIONS}
-      />
-
-      <InputField
-        label="Source / CTA"
-        name="source_cta"
-        value={values.source_cta}
-        onChange={handleChange}
-        placeholder="e.g. Website Hero Banner"
-      />
-
-      <InputField
-        label="Tags"
-        name="tags"
-        value={values.tags}
-        onChange={handleChange}
-        placeholder="Comma-separated tags, e.g. family, urgent"
-      />
-
-      {/* Edit-only fields */}
+      {/* ─── Financial (for edit) ─── */}
       {isEdit && (
         <>
-          <hr className="border-th-border" />
-          <div className="grid grid-cols-2 gap-4">
-            <SelectField
-              label="Priority"
-              name="priority"
-              value={values.priority}
-              onChange={handleChange}
-              options={PRIORITY_OPTIONS}
-            />
-            <InputField
-              label="Lead Score"
-              name="lead_score"
-              type="number"
-              value={values.lead_score}
-              onChange={handleChange}
-              placeholder="0-100"
-            />
+          <SectionDivider label="Financial" />
+          <div className="grid grid-cols-3 gap-4">
+            <InputField label="Full Premium" name="premium_amount" type="number" value={values.premium_amount} onChange={wrappedChange} placeholder="0.00" />
+            <InputField label="Subsidy Amount" name="subsidy_amount" type="number" value={values.subsidy_amount} onChange={wrappedChange} placeholder="0.00" />
+            <InputField label="Member Responsibility" name="member_responsibility" type="number" value={values.member_responsibility} onChange={wrappedChange} placeholder="0.00" />
           </div>
-          <InputField
-            label="Next Follow-up"
-            name="next_followup_at"
-            type="datetime-local"
-            value={values.next_followup_at}
-            onChange={handleChange}
-          />
         </>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-3 pt-2">
+      {/* ─── Preferences ─── */}
+      <SectionDivider label="Preferences" />
+      <div className="grid grid-cols-2 gap-4">
+        <SelectField label="Contact Preference" name="contact_preference" value={values.contact_preference} onChange={wrappedChange} options={CONTACT_PREF_OPTIONS} />
+        <InputField label="Source / CTA" name="source_cta" value={values.source_cta} onChange={wrappedChange} placeholder="e.g. Website Hero Banner" />
+      </div>
+      <InputField label="Tags" name="tags" value={values.tags} onChange={wrappedChange} placeholder="Comma-separated tags" />
+
+      {/* ─── Admin (edit-only) ─── */}
+      {isEdit && (
+        <>
+          <SectionDivider label="Admin" />
+          <div className="grid grid-cols-2 gap-4">
+            <SelectField label="Priority" name="priority" value={values.priority} onChange={wrappedChange} options={PRIORITY_OPTIONS} />
+            <InputField label="Lead Score" name="lead_score" type="number" value={values.lead_score} onChange={wrappedChange} placeholder="0-100" />
+          </div>
+          <InputField label="Next Follow-up" name="next_followup_at" type="datetime-local" value={values.next_followup_at} onChange={wrappedChange} />
+        </>
+      )}
+
+      {/* ─── Error Recovery ─── */}
+      {displayError && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+          <p className="text-sm text-red-700 dark:text-red-400 flex-1">{displayError}</p>
+          <button
+            type="button"
+            onClick={retry}
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 dark:hover:bg-red-500/20 rounded transition-colors"
+          >
+            <RotateCcw className="w-3 h-3" />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* ─── Actions ─── */}
+      <div className="flex items-center gap-3 pt-4 border-t border-th-border sticky bottom-0 bg-surface-primary pb-2 z-10">
         <SubmitButton loading={loading} label={submitLabel} loadingLabel="Saving..." />
         <button
           type="button"
@@ -266,6 +277,7 @@ export function LeadForm({ initialValues, onSubmit, onCancel, submitLabel = 'Sav
         >
           Cancel
         </button>
+        <SaveIndicator status={saveStatus} errorMessage={saveErrorMessage} />
       </div>
     </form>
   );

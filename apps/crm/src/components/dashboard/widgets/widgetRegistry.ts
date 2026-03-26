@@ -21,6 +21,9 @@ import {
   Sparkles,
   ListTodo,
   Gauge,
+  Shield,
+  UserCheck,
+  GitPullRequest,
 } from 'lucide-react';
 import type { WidgetConfig, WidgetRegistry } from '../types';
 
@@ -41,6 +44,9 @@ const TeamWidget = lazy(() => import('./TeamWidget'));
 const AIInsightsWidget = lazy(() => import('./AIInsightsWidget'));
 const ActionQueueWidget = lazy(() => import('./ActionQueueWidget'));
 const KPIStripWidget = lazy(() => import('./KPIStripWidget'));
+const PlanTypeWidget = lazy(() => import('./PlanTypeWidget'));
+const AdvisorWidget = lazy(() => import('./AdvisorWidget'));
+const PipelineBreakdownWidget = lazy(() => import('./PipelineBreakdownWidget'));
 
 // ============================================================================
 // Widget Registry
@@ -557,6 +563,86 @@ export const widgetRegistry: WidgetRegistry = {
           label: 'Compact Mode',
           type: 'checkbox',
           defaultValue: false,
+        },
+      ],
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Operations & Reporting Category
+  // ---------------------------------------------------------------------------
+  'plan-type': {
+    id: 'plan-type',
+    title: 'Plan Type Breakdown',
+    description: 'HealthShare vs Traditional Insurance distribution',
+    icon: Shield,
+    category: 'metrics',
+    defaultSize: 'md',
+    allowedSizes: ['sm', 'md', 'lg'],
+    component: PlanTypeWidget,
+    dataRefreshInterval: 60000,
+    configSchema: {
+      fields: [
+        {
+          key: 'showNewCounts',
+          label: 'Show New Counts',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+      ],
+    },
+  },
+
+  'advisor-performance': {
+    id: 'advisor-performance',
+    title: 'Advisor Performance',
+    description: 'Per-advisor lead counts, conversion, and activity',
+    icon: UserCheck,
+    category: 'metrics',
+    defaultSize: 'lg',
+    allowedSizes: ['sm', 'md', 'lg'],
+    component: AdvisorWidget,
+    dataRefreshInterval: 120000,
+    configSchema: {
+      fields: [
+        {
+          key: 'maxAdvisors',
+          label: 'Max Advisors',
+          type: 'number',
+          defaultValue: 8,
+        },
+        {
+          key: 'sortBy',
+          label: 'Sort By',
+          type: 'select',
+          options: [
+            { value: 'total_leads', label: 'Total Leads' },
+            { value: 'conversion', label: 'Conversion Rate' },
+            { value: 'activity', label: 'Activity Count' },
+          ],
+          defaultValue: 'total_leads',
+        },
+      ],
+    },
+  },
+
+  'pipeline-breakdown': {
+    id: 'pipeline-breakdown',
+    title: 'Pipeline by Plan Type',
+    description: 'Pipeline stages segmented by HealthShare vs Traditional',
+    icon: GitPullRequest,
+    category: 'metrics',
+    defaultSize: 'md',
+    allowedSizes: ['sm', 'md', 'lg'],
+    component: PipelineBreakdownWidget,
+    dataRefreshInterval: 60000,
+    configSchema: {
+      fields: [
+        {
+          key: 'showLegend',
+          label: 'Show Legend',
+          type: 'checkbox',
+          defaultValue: true,
         },
       ],
     },

@@ -9,23 +9,25 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   description?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   variant?: 'modal' | 'slideOver';
   children: ReactNode;
 }
 
-const sizeClasses = {
+const sizeClasses: Record<string, string> = {
   sm: 'max-w-sm',
   md: 'max-w-md',
   lg: 'max-w-lg',
   xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
 };
 
-const slideOverSizes = {
+const slideOverSizes: Record<string, string> = {
   sm: 'max-w-sm',
   md: 'max-w-md',
   lg: 'max-w-lg',
   xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
 };
 
 export function Modal({
@@ -99,6 +101,7 @@ export function Modal({
             <button
               type="button"
               onClick={onClose}
+              aria-label="Close panel"
               className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary transition-colors"
             >
               <X className="w-5 h-5" />
@@ -134,13 +137,14 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close modal"
             className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         {/* Body */}
-        <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="px-6 py-4 max-h-[80vh] overflow-y-auto">{children}</div>
       </div>
     </div>,
     document.body

@@ -86,6 +86,8 @@ class PDFExportService {
     const body = leads.map(lead => 
       columns.map(col => {
         const value = lead[col as keyof Lead];
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'object' && !Array.isArray(value)) return '';
         if (col === 'created_at' && value) {
           return new Date(value as string).toLocaleDateString();
         }
@@ -98,7 +100,7 @@ class PDFExportService {
         if (col === 'priority') {
           return (value as string)?.toUpperCase() || 'MEDIUM';
         }
-        return value ?? '';
+        return String(value);
       })
     );
 

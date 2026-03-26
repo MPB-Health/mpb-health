@@ -22,9 +22,11 @@ export class LeadService {
     try {
       let query = this.supabase
         .from('zoho_lead_submissions')
-        .select('*', { count: 'exact' });
+        .select(`
+          *,
+          carrier:insurance_carriers!zoho_lead_submissions_carrier_id_fkey(id, name, carrier_type)
+        `, { count: 'exact' });
 
-      // Apply filters
       if (filters.stage) {
         query = query.eq('pipeline_stage', filters.stage);
       }
@@ -51,6 +53,21 @@ export class LeadService {
       }
       if (filters.zohoSyncStatus) {
         query = query.eq('zoho_sync_status', filters.zohoSyncStatus);
+      }
+      if (filters.planType) {
+        query = query.eq('plan_type', filters.planType);
+      }
+      if (filters.carrierId) {
+        query = query.eq('carrier_id', filters.carrierId);
+      }
+      if (filters.tobaccoStatus) {
+        query = query.eq('tobacco_status', filters.tobaccoStatus);
+      }
+      if (filters.groupType) {
+        query = query.eq('group_type', filters.groupType);
+      }
+      if (filters.state) {
+        query = query.eq('state', filters.state);
       }
 
       const { data, error, count } = await query
@@ -79,7 +96,7 @@ export class LeadService {
     try {
       const { data, error, count } = await this.supabase
         .from('zoho_lead_submissions')
-        .select('*', { count: 'exact' })
+        .select('id, first_name, last_name, email, phone, pipeline_stage, priority, plan_type, assigned_to, created_at, tags', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -111,7 +128,10 @@ export class LeadService {
     try {
       const { data, error } = await this.supabase
         .from('zoho_lead_submissions')
-        .select('*')
+        .select(`
+          *,
+          carrier:insurance_carriers!zoho_lead_submissions_carrier_id_fkey(id, name, carrier_type)
+        `)
         .eq('id', id)
         .single();
 

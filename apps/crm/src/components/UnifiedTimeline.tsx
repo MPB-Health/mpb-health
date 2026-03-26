@@ -543,7 +543,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('crm_email_log')
-        .select('*')
+        .select('id, direction, sent_at, created_at, subject, preview_text, from_address, to_address, body_text, body_html, open_count, click_count, has_attachments')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -580,7 +580,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('lead_activities')
-        .select('*')
+        .select('id, type, created_at, title, description, metadata')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -619,7 +619,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('calendar_events')
-        .select('*')
+        .select('id, start_time, end_time, created_at, title, description, location, meeting_link, video_link, attendees, event_type')
         .eq('lead_id', leadId)
         .order('start_time', { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -652,7 +652,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, created_at, title, description, due_date, completed, priority, task_type')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -692,7 +692,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('lead_activities')
-        .select('*')
+        .select('id, type, created_at, title, description, metadata')
         .eq('deal_id', dealId)
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);

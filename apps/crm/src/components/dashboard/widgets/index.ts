@@ -22,3 +22,6 @@ export type { default as AlertsWidget } from './AlertsWidget';
 export type { default as GoalsWidget } from './GoalsWidget';
 export type { default as TeamWidget } from './TeamWidget';
 export type { default as AIInsightsWidget } from './AIInsightsWidget';
+export type { default as PlanTypeWidget } from './PlanTypeWidget';
+export type { default as AdvisorWidget } from './AdvisorWidget';
+export type { default as PipelineBreakdownWidget } from './PipelineBreakdownWidget';

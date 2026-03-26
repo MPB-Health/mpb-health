@@ -589,5 +589,89 @@ export type {
 } from './saved-views/savedViewTypes';
 export * from './saved-views';
 
+// Insurance Carriers
+export { CarrierService, createCarrierService } from './carriers/carrierService';
+export type {
+  InsuranceCarrier,
+  CarrierCreateInput,
+  CarrierUpdateInput,
+  CarrierFilters,
+  CarrierType,
+  PlanType,
+  TobaccoStatus,
+  GroupType,
+} from './carriers/carrierTypes';
+export {
+  PLAN_TYPE_LABELS,
+  TOBACCO_STATUS_LABELS,
+  GROUP_TYPE_LABELS,
+  CARRIER_TYPE_LABELS,
+} from './carriers/carrierTypes';
+export * from './carriers';
+
+// Family Members & Phone Numbers
+export { FamilyService, createFamilyService } from './family/familyService';
+export type {
+  FamilyMember,
+  FamilyMemberCreateInput,
+  FamilyMemberUpdateInput,
+  FamilyRelationship,
+  PhoneNumber,
+  PhoneNumberCreateInput,
+  PhoneNumberUpdateInput,
+  PhoneType,
+} from './family/familyTypes';
+export {
+  RELATIONSHIP_LABELS,
+  PHONE_TYPE_LABELS,
+} from './family/familyTypes';
+export * from './family';
+
+// Commissions
+export { CommissionService, createCommissionService } from './commissions/commissionService';
+export type {
+  CommissionSchedule,
+  CommissionScheduleCreateInput,
+  CommissionScheduleUpdateInput,
+  CommissionRecord,
+  CommissionRecordCreateInput,
+  CommissionRecordUpdateInput,
+  CommissionPayout,
+  CommissionPayoutCreateInput,
+  CommissionFilters,
+  CommissionSummary,
+  AdvisorTier,
+  CommissionRateType,
+  CommissionStatus,
+} from './commissions/commissionTypes';
+export {
+  ADVISOR_TIER_LABELS,
+  COMMISSION_STATUS_LABELS,
+} from './commissions/commissionTypes';
+export * from './commissions';
+
+// Attachments
+export { AttachmentService, createAttachmentService } from './attachments/attachmentService';
+export type {
+  Attachment,
+  AttachmentWithUploader,
+  AttachmentCreateInput,
+  AttachmentFilters,
+  AttachmentCategory,
+  AttachmentEntityType,
+} from './attachments/attachmentTypes';
+export * from './attachments';
+
+// Audit
+export { AuditService, createAuditService } from './audit/auditService';
+export type {
+  AuditEntry,
+  AuditEntryWithUser,
+  AuditLogInput,
+  AuditFilters,
+  AuditAction,
+} from './audit/auditTypes';
+export * from './audit';
+
 // Utilities
 export { sanitizeSearchInput } from './utils/sanitize';

@@ -1,4 +1,12 @@
 import { supabase } from '@mpbhealth/database';
+import type {
+  Lead as CRMCoreLead,
+  PipelineStage,
+  Contact,
+} from '@mpbhealth/crm-core';
+
+// Re-export canonical types from crm-core for consumers that only depend on admin-core
+export type { PipelineStage, Contact as CRMCoreContact } from '@mpbhealth/crm-core';
 
 export interface CRMSummary {
   total_leads: number;
@@ -8,6 +16,11 @@ export interface CRMSummary {
   pending_tasks: number;
 }
 
+/**
+ * Admin projection of a CRM lead row from `zoho_lead_submissions`.
+ * For the canonical CRM Lead type with domain fields (plan_type, carrier_id, etc.),
+ * import `Lead` from `@mpbhealth/crm-core`.
+ */
 export interface CRMLead {
   id: string;
   first_name: string | null;
@@ -19,6 +32,7 @@ export interface CRMLead {
   status: string | null;
   pipeline_stage_id: string | null;
   stage_name?: string;
+  plan_type?: string | null;
   assigned_to: string | null;
   created_at: string;
   updated_at: string;
@@ -34,6 +48,7 @@ export interface CRMLeadDetail extends CRMLead {
 export interface CRMActivity {
   id: string;
   type: string;
+  title: string | null;
   description: string | null;
   created_at: string;
 }
@@ -43,6 +58,7 @@ export interface CRMTask {
   title: string;
   completed: boolean;
   due_date: string | null;
+  priority: string | null;
   created_at: string;
 }
 
@@ -51,10 +67,15 @@ export interface CRMLeadFilters {
   stage_id?: string;
   search?: string;
   assigned_to?: string;
+  plan_type?: string;
   limit?: number;
   offset?: number;
 }
 
+/**
+ * @deprecated Use `Contact` from `@mpbhealth/crm-core` for the canonical CRM contact type.
+ * This bridge-specific alias is kept for backward compatibility.
+ */
 export interface CRMContact {
   id: string;
   org_id: string;
@@ -197,6 +218,9 @@ export class CRMBridgeService {
     if (filters?.stage_id) {
       query = query.eq('pipeline_stage_id', filters.stage_id);
     }
+    if (filters?.plan_type) {
+      query = query.eq('plan_type', filters.plan_type);
+    }
     if (filters?.search) {
       query = query.or(
         `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,company.ilike.%${filters.search}%`
@@ -228,13 +252,13 @@ export class CRMBridgeService {
     const [activities, tasks] = await Promise.all([
       supabase
         .from('lead_activities')
-        .select('id, type, description, created_at')
+        .select('id, type, title, description, created_at')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .limit(30),
       supabase
         .from('lead_tasks')
-        .select('id, title, completed, due_date, created_at')
+        .select('id, title, completed, due_date, priority, created_at')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .limit(20),

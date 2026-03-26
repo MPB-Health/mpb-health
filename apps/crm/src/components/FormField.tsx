@@ -131,10 +131,15 @@ interface TextareaFieldProps {
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
   rows?: number;
+  minRows?: number;
+  maxRows?: number;
   error?: string;
   required?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  autoExpand?: boolean;
+  maxLength?: number;
+  hint?: string;
 }
 
 export function TextareaField({
@@ -143,30 +148,61 @@ export function TextareaField({
   value,
   onChange,
   rows = 3,
+  minRows,
+  maxRows = 20,
   error,
   required,
   placeholder,
   disabled,
+  autoExpand,
+  maxLength,
+  hint,
 }: TextareaFieldProps) {
+  const effectiveMinRows = minRows ?? rows;
+
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    if (autoExpand) {
+      const el = e.target;
+      el.style.height = 'auto';
+      const lineHeight = parseInt(getComputedStyle(el).lineHeight) || 20;
+      const maxHeight = lineHeight * maxRows;
+      el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+    }
+    onChange(e);
+  };
+
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-th-text-secondary mb-1">
-        {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
-      </label>
+      <div className="flex items-center justify-between mb-1">
+        <label htmlFor={name} className="block text-sm font-medium text-th-text-secondary">
+          {label}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
+        </label>
+        {maxLength && (
+          <span className={`text-xs ${
+            value.length > maxLength * 0.9
+              ? value.length >= maxLength ? 'text-red-500 font-medium' : 'text-amber-500'
+              : 'text-th-text-tertiary'
+          }`}>
+            {value.length}/{maxLength}
+          </span>
+        )}
+      </div>
       <textarea
         id={name}
         name={name}
         value={value}
-        onChange={onChange}
-        rows={rows}
+        onChange={handleChange}
+        rows={effectiveMinRows}
         required={required}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent transition-colors resize-none disabled:bg-surface-secondary disabled:text-th-text-tertiary ${
-          error ? 'border-red-300 focus:ring-red-500' : 'border-th-border'
-        }`}
+        maxLength={maxLength}
+        className={`w-full border rounded-lg px-3 py-2.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent transition-colors disabled:bg-surface-secondary disabled:text-th-text-tertiary ${
+          autoExpand ? 'resize-none overflow-hidden' : 'resize-y min-h-[80px]'
+        } ${error ? 'border-red-300 focus:ring-red-500' : 'border-th-border'}`}
       />
+      {hint && !error && <p className="mt-1 text-xs text-th-text-tertiary">{hint}</p>}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );

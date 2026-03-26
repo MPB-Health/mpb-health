@@ -93,6 +93,9 @@ export interface Resource {
 }
 
 // Audit Log Types
+// Table: `audit_logs` — system-wide admin actions (login, user CRUD, config changes).
+// For CRM record-level audit (lead edits, stage changes, attachments), use
+// `AuditEntry` from `@mpbhealth/crm-core` which writes to `crm_audit_log`.
 export interface AuditLog {
   id: string;
   user_id: string | null;

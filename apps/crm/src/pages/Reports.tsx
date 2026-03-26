@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Download, Clock, Users as UsersIcon, TrendingUp } from 'lucide-react';
+import { Download, Clock, Users as UsersIcon, TrendingUp, Shield, UserCheck, AlertTriangle } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -14,8 +14,11 @@ import {
 } from 'recharts';
 import { GradientHeader } from '@mpbhealth/ui';
 import { useCRM } from '../contexts/CRMContext';
+import { useOrg } from '../contexts/OrgContext';
+import { supabase } from '../lib/supabase';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { ConversionFunnel } from '../components/ConversionFunnel';
+import { PLAN_TYPE_LABELS } from '@mpbhealth/crm-core';
 import type {
   ReportDateRange,
   ConversionFunnelData,
@@ -26,8 +29,35 @@ import type {
 
 const COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EC4899', '#22C55E', '#EF4444'];
 
+interface PlanTypeStat {
+  plan_type: string;
+  total_count: number;
+  new_today: number;
+  new_this_week: number;
+  new_this_month: number;
+}
+
+interface AdvisorStat {
+  advisor_id: string;
+  advisor_email: string;
+  advisor_name: string;
+  total_leads: number;
+  new_leads_this_month: number;
+  converted_leads: number;
+  open_tasks: number;
+  overdue_tasks: number;
+  activities_this_month: number;
+}
+
+const PLAN_COLORS: Record<string, string> = {
+  healthshare: '#10B981',
+  traditional: '#3B82F6',
+  unspecified: '#9CA3AF',
+};
+
 export default function Reports() {
   const { dashboardStats, pipelineStages, reportingService } = useCRM();
+  const { activeOrgId } = useOrg();
 
   const [dateRange, setDateRange] = useState<ReportDateRange | null>(null);
   const [funnel, setFunnel] = useState<ConversionFunnelData[]>([]);
@@ -35,6 +65,8 @@ export default function Reports() {
   const [responseTime, setResponseTime] = useState<ResponseTimeMetrics | null>(null);
   const [team, setTeam] = useState<TeamPerformanceRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [planTypeStats, setPlanTypeStats] = useState<PlanTypeStat[]>([]);
+  const [advisorStats, setAdvisorStats] = useState<AdvisorStat[]>([]);
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -49,8 +81,17 @@ export default function Reports() {
     setSources(s);
     setResponseTime(r);
     setTeam(t);
+
+    if (activeOrgId) {
+      const [planRes, advisorRes] = await Promise.all([
+        supabase.rpc('crm_plan_type_stats', { p_org_id: activeOrgId }),
+        supabase.rpc('crm_advisor_performance', { p_org_id: activeOrgId }),
+      ]);
+      if (planRes.data) setPlanTypeStats(planRes.data as PlanTypeStat[]);
+      if (advisorRes.data) setAdvisorStats(advisorRes.data as AdvisorStat[]);
+    }
     setLoading(false);
-  }, [reportingService, dateRange]);
+  }, [reportingService, dateRange, activeOrgId]);
 
   useEffect(() => {
     loadReports();
@@ -125,6 +166,158 @@ export default function Reports() {
             {dashboardStats?.new_leads || 0}
           </p>
         </div>
+      </div>
+
+      {/* Plan Type Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Shield className="w-5 h-5 text-th-text-tertiary" />
+            <h2 className="text-lg font-semibold text-th-text-primary">Plan Type Distribution</h2>
+          </div>
+          {loading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
+            </div>
+          ) : planTypeStats.length > 0 ? (
+            <div className="space-y-4">
+              {planTypeStats.map((stat) => {
+                const totalAll = planTypeStats.reduce((s, p) => s + p.total_count, 0);
+                const pct = totalAll > 0 ? (stat.total_count / totalAll) * 100 : 0;
+                const label = PLAN_TYPE_LABELS[stat.plan_type as keyof typeof PLAN_TYPE_LABELS] || stat.plan_type;
+                const color = PLAN_COLORS[stat.plan_type] || PLAN_COLORS.unspecified;
+                return (
+                  <div key={stat.plan_type}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-medium text-th-text-primary">{String(label)}</span>
+                      <div className="flex items-center gap-3 text-xs text-th-text-tertiary">
+                        <span className="font-semibold text-th-text-primary">{stat.total_count.toLocaleString()}</span>
+                        <span>{pct.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="h-2 bg-surface-tertiary rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+                    </div>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-th-text-tertiary">
+                      <span>{stat.new_today} today</span>
+                      <span>{stat.new_this_week} this week</span>
+                      <span>{stat.new_this_month} this month</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-th-text-tertiary text-center py-8">No plan type data available</p>
+          )}
+        </div>
+
+        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Shield className="w-5 h-5 text-th-text-tertiary" />
+            <h2 className="text-lg font-semibold text-th-text-primary">Plan Type by Volume</h2>
+          </div>
+          {loading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
+            </div>
+          ) : planTypeStats.length > 0 ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={planTypeStats.map((s) => ({
+                      name: String(PLAN_TYPE_LABELS[s.plan_type as keyof typeof PLAN_TYPE_LABELS] || s.plan_type),
+                      value: s.total_count,
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={3}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {planTypeStats.map((s) => (
+                      <Cell key={s.plan_type} fill={PLAN_COLORS[s.plan_type] || PLAN_COLORS.unspecified} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: '#1E293B', border: 'none', borderRadius: '8px', color: '#F8FAFC' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="text-sm text-th-text-tertiary text-center py-8">No plan type data available</p>
+          )}
+        </div>
+      </div>
+
+      {/* Advisor Performance */}
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <UserCheck className="w-5 h-5 text-th-text-tertiary" />
+          <h2 className="text-lg font-semibold text-th-text-primary">Advisor Performance</h2>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
+          </div>
+        ) : advisorStats.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-th-border text-left text-th-text-tertiary">
+                  <th className="py-2.5 pr-4 font-medium">Advisor</th>
+                  <th className="py-2.5 pr-4 font-medium text-right">Total Leads</th>
+                  <th className="py-2.5 pr-4 font-medium text-right">New (Month)</th>
+                  <th className="py-2.5 pr-4 font-medium text-right">Converted</th>
+                  <th className="py-2.5 pr-4 font-medium text-right">Conv %</th>
+                  <th className="py-2.5 pr-4 font-medium text-right">Open Tasks</th>
+                  <th className="py-2.5 pr-4 font-medium text-right">Overdue</th>
+                  <th className="py-2.5 font-medium text-right">Activities</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-th-border-subtle">
+                {advisorStats.map((a) => {
+                  const convRate = a.total_leads > 0 ? ((a.converted_leads / a.total_leads) * 100).toFixed(1) : '0.0';
+                  return (
+                    <tr key={a.advisor_id}>
+                      <td className="py-3 pr-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 bg-th-accent-100 rounded-lg flex items-center justify-center shrink-0">
+                            <span className="text-th-accent-700 font-semibold text-xs">{a.advisor_name.charAt(0).toUpperCase()}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-th-text-primary truncate">{a.advisor_name}</p>
+                            <p className="text-xs text-th-text-tertiary truncate">{a.advisor_email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4 text-right font-medium text-th-text-primary">{a.total_leads}</td>
+                      <td className="py-3 pr-4 text-right text-th-text-secondary">{a.new_leads_this_month}</td>
+                      <td className="py-3 pr-4 text-right text-th-text-secondary">{a.converted_leads}</td>
+                      <td className="py-3 pr-4 text-right font-medium text-emerald-600">{convRate}%</td>
+                      <td className="py-3 pr-4 text-right text-th-text-secondary">{a.open_tasks}</td>
+                      <td className="py-3 pr-4 text-right">
+                        {a.overdue_tasks > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+                            <AlertTriangle className="w-3 h-3" />
+                            {a.overdue_tasks}
+                          </span>
+                        ) : (
+                          <span className="text-th-text-tertiary">0</span>
+                        )}
+                      </td>
+                      <td className="py-3 text-right text-th-text-secondary">{a.activities_this_month}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-th-text-tertiary text-center py-8">No advisor data available.</p>
+        )}
       </div>
 
       {/* Conversion Funnel */}

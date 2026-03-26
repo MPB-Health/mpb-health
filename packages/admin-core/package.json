@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@mpbhealth/advisor-core": "workspace:*",
+    "@mpbhealth/crm-core": "workspace:*",
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/utils": "workspace:*"
   },

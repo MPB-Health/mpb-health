@@ -35,6 +35,20 @@ export interface Lead {
   converted_at?: string;
   lost_reason?: string;
   form_data?: Record<string, unknown>;
+  // Domain fields
+  plan_type?: 'healthshare' | 'traditional_insurance' | null;
+  carrier_id?: string | null;
+  tobacco_status?: 'none' | 'tobacco_user' | 'vape_user' | 'former_user' | null;
+  group_type?: 'individual' | 'small_group' | 'large_group' | 'association' | null;
+  original_effective_date?: string | null;
+  premium_amount?: number | null;
+  subsidy_amount?: number | null;
+  member_responsibility?: number | null;
+  state?: string | null;
+  city?: string | null;
+  // Joined relations (not persisted)
+  carrier?: { id: string; name: string; carrier_type: string } | null;
+  assigned_user?: { id: string; email: string; full_name?: string } | null;
 }
 
 // Filters for lead queries
@@ -47,6 +61,11 @@ export interface LeadFilters {
   dateTo?: string;
   tags?: string[];
   zohoSyncStatus?: string;
+  planType?: 'healthshare' | 'traditional_insurance';
+  carrierId?: string;
+  tobaccoStatus?: string;
+  groupType?: string;
+  state?: string;
 }
 
 // Pipeline stage configuration
@@ -114,6 +133,16 @@ export interface LeadCreateInput {
   utm_campaign?: string;
   form_data?: Record<string, unknown>;
   tags?: string[];
+  plan_type?: 'healthshare' | 'traditional_insurance';
+  carrier_id?: string;
+  tobacco_status?: string;
+  group_type?: string;
+  original_effective_date?: string;
+  premium_amount?: number;
+  subsidy_amount?: number;
+  member_responsibility?: number;
+  state?: string;
+  city?: string;
 }
 
 // Lead update input
@@ -136,4 +165,14 @@ export interface LeadUpdateInput {
   tags?: string[];
   next_followup_at?: string;
   lost_reason?: string;
+  plan_type?: 'healthshare' | 'traditional_insurance' | null;
+  carrier_id?: string | null;
+  tobacco_status?: string | null;
+  group_type?: string | null;
+  original_effective_date?: string | null;
+  premium_amount?: number | null;
+  subsidy_amount?: number | null;
+  member_responsibility?: number | null;
+  state?: string | null;
+  city?: string | null;
 }

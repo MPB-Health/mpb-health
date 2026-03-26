@@ -1,8 +1,3 @@
-// ============================================================================
-// Command Palette — Global search and quick actions (Cmd+K)
-// CRM-specific implementation
-// ============================================================================
-
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -32,6 +27,8 @@ import {
   X,
   Loader2,
   ArrowRight,
+  Clock,
+  Phone,
 } from 'lucide-react';
 import {
   useCommandPalette,
@@ -40,10 +37,6 @@ import {
   type CRMSearchResult,
   type QuickAction,
 } from '../hooks/useCommandPalette';
-
-// ============================================================================
-// Icon Mapping
-// ============================================================================
 
 const ENTITY_ICONS: Record<string, typeof Search> = {
   lead: Users,
@@ -81,19 +74,27 @@ const ACTION_ICONS: Record<string, typeof Search> = {
 
 const ENTITY_COLORS: Record<string, string> = {
   lead: 'text-blue-500',
-  account: 'text-blue-500',
-  contact: 'text-green-500',
+  account: 'text-purple-500',
+  contact: 'text-emerald-500',
   deal: 'text-amber-500',
-  product: 'text-cyan-500',
-  quote: 'text-blue-500',
-  invoice: 'text-rose-500',
-  campaign: 'text-orange-500',
-  task: 'text-green-500',
+  product: 'text-indigo-500',
+  quote: 'text-cyan-500',
+  invoice: 'text-orange-500',
+  campaign: 'text-rose-500',
+  task: 'text-teal-500',
 };
 
-// ============================================================================
-// Entity path mapping
-// ============================================================================
+const ENTITY_BGS: Record<string, string> = {
+  lead: 'bg-blue-50 dark:bg-blue-500/10',
+  account: 'bg-purple-50 dark:bg-purple-500/10',
+  contact: 'bg-emerald-50 dark:bg-emerald-500/10',
+  deal: 'bg-amber-50 dark:bg-amber-500/10',
+  product: 'bg-indigo-50 dark:bg-indigo-500/10',
+  quote: 'bg-cyan-50 dark:bg-cyan-500/10',
+  invoice: 'bg-orange-50 dark:bg-orange-500/10',
+  campaign: 'bg-rose-50 dark:bg-rose-500/10',
+  task: 'bg-teal-50 dark:bg-teal-500/10',
+};
 
 function getEntityPath(entityType: string, entityId: string): string {
   const pathMap: Record<string, string> = {
@@ -110,23 +111,31 @@ function getEntityPath(entityType: string, entityId: string): string {
   return pathMap[entityType] || '/';
 }
 
-// ============================================================================
-// Create entity URLs
-// ============================================================================
+interface RecentRecord {
+  entity_type: string;
+  entity_id: string;
+  title: string;
+  timestamp: number;
+}
 
-const CREATE_ENTITY_MODALS: Record<string, string> = {
-  lead: 'addLead',
-  account: 'addAccount',
-  contact: 'addContact',
-  deal: 'addDeal',
-  task: 'addTask',
-  quote: 'addQuote',
-  invoice: 'addInvoice',
-};
+const RECENT_KEY = 'mpb_crm_recent_records';
 
-// ============================================================================
-// Result Item Component
-// ============================================================================
+function getRecentRecords(): RecentRecord[] {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function addRecentRecord(record: Omit<RecentRecord, 'timestamp'>) {
+  const existing = getRecentRecords().filter(
+    (r) => !(r.entity_type === record.entity_type && r.entity_id === record.entity_id)
+  );
+  const updated = [{ ...record, timestamp: Date.now() }, ...existing].slice(0, 8);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(updated));
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 
 interface ResultItemProps {
   result: CRMSearchResult;
@@ -137,36 +146,41 @@ interface ResultItemProps {
 function ResultItem({ result, isSelected, onSelect }: ResultItemProps) {
   const Icon = ENTITY_ICONS[result.entity_type] || Search;
   const colorClass = ENTITY_COLORS[result.entity_type] || 'text-th-text-secondary';
+  const bgClass = ENTITY_BGS[result.entity_type] || 'bg-gray-50 dark:bg-gray-500/10';
+  const isFamilyMatch = result.subtitle?.startsWith('Family of ');
+  const isPhoneMatch = result.subtitle?.startsWith('Phone for ');
 
   return (
     <button
       onClick={onSelect}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
         isSelected
-          ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-600'
+          ? 'bg-th-accent-500/8 border-l-2 border-th-accent-500'
           : 'hover:bg-surface-secondary border-l-2 border-transparent'
       }`}
     >
-      <Icon className={`w-5 h-5 flex-shrink-0 ${colorClass}`} />
+      <div className={`p-1.5 rounded-lg shrink-0 ${bgClass} ${colorClass}`}>
+        {isPhoneMatch ? <Phone className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+      </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-th-text-primary truncate">
-          {result.title}
-        </p>
+        <p className="text-sm font-medium text-th-text-primary truncate">{result.title}</p>
         {result.subtitle && (
-          <p className="text-xs text-th-text-secondary truncate">{result.subtitle}</p>
+          <p className={`text-xs truncate ${
+            isFamilyMatch || isPhoneMatch ? 'text-th-accent-600 font-medium' : 'text-th-text-tertiary'
+          }`}>
+            {result.subtitle}
+          </p>
         )}
       </div>
-      <span className="text-xs text-th-text-secondary capitalize bg-surface-tertiary px-2 py-0.5 rounded">
+      <span className="text-[10px] text-th-text-tertiary shrink-0 capitalize bg-surface-tertiary px-2 py-0.5 rounded">
         {result.entity_type}
       </span>
-      {isSelected && <ArrowRight className="w-4 h-4 text-blue-600" />}
+      {isSelected && <ArrowRight className="w-4 h-4 text-th-accent-500" />}
     </button>
   );
 }
 
-// ============================================================================
-// Quick Action Item Component
-// ============================================================================
+// ────────────────────────────────────────────────────────────────────────────
 
 interface ActionItemProps {
   action: QuickAction;
@@ -182,7 +196,7 @@ function ActionItem({ action, isSelected, onSelect }: ActionItemProps) {
       onClick={onSelect}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
         isSelected
-          ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-600'
+          ? 'bg-th-accent-500/8 border-l-2 border-th-accent-500'
           : 'hover:bg-surface-secondary border-l-2 border-transparent'
       }`}
     >
@@ -190,11 +204,11 @@ function ActionItem({ action, isSelected, onSelect }: ActionItemProps) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-th-text-primary">{action.name}</p>
         {action.description && (
-          <p className="text-xs text-th-text-secondary truncate">{action.description}</p>
+          <p className="text-xs text-th-text-tertiary truncate">{action.description}</p>
         )}
       </div>
       {action.shortcut && (
-        <kbd className="text-xs text-th-text-secondary bg-surface-tertiary px-2 py-0.5 rounded font-mono">
+        <kbd className="text-xs text-th-text-tertiary bg-surface-tertiary px-2 py-0.5 rounded font-mono">
           {action.shortcut}
         </kbd>
       )}
@@ -202,9 +216,7 @@ function ActionItem({ action, isSelected, onSelect }: ActionItemProps) {
   );
 }
 
-// ============================================================================
-// Command Palette Component
-// ============================================================================
+// ────────────────────────────────────────────────────────────────────────────
 
 interface CommandPaletteProps {
   onCreateEntity?: (entityType: string) => void;
@@ -217,16 +229,16 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
 
   const { isOpen, mode, setMode, close } = useCommandPalette();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [recentRecords, setRecentRecords] = useState<RecentRecord[]>([]);
 
   const { query, setQuery, results, loading, durationMs } = useCRMSearch({
     debounceMs: 200,
     minQueryLength: 2,
-    limit: 10,
+    limit: 12,
   });
 
   const { actions, filterActions } = useQuickActions();
 
-  // Filter actions based on query when in commands mode
   const filteredActions = useMemo(() => {
     if (mode === 'commands') {
       return query ? filterActions(query) : actions;
@@ -234,28 +246,30 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
     return [];
   }, [mode, query, actions, filterActions]);
 
-  // Combined items for navigation
+  // Build combined items list for navigation
   const items = useMemo(() => {
-    if (mode === 'commands') {
-      return filteredActions;
-    }
-    if (query.length >= 2) {
-      return results;
-    }
-    return [];
-  }, [mode, query, results, filteredActions]);
+    if (mode === 'commands') return filteredActions;
+    if (query.length >= 2) return results;
+    return recentRecords.map((r) => ({
+      entity_type: r.entity_type,
+      entity_id: r.entity_id,
+      title: r.title,
+      subtitle: null,
+      extra_info: null,
+      rank: 0,
+    })) as CRMSearchResult[];
+  }, [mode, query, results, filteredActions, recentRecords]);
 
-  // Reset selection when items change
   useEffect(() => {
     setSelectedIndex(0);
   }, [items]);
 
-  // Focus input when opening
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
       setQuery('');
       setSelectedIndex(0);
+      setRecentRecords(getRecentRecords());
     }
   }, [isOpen, setQuery]);
 
@@ -275,7 +289,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
           break;
         case 'Enter':
           event.preventDefault();
-          if (items.length > 0) {
+          if (items.length > 0 && selectedIndex < items.length) {
             handleSelect(items[selectedIndex]);
           }
           break;
@@ -290,7 +304,6 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, items, selectedIndex, mode, setMode]);
 
-  // Scroll selected item into view
   useEffect(() => {
     if (listRef.current) {
       const selectedElement = listRef.current.querySelector('[data-selected="true"]');
@@ -302,26 +315,22 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
     (item: CRMSearchResult | QuickAction) => {
       close();
 
-      // Search result
       if ('entity_type' in item) {
         const path = getEntityPath(item.entity_type, item.entity_id);
+        addRecentRecord({ entity_type: item.entity_type, entity_id: item.entity_id, title: item.title });
         navigate(path);
         return;
       }
 
-      // Quick action
       const action = item as QuickAction;
       switch (action.action_type) {
         case 'navigate':
-          if (action.action_data.url) {
-            navigate(action.action_data.url);
-          }
+          if (action.action_data.url) navigate(action.action_data.url);
           break;
         case 'create':
           if (action.action_data.entity && onCreateEntity) {
             onCreateEntity(action.action_data.entity);
           } else if (action.action_data.entity) {
-            // Fallback: navigate to list page with create param
             const entityPaths: Record<string, string> = {
               lead: '/leads?action=create',
               account: '/accounts?action=create',
@@ -348,7 +357,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
           break;
       }
     },
-    [close, navigate, onCreateEntity]
+    [close, navigate, onCreateEntity],
   );
 
   const handleCustomAction = (actionId?: string) => {
@@ -361,7 +370,6 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
         toast.success('URL copied to clipboard');
         break;
       case 'export-view':
-        // Trigger CSV export of the current page's data
         window.dispatchEvent(new CustomEvent('crm:export-view'));
         toast.success('Export initiated');
         break;
@@ -375,6 +383,8 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
 
   if (!isOpen) return null;
 
+  const showRecents = mode === 'search' && query.length < 2 && recentRecords.length > 0;
+
   return (
     <>
       {/* Backdrop */}
@@ -385,14 +395,14 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
       />
 
       {/* Modal */}
-      <div className="fixed inset-x-4 top-[15%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl z-50">
-        <div className="bg-surface-primary rounded-xl shadow-2xl border border-th-border overflow-hidden">
+      <div className="fixed inset-x-4 top-[12%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl z-50">
+        <div className="bg-surface-primary rounded-2xl shadow-2xl border border-th-border overflow-hidden">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-th-border">
             {mode === 'search' ? (
-              <Search className="w-5 h-5 text-th-text-tertiary" />
+              <Search className="w-5 h-5 text-th-text-tertiary shrink-0" />
             ) : (
-              <Command className="w-5 h-5 text-th-text-tertiary" />
+              <Command className="w-5 h-5 text-th-text-tertiary shrink-0" />
             )}
             <input
               ref={inputRef}
@@ -401,16 +411,15 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
               onChange={(e) => setQuery(e.target.value)}
               placeholder={
                 mode === 'search'
-                  ? 'Search leads, accounts, contacts, deals...'
+                  ? 'Search leads, contacts, family, phone...'
                   : 'Type a command or action...'
               }
               className="flex-1 bg-transparent border-none outline-none text-th-text-primary placeholder:text-th-text-tertiary"
             />
-            {loading && <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />}
+            {loading && <Loader2 className="w-5 h-5 text-th-accent-500 animate-spin shrink-0" />}
             <button
               onClick={close}
               className="p-1 text-th-text-tertiary hover:text-th-text-secondary rounded transition-colors"
-              title="Close (Esc)"
               aria-label="Close command palette"
             >
               <X className="w-5 h-5" />
@@ -423,7 +432,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
               onClick={() => setMode('search')}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 mode === 'search'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  ? 'text-th-accent-600 border-b-2 border-th-accent-500'
                   : 'text-th-text-secondary hover:text-th-text-primary'
               }`}
             >
@@ -434,7 +443,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
               onClick={() => setMode('commands')}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 mode === 'commands'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  ? 'text-th-accent-600 border-b-2 border-th-accent-500'
                   : 'text-th-text-secondary hover:text-th-text-primary'
               }`}
             >
@@ -444,20 +453,63 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
           </div>
 
           {/* Results */}
-          <div ref={listRef} className="max-h-96 overflow-y-auto">
+          <div ref={listRef} className="max-h-[420px] overflow-y-auto">
             {mode === 'search' && (
               <>
+                {/* Recent Records */}
+                {showRecents && (
+                  <div>
+                    <div className="px-4 py-2 text-xs font-medium text-th-text-secondary uppercase tracking-wider bg-surface-secondary flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" />
+                      Recent Records
+                    </div>
+                    {recentRecords.map((record, index) => {
+                      const Icon = ENTITY_ICONS[record.entity_type] || Search;
+                      const colorClass = ENTITY_COLORS[record.entity_type] || 'text-th-text-secondary';
+                      const bgClass = ENTITY_BGS[record.entity_type] || 'bg-gray-50';
+                      return (
+                        <div key={`recent-${record.entity_type}-${record.entity_id}`} data-selected={index === selectedIndex}>
+                          <button
+                            onClick={() => handleSelect({
+                              entity_type: record.entity_type,
+                              entity_id: record.entity_id,
+                              title: record.title,
+                              subtitle: null,
+                              extra_info: null,
+                              rank: 0,
+                            })}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                              index === selectedIndex
+                                ? 'bg-th-accent-500/8 border-l-2 border-th-accent-500'
+                                : 'hover:bg-surface-secondary border-l-2 border-transparent'
+                            }`}
+                          >
+                            <div className={`p-1.5 rounded-lg shrink-0 ${bgClass} ${colorClass}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-th-text-primary truncate">{record.title}</p>
+                            </div>
+                            <span className="text-[10px] text-th-text-tertiary shrink-0 capitalize bg-surface-tertiary px-2 py-0.5 rounded">
+                              {record.entity_type}
+                            </span>
+                            {index === selectedIndex && <ArrowRight className="w-4 h-4 text-th-accent-500" />}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Search Results */}
                 {query.length >= 2 && results.length > 0 && (
                   <div>
                     <div className="px-4 py-2 text-xs font-medium text-th-text-secondary uppercase tracking-wider bg-surface-secondary">
                       Results
-                      {durationMs && (
-                        <span className="ml-2 font-normal">({durationMs}ms)</span>
-                      )}
+                      {durationMs && <span className="ml-2 font-normal">({durationMs}ms)</span>}
                     </div>
                     {results.map((result, index) => (
-                      <div key={`${result.entity_type}-${result.entity_id}`} data-selected={index === selectedIndex}>
+                      <div key={`${result.entity_type}-${result.entity_id}-${index}`} data-selected={index === selectedIndex}>
                         <ResultItem
                           result={result}
                           isSelected={index === selectedIndex}
@@ -468,24 +520,24 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                   </div>
                 )}
 
-                {/* No Results */}
+                {/* No results */}
                 {query.length >= 2 && !loading && results.length === 0 && (
                   <div className="px-4 py-8 text-center">
-                    <Search className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
-                    <p className="text-th-text-secondary">No results found for &quot;{query}&quot;</p>
+                    <Search className="w-10 h-10 text-th-text-tertiary mx-auto mb-3 opacity-40" />
+                    <p className="text-th-text-secondary">No results for &quot;{query}&quot;</p>
                     <p className="text-sm text-th-text-tertiary mt-1">
-                      Try a different search term
+                      Try searching by name, email, phone, or family member name
                     </p>
                   </div>
                 )}
 
-                {/* Empty State */}
-                {query.length < 2 && (
+                {/* Empty state */}
+                {query.length < 2 && !showRecents && (
                   <div className="px-4 py-8 text-center">
-                    <Search className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
+                    <Search className="w-10 h-10 text-th-text-tertiary mx-auto mb-3 opacity-40" />
                     <p className="text-th-text-secondary">Start typing to search</p>
                     <p className="text-sm text-th-text-tertiary mt-1">
-                      Search across leads, accounts, contacts, deals, and more
+                      Search across leads, contacts, family members, phone numbers, and more
                     </p>
                   </div>
                 )}
@@ -496,7 +548,6 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
               <>
                 {filteredActions.length > 0 ? (
                   <div>
-                    {/* Group by category */}
                     {['navigation', 'create', 'tools', 'help'].map((category) => {
                       const categoryActions = filteredActions.filter(
                         (a) => a.category === category
@@ -518,10 +569,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                           {categoryActions.map((action) => {
                             const globalIndex = filteredActions.indexOf(action);
                             return (
-                              <div
-                                key={action.id}
-                                data-selected={globalIndex === selectedIndex}
-                              >
+                              <div key={action.id} data-selected={globalIndex === selectedIndex}>
                                 <ActionItem
                                   action={action}
                                   isSelected={globalIndex === selectedIndex}
@@ -536,7 +584,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
                   </div>
                 ) : (
                   <div className="px-4 py-8 text-center">
-                    <Command className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
+                    <Command className="w-10 h-10 text-th-text-tertiary mx-auto mb-3 opacity-40" />
                     <p className="text-th-text-secondary">No commands found</p>
                   </div>
                 )}
@@ -545,32 +593,24 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-th-border bg-surface-secondary flex items-center justify-between text-xs text-th-text-secondary">
+          <div className="px-4 py-2 border-t border-th-border bg-surface-secondary flex items-center justify-between text-xs text-th-text-tertiary">
             <div className="flex items-center gap-4">
               <span>
-                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">
-                  ↑↓
-                </kbd>{' '}
-                Navigate
+                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">↑↓</kbd>
+                {' '}Navigate
               </span>
               <span>
-                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">
-                  ↵
-                </kbd>{' '}
-                Select
+                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">↵</kbd>
+                {' '}Select
               </span>
               <span>
-                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">
-                  Tab
-                </kbd>{' '}
-                Switch mode
+                <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">Tab</kbd>
+                {' '}Switch mode
               </span>
             </div>
             <span>
-              <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">
-                Esc
-              </kbd>{' '}
-              Close
+              <kbd className="px-1.5 py-0.5 bg-surface-primary rounded border border-th-border font-mono">Esc</kbd>
+              {' '}Close
             </span>
           </div>
         </div>

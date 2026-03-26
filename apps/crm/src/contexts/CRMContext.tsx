@@ -70,10 +70,6 @@ function CRMQueryDataProvider({ children }: { children: ReactNode }) {
       return { stats, stages, dStages, activities };
     },
     enabled: orgReady,
-    staleTime: 45_000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
-    refetchOnWindowFocus: false,
   });
 
   const leadsQuery = useQuery({
@@ -83,10 +79,6 @@ function CRMQueryDataProvider({ children }: { children: ReactNode }) {
       return leads;
     },
     enabled: orgReady,
-    staleTime: 45_000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
-    refetchOnWindowFocus: false,
   });
 
   const tasksQuery = useQuery({
@@ -99,20 +91,12 @@ function CRMQueryDataProvider({ children }: { children: ReactNode }) {
       return { today, overdue };
     },
     enabled: orgReady,
-    staleTime: 45_000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
-    refetchOnWindowFocus: false,
   });
 
   const calendarQuery = useQuery({
     queryKey: crmQueryKeys.calendar(activeOrgId),
     queryFn: () => svc.calendarService.getUpcomingEvents(30),
     enabled: orgReady,
-    staleTime: 45_000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
-    refetchOnWindowFocus: false,
   });
 
   const refreshDashboard = useCallback(async () => {

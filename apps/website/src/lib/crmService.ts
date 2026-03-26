@@ -2,54 +2,23 @@ import { createZohoService } from '@mpbhealth/crm-core/zoho';
 import { supabase } from './supabase';
 
 // ============================================================================
-// Types
+// Types — canonical definitions live in @mpbhealth/crm-core.
+// Re-exported here so existing import paths continue to work.
 // ============================================================================
 
-export interface Lead {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  household_size?: number;
-  zip_code?: string;
-  current_insurance?: string;
-  monthly_premium?: string;
-  coverage_preference?: string;
-  primary_concern?: string;
-  contact_preference?: string;
-  pipeline_stage: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assigned_to?: string;
-  lead_score: number;
-  tags: string[];
-  source_cta?: string;
-  source_page?: string;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  zoho_lead_id?: string;
-  zoho_sync_status: string;
-  created_at: string;
-  updated_at?: string;
-  stage_changed_at?: string;
-  last_contacted_at?: string;
-  next_followup_at?: string;
-  converted_at?: string;
-  lost_reason?: string;
-  form_data?: Record<string, unknown>;
-}
+export type {
+  Lead,
+  LeadFilters,
+  PipelineStage,
+  CRMDashboardStats,
+} from '@mpbhealth/crm-core';
 
-export interface LeadActivity {
-  id: string;
-  lead_id: string;
-  activity_type: 'note' | 'call' | 'email' | 'meeting' | 'status_change' | 'assignment' | 'task_created' | 'task_completed';
-  title: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-  created_by?: string;
-  created_at: string;
-}
+export type {
+  LeadActivity,
+} from '@mpbhealth/crm-core';
+
+import type { Lead, LeadFilters, PipelineStage, CRMDashboardStats } from '@mpbhealth/crm-core';
+import type { LeadActivity } from '@mpbhealth/crm-core';
 
 export interface LeadTask {
   id: string;
@@ -67,39 +36,6 @@ export interface LeadTask {
   created_by?: string;
   created_at: string;
   updated_at?: string;
-}
-
-export interface PipelineStage {
-  id: string;
-  name: string;
-  display_name: string;
-  color: string;
-  icon?: string;
-  sort_order: number;
-  is_active: boolean;
-  is_won_stage: boolean;
-  is_lost_stage: boolean;
-}
-
-export interface LeadFilters {
-  stage?: string;
-  priority?: string;
-  assignedTo?: string;
-  search?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  tags?: string[];
-}
-
-export interface CRMDashboardStats {
-  total_leads: number;
-  new_leads: number;
-  leads_by_stage: Record<string, number>;
-  leads_by_priority: Record<string, number>;
-  overdue_tasks: number;
-  tasks_due_today: number;
-  conversion_rate: number;
-  avg_days_to_close: number;
 }
 
 export interface BulkUpdateResult {

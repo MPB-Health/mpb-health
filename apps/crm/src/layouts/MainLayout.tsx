@@ -74,6 +74,7 @@ const navigationSections: NavSection[] = [
   {
     id: 'main',
     items: [
+      { name: 'Today', href: '/today', icon: Zap },
       { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     ],
   },

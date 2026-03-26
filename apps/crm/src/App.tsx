@@ -14,6 +14,7 @@ import Tasks from './pages/Tasks';
 import Calendar from './pages/Calendar';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Today from './pages/Today';
 import Templates from './pages/Templates';
 import Automation from './pages/Automation';
 import SentEmails from './pages/SentEmails';
@@ -192,6 +193,7 @@ export default function App() {
             <MainLayout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/today" element={<Today />} />
                 <Route
                   path="/leads"
                   element={

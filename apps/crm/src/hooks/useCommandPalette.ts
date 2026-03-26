@@ -65,10 +65,22 @@ const CRM_QUICK_ACTIONS: QuickAction[] = [
   { id: 'create-quote', name: 'Create Quote', description: 'Add a new quote', icon: 'file-check', category: 'create', action_type: 'create', action_data: { entity: 'quote' } },
   { id: 'create-invoice', name: 'Create Invoice', description: 'Add a new invoice', icon: 'receipt', category: 'create', action_type: 'create', action_data: { entity: 'invoice' } },
 
+  // Navigation — Workspaces
+  { id: 'nav-today', name: 'Go to Today', description: 'Your daily command center', icon: 'sun', category: 'navigation', action_type: 'navigate', action_data: { url: '/today' } },
+  { id: 'nav-pipeline', name: 'Go to Pipeline Board', icon: 'git-branch', category: 'navigation', action_type: 'navigate', action_data: { url: '/pipeline' } },
+  { id: 'nav-inbox', name: 'Go to Inbox', icon: 'inbox', category: 'navigation', action_type: 'navigate', action_data: { url: '/inbox' } },
+  { id: 'nav-activity-dashboard', name: 'Sales Activity Dashboard', icon: 'activity', category: 'navigation', action_type: 'navigate', action_data: { url: '/sales-activity' } },
+
   // Tools
   { id: 'tool-refresh', name: 'Refresh Data', description: 'Reload current page data', icon: 'refresh-cw', category: 'tools', action_type: 'custom', action_data: { action: 'refresh-data' } },
   { id: 'tool-export', name: 'Export Current View', description: 'Export data to CSV', icon: 'download', category: 'tools', action_type: 'custom', action_data: { action: 'export-view' } },
   { id: 'tool-copy-url', name: 'Copy Page URL', description: 'Copy current URL to clipboard', icon: 'link', category: 'tools', action_type: 'custom', action_data: { action: 'copy-page-url' } },
+
+  // Insurance-specific quick actions
+  { id: 'tool-hs-leads', name: 'HealthShare Leads', description: 'View HealthShare pipeline', icon: 'shield', category: 'tools', action_type: 'navigate', action_data: { url: '/leads?planType=healthshare' } },
+  { id: 'tool-ti-leads', name: 'Traditional Insurance Leads', description: 'View Traditional pipeline', icon: 'shield-check', category: 'tools', action_type: 'navigate', action_data: { url: '/leads?planType=traditional_insurance' } },
+  { id: 'tool-overdue', name: 'My Overdue Tasks', description: 'Tasks past due date', icon: 'alert-triangle', category: 'tools', action_type: 'navigate', action_data: { url: '/tasks?filter=overdue' } },
+  { id: 'tool-followups', name: 'Follow-up Required', description: 'Leads needing follow-up', icon: 'phone-forwarded', category: 'tools', action_type: 'navigate', action_data: { url: '/leads?stage=follow_up' } },
 
   // Help
   { id: 'help-shortcuts', name: 'Keyboard Shortcuts', description: 'View all shortcuts', icon: 'keyboard', shortcut: '?', category: 'help', action_type: 'toggle', action_data: { modal: 'shortcuts' } },

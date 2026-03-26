@@ -1,5 +1,11 @@
 // ============================================================================
 // CRM Lead Types - Lead and pipeline related types
+//
+// @deprecated — These types predate the CRM domain consolidation.
+// For active CRM development, use the canonical types from @mpbhealth/crm-core:
+//   import type { Lead, PipelineStage, LeadPriority } from '@mpbhealth/crm-core';
+//   import type { LeadActivity, ActivityType } from '@mpbhealth/crm-core';
+// These types are retained for backward compatibility with legacy integrations.
 // ============================================================================
 
 export interface Lead {

@@ -25,10 +25,10 @@ export class ContactService {
         .from('crm_contacts')
         .select(`
           *,
-          account:crm_accounts!crm_contacts_account_id_fkey(id, name)
+          account:crm_accounts!crm_contacts_account_id_fkey(id, name),
+          carrier:insurance_carriers!crm_contacts_carrier_id_fkey(id, name, carrier_type)
         `, { count: 'exact' });
 
-      // Apply filters
       if (filters.account_id) {
         query = query.eq('account_id', filters.account_id);
       }
@@ -59,6 +59,18 @@ export class ContactService {
       if (filters.tags && filters.tags.length > 0) {
         query = query.overlaps('tags', filters.tags);
       }
+      if (filters.planType) {
+        query = query.eq('plan_type', filters.planType);
+      }
+      if (filters.carrierId) {
+        query = query.eq('carrier_id', filters.carrierId);
+      }
+      if (filters.tobaccoStatus) {
+        query = query.eq('tobacco_status', filters.tobaccoStatus);
+      }
+      if (filters.state) {
+        query = query.eq('state', filters.state);
+      }
 
       const { data, error, count } = await query
         .order('created_at', { ascending: false })
@@ -86,7 +98,8 @@ export class ContactService {
         .select(`
           *,
           account:crm_accounts!crm_contacts_account_id_fkey(id, name),
-          reports_to_contact:crm_contacts!crm_contacts_reports_to_fkey(id, first_name, last_name)
+          reports_to_contact:crm_contacts!crm_contacts_reports_to_fkey(id, first_name, last_name),
+          carrier:insurance_carriers!crm_contacts_carrier_id_fkey(id, name, carrier_type)
         `)
         .eq('id', id)
         .single();
@@ -274,7 +287,6 @@ export class ContactService {
         accountId = account.id;
       }
 
-      // Create the contact
       const { data: contact, error: contactError } = await this.supabase
         .from('crm_contacts')
         .insert({
@@ -288,6 +300,15 @@ export class ContactService {
           converted_at: new Date().toISOString(),
           mailing_address: lead.zip_code ? { zip: lead.zip_code } : {},
           created_by: user.user.id,
+          plan_type: lead.plan_type || null,
+          carrier_id: lead.carrier_id || null,
+          original_effective_date: lead.original_effective_date || null,
+          premium_amount: lead.premium_amount ?? null,
+          subsidy_amount: lead.subsidy_amount ?? null,
+          member_responsibility: lead.member_responsibility ?? null,
+          tobacco_status: lead.tobacco_status || null,
+          state: lead.state || null,
+          city: lead.city || null,
         })
         .select('id')
         .single();

@@ -726,6 +726,9 @@ importers:
       '@mpbhealth/advisor-core':
         specifier: workspace:*
         version: link:../advisor-core
+      '@mpbhealth/crm-core':
+        specifier: workspace:*
+        version: link:../crm-core
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../database

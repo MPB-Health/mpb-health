@@ -29,6 +29,16 @@ export interface Contact {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Domain fields
+  plan_type: 'healthshare' | 'traditional_insurance' | null;
+  carrier_id: string | null;
+  original_effective_date: string | null;
+  premium_amount: number | null;
+  subsidy_amount: number | null;
+  member_responsibility: number | null;
+  tobacco_status: string | null;
+  state: string | null;
+  city: string | null;
 }
 
 export interface ContactWithRelations extends Contact {
@@ -46,6 +56,11 @@ export interface ContactWithRelations extends Contact {
     first_name: string;
     last_name: string;
   } | null;
+  carrier?: {
+    id: string;
+    name: string;
+    carrier_type: string;
+  } | null;
 }
 
 export interface ContactFilters {
@@ -58,6 +73,10 @@ export interface ContactFilters {
   do_not_email?: boolean;
   dateFrom?: string;
   dateTo?: string;
+  planType?: 'healthshare' | 'traditional_insurance';
+  carrierId?: string;
+  tobaccoStatus?: string;
+  state?: string;
 }
 
 export interface ContactCreateInput {
@@ -84,6 +103,15 @@ export interface ContactCreateInput {
   linkedin_url?: string;
   twitter_handle?: string;
   date_of_birth?: string;
+  plan_type?: 'healthshare' | 'traditional_insurance';
+  carrier_id?: string;
+  original_effective_date?: string;
+  premium_amount?: number;
+  subsidy_amount?: number;
+  member_responsibility?: number;
+  tobacco_status?: string;
+  state?: string;
+  city?: string;
 }
 
 export interface ContactUpdateInput extends Partial<ContactCreateInput> {}

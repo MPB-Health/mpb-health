@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bookmark, Plus, Star, Trash2, Share2, X } from 'lucide-react';
+import { Bookmark, Plus, Star, Trash2, Share2, X, Sparkles } from 'lucide-react';
 import type { SavedView } from '@mpbhealth/crm-core';
+import type { SmartView } from '../hooks/useSavedViews';
 
 interface SavedViewsBarProps {
   views: SavedView[];
+  smartViews?: SmartView[];
   activeViewId: string | null;
   loading: boolean;
-  onApplyView: (view: SavedView) => void;
+  onApplyView: (view: SavedView | SmartView) => void;
   onSaveView: (name: string, isShared: boolean) => Promise<any>;
   onDeleteView: (id: string) => void;
   onSetDefault: (id: string) => void;
@@ -15,6 +17,7 @@ interface SavedViewsBarProps {
 
 export function SavedViewsBar({
   views,
+  smartViews = [],
   activeViewId,
   loading,
   onApplyView,
@@ -78,7 +81,31 @@ export function SavedViewsBar({
       {/* Divider */}
       <div className="w-px h-5 th-border bg-current opacity-20 shrink-0" />
 
-      {/* View pills */}
+      {/* Smart view pills */}
+      {smartViews.map((sv) => (
+        <button
+          key={sv.id}
+          onClick={() => onApplyView(sv)}
+          className={`
+            inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
+            transition-colors duration-150 border shrink-0
+            ${
+              activeViewId === sv.id
+                ? 'bg-th-accent-500/10 text-th-accent-700 dark:text-th-accent-400 border-th-accent-500/30'
+                : 'surface-primary th-text-secondary th-border hover:th-accent-bg/10'
+            }
+          `}
+        >
+          <Sparkles className="w-3 h-3 opacity-60" />
+          <span>{sv.name}</span>
+        </button>
+      ))}
+
+      {smartViews.length > 0 && views.length > 0 && (
+        <div className="w-px h-5 th-border bg-current opacity-10 shrink-0" />
+      )}
+
+      {/* Custom view pills */}
       {views.map((view) => (
         <div key={view.id} className="relative shrink-0">
           <button
@@ -184,6 +211,7 @@ export function SavedViewsBar({
               setShowForm(false);
               setNewName('');
             }}
+            aria-label="Cancel save view"
             className="p-1.5 rounded-md th-text-secondary hover:th-text-primary transition-colors shrink-0"
           >
             <X className="w-3.5 h-3.5" />

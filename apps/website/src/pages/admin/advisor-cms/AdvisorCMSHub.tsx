@@ -20,6 +20,7 @@ import {
   BookOpen,
   ArrowRight,
   Link2,
+  Briefcase,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/button';
@@ -53,6 +54,8 @@ interface CMSStats {
   activeVideos: number;
   enrollmentLinks: number;
   activeEnrollmentLinks: number;
+  toolkitDocuments: number;
+  activeToolkitDocuments: number;
   lastUpdated: string | null;
 }
 
@@ -89,6 +92,8 @@ export default function AdvisorCMSHub() {
     activeVideos: 0,
     enrollmentLinks: 0,
     activeEnrollmentLinks: 0,
+    toolkitDocuments: 0,
+    activeToolkitDocuments: 0,
     lastUpdated: null,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -119,6 +124,7 @@ export default function AdvisorCMSHub() {
         advisorsActiveResult,
         videosResult,
         enrollmentLinksResult,
+        toolkitResult,
       ] = await Promise.all([
         supabase.from('advisor_nav_menu').select('id', { count: 'exact' }),
         supabase.from('advisor_content').select('id, is_published', { count: 'exact' }).eq('content_type', 'bulletin'),
@@ -132,6 +138,7 @@ export default function AdvisorCMSHub() {
         supabase.from('advisors').select('id', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('advisor_videos').select('id, is_active', { count: 'exact' }),
         supabase.from('advisor_enrollment_links').select('id, is_active', { count: 'exact' }),
+        supabase.from('sop_documents').select('id, is_active', { count: 'exact' }).in('category', ['presentations', 'advisor handbook', 'commission structure', 'advisor-toolkit']),
       ]);
 
       // Calculate stats
@@ -143,6 +150,7 @@ export default function AdvisorCMSHub() {
       ).length || 0;
       const activeVideos = videosResult.data?.filter(v => v.is_active).length || 0;
       const activeEnrollmentLinks = enrollmentLinksResult.data?.filter(e => e.is_active).length || 0;
+      const activeToolkitDocuments = toolkitResult.data?.filter(d => d.is_active).length || 0;
 
       setStats({
         navigationItems: navResult.count || 0,
@@ -163,6 +171,8 @@ export default function AdvisorCMSHub() {
         activeVideos,
         enrollmentLinks: enrollmentLinksResult.count || 0,
         activeEnrollmentLinks,
+        toolkitDocuments: toolkitResult.count || 0,
+        activeToolkitDocuments,
         lastUpdated: new Date().toISOString(),
       });
 
@@ -303,6 +313,15 @@ export default function AdvisorCMSHub() {
           color: 'cyan',
           stats: `${stats.upcomingMeetings} upcoming`,
           badge: stats.upcomingMeetings > 0 ? 'Live' : null,
+        },
+        {
+          title: 'Advisor Toolkit',
+          description: 'Presentations, handbooks, and commission resources',
+          icon: Briefcase,
+          href: '/admin/advisor-cms/advisor-toolkit',
+          color: 'green',
+          stats: `${stats.activeToolkitDocuments} active`,
+          badge: stats.toolkitDocuments - stats.activeToolkitDocuments > 0 ? `${stats.toolkitDocuments - stats.activeToolkitDocuments} hidden` : null,
         },
       ],
     },

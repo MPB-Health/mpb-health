@@ -462,9 +462,41 @@ async function addComment(
 async function createTicket(
   itstsAdmin: ReturnType<typeof createClient>,
   requesterId: string,
-  opts: { subject: string; description?: string; category?: string; priority?: string; origin?: string; agentId?: string | null },
+  opts: { subject: string; description?: string; category?: string; priority?: string; origin?: string; agentId?: string | null; idempotencyKey?: string | null },
 ) {
   if (!opts.subject?.trim()) throw new Error("Subject is required");
+
+  // Idempotency guard: if the client sent an idempotency key, check for a
+  // recent ticket by the same requester with the same key to prevent duplicate
+  // inserts caused by client retries or double-clicks.
+  if (opts.idempotencyKey) {
+    const { data: existing } = await itstsAdmin
+      .from("tickets")
+      .select("id, ticket_number")
+      .eq("requester_id", requesterId)
+      .eq("idempotency_key", opts.idempotencyKey)
+      .maybeSingle();
+    if (existing) {
+      log.info("Duplicate create blocked by idempotency key", { key: opts.idempotencyKey, ticket_id: existing.id });
+      return { ticket_id: existing.id, ticket_number: existing.ticket_number };
+    }
+  }
+
+  // Secondary guard: prevent near-identical tickets within a short window.
+  // Same requester + same subject within 60 seconds is almost certainly a duplicate.
+  const sixtySecondsAgo = new Date(Date.now() - 60_000).toISOString();
+  const { data: recentDupe } = await itstsAdmin
+    .from("tickets")
+    .select("id, ticket_number")
+    .eq("requester_id", requesterId)
+    .eq("subject", opts.subject.trim().slice(0, MAX_SUBJECT_LENGTH))
+    .gte("created_at", sixtySecondsAgo)
+    .maybeSingle();
+  if (recentDupe) {
+    log.info("Duplicate create blocked by subject+time window", { ticket_id: recentDupe.id });
+    return { ticket_id: recentDupe.id, ticket_number: recentDupe.ticket_number };
+  }
+
   const { data, error } = await itstsAdmin
     .from("tickets")
     .insert({
@@ -476,6 +508,7 @@ async function createTicket(
       requester_id: requesterId,
       origin: (opts.origin ?? "advisor") as "member" | "advisor" | "staff" | "concierge",
       ...(opts.agentId ? { agent_id: opts.agentId } : {}),
+      ...(opts.idempotencyKey ? { idempotency_key: opts.idempotencyKey } : {}),
     })
     .select("id, ticket_number")
     .single();
@@ -893,6 +926,7 @@ Deno.serve(async (req: Request) => {
           );
         }
         {
+          const idempotencyKey = req.headers.get("x-idempotency-key") || null;
           // Fetch advisor profile first to tag ticket with correct origin + agent_id
           const { data: ap } = await itstsAdmin
             .from("profiles")
@@ -906,6 +940,7 @@ Deno.serve(async (req: Request) => {
             priority: body.priority,
             origin: "advisor",
             agentId: ap?.agent_id || null,
+            idempotencyKey,
           });
           fireNotification({
             event: "created",
@@ -1042,6 +1077,7 @@ Deno.serve(async (req: Request) => {
             priority: body.priority,
             origin: "staff",
             agentId: caAp?.agent_id || null,
+            idempotencyKey: req.headers.get("x-idempotency-key") || null,
           });
           fireNotification({
             event: "created_for_advisor",

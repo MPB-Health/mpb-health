@@ -361,18 +361,23 @@ export class TicketService {
    *
    * Built-in resilience:
    *  1. Resolves a guaranteed-fresh auth token (30 s expiry buffer).
-   *  2. 20 s timeout per attempt so the UI never hangs.
+   *  2. 10 s timeout per attempt so the UI never hangs.
    *  3. Automatic silent retry (up to 3 attempts) with exponential back-off
-   *     for transient failures (timeouts, network errors, 5xx).
+   *     for transient failures (timeouts, network errors, 5xx) — READ-ONLY
+   *     actions only. Mutating actions (create, reply, etc.) are NEVER
+   *     retried to prevent duplicate inserts.
    *  4. On auth errors, refreshes the session and retries silently.
-   *  5. Only throws after all retries are exhausted.
-   *
-   * The end user should never see a technical error; pages should receive
-   * either data or a clean, recoverable error.
+   *  5. Mutating calls include an x-idempotency-key header for server-side
+   *     deduplication as a second safety net.
    */
   private static CALL_TIMEOUT_MS = 10_000;
   private static MAX_RETRIES = 2; // 3 total attempts
   private static RETRY_BACKOFF = [800, 2_000]; // ms between retries
+
+  private static MUTATING_ACTIONS = new Set([
+    'create', 'create_for_advisor', 'reply', 'staff_reply',
+    'update_status', 'assign', 'merge', 'delete',
+  ]);
 
   private async call<T extends { success: boolean }>(
     action: string,
@@ -381,10 +386,12 @@ export class TicketService {
   ): Promise<T> {
     const correlationId = newCorrelationId();
     const timeoutMs = opts.timeoutMs ?? TicketService.CALL_TIMEOUT_MS;
+    const isMutating = TicketService.MUTATING_ACTIONS.has(action);
+    const maxRetries = isMutating ? 0 : TicketService.MAX_RETRIES;
 
     let lastError: Error | null = null;
 
-    for (let attempt = 0; attempt <= TicketService.MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       // Back-off before retries (not before the first attempt)
       if (attempt > 0) {
         const delay = TicketService.RETRY_BACKOFF[attempt - 1] ?? 3_000;
@@ -412,6 +419,7 @@ export class TicketService {
           headers: {
             ...authHeader,
             'x-request-id': correlationId,
+            ...(isMutating ? { 'x-idempotency-key': correlationId } : {}),
           },
         });
 

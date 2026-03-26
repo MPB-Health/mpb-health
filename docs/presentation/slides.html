@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<title>MPB Health Platform Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:#0f1419;overflow:hidden}
+  .slide{width:1920px;height:1080px;position:relative;overflow:hidden;display:none}
+  .slide.active{display:block}
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif}
+
+  /* ─── SLIDE 1: TITLE ─── */
+  .slide-1{background:linear-gradient(135deg,#0a1a1a 0%,#0f2e2e 35%,#122a2a 65%,#0d1f1f 100%)}
+  .slide-1 .bg-grid{position:absolute;inset:0;background-image:
+    linear-gradient(rgba(26,92,92,.08) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(26,92,92,.08) 1px,transparent 1px);
+    background-size:60px 60px}
+  .slide-1 .orb{position:absolute;border-radius:50%;filter:blur(80px)}
+  .slide-1 .orb-1{width:600px;height:600px;background:radial-gradient(circle,rgba(196,92,62,.15),transparent);top:-100px;right:-100px}
+  .slide-1 .orb-2{width:500px;height:500px;background:radial-gradient(circle,rgba(42,107,143,.12),transparent);bottom:-150px;left:-80px}
+  .slide-1 .orb-3{width:300px;height:300px;background:radial-gradient(circle,rgba(45,143,107,.1),transparent);top:40%;left:35%}
+  .slide-1 .content{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;height:100%;padding:0 140px}
+  .slide-1 .tag{display:inline-flex;align-items:center;gap:8px;background:rgba(26,92,92,.25);border:1px solid rgba(26,92,92,.4);border-radius:100px;padding:10px 24px;font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:#5db8b8;margin-bottom:40px}
+  .slide-1 .tag .dot{width:8px;height:8px;border-radius:50%;background:#34d399;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .slide-1 h1{font-size:82px;color:#f1f5f0;line-height:1.05;font-weight:800;max-width:1100px}
+  .slide-1 h1 span{background:linear-gradient(135deg,#34d399,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .slide-1 .subtitle{font-size:24px;color:#8aa8a8;margin-top:28px;max-width:800px;line-height:1.6;font-weight:400}
+  .slide-1 .bottom-bar{position:absolute;bottom:0;left:0;right:0;height:80px;display:flex;align-items:center;padding:0 140px;gap:60px;border-top:1px solid rgba(26,92,92,.2)}
+  .slide-1 .bottom-bar .stat{display:flex;flex-direction:column;gap:2px}
+  .slide-1 .bottom-bar .stat-val{font-family:'Fraunces',serif;font-size:28px;color:#34d399;font-weight:700}
+  .slide-1 .bottom-bar .stat-lbl{font-size:13px;color:#5a8080;letter-spacing:.05em}
+  .slide-1 .line-accent{position:absolute;top:0;left:0;width:6px;height:100%;background:linear-gradient(180deg,#c45c3e,#2d8f6b,#2a6b8f,#6b5cae)}
+
+  /* ─── SLIDE 2: ARCHITECTURE ─── */
+  .slide-2{background:linear-gradient(135deg,#faf7f2 0%,#eef5f3 50%,#e8f0ee 100%)}
+  .slide-2 .header{padding:60px 100px 0;display:flex;justify-content:space-between;align-items:flex-start}
+  .slide-2 .header h2{font-size:48px;color:#0f2929;font-weight:700}
+  .slide-2 .header .badge{background:#0f2929;color:#34d399;font-size:13px;padding:8px 20px;border-radius:100px;letter-spacing:.1em;text-transform:uppercase}
+  .slide-2 .arch-canvas{position:relative;width:1720px;height:860px;margin:20px auto 0}
+  .app-node{position:absolute;border-radius:20px;padding:28px 32px;color:#fff;box-shadow:0 16px 40px rgba(0,0,0,.12)}
+  .app-node h3{font-size:22px;margin-bottom:4px;font-weight:700}
+  .app-node .domain{font-size:13px;opacity:.8;margin-bottom:12px;font-family:'DM Sans',sans-serif}
+  .app-node .features{font-size:14px;line-height:1.7;opacity:.92;font-family:'DM Sans',sans-serif}
+  .node-website{background:linear-gradient(135deg,#c45c3e,#9e3d2a);width:360px;top:40px;left:40px}
+  .node-crm{background:linear-gradient(135deg,#2a6b8f,#1d4d6d);width:360px;top:40px;right:40px}
+  .node-admin{background:linear-gradient(135deg,#6b5cae,#453a7a);width:340px;bottom:120px;left:40px}
+  .node-advisor{background:linear-gradient(135deg,#2d8f6b,#1e6b4f);width:340px;bottom:120px;right:220px}
+  .node-concierge{background:linear-gradient(135deg,#b8860b,#8b6508);width:340px;bottom:120px;right:40px;border:2px solid #ffd700}
+  .node-concierge .new-badge{position:absolute;top:-12px;right:20px;background:#ffd700;color:#1a1a00;font-size:11px;font-weight:700;padding:4px 14px;border-radius:100px;letter-spacing:.1em;text-transform:uppercase}
+  .hub-node{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:440px;height:180px;border-radius:24px;background:linear-gradient(135deg,#1a5c5c,#0f3d3f);border:2px solid rgba(201,162,39,.4);box-shadow:0 20px 60px rgba(15,61,63,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;z-index:10}
+  .hub-node h3{font-size:26px;font-weight:700;margin-bottom:6px}
+  .hub-node p{font-size:14px;color:#b8d9d4;max-width:340px;line-height:1.5}
+  .hub-node .gold{color:#c9a227;font-style:italic;font-size:13px;margin-top:8px}
+  .slide-2 svg.connections{position:absolute;inset:0;z-index:5;pointer-events:none}
+  .slide-2 .foot{position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:12px;color:#6a8a8a}
+
+  /* ─── SLIDE 3-7: APP BLUEPRINTS ─── */
+  .blueprint{display:flex;height:100%}
+  .blueprint .left{width:680px;padding:80px 80px;display:flex;flex-direction:column;justify-content:center;color:#fff}
+  .blueprint .left .app-icon{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:32px;border:2px solid rgba(255,255,255,.2)}
+  .blueprint .left h2{font-size:52px;font-weight:800;line-height:1.1;margin-bottom:8px}
+  .blueprint .left .url{font-size:16px;opacity:.7;margin-bottom:32px}
+  .blueprint .left .desc{font-size:18px;line-height:1.7;opacity:.9;margin-bottom:40px}
+  .blueprint .left .deps{display:flex;flex-wrap:wrap;gap:8px}
+  .blueprint .left .dep{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);padding:6px 16px;border-radius:100px;font-size:12px;color:rgba(255,255,255,.85)}
+  .blueprint .right{flex:1;background:rgba(255,255,255,.04);border-left:1px solid rgba(255,255,255,.08);padding:60px 70px;display:flex;flex-direction:column;justify-content:center}
+  .blueprint .right h3{font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:28px}
+  .feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 28px}
+  .feature-item{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px}
+  .feature-item .icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .feature-item .text h4{font-size:15px;color:rgba(255,255,255,.92);font-weight:600;margin-bottom:3px;font-family:'Fraunces',serif}
+  .feature-item .text p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.4}
+
+  .bg-website{background:linear-gradient(135deg,#1a0f0a,#2e1810,#1a0f0a)}
+  .bg-crm{background:linear-gradient(135deg,#0a1520,#142838,#0a1520)}
+  .bg-admin{background:linear-gradient(135deg,#120e1f,#1e1838,#120e1f)}
+  .bg-advisor{background:linear-gradient(135deg,#0a1a14,#142e22,#0a1a14)}
+  .bg-concierge{background:linear-gradient(135deg,#1a1500,#2e2200,#1a1500)}
+
+  .accent-website{background:rgba(196,92,62,.2);color:#f4a68a}
+  .accent-crm{background:rgba(42,107,143,.2);color:#7ac4e8}
+  .accent-admin{background:rgba(107,92,174,.2);color:#b8a8e8}
+  .accent-advisor{background:rgba(45,143,107,.2);color:#7ae8c4}
+  .accent-concierge{background:rgba(184,134,11,.2);color:#ffd966}
+
+  /* ─── SLIDE 8: SHARED PACKAGES ─── */
+  .slide-8{background:linear-gradient(135deg,#12151c,#1a2230,#12151c)}
+  .slide-8 .rail{position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent,#22d3ee 50%,#a78bfa 80%,transparent)}
+  .slide-8 .content{position:relative;z-index:2;padding:70px 100px;height:100%;display:flex;flex-direction:column}
+  .slide-8 h2{font-size:48px;color:#f1f5f9;font-weight:700;margin-bottom:8px}
+  .slide-8 .sub{font-size:18px;color:#64748b;margin-bottom:40px}
+  .pkg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;flex:1}
+  .pkg-card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;display:flex;flex-direction:column}
+  .pkg-card .name{font-family:'DM Sans',monospace;font-size:15px;color:#e2e8f0;font-weight:600;margin-bottom:8px}
+  .pkg-card .role{font-size:13px;color:#94a3b8;line-height:1.5;flex:1}
+  .pkg-card .users{margin-top:14px;display:flex;gap:6px;flex-wrap:wrap}
+  .pkg-card .user-dot{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.1)}
+  .dot-web{background:#c45c3e}.dot-crm{background:#2a6b8f}.dot-admin{background:#6b5cae}.dot-adv{background:#2d8f6b}.dot-con{background:#b8860b}
+  .pkg-card.highlight{border-color:rgba(34,211,238,.3);background:linear-gradient(135deg,#1e293b,#0c4a6e20)}
+
+  /* ─── SLIDE 9: TECH STACK ─── */
+  .slide-9{background:linear-gradient(135deg,#faf7f2,#f0f4f2,#e8f0ee)}
+  .slide-9 .content{padding:70px 100px;height:100%;display:flex;flex-direction:column}
+  .slide-9 h2{font-size:48px;color:#0f2929;font-weight:700;margin-bottom:8px}
+  .slide-9 .sub{font-size:18px;color:#5a7a7a;margin-bottom:40px}
+  .tech-rows{flex:1;display:flex;flex-direction:column;gap:20px}
+  .tech-row{display:flex;gap:20px;flex:1}
+  .tech-card{flex:1;border-radius:18px;padding:32px;display:flex;flex-direction:column}
+  .tech-card h3{font-family:'Fraunces',serif;font-size:22px;margin-bottom:6px}
+  .tech-card .items{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto}
+  .tech-card .item{padding:8px 18px;border-radius:100px;font-size:14px;font-weight:500}
+  .tc-frontend{background:linear-gradient(135deg,#1a5c5c,#0f3d3f);color:#fff}
+  .tc-frontend .item{background:rgba(255,255,255,.12);color:rgba(255,255,255,.9)}
+  .tc-backend{background:linear-gradient(135deg,#2a6b8f,#1d4d6d);color:#fff}
+  .tc-backend .item{background:rgba(255,255,255,.12);color:rgba(255,255,255,.9)}
+  .tc-infra{background:linear-gradient(135deg,#6b5cae,#453a7a);color:#fff}
+  .tc-infra .item{background:rgba(255,255,255,.12);color:rgba(255,255,255,.9)}
+  .tc-dx{background:#0f2929;color:#fff}
+  .tc-dx .item{background:rgba(255,255,255,.1);color:rgba(255,255,255,.85)}
+  .tc-quality{background:linear-gradient(135deg,#2d8f6b,#1e6b4f);color:#fff}
+  .tc-quality .item{background:rgba(255,255,255,.12);color:rgba(255,255,255,.9)}
+  .tc-ai{background:linear-gradient(135deg,#b8860b,#8b6508);color:#fff}
+  .tc-ai .item{background:rgba(255,255,255,.12);color:rgba(255,255,255,.9)}
+
+  .nav{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;gap:8px}
+  .nav button{background:#1a5c5c;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px}
+  .nav button:hover{background:#2d8f6b}
+  .nav .counter{color:#fff;font-size:13px;display:flex;align-items:center;padding:0 12px}
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: TITLE -->
+<div class="slide slide-1 active" id="slide-1">
+  <div class="line-accent"></div>
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="content">
+    <div class="tag"><span class="dot"></span> Platform Blueprint 2026</div>
+    <h1>MPB Health<br><span>Digital Platform</span></h1>
+    <div class="subtitle">A unified monorepo powering public enrollment, CRM sales operations, advisor field tools, administrative controls, and concierge member services — all connected through one shared data layer.</div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat"><span class="stat-val">5</span><span class="stat-lbl">Applications</span></div>
+    <div class="stat"><span class="stat-val">12+</span><span class="stat-lbl">Shared Packages</span></div>
+    <div class="stat"><span class="stat-val">1</span><span class="stat-lbl">Unified Database</span></div>
+    <div class="stat"><span class="stat-val">30+</span><span class="stat-lbl">Edge Functions</span></div>
+  </div>
+</div>
+
+<!-- SLIDE 2: ARCHITECTURE -->
+<div class="slide slide-2" id="slide-2">
+  <div class="header">
+    <h2>Platform architecture</h2>
+    <div class="badge">How it all connects</div>
+  </div>
+  <div class="arch-canvas">
+    <svg class="connections" viewBox="0 0 1720 860">
+      <defs>
+        <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1a5c5c" opacity=".5"/></marker>
+      </defs>
+      <!-- Website to Hub -->
+      <path d="M 320 260 Q 550 350 680 390" stroke="#c45c3e" stroke-width="2.5" fill="none" opacity=".4" marker-end="url(#ah)"/>
+      <!-- CRM to Hub -->
+      <path d="M 1400 260 Q 1170 350 1040 390" stroke="#2a6b8f" stroke-width="2.5" fill="none" opacity=".4" marker-end="url(#ah)"/>
+      <!-- Admin to Hub -->
+      <path d="M 300 540 Q 500 480 680 440" stroke="#6b5cae" stroke-width="2.5" fill="none" opacity=".4" marker-end="url(#ah)"/>
+      <!-- Advisor to Hub -->
+      <path d="M 1150 540 Q 1000 480 1040 440" stroke="#2d8f6b" stroke-width="2.5" fill="none" opacity=".4" marker-end="url(#ah)"/>
+      <!-- Concierge to Hub -->
+      <path d="M 1500 540 Q 1250 480 1040 440" stroke="#b8860b" stroke-width="2.5" fill="none" opacity=".4" marker-end="url(#ah)"/>
+      <!-- Website to CRM data flow -->
+      <path d="M 400 120 L 1320 120" stroke="#1a5c5c" stroke-width="1.5" stroke-dasharray="8 6" fill="none" opacity=".2"/>
+      <text x="860" y="112" text-anchor="middle" font-size="11" fill="#5a8080" font-family="'DM Sans',sans-serif">Leads flow from website to CRM automatically</text>
+      <!-- Admin to Advisor content flow -->
+      <path d="M 380 620 L 1060 620" stroke="#1a5c5c" stroke-width="1.5" stroke-dasharray="8 6" fill="none" opacity=".2"/>
+      <text x="720" y="612" text-anchor="middle" font-size="11" fill="#5a8080" font-family="'DM Sans',sans-serif">Admin publishes content consumed by Advisor + Concierge portals</text>
+    </svg>
+
+    <div class="app-node node-website">
+      <h3>Public Website</h3>
+      <div class="domain">www.mpb.health</div>
+      <div class="features">Marketing hub, lead capture,<br>quote flows, enrollment journeys,<br>member portal, advisor directory</div>
+    </div>
+    <div class="app-node node-crm">
+      <h3>CRM</h3>
+      <div class="domain">crm.mpb.health</div>
+      <div class="features">Sales pipeline, contacts,<br>deals, email sequences,<br>reporting, forecasting</div>
+    </div>
+    <div class="app-node node-admin">
+      <h3>Admin Portal</h3>
+      <div class="domain">admin.mpb.health</div>
+      <div class="features">CMS, user mgmt, plans,<br>operations, analytics,<br>support, settings</div>
+    </div>
+    <div class="app-node node-advisor">
+      <h3>Advisor Portal</h3>
+      <div class="domain">advisors.mpb.health</div>
+      <div class="features">Training, SOPs, tickets,<br>chat, events, forms,<br>resources, AI tools</div>
+    </div>
+    <div class="app-node node-concierge">
+      <span class="new-badge">New</span>
+      <h3>Concierge Portal</h3>
+      <div class="domain">concierge.mpb.health</div>
+      <div class="features">Member guidance, care<br>navigation, enrollment<br>help, support workflows</div>
+    </div>
+    <div class="hub-node">
+      <h3>Shared Platform Core</h3>
+      <p>Supabase PostgreSQL, Edge Functions, Auth, RLS — single source of truth</p>
+      <span class="gold">Every app reads and writes the same data layer</span>
+    </div>
+  </div>
+  <div class="foot">MPB Health Monorepo — Turborepo / React / TypeScript / Vite / Supabase</div>
+</div>
+
+<!-- SLIDE 3: WEBSITE -->
+<div class="slide" id="slide-3">
+  <div class="blueprint bg-website">
+    <div class="left">
+      <div class="app-icon" style="background:rgba(196,92,62,.3)">🌐</div>
+      <h2 style="color:#f4a68a">Public Website</h2>
+      <div class="url">www.mpb.health</div>
+      <div class="desc">The front door of the platform. Marketing, education, lead capture, and enrollment journeys — all in one responsive SPA. Captures leads that flow directly into the CRM pipeline.</div>
+      <div class="deps">
+        <span class="dep">@mpbhealth/ui</span>
+        <span class="dep">@mpbhealth/auth</span>
+        <span class="dep">@mpbhealth/database</span>
+        <span class="dep">@mpbhealth/crm-core</span>
+        <span class="dep">@mpbhealth/plans-core</span>
+        <span class="dep">@mpbhealth/config</span>
+        <span class="dep">@mpbhealth/utils</span>
+      </div>
+    </div>
+    <div class="right">
+      <h3>Key capabilities</h3>
+      <div class="feature-grid">
+        <div class="feature-item"><div class="icon accent-website">📣</div><div class="text"><h4>Marketing Hub</h4><p>Landing pages, plans, benefits, features, and blog content</p></div></div>
+        <div class="feature-item"><div class="icon accent-website">📝</div><div class="text"><h4>Lead Capture</h4><p>Employer, member, and advisor forms with instant CRM sync</p></div></div>
+        <div class="feature-item"><div class="icon accent-website">💰</div><div class="text"><h4>Quote Engine</h4><p>Quick rate estimates that convert visitors into qualified leads</p></div></div>
+        <div class="feature-item"><div class="icon accent-website">📋</div><div class="text"><h4>Enrollment Flows</h4><p>Guided enrollment journeys for members and employers</p></div></div>
+        <div class="feature-item"><div class="icon accent-website">👤</div><div class="text"><h4>Member Portal</h4><p>Authenticated area for existing members to manage their accounts</p></div></div>
+        <div class="feature-item"><div class="icon accent-website">🔍</div><div class="text"><h4>Advisor Directory</h4><p>Public-facing advisor search and profile pages</p></div></div>
+        <div class="feature-item"><div class="icon accent-website">📰</div><div class="text"><h4>Content Platform</h4><p>Blog, events, resources, newsletters, and handbook pages</p></div></div>
+        <div class="feature-item"><div class="icon accent-website">🔗</div><div class="text"><h4>CMS Integration</h4><p>Admin-published content renders seamlessly on the public site</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: CRM -->
+<div class="slide" id="slide-4">
+  <div class="blueprint bg-crm">
+    <div class="left">
+      <div class="app-icon" style="background:rgba(42,107,143,.3)">📊</div>
+      <h2 style="color:#7ac4e8">CRM</h2>
+      <div class="url">crm.mpb.health</div>
+      <div class="desc">Full-featured CRM replacing Zoho. Manages the complete sales lifecycle from lead capture through deal close, with built-in email, pipeline management, and reporting. Directly consumes leads from the public website.</div>
+      <div class="deps">
+        <span class="dep">@mpbhealth/crm-core</span>
+        <span class="dep">@mpbhealth/plans-core</span>
+        <span class="dep">@mpbhealth/auth</span>
+        <span class="dep">@mpbhealth/database</span>
+        <span class="dep">@mpbhealth/ui</span>
+        <span class="dep">@mpbhealth/config</span>
+        <span class="dep">@mpbhealth/utils</span>
+      </div>
+    </div>
+    <div class="right">
+      <h3>Key capabilities</h3>
+      <div class="feature-grid">
+        <div class="feature-item"><div class="icon accent-crm">🔀</div><div class="text"><h4>Sales Pipeline</h4><p>Visual deal stages, ownership, forecasting, and conversion tracking</p></div></div>
+        <div class="feature-item"><div class="icon accent-crm">👥</div><div class="text"><h4>Contacts & Accounts</h4><p>Full contact management with company-level relationships</p></div></div>
+        <div class="feature-item"><div class="icon accent-crm">📧</div><div class="text"><h4>Email System</h4><p>Connected inbox, sequences, templates, and deliverability tools</p></div></div>
+        <div class="feature-item"><div class="icon accent-crm">📈</div><div class="text"><h4>Reports & Analytics</h4><p>Recharts dashboards, forecasting, and sales activity metrics</p></div></div>
+        <div class="feature-item"><div class="icon accent-crm">🎯</div><div class="text"><h4>Lead Management</h4><p>Auto-assignment rules, scoring, and quick rate estimate leads</p></div></div>
+        <div class="feature-item"><div class="icon accent-crm">📄</div><div class="text"><h4>Quotes & Invoices</h4><p>Products, price books, quotes, purchase/sales orders</p></div></div>
+        <div class="feature-item"><div class="icon accent-crm">🏗️</div><div class="text"><h4>CRM Studio</h4><p>Custom modules, fields, and web forms builder</p></div></div>
+        <div class="feature-item"><div class="icon accent-crm">📅</div><div class="text"><h4>Activity Suite</h4><p>Tasks, calendar, meetings, calls, approvals, and campaigns</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: ADVISOR PORTAL -->
+<div class="slide" id="slide-5">
+  <div class="blueprint bg-advisor">
+    <div class="left">
+      <div class="app-icon" style="background:rgba(45,143,107,.3)">🏆</div>
+      <h2 style="color:#7ae8c4">Advisor Portal</h2>
+      <div class="url">advisors.mpb.health</div>
+      <div class="desc">The command center for field advisors and agents. Training, compliance, communication, and support tools — all in one place. Powered by the Champion Advisor OS for engagement and AI-assisted workflows.</div>
+      <div class="deps">
+        <span class="dep">@mpbhealth/advisor-core</span>
+        <span class="dep">@mpbhealth/champion-core</span>
+        <span class="dep">@mpbhealth/auth</span>
+        <span class="dep">@mpbhealth/database</span>
+        <span class="dep">@mpbhealth/ui</span>
+        <span class="dep">@mpbhealth/config</span>
+        <span class="dep">@mpbhealth/utils</span>
+      </div>
+    </div>
+    <div class="right">
+      <h3>Key capabilities</h3>
+      <div class="feature-grid">
+        <div class="feature-item"><div class="icon accent-advisor">📚</div><div class="text"><h4>Training Center</h4><p>Multi-track training: MPB, Sedera, Zion, Cards, HSA, Care Plus</p></div></div>
+        <div class="feature-item"><div class="icon accent-advisor">📋</div><div class="text"><h4>SOP Library</h4><p>Standard operating procedures with section-based navigation</p></div></div>
+        <div class="feature-item"><div class="icon accent-advisor">💬</div><div class="text"><h4>Real-Time Chat</h4><p>Direct messaging, conversations, and inbox threads</p></div></div>
+        <div class="feature-item"><div class="icon accent-advisor">🎫</div><div class="text"><h4>Support Tickets</h4><p>Create, track, and manage support tickets with rich editor</p></div></div>
+        <div class="feature-item"><div class="icon accent-advisor">📰</div><div class="text"><h4>Bulletins & News</h4><p>Company communications, announcements, and updates</p></div></div>
+        <div class="feature-item"><div class="icon accent-advisor">🎥</div><div class="text"><h4>Video Library</h4><p>Training videos and educational content on demand</p></div></div>
+        <div class="feature-item"><div class="icon accent-advisor">🤖</div><div class="text"><h4>AI Assistant</h4><p>AI suggestions panel, message assistance, and smart tools</p></div></div>
+        <div class="feature-item"><div class="icon accent-advisor">📱</div><div class="text"><h4>PWA & Mobile</h4><p>Installable app, push notifications, mobile-optimized nav</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: ADMIN PORTAL -->
+<div class="slide" id="slide-6">
+  <div class="blueprint bg-admin">
+    <div class="left">
+      <div class="app-icon" style="background:rgba(107,92,174,.3)">⚙️</div>
+      <h2 style="color:#b8a8e8">Admin Portal</h2>
+      <div class="url">admin.mpb.health</div>
+      <div class="desc">The operations command center. Manages users, content, plans, enrollment links, support, and platform configuration. Content published here flows to the website, advisor portal, and concierge portal automatically.</div>
+      <div class="deps">
+        <span class="dep">@mpbhealth/admin-core</span>
+        <span class="dep">@mpbhealth/plans-core</span>
+        <span class="dep">@mpbhealth/auth</span>
+        <span class="dep">@mpbhealth/database</span>
+        <span class="dep">@mpbhealth/ui</span>
+        <span class="dep">@mpbhealth/config</span>
+        <span class="dep">@mpbhealth/utils</span>
+      </div>
+    </div>
+    <div class="right">
+      <h3>Key capabilities</h3>
+      <div class="feature-grid">
+        <div class="feature-item"><div class="icon accent-admin">📝</div><div class="text"><h4>Content CMS</h4><p>Blog, bulletins, resources, training, SOPs, videos, handbooks</p></div></div>
+        <div class="feature-item"><div class="icon accent-admin">👥</div><div class="text"><h4>User Management</h4><p>User accounts, advisor access control, and member management</p></div></div>
+        <div class="feature-item"><div class="icon accent-admin">💊</div><div class="text"><h4>Plan Editor</h4><p>Create and manage health plan configurations and pricing</p></div></div>
+        <div class="feature-item"><div class="icon accent-admin">📊</div><div class="text"><h4>Analytics Dashboard</h4><p>Platform-wide metrics, reports, and system health monitoring</p></div></div>
+        <div class="feature-item"><div class="icon accent-admin">🎫</div><div class="text"><h4>Support Management</h4><p>Ticket categories, queue management, and chat moderation</p></div></div>
+        <div class="feature-item"><div class="icon accent-admin">⚡</div><div class="text"><h4>Operations</h4><p>Leads, newsletter, lead assignment, promo codes, SMS config</p></div></div>
+        <div class="feature-item"><div class="icon accent-admin">📋</div><div class="text"><h4>Audit Logs</h4><p>Full audit trail of platform changes and user actions</p></div></div>
+        <div class="feature-item"><div class="icon accent-admin">🔧</div><div class="text"><h4>Platform Settings</h4><p>Payments, e-sign, widgets, notifications, portal config</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: CONCIERGE PORTAL (NEW) -->
+<div class="slide" id="slide-7">
+  <div class="blueprint bg-concierge">
+    <div class="left">
+      <div class="app-icon" style="background:rgba(184,134,11,.3);border-color:rgba(255,215,0,.3)">🔔</div>
+      <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span style="background:#ffd700;color:#1a1a00;font-size:12px;font-weight:700;padding:6px 18px;border-radius:100px;letter-spacing:.1em;text-transform:uppercase">New Application</span>
+      </div>
+      <h2 style="color:#ffd966">Concierge Portal</h2>
+      <div class="url">concierge.mpb.health</div>
+      <div class="desc">A dedicated hub for concierge staff to guide members through care navigation, enrollment, and support — mirroring the advisor portal's architecture but tailored for member-facing concierge workflows. Built on the same shared packages.</div>
+      <div class="deps">
+        <span class="dep">@mpbhealth/advisor-core</span>
+        <span class="dep">@mpbhealth/champion-core</span>
+        <span class="dep">@mpbhealth/auth</span>
+        <span class="dep">@mpbhealth/database</span>
+        <span class="dep">@mpbhealth/ui</span>
+        <span class="dep">@mpbhealth/config</span>
+        <span class="dep">@mpbhealth/utils</span>
+      </div>
+    </div>
+    <div class="right">
+      <h3>Planned capabilities</h3>
+      <div class="feature-grid">
+        <div class="feature-item"><div class="icon accent-concierge">🧭</div><div class="text"><h4>Care Navigation</h4><p>Guide members to the right providers, services, and resources</p></div></div>
+        <div class="feature-item"><div class="icon accent-concierge">📋</div><div class="text"><h4>Enrollment Assistance</h4><p>Walk members through plan selection and enrollment completion</p></div></div>
+        <div class="feature-item"><div class="icon accent-concierge">💬</div><div class="text"><h4>Member Chat</h4><p>Real-time messaging with members for support and guidance</p></div></div>
+        <div class="feature-item"><div class="icon accent-concierge">🎫</div><div class="text"><h4>Support Tickets</h4><p>Create and manage member support cases with full history</p></div></div>
+        <div class="feature-item"><div class="icon accent-concierge">📚</div><div class="text"><h4>Knowledge Base</h4><p>Quick access to SOPs, training materials, and plan details</p></div></div>
+        <div class="feature-item"><div class="icon accent-concierge">📊</div><div class="text"><h4>Member Dashboard</h4><p>View member profiles, enrollment status, and interaction history</p></div></div>
+        <div class="feature-item"><div class="icon accent-concierge">🤖</div><div class="text"><h4>AI Assistance</h4><p>Smart suggestions and message drafting for member interactions</p></div></div>
+        <div class="feature-item"><div class="icon accent-concierge">🔔</div><div class="text"><h4>Notifications & Alerts</h4><p>Push notifications, task reminders, and escalation workflows</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: SHARED PACKAGES -->
+<div class="slide slide-8" id="slide-8">
+  <div class="rail"></div>
+  <div class="content">
+    <h2>Shared packages & infrastructure</h2>
+    <div class="sub">Reusable code powering every app — one library to rule each domain</div>
+    <div class="pkg-grid">
+      <div class="pkg-card highlight">
+        <div class="name">@mpbhealth/database</div>
+        <div class="role">Supabase client, generated types, and migration pipeline. The single connection layer for all apps.</div>
+        <div class="users"><span class="user-dot dot-web"></span><span class="user-dot dot-crm"></span><span class="user-dot dot-admin"></span><span class="user-dot dot-adv"></span><span class="user-dot dot-con"></span></div>
+      </div>
+      <div class="pkg-card highlight">
+        <div class="name">@mpbhealth/auth</div>
+        <div class="role">Shared authentication layer with Supabase Auth, session management, and role-based access.</div>
+        <div class="users"><span class="user-dot dot-web"></span><span class="user-dot dot-crm"></span><span class="user-dot dot-admin"></span><span class="user-dot dot-adv"></span><span class="user-dot dot-con"></span></div>
+      </div>
+      <div class="pkg-card highlight">
+        <div class="name">@mpbhealth/ui</div>
+        <div class="role">Shared React component library and design system. Consistent look and feel across all surfaces.</div>
+        <div class="users"><span class="user-dot dot-web"></span><span class="user-dot dot-crm"></span><span class="user-dot dot-admin"></span><span class="user-dot dot-adv"></span><span class="user-dot dot-con"></span></div>
+      </div>
+      <div class="pkg-card">
+        <div class="name">@mpbhealth/crm-core</div>
+        <div class="role">CRM domain logic: leads, pipeline, email, deals, accounts, automation, and Zoho migration.</div>
+        <div class="users"><span class="user-dot dot-web"></span><span class="user-dot dot-crm"></span></div>
+      </div>
+      <div class="pkg-card">
+        <div class="name">@mpbhealth/advisor-core</div>
+        <div class="role">Advisor workflows: training, meetings, content, forms, tickets, chat, events, and portal settings.</div>
+        <div class="users"><span class="user-dot dot-adv"></span><span class="user-dot dot-con"></span></div>
+      </div>
+      <div class="pkg-card">
+        <div class="name">@mpbhealth/champion-core</div>
+        <div class="role">Champion Advisor OS: engagement inbox, sequences, compliance, and AI-powered assistant tools.</div>
+        <div class="users"><span class="user-dot dot-adv"></span><span class="user-dot dot-con"></span></div>
+      </div>
+      <div class="pkg-card">
+        <div class="name">@mpbhealth/admin-core</div>
+        <div class="role">Admin domain logic: builds on advisor-core for CMS, user management, and platform operations.</div>
+        <div class="users"><span class="user-dot dot-admin"></span></div>
+      </div>
+      <div class="pkg-card">
+        <div class="name">@mpbhealth/plans-core</div>
+        <div class="role">Plan data, pricing rules, and rate calculation engine shared across quote and enrollment flows.</div>
+        <div class="users"><span class="user-dot dot-web"></span><span class="user-dot dot-crm"></span><span class="user-dot dot-admin"></span></div>
+      </div>
+      <div class="pkg-card">
+        <div class="name">@mpbhealth/config</div>
+        <div class="role">Shared environment configuration, feature flags, and Tailwind design presets.</div>
+        <div class="users"><span class="user-dot dot-web"></span><span class="user-dot dot-crm"></span><span class="user-dot dot-admin"></span><span class="user-dot dot-adv"></span><span class="user-dot dot-con"></span></div>
+      </div>
+      <div class="pkg-card">
+        <div class="name">@mpbhealth/utils</div>
+        <div class="role">Shared utilities, Zod validation schemas, sanitization, and date/format helpers.</div>
+        <div class="users"><span class="user-dot dot-web"></span><span class="user-dot dot-crm"></span><span class="user-dot dot-admin"></span><span class="user-dot dot-adv"></span><span class="user-dot dot-con"></span></div>
+      </div>
+      <div class="pkg-card" style="grid-column:span 2">
+        <div class="name">Supabase Edge Functions</div>
+        <div class="role">30+ serverless functions: bulletin notifications, password resets, bulk advisor import, ticket proxy, chat service, portal SSO, CRM sync agents, email delivery, and more. The shared API layer all apps call into.</div>
+        <div class="users"><span class="user-dot dot-web"></span><span class="user-dot dot-crm"></span><span class="user-dot dot-admin"></span><span class="user-dot dot-adv"></span><span class="user-dot dot-con"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9: TECH STACK -->
+<div class="slide slide-9" id="slide-9">
+  <div class="content">
+    <h2>Technology stack</h2>
+    <div class="sub">Modern, battle-tested tools chosen for speed, reliability, and developer experience</div>
+    <div class="tech-rows">
+      <div class="tech-row">
+        <div class="tech-card tc-frontend">
+          <h3>Frontend</h3>
+          <p style="font-size:14px;opacity:.7;margin-bottom:16px">UI framework and rendering</p>
+          <div class="items">
+            <span class="item">React 18</span>
+            <span class="item">TypeScript</span>
+            <span class="item">Vite</span>
+            <span class="item">React Router</span>
+            <span class="item">Tailwind CSS</span>
+            <span class="item">Framer Motion</span>
+            <span class="item">Tiptap Editor</span>
+          </div>
+        </div>
+        <div class="tech-card tc-backend">
+          <h3>Backend & Data</h3>
+          <p style="font-size:14px;opacity:.7;margin-bottom:16px">Database and API layer</p>
+          <div class="items">
+            <span class="item">Supabase</span>
+            <span class="item">PostgreSQL</span>
+            <span class="item">Row Level Security</span>
+            <span class="item">Edge Functions</span>
+            <span class="item">Supabase Auth</span>
+            <span class="item">Realtime</span>
+          </div>
+        </div>
+        <div class="tech-card tc-infra">
+          <h3>State & Fetching</h3>
+          <p style="font-size:14px;opacity:.7;margin-bottom:16px">Data management patterns</p>
+          <div class="items">
+            <span class="item">TanStack Query</span>
+            <span class="item">Zustand</span>
+            <span class="item">React Hook Form</span>
+            <span class="item">Zod Validation</span>
+          </div>
+        </div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-card tc-dx">
+          <h3>Developer Experience</h3>
+          <p style="font-size:14px;opacity:.7;margin-bottom:16px">Build tooling and workflow</p>
+          <div class="items">
+            <span class="item">Turborepo</span>
+            <span class="item">pnpm Workspaces</span>
+            <span class="item">ESLint</span>
+            <span class="item">Shared TS Config</span>
+            <span class="item">tsup</span>
+          </div>
+        </div>
+        <div class="tech-card tc-quality">
+          <h3>UI & Visualization</h3>
+          <p style="font-size:14px;opacity:.7;margin-bottom:16px">Charts, PDF, and rich UI</p>
+          <div class="items">
+            <span class="item">Recharts</span>
+            <span class="item">jsPDF</span>
+            <span class="item">dnd-kit</span>
+            <span class="item">Sonner</span>
+            <span class="item">Lucide Icons</span>
+          </div>
+        </div>
+        <div class="tech-card tc-ai">
+          <h3>AI & Intelligence</h3>
+          <p style="font-size:14px;opacity:.7;margin-bottom:16px">Smart features and automation</p>
+          <div class="items">
+            <span class="item">AI Suggestions Panel</span>
+            <span class="item">AI Message Assistant</span>
+            <span class="item">Smart Routing</span>
+            <span class="item">Priority OS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <button onclick="go(-1)">&larr; Prev</button>
+  <span class="counter" id="counter">1 / 9</span>
+  <button onclick="go(1)">Next &rarr;</button>
+</div>
+
+<script>
+let cur=0;const slides=document.querySelectorAll('.slide');
+function show(i){slides.forEach(s=>s.classList.remove('active'));slides[i].classList.add('active');document.getElementById('counter').textContent=`${i+1} / ${slides.length}`}
+function go(d){cur=Math.max(0,Math.min(slides.length-1,cur+d));show(cur)}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1)});
+</script>
+</body>
+</html>

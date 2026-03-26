@@ -126,6 +126,7 @@ export default function NewTicket() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     if (!subject.trim()) {
       setError('Subject is required.');
       return;

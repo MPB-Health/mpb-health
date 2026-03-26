@@ -22,6 +22,7 @@ import {
   Link2,
   Briefcase,
   BarChart2,
+  FileImage,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/button';
@@ -61,6 +62,8 @@ interface CMSStats {
   activePricingCharts: number;
   referenceMaterials: number;
   activeReferenceMaterials: number;
+  flyers: number;
+  activeFlyers: number;
   lastUpdated: string | null;
 }
 
@@ -103,6 +106,8 @@ export default function AdvisorCMSHub() {
     activePricingCharts: 0,
     referenceMaterials: 0,
     activeReferenceMaterials: 0,
+    flyers: 0,
+    activeFlyers: 0,
     lastUpdated: null,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -177,6 +182,12 @@ export default function AdvisorCMSHub() {
         return REF_CATS.some(c => lower === c || lower.includes(c));
       }) || [];
       const activeReferenceMaterials = refDocs.filter(d => d.is_active).length;
+      const FLYER_CATS = ['flyers', 'flyers-sedera'];
+      const flyerDocs = toolkitResult.data?.filter(d => {
+        const lower = (d.category || '').toLowerCase();
+        return FLYER_CATS.some(c => lower === c || lower.includes(c));
+      }) || [];
+      const activeFlyers = flyerDocs.filter(d => d.is_active).length;
 
       setStats({
         navigationItems: navResult.count || 0,
@@ -203,6 +214,8 @@ export default function AdvisorCMSHub() {
         activePricingCharts,
         referenceMaterials: refDocs.length,
         activeReferenceMaterials,
+        flyers: flyerDocs.length,
+        activeFlyers,
         lastUpdated: new Date().toISOString(),
       });
 
@@ -370,6 +383,15 @@ export default function AdvisorCMSHub() {
           color: 'indigo',
           stats: `${stats.activeReferenceMaterials} active`,
           badge: stats.referenceMaterials - stats.activeReferenceMaterials > 0 ? `${stats.referenceMaterials - stats.activeReferenceMaterials} hidden` : null,
+        },
+        {
+          title: 'Flyers',
+          description: 'Marketing flyers and product materials',
+          icon: FileImage,
+          href: '/admin/advisor-cms/flyers',
+          color: 'rose',
+          stats: `${stats.activeFlyers} active`,
+          badge: stats.flyers - stats.activeFlyers > 0 ? `${stats.flyers - stats.activeFlyers} hidden` : null,
         },
       ],
     },

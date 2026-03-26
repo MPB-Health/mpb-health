@@ -171,6 +171,7 @@ const AdvisorCMSSettings = lazyAuto(() => import('./pages/admin/advisor-cms/Port
 const AdvisorCMSToolkit = lazyAuto(() => import('./pages/admin/advisor-cms/AdvisorToolkitManager'));
 const AdvisorCMSPricingCharts = lazyAuto(() => import('./pages/admin/advisor-cms/PricingChartsManager'));
 const AdvisorCMSReferenceMaterials = lazyAuto(() => import('./pages/admin/advisor-cms/ReferenceMaterialsManager'));
+const AdvisorCMSFlyers = lazyAuto(() => import('./pages/admin/advisor-cms/FlyersManager'));
 
 // Forms Manager
 const FormsManager = lazyAuto(() => import('./pages/admin/FormsManager'));
@@ -704,6 +705,14 @@ const App = () => {
                     element={
                       <ProtectedRoute requiredRole="admin">
                         <AdvisorCMSReferenceMaterials />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/advisor-cms/flyers"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdvisorCMSFlyers />
                       </ProtectedRoute>
                     }
                   />

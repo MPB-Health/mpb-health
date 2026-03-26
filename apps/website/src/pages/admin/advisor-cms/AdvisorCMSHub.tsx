@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Link2,
   Briefcase,
+  BarChart2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/button';
@@ -56,6 +57,8 @@ interface CMSStats {
   activeEnrollmentLinks: number;
   toolkitDocuments: number;
   activeToolkitDocuments: number;
+  pricingCharts: number;
+  activePricingCharts: number;
   lastUpdated: string | null;
 }
 
@@ -94,6 +97,8 @@ export default function AdvisorCMSHub() {
     activeEnrollmentLinks: 0,
     toolkitDocuments: 0,
     activeToolkitDocuments: 0,
+    pricingCharts: 0,
+    activePricingCharts: 0,
     lastUpdated: null,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -156,6 +161,12 @@ export default function AdvisorCMSHub() {
         return TOOLKIT_CATS.some(c => lower === c || lower.includes(c));
       }) || [];
       const activeToolkitDocuments = toolkitDocs.filter(d => d.is_active).length;
+      const PRICING_CATS = ['pricing charts', 'pricing-charts'];
+      const pricingDocs = toolkitResult.data?.filter(d => {
+        const lower = (d.category || '').toLowerCase();
+        return PRICING_CATS.some(c => lower === c || lower.includes(c));
+      }) || [];
+      const activePricingCharts = pricingDocs.filter(d => d.is_active).length;
 
       setStats({
         navigationItems: navResult.count || 0,
@@ -178,6 +189,8 @@ export default function AdvisorCMSHub() {
         activeEnrollmentLinks,
         toolkitDocuments: toolkitDocs.length,
         activeToolkitDocuments,
+        pricingCharts: pricingDocs.length,
+        activePricingCharts,
         lastUpdated: new Date().toISOString(),
       });
 
@@ -327,6 +340,15 @@ export default function AdvisorCMSHub() {
           color: 'green',
           stats: `${stats.activeToolkitDocuments} active`,
           badge: stats.toolkitDocuments - stats.activeToolkitDocuments > 0 ? `${stats.toolkitDocuments - stats.activeToolkitDocuments} hidden` : null,
+        },
+        {
+          title: 'Pricing Charts',
+          description: 'Product pricing and comparison charts',
+          icon: BarChart2,
+          href: '/admin/advisor-cms/pricing-charts',
+          color: 'orange',
+          stats: `${stats.activePricingCharts} active`,
+          badge: stats.pricingCharts - stats.activePricingCharts > 0 ? `${stats.pricingCharts - stats.activePricingCharts} hidden` : null,
         },
       ],
     },

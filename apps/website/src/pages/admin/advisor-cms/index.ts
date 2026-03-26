@@ -6,3 +6,4 @@ export { default as FormsManager } from './FormsManager';
 export { default as TrainingManager } from './TrainingManager';
 export { default as QuickActionsManager } from './QuickActionsManager';
 export { default as AdvisorToolkitManager } from './AdvisorToolkitManager';
+export { default as PricingChartsManager } from './PricingChartsManager';

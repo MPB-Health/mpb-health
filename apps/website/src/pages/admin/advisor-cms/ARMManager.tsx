@@ -50,7 +50,8 @@ interface SOPDocument {
 }
 
 function matchesArmCategory(category: string): boolean {
-  return (category || '').toLowerCase() === 'arm';
+  const lower = (category || '').toLowerCase();
+  return lower === 'arm' || lower.includes('arm');
 }
 
 function generateSlug(title: string) {

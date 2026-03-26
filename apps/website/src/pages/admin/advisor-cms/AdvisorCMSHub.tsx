@@ -204,10 +204,9 @@ export default function AdvisorCMSHub() {
         return SHARING_CATS.some(c => lower === c || lower.includes(c));
       }) || [];
       const activeSharingGuidelines = sharingDocs.filter(d => d.is_active).length;
-      const ARM_CATS = ['arm'];
       const armDocsList = toolkitResult.data?.filter(d => {
         const lower = (d.category || '').toLowerCase();
-        return ARM_CATS.some(c => lower === c);
+        return lower === 'arm' || lower.includes('arm');
       }) || [];
       const activeArmDocs = armDocsList.filter(d => d.is_active).length;
 

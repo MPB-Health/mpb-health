@@ -10,3 +10,4 @@ export { default as PricingChartsManager } from './PricingChartsManager';
 export { default as ReferenceMaterialsManager } from './ReferenceMaterialsManager';
 export { default as FlyersManager } from './FlyersManager';
 export { default as SharingGuidelinesManager } from './SharingGuidelinesManager';
+export { default as ARMManager } from './ARMManager';

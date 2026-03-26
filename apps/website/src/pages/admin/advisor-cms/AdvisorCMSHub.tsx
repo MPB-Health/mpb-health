@@ -24,6 +24,7 @@ import {
   BarChart2,
   FileImage,
   ClipboardList,
+  Shield,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/button';
@@ -67,6 +68,8 @@ interface CMSStats {
   activeFlyers: number;
   sharingGuidelines: number;
   activeSharingGuidelines: number;
+  armDocs: number;
+  activeArmDocs: number;
   lastUpdated: string | null;
 }
 
@@ -113,6 +116,8 @@ export default function AdvisorCMSHub() {
     activeFlyers: 0,
     sharingGuidelines: 0,
     activeSharingGuidelines: 0,
+    armDocs: 0,
+    activeArmDocs: 0,
     lastUpdated: null,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -199,6 +204,12 @@ export default function AdvisorCMSHub() {
         return SHARING_CATS.some(c => lower === c || lower.includes(c));
       }) || [];
       const activeSharingGuidelines = sharingDocs.filter(d => d.is_active).length;
+      const ARM_CATS = ['arm'];
+      const armDocsList = toolkitResult.data?.filter(d => {
+        const lower = (d.category || '').toLowerCase();
+        return ARM_CATS.some(c => lower === c);
+      }) || [];
+      const activeArmDocs = armDocsList.filter(d => d.is_active).length;
 
       setStats({
         navigationItems: navResult.count || 0,
@@ -229,6 +240,8 @@ export default function AdvisorCMSHub() {
         activeFlyers,
         sharingGuidelines: sharingDocs.length,
         activeSharingGuidelines,
+        armDocs: armDocsList.length,
+        activeArmDocs,
         lastUpdated: new Date().toISOString(),
       });
 
@@ -414,6 +427,15 @@ export default function AdvisorCMSHub() {
           color: 'teal',
           stats: `${stats.activeSharingGuidelines} active`,
           badge: stats.sharingGuidelines - stats.activeSharingGuidelines > 0 ? `${stats.sharingGuidelines - stats.activeSharingGuidelines} hidden` : null,
+        },
+        {
+          title: 'ARM',
+          description: 'ARM program links and resources',
+          icon: Shield,
+          href: '/admin/advisor-cms/arm',
+          color: 'violet',
+          stats: `${stats.activeArmDocs} active`,
+          badge: stats.armDocs - stats.activeArmDocs > 0 ? `${stats.armDocs - stats.activeArmDocs} hidden` : null,
         },
       ],
     },

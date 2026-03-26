@@ -138,7 +138,7 @@ export default function AdvisorCMSHub() {
         supabase.from('advisors').select('id', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('advisor_videos').select('id, is_active', { count: 'exact' }),
         supabase.from('advisor_enrollment_links').select('id, is_active', { count: 'exact' }),
-        supabase.from('sop_documents').select('id, is_active', { count: 'exact' }).in('category', ['presentations', 'advisor handbook', 'commission structure', 'advisor-toolkit']),
+        supabase.from('sop_documents').select('id, is_active, category', { count: 'exact' }),
       ]);
 
       // Calculate stats
@@ -150,7 +150,12 @@ export default function AdvisorCMSHub() {
       ).length || 0;
       const activeVideos = videosResult.data?.filter(v => v.is_active).length || 0;
       const activeEnrollmentLinks = enrollmentLinksResult.data?.filter(e => e.is_active).length || 0;
-      const activeToolkitDocuments = toolkitResult.data?.filter(d => d.is_active).length || 0;
+      const TOOLKIT_CATS = ['presentations', 'advisor handbook', 'commission structure', 'advisor-toolkit'];
+      const toolkitDocs = toolkitResult.data?.filter(d => {
+        const lower = (d.category || '').toLowerCase();
+        return TOOLKIT_CATS.some(c => lower === c || lower.includes(c));
+      }) || [];
+      const activeToolkitDocuments = toolkitDocs.filter(d => d.is_active).length;
 
       setStats({
         navigationItems: navResult.count || 0,
@@ -171,7 +176,7 @@ export default function AdvisorCMSHub() {
         activeVideos,
         enrollmentLinks: enrollmentLinksResult.count || 0,
         activeEnrollmentLinks,
-        toolkitDocuments: toolkitResult.count || 0,
+        toolkitDocuments: toolkitDocs.length,
         activeToolkitDocuments,
         lastUpdated: new Date().toISOString(),
       });

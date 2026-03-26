@@ -58,6 +58,16 @@ const TOOLKIT_CATEGORIES = [
 
 const ALL_CATEGORY_VALUES = TOOLKIT_CATEGORIES.map(c => c.value);
 
+function matchesToolkitCategory(category: string): boolean {
+  const lower = (category || '').toLowerCase();
+  return ALL_CATEGORY_VALUES.some(v => lower === v || lower.includes(v));
+}
+
+function normalizeCategoryKey(category: string): string {
+  const lower = (category || '').toLowerCase();
+  return ALL_CATEGORY_VALUES.find(v => lower === v || lower.includes(v)) || 'advisor-toolkit';
+}
+
 function generateSlug(title: string) {
   return title
     .toLowerCase()
@@ -87,11 +97,11 @@ export default function AdvisorToolkitManager() {
       const { data, error } = await supabase
         .from('sop_documents')
         .select('*')
-        .in('category', ALL_CATEGORY_VALUES)
         .order('order_index', { ascending: true });
 
       if (error) throw error;
-      setDocuments(data || []);
+      const toolkitDocs = (data || []).filter(d => matchesToolkitCategory(d.category));
+      setDocuments(toolkitDocs);
     } catch (error) {
       console.error('Error loading toolkit documents:', error);
       toast.error('Failed to load toolkit documents');
@@ -288,12 +298,12 @@ export default function AdvisorToolkitManager() {
   const filteredDocs = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (doc.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || doc.category === filterCategory;
+    const matchesCategory = filterCategory === 'all' || normalizeCategoryKey(doc.category) === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
   const groupedDocs = TOOLKIT_CATEGORIES.reduce((acc, cat) => {
-    acc[cat.value] = filteredDocs.filter(d => d.category === cat.value);
+    acc[cat.value] = filteredDocs.filter(d => normalizeCategoryKey(d.category) === cat.value);
     return acc;
   }, {} as Record<string, ToolkitDocument[]>);
 

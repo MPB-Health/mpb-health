@@ -54,6 +54,11 @@ function matchesArmCategory(category: string): boolean {
   return lower === 'arm' || lower.includes('arm');
 }
 
+function matchesRxCategory(category: string): boolean {
+  const lower = (category || '').toLowerCase();
+  return lower === 'rx' || lower.includes('rx');
+}
+
 function generateSlug(title: string) {
   return title
     .toLowerCase()
@@ -72,6 +77,7 @@ function extractDomain(url: string): string {
 export default function ARMManager() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<SOPDocument[]>([]);
+  const [rxDocuments, setRxDocuments] = useState<SOPDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -93,8 +99,11 @@ export default function ARMManager() {
         .order('order_index', { ascending: true });
 
       if (error) throw error;
-      const armDocs = (data || []).filter(d => matchesArmCategory(d.category));
+      const allDocs = data || [];
+      const armDocs = allDocs.filter(d => matchesArmCategory(d.category));
+      const rxDocs = allDocs.filter(d => matchesRxCategory(d.category));
       setDocuments(armDocs);
+      setRxDocuments(rxDocs);
     } catch (error) {
       console.error('Error loading ARM resources:', error);
       toast.error('Failed to load ARM resources');
@@ -469,6 +478,83 @@ export default function ARMManager() {
                   </Droppable>
                 </DragDropContext>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Direct Links (RX) */}
+        {!loading && rxDocuments.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Link2 className="w-5 h-5" />
+                  Direct Links
+                </span>
+                <Badge variant="secondary">{rxDocuments.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {rxDocuments.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className={cn(
+                      'flex items-center gap-3 p-3 bg-white border rounded-lg',
+                      !doc.is_active && 'opacity-50'
+                    )}
+                  >
+                    <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                      <Link2 className="w-5 h-5 text-purple-600" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{doc.title}</span>
+                        <ExternalLink className="w-3 h-3 text-gray-400" />
+                      </div>
+                      <p className="text-sm text-gray-500 truncate">
+                        {doc.file_url ? extractDomain(doc.file_url) : 'No URL set'}
+                      </p>
+                    </div>
+
+                    {doc.file_url && (
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hidden sm:flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Open
+                      </a>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleActive(doc)}
+                        title={doc.is_active ? 'Hide' : 'Show'}
+                      >
+                        {doc.is_active ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(doc)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}

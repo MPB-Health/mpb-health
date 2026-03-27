@@ -52,6 +52,7 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
           codeBlock: false,
           code: false,
           horizontalRule: false,
+          link: false,
         }),
         Link.configure({
           openOnClick: false,

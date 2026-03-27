@@ -14,7 +14,7 @@ const OPTIONS = {
     "img",
   ],
   allowedAttributes: {
-    a: ["href", "title", "target", "rel"],
+    a: ["href", "title", "target", "rel", "data-storage-path"],
     span: ["class"],
     div: ["class"],
     p: ["class"],

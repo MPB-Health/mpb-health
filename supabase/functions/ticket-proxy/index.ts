@@ -19,10 +19,11 @@ type ProxyAction =
   | "reply"
   | "update_ticket"
   | "get_categories"
-  | "create_for_advisor";
+  | "create_for_advisor"
+  | "resign_attachments";
 
 const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor"];
-const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories"];
+const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories", "resign_attachments"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_COMMENT_LENGTH = 10_000;
@@ -51,6 +52,8 @@ interface ProxyRequest {
   /** When "html", content is sanitized server-side before insert. Default plain (legacy). */
   content_format?: "plain" | "html";
   is_internal?: boolean;
+  /** Storage paths for resign_attachments action */
+  storage_paths?: string[];
 }
 
 function normalizeContentFormat(raw: unknown): "plain" | "html" {
@@ -1094,6 +1097,45 @@ Deno.serve(async (req: Request) => {
             actor_name: user.email,
           });
         }
+        break;
+      }
+      case "resign_attachments": {
+        const paths = body.storage_paths;
+        if (!Array.isArray(paths) || paths.length === 0) {
+          return new Response(
+            JSON.stringify({ success: false, error: "storage_paths array is required" }),
+            { status: 400, headers },
+          );
+        }
+        if (paths.length > 20) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Maximum 20 paths per request" }),
+            { status: 400, headers },
+          );
+        }
+        // Validate paths belong to user (or user is admin/super_admin)
+        const primaryUrl = Deno.env.get("SUPABASE_URL")!;
+        const primaryServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const primaryAdmin = createClient(primaryUrl, primaryServiceKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const isAdmin = await checkAdminRole(supabaseAdmin, user.id);
+        const signed: { path: string; url: string | null; error?: string }[] = [];
+        for (const p of paths) {
+          if (typeof p !== "string" || (!isAdmin && !p.startsWith(`${user.id}/`))) {
+            signed.push({ path: p, url: null, error: "Access denied" });
+            continue;
+          }
+          const { data, error: signErr } = await primaryAdmin.storage
+            .from("ticket-attachments")
+            .createSignedUrl(p, 60 * 60 * 24 * 365);
+          if (signErr || !data?.signedUrl) {
+            signed.push({ path: p, url: null, error: signErr?.message || "Failed to sign" });
+          } else {
+            signed.push({ path: p, url: data.signedUrl });
+          }
+        }
+        result = { signed_urls: signed };
         break;
       }
       default:

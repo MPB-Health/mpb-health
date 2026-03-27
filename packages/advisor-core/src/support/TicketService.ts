@@ -205,6 +205,7 @@ export interface CreateTicketResult {
 export interface TicketAttachmentUploadResult {
   fileName: string;
   accessUrl: string;
+  storagePath: string;
   size: number;
 }
 
@@ -284,8 +285,9 @@ export class TicketService {
       .map((u, i) => {
         const displayName = esc(friendlyDisplayName(u.fileName, i + 1));
         const href = esc(u.accessUrl);
+        const storagePath = esc(u.storagePath);
         const kb = Math.max(1, Math.round(u.size / 1024));
-        return `<li><a href="${href}" rel="noopener noreferrer" target="_blank">${displayName}</a> <span style="color:#737373">(${kb} KB)</span></li>`;
+        return `<li><a href="${href}" rel="noopener noreferrer" target="_blank" data-storage-path="${storagePath}">${displayName}</a> <span style="color:#737373">(${kb} KB)</span></li>`;
       })
       .join('');
     return `<p><strong>Attachments</strong></p><ul>${items}</ul>`;
@@ -350,7 +352,7 @@ export class TicketService {
 
         const { data: signedData, error: signedError } = await supabase.storage
           .from(TicketService.ATTACHMENTS_BUCKET)
-          .createSignedUrl(path, 60 * 60 * 24);
+          .createSignedUrl(path, 60 * 60 * 24 * 365);
 
         if (signedError || !signedData?.signedUrl) {
           throw signedError || new Error('Failed to create secure attachment URL.');
@@ -359,6 +361,7 @@ export class TicketService {
         uploaded.push({
           fileName: file.name,
           accessUrl: signedData.signedUrl,
+          storagePath: path,
           size: file.size,
         });
       }

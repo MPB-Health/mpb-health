@@ -657,11 +657,14 @@ export class TicketService {
   }
 
   /**
-   * Delete multiple tickets. Closes them since the proxy doesn't support
-   * hard-delete; this is the safest admin bulk action.
+   * Permanently delete tickets and all associated data (comments, SLA,
+   * attachments) from both ITSTS and primary storage.
    */
   async bulkDeleteTickets(ticketIds: string[]): Promise<number> {
-    return this.bulkUpdateTickets(ticketIds, { status: 'closed' });
+    const data = await this.call<{ success: boolean; deleted: number }>('delete_tickets', {
+      ticket_ids: ticketIds,
+    });
+    return data.deleted;
   }
 
   /**

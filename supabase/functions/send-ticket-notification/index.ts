@@ -221,22 +221,8 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
         ),
       });
 
-      // Alert to support team
-      messages.push({
-        to: supportEmail,
-        subject: `🎫 New Ticket #${p.ticket_number} — ${p.subject} [${priorityLabel}]`,
-        html: wrap(
-          `New Ticket #${p.ticket_number}`,
-          `New support ticket submitted by ${safeAdvisorName}`,
-          `<h2 style="margin:0 0 8px;font-size:20px;color:#111827;">New support ticket submitted</h2>
-           <p style="margin:0 0 20px;color:#374151;font-size:15px;">
-             A new ticket has been submitted via the Advisor Portal.
-           </p>
-           ${advisorBlock}
-           ${ctaButton(adminUrl, "Open in Ticket Management")}`,
-          appUrl,
-        ),
-      });
+      // Staff notification is handled by ITSTS notify-staff trigger
+      // (category-based routing to the correct team members).
       break;
     }
 
@@ -269,33 +255,11 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
       break;
     }
 
-    // ── Advisor replied to their ticket (alert support team) ─────────────────
-    case "advisor_replied": {
-      const preview = p.comment
-        ? escapeHtml(p.comment.slice(0, 300) + (p.comment.length > 300 ? "…" : ""))
-        : "";
-      messages.push({
-        to: supportEmail,
-        subject: `💬 Advisor replied — Ticket #${p.ticket_number}: ${p.subject}`,
-        html: wrap(
-          `Advisor Reply — Ticket #${p.ticket_number}`,
-          `${safeAdvisorName} replied to ticket #${p.ticket_number}`,
-          `<h2 style="margin:0 0 8px;font-size:20px;color:#111827;">Advisor replied to a ticket</h2>
-           <p style="margin:0 0 20px;color:#374151;font-size:15px;">
-             ${safeAdvisorName} has added a reply to their support ticket.
-             ${agentLine ? `<br/><span style="color:#6b7280;font-size:13px;">${agentLine}</span>` : ""}
-           </p>
-           ${advisorBlock}
-           ${preview ? `
-           <div style="margin:16px 0;padding:16px;background:#f9fafb;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;">
-             <p style="margin:0;color:#374151;font-size:14px;line-height:1.6;white-space:pre-wrap;">${preview}</p>
-           </div>` : ""}
-           ${ctaButton(adminUrl, "Reply in Ticket Management")}`,
-          appUrl,
-        ),
-      });
+    // ── Advisor replied to their ticket ──────────────────────────────────────
+    // Staff notification is handled by ITSTS comment trigger → notify-staff
+    // (category-based routing with preference checks).
+    case "advisor_replied":
       break;
-    }
 
     // ── Staff/admin replied to advisor ticket ─────────────────────────────────
     case "staff_replied": {

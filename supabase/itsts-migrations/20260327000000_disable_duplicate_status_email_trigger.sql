@@ -15,3 +15,8 @@ DROP TRIGGER IF EXISTS ticket_status_change_email ON public.tickets;
 
 -- Path #3: trigger that calls monorepo send-ticket-notification directly
 DROP TRIGGER IF EXISTS notify_advisor_status_change ON public.tickets;
+
+-- Also: duplicate ticket creation confirmation email
+-- send_ticket_confirmation_email() queues another confirmation to the advisor
+-- via ticket_email_notifications, duplicating the monorepo's created event.
+DROP TRIGGER IF EXISTS trg_ticket_confirmation_email ON public.tickets;

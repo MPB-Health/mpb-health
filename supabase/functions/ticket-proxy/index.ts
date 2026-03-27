@@ -20,9 +20,10 @@ type ProxyAction =
   | "update_ticket"
   | "get_categories"
   | "create_for_advisor"
-  | "resign_attachments";
+  | "resign_attachments"
+  | "delete_tickets";
 
-const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor"];
+const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor", "delete_tickets"];
 const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories", "resign_attachments"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,6 +55,8 @@ interface ProxyRequest {
   is_internal?: boolean;
   /** Storage paths for resign_attachments action */
   storage_paths?: string[];
+  /** Ticket IDs for bulk delete_tickets action */
+  ticket_ids?: string[];
 }
 
 function normalizeContentFormat(raw: unknown): "plain" | "html" {
@@ -1097,6 +1100,95 @@ Deno.serve(async (req: Request) => {
             actor_name: user.email,
           });
         }
+        break;
+      }
+      case "delete_tickets": {
+        const ids = body.ticket_ids ?? (body.ticket_id ? [body.ticket_id] : []);
+        if (!ids.length || ids.length > 50) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Provide 1-50 ticket_ids" }),
+            { status: 400, headers },
+          );
+        }
+        for (const id of ids) {
+          if (!UUID_RE.test(id)) {
+            return new Response(
+              JSON.stringify({ success: false, error: `Invalid ticket_id: ${id}` }),
+              { status: 400, headers },
+            );
+          }
+        }
+
+        // 1. Look up requester_ids so we can clean up storage attachments
+        const { data: ticketRows } = await itstsAdmin
+          .from("tickets")
+          .select("id, requester_id")
+          .in("id", ids);
+        const requesterMap = new Map((ticketRows || []).map((t: { id: string; requester_id: string }) => [t.id, t.requester_id]));
+
+        // 2. Delete dependent rows in ITSTS (order matters for FK constraints)
+        const depTables = [
+          "ticket_comments", "ticket_status_history", "ticket_activity_log",
+          "ticket_email_notifications", "ticket_read_status", "ticket_tags",
+          "ticket_watchers", "ticket_mentions", "ticket_attachments",
+          "ticket_custom_fields", "ticket_private_notes", "ticket_files",
+          "ticket_time_entries", "ticket_events", "ticket_links",
+          "ticket_field_history", "ticket_geo_data", "ticket_actions",
+          "sla_metrics", "sla_events", "sla_timers", "sla_escalations",
+        ];
+        for (const table of depTables) {
+          await itstsAdmin.from(table).delete().in("ticket_id", ids).then(() => {});
+        }
+
+        // 3. Delete the tickets themselves
+        const { error: delErr, count: delCount } = await itstsAdmin
+          .from("tickets")
+          .delete({ count: "exact" })
+          .in("id", ids);
+
+        if (delErr) throw delErr;
+
+        // 4. Clean up storage attachments on the primary project (fire-and-forget)
+        try {
+          const primaryUrl = Deno.env.get("SUPABASE_URL")!;
+          const primaryKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const primaryAdmin = createClient(primaryUrl, primaryKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          });
+          // Attachment paths are stored as: {userId}/{ticketId}/...
+          // We need to look up the advisor's user ID in the primary project
+          for (const ticketId of ids) {
+            const requesterId = requesterMap.get(ticketId);
+            if (!requesterId) continue;
+            // The requester_id in ITSTS is the ITSTS user id, but storage paths use
+            // the primary project's user id. Look up email to find primary user.
+            const { data: itstsProfile } = await itstsAdmin
+              .from("profiles")
+              .select("email")
+              .eq("id", requesterId)
+              .maybeSingle();
+            if (!itstsProfile?.email) continue;
+            const { data: primaryUser } = await primaryAdmin
+              .from("profiles")
+              .select("id")
+              .eq("email", itstsProfile.email)
+              .maybeSingle();
+            if (!primaryUser?.id) continue;
+            const folder = `${primaryUser.id}/${ticketId}`;
+            const { data: files } = await primaryAdmin.storage
+              .from("ticket-attachments")
+              .list(folder);
+            if (files?.length) {
+              const paths = files.map((f: { name: string }) => `${folder}/${f.name}`);
+              await primaryAdmin.storage.from("ticket-attachments").remove(paths);
+            }
+          }
+        } catch (storageErr) {
+          log.warn("Storage cleanup failed (non-fatal)", { error: String(storageErr) });
+        }
+
+        result = { deleted: delCount || 0 };
+        log.info(`Deleted ${delCount} ticket(s)`, { ticket_ids: ids, actor: user.email });
         break;
       }
       case "resign_attachments": {

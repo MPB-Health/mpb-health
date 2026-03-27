@@ -211,6 +211,23 @@ export interface TicketAttachmentUploadResult {
 /**
  * Appends a sanitized attachment list to ticket reply HTML (after inline images / body).
  */
+/**
+ * If the filename is a UUID (e.g. iOS camera roll photo), return a
+ * human-friendly label like "Photo 1.jpg" instead.
+ */
+function friendlyDisplayName(name: string, index: number): string {
+  const dotIdx = name.lastIndexOf('.');
+  const base = dotIdx > 0 ? name.slice(0, dotIdx) : name;
+  const ext = dotIdx > 0 ? name.slice(dotIdx) : '';
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(base);
+  if (!isUuid) return name;
+  const typeLabel = /\.(jpe?g|png|gif|webp|heic|svg)$/i.test(ext) ? 'Photo'
+    : /\.(pdf)$/i.test(ext) ? 'Document'
+    : /\.(mp4|mov|avi|webm)$/i.test(ext) ? 'Video'
+    : 'Attachment';
+  return `${typeLabel} ${index}${ext}`;
+}
+
 export function appendTicketAttachmentsHtml(
   baseHtml: string,
   uploads: TicketAttachmentUploadResult[],
@@ -219,8 +236,8 @@ export function appendTicketAttachmentsHtml(
   const esc = (s: string) =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const items = uploads
-    .map((u) => {
-      const name = esc(u.fileName);
+    .map((u, i) => {
+      const name = esc(friendlyDisplayName(u.fileName, i + 1));
       const href = esc(u.accessUrl);
       const kb = Math.max(1, Math.round(u.size / 1024));
       return `<li><a href="${href}" rel="noopener noreferrer" target="_blank">${name}</a> <span class="text-neutral-500">(${kb} KB)</span></li>`;
@@ -260,12 +277,18 @@ export class TicketService {
     return ext ? `${base}.${ext.slice(0, 10)}` : base;
   }
 
-  private formatAttachmentComment(uploads: TicketAttachmentUploadResult[]): string {
-    const lines = uploads.map((upload) => {
-      const kb = Math.max(1, Math.round(upload.size / 1024));
-      return `- ${upload.fileName} (${kb} KB): ${upload.accessUrl}`;
-    });
-    return ['Attachments uploaded by advisor:', ...lines].join('\n');
+  private formatAttachmentHtml(uploads: TicketAttachmentUploadResult[]): string {
+    const esc = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const items = uploads
+      .map((u, i) => {
+        const displayName = esc(friendlyDisplayName(u.fileName, i + 1));
+        const href = esc(u.accessUrl);
+        const kb = Math.max(1, Math.round(u.size / 1024));
+        return `<li><a href="${href}" rel="noopener noreferrer" target="_blank">${displayName}</a> <span style="color:#737373">(${kb} KB)</span></li>`;
+      })
+      .join('');
+    return `<p><strong>Attachments</strong></p><ul>${items}</ul>`;
   }
 
   /**
@@ -522,7 +545,7 @@ export class TicketService {
     if (opts.attachments?.length) {
       const uploads = await this.uploadAttachments(data.ticket_id, opts.attachments);
       if (uploads.length) {
-        await this.replyToTicket(data.ticket_id, this.formatAttachmentComment(uploads));
+        await this.replyToTicket(data.ticket_id, this.formatAttachmentHtml(uploads), 'html');
       }
     }
 

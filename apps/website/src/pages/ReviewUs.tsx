@@ -78,7 +78,7 @@ const ReviewUs = () => {
                   </div>
 
                   <a
-                    href="https://www.google.com/search?client=firefox-b-1-d&sca_esv=7f6b8dae05f48483&sxsrf=AE3TifPM_8LlHW7_AbXP-MXMGO-zNKenUQ:1750864165971&kgmid=/g/11f63crwqy&q=MPB+Health&shndl=30&shem=lcuae,uaasie&source=sh/x/loc/uni/m1/1&kgs=611be9012f8b7263&sei=pAImadiSF57Up84Ps5jrqAs"
+                    href="https://teams.microsoft.com/l/message/19:c162e016-7986-49ab-becd-adc16806d236_cf2d00e5-7fb3-4b71-8426-3e037178463f@unq.gbl.spaces/1774619158972?context=%7B%22contextType%22%3A%22chat%22%7D"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl group-hover:scale-105"

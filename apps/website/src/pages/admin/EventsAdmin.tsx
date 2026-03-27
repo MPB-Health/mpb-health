@@ -287,17 +287,17 @@ const EventsAdmin: React.FC = () => {
       const payload = {
         title: formData.title,
         slug: formData.slug || generateSlug(formData.title),
-        excerpt: formData.excerpt || null,
+        excerpt: formData.excerpt || '',
         content: formData.content,
         event_date: formData.event_date,
         event_end_date: formData.event_end_date || null,
         event_type: formData.event_type,
         location_type: formData.location_type,
-        location: formData.location || null,
+        location: formData.location || '',
         organizer: formData.organizer,
         registration_url: formData.registration_url || null,
         max_attendees: formData.max_attendees ? Number(formData.max_attendees) : null,
-        featured_image_url: formData.featured_image_url || null,
+        featured_image_url: formData.featured_image_url || '',
         video_url: formData.video_url || null,
         tags: formData.tags,
         gallery_images: formData.gallery_images,
@@ -322,8 +322,9 @@ const EventsAdmin: React.FC = () => {
 
       setShowForm(false);
       fetchEvents();
-    } catch (err) {
-      setNotification({ type: 'error', message: 'Failed to save event' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setNotification({ type: 'error', message: `Failed to save event: ${message}` });
     } finally {
       setSaving(false);
     }
@@ -555,7 +556,7 @@ const EventsAdmin: React.FC = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
                     <Globe className="w-4 h-4" />
-                    Publish
+                    {saving ? 'Publishing…' : 'Publish'}
                   </button>
                 )}
                 <button
@@ -566,7 +567,7 @@ const EventsAdmin: React.FC = () => {
                   className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
                 >
                   <Save className="w-4 h-4" />
-                  {formData.is_published ? 'Save' : 'Draft'}
+                  {saving ? 'Saving…' : galleryUploading ? 'Uploading…' : formData.is_published ? 'Save' : 'Draft'}
                 </button>
                 <button
                   type="button"

@@ -428,8 +428,8 @@ export default function AdvisorCMSHub() {
           badge: stats.sharingGuidelines - stats.activeSharingGuidelines > 0 ? `${stats.sharingGuidelines - stats.activeSharingGuidelines} hidden` : null,
         },
         {
-          title: 'ARM',
-          description: 'ARM program links and resources',
+          title: 'ARM + RX',
+          description: 'ARM + RX program links and resources',
           icon: Shield,
           href: '/admin/advisor-cms/arm',
           color: 'violet',

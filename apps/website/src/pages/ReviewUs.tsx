@@ -78,7 +78,7 @@ const ReviewUs = () => {
                   </div>
 
                   <a
-                    href="https://www.google.com/search?client=firefox-b-1-d&sca_esv=7f6b8dae05f48483&sxsrf=ANbL-n7f7v85kORqK7jMpfCeP9Hnupnqzg:1774550576241&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOZ6PlBw6wBWfKMuILeHDY8bXIctPD0--AiCJUbDzNhjvECP1kewISq3spbq7-jElcSewQMw3fHrILJiNdT5SPTEO-Njs&q=MPB+Health+Reviews&sa=X&ved=2ahUKEwiZjO6FnL6TAxWJm2oFHTBlO-IQ0bkNegQIJxAH&biw=1536&bih=730&dpr=1.25&sei=wZHGacWlHN-vqtsP1fbUwQw#lrd=0x88d91dffd77087dd:0x7ee4f6597eac3b4,3"
+                    href="https://search.google.com/local/writereview?placeid=ChIJ3Ydw1_8d2YgRtMPql2VP7gc"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl group-hover:scale-105"

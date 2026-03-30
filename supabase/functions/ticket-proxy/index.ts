@@ -475,16 +475,21 @@ async function createTicket(
   // Idempotency guard: if the client sent an idempotency key, check for a
   // recent ticket by the same requester with the same key to prevent duplicate
   // inserts caused by client retries or double-clicks.
+  // The idempotency_key column may not exist on older ITSTS schemas, so wrap in try/catch.
   if (opts.idempotencyKey) {
-    const { data: existing } = await itstsAdmin
-      .from("tickets")
-      .select("id, ticket_number")
-      .eq("requester_id", requesterId)
-      .eq("idempotency_key", opts.idempotencyKey)
-      .maybeSingle();
-    if (existing) {
-      log.info("Duplicate create blocked by idempotency key", { key: opts.idempotencyKey, ticket_id: existing.id });
-      return { ticket_id: existing.id, ticket_number: existing.ticket_number };
+    try {
+      const { data: existing } = await itstsAdmin
+        .from("tickets")
+        .select("id, ticket_number")
+        .eq("requester_id", requesterId)
+        .eq("idempotency_key", opts.idempotencyKey)
+        .maybeSingle();
+      if (existing) {
+        log.info("Duplicate create blocked by idempotency key", { key: opts.idempotencyKey, ticket_id: existing.id });
+        return { ticket_id: existing.id, ticket_number: existing.ticket_number };
+      }
+    } catch {
+      log.warn("idempotency_key column not available — skipping idempotency guard");
     }
   }
 
@@ -503,24 +508,42 @@ async function createTicket(
     return { ticket_id: recentDupe.id, ticket_number: recentDupe.ticket_number };
   }
 
-  const { data, error } = await itstsAdmin
+  // Build insert payload — only include columns known to exist on the ITSTS tickets table.
+  // idempotency_key may not exist on older schemas; attempt insert with it and retry without.
+  const insertPayload: Record<string, unknown> = {
+    subject: opts.subject.trim().slice(0, MAX_SUBJECT_LENGTH),
+    description: opts.description?.trim() || null,
+    category: opts.category?.trim() || null,
+    priority: opts.priority || "medium",
+    status: "new",
+    requester_id: requesterId,
+    origin: (opts.origin ?? "advisor") as "member" | "advisor" | "staff" | "concierge",
+    ...(opts.agentId ? { agent_id: opts.agentId } : {}),
+    ...(opts.idempotencyKey ? { idempotency_key: opts.idempotencyKey } : {}),
+  };
+
+  let data: { id: string; ticket_number: number } | null = null;
+  let error = null;
+
+  ({ data, error } = await itstsAdmin
     .from("tickets")
-    .insert({
-      subject: opts.subject.trim().slice(0, MAX_SUBJECT_LENGTH),
-      description: opts.description?.trim() || null,
-      category: opts.category?.trim() || null,
-      priority: opts.priority || "medium",
-      status: "new",
-      requester_id: requesterId,
-      origin: (opts.origin ?? "advisor") as "member" | "advisor" | "staff" | "concierge",
-      ...(opts.agentId ? { agent_id: opts.agentId } : {}),
-      ...(opts.idempotencyKey ? { idempotency_key: opts.idempotencyKey } : {}),
-    })
+    .insert(insertPayload)
     .select("id, ticket_number")
-    .single();
+    .single());
+
+  // Retry without idempotency_key if the column doesn't exist yet
+  if (error?.code === "42703" && opts.idempotencyKey) {
+    log.warn("idempotency_key column missing on ITSTS — retrying insert without it");
+    delete insertPayload.idempotency_key;
+    ({ data, error } = await itstsAdmin
+      .from("tickets")
+      .insert(insertPayload)
+      .select("id, ticket_number")
+      .single());
+  }
 
   if (error) throw error;
-  return { ticket_id: data.id, ticket_number: data.ticket_number };
+  return { ticket_id: data!.id, ticket_number: data!.ticket_number };
 }
 
 async function replyToTicket(

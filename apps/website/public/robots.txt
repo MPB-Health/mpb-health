@@ -27,12 +27,12 @@ Allow: /blog
 Allow: /advisors
 Allow: /benefits
 Allow: /features
-Allow: /quote
+Allow: /get-a-quote
 Allow: /get-started
-Allow: /individuals-families
-Allow: /businesses-organizations
+Allow: /individuals-and-families
+Allow: /businesses-and-organizations
 Allow: /advisor-directory
-Allow: /resource-library
+Allow: /resources
 
 # Sitemap locations
 Sitemap: https://mpb.health/sitemap.xml

@@ -10,7 +10,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { HeaderWithAuth } from './components/layout/HeaderWithAuth';
 import { AppDownloadSection } from './components/blocks/AppDownloadSection';
 import { Footer } from './components/layout/Footer';
-import { trackPageView, initializeAnalytics } from './lib/analytics';
+import { trackPageView, initializeAnalytics, loadDatabaseSnippets } from './lib/analytics';
 import { usePageTracking } from './hooks/usePageTracking';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { BackToTop } from './components/layout/BackToTop';
@@ -257,8 +257,11 @@ const AdvisorPortalRedirect: React.FC = () => {
 
 const App = () => {
   React.useEffect(() => {
-    // Initialize Google Analytics and other tracking scripts
+    // Initialize env-var-driven analytics (fallback)
     initializeAnalytics();
+
+    // Load and inject snippets configured via the admin panel
+    loadDatabaseSnippets();
 
     // Track initial page view to GA
     trackPageView(window.location.pathname);

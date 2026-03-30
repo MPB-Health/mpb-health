@@ -51,10 +51,10 @@ const StickyMobileCTA: React.FC = () => {
               Get Free Quote
             </button>
           </Link>
-          <a href="tel:8556709571" className="flex-1">
+          <a href="tel:8558164650" className="flex-1">
             <button className="w-full border-2 border-white text-white px-4 py-3 rounded-lg font-semibold text-sm hover:bg-white/10 transition-colors active:scale-95 flex items-center justify-center gap-2">
               <Phone className="w-4 h-4" />
-              (855) 670-9571
+              (855) 816-4650
             </button>
           </a>
         </div>

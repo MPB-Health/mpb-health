@@ -16,7 +16,7 @@ const CTASection = ({
   title = "Ready to Get Started?",
   description = "Join thousands of families who trust MPB Health for affordable, reliable healthcare coverage.",
   primaryCTA = "Get Your Quote Today",
-  secondaryCTA = "Call (855) 670-9571",
+  secondaryCTA = "Call (855) 816-4650",
   variant = 'default'
 }: CTASectionProps) => {
   
@@ -46,7 +46,7 @@ const CTASection = ({
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
               <a
-                href="tel:8556709571"
+                href="tel:8558164650"
                 className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
               >
                 <Phone className="mr-2 h-4 w-4" />
@@ -114,7 +114,7 @@ const CTASection = ({
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
               <a
-                href="tel:8556709571"
+                href="tel:8558164650"
                 className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
               >
                 <Phone className="mr-2 h-4 w-4" />

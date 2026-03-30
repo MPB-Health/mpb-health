@@ -282,7 +282,7 @@ export default function HeroCalculator() {
         },
       });
 
-      navigate('/quote/results', {
+      navigate('/get-a-quote', {
         replace: true,
         state: {
           estimates: allEstimates,

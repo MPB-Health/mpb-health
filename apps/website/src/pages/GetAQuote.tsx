@@ -17,7 +17,7 @@ const GetAQuote: React.FC = () => {
           name="description"
           content="Request your personalized health sharing quote today. No obligation, fast response within 24 hours. See how much you can save with MPB Health."
         />
-        <meta name="robots" content="noindex, follow" />
+        <meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
@@ -177,15 +177,15 @@ const GetAQuote: React.FC = () => {
               </p>
               <div className="flex flex-wrap justify-center gap-8 text-lg">
                 <div>
-                  <div className="text-4xl font-bold">15,000+</div>
-                  <div className="text-blue-100">Happy Members</div>
+                  <div className="text-4xl font-bold">50,000+</div>
+                  <div className="text-blue-100">Families Served</div>
                 </div>
                 <div>
                   <div className="text-4xl font-bold">$240M+</div>
                   <div className="text-blue-100">In Shared Medical Bills</div>
                 </div>
                 <div>
-                  <div className="text-4xl font-bold">4.8/5</div>
+                  <div className="text-4xl font-bold">4.9/5</div>
                   <div className="text-blue-100">Customer Rating</div>
                 </div>
               </div>

@@ -340,7 +340,7 @@ export const generateOrganizationSchema = (): OrganizationSchema => ({
   contactPoint: [
     {
       '@type': 'ContactPoint',
-      telephone: '+1-855-670-9571',
+      telephone: '+1-855-816-4650',
       contactType: 'Customer Service',
       areaServed: 'US',
       availableLanguage: ['English', 'Spanish'],

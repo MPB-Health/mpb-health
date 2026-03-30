@@ -385,13 +385,13 @@ const HowItWorksPage: React.FC = () => {
                 </Button>
               </Link>
 
-              <a href="tel:8556709571">
+              <a href="tel:8558164650">
                 <Button
                   size="lg"
                   className="bg-white text-blue-600 hover:bg-blue-50 shadow-xl hover:shadow-2xl transition-all duration-300 font-semibold px-8"
                 >
                   <Phone className="w-5 h-5 mr-2" />
-                  (855) 670-9571
+                  (855) 816-4650
                 </Button>
               </a>
             </div>

@@ -33,6 +33,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
   const [errors, setErrors] = useState<Partial<ContactFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const updateFormData = (field: keyof ContactFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -59,6 +60,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const emailResult = await sendContactFormNotification({
@@ -71,6 +73,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
 
       if (!emailResult.success) {
         console.error('Failed to send email notification:', emailResult.error);
+        setSubmitError('We couldn\'t send your message right now. Please try again or call us at (855) 816-4650.');
+        return;
       }
 
       if (onSubmit) {
@@ -81,6 +85,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
       setFormData(initialFormData);
     } catch (error) {
       console.error('Form submission error:', error);
+      setSubmitError('Something went wrong. Please try again or call us at (855) 816-4650.');
     } finally {
       setIsSubmitting(false);
     }
@@ -116,6 +121,11 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
       </CardHeader>
 
       <CardContent>
+        {submitError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {submitError}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

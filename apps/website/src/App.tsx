@@ -192,11 +192,18 @@ const DynamicHandbookPage = lazyAuto(() => import('./pages/handbooks/DynamicHand
 
 // Analytics tracking wrapper - must be inside Router to use useLocation
 const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+
   // Track page views to Supabase (for admin dashboard)
   usePageTracking({
     enabled: true,
-    excludePaths: [], // Track all pages including admin
+    excludePaths: [],
   });
+
+  // Track every SPA route change in GA4 / Facebook / etc.
+  React.useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
 
   return <>{children}</>;
 };

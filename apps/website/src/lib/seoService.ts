@@ -49,13 +49,13 @@ export const pageSEO: Record<string, SEOMetadata> = {
     canonicalUrl: 'https://mpb.health/plans',
     robots: 'index, follow'
   },
-  '/quote': {
+  '/get-a-quote': {
     title: 'Get Your Free Quote - Rate Calculator | MPB Health',
     description: 'Calculate your monthly health sharing cost in seconds. Free, no-obligation quote. See potential savings compared to traditional insurance.',
     keywords: 'health sharing quote, cost calculator, rate estimate, healthcare pricing calculator, quick quote',
     ogTitle: 'Free Health Sharing Quote Calculator',
     ogDescription: 'Calculate your rate in seconds. See how much you could save.',
-    canonicalUrl: 'https://mpb.health/quote',
+    canonicalUrl: 'https://mpb.health/get-a-quote',
     robots: 'index, follow'
   },
   '/how-it-works': {
@@ -103,22 +103,22 @@ export const pageSEO: Record<string, SEOMetadata> = {
     canonicalUrl: 'https://mpb.health/blog',
     robots: 'index, follow'
   },
-  '/individuals-families': {
+  '/individuals-and-families': {
     title: 'Health Sharing for Individuals & Families | MPB Health',
     description: 'Affordable health sharing plans designed for individuals and families. Save up to 60% compared to traditional insurance. No network restrictions.',
     keywords: 'family health sharing, individual health plan, family healthcare, affordable health membership, family medical sharing',
     ogTitle: 'Health Sharing for Families | MPB Health',
     ogDescription: 'Affordable plans for individuals and families. Save up to 60%.',
-    canonicalUrl: 'https://mpb.health/individuals-families',
+    canonicalUrl: 'https://mpb.health/individuals-and-families',
     robots: 'index, follow'
   },
-  '/businesses-organizations': {
+  '/businesses-and-organizations': {
     title: 'Business Health Sharing Solutions | Employer Healthcare | MPB Health',
     description: 'Affordable health sharing for businesses and organizations. MEC+ Essentials satisfies ACA mandate. Secure HSA-compatible options. Save on group healthcare.',
     keywords: 'business health sharing, employer healthcare, group health plan, ACA compliance, MEC plans, business healthcare solutions',
     ogTitle: 'Business Health Sharing Solutions | MPB Health',
     ogDescription: 'Affordable group healthcare for businesses. ACA-compliant options.',
-    canonicalUrl: 'https://mpb.health/businesses-organizations',
+    canonicalUrl: 'https://mpb.health/businesses-and-organizations',
     robots: 'index, follow'
   },
   '/advisor-directory': {
@@ -139,13 +139,13 @@ export const pageSEO: Record<string, SEOMetadata> = {
     canonicalUrl: 'https://mpb.health/benefits',
     robots: 'index, follow'
   },
-  '/resource-library': {
+  '/resources': {
     title: 'Health Sharing Resources & Guides | MPB Health',
     description: 'Access helpful resources, guides, forms, and educational materials about health sharing. Download member handbooks and enrollment guides.',
     keywords: 'health sharing resources, member guides, enrollment forms, healthcare education, member handbook',
     ogTitle: 'Resource Library | MPB Health',
     ogDescription: 'Helpful guides, forms, and educational resources.',
-    canonicalUrl: 'https://mpb.health/resource-library',
+    canonicalUrl: 'https://mpb.health/resources',
     robots: 'index, follow'
   }
 };

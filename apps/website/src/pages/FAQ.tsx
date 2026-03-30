@@ -95,11 +95,11 @@ const FAQ: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
-                href="tel:8556709571"
+                href="tel:8558164650"
                 className="flex items-center space-x-2 text-neutral-700 hover:text-primary transition-colors"
               >
                 <Phone className="h-5 w-5" />
-                <span className="font-medium">(855) 670-9571</span>
+                <span className="font-medium">(855) 816-4650</span>
               </a>
 
               <span className="hidden sm:block text-neutral-400">|</span>

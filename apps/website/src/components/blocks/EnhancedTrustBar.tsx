@@ -100,11 +100,11 @@ const EnhancedTrustBar: React.FC = () => {
         {/* Call to Action */}
         <div className="flex justify-center">
           <a
-            href="tel:8556709571"
+            href="tel:8558164650"
             className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg"
           >
             <Phone className="w-5 h-5" />
-            Call Us: (855) 670-9571
+            Call Us: (855) 816-4650
           </a>
         </div>
 

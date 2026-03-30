@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { usePlans } from '@/hooks/usePlans';
 import { PlanComparisonTable } from '@/components/blocks/PlanComparisonTable';
 import { PlanComparisonGuide } from '@/components/blocks/PlanComparisonGuide';
@@ -51,6 +52,15 @@ export default function PlanComparison() {
   }
 
   return (
+    <>
+    <Helmet>
+      <title>Compare Health Sharing Plans Side by Side | MPB Health 2026</title>
+      <meta name="description" content="Compare MPB Health sharing plans: Essentials, Care Plus, Direct, and Secure HSA. See pricing, benefits, and features side by side to find your best fit." />
+      <link rel="canonical" href="https://mpb.health/compare-plans" />
+      <meta property="og:title" content="Compare Health Sharing Plans | MPB Health" />
+      <meta property="og:description" content="Side-by-side plan comparison. Find the right health sharing plan for your family." />
+      <meta property="og:url" content="https://mpb.health/compare-plans" />
+    </Helmet>
     <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-neutral-50 py-12 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-100/40 via-transparent to-transparent"></div>
       <div className="absolute top-20 right-10 w-96 h-96 bg-gradient-to-br from-primary-200/20 to-accent-200/20 rounded-full blur-3xl"></div>
@@ -216,10 +226,11 @@ export default function PlanComparison() {
       </div>
 
       {/* Full Plan Comparison Guide */}
-      <PlanComparisonGuide 
+      <PlanComparisonGuide
         title="Complete Plan Comparison Guide"
         subtitle="View all plans and features at a glance"
       />
     </div>
+    </>
   );
 }

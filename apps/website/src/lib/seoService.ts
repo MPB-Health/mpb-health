@@ -147,6 +147,87 @@ export const pageSEO: Record<string, SEOMetadata> = {
     ogDescription: 'Helpful guides, forms, and educational resources.',
     canonicalUrl: 'https://mpb.health/resources',
     robots: 'index, follow'
+  },
+  '/compare-plans': {
+    title: 'Compare Health Sharing Plans Side by Side | MPB Health 2026',
+    description: 'Compare MPB Health sharing plans: Essentials, Care Plus, Direct, and Secure HSA. See pricing, benefits, and features side by side to find your best fit.',
+    keywords: 'compare health plans, plan comparison, health sharing comparison, essentials vs care plus, plan pricing',
+    ogTitle: 'Compare Health Sharing Plans | MPB Health',
+    ogDescription: 'Side-by-side plan comparison. Find the right health sharing plan for your family.',
+    canonicalUrl: 'https://mpb.health/compare-plans',
+    robots: 'index, follow'
+  },
+  '/get-started': {
+    title: 'Get Started with Health Sharing | Free Rate Calculator | MPB Health',
+    description: 'Calculate your health sharing rate in seconds. Answer a few questions to see how much you could save compared to traditional insurance.',
+    keywords: 'get started health sharing, rate calculator, health sharing cost, savings estimate, quick quote',
+    ogTitle: 'Get Started | MPB Health Rate Calculator',
+    ogDescription: 'See your potential savings in seconds with our free calculator.',
+    canonicalUrl: 'https://mpb.health/get-started',
+    robots: 'index, follow'
+  },
+  '/advisors-and-brokers': {
+    title: 'Health Sharing for Advisors & Brokers | Partner with MPB Health',
+    description: 'Grow your practice with MPB Health. Offer clients affordable health sharing plans. Competitive commissions, training, and dedicated support for advisors.',
+    keywords: 'health sharing advisor, insurance broker, health sharing commissions, advisor partnership, broker program',
+    ogTitle: 'Advisor & Broker Program | MPB Health',
+    ogDescription: 'Partner with MPB Health. Competitive commissions, dedicated support.',
+    canonicalUrl: 'https://mpb.health/advisors-and-brokers',
+    robots: 'index, follow'
+  },
+  '/features': {
+    title: 'Health Sharing Features & Benefits | MPB Health',
+    description: 'Explore MPB Health features: telemedicine, prescription assistance, dental and vision options, wellness programs, and nationwide provider access.',
+    keywords: 'health sharing features, telemedicine, prescription savings, dental vision, wellness programs, provider network',
+    ogTitle: 'Features & Benefits | MPB Health',
+    ogDescription: 'Telemedicine, prescriptions, dental, vision, and more.',
+    canonicalUrl: 'https://mpb.health/features',
+    robots: 'index, follow'
+  },
+  '/support': {
+    title: 'Member Support & Help Center | MPB Health',
+    description: 'Get help with your MPB Health membership. Submit requests, find answers, and connect with our support team.',
+    keywords: 'member support, help center, customer service, health sharing help, MPB support',
+    ogTitle: 'Support | MPB Health',
+    ogDescription: 'Get help with your health sharing membership.',
+    canonicalUrl: 'https://mpb.health/support',
+    robots: 'index, follow'
+  },
+  '/events': {
+    title: 'Health Sharing Events & Webinars | MPB Health',
+    description: 'Join MPB Health events, webinars, and community gatherings. Learn about health sharing, wellness, and cost-saving strategies.',
+    keywords: 'health sharing events, webinars, community events, healthcare education, wellness events',
+    ogTitle: 'Events & Webinars | MPB Health',
+    ogDescription: 'Join our community events and educational webinars.',
+    canonicalUrl: 'https://mpb.health/events',
+    robots: 'index, follow'
+  },
+  '/download-app': {
+    title: 'Download the MPB Health App | Manage Your Membership',
+    description: 'Download the MPB Health mobile app. Submit medical expenses, find providers, track sharing requests, and manage your membership on the go.',
+    keywords: 'MPB Health app, mobile app, health sharing app, member app, download app',
+    ogTitle: 'MPB Health Mobile App',
+    ogDescription: 'Manage your health sharing membership from your phone.',
+    canonicalUrl: 'https://mpb.health/download-app',
+    robots: 'index, follow'
+  },
+  '/join-our-team': {
+    title: 'Careers at MPB Health | Join Our Team',
+    description: 'Join the MPB Health team. Explore career opportunities in healthcare, technology, and member services. Help families access affordable healthcare.',
+    keywords: 'MPB Health careers, healthcare jobs, join our team, employment opportunities',
+    ogTitle: 'Careers | MPB Health',
+    ogDescription: 'Join our mission to make healthcare affordable for everyone.',
+    canonicalUrl: 'https://mpb.health/join-our-team',
+    robots: 'index, follow'
+  },
+  '/member-stories': {
+    title: 'Member Stories & Testimonials | MPB Health',
+    description: 'Read real stories from MPB Health members. See how families save on healthcare with community health sharing.',
+    keywords: 'member stories, testimonials, health sharing reviews, customer stories, real savings',
+    ogTitle: 'Member Stories | MPB Health',
+    ogDescription: 'Real stories from families saving with health sharing.',
+    canonicalUrl: 'https://mpb.health/member-stories',
+    robots: 'index, follow'
   }
 };
 

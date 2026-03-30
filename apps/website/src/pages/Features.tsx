@@ -46,11 +46,16 @@ export const Features: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Healthcare Benefits - Comprehensive Coverage | MPB Health</title>
+        <title>Health Sharing Features & Benefits | MPB Health</title>
         <meta
           name="description"
-          content="Explore 10 comprehensive healthcare benefits including telemedicine, primary care, urgent care, virtual behavioral health support, maternity care, and more. Find the coverage you need."
+          content="Explore MPB Health features: telemedicine, primary care, urgent care, behavioral health, maternity care, prescription savings, and more. Find the coverage you need."
         />
+        <link rel="canonical" href="https://mpb.health/features" />
+        <meta property="og:title" content="Features & Benefits | MPB Health" />
+        <meta property="og:description" content="Telemedicine, prescriptions, dental, vision, and more." />
+        <meta property="og:url" content="https://mpb.health/features" />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       {/* Hero Section */}

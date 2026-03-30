@@ -112,11 +112,16 @@ const AdvisorsAndBrokers = () => {
   return (
     <>
       <Helmet>
-        <title>Advisors & Brokers - Partner with MPB Health</title>
+        <title>Health Sharing for Advisors & Brokers | Partner with MPB Health</title>
         <meta
           name="description"
-          content="Join MPB Health's partner network and offer innovative health sharing solutions. Competitive commissions, marketing support, and dedicated partner resources."
+          content="Grow your practice with MPB Health. Offer clients affordable health sharing plans. Competitive commissions, training, and dedicated support for advisors and brokers."
         />
+        <link rel="canonical" href="https://mpb.health/advisors-and-brokers" />
+        <meta property="og:title" content="Advisor & Broker Program | MPB Health" />
+        <meta property="og:description" content="Partner with MPB Health. Competitive commissions, dedicated support." />
+        <meta property="og:url" content="https://mpb.health/advisors-and-brokers" />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       <section className="relative bg-gradient-to-br from-primary/5 via-white to-primary/10 pt-20 pb-16 overflow-hidden">

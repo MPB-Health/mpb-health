@@ -187,6 +187,14 @@
     <priority>0.5</priority>
   </url>
 
+  <!-- Mobile App -->
+  <url>
+    <loc>https://mpb.health/download-app</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
   <!-- Legal Pages -->
   <url>
     <loc>https://mpb.health/privacy-policy</loc>

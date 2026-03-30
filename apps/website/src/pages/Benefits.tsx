@@ -9,11 +9,16 @@ export const Benefits: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Voluntary Benefits - MPB Health</title>
+        <title>Member Benefits & Voluntary Coverage | MPB Health</title>
         <meta
           name="description"
-          content="Explore comprehensive voluntary benefits including disability, critical illness, vision, dental, life, and more. Protect your finances, family, and livelihood."
+          content="Explore MPB Health voluntary benefits: dental, vision, disability, critical illness, life insurance, and more. Comprehensive protection for your family."
         />
+        <link rel="canonical" href="https://mpb.health/benefits" />
+        <meta property="og:title" content="Member Benefits | MPB Health" />
+        <meta property="og:description" content="Dental, vision, telemedicine, and more supplemental benefits." />
+        <meta property="og:url" content="https://mpb.health/benefits" />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       <section className="relative py-16 md:py-24 bg-gradient-to-br from-blue-600 to-cyan-600 text-white overflow-hidden">

@@ -30,6 +30,8 @@ const Landing: React.FC = () => {
         />
         <meta name="keywords" content="health sharing, healthcare costs, insurance alternative, community health, medical cost sharing, affordable healthcare, health sharing plans" />
 
+        <link rel="canonical" href="https://mpb.health" />
+
         {/* Preload critical resources */}
         <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" />
 

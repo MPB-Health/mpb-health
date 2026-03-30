@@ -79,12 +79,17 @@ const Support: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Support & Help Center | MPB Health</title>
+        <title>Member Support & Help Center | MPB Health</title>
         <meta
           name="description"
-          content="Get task-based support tailored to your role at MPB Health. Access resources for employers, members, and advisors with quick links to common actions."
+          content="Get help with your MPB Health membership. Access resources for employers, members, and advisors. Submit requests, find answers, and connect with our support team."
         />
         <meta name="keywords" content="MPB Health support, healthcare help, member support, employer portal, advisor resources" />
+        <link rel="canonical" href="https://mpb.health/support" />
+        <meta property="og:title" content="Support | MPB Health" />
+        <meta property="og:description" content="Get help with your health sharing membership." />
+        <meta property="og:url" content="https://mpb.health/support" />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">

@@ -88,11 +88,16 @@ const AboutUs: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>About Us | MPB Health</title>
+        <title>About MPB Health - 14+ Years of Affordable Healthcare Solutions</title>
         <meta
           name="description"
-          content="Learn about MPB Health's mission to empower healthier lives through innovative medical cost sharing solutions. Discover our values and commitment to transparency, compassion, and care."
+          content="MPB Health has served 50,000+ families since 2011. Learn about our mission to provide affordable, community-based healthcare alternatives with transparency and care."
         />
+        <link rel="canonical" href="https://mpb.health/about-us" />
+        <meta property="og:title" content="About MPB Health - Our Story" />
+        <meta property="og:description" content="14+ years serving families with affordable healthcare solutions." />
+        <meta property="og:url" content="https://mpb.health/about-us" />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       <section className="relative pt-20 pb-10 overflow-hidden">

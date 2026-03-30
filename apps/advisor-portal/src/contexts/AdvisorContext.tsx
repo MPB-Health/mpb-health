@@ -103,8 +103,25 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       if (advisorProfile) {
         setProfile(advisorProfile);
       } else {
-        console.warn('[AdvisorContext] advisor_profiles row missing; using session fallback profile');
-        setProfile(buildSessionFallbackProfile(session.user));
+        console.warn('[AdvisorContext] advisor_profiles row missing; attempting self-heal upsert');
+        const fallback = buildSessionFallbackProfile(session.user);
+        setProfile(fallback);
+
+        try {
+          const healed = await profileService.ensureProfile({
+            id: session.user.id,
+            email: session.user.email || '',
+            first_name: fallback.first_name,
+            last_name: fallback.last_name,
+            user_id: session.user.id,
+          });
+          if (healed) {
+            console.info('[AdvisorContext] Self-healed advisor_profiles row created');
+            setProfile(healed);
+          }
+        } catch (healErr) {
+          console.warn('[AdvisorContext] Self-heal upsert failed (non-blocking):', healErr);
+        }
       }
     } catch (err) {
       // Ignore AbortError from Web Locks API - these are benign and occur during navigation

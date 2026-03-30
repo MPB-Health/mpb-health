@@ -123,6 +123,48 @@ export class ProfileService {
     return (data || []).map(d => this.normalizeProfile(d)!);
   }
 
+  /**
+   * Upsert a profile row, used for self-healing when an advisor logs in
+   * but has no `advisor_profiles` row yet.
+   */
+  async ensureProfile(profile: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    user_id?: string;
+    phone?: string | null;
+    specialization?: string;
+    status?: string;
+  }): Promise<AdvisorProfile | null> {
+    const { data, error } = await supabase
+      .from('advisor_profiles')
+      .upsert(
+        {
+          id: profile.id,
+          user_id: profile.user_id || profile.id,
+          email: profile.email,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          phone: profile.phone || null,
+          specialization: profile.specialization || 'Health Share',
+          status: profile.status || 'active',
+          onboarding_completed: false,
+          metadata: { provisioned_by: 'advisor-context-self-heal', source: 'advisor-portal' },
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[ProfileService] ensureProfile upsert failed:', error);
+      return null;
+    }
+    return this.normalizeProfile(data);
+  }
+
   // Get active advisors
   async getActiveAdvisors(): Promise<AdvisorProfile[]> {
     return this.getAllAdvisors({ status: 'active' });

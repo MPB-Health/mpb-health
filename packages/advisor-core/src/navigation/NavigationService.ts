@@ -51,9 +51,17 @@ export class NavigationService {
     );
     const selectedLinks = preferredLinks.length > 0 ? preferredLinks : activeLinks;
 
+    const seen = new Set<string>();
+    const deduped = selectedLinks.filter((link) => {
+      const key = `${link.label}::${link.url}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
     return typeof limit === 'number'
-      ? selectedLinks.slice(0, limit)
-      : selectedLinks;
+      ? deduped.slice(0, limit)
+      : deduped;
   }
 
   // Get all navigation menu items

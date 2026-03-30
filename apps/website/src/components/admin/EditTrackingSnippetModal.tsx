@@ -105,7 +105,8 @@ export const EditTrackingSnippetModal: React.FC<EditTrackingSnippetModalProps> =
       onClose();
     } catch (err: unknown) {
       console.error('Error updating snippet:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update tracking snippet');
+      const message = err instanceof Error ? err.message : String(err);
+      setError(`Failed to update: ${message}`);
     } finally {
       setLoading(false);
     }

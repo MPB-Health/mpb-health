@@ -1,4 +1,5 @@
 import { createClientLogger } from '@mpbhealth/utils';
+import { supabase } from './supabase';
 
 const log = createClientLogger('Analytics');
 
@@ -265,6 +266,98 @@ export const initializeAnalytics = () => {
       })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
     `;
     document.head.appendChild(script);
+  }
+};
+
+/**
+ * Loads enabled tracking snippets from the database (configured via the admin
+ * panel's Analytics Integration Management) and injects them into the page.
+ * Snippets in test mode log to console instead of injecting.
+ */
+export const loadDatabaseSnippets = async () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const { data: snippets, error } = await supabase
+      .from('tracking_snippets')
+      .select('*')
+      .eq('is_enabled', true)
+      .order('load_priority', { ascending: false });
+
+    if (error) {
+      log.warn('Failed to load tracking snippets:', error.message);
+      return;
+    }
+
+    if (!snippets || snippets.length === 0) return;
+
+    for (const snippet of snippets) {
+      if (snippet.is_test_mode) {
+        log.info(`[Test Mode] Snippet "${snippet.snippet_name}" (${snippet.tracking_id || 'no ID'}) — not injected`);
+        continue;
+      }
+
+      try {
+        if (snippet.snippet_code) {
+          const target = snippet.injection_point === 'body_end' ? document.body : document.head;
+          const container = document.createElement('div');
+          container.innerHTML = snippet.snippet_code;
+
+          const scripts = container.querySelectorAll('script');
+          const nonScriptContent = snippet.snippet_code.replace(/<script[\s\S]*?<\/script>/gi, '').trim();
+
+          if (nonScriptContent) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = nonScriptContent;
+            while (wrapper.firstChild) {
+              target.appendChild(wrapper.firstChild);
+            }
+          }
+
+          for (const oldScript of scripts) {
+            const newScript = document.createElement('script');
+            for (const attr of oldScript.attributes) {
+              newScript.setAttribute(attr.name, attr.value);
+            }
+            if (oldScript.textContent) {
+              newScript.textContent = oldScript.textContent;
+            }
+            if (oldScript.src) {
+              newScript.async = true;
+            }
+            target.appendChild(newScript);
+          }
+
+          log.info(`Injected snippet: ${snippet.snippet_name}`);
+        }
+
+        if (snippet.tracking_id && !snippet.snippet_code) {
+          const platformType = snippet.snippet_type?.toLowerCase() || '';
+          if (platformType.includes('gtag') || platformType.includes('google') || snippet.snippet_name?.toLowerCase().includes('google')) {
+            if (!window.gtag) {
+              const gtagScript = document.createElement('script');
+              gtagScript.async = true;
+              gtagScript.src = `https://www.googletagmanager.com/gtag/js?id=${snippet.tracking_id}`;
+              document.head.appendChild(gtagScript);
+
+              const configScript = document.createElement('script');
+              configScript.textContent = `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${snippet.tracking_id}', { send_page_view: true });
+              `;
+              document.head.appendChild(configScript);
+              log.info(`Injected Google Analytics: ${snippet.tracking_id}`);
+            }
+          }
+        }
+      } catch (snippetError) {
+        log.warn(`Failed to inject snippet "${snippet.snippet_name}":`, snippetError);
+      }
+    }
+  } catch (err) {
+    log.warn('Error loading database snippets:', err);
   }
 };
 

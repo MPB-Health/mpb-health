@@ -74,7 +74,6 @@ const STATUS_LABELS: Record<string, string> = {
   new: "New",
   open: "Open",
   pending: "Pending",
-  resolved: "Resolved",
   closed: "Closed",
 };
 
@@ -336,10 +335,10 @@ function buildMessages(p: TicketNotificationPayload, appUrl: string, supportEmai
              ${ticketMetaRow("Subject", safeSubject)}
              ${changeLines.join("")}
            </table>
-           ${p.new_status === "resolved" ? `
+           ${p.new_status === "closed" ? `
            <div style="margin:16px 0;padding:14px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;">
              <p style="margin:0;color:#166534;font-size:14px;">
-               ✅ Your ticket has been resolved. If you have any further questions, feel free to open a new ticket.
+               ✅ Your ticket has been closed. If you have any further questions, feel free to open a new ticket.
              </p>
            </div>` : ""}
            ${ctaButton(ticketUrl, "View Ticket")}`,

@@ -29,7 +29,6 @@ const STATUS_DOT: Record<string, string> = {
   new: 'bg-blue-500',
   open: 'bg-yellow-500',
   pending: 'bg-orange-500',
-  resolved: 'bg-green-500',
   closed: 'bg-neutral-400',
 };
 
@@ -37,7 +36,6 @@ const STATUS_LABEL: Record<string, { text: string; chip: string }> = {
   new:      { text: 'New',      chip: 'bg-blue-100 text-blue-700' },
   open:     { text: 'Open',     chip: 'bg-yellow-100 text-yellow-700' },
   pending:  { text: 'Pending',  chip: 'bg-orange-100 text-orange-700' },
-  resolved: { text: 'Resolved', chip: 'bg-green-100 text-green-700' },
   closed:   { text: 'Closed',   chip: 'bg-neutral-100 text-neutral-600' },
 };
 
@@ -61,7 +59,7 @@ export default function NewTicket() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [stats, setStats] = useState<{ open: number; pending: number; resolved: number; total: number } | null>(null);
+  const [stats, setStats] = useState<{ open: number; pending: number; closed: number; total: number } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
 
   const handleFilesSelected = (list: FileList | null) => {
@@ -116,7 +114,7 @@ export default function NewTicket() {
       .then(([list, s]) => {
         if (cancelled) return;
         setTickets(list.tickets);
-        setStats({ open: s.open, pending: s.pending, resolved: s.resolved, total: s.total });
+        setStats({ open: s.open, pending: s.pending, closed: s.closed, total: s.total });
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setHistoryLoading(false); });
@@ -358,7 +356,7 @@ export default function NewTicket() {
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
                 { label: 'Open', value: (stats?.open ?? 0) + (stats?.pending ?? 0), chip: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-                { label: 'Resolved', value: stats?.resolved ?? 0, chip: 'bg-green-50 text-green-700 border-green-200' },
+                { label: 'Closed', value: stats?.closed ?? 0, chip: 'bg-neutral-50 text-neutral-600 border-neutral-200' },
                 { label: 'Total', value: stats?.total ?? 0, chip: 'bg-neutral-50 text-neutral-600 border-neutral-200' },
               ].map(({ label, value, chip }) => (
                 <div key={label} className={`rounded-lg border px-2 py-2 ${chip}`}>

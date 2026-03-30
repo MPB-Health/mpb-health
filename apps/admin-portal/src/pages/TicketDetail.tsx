@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   AlertCircle,
   Clock,
-  CheckCircle2,
   CircleDot,
   Loader2,
   XCircle,
@@ -39,7 +38,6 @@ const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: 
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
   open: { label: 'Open', color: 'bg-yellow-100 text-yellow-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
   pending: { label: 'Pending', color: 'bg-orange-100 text-orange-700', icon: <Clock className="w-3.5 h-3.5" /> },
-  resolved: { label: 'Resolved', color: 'bg-green-100 text-green-700', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
   closed: { label: 'Closed', color: 'bg-neutral-100 text-neutral-600', icon: <XCircle className="w-3.5 h-3.5" /> },
 };
 
@@ -271,18 +269,19 @@ export default function TicketDetail() {
                 value={ticket.status}
                 onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
                 disabled={updating}
+                title="Ticket status"
                 className="px-3 py-1.5 border border-neutral-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
               >
                 <option value="new">New</option>
                 <option value="open">Open</option>
                 <option value="pending">Pending</option>
-                <option value="resolved">Resolved</option>
                 <option value="closed">Closed</option>
               </select>
               <select
                 value={ticket.priority}
                 onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
                 disabled={updating}
+                title="Ticket priority"
                 className="px-3 py-1.5 border border-neutral-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
               >
                 <option value="low">Low</option>

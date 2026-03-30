@@ -98,7 +98,7 @@ async function extractFunctionError(error: unknown): Promise<string> {
   return error instanceof Error ? error.message : 'Unknown error';
 }
 
-export type TicketStatus = 'new' | 'open' | 'pending' | 'resolved' | 'closed';
+export type TicketStatus = 'new' | 'open' | 'pending' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface Ticket {
@@ -137,7 +137,6 @@ export interface TicketStats {
   new: number;
   open: number;
   pending: number;
-  resolved: number;
   closed: number;
 }
 
@@ -521,8 +520,8 @@ export class TicketService {
   async getTicketStats(): Promise<TicketStats> {
     // Unauthenticated → return zeros silently.
     const data = await this.call<TicketStats & { success: boolean }>('stats', {}, { allowUnauthenticated: true });
-    if (!data) return { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 };
-    return { total: data.total, new: data.new, open: data.open, pending: data.pending, resolved: data.resolved, closed: data.closed };
+    if (!data) return { total: 0, new: 0, open: 0, pending: 0, closed: 0 };
+    return { total: data.total, new: data.new, open: data.open, pending: data.pending, closed: data.closed };
   }
 
   async getCategories(): Promise<string[]> {
@@ -590,7 +589,7 @@ export class TicketService {
 
   async getAllTicketStats(): Promise<TicketStats> {
     const data = await this.call<TicketStats & { success: boolean }>('stats_all');
-    return { total: data.total, new: data.new, open: data.open, pending: data.pending, resolved: data.resolved, closed: data.closed };
+    return { total: data.total, new: data.new, open: data.open, pending: data.pending, closed: data.closed };
   }
 
   // ── Admin write methods ────────────────────────────────────────────────
@@ -672,7 +671,7 @@ export class TicketService {
    * closes them in bulk.
    */
   async bulkCloseAll(): Promise<number> {
-    const openStatuses: TicketStatus[] = ['new', 'open', 'pending', 'resolved'];
+    const openStatuses: TicketStatus[] = ['new', 'open', 'pending'];
     let totalClosed = 0;
 
     for (const status of openStatuses) {
@@ -706,8 +705,7 @@ export class TicketService {
   }
 
   /**
-   * Knowledge base — returns resolved tickets as searchable articles.
-   * Re-uses the admin list endpoint with a resolved/closed status filter.
+   * Knowledge base — returns closed tickets as searchable articles.
    */
   async getKnowledgeBase(opts: {
     search?: string;
@@ -716,7 +714,7 @@ export class TicketService {
     perPage?: number;
   } = {}): Promise<AdminTicketListResult> {
     return this.getAllTickets({
-      status: 'resolved',
+      status: 'closed',
       search: opts.search,
       page: opts.page,
       perPage: opts.perPage,

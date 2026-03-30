@@ -218,7 +218,7 @@ async function getTicketStats(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
 ) {
-  const statuses = ["new", "open", "pending", "resolved", "closed"] as const;
+  const statuses = ["new", "open", "pending", "closed"] as const;
 
   const results = await Promise.all(
     statuses.map((status) =>
@@ -376,7 +376,7 @@ async function getTicketDetailAdmin(
 async function getAllTicketStats(
   itstsAdmin: ReturnType<typeof createClient>,
 ) {
-  const statuses = ["new", "open", "pending", "resolved", "closed"] as const;
+  const statuses = ["new", "open", "pending", "closed"] as const;
 
   const results = await Promise.all(
     statuses.map((status) =>
@@ -751,10 +751,10 @@ Deno.serve(async (req: Request) => {
       if (READ_STUB_ACTIONS.includes(action as string)) {
         const stubs: Record<string, unknown> = {
           list:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats:         { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+          stats:         { total: 0, new: 0, open: 0, pending: 0, closed: 0 },
           get_categories:{ categories: [] },
           list_all:      { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats_all:     { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+          stats_all:     { total: 0, new: 0, open: 0, pending: 0, closed: 0 },
         };
         return new Response(
           JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId }),
@@ -796,7 +796,7 @@ Deno.serve(async (req: Request) => {
         }
         if (action === "stats") {
           return new Response(
-            JSON.stringify({ success: true, total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 }),
+            JSON.stringify({ success: true, total: 0, new: 0, open: 0, pending: 0, closed: 0 }),
             { status: 200, headers },
           );
         }

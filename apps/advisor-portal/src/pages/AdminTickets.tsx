@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   AlertCircle,
   Clock,
-  CheckCircle2,
   CircleDot,
   Loader2,
   XCircle,
@@ -57,7 +56,6 @@ const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: 
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
   open: { label: 'Open', color: 'bg-yellow-100 text-yellow-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
   pending: { label: 'Pending', color: 'bg-orange-100 text-orange-700', icon: <Clock className="w-3.5 h-3.5" /> },
-  resolved: { label: 'Resolved', color: 'bg-green-100 text-green-700', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
   closed: { label: 'Closed', color: 'bg-neutral-100 text-neutral-600', icon: <XCircle className="w-3.5 h-3.5" /> },
 };
 
@@ -141,10 +139,6 @@ export default function AdminTickets() {
         case 'pending':
           count = await ticketService.bulkUpdateTickets(ids, { status: 'pending' });
           toast.success(`${count} ticket${count !== 1 ? 's' : ''} set to pending.`);
-          break;
-        case 'resolved':
-          count = await ticketService.bulkUpdateTickets(ids, { status: 'resolved' });
-          toast.success(`${count} ticket${count !== 1 ? 's' : ''} resolved.`);
           break;
         case 'delete':
           count = await ticketService.bulkDeleteTickets(ids);
@@ -561,7 +555,6 @@ export default function AdminTickets() {
                   <option value="new">New</option>
                   <option value="open">Open</option>
                   <option value="pending">Pending</option>
-                  <option value="resolved">Resolved</option>
                   <option value="closed">Closed</option>
                 </select>
                 <select
@@ -776,12 +769,11 @@ export default function AdminTickets() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
           <MetricCard label="Total" value={stats.total} icon={<ShieldCheck className="w-5 h-5" />} onClick={() => { setStatusFilter(''); setPage(1); }} active={statusFilter === ''} />
           <MetricCard label="New" value={stats.new} icon={<CircleDot className="w-5 h-5 text-blue-500" />} onClick={() => { setStatusFilter(statusFilter === 'new' ? '' : 'new'); setPage(1); }} active={statusFilter === 'new'} />
           <MetricCard label="Open" value={stats.open} icon={<AlertCircle className="w-5 h-5 text-yellow-500" />} onClick={() => { setStatusFilter(statusFilter === 'open' ? '' : 'open'); setPage(1); }} active={statusFilter === 'open'} />
           <MetricCard label="Pending" value={stats.pending} icon={<Clock className="w-5 h-5 text-orange-500" />} onClick={() => { setStatusFilter(statusFilter === 'pending' ? '' : 'pending'); setPage(1); }} active={statusFilter === 'pending'} />
-          <MetricCard label="Resolved" value={stats.resolved} icon={<CheckCircle2 className="w-5 h-5 text-green-500" />} onClick={() => { setStatusFilter(statusFilter === 'resolved' ? '' : 'resolved'); setPage(1); }} active={statusFilter === 'resolved'} />
           <MetricCard label="Closed" value={stats.closed} icon={<XCircle className="w-5 h-5 text-neutral-400" />} onClick={() => { setStatusFilter(statusFilter === 'closed' ? '' : 'closed'); setPage(1); }} active={statusFilter === 'closed'} />
         </div>
       )}
@@ -832,7 +824,6 @@ export default function AdminTickets() {
             <option value="new">New</option>
             <option value="open">Open</option>
             <option value="pending">Pending</option>
-            <option value="resolved">Resolved</option>
             <option value="closed">Closed</option>
           </select>
 
@@ -961,13 +952,6 @@ export default function AdminTickets() {
               className="px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg transition-colors"
             >
               Set Pending
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowBulkActionConfirm({ action: 'resolved', label: 'Resolve' })}
-              className="px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors"
-            >
-              Resolve
             </button>
             <button
               type="button"

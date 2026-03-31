@@ -712,6 +712,36 @@ export const memberPortalService = {
     return data;
   },
 
+  async markAllNotificationsRead(memberId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('member_notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('member_id', memberId)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error marking all notifications read:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  async getUnreadNotificationCount(memberId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('member_notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('member_id', memberId)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  },
+
   async getSupportTickets(memberId: string): Promise<SupportTicket[]> {
     const { data, error } = await supabase
       .from('support_tickets')

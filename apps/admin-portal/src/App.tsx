@@ -66,6 +66,7 @@ const NotificationRules = lazyRetry(() => import('./pages/NotificationRules'));
 // Command center pages
 const Members = lazyRetry(() => import('./pages/Members'));
 const MemberDetail = lazyRetry(() => import('./pages/MemberDetail'));
+const MemberNotificationCenter = lazyRetry(() => import('./pages/MemberNotificationCenter'));
 const CRMDashboard = lazyRetry(() => import('./pages/CRMDashboard'));
 const CRMLeads = lazyRetry(() => import('./pages/CRMLeads'));
 const CRMLeadDetail = lazyRetry(() => import('./pages/CRMLeadDetail'));
@@ -303,6 +304,7 @@ export default function App() {
               <Route path="audit-logs" element={<RequirePermission permission="settings.manage"><AuditLogs /></RequirePermission>} />
               {/* Command center routes */}
               <Route path="members" element={<Members />} />
+              <Route path="members/notifications" element={<MemberNotificationCenter />} />
               <Route path="members/:memberId" element={<MemberDetail />} />
               <Route path="crm/dashboard" element={<CRMDashboard />} />
               <Route path="crm/leads" element={<CRMLeads />} />

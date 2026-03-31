@@ -159,23 +159,6 @@ class LeadSubmissionService {
     }
   }
 
-  async getSubmissionStats(daysBack: number = 30) {
-    try {
-      const { data, error } = await supabase
-        .rpc('get_lead_submission_stats', { days_back: daysBack });
-
-      if (error) {
-        console.error('Failed to get submission stats:', error);
-        return null;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Get submission stats error:', error);
-      return null;
-    }
-  }
-
   async retryFailedSubmissions(_maxRetries: number = 3): Promise<{ attempted: number; succeeded: number; failed: number }> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     if (!supabaseUrl) {

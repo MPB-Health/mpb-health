@@ -1,4 +1,13 @@
 import { supabase } from '@mpbhealth/database';
+import type { AccountEventType, ActorDepartment } from './MemberNotificationService';
+
+export interface NotificationContext {
+  actor_user_id: string;
+  actor_department: ActorDepartment | string;
+  event_type: AccountEventType;
+  actor_email?: string;
+  should_notify_member?: boolean;
+}
 
 export interface MemberProfile {
   id: string;
@@ -107,8 +116,13 @@ export class MemberService {
 
   async updateMember(
     memberId: string,
-    updates: Partial<Pick<MemberProfile, 'membership_status' | 'assigned_advisor_id' | 'phone' | 'preferred_language'>>
+    updates: Partial<Pick<MemberProfile, 'membership_status' | 'assigned_advisor_id' | 'phone' | 'preferred_language'>>,
+    notificationCtx?: NotificationContext
   ): Promise<MemberProfile> {
+    const oldData = notificationCtx
+      ? await this.getMember(memberId)
+      : null;
+
     const { data, error } = await supabase
       .from('member_profiles')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -117,6 +131,30 @@ export class MemberService {
       .single();
 
     if (error) throw error;
+
+    if (notificationCtx) {
+      const changes: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(updates)) {
+        changes[key] = { old: oldData?.[key as keyof MemberProfile] ?? null, new: val };
+      }
+
+      try {
+        await supabase.from('member_account_events').insert({
+          member_id: memberId,
+          actor_user_id: notificationCtx.actor_user_id,
+          actor_department: notificationCtx.actor_department,
+          event_type: notificationCtx.event_type,
+          entity_type: 'member_profile',
+          entity_id: memberId,
+          changes,
+          payload_summary: { actor_email: notificationCtx.actor_email },
+          should_notify_member: notificationCtx.should_notify_member ?? true,
+        });
+      } catch (emitErr) {
+        console.error('Failed to emit member account event (update succeeded):', emitErr);
+      }
+    }
+
     return data;
   }
 

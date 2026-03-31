@@ -16,7 +16,13 @@ export type ReminderType = 'refill' | 'take_medication' | 'appointment';
 export type ConditionType = 'chronic' | 'acute' | 'resolved' | 'family_history';
 export type Severity = 'mild' | 'moderate' | 'severe';
 export type VisitType = 'office' | 'emergency' | 'urgent_care' | 'telehealth' | 'hospital' | 'specialist' | 'lab' | 'imaging' | 'other';
-export type NotificationType = 'claim_update' | 'payment_due' | 'payment_received' | 'document_uploaded' | 'coverage_update' | 'system_alert' | 'message' | 'reminder';
+export type NotificationType =
+  | 'claim_update' | 'payment_due' | 'payment_received'
+  | 'document_uploaded' | 'coverage_update' | 'system_alert'
+  | 'message' | 'reminder'
+  | 'profile_update' | 'billing_update' | 'membership_update'
+  | 'eligibility_update' | 'dependent_update' | 'account_update'
+  | 'support_update' | 'operational_update';
 export type Priority = 'low' | 'normal' | 'high' | 'urgent';
 export type TicketCategory = 'technical' | 'billing' | 'claims' | 'coverage' | 'general' | 'complaint';
 export type TicketStatus = 'open' | 'in_progress' | 'waiting_member' | 'waiting_staff' | 'resolved' | 'closed';
@@ -458,6 +464,12 @@ export interface MemberNotification {
   is_read: boolean;
   read_at?: string;
   action_url?: string;
+  actor_department?: string;
+  category?: string;
+  related_entity_type?: string;
+  related_entity_id?: string;
+  source_event_id?: string;
+  expires_at?: string;
   metadata?: Record<string, any>;
   created_at: string;
 }

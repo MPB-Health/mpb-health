@@ -49,7 +49,6 @@ interface QuoteSubmission {
 
 export const QuoteSubmissionsPanel: React.FC = () => {
   const [submissions, setSubmissions] = useState<QuoteSubmission[]>([]);
-  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -98,8 +97,6 @@ export const QuoteSubmissionsPanel: React.FC = () => {
       if (error) throw error;
       setSubmissions(data || []);
 
-      const statsData = await leadSubmissionService.getSubmissionStats(30);
-      setStats(statsData);
     } catch (error) {
       console.error('Failed to load submissions:', error);
     } finally {
@@ -158,36 +155,6 @@ export const QuoteSubmissionsPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      {stats && stats.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-neutral-900">{stats[0].total_submissions || 0}</div>
-              <div className="text-sm text-neutral-600">Total Submissions</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-green-600">{stats[0].successful_syncs || 0}</div>
-              <div className="text-sm text-neutral-600">Successfully Synced</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-yellow-600">{stats[0].pending_syncs || 0}</div>
-              <div className="text-sm text-neutral-600">Pending Sync</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-red-600">{stats[0].failed_syncs || 0}</div>
-              <div className="text-sm text-neutral-600">Failed Syncs</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Controls */}
       <Card>
         <CardHeader>

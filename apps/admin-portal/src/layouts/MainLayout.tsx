@@ -29,7 +29,15 @@ import { useAdmin } from '../contexts/AdminContext';
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Users', href: '/users', icon: Users },
-  { name: 'Members', href: '/members', icon: Heart },
+  {
+    name: 'Members',
+    href: '#',
+    icon: Heart,
+    children: [
+      { name: 'All Members', href: '/members' },
+      { name: 'Notifications', href: '/members/notifications' },
+    ],
+  },
   {
     name: 'Enrollments',
     href: '/enrollments',

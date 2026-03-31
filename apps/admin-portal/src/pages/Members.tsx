@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Users as UsersIcon, UserCheck, UserX, Clock, TrendingUp } from 'lucide-react';
+import { Search, Users as UsersIcon, UserCheck, UserX, Clock, TrendingUp, Bell } from 'lucide-react';
 import { memberService, type MemberProfile, type MemberStats } from '@mpbhealth/admin-core';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -54,6 +54,13 @@ export default function Members() {
             {totalCount} total member{totalCount !== 1 ? 's' : ''}
           </p>
         </div>
+        <button
+          onClick={() => navigate('/members/notifications')}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-surface-primary border border-th-border rounded-lg hover:bg-surface-secondary transition-colors text-th-text-primary"
+        >
+          <Bell className="w-4 h-4" />
+          Notification Center
+        </button>
       </div>
 
       {/* Stats cards */}
@@ -83,6 +90,7 @@ export default function Members() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label="Filter by membership status"
           className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
         >
           <option value="">All Statuses</option>

@@ -199,7 +199,26 @@ export {
   type MemberClaim,
   type MemberStats,
   type MemberFilters,
+  type NotificationContext,
 } from './members/MemberService';
+
+// Member notification system
+export {
+  MemberNotificationService,
+  memberNotificationService,
+  getDepartmentLabel,
+  DEPARTMENT_OPTIONS,
+  EVENT_TYPE_LABELS,
+  type MemberAccountEvent,
+  type MemberNotificationAdmin,
+  type NotificationRule as MemberNotificationRule,
+  type CreateAccountEventInput,
+  type AccountEventFilters,
+  type NotificationFilters as MemberNotificationFilters,
+  type NotificationStats as MemberNotificationStats,
+  type AccountEventType,
+  type ActorDepartment,
+} from './members/MemberNotificationService';
 
 // System health
 export {

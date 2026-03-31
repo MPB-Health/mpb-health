@@ -197,7 +197,7 @@ const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children })
   // Track page views to Supabase (for admin dashboard)
   usePageTracking({
     enabled: true,
-    excludePaths: [],
+    excludePaths: ['/admin', '/member'],
   });
 
   // Track every SPA route change in GA4 / Facebook / etc.

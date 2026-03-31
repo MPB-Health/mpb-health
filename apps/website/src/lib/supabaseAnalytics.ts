@@ -236,6 +236,17 @@ function getUTMParams(): { source: string | null; medium: string | null; campaig
 }
 
 // ============================================================================
+// Bot Detection
+// ============================================================================
+
+const BOT_PATTERNS = /bot|crawl|spider|slurp|bingpreview|mediapartners|google|baidu|yandex|sogou|facebook|twitter|linkedin|pinterest|whatsapp|telegram|preview|headless|phantom|selenium|puppeteer|lighthouse|pagespeed|gtmetrix|pingdom|uptimerobot/i;
+
+function isBot(): boolean {
+  if (typeof navigator === 'undefined') return true;
+  return BOT_PATTERNS.test(navigator.userAgent);
+}
+
+// ============================================================================
 // Main Tracking Service
 // ============================================================================
 
@@ -244,7 +255,7 @@ export const supabaseAnalytics = {
    * Initialize analytics - call once on app load
    */
   async init(): Promise<void> {
-    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured || isBot()) return;
 
     // Get or create visitor and session
     const { isNew: isNewVisitor } = getVisitorId();
@@ -260,13 +271,15 @@ export const supabaseAnalytics = {
    * Start a new session
    */
   async startSession(sessionId: string, isNewVisitor: boolean): Promise<void> {
-    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured || isBot()) return;
 
     const referrer = document.referrer || null;
     const utm = getUTMParams();
+    const { id: visitorId } = getVisitorId();
 
     const sessionData = {
       session_id: sessionId,
+      visitor_id: visitorId,
       entry_page: window.location.pathname,
       referrer: referrer,
       referrer_source: getReferrerSource(referrer),
@@ -297,10 +310,10 @@ export const supabaseAnalytics = {
    * Track a page view
    */
   async trackPageView(path: string, title?: string): Promise<void> {
-    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured || isBot()) return;
 
     const { id: sessionId, isNewSession } = getSessionId();
-    const { id: _visitorId, isNew: isNewVisitor } = getVisitorId();
+    const { isNew: isNewVisitor } = getVisitorId();
 
     // If this created a new session, start it first
     if (isNewSession) {
@@ -342,7 +355,7 @@ export const supabaseAnalytics = {
     eventValue?: number,
     metadata?: Record<string, any>
   ): Promise<void> {
-    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured || isBot()) return;
 
     const { id: sessionId } = getSessionId();
 
@@ -380,7 +393,7 @@ export const supabaseAnalytics = {
     scrollDepth: number,
     isExit: boolean = false
   ): Promise<void> {
-    if (typeof window === 'undefined' || !isSupabaseConfigured) return;
+    if (typeof window === 'undefined' || !isSupabaseConfigured || isBot()) return;
 
     const { id: sessionId } = getSessionId();
 

@@ -89,20 +89,28 @@ export interface SessionData {
 export const analyticsDataService = {
   /**
    * Get analytics summary for a date range
-   * Always calculates from analytics_sessions table for accurate real-time data
+   * Calculates from analytics_sessions + page_views for accurate real-time data
    */
   async getSummary(dateRange: DateRange): Promise<AnalyticsSummary> {
     const { startDate, endDate } = dateRange;
+    const startISO = startDate.toISOString();
+    const endISO = endDate.toISOString();
 
-    // Calculate directly from sessions table for accurate real-time data
-    const { data: sessions, error } = await supabase
-      .from('analytics_sessions')
-      .select('*')
-      .gte('started_at', startDate.toISOString())
-      .lte('started_at', endDate.toISOString());
+    const [sessionsResult, pageViewsResult] = await Promise.all([
+      supabase
+        .from('analytics_sessions')
+        .select('session_id, visitor_id, user_id, is_new_visitor, is_bounce, duration_seconds, page_count')
+        .gte('started_at', startISO)
+        .lte('started_at', endISO),
+      supabase
+        .from('page_views')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', startISO)
+        .lte('created_at', endISO),
+    ]);
 
-    if (error || !sessions) {
-      console.error('Error fetching sessions:', error);
+    if (sessionsResult.error || !sessionsResult.data) {
+      console.error('Error fetching sessions:', sessionsResult.error);
       return {
         totalSessions: 0,
         totalUsers: 0,
@@ -115,61 +123,90 @@ export const analyticsDataService = {
       };
     }
 
-    const uniqueUsers = new Set(sessions.map((s) => s.user_id || s.session_id));
-    const newUsers = sessions.filter((s) => s.is_new_visitor).length;
+    const sessions = sessionsResult.data;
+    const totalPageViews = pageViewsResult.count ?? sessions.reduce((sum, s) => sum + (s.page_count || 0), 0);
+
+    // Deduplicate users by visitor_id (falls back to session_id for old records)
+    const uniqueUsers = new Set(sessions.map((s) => s.visitor_id || s.user_id || s.session_id));
+
+    // Count unique new visitors (not sessions) to avoid overcounting
+    const newVisitorIds = new Set(
+      sessions.filter((s) => s.is_new_visitor).map((s) => s.visitor_id || s.user_id || s.session_id)
+    );
+
     const bounces = sessions.filter((s) => s.is_bounce).length;
     const totalDuration = sessions.reduce((sum, s) => sum + (s.duration_seconds || 0), 0);
-    const totalPages = sessions.reduce((sum, s) => sum + (s.page_count || 0), 0);
 
     return {
       totalSessions: sessions.length,
       totalUsers: uniqueUsers.size,
-      newUsers,
-      returningUsers: uniqueUsers.size - newUsers,
-      totalPageViews: totalPages,
+      newUsers: newVisitorIds.size,
+      returningUsers: uniqueUsers.size - newVisitorIds.size,
+      totalPageViews,
       bounceRate: sessions.length > 0 ? (bounces / sessions.length) * 100 : 0,
       avgSessionDuration: sessions.length > 0 ? totalDuration / sessions.length : 0,
-      pagesPerSession: sessions.length > 0 ? totalPages / sessions.length : 0,
+      pagesPerSession: sessions.length > 0 ? totalPageViews / sessions.length : 0,
     };
   },
 
   /**
    * Get daily metrics for trend charts
-   * Calculates from analytics_sessions for accurate real-time data
+   * Calculates from analytics_sessions (+ page_views for pageViews metric)
    */
   async getDailyMetrics(
     dateRange: DateRange,
     metric: 'sessions' | 'users' | 'pageViews' | 'bounceRate'
   ): Promise<DailyMetric[]> {
     const { startDate, endDate } = dateRange;
+    const startISO = startDate.toISOString();
+    const endISO = endDate.toISOString();
 
-    // Get sessions data and aggregate by date
+    // For pageViews metric, count directly from page_views table
+    if (metric === 'pageViews') {
+      const { data: pvData, error: pvError } = await supabase
+        .from('page_views')
+        .select('created_at')
+        .gte('created_at', startISO)
+        .lte('created_at', endISO);
+
+      if (pvError || !pvData) {
+        console.error('Error fetching daily page views:', pvError);
+        return [];
+      }
+
+      const dailyCounts: Record<string, number> = {};
+      pvData.forEach((pv) => {
+        const date = new Date(pv.created_at).toISOString().split('T')[0];
+        dailyCounts[date] = (dailyCounts[date] || 0) + 1;
+      });
+
+      return Object.keys(dailyCounts).sort().map((date) => ({ date, value: dailyCounts[date] }));
+    }
+
+    // For session-based metrics
     const { data: sessions, error } = await supabase
       .from('analytics_sessions')
-      .select('started_at, user_id, session_id, page_count, is_bounce')
-      .gte('started_at', startDate.toISOString())
-      .lte('started_at', endDate.toISOString());
+      .select('started_at, visitor_id, user_id, session_id, is_bounce')
+      .gte('started_at', startISO)
+      .lte('started_at', endISO);
 
     if (error || !sessions) {
       console.error('Error fetching daily metrics:', error);
       return [];
     }
 
-    // Group sessions by date
-    const dailyData: Record<string, { sessions: number; userIds: Set<string>; pageViews: number; bounces: number }> = {};
+    const dailyData: Record<string, { sessions: number; visitorIds: Set<string>; bounces: number }> = {};
 
     sessions.forEach((session) => {
       const date = new Date(session.started_at).toISOString().split('T')[0];
       if (!dailyData[date]) {
-        dailyData[date] = { sessions: 0, userIds: new Set(), pageViews: 0, bounces: 0 };
+        dailyData[date] = { sessions: 0, visitorIds: new Set(), bounces: 0 };
       }
       dailyData[date].sessions++;
-      dailyData[date].userIds.add(session.user_id || session.session_id);
-      dailyData[date].pageViews += session.page_count || 0;
+      dailyData[date].visitorIds.add(session.visitor_id || session.user_id || session.session_id);
       if (session.is_bounce) dailyData[date].bounces++;
     });
 
-    // Convert to array sorted by date
     const sortedDates = Object.keys(dailyData).sort();
 
     return sortedDates.map((date) => {
@@ -180,10 +217,7 @@ export const analyticsDataService = {
           value = day.sessions;
           break;
         case 'users':
-          value = day.userIds.size;
-          break;
-        case 'pageViews':
-          value = day.pageViews;
+          value = day.visitorIds.size;
           break;
         case 'bounceRate':
           value = day.sessions > 0 ? (day.bounces / day.sessions) * 100 : 0;
@@ -237,10 +271,9 @@ export const analyticsDataService = {
   async getTrafficSources(dateRange: DateRange): Promise<TrafficSource[]> {
     const { startDate, endDate } = dateRange;
 
-    // Calculate directly from sessions table for accurate real-time data
     const { data: sessions, error } = await supabase
       .from('analytics_sessions')
-      .select('referrer_source, session_id, user_id, page_count, is_bounce, duration_seconds')
+      .select('referrer_source, session_id, visitor_id, user_id, page_count, is_bounce, duration_seconds')
       .gte('started_at', startDate.toISOString())
       .lte('started_at', endDate.toISOString());
 
@@ -257,14 +290,14 @@ export const analyticsDataService = {
           sourceType: source,
           sourceName: null,
           sessions: 0,
-          userIds: new Set(),
+          visitorIds: new Set(),
           pageViews: 0,
           bounces: 0,
           totalDuration: 0,
         };
       }
       sourceAgg[source].sessions++;
-      sourceAgg[source].userIds.add(s.user_id || s.session_id);
+      sourceAgg[source].visitorIds.add(s.visitor_id || s.user_id || s.session_id);
       sourceAgg[source].pageViews += s.page_count || 0;
       if (s.is_bounce) sourceAgg[source].bounces++;
       sourceAgg[source].totalDuration += s.duration_seconds || 0;
@@ -275,7 +308,7 @@ export const analyticsDataService = {
         sourceType: s.sourceType,
         sourceName: s.sourceName,
         sessions: s.sessions,
-        users: s.userIds.size,
+        users: s.visitorIds.size,
         pageViews: s.pageViews,
         bounceRate: s.sessions > 0 ? (s.bounces / s.sessions) * 100 : 0,
         avgSessionDuration: s.sessions > 0 ? s.totalDuration / s.sessions : 0,
@@ -321,7 +354,7 @@ export const analyticsDataService = {
 
     const { data, error } = await supabase
       .from('analytics_sessions')
-      .select('country, session_id, user_id, is_bounce')
+      .select('country, session_id, visitor_id, user_id, is_bounce')
       .gte('started_at', startDate.toISOString())
       .lte('started_at', endDate.toISOString())
       .not('country', 'is', null);
@@ -338,12 +371,12 @@ export const analyticsDataService = {
         geoAgg[country] = {
           country,
           sessions: 0,
-          userIds: new Set(),
+          visitorIds: new Set(),
           bounces: 0,
         };
       }
       geoAgg[country].sessions++;
-      geoAgg[country].userIds.add(s.user_id || s.session_id);
+      geoAgg[country].visitorIds.add(s.visitor_id || s.user_id || s.session_id);
       if (s.is_bounce) geoAgg[country].bounces++;
     });
 
@@ -351,7 +384,7 @@ export const analyticsDataService = {
       .map((g: any) => ({
         country: g.country,
         sessions: g.sessions,
-        users: g.userIds.size,
+        users: g.visitorIds.size,
         bounceRate: g.sessions > 0 ? (g.bounces / g.sessions) * 100 : 0,
       }))
       .sort((a, b) => b.sessions - a.sessions);

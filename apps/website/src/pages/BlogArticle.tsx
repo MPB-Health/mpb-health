@@ -139,19 +139,6 @@ export const BlogArticle: React.FC = () => {
             .update({ view_count: (article.view_count || 0) + 1 })
             .eq('id', article.id);
         }
-
-        // Also log to page_views for detailed analytics
-        const pageViewsResult = await supabase.from('page_views').insert({
-          path: `/blog/${article.slug}`,
-          page_title: article.title,
-          referrer: document.referrer || null,
-          user_agent: navigator.userAgent,
-          session_id: sessionStorage.getItem('session_id') || crypto.randomUUID()
-        });
-        
-        if (pageViewsResult.error) {
-          console.error('Blog view tracking: page_views insert failed:', pageViewsResult.error.message);
-        }
       } catch (err) {
         // Silently fail view tracking - don't break the user experience
         console.debug('View tracking skipped:', err);

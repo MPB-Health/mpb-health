@@ -531,6 +531,30 @@ export class DealService {
       return { totalDeals: 0, totalValue: 0, weightedValue: 0, byStage: [] };
     }
   }
+
+  /**
+   * Get activities for a deal from the crm_activities table
+   */
+  async getDealActivities(dealId: string, limit: number = 50): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('crm_activities')
+        .select('*')
+        .eq('deal_id', dealId)
+        .order('activity_date', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Failed to get deal activities:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Get deal activities error:', error);
+      return [];
+    }
+  }
 }
 
 // Factory function

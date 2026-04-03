@@ -7,6 +7,7 @@ import type {
   TrackingType,
   DeviceType,
 } from './types';
+import { sanitizeSearchInput } from '../utils/sanitize';
 
 export class EmailTrackingService {
   constructor(private supabase: SupabaseClient) {}
@@ -144,7 +145,10 @@ export class EmailTrackingService {
         query = query.lte('sent_at', filters.date_to);
       }
       if (filters?.search) {
-        query = query.or(`to_email.ilike.%${filters.search}%,subject.ilike.%${filters.search}%`);
+        const sanitized = sanitizeSearchInput(filters.search);
+        if (sanitized) {
+          query = query.or(`to_email.ilike.%${sanitized}%,subject.ilike.%${sanitized}%`);
+        }
       }
       if (filters?.has_opened) {
         query = query.gt('open_count', 0);

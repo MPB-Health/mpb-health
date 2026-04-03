@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Users, CheckSquare, Calendar, Check } from 'lucide-react';
+import { Bell, Users, CheckSquare, Calendar, Check, AlertCircle } from 'lucide-react';
 import { useCRM } from '../contexts/CRMContext';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
 import type { UnifiedNotification } from '@mpbhealth/crm-core';
 
-const ICON_MAP = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   lead: Users,
   task: CheckSquare,
   event: Calendar,
@@ -46,15 +46,24 @@ export function NotificationCenter() {
   }, []);
 
   const loadUnreadCount = async () => {
-    const count = await notificationCenterService.getUnreadCount();
-    setUnreadCount(count);
+    try {
+      const count = await notificationCenterService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (err) {
+      console.error('Failed to load unread count:', err);
+    }
   };
 
   const loadNotifications = async () => {
-    setLoading(true);
-    const data = await notificationCenterService.getNotifications(20);
-    setNotifications(data);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const data = await notificationCenterService.getNotifications(20);
+      setNotifications(data);
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleToggle = () => {
@@ -168,7 +177,7 @@ function NotificationGroup({
         </span>
       </div>
       {notifications.map((notification) => {
-        const Icon = ICON_MAP[notification.type];
+        const Icon = ICON_MAP[notification.type] || AlertCircle;
         return (
           <button
             key={notification.id}

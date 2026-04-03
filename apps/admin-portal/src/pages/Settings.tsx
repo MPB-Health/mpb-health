@@ -28,10 +28,12 @@ export default function Settings() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [settingsData, integrationsData] = await Promise.all([
+        const [settingsResult, integrationsResult] = await Promise.allSettled([
           settingsService.getSettingsByCategory(),
           settingsService.getIntegrations(),
         ]);
+        const settingsData = settingsResult.status === 'fulfilled' ? settingsResult.value : {};
+        const integrationsData = integrationsResult.status === 'fulfilled' ? integrationsResult.value : [];
         setSettings(settingsData);
         setIntegrations(integrationsData);
 

@@ -58,23 +58,29 @@ export default function DealDetail() {
   const loadDeal = async () => {
     if (!id) return;
 
-    setLoading(true);
-    const dealData = await dealService.getDeal(id);
-    setDeal(dealData);
+    try {
+      setLoading(true);
+      const dealData = await dealService.getDeal(id);
+      setDeal(dealData);
 
-    if (dealData) {
-      // Load related data in parallel
-      const [contacts, products, history] = await Promise.all([
-        dealService.getDealContacts(id),
-        dealService.getDealProducts(id),
-        dealService.getDealStageHistory(id),
-      ]);
-      setDealContacts(contacts);
-      setDealProducts(products);
-      setStageHistory(history);
+      if (dealData) {
+        const [contacts, products, history, dealActivities] = await Promise.all([
+          dealService.getDealContacts(id),
+          dealService.getDealProducts(id),
+          dealService.getDealStageHistory(id),
+          dealService.getDealActivities(id).catch(() => []),
+        ]);
+        setDealContacts(contacts);
+        setDealProducts(products);
+        setStageHistory(history);
+        setActivities(dealActivities);
+      }
+    } catch (err) {
+      console.error('Failed to load deal:', err);
+      toast.error('Failed to load deal details');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {

@@ -3,16 +3,15 @@
 // Main container for the Championship Command Center
 // ============================================================================
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { AlertCircle, LayoutDashboard } from 'lucide-react';
-import { createClientLogger } from '@mpbhealth/utils';
 import { SkeletonMetric, SkeletonCard } from '@mpbhealth/ui';
 import { DashboardProvider, useDashboardStore } from '../../contexts/DashboardContext';
+import { useOrg } from '../../contexts/OrgContext';
 import { DashboardToolbar } from './DashboardToolbar';
 import { WidgetGrid } from './WidgetGrid';
 import { useKeyboardShortcuts } from './KeyboardShortcuts';
 
-const log = createClientLogger('DashboardContainer');
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
   classes.filter(Boolean).join(' ');
 
@@ -33,22 +32,21 @@ export function DashboardContainer() {
 // ============================================================================
 
 function DashboardContent() {
-  const { isLoading, error, widgets, editMode, clearError } = useDashboardStore();
+  const { isLoading, error, widgets, editMode, clearError, loadLayout } = useDashboardStore();
+  const { activeOrgId } = useOrg();
 
-  // Enable keyboard shortcuts
   useKeyboardShortcuts();
 
-  // Listen for refresh events
-  useEffect(() => {
-    const handleRefresh = () => {
-      // Trigger widget refresh by dispatching a custom event
-      // Individual widgets listen for this
-      log.info('Dashboard refresh triggered');
-    };
+  const handleRefresh = useCallback(() => {
+    if (activeOrgId) {
+      loadLayout(activeOrgId);
+    }
+  }, [activeOrgId, loadLayout]);
 
+  useEffect(() => {
     window.addEventListener('dashboard:refresh', handleRefresh);
     return () => window.removeEventListener('dashboard:refresh', handleRefresh);
-  }, []);
+  }, [handleRefresh]);
 
   // Loading state
   if (isLoading) {

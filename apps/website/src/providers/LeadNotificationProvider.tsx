@@ -98,6 +98,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
   const [unreadCount, setUnreadCount] = useState(0);
   
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const handleNewLeadRef = useRef<(lead: LeadSubmission) => Promise<void>>();
 
   // Check for existing notification permission
   useEffect(() => {
@@ -266,7 +267,13 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
     [createToast, playSound, sendDesktopNotification, hasPermission]
   );
 
-  // Subscribe to Supabase realtime
+  // Keep handleNewLead ref current so the subscription effect doesn't
+  // re-run (and tear down / reopen the WebSocket) on every render.
+  useEffect(() => {
+    handleNewLeadRef.current = handleNewLead;
+  }, [handleNewLead]);
+
+  // Subscribe to Supabase realtime — stable deps only
   useEffect(() => {
     if (!enabled || !isSupabaseConfigured) return;
 
@@ -282,7 +289,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
           table: 'zoho_lead_submissions',
         },
         (payload: RealtimePostgresInsertPayload<LeadSubmission>) => {
-          handleNewLead(payload.new);
+          handleNewLeadRef.current?.(payload.new);
         }
       )
       .subscribe((status) => {
@@ -296,7 +303,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
         channelRef.current = null;
       }
     };
-  }, [enabled, handleNewLead]);
+  }, [enabled]);
 
   // Dismiss a single toast
   const dismissToast = useCallback((id: string) => {

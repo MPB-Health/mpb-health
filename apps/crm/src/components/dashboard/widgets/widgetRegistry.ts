@@ -24,6 +24,9 @@ import {
   Shield,
   UserCheck,
   GitPullRequest,
+  DollarSign,
+  Building2,
+  HeartPulse,
 } from 'lucide-react';
 import type { WidgetConfig, WidgetRegistry } from '../types';
 
@@ -47,6 +50,9 @@ const KPIStripWidget = lazy(() => import('./KPIStripWidget'));
 const PlanTypeWidget = lazy(() => import('./PlanTypeWidget'));
 const AdvisorWidget = lazy(() => import('./AdvisorWidget'));
 const PipelineBreakdownWidget = lazy(() => import('./PipelineBreakdownWidget'));
+const RevenueIntelligenceWidget = lazy(() => import('./RevenueIntelligenceWidget'));
+const RelationshipMapWidget = lazy(() => import('./RelationshipMapWidget'));
+const ActivityPulseWidget = lazy(() => import('./ActivityPulseWidget'));
 
 // ============================================================================
 // Widget Registry
@@ -641,6 +647,102 @@ export const widgetRegistry: WidgetRegistry = {
         {
           key: 'showLegend',
           label: 'Show Legend',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+      ],
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Intelligence Category (Zoho-Killer Upgrades)
+  // ---------------------------------------------------------------------------
+  'revenue-intelligence': {
+    id: 'revenue-intelligence',
+    title: 'Revenue Intelligence',
+    description: 'AI-powered pipeline analytics with deal velocity, weighted forecasts, and at-risk deal detection',
+    icon: DollarSign,
+    category: 'insights',
+    defaultSize: 'lg',
+    allowedSizes: ['md', 'lg', 'full'],
+    minWidth: 6,
+    component: RevenueIntelligenceWidget,
+    permissions: ['deals.read'],
+    dataRefreshInterval: 60000,
+    configSchema: {
+      fields: [
+        {
+          key: 'showAtRisk',
+          label: 'Show At-Risk Deals',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+        {
+          key: 'showFunnel',
+          label: 'Show Pipeline Funnel',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+      ],
+    },
+  },
+
+  'relationship-map': {
+    id: 'relationship-map',
+    title: 'Relationship Intelligence',
+    description: 'Account health scoring and relationship strength visualization across your CRM',
+    icon: Building2,
+    category: 'insights',
+    defaultSize: 'md',
+    allowedSizes: ['md', 'lg'],
+    minWidth: 6,
+    component: RelationshipMapWidget,
+    permissions: ['accounts.read'],
+    dataRefreshInterval: 120000,
+    configSchema: {
+      fields: [
+        {
+          key: 'maxAccounts',
+          label: 'Max Accounts',
+          type: 'number',
+          defaultValue: 6,
+        },
+        {
+          key: 'showHealthBar',
+          label: 'Show Health Distribution',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+      ],
+    },
+  },
+
+  'activity-pulse': {
+    id: 'activity-pulse',
+    title: 'Activity Pulse',
+    description: 'Real-time engagement heatmap showing team activity intensity and engagement scoring',
+    icon: HeartPulse,
+    category: 'insights',
+    defaultSize: 'md',
+    allowedSizes: ['md', 'lg'],
+    minWidth: 6,
+    component: ActivityPulseWidget,
+    dataRefreshInterval: 30000,
+    configSchema: {
+      fields: [
+        {
+          key: 'defaultView',
+          label: 'Default View',
+          type: 'select',
+          options: [
+            { value: 'heatmap', label: 'Activity Heatmap' },
+            { value: 'stats', label: 'Breakdown' },
+          ],
+          defaultValue: 'heatmap',
+        },
+        {
+          key: 'showEngagementScore',
+          label: 'Show Engagement Score',
           type: 'checkbox',
           defaultValue: true,
         },

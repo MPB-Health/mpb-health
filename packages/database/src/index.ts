@@ -12,10 +12,10 @@ export {
   invalidateHealthCheck,
 } from './client';
 
-// Types - Supabase Generated (auto-generated from live schema)
-export type { Database } from './types/supabase';
+// Types - Supabase Generated (auto-generated via `pnpm db:generate`)
+export type { Database } from './types/database';
 
-// Types - Database
+// Types - Hand-crafted domain models (safe to edit; NOT overwritten by codegen)
 export type {
   BlogAuthor,
   BlogArticle,
@@ -34,7 +34,7 @@ export type {
   CmsEvent,
   Profile,
   UserSession,
-} from './types/database';
+} from './types/models';
 
 // Types - Member
 export type {

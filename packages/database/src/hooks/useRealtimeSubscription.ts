@@ -52,6 +52,13 @@ export function useRealtimeSubscription<T extends Record<string, any> = Record<s
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
 
+  // Store callbacks in refs so the subscription effect doesn't re-run
+  // (and tear down / reopen the WebSocket) when callback identity changes.
+  const callbacksRef = useRef({ onInsert, onUpdate, onDelete, onChange });
+  useEffect(() => {
+    callbacksRef.current = { onInsert, onUpdate, onDelete, onChange };
+  }, [onInsert, onUpdate, onDelete, onChange]);
+
   const subscribe = useCallback(() => {
     if (!enabled) return;
 
@@ -75,17 +82,17 @@ export function useRealtimeSubscription<T extends Record<string, any> = Record<s
         'postgres_changes' as any,
         channelConfig,
         (payload: RealtimePostgresChangesPayload<T>) => {
-          onChange?.(payload);
+          callbacksRef.current.onChange?.(payload);
 
           switch (payload.eventType) {
             case 'INSERT':
-              onInsert?.(payload.new as T);
+              callbacksRef.current.onInsert?.(payload.new as T);
               break;
             case 'UPDATE':
-              onUpdate?.({ old: payload.old as T, new: payload.new as T });
+              callbacksRef.current.onUpdate?.({ old: payload.old as T, new: payload.new as T });
               break;
             case 'DELETE':
-              onDelete?.(payload.old as T);
+              callbacksRef.current.onDelete?.(payload.old as T);
               break;
           }
         }
@@ -101,7 +108,7 @@ export function useRealtimeSubscription<T extends Record<string, any> = Record<s
       });
 
     channelRef.current = channel;
-  }, [table, schema, event, filter, onInsert, onUpdate, onDelete, onChange, enabled]);
+  }, [table, schema, event, filter, enabled]);
 
   const unsubscribe = useCallback(() => {
     if (channelRef.current) {

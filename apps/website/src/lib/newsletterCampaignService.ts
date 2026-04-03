@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { triggerNewsletterScheduledWebhook, triggerNewsletterSendWebhook } from './n8nWebhookService';
 
 export interface NewsletterCampaign {
   id: string;
@@ -17,8 +16,6 @@ export interface NewsletterCampaign {
   unsubscribed_count: number;
   open_rate: number;
   click_rate: number;
-  n8n_webhook_url?: string;
-  n8n_execution_id?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -160,40 +157,17 @@ export async function updateCampaignStatus(
 export async function scheduleCampaign(
   campaignId: string,
   sendAt: string,
-  webhookUrl: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const campaign = await getNewsletterCampaign(campaignId);
-    if (!campaign) {
-      throw new Error('Campaign not found');
-    }
-
     const { error: updateError } = await supabase
       .from('newsletter_campaigns')
       .update({
         send_at: sendAt,
         status: 'scheduled',
-        n8n_webhook_url: webhookUrl,
       })
       .eq('id', campaignId);
 
     if (updateError) throw updateError;
-
-    const webhookResult = await triggerNewsletterScheduledWebhook(
-      {
-        id: campaignId,
-        blog_post_id: campaign.blog_post_id!,
-        subject_line: campaign.subject_line,
-        preview_text: campaign.preview_text,
-        send_at: sendAt,
-        target_segment: campaign.target_segment,
-      },
-      webhookUrl
-    );
-
-    if (!webhookResult.success) {
-      throw new Error(webhookResult.error || 'Failed to trigger webhook');
-    }
 
     return { success: true };
   } catch (error) {
@@ -210,14 +184,8 @@ export async function scheduleCampaign(
  */
 export async function sendCampaignNow(
   campaignId: string,
-  webhookUrl: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const campaign = await getNewsletterCampaign(campaignId);
-    if (!campaign) {
-      throw new Error('Campaign not found');
-    }
-
     await updateCampaignStatus(campaignId, 'sending');
 
     const { data: activeSubscribers, error: subscribersError } = await supabase
@@ -243,27 +211,6 @@ export async function sendCampaignNow(
       .insert(queueItems);
 
     if (queueError) throw queueError;
-
-    const subscribersWithTokens = activeSubscribers.map((sub, idx) => ({
-      id: sub.id,
-      email: sub.email,
-      tracking_token: queueItems[idx].tracking_token,
-    }));
-
-    const webhookResult = await triggerNewsletterSendWebhook(
-      {
-        id: campaignId,
-        blog_post_id: campaign.blog_post_id!,
-        subject_line: campaign.subject_line,
-      },
-      subscribersWithTokens,
-      webhookUrl
-    );
-
-    if (!webhookResult.success) {
-      await updateCampaignStatus(campaignId, 'failed');
-      throw new Error(webhookResult.error || 'Failed to trigger send webhook');
-    }
 
     return { success: true };
   } catch (error) {

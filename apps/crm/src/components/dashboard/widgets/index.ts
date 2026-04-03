@@ -25,3 +25,6 @@ export type { default as AIInsightsWidget } from './AIInsightsWidget';
 export type { default as PlanTypeWidget } from './PlanTypeWidget';
 export type { default as AdvisorWidget } from './AdvisorWidget';
 export type { default as PipelineBreakdownWidget } from './PipelineBreakdownWidget';
+export type { default as RevenueIntelligenceWidget } from './RevenueIntelligenceWidget';
+export type { default as RelationshipMapWidget } from './RelationshipMapWidget';
+export type { default as ActivityPulseWidget } from './ActivityPulseWidget';

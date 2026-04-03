@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 import { generateBlogPost, type GenerateBlogPostRequest, type GenerateBlogPostResponse } from './geminiService';
-import { triggerBlogPublishedWebhook } from './n8nWebhookService';
 
 export interface BlogPostData {
   title: string;
@@ -26,8 +25,6 @@ export interface BulkImportResult {
 export interface CreatePostOptions {
   publishImmediately?: boolean;
   scheduleFor?: string;
-  triggerWebhook?: boolean;
-  webhookUrl?: string;
 }
 
 /**
@@ -136,23 +133,6 @@ export async function createBlogPost(
       .single();
 
     if (error) throw error;
-
-    if (options.triggerWebhook && options.webhookUrl && data.is_published) {
-      await triggerBlogPublishedWebhook(
-        {
-          id: data.id,
-          title: data.title,
-          slug: data.slug,
-          excerpt: data.excerpt,
-          author: data.author,
-          published_date: data.published_date,
-          featured_image_url: data.featured_image_url,
-          category: data.category,
-          tags: postData.tags,
-        },
-        options.webhookUrl
-      );
-    }
 
     return {
       success: true,
@@ -373,17 +353,8 @@ export async function updateBlogPost(
  */
 export async function publishBlogPost(
   postId: string,
-  webhookUrl?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { data: post, error: fetchError } = await supabase
-      .from('blog_articles')
-      .select('*')
-      .eq('id', postId)
-      .single();
-
-    if (fetchError) throw fetchError;
-
     const { error: updateError } = await supabase
       .from('blog_articles')
       .update({
@@ -393,22 +364,6 @@ export async function publishBlogPost(
       .eq('id', postId);
 
     if (updateError) throw updateError;
-
-    if (webhookUrl) {
-      await triggerBlogPublishedWebhook(
-        {
-          id: post.id,
-          title: post.title,
-          slug: post.slug,
-          excerpt: post.excerpt,
-          author: post.author,
-          published_date: new Date().toISOString(),
-          featured_image_url: post.featured_image_url,
-          category: post.category,
-        },
-        webhookUrl
-      );
-    }
 
     return { success: true };
   } catch (error) {

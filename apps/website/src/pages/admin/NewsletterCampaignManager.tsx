@@ -32,7 +32,6 @@ const NewsletterCampaignManager: React.FC = () => {
     blog_post_id: '',
     subject_line: '',
     preview_text: '',
-    webhook_url: '',
     send_at: '',
   });
 
@@ -72,7 +71,7 @@ const NewsletterCampaignManager: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.blog_post_id || !formData.subject_line || !formData.webhook_url) {
+    if (!formData.blog_post_id || !formData.subject_line) {
       alert('Please fill in all required fields');
       return;
     }
@@ -83,7 +82,6 @@ const NewsletterCampaignManager: React.FC = () => {
       preview_text: formData.preview_text,
       status: 'draft',
       target_segment: {},
-      n8n_webhook_url: formData.webhook_url,
     });
 
     if (campaign) {
@@ -93,7 +91,6 @@ const NewsletterCampaignManager: React.FC = () => {
         blog_post_id: '',
         subject_line: '',
         preview_text: '',
-        webhook_url: '',
         send_at: '',
       });
       loadCampaigns();
@@ -102,13 +99,13 @@ const NewsletterCampaignManager: React.FC = () => {
     }
   };
 
-  const handleSchedule = async (campaignId: string, sendAt: string, webhookUrl: string) => {
+  const handleSchedule = async (campaignId: string, sendAt: string) => {
     if (!sendAt) {
       alert('Please select a send date and time');
       return;
     }
 
-    const result = await scheduleCampaign(campaignId, sendAt, webhookUrl);
+    const result = await scheduleCampaign(campaignId, sendAt);
 
     if (result.success) {
       alert('Campaign scheduled successfully!');
@@ -118,12 +115,12 @@ const NewsletterCampaignManager: React.FC = () => {
     }
   };
 
-  const handleSendNow = async (campaignId: string, webhookUrl: string) => {
+  const handleSendNow = async (campaignId: string) => {
     if (!confirm('Are you sure you want to send this campaign immediately?')) {
       return;
     }
 
-    const result = await sendCampaignNow(campaignId, webhookUrl);
+    const result = await sendCampaignNow(campaignId);
 
     if (result.success) {
       alert('Campaign is being sent!');
@@ -276,21 +273,6 @@ const NewsletterCampaignManager: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="webhook">n8n Webhook URL</Label>
-                    <Input
-                      id="webhook"
-                      type="url"
-                      value={formData.webhook_url}
-                      onChange={(e) =>
-                        setFormData({ ...formData, webhook_url: e.target.value })
-                      }
-                      placeholder="https://your-n8n-instance.com/webhook/..."
-                      className="mt-2"
-                      required
-                    />
-                  </div>
-
                   <div className="flex gap-4">
                     <Button type="submit" className="flex-1">
                       Create Campaign
@@ -376,7 +358,7 @@ const NewsletterCampaignManager: React.FC = () => {
                             <>
                               <button
                                 onClick={() =>
-                                  handleSendNow(campaign.id, campaign.n8n_webhook_url || '')
+                                  handleSendNow(campaign.id)
                                 }
                                 className="text-green-600 hover:text-green-900"
                                 title="Send Now"
@@ -387,7 +369,7 @@ const NewsletterCampaignManager: React.FC = () => {
                                 onClick={() => {
                                   const sendAt = prompt('Enter send date/time (YYYY-MM-DD HH:MM):');
                                   if (sendAt) {
-                                    handleSchedule(campaign.id, sendAt, campaign.n8n_webhook_url || '');
+                                    handleSchedule(campaign.id, sendAt);
                                   }
                                 }}
                                 className="text-blue-600 hover:text-blue-900"

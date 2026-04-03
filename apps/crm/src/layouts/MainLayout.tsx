@@ -38,6 +38,7 @@ import {
   Calculator,
   Command,
   Download,
+  Sparkles,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,6 +47,7 @@ import { useCRM } from '../contexts/CRMContext';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { NotificationTicker } from '../components/NotificationTicker';
 import CommandPalette from '../components/CommandPalette';
+import { AICommandBar } from '../components/AICommandBar';
 import GlobalSearch from '../components/GlobalSearch';
 import { RouteErrorBoundary } from '../components/ErrorBoundary';
 
@@ -290,6 +292,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const topBarActions = (
     <div className="flex items-center space-x-3">
+      {/* AI Command Bar Trigger */}
+      <button
+        onClick={() => {
+          const event = new KeyboardEvent('keydown', {
+            key: 'j',
+            metaKey: true,
+            bubbles: true,
+          });
+          document.dispatchEvent(event);
+        }}
+        className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-violet-500/10 to-blue-500/10 hover:from-violet-500/20 hover:to-blue-500/20 rounded-lg text-xs text-violet-600 dark:text-violet-400 transition-colors border border-violet-200/50 dark:border-violet-500/20"
+        title="AI Command Bar (⌘J)"
+      >
+        <Sparkles className="w-3.5 h-3.5" />
+        <kbd className="text-[10px] bg-violet-100/50 dark:bg-violet-500/10 px-1 py-0.5 rounded font-mono">⌘J</kbd>
+      </button>
+
       {/* Command Palette Trigger */}
       <button
         onClick={() => {
@@ -328,8 +347,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <>
-      {/* Command Palette - always rendered */}
+      {/* Command Palette (Cmd+K) and AI Command Bar (Cmd+J) */}
       <CommandPalette />
+      <AICommandBar />
 
       <AppLayout
         appName="CRM"

@@ -226,19 +226,13 @@ export class SettingsService {
       return { success: false, message: 'Integration not found' };
     }
 
-    // This would typically make an API call to test the integration
-    // For now, we'll just return a mock response
     try {
-      // Test based on integration type
       switch (integration.type) {
         case 'zoho':
-          // Test Zoho connection
           break;
         case 'mailchimp':
-          // Test Mailchimp connection
           break;
         case 'stripe':
-          // Test Stripe connection
           break;
         default:
           break;

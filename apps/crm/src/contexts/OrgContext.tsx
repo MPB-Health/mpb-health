@@ -6,7 +6,6 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef, us
 import {
   getUserOrgs,
   loadUserPermissions,
-  hasPermission as checkPermission,
   invalidatePermissionCache,
   invalidateCache as invalidateOrgCache,
   DEFAULT_ORG_ID,

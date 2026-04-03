@@ -27,6 +27,7 @@ import { useSavedViews } from '../hooks/useSavedViews';
 import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel, PLAN_TYPE_LABELS } from '@mpbhealth/crm-core';
 import { SkeletonTable } from '@mpbhealth/ui';
+import toast from 'react-hot-toast';
 
 export default function LeadsList() {
   const { leadService, pipelineStages } = useCRM();
@@ -71,11 +72,17 @@ export default function LeadsList() {
   }, [savedViews.activeView, savedViews.activeSmartView, debouncedSearch]);
 
   const loadLeads = useCallback(async () => {
-    setLoading(true);
-    const { leads, total } = await leadService.getLeads(filters, pageSize, page * pageSize);
-    setLeads(leads);
-    setTotal(total);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const { leads, total } = await leadService.getLeads(filters, pageSize, page * pageSize);
+      setLeads(leads);
+      setTotal(total);
+    } catch (err) {
+      console.error('Failed to load leads:', err);
+      toast.error('Failed to load leads. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, [leadService, filters, page]);
 
   useEffect(() => {
@@ -92,26 +99,38 @@ export default function LeadsList() {
   };
 
   const handleExport = async () => {
-    const exportLeads = await leadService.getLeadsForExport(undefined, filters);
-    const csv = leadService.generateCSV(exportLeads);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    try {
+      const exportLeads = await leadService.getLeadsForExport(undefined, filters);
+      const csv = leadService.generateCSV(exportLeads);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      toast.success(`Exported ${exportLeads.length} leads`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error('Failed to export leads');
+    }
   };
 
   const handleExportSelected = async () => {
-    const ids = Array.from(selectedLeads);
-    const exportLeads = await leadService.getLeadsForExport(ids);
-    const csv = leadService.generateCSV(exportLeads);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leads-selected-export-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    try {
+      const ids = Array.from(selectedLeads);
+      const exportLeads = await leadService.getLeadsForExport(ids);
+      const csv = leadService.generateCSV(exportLeads);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leads-selected-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      toast.success(`Exported ${exportLeads.length} leads`);
+    } catch (err) {
+      console.error('Export selected failed:', err);
+      toast.error('Failed to export selected leads');
+    }
   };
 
   const toggleSelectAll = useCallback(() => {
@@ -133,7 +152,7 @@ export default function LeadsList() {
     loadLeads();
   };
 
-  const activeFilterCount = [filters.stage, filters.priority, filters.planType, filters.carrierId].filter(Boolean).length;
+  const activeFilterCount = [filters.stage, filters.priority, filters.planType, filters.carrierId, filters.dateFrom].filter(Boolean).length;
   const selectedIds = Array.from(selectedLeads);
   const totalPages = Math.ceil(total / pageSize);
 

@@ -3,18 +3,18 @@
   <!-- Main SEO Sitemap -->
   <sitemap>
     <loc>https://mpb.health/sitemap-pages.xml</loc>
-    <lastmod>2026-02-03</lastmod>
+    <lastmod>2026-02-25</lastmod>
   </sitemap>
   
   <!-- GEO/Location Sitemap -->
   <sitemap>
     <loc>https://mpb.health/sitemap-geo.xml</loc>
-    <lastmod>2026-02-03</lastmod>
+    <lastmod>2026-02-25</lastmod>
   </sitemap>
   
   <!-- Blog Sitemap -->
   <sitemap>
     <loc>https://mpb.health/sitemap-blog.xml</loc>
-    <lastmod>2026-02-03</lastmod>
+    <lastmod>2026-02-25</lastmod>
   </sitemap>
 </sitemapindex>

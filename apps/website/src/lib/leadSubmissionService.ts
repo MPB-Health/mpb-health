@@ -6,6 +6,8 @@ import { createClientLogger } from '@mpbhealth/utils';
 
 const log = createClientLogger('LeadSubmission');
 
+const N8N_LEAD_WEBHOOK_URL = import.meta.env.VITE_N8N_LEAD_WEBHOOK_URL as string | undefined;
+
 export interface LeadFormData {
   firstName: string;
   lastName: string;
@@ -156,6 +158,40 @@ class LeadSubmissionService {
       log.info(`[LeadSubmission] Welcome email sent to ${formData.email}`);
     } catch (error) {
       console.error('Lead welcome email error:', error);
+    }
+
+    // Fire n8n webhook for CRM automation when configured
+    if (N8N_LEAD_WEBHOOK_URL) {
+      try {
+        const result = await triggerN8nWebhook({
+          eventType: 'new_lead_submission',
+          webhookUrl: N8N_LEAD_WEBHOOK_URL,
+          data: {
+            lead: {
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              email: formData.email,
+              phone: formData.phone,
+              household_size: formData.householdSize,
+              zip_code: formData.zipCode,
+              source_page: formData.sourcePage,
+              source_cta: formData.sourceCTA,
+              utm_source: formData.utmSource,
+              utm_medium: formData.utmMedium,
+              utm_campaign: formData.utmCampaign,
+            },
+            form_data: formData.formData,
+          },
+          retryConfig: { maxRetries: 3, retryDelay: 2000 },
+        });
+        if (result.success) {
+          log.info(`[LeadSubmission] n8n webhook fired for ${formData.email}`);
+        } else {
+          log.warn(`[LeadSubmission] n8n webhook failed: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('n8n webhook error:', error);
+      }
     }
   }
 

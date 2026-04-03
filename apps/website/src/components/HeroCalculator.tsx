@@ -78,6 +78,12 @@ const householdTypes = [
 
 const TOTAL_STEPS = 3;
 
+interface InlineResults {
+  estimates: ReturnType<typeof estimateAllMemberships>;
+  recommendations: ReturnType<typeof recommendPlans>;
+  traditionalCost: number;
+}
+
 export default function HeroCalculator() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,6 +92,9 @@ export default function HeroCalculator() {
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [inlineResults, setInlineResults] = useState<InlineResults | null>(null);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
   const { track } = useAnalytics();
 
   const {
@@ -135,38 +144,6 @@ export default function HeroCalculator() {
 
   const canProceedStep2 = () => selectedPriorities.length > 0;
 
-  // Step 3 preview: best match + estimated price (show value before contact)
-  const step3Preview = (() => {
-    if (step !== 3 || !canProceedStep1() || !watchedState || !watchedAge) return null;
-    try {
-      const comparisonInput = {
-        householdType: watchedHouseholdType,
-        state: watchedState,
-        primaryAge: watchedAge,
-        spouseAge: watchedSpouseAge ?? null,
-        dependentsCount: watchedDependentsCount || 0,
-        primaryTobacco: false,
-        spouseTobacco: false,
-        currentMonthly: undefined,
-      };
-      const estimates = estimateAllMemberships(comparisonInput);
-      const recs = recommendPlans(selectedPriorities);
-      const traditional = estimateTraditionalInsurance(watchedHouseholdType, watchedAge);
-      const best = recs[0];
-      const bestPlan = best ? estimates.plans.find(p => p.planId === best.planId) : null;
-      const savings = bestPlan && traditional > 0 ? traditional - (bestPlan.flatRate ?? bestPlan.lowestPrice) : 0;
-      return {
-        bestPlanLabel: bestPlan?.planLabel ?? 'Secure HSA',
-        bestPrice: bestPlan ? (bestPlan.flatRate ?? bestPlan.lowestPrice) : 0,
-        matchPct: best?.matchPercentage ?? 85,
-        savings: Math.max(0, savings),
-        traditional,
-      };
-    } catch {
-      return null;
-    }
-  })();
-
   // Pre-fill form when returning from "Edit your quote"
   useEffect(() => {
     const state = location.state as { editQuote?: boolean; formData?: Record<string, unknown> } | undefined;
@@ -185,7 +162,7 @@ export default function HeroCalculator() {
         phone: fd.phone as string | undefined,
       });
       setSelectedPriorities((fd.membershipPriorities as string[]) ?? []);
-      setStep(3);
+      setStep(2);
     }
   }, [location.state, reset]);
 
@@ -197,35 +174,71 @@ export default function HeroCalculator() {
       const valid = await trigger(fields);
       if (valid && canProceedStep1()) setStep(2);
     } else if (step === 2 && canProceedStep2()) {
+      computeInlineResults();
       setStep(3);
     }
   };
 
-  const handlePrevStep = () => setStep(Math.max(1, step - 1));
+  const handlePrevStep = () => {
+    if (step === 3) {
+      setInlineResults(null);
+      setShowContactForm(false);
+    }
+    setStep(Math.max(1, step - 1));
+  };
 
-  const onSubmit = async (data: HeroCalculatorInput) => {
-    setIsCalculating(true);
-    setIsSubmittingLead(true);
-    setSubmissionError(null);
-
+  /** Compute and display results immediately — no form required */
+  const computeInlineResults = () => {
     try {
+      setIsCalculating(true);
       const comparisonInput = {
-        householdType: data.householdType,
-        state: data.state,
-        primaryAge: data.primaryAge,
-        spouseAge: data.spouseAge ?? null,
-        dependentsCount: data.dependentsCount || 0,
+        householdType: watchedHouseholdType,
+        state: watchedState,
+        primaryAge: watchedAge,
+        spouseAge: watchedSpouseAge ?? null,
+        dependentsCount: watchedDependentsCount || 0,
         primaryTobacco: false,
         spouseTobacco: false,
         currentMonthly: undefined,
       };
+      const estimates = estimateAllMemberships(comparisonInput);
+      const recommendations = recommendPlans(selectedPriorities);
+      const traditionalCost = estimateTraditionalInsurance(watchedHouseholdType, watchedAge);
 
-      const allEstimates = estimateAllMemberships(comparisonInput);
-      const planRecommendations = recommendPlans(data.membershipPriorities || []);
-      const traditional = estimateTraditionalInsurance(data.householdType, data.primaryAge);
+      setInlineResults({ estimates, recommendations, traditionalCost });
 
+      track({
+        event: AnalyticsEvents.CALCULATE_RATE,
+        category: 'hero-calculator',
+        label: 'inline-results-shown',
+        value: estimates.plans.length,
+        custom_parameters: {
+          household_type: watchedHouseholdType,
+          state: watchedState,
+          primary_age: watchedAge,
+          membership_priorities: selectedPriorities.join(','),
+          traditional_cost: traditionalCost,
+          plans_shown: estimates.plans.map(p => p.planId).join(','),
+          best_match: recommendations[0]?.planId || 'none',
+        },
+      });
+    } catch (error) {
+      log.error('Failed to compute results:', error);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  /** Submit contact info to capture the lead (optional step after results) */
+  const onSubmit = async (data: HeroCalculatorInput) => {
+    if (!inlineResults) return;
+
+    setIsSubmittingLead(true);
+    setSubmissionError(null);
+
+    try {
       const allPlanRates: Record<string, any> = {};
-      allEstimates.plans.forEach(plan => {
+      inlineResults.estimates.plans.forEach(plan => {
         allPlanRates[plan.planId] = {
           planLabel: plan.planLabel,
           lowestPrice: plan.lowestPrice,
@@ -240,7 +253,7 @@ export default function HeroCalculator() {
       else if (data.householdType === 'member-child') householdSize = 1 + (data.dependentsCount || 0);
       else if (data.householdType === 'member-family') householdSize = 2 + (data.dependentsCount || 0);
 
-      const submissionResult = await leadSubmissionService.submitLead({
+      await leadSubmissionService.submitLead({
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -259,59 +272,31 @@ export default function HeroCalculator() {
           membership_priorities: data.membershipPriorities,
           all_plan_rates: allPlanRates,
           priorities_matched: data.membershipPriorities,
-          traditional_cost_estimate: traditional,
-          best_match_plan: planRecommendations[0]?.planId || null,
-          best_match_percentage: planRecommendations[0]?.matchPercentage || 0,
+          traditional_cost_estimate: inlineResults.traditionalCost,
+          best_match_plan: inlineResults.recommendations[0]?.planId || null,
+          best_match_percentage: inlineResults.recommendations[0]?.matchPercentage || 0,
         },
       });
 
       track({
         event: AnalyticsEvents.CALCULATE_RATE,
         category: 'hero-calculator',
-        label: 'all-plans-comparison',
-        value: allEstimates.plans.length,
+        label: 'lead-captured-from-results',
+        value: 1,
         custom_parameters: {
           household_type: data.householdType,
           state: data.state,
           primary_age: data.primaryAge,
-          membership_priorities: data.membershipPriorities?.join(',') || '',
-          traditional_cost: traditional,
-          plans_shown: allEstimates.plans.map(p => p.planId).join(','),
-          best_match: planRecommendations[0]?.planId || 'none',
           email_captured: true,
         },
       });
 
-      navigate('/get-a-quote', {
-        replace: true,
-        state: {
-          estimates: allEstimates,
-          recommendations: planRecommendations,
-          traditionalCost: traditional,
-          email: data.email,
-          submissionSuccess: submissionResult.success,
-          submissionError: submissionResult.success
-            ? undefined
-            : submissionResult.error || 'We couldn\'t save your info. Your comparison is below — please reach out or try again.',
-          formData: {
-            householdType: data.householdType,
-            state: data.state,
-            primaryAge: data.primaryAge,
-            spouseAge: data.spouseAge,
-            dependentsCount: data.dependentsCount,
-            membershipPriorities: data.membershipPriorities || [],
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            phone: data.phone,
-          },
-        },
-      });
+      setLeadSubmitted(true);
+      setShowContactForm(false);
     } catch (error) {
-      console.error('[HeroCalculator] Error:', error);
+      console.error('[HeroCalculator] Lead submission error:', error);
       setSubmissionError(error instanceof Error ? error.message : 'An unexpected error occurred.');
     } finally {
-      setIsCalculating(false);
       setIsSubmittingLead(false);
     }
   };
@@ -326,8 +311,12 @@ export default function HeroCalculator() {
             <Calculator className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="text-white font-bold text-lg leading-tight">Quick Rate Estimate</h3>
-            <p className="text-white/90 text-sm">Compare all plans in 30 seconds</p>
+            <h3 className="text-white font-bold text-lg leading-tight">
+              {step === 3 && inlineResults ? 'Your Rate Comparison' : 'Quick Rate Estimate'}
+            </h3>
+            <p className="text-white/90 text-sm">
+              {step === 3 && inlineResults ? `${inlineResults.estimates.plans.length} plans compared instantly` : 'Compare all plans in 30 seconds'}
+            </p>
           </div>
         </div>
         <div className="relative mt-3 flex items-center gap-4 text-white/90 text-xs">
@@ -462,77 +451,191 @@ export default function HeroCalculator() {
             </div>
           )}
 
-          {/* Step 3: Contact — show value first, then form */}
+          {/* Step 3: Inline Results — shown immediately, no form required */}
           {step === 3 && (
-            <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
-              <div>
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 3 of 3 — almost there</p>
-                <h4 className="text-base font-bold text-gray-900">Your best match is ready</h4>
-                <p className="text-sm text-gray-500 mt-0.5">Enter your details below to see the full comparison and get your exact rate</p>
-              </div>
-
-              {/* Best match preview — show value BEFORE asking for contact */}
-              {step3Preview && (
-                <div className="p-4 rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-cyan-50/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                    <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">Your best match</span>
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
+              {isCalculating ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <span className="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+                  <p className="text-sm font-medium text-gray-700">Comparing plans...</p>
+                </div>
+              ) : inlineResults ? (
+                <>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="h-4 w-4 text-blue-600" />
+                      <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Your Results</p>
+                    </div>
+                    <h4 className="text-base font-bold text-gray-900">
+                      {inlineResults.estimates.plans.length} plans compared
+                    </h4>
                   </div>
-                  <p className="text-lg font-bold text-gray-900">{step3Preview.bestPlanLabel}</p>
-                  <p className="text-sm text-gray-600 mt-0.5">
-                    Starting around <strong className="text-blue-700">{fmtMoney(step3Preview.bestPrice)}/mo</strong>
-                    {step3Preview.savings > 0 && (
-                      <span className="ml-2 text-emerald-700 font-semibold">
-                        — save {fmtMoney(step3Preview.savings)}/mo vs traditional
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">Call to get your exact rate and enroll — takes about 5 minutes.</p>
-                </div>
-              )}
 
-              {/* Urgency */}
-              <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Rates are based on today&apos;s info — call now to lock in your rate before it changes.
-              </p>
+                  {/* Traditional insurance comparison banner */}
+                  {inlineResults.traditionalCost > 0 && (
+                    <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-red-700">Traditional Insurance</p>
+                        <p className="text-lg font-bold text-red-800">{fmtMoney(inlineResults.traditionalCost)}<span className="text-xs font-normal text-red-600">/mo</span></p>
+                      </div>
+                      <X className="h-5 w-5 text-red-400" />
+                    </div>
+                  )}
 
-              <p className="text-sm font-medium text-gray-700">Enter your details to get your full comparison</p>
+                  {/* Plan cards */}
+                  <div className="space-y-2.5">
+                    {inlineResults.estimates.plans
+                      .sort((a, b) => {
+                        const aRec = inlineResults.recommendations.findIndex(r => r.planId === a.planId);
+                        const bRec = inlineResults.recommendations.findIndex(r => r.planId === b.planId);
+                        const aIdx = aRec >= 0 ? aRec : 999;
+                        const bIdx = bRec >= 0 ? bRec : 999;
+                        return aIdx - bIdx;
+                      })
+                      .map((plan, i) => {
+                        const rec = inlineResults.recommendations.find(r => r.planId === plan.planId);
+                        const price = plan.flatRate ?? plan.lowestPrice;
+                        const savings = inlineResults.traditionalCost - price;
+                        const isBestMatch = i === 0 && rec;
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="hero-first-name" className="text-sm font-semibold text-gray-700">First Name</Label>
-                  <Input id="hero-first-name" type="text" placeholder="John" className="h-11 text-sm" {...register('firstName')} />
-                  {errors.firstName && <p className="text-xs text-red-600">{errors.firstName.message}</p>}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="hero-last-name" className="text-sm font-semibold text-gray-700">Last Name</Label>
-                  <Input id="hero-last-name" type="text" placeholder="Smith" className="h-11 text-sm" {...register('lastName')} />
-                  {errors.lastName && <p className="text-xs text-red-600">{errors.lastName.message}</p>}
-                </div>
-              </div>
+                        return (
+                          <div
+                            key={plan.planId}
+                            className={cn(
+                              'p-3.5 rounded-xl border-2 transition-all',
+                              isBestMatch
+                                ? 'border-blue-400 bg-gradient-to-br from-blue-50 via-white to-cyan-50/50 shadow-md'
+                                : 'border-gray-200 bg-white hover:border-gray-300'
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className={cn(
+                                    'font-bold text-sm',
+                                    isBestMatch ? 'text-blue-900' : 'text-gray-900'
+                                  )}>
+                                    {plan.planLabel}
+                                  </p>
+                                  {isBestMatch && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white uppercase tracking-wider">
+                                      Best Match
+                                    </span>
+                                  )}
+                                  {rec && !isBestMatch && (
+                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                      {rec.matchPercentage}% match
+                                    </span>
+                                  )}
+                                </div>
+                                {plan.description && (
+                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{plan.description}</p>
+                                )}
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className={cn(
+                                  'text-lg font-bold',
+                                  isBestMatch ? 'text-blue-700' : 'text-gray-900'
+                                )}>
+                                  {fmtMoney(price)}
+                                  <span className="text-xs font-normal text-gray-500">/mo</span>
+                                </p>
+                                {savings > 0 && (
+                                  <p className="text-[10px] font-semibold text-emerald-600">
+                                    Save {fmtMoney(savings)}/mo
+                                  </p>
+                                )}
+                              </div>
+                            </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="hero-email" className="text-sm font-semibold text-gray-700">Email</Label>
-                <Input id="hero-email" type="email" placeholder="your@email.com" className="h-11 text-sm" {...register('email')} />
-                {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
-                <p className="text-xs text-gray-500">We&apos;ll send your full comparison here in 30 seconds</p>
-              </div>
+                            {/* Tier range for plans with multiple tiers */}
+                            {plan.tiers && plan.tiers.length > 1 && (
+                              <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-1.5">
+                                {plan.tiers.map(tier => (
+                                  <span key={tier.tierId} className="text-[10px] px-2 py-0.5 rounded bg-gray-50 text-gray-600 border border-gray-100">
+                                    {tier.tierLabel}: {fmtMoney(tier.monthly)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
 
-              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                <Label htmlFor="hero-phone" className="text-sm font-semibold text-gray-700">
-                  Phone <span className="font-normal text-gray-500">(optional but recommended)</span>
-                </Label>
-                <Input
-                  id="hero-phone"
-                  type="tel"
-                  placeholder="(555) 123-4567"
-                  className="h-11 text-sm bg-white mt-1.5"
-                  {...register('phone')}
-                />
-                <p className="text-xs text-gray-600 mt-1.5">
-                  Add your phone for a faster callback — advisors often call within 2 hours. No need to wait on hold.
-                </p>
-              </div>
+                  {/* CTA: Talk to an advisor */}
+                  {!showContactForm && !leadSubmitted && (
+                    <div className="space-y-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowContactForm(true)}
+                        className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        Talk to an Advisor — Get Your Exact Rate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/get-a-quote', {
+                          state: {
+                            estimates: inlineResults.estimates,
+                            recommendations: inlineResults.recommendations,
+                            traditionalCost: inlineResults.traditionalCost,
+                          },
+                        })}
+                        className="w-full py-2.5 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                        View Full Comparison
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Lead submitted success */}
+                  {leadSubmitted && (
+                    <div className="p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-center">
+                      <Shield className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-emerald-800">You&apos;re all set!</p>
+                      <p className="text-xs text-emerald-700 mt-1">
+                        An advisor will reach out shortly to help you enroll. Check your email for your full comparison.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Optional contact form (only shown when CTA is clicked) */}
+                  {showContactForm && !leadSubmitted && (
+                    <div className="space-y-3 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <p className="text-sm font-semibold text-gray-800">Get your exact rate &mdash; takes 10 seconds</p>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="hero-first-name" className="text-sm font-semibold text-gray-700">First Name</Label>
+                          <Input id="hero-first-name" type="text" placeholder="John" className="h-10 text-sm" {...register('firstName')} />
+                          {errors.firstName && <p className="text-xs text-red-600">{errors.firstName.message}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="hero-last-name" className="text-sm font-semibold text-gray-700">Last Name</Label>
+                          <Input id="hero-last-name" type="text" placeholder="Smith" className="h-10 text-sm" {...register('lastName')} />
+                          {errors.lastName && <p className="text-xs text-red-600">{errors.lastName.message}</p>}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="hero-email" className="text-sm font-semibold text-gray-700">Email</Label>
+                        <Input id="hero-email" type="email" placeholder="your@email.com" className="h-10 text-sm" {...register('email')} />
+                        {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="hero-phone" className="text-sm font-semibold text-gray-700">
+                          Phone <span className="font-normal text-gray-400">(optional)</span>
+                        </Label>
+                        <Input id="hero-phone" type="tel" placeholder="(555) 123-4567" className="h-10 text-sm" {...register('phone')} />
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : null}
             </div>
           )}
 
@@ -551,13 +654,13 @@ export default function HeroCalculator() {
 
           {/* Navigation */}
           <div className="mt-6 flex gap-3">
-            {step > 1 ? (
+            {step > 1 && (
               <Button type="button" variant="outline" onClick={handlePrevStep} className="flex-1 h-11">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
-            ) : null}
-            {step < TOTAL_STEPS ? (
+            )}
+            {step < TOTAL_STEPS && (
               <Button
                 type="button"
                 onClick={handleNextStep}
@@ -567,30 +670,34 @@ export default function HeroCalculator() {
                 }
                 className={cn('flex-1 h-11', step === 1 ? '' : 'flex-[2]')}
               >
-                {step === 2 ? 'See my best match' : 'Continue'}
-                <ArrowRight className="h-4 w-4 ml-2" />
+                {step === 2 ? (
+                  <>
+                    <Calculator className="h-4 w-4 mr-2" />
+                    See My Rates
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
               </Button>
-            ) : (
+            )}
+            {step === TOTAL_STEPS && showContactForm && !leadSubmitted && (
               <Button
                 type="submit"
-                disabled={
-                  isCalculating ||
-                  isSubmittingLead ||
-                  !watchedFirstName ||
-                  !watchedLastName ||
-                  !watchedEmail
-                }
+                disabled={isSubmittingLead || !watchedFirstName || !watchedLastName || !watchedEmail}
                 className="flex-[2] h-11 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
               >
-                {isCalculating || isSubmittingLead ? (
+                {isSubmittingLead ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Getting your comparison...
+                    Sending...
                   </span>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
-                    Get My Comparison
+                    Get My Exact Rate
                   </>
                 )}
               </Button>

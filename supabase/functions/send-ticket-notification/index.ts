@@ -671,27 +671,13 @@ Deno.serve(async (req: Request) => {
       advisor: payload.advisor_email,
     });
 
-    // ── 1. Email notifications ───────────────────────────────────────────────
-    let emailSent = 0;
-    let emailFailed = 0;
-
-    if (RESEND_API_KEY) {
-      const messages = buildMessages(payload, APP_URL, SUPPORT_TEAM_EMAIL);
-      const results = await Promise.allSettled(
-        messages.map((msg) => sendEmail(RESEND_API_KEY, FROM_EMAIL, FROM_NAME, msg)),
-      );
-      emailSent = results.filter((r) => r.status === "fulfilled").length;
-      emailFailed = results.filter((r) => r.status === "rejected").length;
-
-      if (emailFailed > 0) {
-        const errors = results
-          .filter((r): r is PromiseRejectedResult => r.status === "rejected")
-          .map((r) => r.reason?.message || String(r.reason));
-        log.error("Some emails failed", { errors, event: payload.event });
-      }
-    } else {
-      log.warn("RESEND_API_KEY not configured — skipping email notification");
-    }
+    // ── 1. Email notifications (DISABLED) ─────────────────────────────────────
+    // Ticket email notifications via Resend are disabled to reduce advisor
+    // inbox noise caused by the ITSTS integration sending overlapping emails.
+    // In-app bell + push notifications below remain active.
+    const emailSent = 0;
+    const emailFailed = 0;
+    log.info("Email notifications disabled — in-app + push only");
 
     // ── 2. In-app + Push notifications ───────────────────────────────────────
     let pushSent = 0;

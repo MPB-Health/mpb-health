@@ -105,7 +105,11 @@ export default function ESignature() {
   };
 
   useEffect(() => {
-    if (user?.org_id) loadData();
+    if (user?.org_id) {
+      loadData();
+    } else if (user) {
+      setLoading(false);
+    }
   }, [user?.org_id]);
 
   // Provider handlers

@@ -1,4 +1,3 @@
-import { createZohoService } from '@mpbhealth/crm-core/zoho';
 import { supabase } from './supabase';
 import { sendLeadNotification, sendLeadWelcomeEmail } from './emailService';
 import { createClientLogger } from '@mpbhealth/utils';
@@ -71,7 +70,7 @@ class LeadSubmissionService {
       };
 
       const { data: submission, error: dbError } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .insert(submissionData)
         .select()
         .single();
@@ -159,15 +158,6 @@ class LeadSubmissionService {
 
   }
 
-  async retryFailedSubmissions(_maxRetries: number = 3): Promise<{ attempted: number; succeeded: number; failed: number }> {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      return { attempted: 0, succeeded: 0, failed: 0 };
-    }
-    const zoho = createZohoService(supabase, supabaseUrl);
-    const { synced, failed } = await zoho.retryFailedSyncs();
-    return { attempted: synced + failed, succeeded: synced, failed };
-  }
 }
 
 export const leadSubmissionService = new LeadSubmissionService();

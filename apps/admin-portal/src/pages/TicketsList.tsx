@@ -647,7 +647,7 @@ export default function TicketsList() {
                 This will mark <strong>all non-closed tickets</strong> as <strong>closed</strong>.
               </p>
               <p className="text-sm text-neutral-500">
-                This is intended for imported tickets from the Zoho desk migration. This action cannot be easily undone.
+                Use this for bulk cleanup after importing tickets from another system. This action cannot be easily undone.
               </p>
             </div>
             <div className="p-4 border-t border-neutral-100 flex justify-end gap-3 bg-neutral-50">

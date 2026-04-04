@@ -40,7 +40,7 @@ export class EmailService {
 
       // Load lead
       const { data: lead, error: lErr } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('first_name, last_name, email, phone')
         .eq('id', leadId)
         .single();

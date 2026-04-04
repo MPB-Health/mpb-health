@@ -80,7 +80,7 @@ export function useLeadNotifications(
 
     try {
       const { data, error: fetchError } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select(
           'id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_cta, created_at'
         )

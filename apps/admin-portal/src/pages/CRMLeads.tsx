@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Users, Filter } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { crmBridgeService, type CRMLead } from '@mpbhealth/admin-core';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -34,6 +35,7 @@ export default function CRMLeads() {
       setTotalCount(result.count);
     } catch (err) {
       console.error('Failed to load leads:', err);
+      toast.error('Failed to load leads');
     } finally {
       setLoading(false);
     }

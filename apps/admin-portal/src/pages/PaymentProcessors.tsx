@@ -75,7 +75,11 @@ export default function PaymentProcessors() {
   };
 
   useEffect(() => {
-    if (user?.org_id) loadProcessors();
+    if (user?.org_id) {
+      loadProcessors();
+    } else if (user) {
+      setLoading(false);
+    }
   }, [user?.org_id]);
 
   const openModal = (processor?: PaymentProcessor) => {

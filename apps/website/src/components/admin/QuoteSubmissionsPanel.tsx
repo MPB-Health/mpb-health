@@ -28,10 +28,6 @@ interface QuoteSubmission {
   phone: string;
   household_size: number;
   zip_code: string;
-  zoho_lead_id: string | null;
-  zoho_sync_status: string;
-  zoho_sync_attempts: number;
-  zoho_error_message: string | null;
   source_cta: string | null;
   created_at: string;
   // Additional fields for complete quote info
@@ -75,13 +71,13 @@ export const QuoteSubmissionsPanel: React.FC = () => {
     setLoading(true);
     try {
       let query = supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (statusFilter !== 'all') {
-        query = query.eq('zoho_sync_status', statusFilter);
+        query = query.eq('pipeline_stage', statusFilter);
       }
 
       if (sourceFilter !== 'all') {
@@ -105,17 +101,8 @@ export const QuoteSubmissionsPanel: React.FC = () => {
   };
 
   const handleRetryFailed = async () => {
-    setRetrying(true);
-    try {
-      const result = await leadSubmissionService.retryFailedSubmissions(3);
-      alert(`Retry complete:\n${result.attempted} attempted\n${result.succeeded} succeeded\n${result.failed} failed`);
-      await loadData();
-    } catch (error) {
-      console.error('Retry failed:', error);
-      alert('Failed to retry submissions');
-    } finally {
-      setRetrying(false);
-    }
+    // No-op: legacy retry removed
+    await loadData();
   };
 
   const getStatusBadge = (status: string) => {
@@ -224,7 +211,6 @@ export const QuoteSubmissionsPanel: React.FC = () => {
                     <th className="pb-3">Details</th>
                     <th className="pb-3">Source</th>
                     <th className="pb-3">Status</th>
-                    <th className="pb-3">Zoho Lead</th>
                     <th className="pb-3">Date</th>
                   </tr>
                 </thead>
@@ -267,38 +253,6 @@ export const QuoteSubmissionsPanel: React.FC = () => {
                             <div className="text-xs text-neutral-600">
                               {submission.source_cta || 'Direct'}
                             </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex flex-col gap-1">
-                              {getStatusBadge(submission.zoho_sync_status)}
-                              {submission.zoho_sync_attempts > 0 && (
-                                <span className="text-xs text-neutral-500">
-                                  {submission.zoho_sync_attempts} attempts
-                                </span>
-                              )}
-                              {submission.zoho_error_message && (
-                                <div className="flex items-start gap-1 text-xs text-red-600 mt-1">
-                                  <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                  <span className="line-clamp-2">{submission.zoho_error_message}</span>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            {submission.zoho_lead_id ? (
-                              <a
-                                href={`https://crm.zoho.com/crm/org123/tab/Leads/${submission.zoho_lead_id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-xs"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                View Lead
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ) : (
-                              <span className="text-xs text-neutral-400">Not synced</span>
-                            )}
                           </td>
                           <td className="py-3 text-xs text-neutral-600">
                             {new Date(submission.created_at).toLocaleString()}

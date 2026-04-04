@@ -125,8 +125,6 @@ export interface QuoteSubmission {
   tags: string[] | null;
   pipeline_stage: string | null;
   interested_plans: string[] | null;
-  zoho_lead_id: string | null;
-  zoho_sync_status: 'pending' | 'success' | 'failed' | 'retrying';
   created_at: string;
   updated_at: string;
 }

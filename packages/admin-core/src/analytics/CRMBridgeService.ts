@@ -17,7 +17,7 @@ export interface CRMSummary {
 }
 
 /**
- * Admin projection of a CRM lead row from `zoho_lead_submissions`.
+ * Admin projection of a CRM lead row from `lead_submissions`.
  * For the canonical CRM Lead type with domain fields (plan_type, carrier_id, etc.),
  * import `Lead` from `@mpbhealth/crm-core`.
  */
@@ -132,7 +132,7 @@ export class CRMBridgeService {
 
   private async getTotalLeads(): Promise<number> {
     const { count } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id', { count: 'exact', head: true });
     return count || 0;
   }
@@ -141,7 +141,7 @@ export class CRMBridgeService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const { count } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id', { count: 'exact', head: true })
       .gte('created_at', today.toISOString());
     return count || 0;
@@ -159,7 +159,7 @@ export class CRMBridgeService {
 
     for (const stage of stages) {
       const { count } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('id', { count: 'exact', head: true })
         .eq('pipeline_stage_id', stage.id);
       results.push({
@@ -183,14 +183,14 @@ export class CRMBridgeService {
     if (!stages || stages.length === 0) {
       // Fallback: count leads marked as converted
       const { count } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'converted');
       return count || 0;
     }
 
     const { count } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id', { count: 'exact', head: true })
       .eq('pipeline_stage_id', stages[0].id);
     return count || 0;
@@ -208,7 +208,7 @@ export class CRMBridgeService {
 
   async getLeads(filters?: CRMLeadFilters): Promise<{ data: CRMLead[]; count: number }> {
     let query = supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
 
@@ -241,7 +241,7 @@ export class CRMBridgeService {
 
   async getLead(leadId: string): Promise<CRMLeadDetail | null> {
     const { data, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*')
       .eq('id', leadId)
       .single();
@@ -285,7 +285,7 @@ export class CRMBridgeService {
 
   async updateLeadStage(leadId: string, stageId: string): Promise<void> {
     const { error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .update({ pipeline_stage_id: stageId, updated_at: new Date().toISOString() })
       .eq('id', leadId);
 
@@ -313,7 +313,7 @@ export class CRMBridgeService {
   ): Promise<CRMContact> {
     // 1. Get the lead
     const { data: lead, error: leadError } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*')
       .eq('id', leadId)
       .single();
@@ -376,7 +376,7 @@ export class CRMBridgeService {
     }
 
     await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .update(leadUpdate)
       .eq('id', leadId);
 

@@ -16,8 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --external react --external @mpbhealth/utils",
-    "dev": "tsup src/index.ts --format esm --dts --external react --external @mpbhealth/utils --watch",
+    "build": "tsup src/index.ts --format esm --dts --external react --external @mpbhealth/utils --external @mpbhealth/config --external @mpbhealth/database --external @supabase/supabase-js --external react-router-dom",
+    "dev": "tsup src/index.ts --format esm --dts --external react --external @mpbhealth/utils --external @mpbhealth/config --external @mpbhealth/database --external @supabase/supabase-js --external react-router-dom --watch",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },
@@ -28,6 +28,7 @@
     "@supabase/supabase-js": "catalog:"
   },
   "dependencies": {
+    "@mpbhealth/config": "workspace:*",
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/utils": "workspace:*"
   },

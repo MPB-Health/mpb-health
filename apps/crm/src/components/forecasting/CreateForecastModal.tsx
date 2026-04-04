@@ -40,6 +40,10 @@ function getDefaultPeriod(type: ForecastType): { start: string; end: string; nam
         name: `${year} Annual Forecast`,
       };
     }
+    default: {
+      const _exhaustive: never = type;
+      return _exhaustive;
+    }
   }
 }
 

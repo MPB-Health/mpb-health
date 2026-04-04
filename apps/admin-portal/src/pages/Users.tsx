@@ -26,7 +26,9 @@ import { useAdmin } from '../contexts/AdminContext';
 import AddUserModal from '../components/AddUserModal';
 import InviteUserModal from '../components/InviteUserModal';
 
-type PortalTab = 'admin' | 'advisor' | 'member' | 'all';
+type PortalTab = 'admin' | 'advisor' | 'member' | 'support' | 'all';
+
+const SUPPORT_ACCESS_ROLES = ['super_admin', 'admin', 'advisor'];
 
 interface MassPasswordResetResponse {
   success: boolean;
@@ -40,6 +42,7 @@ const PORTAL_TABS: { id: PortalTab; label: string }[] = [
   { id: 'admin', label: 'Admin' },
   { id: 'advisor', label: 'Advisor' },
   { id: 'member', label: 'Member' },
+  { id: 'support', label: 'Support' },
   { id: 'all', label: 'All Portals' },
 ];
 
@@ -143,6 +146,8 @@ export default function Users() {
       loadCrossPortalUsers('advisor');
     } else if (activeTab === 'member') {
       loadCrossPortalUsers('member');
+    } else if (activeTab === 'support') {
+      loadCrossPortalUsers();
     } else {
       loadCrossPortalUsers();
     }
@@ -150,7 +155,10 @@ export default function Users() {
 
   // ── Bulk actions ────────────────────────────────────────────────────────────
 
-  const currentList = activeTab === 'admin' ? adminUsers : crossUsers;
+  const filteredCrossUsers = activeTab === 'support'
+    ? crossUsers.filter((u) => u.roles.some((r) => SUPPORT_ACCESS_ROLES.includes(r)))
+    : crossUsers;
+  const currentList = activeTab === 'admin' ? adminUsers : filteredCrossUsers;
   const currentListIds = currentList.map((u) => u.id);
 
   const toggleSelect = (id: string) => {
@@ -343,89 +351,113 @@ export default function Users() {
     </div>
   );
 
-  const renderCrossPortalTable = () => (
-    <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
-        </div>
-      ) : crossUsers.length > 0 ? (
-        <table className="w-full">
-          <thead className="bg-surface-secondary border-b border-th-border">
-            <tr>
-              {isSuperAdmin && renderSelectAllHeader()}
-              <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">User</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Portal Roles</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Joined</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Last Login</th>
-              <th className="text-right py-3 px-4 text-sm font-medium text-th-text-tertiary">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-th-border-subtle">
-            {crossUsers.map((user) => (
-              <tr
-                key={user.id}
-                className="hover:bg-surface-tertiary cursor-pointer"
-                onClick={() => navigate(`/users/${user.id}`)}
-              >
-                {isSuperAdmin && renderSelectCheckbox(user.id, user.full_name ?? user.email)}
-                <td className="py-3 px-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-surface-tertiary rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-th-text-secondary">
-                        {(user.full_name?.[0] ?? user.email[0]).toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-th-text-primary">
-                        {user.full_name ?? '—'}
-                      </p>
-                      <p className="text-sm text-th-text-tertiary">{user.email}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex flex-wrap gap-1">
-                    {user.roles.length > 0 ? user.roles.map((role) => (
-                      <span
-                        key={role}
-                        className={`px-2 py-0.5 text-xs rounded-full capitalize ${PORTAL_ROLE_COLORS[role] ?? 'bg-surface-tertiary text-th-text-secondary'}`}
-                      >
-                        {role.replace('_', ' ')}
-                      </span>
-                    )) : (
-                      <span className="text-xs text-th-text-tertiary">No roles</span>
-                    )}
-                  </div>
-                </td>
-                <td className="py-3 px-4 text-sm text-th-text-tertiary">
-                  {new Date(user.user_created_at).toLocaleDateString()}
-                </td>
-                <td className="py-3 px-4 text-sm text-th-text-tertiary">
-                  {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
-                </td>
-                <td className="py-3 px-4 text-right">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}`); }}
-                    aria-label="View user details"
-                    className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
-                </td>
+  const renderCrossPortalTable = () => {
+    const usersToShow = activeTab === 'support' ? filteredCrossUsers : crossUsers;
+    const showSupportColumn = activeTab === 'all' || activeTab === 'support';
+
+    return (
+      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
+          </div>
+        ) : usersToShow.length > 0 ? (
+          <table className="w-full">
+            <thead className="bg-surface-secondary border-b border-th-border">
+              <tr>
+                {isSuperAdmin && renderSelectAllHeader()}
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">User</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Portal Roles</th>
+                {showSupportColumn && (
+                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Support</th>
+                )}
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Joined</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-th-text-tertiary">Last Login</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-th-text-tertiary">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <div className="text-center py-12">
-          <UsersIcon className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
-          <p className="text-th-text-tertiary">No users found</p>
-        </div>
-      )}
-    </div>
-  );
+            </thead>
+            <tbody className="divide-y divide-th-border-subtle">
+              {usersToShow.map((user) => {
+                const hasSupportAccess = user.roles.some((r) => SUPPORT_ACCESS_ROLES.includes(r));
+                return (
+                  <tr
+                    key={user.id}
+                    className="hover:bg-surface-tertiary cursor-pointer"
+                    onClick={() => navigate(`/users/${user.id}`)}
+                  >
+                    {isSuperAdmin && renderSelectCheckbox(user.id, user.full_name ?? user.email)}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-surface-tertiary rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-th-text-secondary">
+                            {(user.full_name?.[0] ?? user.email[0]).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-th-text-primary">
+                            {user.full_name ?? '—'}
+                          </p>
+                          <p className="text-sm text-th-text-tertiary">{user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles.length > 0 ? user.roles.map((role) => (
+                          <span
+                            key={role}
+                            className={`px-2 py-0.5 text-xs rounded-full capitalize ${PORTAL_ROLE_COLORS[role] ?? 'bg-surface-tertiary text-th-text-secondary'}`}
+                          >
+                            {role.replace('_', ' ')}
+                          </span>
+                        )) : (
+                          <span className="text-xs text-th-text-tertiary">No roles</span>
+                        )}
+                      </div>
+                    </td>
+                    {showSupportColumn && (
+                      <td className="py-3 px-4">
+                        {hasSupportAccess ? (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-surface-tertiary text-th-text-tertiary">
+                            None
+                          </span>
+                        )}
+                      </td>
+                    )}
+                    <td className="py-3 px-4 text-sm text-th-text-tertiary">
+                      {new Date(user.user_created_at).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-th-text-tertiary">
+                      {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}`); }}
+                        aria-label="View user details"
+                        className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <div className="text-center py-12">
+            <UsersIcon className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
+            <p className="text-th-text-tertiary">No users found</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -570,6 +602,13 @@ export default function Users() {
 
       {/* Table */}
       {activeTab === 'admin' ? renderAdminTable() : renderCrossPortalTable()}
+
+      {/* Support tab hint */}
+      {activeTab === 'support' && filteredCrossUsers.length > 0 && (
+        <p className="text-xs text-th-text-tertiary">
+          Showing users with Support Portal access (Super Admin, Admin, or Advisor roles).
+        </p>
+      )}
 
       {/* Modals */}
       <AddUserModal

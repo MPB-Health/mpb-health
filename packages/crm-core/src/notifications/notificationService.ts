@@ -6,7 +6,7 @@ import type {
   EnhancedLeadCallback,
   LeadCountsByPriority,
 } from './types';
-import type { LeadPriority } from '../priority/types';
+import type { NotificationPriority } from '../priority/types';
 import { createClientLogger } from '@mpbhealth/utils';
 import { PriorityService } from '../priority/priorityService';
 
@@ -41,7 +41,7 @@ export class NotificationService {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'zoho_lead_submissions',
+          table: 'lead_submissions',
         },
         async (payload: RealtimePostgresInsertPayload<LeadSubmission>) => {
           const lead = payload.new;
@@ -152,9 +152,9 @@ export class NotificationService {
    */
   async getRecentLeads(limit: number = 10): Promise<LeadSubmission[]> {
     const { data, error } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select(
-        'id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_page, source_cta, zoho_sync_status, created_at'
+        'id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_page, source_cta, created_at'
       )
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -205,7 +205,7 @@ export class NotificationService {
   /**
    * Get quick priority for a lead (sync, for UI display)
    */
-  getLeadQuickPriority(lead: LeadSubmission): LeadPriority {
+  getLeadQuickPriority(lead: LeadSubmission): NotificationPriority {
     return this.priorityService.getQuickPriority({
       household_size: lead.household_size,
       contact_preference: lead.contact_preference,
@@ -220,7 +220,7 @@ export class NotificationService {
     const cutoffTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
 
     const { count, error } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', cutoffTime);
 

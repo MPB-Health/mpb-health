@@ -236,17 +236,6 @@ export const LeadCard: React.FC<LeadCardProps> = ({
             <Clock className="h-3 w-3" />
             {new Date(lead.created_at).toLocaleDateString()}
           </span>
-          {lead.zoho_sync_status === 'success' ? (
-            <span className="flex items-center gap-1 text-green-600">
-              <CheckCircle className="h-3 w-3" />
-              Synced
-            </span>
-          ) : lead.zoho_sync_status === 'failed' ? (
-            <span className="flex items-center gap-1 text-red-500">
-              <AlertCircle className="h-3 w-3" />
-              Sync Failed
-            </span>
-          ) : null}
         </div>
 
         {showActions && (

@@ -53,7 +53,7 @@ import {
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
+import { isAdmin as checkIsAdmin, usePortalAccess, getPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -66,7 +66,7 @@ import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
-import { useSupportSSO } from '../hooks/useSupportSSO';
+import { useSSONavigation } from '@mpbhealth/auth';
 import { GlobalSearch } from '../components/GlobalSearch';
 
 // Icon mapping for dynamic icons from CMS
@@ -219,7 +219,8 @@ export default function MainLayout() {
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
-  const { openSupport, loading: ssoLoading } = useSupportSSO();
+  const { navigateToPortal, loadingPortal } = useSSONavigation();
+  const ssoLoading = loadingPortal === 'support';
 
   // Admin role check for conditional nav items
   const [isAdminUser, setIsAdminUser] = useState(false);
@@ -230,11 +231,15 @@ export default function MainLayout() {
   }, [profile?.user_id]);
 
   // Portal access from global user_roles table
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(profile?.user_id);
 
-  // SSO-aware portal navigation (client-side session transfer)
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
+    try {
+      const result = await getPortalSSOUrl(portal, supabase);
+      return result.url;
+    } catch {
+      return null;
+    }
   }, []);
 
   // Dynamic navigation from CMS — React Query for deduplication and shared cache
@@ -456,7 +461,7 @@ export default function MainLayout() {
       </NavLink>
 
       <button
-        onClick={openSupport}
+        onClick={() => navigateToPortal('support', { newTab: true })}
         disabled={ssoLoading}
         className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))] transition-all duration-150 disabled:opacity-50"
       >
@@ -548,6 +553,7 @@ export default function MainLayout() {
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
+            canAccessSupport={canAccessSupport}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />

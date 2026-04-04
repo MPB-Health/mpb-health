@@ -286,7 +286,7 @@ export const LeadNotificationProvider: React.FC<LeadNotificationProviderProps> =
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'zoho_lead_submissions',
+          table: 'lead_submissions',
         },
         (payload: RealtimePostgresInsertPayload<LeadSubmission>) => {
           handleNewLeadRef.current?.(payload.new);

@@ -179,7 +179,7 @@ class AITaskClusterService {
         .from('ai_lead_insights')
         .select(`
           *,
-          lead:zoho_lead_submissions(*)
+          lead:lead_submissions(*)
         `)
         .order('ai_score', { ascending: false })
         .limit(limit);
@@ -208,7 +208,7 @@ class AITaskClusterService {
         .from('ai_lead_insights')
         .select(`
           *,
-          lead:zoho_lead_submissions(*)
+          lead:lead_submissions(*)
         `)
         .in('follow_up_urgency', ['high', 'urgent'])
         .order('follow_up_urgency', { ascending: false })
@@ -797,7 +797,7 @@ MPB Health Advisor`,
   async processInactiveLeads(): Promise<number> {
     try {
       const { data: leads, error } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('id, pipeline_stage, last_contacted_at, updated_at')
         .in('pipeline_stage', ['contacted', 'qualified', 'proposal', 'negotiation'])
         .lt('updated_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());

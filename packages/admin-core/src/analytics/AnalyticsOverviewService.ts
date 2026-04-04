@@ -28,7 +28,7 @@ export class AnalyticsOverviewService {
         .gte('date', sinceStr)
         .order('date', { ascending: true }),
       supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('created_at'),
     ]);
 

@@ -31,7 +31,7 @@ export interface LeadAssignmentStats {
 export class LeadAssignmentService {
   async getAll(filters?: { assigned?: 'all' | 'assigned' | 'unassigned'; search?: string; priority?: string }): Promise<AssignableLead[]> {
     let query = supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id, first_name, last_name, email, phone, pipeline_stage, priority, lead_score, assigned_to, source_page, created_at')
       .order('created_at', { ascending: false })
       .limit(200);
@@ -56,7 +56,7 @@ export class LeadAssignmentService {
 
   async assignLead(leadId: string, advisorId: string): Promise<void> {
     const { error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .update({ assigned_to: advisorId, updated_at: new Date().toISOString() })
       .eq('id', leadId);
     if (error) throw error;
@@ -64,7 +64,7 @@ export class LeadAssignmentService {
 
   async unassignLead(leadId: string): Promise<void> {
     const { error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .update({ assigned_to: null, updated_at: new Date().toISOString() })
       .eq('id', leadId);
     if (error) throw error;
@@ -72,7 +72,7 @@ export class LeadAssignmentService {
 
   async bulkAssign(leadIds: string[], advisorId: string): Promise<number> {
     const { error, count } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .update({ assigned_to: advisorId, updated_at: new Date().toISOString() })
       .in('id', leadIds);
     if (error) throw error;
@@ -81,7 +81,7 @@ export class LeadAssignmentService {
 
   async getStats(): Promise<LeadAssignmentStats> {
     const { data, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id, assigned_to');
     if (error) throw error;
     const all = data || [];

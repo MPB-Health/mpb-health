@@ -36,7 +36,7 @@ export class NotificationCenterService {
 
         if (leadIds.length > 0) {
           const { data: leads } = await this.supabase
-            .from('zoho_lead_submissions')
+            .from('lead_submissions')
             .select('id, first_name, last_name')
             .in('id', leadIds);
           if (leads) {

@@ -318,18 +318,16 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
           </a>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
-          <h3 className="font-semibold text-gray-900 mb-2">Zoho CRM</h3>
+        <Card className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+          <h3 className="font-semibold text-gray-900 mb-2">MPB CRM</h3>
           <p className="text-sm text-gray-600 mb-4">
-            Access Zoho CRM for customer relationship management.
+            Manage leads, contacts, and pipeline.
           </p>
           <a
-            href="https://accounts.zoho.com/signin?servicename=ZohoCRM&signupurl=https://www.zoho.com/crm/signup.html&serviceurl=https%3A%2F%2Fcrm.zoho.com%2Fcrm%2FShowHomePage.do"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/admin/leads"
             className="inline-flex items-center justify-center w-full h-10 px-4 text-sm font-medium border border-neutral-300 bg-white hover:bg-neutral-50 active:bg-neutral-100 shadow-sm hover:shadow-md rounded-xl transition-all duration-200"
           >
-            Open Zoho CRM
+            Open CRM
           </a>
         </Card>
       </div>

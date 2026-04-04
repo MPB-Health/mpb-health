@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  BarChart3, Users, TrendingUp, DollarSign,
-  Download, Calendar, Target, Activity,
+  Users, DollarSign,
+  Download, Target, Activity, RefreshCw, AlertCircle,
 } from 'lucide-react';
 import {
   analyticsService,
@@ -27,32 +27,41 @@ export default function Reports() {
     revenue: null,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [dateRange, setDateRange] = useState('this_month');
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [metrics, memberStats, crmSummary, revenue] = await Promise.allSettled([
-          analyticsService.getDashboardMetrics(),
-          memberService.getStats(),
-          crmBridgeService.getCRMSummary(),
-          crmBridgeService.getRevenueMetrics(),
-        ]);
+  const loadReports = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [metrics, memberStats, crmSummary, revenue] = await Promise.allSettled([
+        analyticsService.getDashboardMetrics(),
+        memberService.getStats(),
+        crmBridgeService.getCRMSummary(),
+        crmBridgeService.getRevenueMetrics(),
+      ]);
 
-        setData({
-          metrics: metrics.status === 'fulfilled' ? metrics.value : null,
-          memberStats: memberStats.status === 'fulfilled' ? memberStats.value : null,
-          crmSummary: crmSummary.status === 'fulfilled' ? crmSummary.value : null,
-          revenue: revenue.status === 'fulfilled' ? revenue.value : null,
-        });
-      } catch (err) {
-        console.error('Failed to load reports:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+      const newData = {
+        metrics: metrics.status === 'fulfilled' ? metrics.value : null,
+        memberStats: memberStats.status === 'fulfilled' ? memberStats.value : null,
+        crmSummary: crmSummary.status === 'fulfilled' ? crmSummary.value : null,
+        revenue: revenue.status === 'fulfilled' ? revenue.value : null,
+      };
+      setData(newData);
+
+      const allFailed = !newData.metrics && !newData.memberStats && !newData.crmSummary && !newData.revenue;
+      if (allFailed) setError(true);
+    } catch (err) {
+      console.error('Failed to load reports:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [dateRange]);
+
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
 
   const exportCSV = () => {
     const rows: string[][] = [['Metric', 'Value']];
@@ -115,6 +124,14 @@ export default function Reports() {
             <option value="this_year">This Year</option>
           </select>
           <button
+            onClick={loadReports}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary transition-colors text-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
             onClick={exportCSV}
             className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors text-sm"
           >
@@ -123,6 +140,21 @@ export default function Reports() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+          <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+          <p className="text-sm text-red-700 dark:text-red-300">
+            Failed to load some report data. Try refreshing the page.
+          </p>
+          <button
+            onClick={loadReports}
+            className="ml-auto text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* User & Advisor metrics */}
       {data.metrics && (

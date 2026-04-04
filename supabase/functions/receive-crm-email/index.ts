@@ -158,14 +158,14 @@ serve(async (req) => {
     if (referencesHeader) log.info(`References: ${referencesHeader}`);
 
     // ========================================================================
-    // 3. Match sender to a lead in zoho_lead_submissions
+    // 3. Match sender to a lead in lead_submissions
     // ========================================================================
 
     let leadId: string | null = null;
     let orgId: string | null = null;
 
     const { data: lead, error: leadError } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id, org_id')
       .ilike('email', sender.email)
       .limit(1)

@@ -46,6 +46,7 @@ export default function ChatModeration() {
       setStats(chatStats);
     } catch (err) {
       console.error('Failed to load conversations:', err);
+      toast.error('Failed to load conversations');
     } finally {
       setLoading(false);
     }

@@ -49,10 +49,6 @@ export interface Lead {
   created_at: string;
   updated_at: string;
 
-  // Zoho sync
-  zoho_id?: string;
-  zoho_sync_status?: SyncStatus;
-  zoho_last_sync?: string;
 }
 
 export type LeadSource =

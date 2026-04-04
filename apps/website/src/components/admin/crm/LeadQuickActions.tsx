@@ -216,24 +216,6 @@ export const LeadQuickActions: React.FC<LeadQuickActionsProps> = ({
           )}
         </button>
 
-        {/* Zoho Link (if synced) */}
-        {lead.zoho_lead_id && (
-          <a
-            href={`https://crm.zoho.com/crm/org123/tab/Leads/${lead.zoho_lead_id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              'flex items-center gap-2 rounded-lg bg-neutral-100 text-neutral-700 hover:bg-neutral-200 transition-colors',
-              buttonSize
-            )}
-            title="View in Zoho"
-          >
-            <ExternalLink className={iconSize} />
-            {variant === 'vertical' && size === 'md' && (
-              <span className="text-sm">Zoho</span>
-            )}
-          </a>
-        )}
       </div>
 
       {/* Call Modal */}

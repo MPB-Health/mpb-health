@@ -47,7 +47,7 @@ export async function checkRepeatLead(
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     
     const { count: emailCount, error: emailError } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*', { count: 'exact', head: true })
       .ilike('email', email)
       .lt('created_at', fiveMinutesAgo);
@@ -59,7 +59,7 @@ export async function checkRepeatLead(
     let phoneCount = 0;
     if (phone && phone.trim() !== '') {
       const { count, error: phoneError } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact', head: true })
         .eq('phone', phone)
         .lt('created_at', fiveMinutesAgo);

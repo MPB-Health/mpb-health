@@ -73,7 +73,11 @@ export default function CodeInventory() {
   };
 
   useEffect(() => {
-    if (user?.org_id) loadData();
+    if (user?.org_id) {
+      loadData();
+    } else if (user) {
+      setLoading(false);
+    }
   }, [user?.org_id, filters]);
 
   const handleCreateBatch = async (e: React.FormEvent) => {

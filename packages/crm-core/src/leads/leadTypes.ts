@@ -25,8 +25,6 @@ export interface Lead {
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
-  zoho_lead_id?: string;
-  zoho_sync_status?: string;
   created_at: string;
   updated_at?: string;
   stage_changed_at?: string;
@@ -60,7 +58,6 @@ export interface LeadFilters {
   dateFrom?: string;
   dateTo?: string;
   tags?: string[];
-  zohoSyncStatus?: string;
   planType?: 'healthshare' | 'traditional_insurance';
   carrierId?: string;
   tobaccoStatus?: string;

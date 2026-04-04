@@ -44,7 +44,7 @@ export class HealthQuoteService {
       .from('crm_lead_health_quotes')
       .select(`
         *,
-        lead:zoho_lead_submissions(id, first_name, last_name, email, phone)
+        lead:lead_submissions(id, first_name, last_name, email, phone)
       `)
       .eq('id', id)
       .single();
@@ -67,7 +67,7 @@ export class HealthQuoteService {
       .from('crm_lead_health_quotes')
       .select(`
         *,
-        lead:zoho_lead_submissions(id, first_name, last_name, email, phone)
+        lead:lead_submissions(id, first_name, last_name, email, phone)
       `)
       .eq('quote_number', quoteNumber)
       .single();
@@ -295,7 +295,7 @@ export class HealthQuoteService {
       .from('crm_lead_health_quotes')
       .select(`
         *,
-        lead:zoho_lead_submissions(id, first_name, last_name, email, phone)
+        lead:lead_submissions(id, first_name, last_name, email, phone)
       `, { count: 'exact' });
 
     // Apply filters

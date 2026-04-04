@@ -39,6 +39,11 @@ import {
   Clock,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { PortalSwitcher } from '@mpbhealth/ui';
+import type { PortalKey } from '@mpbhealth/ui';
+import { getPortalUrl } from '@mpbhealth/config';
+import { usePortalAccess, getPortalSSOUrl } from '@mpbhealth/auth';
+import { supabase } from '../../lib/supabase';
 
 interface NavItem {
   id: string;
@@ -167,6 +172,23 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const navigate = useNavigate();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Analytics', 'Marketing', 'CRM', 'Content']);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthUserId(session?.user?.id ?? null);
+    });
+  }, []);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(authUserId);
+
+  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
+    try {
+      const result = await getPortalSSOUrl(portal, supabase);
+      return result.url;
+    } catch {
+      return null;
+    }
+  }, []);
 
   // Search state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -403,6 +425,22 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           >
             <Search className="h-4 w-4" />
           </button>
+        </div>
+      )}
+
+      {/* Portal Switcher */}
+      {!collapsed && (
+        <div className="px-4 pb-2">
+          <PortalSwitcher
+            currentPortal="website"
+            canAccessAdmin={canAccessAdmin}
+            canAccessCRM={canAccessCrm}
+            canAccessAdvisor={canAccessAdvisor}
+            canAccessSupport={canAccessSupport}
+            canAccessWebsite
+            getPortalUrl={getPortalUrl}
+            getPortalUrlWithSSO={getPortalUrlWithSSO}
+          />
         </div>
       )}
 

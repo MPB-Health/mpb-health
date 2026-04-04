@@ -317,7 +317,7 @@ async function handleEmailBounced(
     // Optionally mark lead email as invalid for hard bounces
     if (bounce?.type === 'hard') {
       await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update({
           tags: supabase.rpc('array_append_unique', {
             row_id: leadId,
@@ -365,7 +365,7 @@ async function handleEmailComplained(
 
     // Tag the lead
     await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .update({
         tags: supabase.rpc('array_append_unique', {
           row_id: leadId,

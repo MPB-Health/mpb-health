@@ -44,7 +44,7 @@ export {
   getToastDismissTime,
 } from './priority/priorityService';
 export type {
-  LeadPriority as NotificationPriority,
+  NotificationPriority,
   LeadData,
   PriorityClassification,
   PriorityColors,

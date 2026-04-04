@@ -1,5 +1,5 @@
-// Lead priority levels
-export type LeadPriority = 'normal' | 'high' | 'critical';
+// Notification priority levels (distinct from CRM pipeline LeadPriority in leads/leadTypes.ts)
+export type NotificationPriority = 'normal' | 'high' | 'critical';
 
 // Lead data for priority classification
 export interface LeadData {
@@ -18,7 +18,7 @@ export interface LeadData {
 
 // Priority classification result
 export interface PriorityClassification {
-  priority: LeadPriority;
+  priority: NotificationPriority;
   isRepeatLead: boolean;
   repeatCount: number;
   reasons: string[];

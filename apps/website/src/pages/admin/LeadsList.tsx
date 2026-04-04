@@ -263,9 +263,6 @@ const LeadsList: React.FC = () => {
                       Source
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-neutral-600">
-                      Zoho
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-neutral-600">
                       <SortHeader field="created_at">Created</SortHeader>
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-neutral-600">
@@ -350,25 +347,6 @@ const LeadsList: React.FC = () => {
                           <span className="text-sm text-neutral-600 truncate max-w-[120px] block">
                             {lead.source_cta || 'Direct'}
                           </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {lead.zoho_sync_status === 'success' ? (
-                            <a
-                              href={`https://crm.zoho.com/crm/org123/tab/Leads/${lead.zoho_lead_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-green-600 hover:text-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          ) : lead.zoho_sync_status === 'failed' ? (
-                            <span className="flex items-center gap-1 text-red-500" title="Sync failed">
-                              <AlertCircle className="h-4 w-4" />
-                            </span>
-                          ) : (
-                            <span className="text-neutral-400 text-xs">Pending</span>
-                          )}
                         </td>
                         <td className="px-4 py-3 text-sm text-neutral-500">
                           {new Date(lead.created_at).toLocaleDateString()}

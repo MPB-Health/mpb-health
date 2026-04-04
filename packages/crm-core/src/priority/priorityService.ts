@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { LeadData, LeadPriority, PriorityClassification, PriorityColors } from './types';
+import type { LeadData, NotificationPriority, PriorityClassification, PriorityColors } from './types';
 import { URGENCY_KEYWORDS } from './types';
 
 export class PriorityService {
@@ -16,7 +16,7 @@ export class PriorityService {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
       const { count: emailCount, error: emailError } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact', head: true })
         .ilike('email', email)
         .lt('created_at', fiveMinutesAgo);
@@ -28,7 +28,7 @@ export class PriorityService {
       let phoneCount = 0;
       if (phone && phone.trim() !== '') {
         const { count, error: phoneError } = await this.supabase
-          .from('zoho_lead_submissions')
+          .from('lead_submissions')
           .select('*', { count: 'exact', head: true })
           .eq('phone', phone)
           .lt('created_at', fiveMinutesAgo);
@@ -56,7 +56,7 @@ export class PriorityService {
    */
   async classifyLeadPriority(lead: LeadData): Promise<PriorityClassification> {
     const reasons: string[] = [];
-    let priority: LeadPriority = 'normal';
+    let priority: NotificationPriority = 'normal';
 
     // Check for repeat lead
     const { isRepeat, repeatCount } = await this.checkRepeatLead(lead.email, lead.phone);
@@ -69,7 +69,7 @@ export class PriorityService {
     // Check household size
     if (lead.household_size && lead.household_size >= 3) {
       reasons.push(`Family size: ${lead.household_size} members`);
-      if ((priority as LeadPriority) !== 'critical') {
+      if ((priority as NotificationPriority) !== 'critical') {
         priority = 'high';
       }
     }
@@ -89,7 +89,7 @@ export class PriorityService {
     // Check for urgency in source CTA
     if (this.containsUrgencyKeywords(lead.source_cta)) {
       reasons.push('Source CTA indicates urgency');
-      if ((priority as LeadPriority) !== 'critical') {
+      if ((priority as NotificationPriority) !== 'critical') {
         priority = 'high';
       }
     }
@@ -122,7 +122,7 @@ export class PriorityService {
   /**
    * Quick priority check without async operations (for UI display)
    */
-  getQuickPriority(lead: Partial<LeadData>): LeadPriority {
+  getQuickPriority(lead: Partial<LeadData>): NotificationPriority {
     // Large family
     if (lead.household_size && lead.household_size >= 5) {
       return 'critical';
@@ -159,7 +159,7 @@ export class PriorityService {
 /**
  * Get priority color scheme for UI display
  */
-export function getPriorityColor(priority: LeadPriority): PriorityColors {
+export function getPriorityColor(priority: NotificationPriority): PriorityColors {
   switch (priority) {
     case 'critical':
       return {
@@ -189,7 +189,7 @@ export function getPriorityColor(priority: LeadPriority): PriorityColors {
 /**
  * Get priority label for display
  */
-export function getPriorityLabel(priority: LeadPriority): string {
+export function getPriorityLabel(priority: NotificationPriority): string {
   switch (priority) {
     case 'critical':
       return 'Critical';
@@ -204,14 +204,14 @@ export function getPriorityLabel(priority: LeadPriority): string {
 /**
  * Should play sound for this priority level?
  */
-export function shouldPlaySound(priority: LeadPriority): boolean {
+export function shouldPlaySound(priority: NotificationPriority): boolean {
   return priority === 'high' || priority === 'critical';
 }
 
 /**
  * Get auto-dismiss time for toast (in ms)
  */
-export function getToastDismissTime(priority: LeadPriority): number {
+export function getToastDismissTime(priority: NotificationPriority): number {
   switch (priority) {
     case 'critical':
       return 0; // Never auto-dismiss critical

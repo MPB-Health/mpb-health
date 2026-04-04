@@ -55,12 +55,12 @@ export class TickerService {
       .channel('ticker_leads')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'zoho_lead_submissions' },
+        { event: 'INSERT', schema: 'public', table: 'lead_submissions' },
         (payload) => this.handleLeadInsert(payload.new as any)
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'zoho_lead_submissions' },
+        { event: 'UPDATE', schema: 'public', table: 'lead_submissions' },
         (payload) => this.handleLeadUpdate(payload.new as any, payload.old as any)
       )
       .subscribe();
@@ -387,7 +387,7 @@ export class TickerService {
     try {
       // Fetch recent lead notifications
       const { data: leads } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('id, first_name, last_name, email, pipeline_stage, created_at, updated_at')
         .order('created_at', { ascending: false })
         .limit(20);

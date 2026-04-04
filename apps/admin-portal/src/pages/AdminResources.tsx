@@ -80,7 +80,11 @@ export default function AdminResources() {
   };
 
   useEffect(() => {
-    if (user?.org_id) loadData();
+    if (user?.org_id) {
+      loadData();
+    } else if (user) {
+      setLoading(false);
+    }
   }, [user?.org_id, filters]);
 
   const openModal = (resource?: AdminResource) => {

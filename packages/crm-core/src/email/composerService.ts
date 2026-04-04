@@ -219,7 +219,7 @@ export class ComposerService {
         *,
         attachments:crm_email_attachments(*),
         thread:crm_email_threads(*),
-        lead:zoho_lead_submissions(id, first_name, last_name, email)
+        lead:lead_submissions(id, first_name, last_name, email)
       `)
       .eq('id', id)
       .single();
@@ -246,7 +246,7 @@ export class ComposerService {
       .select(`
         *,
         attachments:crm_email_attachments(*),
-        lead:zoho_lead_submissions(id, first_name, last_name, email)
+        lead:lead_submissions(id, first_name, last_name, email)
       `, { count: 'exact' });
 
     // Apply filters
@@ -318,7 +318,7 @@ export class ComposerService {
       .from('crm_email_threads')
       .select(`
         *,
-        lead:zoho_lead_submissions(id, first_name, last_name, email)
+        lead:lead_submissions(id, first_name, last_name, email)
       `, { count: 'exact' });
 
     // Apply filters

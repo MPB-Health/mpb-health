@@ -66,33 +66,8 @@ export default function NotificationRules() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const [rulesData, eventsData, typesData, statsData] = await Promise.all([
-          notificationRuleService.getAllRules(),
-          notificationRuleService.getRecentEvents(50),
-          notificationRuleService.getEventTypes(),
-          notificationRuleService.getStats(),
-        ]);
-        if (!cancelled) {
-          setRules(rulesData);
-          setEvents(eventsData);
-          setEventTypes(typesData);
-          setStats(statsData);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Failed to load notification data:', err);
-          toast.error('Failed to load notification settings');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    load();
+  }, [load]);
 
   async function handleToggle(rule: NotificationRule, field: string, currentValue: boolean) {
     try {

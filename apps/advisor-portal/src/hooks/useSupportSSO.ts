@@ -1,3 +1,13 @@
+/**
+ * @deprecated Use `useSSONavigation` from `@mpbhealth/auth` instead.
+ *
+ * This hook is superseded by the unified SSO system. The PortalSwitcher
+ * and `useSSONavigation` hook handle ITSTS SSO via the same edge function.
+ *
+ * Migration:
+ *   const { navigateToPortal, loadingPortal } = useSSONavigation();
+ *   navigateToPortal('support', { newTab: true });
+ */
 import { useState, useCallback } from 'react';
 import { supabase } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
@@ -9,10 +19,6 @@ interface SSOResult {
   error?: string;
 }
 
-/**
- * Extract the real error message from a Supabase Functions error.
- * The SDK returns a generic message; the actual error is in the Response body.
- */
 async function extractError(error: unknown): Promise<string> {
   if (error && typeof error === 'object' && 'context' in error) {
     try {

@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp, Users, Target, DollarSign,
-  CheckCircle, Clock, ArrowRight,
+  CheckCircle, Clock, ArrowRight, AlertCircle,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { crmBridgeService, type CRMSummary } from '@mpbhealth/admin-core';
 
 export default function CRMDashboard() {
@@ -28,6 +29,7 @@ export default function CRMDashboard() {
         setRevenue(rev);
       } catch (err) {
         console.error('Failed to load CRM dashboard:', err);
+        toast.error('Failed to load CRM dashboard');
       } finally {
         setLoading(false);
       }

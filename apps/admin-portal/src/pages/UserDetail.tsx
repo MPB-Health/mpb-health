@@ -16,6 +16,8 @@ import {
   Trash2,
   Briefcase,
   Key,
+  RefreshCw,
+  HeadsetIcon,
 } from 'lucide-react';
 import {
   userService,
@@ -93,6 +95,9 @@ export default function UserDetail() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [settingPassword, setSettingPassword] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
+
+  // ITSTS sync
+  const [syncingToItsts, setSyncingToItsts] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -188,6 +193,8 @@ export default function UserDetail() {
 
   // ── Portal role handlers ─────────────────────────────────────────────────────
 
+  const SUPPORT_GRANTING_ROLES: PortalRole[] = ['super_admin', 'admin', 'advisor'];
+
   const handleAssignRole = async () => {
     if (!userId) return;
     if (portalRoles.some((r) => r.role === roleToAdd)) {
@@ -200,6 +207,23 @@ export default function UserDetail() {
       setPortalRoles(updated);
       setAddingRole(false);
       toast.success(`Role "${roleToAdd}" assigned`);
+
+      // Auto-provision in ITSTS when granting a support-eligible role
+      if (SUPPORT_GRANTING_ROLES.includes(roleToAdd)) {
+        const email = user?.email ?? crossUser?.email;
+        const firstName = user?.first_name ?? crossUser?.full_name?.split(' ')[0] ?? '';
+        const lastName = user?.last_name ?? crossUser?.full_name?.split(' ').slice(1).join(' ') ?? '';
+        const allRoles = updated.map((r) => r.role);
+        if (email) {
+          userService.syncUserToItsts(userId, email, firstName, lastName, allRoles).then((result) => {
+            if (result.success) {
+              toast.success('User auto-provisioned in Support Portal');
+            }
+          }).catch(() => {
+            // Fire-and-forget; don't block the role assignment
+          });
+        }
+      }
     } catch {
       toast.error('Failed to assign role');
     }
@@ -214,6 +238,39 @@ export default function UserDetail() {
       toast.success(`Role "${role}" removed`);
     } catch {
       toast.error('Failed to remove role');
+    }
+  };
+
+  // ── ITSTS sync handler ───────────────────────────────────────────────────────
+
+  const hasSupportAccess = portalRoles.some(
+    (r) => r.role === 'super_admin' || r.role === 'admin' || r.role === 'advisor'
+  );
+
+  const handleSyncToItsts = async () => {
+    if (!userId) return;
+    const email = user?.email ?? crossUser?.email;
+    const firstName = user?.first_name ?? crossUser?.full_name?.split(' ')[0] ?? '';
+    const lastName = user?.last_name ?? crossUser?.full_name?.split(' ').slice(1).join(' ') ?? '';
+    const roles = portalRoles.map((r) => r.role);
+
+    if (!email) {
+      toast.error('User email is required for ITSTS sync');
+      return;
+    }
+
+    setSyncingToItsts(true);
+    try {
+      const result = await userService.syncUserToItsts(userId, email, firstName, lastName, roles);
+      if (result.success) {
+        toast.success('User synced to Support Portal');
+      } else {
+        toast.error(result.error || 'Failed to sync to Support Portal');
+      }
+    } catch {
+      toast.error('Failed to sync to Support Portal');
+    } finally {
+      setSyncingToItsts(false);
     }
   };
 
@@ -532,6 +589,41 @@ export default function UserDetail() {
           </button>
         </div>
       )}
+
+      {/* Support Portal (ITSTS) sync status */}
+      <div className="mt-6 pt-4 border-t border-th-border-subtle">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <HeadsetIcon className="w-4 h-4 text-th-text-tertiary" />
+            <span className="text-sm font-medium text-th-text-primary">Support Portal (ITSTS)</span>
+          </div>
+          {hasSupportAccess ? (
+            <span className="px-2.5 py-1 text-xs rounded-full font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+              Access Granted
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 text-xs rounded-full font-medium bg-surface-tertiary text-th-text-secondary">
+              No Access
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-th-text-tertiary mt-1.5">
+          {hasSupportAccess
+            ? 'User has access via Super Admin, Admin, or Advisor role.'
+            : 'Assign a Super Admin, Admin, or Advisor role to grant support access.'}
+        </p>
+        {isSuperAdmin && hasSupportAccess && (
+          <button
+            type="button"
+            onClick={handleSyncToItsts}
+            disabled={syncingToItsts}
+            className="mt-3 flex items-center space-x-2 px-3 py-1.5 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncingToItsts ? 'animate-spin' : ''}`} />
+            <span>{syncingToItsts ? 'Syncing...' : 'Sync to ITSTS'}</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 

@@ -410,8 +410,15 @@ export async function canAccessCrmPortal(userId: string): Promise<boolean> {
  * Check if user can access member portal
  */
 export async function canAccessMemberPortal(_userId: string): Promise<boolean> {
-  // All authenticated users can access member portal
   return true;
+}
+
+/**
+ * Check if user can access support portal (ITSTS)
+ */
+export async function canAccessSupportPortal(userId: string): Promise<boolean> {
+  const roles = await getUserRoles(userId);
+  return roles.includes('super_admin') || roles.includes('admin') || roles.includes('advisor');
 }
 
 /**
@@ -419,14 +426,15 @@ export async function canAccessMemberPortal(_userId: string): Promise<boolean> {
  */
 export async function getAccessiblePortals(userId: string): Promise<string[]> {
   const roles = await getUserRoles(userId);
-  const portals: string[] = ['member']; // Everyone gets member access
+  const portals: string[] = ['member'];
 
   if (roles.includes('super_admin')) {
-    portals.push('admin', 'advisor', 'crm');
+    portals.push('admin', 'advisor', 'crm', 'support');
   } else {
     if (roles.includes('admin')) portals.push('admin');
     if (roles.includes('advisor')) portals.push('advisor');
     if (roles.includes('crm_user')) portals.push('crm');
+    if (roles.includes('admin') || roles.includes('advisor')) portals.push('support');
   }
 
   return portals;
@@ -454,6 +462,7 @@ export const userRolesService = {
   canAccessAdvisorPortal,
   canAccessCrmPortal,
   canAccessMemberPortal,
+  canAccessSupportPortal,
   getAccessiblePortals,
   invalidateCache,
 };

@@ -8,6 +8,7 @@ export class AuditService {
     action?: string;
     entityType?: string;
     entityId?: string;
+    search?: string;
     fromDate?: string;
     toDate?: string;
     limit?: number;
@@ -29,6 +30,11 @@ export class AuditService {
     }
     if (filters?.entityId) {
       query = query.eq('entity_id', filters.entityId);
+    }
+    if (filters?.search) {
+      query = query.or(
+        `user_email.ilike.%${filters.search}%,action.ilike.%${filters.search}%,entity_type.ilike.%${filters.search}%`
+      );
     }
     if (filters?.fromDate) {
       query = query.gte('created_at', filters.fromDate);
@@ -225,6 +231,7 @@ export class AuditService {
     toDate?: string;
     entityType?: string;
     action?: string;
+    search?: string;
   }): Promise<string> {
     const { logs } = await this.getLogs({ ...filters, limit: 10000 });
 

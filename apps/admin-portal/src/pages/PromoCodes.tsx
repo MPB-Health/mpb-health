@@ -76,7 +76,11 @@ export default function PromoCodes() {
   };
 
   useEffect(() => {
-    if (user?.org_id) loadCodes();
+    if (user?.org_id) {
+      loadCodes();
+    } else if (user) {
+      setLoading(false);
+    }
   }, [user?.org_id]);
 
   const openModal = (code?: PromoCode) => {

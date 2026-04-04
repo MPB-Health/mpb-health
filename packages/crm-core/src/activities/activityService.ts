@@ -80,7 +80,7 @@ export class ActivityService {
       // Update last_contacted_at for contact activities
       if (['call', 'email', 'meeting', 'sms'].includes(activity.activity_type)) {
         await this.supabase
-          .from('zoho_lead_submissions')
+          .from('lead_submissions')
           .update({ last_contacted_at: new Date().toISOString() })
           .eq('id', leadId);
       }

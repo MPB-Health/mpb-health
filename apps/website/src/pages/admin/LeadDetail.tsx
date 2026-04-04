@@ -48,7 +48,6 @@ const LeadDetail: React.FC = () => {
   const [editedLead, setEditedLead] = useState<Partial<Lead>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [newTag, setNewTag] = useState('');
-  const [isSyncingToZoho, setIsSyncingToZoho] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -104,24 +103,6 @@ const LeadDetail: React.FC = () => {
     }
   };
 
-  const handleSyncToZoho = async () => {
-    if (!id) return;
-
-    setIsSyncingToZoho(true);
-    try {
-      const result = await crmService.syncLeadToZoho(id);
-      if (result.success) {
-        loadLeadData();
-      } else {
-        alert('Failed to sync to Zoho: ' + result.error);
-      }
-    } catch (error) {
-      console.error('Sync to Zoho error:', error);
-      alert('Failed to sync to Zoho');
-    } finally {
-      setIsSyncingToZoho(false);
-    }
-  };
 
   const handleAddTag = async () => {
     if (!id || !newTag.trim()) return;
@@ -292,60 +273,7 @@ const LeadDetail: React.FC = () => {
                 size="sm"
               />
             </div>
-            <div className="flex items-center gap-2">
-              {lead.zoho_lead_id && lead.zoho_sync_status === 'synced' ? (
-                <>
-                  <a
-                    href={`https://crm.zoho.com/crm/org123/tab/Leads/${lead.zoho_lead_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Synced to Zoho
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSyncToZoho}
-                    disabled={isSyncingToZoho}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  >
-                    <RefreshCw className={cn('h-4 w-4 mr-1', isSyncingToZoho && 'animate-spin')} />
-                    {isSyncingToZoho ? 'Syncing...' : 'Re-sync'}
-                  </Button>
-                </>
-              ) : lead.zoho_sync_status === 'failed' ? (
-                <>
-                  <span className="flex items-center gap-1 text-sm text-red-600">
-                    <AlertCircle className="h-4 w-4" />
-                    Sync failed
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSyncToZoho}
-                    disabled={isSyncingToZoho}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <RefreshCw className={cn('h-4 w-4 mr-1', isSyncingToZoho && 'animate-spin')} />
-                    {isSyncingToZoho ? 'Retrying...' : 'Retry'}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSyncToZoho}
-                  disabled={isSyncingToZoho}
-                  className="text-primary-600 hover:text-primary-700"
-                >
-                  <Upload className={cn('h-4 w-4 mr-1', isSyncingToZoho && 'animate-pulse')} />
-                  {isSyncingToZoho ? 'Pushing...' : 'Push to Zoho CRM'}
-                </Button>
-              )}
-            </div>
+            <div className="flex items-center gap-2" />
           </div>
         </div>
 

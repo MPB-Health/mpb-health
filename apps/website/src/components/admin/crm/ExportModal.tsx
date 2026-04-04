@@ -40,8 +40,6 @@ const availableColumns = [
   { key: 'created_at', label: 'Created Date', default: true },
   { key: 'last_contacted_at', label: 'Last Contacted', default: false },
   { key: 'next_followup_at', label: 'Next Follow-up', default: false },
-  { key: 'zoho_sync_status', label: 'Zoho Status', default: false },
-  { key: 'zoho_lead_id', label: 'Zoho Lead ID', default: false },
 ];
 
 export const ExportModal: React.FC<ExportModalProps> = ({

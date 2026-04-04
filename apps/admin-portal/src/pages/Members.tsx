@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Users as UsersIcon, UserCheck, UserX, Clock, TrendingUp, Bell } from 'lucide-react';
+import { Search, Users as UsersIcon, UserCheck, UserX, Clock, TrendingUp, Bell, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { memberService, type MemberProfile, type MemberStats } from '@mpbhealth/admin-core';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -35,6 +36,7 @@ export default function Members() {
       setStats(memberStats);
     } catch (err) {
       console.error('Failed to load members:', err);
+      toast.error('Failed to load members');
     } finally {
       setLoading(false);
     }

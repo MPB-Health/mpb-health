@@ -186,7 +186,7 @@ serve(async (req) => {
       }
 
       const { data: lead } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .insert(leadData)
         .select('id')
         .single();

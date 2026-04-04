@@ -1,15 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import {
   ClipboardList,
   Search,
-  Filter,
   Download,
   User,
-  Calendar,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { auditService, type AuditLog } from '@mpbhealth/admin-core';
 
 export default function AuditLogs() {
@@ -24,35 +23,38 @@ export default function AuditLogs() {
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  useEffect(() => {
-    const loadLogs = async () => {
-      setLoading(true);
-      try {
-        const { logs: logsData, total: totalCount } = await auditService.getLogs({
-          action: actionFilter || undefined,
-          entityType: entityFilter || undefined,
-          fromDate: fromDate || undefined,
-          toDate: toDate || undefined,
-          limit: pageSize,
-          offset: page * pageSize,
-        });
-        setLogs(logsData);
-        setTotal(totalCount);
-      } catch (err) {
-        console.error('Failed to load logs:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadLogs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { logs: logsData, total: totalCount } = await auditService.getLogs({
+        action: actionFilter || undefined,
+        entityType: entityFilter || undefined,
+        search: searchQuery || undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+        limit: pageSize,
+        offset: page * pageSize,
+      });
+      setLogs(logsData);
+      setTotal(totalCount);
+    } catch (err) {
+      console.error('Failed to load logs:', err);
+      toast.error('Failed to load audit logs');
+    } finally {
+      setLoading(false);
+    }
+  }, [actionFilter, entityFilter, searchQuery, fromDate, toDate, page]);
 
+  useEffect(() => {
     loadLogs();
-  }, [actionFilter, entityFilter, fromDate, toDate, page]);
+  }, [loadLogs]);
 
   const handleExport = async () => {
     try {
       const csv = await auditService.exportLogs({
         action: actionFilter || undefined,
         entityType: entityFilter || undefined,
+        search: searchQuery || undefined,
         fromDate: fromDate || undefined,
         toDate: toDate || undefined,
       });
@@ -66,6 +68,7 @@ export default function AuditLogs() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to export logs:', err);
+      toast.error('Failed to export audit logs');
     }
   };
 
@@ -107,8 +110,21 @@ export default function AuditLogs() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-surface-primary rounded-xl border border-th-border p-4">
+      {/* Search + Filters */}
+      <div className="bg-surface-primary rounded-xl border border-th-border p-4 space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-tertiary" />
+          <input
+            type="text"
+            placeholder="Search by user email, action, or entity..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(0);
+            }}
+            className="w-full pl-10 pr-4 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label htmlFor="audit-action-filter" className="block text-sm font-medium text-th-text-secondary mb-1">

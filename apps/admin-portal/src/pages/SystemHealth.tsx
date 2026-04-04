@@ -16,14 +16,17 @@ const STATUS_CONFIG = {
 export default function SystemHealth() {
   const [health, setHealth] = useState<SystemHealthSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async (showToast = false) => {
     try {
+      setError(false);
       const data = await systemHealthService.getHealthSummary();
       setHealth(data);
       if (showToast) toast.success('Health check complete');
     } catch {
+      setError(true);
       if (showToast) toast.error('Health check failed');
     } finally {
       setLoading(false);
@@ -44,6 +47,26 @@ export default function SystemHealth() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-th-accent-600" />
+      </div>
+    );
+  }
+
+  if (error && !health) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-th-text-primary">System Health</h1>
+        <div className="flex flex-col items-center justify-center py-16 bg-surface-primary rounded-xl border border-th-border">
+          <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
+          <p className="text-th-text-secondary font-medium mb-2">Failed to load system health data</p>
+          <p className="text-sm text-th-text-tertiary mb-4">Check your network connection and try again.</p>
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

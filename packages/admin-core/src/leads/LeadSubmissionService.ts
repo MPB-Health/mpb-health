@@ -32,7 +32,7 @@ export interface LeadSubmissionStats {
 export class LeadSubmissionService {
   async getSubmissions(filters?: LeadSubmissionFilters): Promise<LeadSubmission[]> {
     let query = supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
@@ -71,7 +71,7 @@ export class LeadSubmissionService {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
     const { data, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('created_at');
     if (error) throw error;
 

@@ -167,7 +167,7 @@ export class ImportService {
       // Check for duplicates
       if (options.skipDuplicates && lead.email) {
         const { data: existing } = await this.supabase
-          .from('zoho_lead_submissions')
+          .from('lead_submissions')
           .select('id')
           .eq('email', lead.email)
           .limit(1)
@@ -181,7 +181,7 @@ export class ImportService {
 
       // Insert lead
       const { data, error } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .insert({
           first_name: lead.first_name || '',
           last_name: lead.last_name || '',
@@ -198,7 +198,6 @@ export class ImportService {
             tags: options.tags || [],
             ...lead,
           },
-          zoho_sync_status: 'pending',
         })
         .select('id')
         .single();
@@ -432,7 +431,7 @@ export class ImportService {
   ): Promise<{ submissions: QuoteSubmission[]; total: number }> {
     try {
       let query = this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact' });
 
       // Get submissions from all website forms
@@ -445,7 +444,7 @@ export class ImportService {
       }
 
       if (filters.syncStatus) {
-        query = query.eq('zoho_sync_status', filters.syncStatus);
+        query = query.eq('sync_status', filters.syncStatus);
       }
 
       if (filters.dateFrom) {
@@ -491,7 +490,7 @@ export class ImportService {
 
     // Get the submissions
     const { data: submissions, error: fetchError } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*')
       .in('id', submissionIds);
 
@@ -504,7 +503,7 @@ export class ImportService {
       const formData = (sub.form_data as Record<string, unknown>) || {};
 
       const { error: updateError } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update({
           source_cta: 'Quick Rate Estimate',
           form_data: {
@@ -541,7 +540,7 @@ export class ImportService {
   ): Promise<{ leads: QuoteSubmission[]; total: number }> {
     try {
       let query = this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact' })
         .or('source_cta.eq.Quick Rate Estimate,source_cta.ilike.%hero-calculator%,form_data->>lead_type.eq.Quick Rate Estimate Leads,source_cta.eq.quick-start-plan-finder,source_cta.eq.lead-form,source_cta.eq.multi-step-quote-form,source_cta.ilike.benefit-interest-%');
 
@@ -553,7 +552,7 @@ export class ImportService {
       }
 
       if (filters.syncStatus) {
-        query = query.eq('zoho_sync_status', filters.syncStatus);
+        query = query.eq('sync_status', filters.syncStatus);
       }
 
       if (filters.dateFrom) {
@@ -592,7 +591,7 @@ export class ImportService {
    */
   async deleteLeadSubmissions(ids: string[]): Promise<{ success: boolean; deletedCount: number; error?: string }> {
     const { error, count } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .delete({ count: 'exact' })
       .in('id', ids);
 
@@ -606,7 +605,7 @@ export class ImportService {
   async addTagsToLeads(ids: string[], tags: string[]): Promise<{ success: boolean; error?: string }> {
     // Fetch current tags, merge, then update each row
     const { data: rows, error: fetchErr } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id, tags')
       .in('id', ids);
 
@@ -616,7 +615,7 @@ export class ImportService {
       const existing: string[] = (row.tags as string[]) || [];
       const merged = [...new Set([...existing, ...tags])];
       const { error } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update({ tags: merged })
         .eq('id', row.id);
       if (error) return { success: false, error: error.message };
@@ -629,7 +628,7 @@ export class ImportService {
    */
   async removeTagsFromLeads(ids: string[], tags: string[]): Promise<{ success: boolean; error?: string }> {
     const { data: rows, error: fetchErr } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id, tags')
       .in('id', ids);
 
@@ -639,7 +638,7 @@ export class ImportService {
       const existing: string[] = (row.tags as string[]) || [];
       const filtered = existing.filter(t => !tags.includes(t));
       const { error } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update({ tags: filtered })
         .eq('id', row.id);
       if (error) return { success: false, error: error.message };
@@ -652,7 +651,7 @@ export class ImportService {
    */
   async setInterestedPlans(ids: string[], plans: string[]): Promise<{ success: boolean; error?: string }> {
     const { error } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .update({ interested_plans: plans })
       .in('id', ids);
 
@@ -665,7 +664,7 @@ export class ImportService {
    */
   async updateLeadStage(ids: string[], stage: string): Promise<{ success: boolean; error?: string }> {
     const { error } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .update({ pipeline_stage: stage, stage_changed_at: new Date().toISOString() })
       .in('id', ids);
 
@@ -681,7 +680,7 @@ export class ImportService {
     if (!user.user) return { success: false, convertedCount: 0, errors: ['Not authenticated'] };
 
     const { data: leads, error: fetchErr } = await this.supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*')
       .in('id', ids);
 
@@ -708,7 +707,7 @@ export class ImportService {
         errors.push(`${lead.first_name} ${lead.last_name}: ${insertErr.message}`);
       } else {
         await this.supabase
-          .from('zoho_lead_submissions')
+          .from('lead_submissions')
           .update({ converted_at: new Date().toISOString(), pipeline_stage: 'converted' })
           .eq('id', lead.id);
         convertedCount++;

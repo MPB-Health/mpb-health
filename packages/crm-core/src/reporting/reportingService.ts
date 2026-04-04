@@ -25,7 +25,7 @@ export class ReportingService {
 
       // Count leads per stage
       let query = this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('pipeline_stage');
 
       if (dateRange) {
@@ -68,7 +68,7 @@ export class ReportingService {
   async getLeadSourceBreakdown(dateRange?: ReportDateRange): Promise<LeadSourceBreakdown[]> {
     try {
       let query = this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('source_cta, utm_source, pipeline_stage, created_at');
 
       if (dateRange) {
@@ -118,7 +118,7 @@ export class ReportingService {
 
     try {
       let leadsQuery = this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('id, created_at');
 
       if (dateRange) {
@@ -181,7 +181,7 @@ export class ReportingService {
   async getTeamPerformance(dateRange?: ReportDateRange): Promise<TeamPerformanceRow[]> {
     try {
       let query = this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('assigned_to, pipeline_stage');
 
       if (dateRange) {

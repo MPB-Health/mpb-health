@@ -34,7 +34,7 @@ interface LeadDetailRow extends LeadRow {
 export class AdvisorLeadService {
   async getAssignedLeads(userId: string): Promise<AssignedLeadView[]> {
     const { data: leads, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select(`
         id,
         first_name,
@@ -74,7 +74,7 @@ export class AdvisorLeadService {
 
   async getAssignedLeadCount(userId: string): Promise<number> {
     const { count, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('id', { count: 'exact', head: true })
       .eq('assigned_to', userId);
 
@@ -88,7 +88,7 @@ export class AdvisorLeadService {
 
   async getLead(leadId: string): Promise<LeadDetail | null> {
     const { data: lead, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select(`
         id,
         first_name,
@@ -117,7 +117,7 @@ export class AdvisorLeadService {
           name,
           color
         ),
-        assigned_advisor:advisor_profiles!zoho_lead_submissions_assigned_to_fkey (
+        assigned_advisor:advisor_profiles!lead_submissions_assigned_to_fkey (
           first_name,
           last_name
         )

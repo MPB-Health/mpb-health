@@ -231,7 +231,7 @@ export function AICommandBar() {
 
       // Email draft
       if (lower.includes('email') || lower.includes('draft') || lower.includes('write')) {
-        const hotLead = recentLeads.find(l => l.priority === 'critical' || l.priority === 'high') || recentLeads[0];
+        const hotLead = recentLeads.find(l => l.priority === 'urgent' || l.priority === 'high') || recentLeads[0];
         if (hotLead) {
           results.push({
             action: 'draft_email',

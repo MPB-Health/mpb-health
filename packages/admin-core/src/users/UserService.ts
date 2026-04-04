@@ -394,6 +394,37 @@ export class UserService {
 
     if (error) throw error;
   }
+
+  // ── ITSTS / Support Portal sync ──────────────────────────────────────────────
+
+  /**
+   * Trigger a manual sync of a user to the ITSTS (Support Portal) Supabase project.
+   * Calls the sync-user-to-itsts edge function with the user's details.
+   */
+  async syncUserToItsts(
+    userId: string,
+    email: string,
+    firstName: string,
+    lastName: string,
+    roles: string[],
+  ): Promise<{ success: boolean; error?: string }> {
+    const { data, error } = await supabase.functions.invoke('sync-user-to-itsts', {
+      body: {
+        email,
+        action: 'create',
+        first_name: firstName,
+        last_name: lastName,
+        roles,
+      },
+    });
+
+    if (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: msg };
+    }
+
+    return data ?? { success: true };
+  }
 }
 
 export const userService = new UserService();

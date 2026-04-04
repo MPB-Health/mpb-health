@@ -23,7 +23,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { supabase } from '@mpbhealth/database';
-import { usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
+import { usePortalAccess, getPortalSSOUrl } from '@mpbhealth/auth';
 import { useAdmin } from '../contexts/AdminContext';
 
 const navigation: NavItem[] = [
@@ -149,10 +149,15 @@ export default function MainLayout() {
       setAuthUserId(session?.user?.id ?? null);
     });
   }, []);
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(authUserId);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(authUserId);
 
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
+    try {
+      const result = await getPortalSSOUrl(portal, supabase);
+      return result.url;
+    } catch {
+      return null;
+    }
   }, []);
 
   // Redirect to login if not authenticated
@@ -186,6 +191,7 @@ export default function MainLayout() {
           canAccessAdmin={canAccessAdmin}
           canAccessCRM={canAccessCrm}
           canAccessAdvisor={canAccessAdvisor}
+          canAccessSupport={canAccessSupport}
           getPortalUrl={getPortalUrl}
           getPortalUrlWithSSO={getPortalUrlWithSSO}
         />

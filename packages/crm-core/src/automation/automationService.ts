@@ -260,7 +260,7 @@ export class AutomationService {
         const userId = config.user_id as string;
         if (!userId) throw new Error('No user_id in action config');
         const { error } = await this.supabase
-          .from('zoho_lead_submissions')
+          .from('lead_submissions')
           .update({ assigned_to: userId })
           .eq('id', leadId);
         if (error) throw new Error(error.message);
@@ -271,7 +271,7 @@ export class AutomationService {
         const priority = config.priority as string;
         if (!priority) throw new Error('No priority in action config');
         const { error } = await this.supabase
-          .from('zoho_lead_submissions')
+          .from('lead_submissions')
           .update({ priority })
           .eq('id', leadId);
         if (error) throw new Error(error.message);

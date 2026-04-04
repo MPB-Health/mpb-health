@@ -32,8 +32,6 @@ import { useCRM } from '../contexts/CRMContext';
 import type { QuoteSubmission } from '@mpbhealth/crm-core';
 
 const PAGE_SIZE = 20;
-const zohoConfigured = !!import.meta.env.VITE_ZOHO_API_KEY;
-
 // ── Labels & Products ────────────────────────────────────────────────────────
 
 const PRODUCT_LABELS = [
@@ -75,7 +73,6 @@ const DEFAULT_COLUMNS: ColumnDef[] = [
   { id: 'source', label: 'Source', minWidth: 120, defaultWidth: 180, visible: true },
   { id: 'tags', label: 'Tags', minWidth: 100, defaultWidth: 160, visible: true },
   { id: 'stage', label: 'Stage', minWidth: 90, defaultWidth: 110, visible: true },
-  ...(zohoConfigured ? [{ id: 'status', label: 'Sync', minWidth: 80, defaultWidth: 90, visible: true }] : []),
   { id: 'date', label: 'Date', minWidth: 120, defaultWidth: 160, visible: true },
 ];
 
@@ -336,8 +333,6 @@ export default function QuickRateEstimateLeads() {
         ) : <span className="text-xs text-th-text-tertiary">-</span>;
       case 'stage':
         return getStageBadge(stage);
-      case 'status':
-        return getSyncBadge(sub.zoho_sync_status);
       case 'date':
         return <span className="text-sm text-th-text-tertiary whitespace-nowrap">{formatDate(sub.created_at)}</span>;
       default:
@@ -392,9 +387,6 @@ export default function QuickRateEstimateLeads() {
                   </div>
                 </>
               )}
-              {zohoConfigured && sub.zoho_lead_id && (
-                <a href={`https://crm.zoho.com/crm/org/tab/Leads/${sub.zoho_lead_id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-xs text-th-accent-600 hover:underline"><ExternalLink className="w-3 h-3" />View in Zoho</a>
-              )}
             </div>
           </div>
         </td>
@@ -438,16 +430,6 @@ export default function QuickRateEstimateLeads() {
               className="w-full pl-9 pr-8 py-2 border border-th-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500/30 bg-surface-primary" />
             {searchTerm && <button type="button" onClick={() => setSearchTerm('')} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-th-text-tertiary hover:text-th-text-primary"><X className="w-3.5 h-3.5" /></button>}
           </div>
-
-          {/* Sync filter */}
-          {zohoConfigured && (
-            <select value={syncFilter} onChange={e => setSyncFilter(e.target.value)} aria-label="Filter by sync status" className="px-3 py-2 border border-th-border rounded-lg text-sm bg-surface-primary text-th-text-primary">
-              <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="success">Synced</option>
-              <option value="failed">Failed</option>
-            </select>
-          )}
 
           <button type="button" onClick={() => { setRefreshing(true); loadSubmissions(); }} disabled={refreshing} className="p-2 border border-th-border rounded-lg hover:bg-surface-secondary transition-colors" aria-label="Refresh">
             <RefreshCw className={`w-4 h-4 text-th-text-tertiary ${refreshing ? 'animate-spin' : ''}`} />
@@ -687,10 +669,6 @@ export default function QuickRateEstimateLeads() {
                   {detailSub.utm_campaign && <div className="flex justify-between"><span className="text-th-text-tertiary">UTM Campaign</span><span>{detailSub.utm_campaign}</span></div>}
                 </div>
               </div>
-
-              {zohoConfigured && detailSub.zoho_lead_id && (
-                <a href={`https://crm.zoho.com/crm/org/tab/Leads/${detailSub.zoho_lead_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-th-accent-600 hover:underline mb-6"><ExternalLink className="w-4 h-4" />View in Zoho CRM</a>
-              )}
 
               {/* Quick actions */}
               <div className="flex flex-wrap gap-2">

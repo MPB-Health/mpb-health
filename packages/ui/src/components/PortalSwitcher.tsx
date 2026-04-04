@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDown, LayoutDashboard, Users, GraduationCap, Globe, Check } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, Users, GraduationCap, Globe, HeadsetIcon, Check, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '../utils';
 
-export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website';
+export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website' | 'support';
 
 export interface PortalSwitcherProps {
   /** The current portal the user is on */
@@ -15,6 +15,8 @@ export interface PortalSwitcherProps {
   canAccessAdvisor: boolean;
   /** Whether the user can access the Website Backend */
   canAccessWebsite?: boolean;
+  /** Whether the user can access the Support Portal (ITSTS) */
+  canAccessSupport?: boolean;
   /** Function to get the URL for a portal */
   getPortalUrl: (portal: PortalKey) => string;
   /** Optional: async SSO URL for cross-portal nav. If provided and returns URL, use it; else fall back to getPortalUrl */
@@ -28,6 +30,8 @@ interface PortalOption {
   name: string;
   description: string;
   icon: React.ElementType;
+  /** Opens in a new tab (cross-project portals like ITSTS) */
+  openInNewTab?: boolean;
 }
 
 const PORTAL_OPTIONS: PortalOption[] = [
@@ -55,6 +59,13 @@ const PORTAL_OPTIONS: PortalOption[] = [
     description: 'CMS, blog & site settings',
     icon: Globe,
   },
+  {
+    key: 'support',
+    name: 'Support Portal',
+    description: 'IT Support & Tickets',
+    icon: HeadsetIcon,
+    openInNewTab: true,
+  },
 ];
 
 export function PortalSwitcher({
@@ -63,6 +74,7 @@ export function PortalSwitcher({
   canAccessCRM,
   canAccessAdvisor,
   canAccessWebsite,
+  canAccessSupport,
   getPortalUrl,
   getPortalUrlWithSSO,
   className,
@@ -71,7 +83,6 @@ export function PortalSwitcher({
   const [loadingPortal, setLoadingPortal] = useState<PortalKey | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -83,16 +94,15 @@ export function PortalSwitcher({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter available portals based on access (memoized to avoid re-filtering every render)
   const availablePortals = useMemo(() => PORTAL_OPTIONS.filter((portal) => {
     if (portal.key === 'admin') return canAccessAdmin;
     if (portal.key === 'crm') return canAccessCRM;
     if (portal.key === 'advisors') return canAccessAdvisor;
     if (portal.key === 'website') return !!canAccessWebsite;
+    if (portal.key === 'support') return !!canAccessSupport;
     return false;
-  }), [canAccessAdmin, canAccessCRM, canAccessAdvisor, canAccessWebsite]);
+  }), [canAccessAdmin, canAccessCRM, canAccessAdvisor, canAccessWebsite, canAccessSupport]);
 
-  // Don't show the switcher if user only has access to one portal
   if (availablePortals.length <= 1) {
     return null;
   }
@@ -100,18 +110,23 @@ export function PortalSwitcher({
   const currentPortalInfo = PORTAL_OPTIONS.find((p) => p.key === currentPortal);
   const CurrentIcon = currentPortalInfo?.icon || LayoutDashboard;
 
-  const handlePortalSwitch = async (portal: PortalKey) => {
-    if (portal === currentPortal) {
+  const handlePortalSwitch = async (portalOption: PortalOption) => {
+    if (portalOption.key === currentPortal) {
       setIsOpen(false);
       return;
     }
 
-    setLoadingPortal(portal);
+    setLoadingPortal(portalOption.key);
     try {
       if (getPortalUrlWithSSO) {
-        const ssoUrl = await getPortalUrlWithSSO(portal);
+        const ssoUrl = await getPortalUrlWithSSO(portalOption.key);
         if (ssoUrl) {
-          window.location.href = ssoUrl;
+          if (portalOption.openInNewTab) {
+            window.open(ssoUrl, '_blank', 'noopener,noreferrer');
+          } else {
+            window.location.href = ssoUrl;
+          }
+          setIsOpen(false);
           return;
         }
       }
@@ -121,7 +136,13 @@ export function PortalSwitcher({
       setLoadingPortal(null);
     }
 
-    window.location.href = getPortalUrl(portal);
+    const fallbackUrl = getPortalUrl(portalOption.key);
+    if (portalOption.openInNewTab) {
+      window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      window.location.href = fallbackUrl;
+    }
+    setIsOpen(false);
   };
 
   return (
@@ -162,7 +183,7 @@ export function PortalSwitcher({
               return (
                 <button
                   key={portal.key}
-                  onClick={() => handlePortalSwitch(portal.key)}
+                  onClick={() => handlePortalSwitch(portal)}
                   disabled={isLoading}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all duration-150',
@@ -177,7 +198,11 @@ export function PortalSwitcher({
                       isActive ? 'bg-[rgb(var(--sidebar-text)_/_0.15)]' : 'bg-[rgb(var(--sidebar-text)_/_0.08)]'
                     )}
                   >
-                    <Icon className="w-4 h-4" />
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Icon className="w-4 h-4" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{portal.name}</p>
@@ -185,6 +210,9 @@ export function PortalSwitcher({
                   </div>
                   {isActive && (
                     <Check className="w-4 h-4 text-green-400 shrink-0" />
+                  )}
+                  {!isActive && portal.openInNewTab && (
+                    <ExternalLink className="w-3.5 h-3.5 text-[rgb(var(--sidebar-text)_/_0.4)] shrink-0" />
                   )}
                 </button>
               );

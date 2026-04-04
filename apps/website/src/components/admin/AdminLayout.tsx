@@ -147,9 +147,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         // Dashboard stats queries
         safeQuery(supabase.from('advisors').select('id', { count: 'exact', head: true }).eq('is_active', true)),
         safeQuery(supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role', 'advisor')),
-        safeQuery(supabase.from('zoho_lead_submissions').select('id', { count: 'exact', head: true })),
-        safeQuery(supabase.from('zoho_lead_submissions').select('id', { count: 'exact', head: true }).eq('zoho_sync_status', 'pending')),
-        safeQuery(supabase.from('zoho_lead_submissions').select('id', { count: 'exact', head: true }).gte('created_at', startOfToday.toISOString())),
+        safeQuery(supabase.from('lead_submissions').select('id', { count: 'exact', head: true })),
+        safeQuery(supabase.from('lead_submissions').select('id', { count: 'exact', head: true }).is('pipeline_stage', null)),
+        safeQuery(supabase.from('lead_submissions').select('id', { count: 'exact', head: true }).gte('created_at', startOfToday.toISOString())),
         safeQuery(supabase.from('newsletter_subscribers').select('id', { count: 'exact', head: true }).eq('status', 'active')),
         safeQuery(supabase.from('newsletter_subscribers').select('id', { count: 'exact', head: true }).gte('created_at', `${currentMonth}-01`)),
         // Legacy queries

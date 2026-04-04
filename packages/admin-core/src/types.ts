@@ -125,7 +125,7 @@ export interface SystemSetting {
 export interface Integration {
   id: string;
   name: string;
-  type: 'zoho' | 'mailchimp' | 'stripe' | 'twilio' | 'cognito' | 'other';
+  type: 'mailchimp' | 'stripe' | 'twilio' | 'cognito' | 'itsts' | 'other';
   status: 'active' | 'inactive' | 'error';
   config: Record<string, unknown>;
   last_sync_at: string | null;

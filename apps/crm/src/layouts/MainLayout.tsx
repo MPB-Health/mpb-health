@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
 import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { buildPortalSSOUrl } from '@mpbhealth/auth';
+import { getPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
 import {
   LayoutDashboard,
@@ -87,7 +87,6 @@ const navigationSections: NavSection[] = [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
       { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
-      { name: 'Import from Zoho', href: '/import/zoho', icon: Download, permission: 'settings.manage' },
     ],
   },
   {
@@ -174,10 +173,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
-  const zohoConfigured = !!import.meta.env.VITE_ZOHO_API_KEY;
-
   // Portal access from global user_roles table
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(user?.id);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(user?.id);
 
   const handleSignOut = async () => {
     await signOut();
@@ -190,8 +187,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Filter nav items based on permissions and feature flags
   const visibleNav: NavItem[] = navigation
     .filter((item) => {
-      // Hide Zoho-specific items when Zoho is not configured
-      if (item.href === '/import/zoho' && !zohoConfigured) return false;
       if (!item.permission) return true;
       return can(item.permission);
     })
@@ -247,7 +242,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
+    try {
+      const result = await getPortalSSOUrl(portal, supabase);
+      return result.url;
+    } catch {
+      return null;
+    }
   }, []);
 
   const userSection = (
@@ -361,6 +361,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
+            canAccessSupport={canAccessSupport}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />

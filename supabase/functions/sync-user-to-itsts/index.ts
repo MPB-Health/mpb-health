@@ -3,11 +3,11 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { mapToItstsRole } from "../_shared/itsts-sync.ts";
 
 const log = createLogger("sync-user-to-itsts");
 
-type MonorepoRole = "super_admin" | "admin" | "advisor" | "member" | "crm_user";
-type ItstsRole = "member" | "advisor" | "staff" | "agent" | "admin" | "super_admin" | "concierge";
+type MonorepoRole = "super_admin" | "admin" | "advisor" | "member" | "crm_user" | "manager" | "staff";
 type SyncAction = "create" | "update" | "password_change";
 
 interface SyncRequest {
@@ -33,25 +33,6 @@ function buildProfileExtras(req: SyncRequest): Record<string, string> {
   if (req.company_name) extras.company_name = req.company_name;
   if (req.avatar_url) extras.avatar_url = req.avatar_url;
   return extras;
-}
-
-const ROLE_MAP: Record<MonorepoRole, ItstsRole> = {
-  super_admin: "admin",
-  admin: "staff",
-  advisor: "advisor",
-  crm_user: "member",
-  member: "member",
-};
-
-const ROLE_PRIORITY: ItstsRole[] = ["admin", "staff", "advisor", "concierge", "member"];
-
-function mapToItstsRole(roles: MonorepoRole[]): ItstsRole {
-  for (const itstsRole of ROLE_PRIORITY) {
-    for (const monoRole of roles) {
-      if (ROLE_MAP[monoRole] === itstsRole) return itstsRole;
-    }
-  }
-  return "member";
 }
 
 function getItstsClient() {

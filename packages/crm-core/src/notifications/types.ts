@@ -1,4 +1,4 @@
-import type { LeadPriority } from '../priority/types';
+import type { NotificationPriority } from '../priority/types';
 
 // Lead submission for notifications
 export interface LeadSubmission {
@@ -13,13 +13,12 @@ export interface LeadSubmission {
   primary_concern?: string | null;
   source_page: string | null;
   source_cta: string | null;
-  zoho_sync_status: string;
   created_at: string;
 }
 
 // Enhanced lead submission with priority info
 export interface EnhancedLeadSubmission extends LeadSubmission {
-  priority: LeadPriority;
+  priority: NotificationPriority;
   isRepeatLead: boolean;
   repeatCount: number;
   priorityReasons: string[];

@@ -5,7 +5,6 @@ export interface NotificationPreferences {
   user_id?: string;
   email_notifications: boolean;
   desktop_notifications: boolean;
-  auto_sync_zoho: boolean;
   quiet_hours_enabled: boolean;
   quiet_hours_start: string;
   quiet_hours_end: string;
@@ -15,7 +14,6 @@ export interface NotificationPreferences {
 const DEFAULT_PREFERENCES: NotificationPreferences = {
   email_notifications: true,
   desktop_notifications: true,
-  auto_sync_zoho: true,
   quiet_hours_enabled: false,
   quiet_hours_start: '22:00',
   quiet_hours_end: '08:00',
@@ -45,7 +43,6 @@ export class PreferencesService {
         user_id: data.user_id,
         email_notifications: data.email_notifications ?? DEFAULT_PREFERENCES.email_notifications,
         desktop_notifications: data.desktop_notifications ?? DEFAULT_PREFERENCES.desktop_notifications,
-        auto_sync_zoho: data.auto_sync_zoho ?? DEFAULT_PREFERENCES.auto_sync_zoho,
         quiet_hours_enabled: data.quiet_hours_enabled ?? DEFAULT_PREFERENCES.quiet_hours_enabled,
         quiet_hours_start: data.quiet_hours_start ?? DEFAULT_PREFERENCES.quiet_hours_start,
         quiet_hours_end: data.quiet_hours_end ?? DEFAULT_PREFERENCES.quiet_hours_end,

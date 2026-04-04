@@ -2,7 +2,6 @@
 export interface FeatureFlags {
   enableAnalytics: boolean;
   enableNotifications: boolean;
-  enableZohoSync: boolean;
   enableEmailNotifications: boolean;
   enableSMSNotifications: boolean;
   enableAIInsights: boolean;
@@ -13,7 +12,6 @@ export interface FeatureFlags {
 export const featureFlags: FeatureFlags = {
   enableAnalytics: true,
   enableNotifications: true,
-  enableZohoSync: true,
   enableEmailNotifications: true,
   enableSMSNotifications: false,
   enableAIInsights: true,

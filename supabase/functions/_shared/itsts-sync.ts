@@ -36,7 +36,7 @@ function buildProfileExtras(params: SyncUserParams): Record<string, string> {
   return extras;
 }
 
-const ROLE_MAP: Record<string, ItstsRole> = {
+export const ROLE_MAP: Record<string, ItstsRole> = {
   super_admin: "admin",
   admin: "staff",
   manager: "staff",
@@ -46,9 +46,9 @@ const ROLE_MAP: Record<string, ItstsRole> = {
   member: "member",
 };
 
-const ROLE_PRIORITY: ItstsRole[] = ["admin", "staff", "advisor", "concierge", "member"];
+export const ROLE_PRIORITY: ItstsRole[] = ["admin", "staff", "advisor", "concierge", "member"];
 
-function mapToItstsRole(roles: MonorepoRole[]): ItstsRole {
+export function mapToItstsRole(roles: MonorepoRole[]): ItstsRole {
   for (const itstsRole of ROLE_PRIORITY) {
     for (const monoRole of roles) {
       if (ROLE_MAP[monoRole] === itstsRole) return itstsRole;

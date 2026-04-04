@@ -769,6 +769,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@mpbhealth/config':
+        specifier: workspace:*
+        version: link:../config
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../database

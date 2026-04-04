@@ -147,7 +147,7 @@ export class TaskService {
 
       // Update next followup date on lead
       await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update({ next_followup_at: task.due_date })
         .eq('id', task.lead_id);
 

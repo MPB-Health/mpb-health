@@ -91,17 +91,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
     }
   };
 
-  const handleSyncToZoho = async () => {
-    setIsProcessing(true);
-    const leadIds = selectedLeads.map(l => l.id);
-    const syncResult = await crmService.bulkSyncToZoho(leadIds);
-    setIsProcessing(false);
-    setResult({ success: syncResult.synced, failed: syncResult.failed });
-    
-    if (syncResult.synced > 0) {
-      onActionComplete();
-    }
-  };
+
 
   if (selectedLeads.length === 0) {
     return null;
@@ -231,16 +221,6 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
               Export PDF
             </button>
 
-            <div className="w-px h-8 bg-slate-700" />
-
-            <button
-              onClick={handleSyncToZoho}
-              disabled={isProcessing}
-              className="flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 rounded-lg transition-colors text-sm text-blue-400"
-            >
-              <Upload className="h-4 w-4" />
-              Sync to Zoho
-            </button>
           </>
         )}
 

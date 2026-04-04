@@ -4,9 +4,9 @@ import { createClientLogger } from '@mpbhealth/utils';
 const log = createClientLogger('CSVImporter');
 
 /**
- * Complete Zoho CRM Contact interface - ALL 157 fields from export
+ * CSV Contact import interface - supports 157 fields from legacy CRM CSV exports
  */
-export interface ZohoContact {
+export interface CsvContact {
   // Core identification
   recordId?: string;
   contactOwnerId?: string;
@@ -216,9 +216,9 @@ export interface ZohoContact {
 }
 
 /**
- * Complete CSV column mapping - ALL 157 columns from Zoho export
+ * Complete CSV column mapping - ALL 157 columns from CRM CSV export
  */
-const COLUMN_MAPPING: Record<string, keyof ZohoContact> = {
+const COLUMN_MAPPING: Record<string, keyof CsvContact> = {
   // Core identification
   'Record Id': 'recordId',
   'Contact Owner.id': 'contactOwnerId',
@@ -431,7 +431,7 @@ export interface ImportResult {
   total: number;
   successful: number;
   failed: number;
-  errors: Array<{ row: number; error: string; data?: ZohoContact }>;
+  errors: Array<{ row: number; error: string; data?: CsvContact }>;
   leads: LeadCreateInput[];
 }
 
@@ -502,10 +502,10 @@ export function parseCSV(csvContent: string): string[][] {
  * Also captures any unmapped columns for storage
  */
 function mapHeaders(headers: string[]): { 
-  mapping: Map<number, keyof ZohoContact>;
+  mapping: Map<number, keyof CsvContact>;
   unmappedHeaders: Map<number, string>;
 } {
-  const mapping = new Map<number, keyof ZohoContact>();
+  const mapping = new Map<number, keyof CsvContact>();
   const unmappedHeaders = new Map<number, string>();
   
   headers.forEach((header, index) => {
@@ -523,14 +523,14 @@ function mapHeaders(headers: string[]): {
 }
 
 /**
- * Parse a single row into a ZohoContact object
+ * Parse a single row into a CsvContact object
  */
 function parseRow(
   row: string[], 
-  headerMapping: Map<number, keyof ZohoContact>,
+  headerMapping: Map<number, keyof CsvContact>,
   unmappedHeaders: Map<number, string>
-): { contact: ZohoContact; extraFields: Record<string, string> } {
-  const contact: ZohoContact = {};
+): { contact: CsvContact; extraFields: Record<string, string> } {
+  const contact: CsvContact = {};
   const extraFields: Record<string, string> = {};
 
   // Map known fields
@@ -551,7 +551,7 @@ function parseRow(
 }
 
 /**
- * Map Zoho contact status to pipeline stage
+ * Map contact status to pipeline stage
  */
 function mapStatusToStage(status?: string): string {
   if (!status) return 'new';
@@ -583,7 +583,7 @@ function mapStatusToStage(status?: string): string {
 /**
  * Determine priority based on contact data
  */
-function determinePriority(contact: ZohoContact): LeadPriority {
+function determinePriority(contact: CsvContact): LeadPriority {
   // High priority for recent activity
   if (contact.lastActivityTime) {
     const lastActivity = new Date(contact.lastActivityTime);
@@ -647,7 +647,7 @@ function cleanPhone(phone?: string): string | undefined {
 /**
  * Build family members array from contact data
  */
-function buildFamilyMembers(contact: ZohoContact): Record<string, unknown>[] {
+function buildFamilyMembers(contact: CsvContact): Record<string, unknown>[] {
   const members: Record<string, unknown>[] = [];
   
   // Spouse
@@ -691,10 +691,10 @@ function buildFamilyMembers(contact: ZohoContact): Record<string, unknown>[] {
 }
 
 /**
- * Convert ZohoContact to LeadCreateInput with ALL data preserved
+ * Convert CsvContact to LeadCreateInput with ALL data preserved
  */
 function convertToLead(
-  contact: ZohoContact, 
+  contact: CsvContact, 
   extraFields: Record<string, string>,
   options: ImportOptions = {}
 ): LeadCreateInput | null {
@@ -715,14 +715,14 @@ function convertToLead(
   const email = cleanEmail(contact.email) || cleanEmail(contact.secondaryEmail);
   const phone = cleanPhone(contact.phone) || cleanPhone(contact.mobile) || cleanPhone(contact.workPhone);
 
-  // Build comprehensive form_data with ALL Zoho fields
+  // Build comprehensive form_data with ALL imported fields
   const formData: Record<string, unknown> = {
-    // Zoho identifiers
-    zoho_record_id: contact.recordId,
-    zoho_contact_owner_id: contact.contactOwnerId,
-    zoho_contact_owner: contact.contactOwner,
-    zoho_producer_id: contact.producerNameId,
-    zoho_producer: contact.producerName,
+    // Source system identifiers (preserved for data lineage)
+    import_record_id: contact.recordId,
+    import_contact_owner_id: contact.contactOwnerId,
+    import_contact_owner: contact.contactOwner,
+    import_producer_id: contact.producerNameId,
+    import_producer: contact.producerName,
     
     // Personal info
     title: contact.title,
@@ -755,13 +755,13 @@ function convertToLead(
     family_members: buildFamilyMembers(contact),
     
     // Insurance/Product details
-    zoho_status: contact.contactStatus,
-    zoho_product: contact.product,
-    zoho_carrier: contact.carrier,
-    zoho_previous_product: contact.previousProduct,
-    zoho_coverage_option: contact.coverageOption,
-    zoho_start_date: contact.startDate,
-    zoho_cancellation_date: contact.cancellationDate,
+    import_status: contact.contactStatus,
+    import_product: contact.product,
+    import_carrier: contact.carrier,
+    import_previous_product: contact.previousProduct,
+    import_coverage_option: contact.coverageOption,
+    import_start_date: contact.startDate,
+    import_cancellation_date: contact.cancellationDate,
     add_on_product: contact.addOnProduct,
     declined: contact.declined,
     charge_waived: contact.chargeWaived,
@@ -774,7 +774,7 @@ function convertToLead(
     household_annual_adj_gross: contact.householdAnnualAdjGross,
     
     // Referral info
-    zoho_referral_source: contact.referralSource,
+    import_referral_source: contact.referralSource,
     referring_member: contact.referringMember,
     mpb_referral_fee: contact.mpbReferralFee,
     referral_requirement_satisfied: contact.referralRequirementSatisfied,
@@ -907,7 +907,7 @@ function convertToLead(
   if (contact.tag) {
     tags.push(...contact.tag.split(',').map(t => t.trim().toLowerCase().replace(/[^a-z0-9]/g, '-')).filter(Boolean));
   }
-  tags.push('zoho-import');
+  tags.push('csv-import');
 
   return {
     first_name: firstName,
@@ -918,7 +918,7 @@ function convertToLead(
     current_insurance: contact.carrier,
     monthly_premium: contact.monthlyPremium,
     coverage_preference: contact.coverageOption,
-    source_cta: 'zoho-import',
+    source_cta: 'csv-import',
     utm_source: contact.leadSource,
     form_data: formData,
     tags,

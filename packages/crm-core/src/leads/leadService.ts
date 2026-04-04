@@ -21,10 +21,10 @@ export class LeadService {
   ): Promise<{ leads: Lead[]; total: number }> {
     try {
       let query = this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select(`
           *,
-          carrier:insurance_carriers!zoho_lead_submissions_carrier_id_fkey(id, name, carrier_type)
+          carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
         `, { count: 'exact' });
 
       if (filters.stage) {
@@ -50,9 +50,6 @@ export class LeadService {
       }
       if (filters.tags && filters.tags.length > 0) {
         query = query.overlaps('tags', filters.tags);
-      }
-      if (filters.zohoSyncStatus) {
-        query = query.eq('zoho_sync_status', filters.zohoSyncStatus);
       }
       if (filters.planType) {
         query = query.eq('plan_type', filters.planType);
@@ -95,7 +92,7 @@ export class LeadService {
   ): Promise<{ grouped: Record<string, Lead[]>; total: number }> {
     try {
       const { data, error, count } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('id, first_name, last_name, email, phone, pipeline_stage, priority, plan_type, assigned_to, created_at, tags', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
@@ -127,10 +124,10 @@ export class LeadService {
   async getLead(id: string): Promise<Lead | null> {
     try {
       const { data, error } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select(`
           *,
-          carrier:insurance_carriers!zoho_lead_submissions_carrier_id_fkey(id, name, carrier_type)
+          carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
         `)
         .eq('id', id)
         .single();
@@ -155,7 +152,7 @@ export class LeadService {
   ): Promise<{ success: boolean; leadId?: string; error?: string }> {
     try {
       const { data, error } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .insert({
           ...input,
           pipeline_stage: 'new',
@@ -186,7 +183,7 @@ export class LeadService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
@@ -260,7 +257,7 @@ export class LeadService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: currentLead } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('tags')
         .eq('id', leadId)
         .single();
@@ -284,7 +281,7 @@ export class LeadService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: currentLead } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('tags')
         .eq('id', leadId)
         .single();
@@ -305,7 +302,7 @@ export class LeadService {
   async deleteLead(id: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .delete()
         .eq('id', id);
 
@@ -328,7 +325,7 @@ export class LeadService {
     filters?: LeadFilters
   ): Promise<Lead[]> {
     try {
-      let query = this.supabase.from('zoho_lead_submissions').select('*');
+      let query = this.supabase.from('lead_submissions').select('*');
 
       if (leadIds && leadIds.length > 0) {
         query = query.in('id', leadIds);

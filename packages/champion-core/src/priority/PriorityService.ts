@@ -185,7 +185,7 @@ export class PriorityService {
       .select(`
         *,
         lane:priority_lanes(*),
-        lead:zoho_lead_submissions(id, first_name, last_name, email, phone, pipeline_stage, priority, last_contacted_at)
+        lead:lead_submissions(id, first_name, last_name, email, phone, pipeline_stage, priority, last_contacted_at)
       `)
       .eq('lane_id', laneId)
       .order('score', { ascending: false })
@@ -222,7 +222,7 @@ export class PriorityService {
       .select(`
         *,
         lane:priority_lanes(*),
-        lead:zoho_lead_submissions(id, first_name, last_name, email, phone, pipeline_stage, priority, last_contacted_at)
+        lead:lead_submissions(id, first_name, last_name, email, phone, pipeline_stage, priority, last_contacted_at)
       `)
       .eq('org_id', orgId)
       .eq('owner_user_id', userId)

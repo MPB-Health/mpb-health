@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { ROLE_MAP } from "../_shared/itsts-sync.ts";
 
 const log = createLogger("sso-itsts-login");
 
@@ -141,11 +142,7 @@ Deno.serve(async (req: Request) => {
       const lastName = fullUser?.user_metadata?.last_name || "";
       const fullName = `${firstName} ${lastName}`.trim();
 
-      // Map monorepo role to ITSTS role
-      const roleMap: Record<string, string> = {
-        super_admin: "admin", admin: "staff", advisor: "advisor", crm_user: "member", member: "member",
-      };
-      const itstsRole = roleMap[primaryRole] || "member";
+      const itstsRole = ROLE_MAP[primaryRole] || "member";
 
       // Create auth user in ITSTS
       const tempPassword = crypto.randomUUID().slice(0, 16) + "!A1";

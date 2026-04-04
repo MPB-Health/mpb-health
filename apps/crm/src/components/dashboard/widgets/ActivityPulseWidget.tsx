@@ -76,12 +76,25 @@ export default function ActivityPulseWidget() {
     return { buckets, maxCount };
   }, [recentActivities]);
 
-  // Activity type breakdown
+  // Activity type breakdown with trend computed from first-half vs second-half of the window
   const activityStats: ActivityStat[] = useMemo(() => {
     const typeCounts: Record<string, number> = {};
-    recentActivities.forEach(a => {
+    const typeCountsFirstHalf: Record<string, number> = {};
+    const typeCountsSecondHalf: Record<string, number> = {};
+
+    const sorted = [...recentActivities].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    const midpoint = Math.floor(sorted.length / 2);
+
+    sorted.forEach((a, i) => {
       const type = a.activity_type || 'other';
       typeCounts[type] = (typeCounts[type] || 0) + 1;
+      if (i < midpoint) {
+        typeCountsFirstHalf[type] = (typeCountsFirstHalf[type] || 0) + 1;
+      } else {
+        typeCountsSecondHalf[type] = (typeCountsSecondHalf[type] || 0) + 1;
+      }
     });
 
     const typeConfig: Record<string, { icon: typeof Activity; color: string }> = {
@@ -93,13 +106,18 @@ export default function ActivityPulseWidget() {
     };
 
     return Object.entries(typeCounts)
-      .map(([type, count]) => ({
-        type: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
-        icon: typeConfig[type]?.icon || Activity,
-        count,
-        color: typeConfig[type]?.color || 'text-th-text-tertiary',
-        trend: Math.random() * 30 - 10, // TODO: compute from historical comparison
-      }))
+      .map(([type, count]) => {
+        const first = typeCountsFirstHalf[type] || 0;
+        const second = typeCountsSecondHalf[type] || 0;
+        const trend = first > 0 ? ((second - first) / first) * 100 : second > 0 ? 100 : 0;
+        return {
+          type: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
+          icon: typeConfig[type]?.icon || Activity,
+          count,
+          color: typeConfig[type]?.color || 'text-th-text-tertiary',
+          trend: Math.round(trend * 10) / 10,
+        };
+      })
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }, [recentActivities]);

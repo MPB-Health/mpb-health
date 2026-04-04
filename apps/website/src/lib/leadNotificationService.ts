@@ -21,7 +21,6 @@ export interface LeadSubmission {
   primary_concern?: string | null;
   source_page: string | null;
   source_cta: string | null;
-  zoho_sync_status: string;
   created_at: string;
 }
 
@@ -61,7 +60,7 @@ export const subscribeToLeadSubmissions = (
       {
         event: 'INSERT',
         schema: 'public',
-        table: 'zoho_lead_submissions',
+        table: 'lead_submissions',
       },
       async (payload: RealtimePostgresInsertPayload<LeadSubmission>) => {
         const lead = payload.new;
@@ -181,8 +180,8 @@ export const unsubscribeFromLeadSubmissions = (): void => {
  */
 export const getRecentLeads = async (limit: number = 10): Promise<LeadSubmission[]> => {
   const { data, error } = await supabase
-    .from('zoho_lead_submissions')
-    .select('id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_page, source_cta, zoho_sync_status, created_at')
+    .from('lead_submissions')
+    .select('id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_page, source_cta, created_at')
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -247,7 +246,7 @@ export const getLeadCount = async (hoursBack: number = 24): Promise<number> => {
   const cutoffTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
   
   const { count, error } = await supabase
-    .from('zoho_lead_submissions')
+    .from('lead_submissions')
     .select('*', { count: 'exact', head: true })
     .gte('created_at', cutoffTime);
 
@@ -311,7 +310,7 @@ export const getUnreadLeadCount = async (): Promise<number> => {
   }
 
   const { count, error } = await supabase
-    .from('zoho_lead_submissions')
+    .from('lead_submissions')
     .select('*', { count: 'exact', head: true })
     .gt('created_at', lastViewed);
 
@@ -333,7 +332,7 @@ export const checkIfRepeatLead = async (
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
   const { count: emailCount, error: emailError } = await supabase
-    .from('zoho_lead_submissions')
+    .from('lead_submissions')
     .select('*', { count: 'exact', head: true })
     .ilike('email', email)
     .lt('created_at', fiveMinutesAgo);
@@ -346,7 +345,7 @@ export const checkIfRepeatLead = async (
   let phoneCount = 0;
   if (phone && phone.trim() !== '') {
     const { count, error: phoneError } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('*', { count: 'exact', head: true })
       .eq('phone', phone)
       .lt('created_at', fiveMinutesAgo);

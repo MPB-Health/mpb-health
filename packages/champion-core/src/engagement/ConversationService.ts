@@ -32,7 +32,7 @@ export class ConversationService {
       .from('conversations')
       .select(`
         *,
-        lead:zoho_lead_submissions(id, first_name, last_name, email, phone, pipeline_stage)
+        lead:lead_submissions(id, first_name, last_name, email, phone, pipeline_stage)
       `)
       .eq('org_id', orgId)
       .order('last_message_at', { ascending: false, nullsFirst: false });
@@ -87,7 +87,7 @@ export class ConversationService {
       .from('conversations')
       .select(`
         *,
-        lead:zoho_lead_submissions(id, first_name, last_name, email, phone, pipeline_stage)
+        lead:lead_submissions(id, first_name, last_name, email, phone, pipeline_stage)
       `)
       .eq('id', conversationId)
       .single();

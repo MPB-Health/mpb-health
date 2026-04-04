@@ -30,6 +30,8 @@ export interface PortalAccessState {
   canAccessCrm: boolean;
   /** User can access Member Portal (always true for authenticated users) */
   canAccessMember: boolean;
+  /** User can access Support Portal / ITSTS (super_admin, admin, or advisor) */
+  canAccessSupport: boolean;
   /** Re-fetch roles from the database */
   refreshAccess: () => Promise<void>;
 }
@@ -110,7 +112,8 @@ export function usePortalAccess(userId: string | null | undefined): PortalAccess
     canAccessAdmin: isSuperAdmin || roles.includes('admin'),
     canAccessAdvisor: isSuperAdmin || roles.includes('advisor'),
     canAccessCrm: isSuperAdmin || roles.includes('crm_user'),
-    canAccessMember: true, // All authenticated users can access member portal
+    canAccessMember: true,
+    canAccessSupport: isSuperAdmin || roles.includes('admin') || roles.includes('advisor'),
     refreshAccess,
   };
 }

@@ -257,7 +257,7 @@ export class ContactService {
 
       // Get the lead
       const { data: lead, error: leadError } = await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*')
         .eq('id', input.leadId)
         .single();
@@ -319,7 +319,7 @@ export class ContactService {
 
       // Update lead as converted
       await this.supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update({
           pipeline_stage: 'converted',
           converted_at: new Date().toISOString(),

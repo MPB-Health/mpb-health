@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Search, Filter, Loader2, UserPlus, X, Check, RefreshCw } from 'lucide-react';
+import { Users, Search, Loader2, UserPlus, X, Check, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   leadAssignmentService,
@@ -59,35 +59,8 @@ export default function LeadAssignment() {
   }, [search, assignedFilter, priorityFilter]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const [leadsData, advisorsData, statsData] = await Promise.all([
-          leadAssignmentService.getAll({
-            assigned: assignedFilter,
-            search: search || undefined,
-            priority: priorityFilter || undefined,
-          }),
-          leadAssignmentService.getAdvisors(),
-          leadAssignmentService.getStats(),
-        ]);
-        if (!cancelled) {
-          setLeads(leadsData);
-          setAdvisors(advisorsData);
-          setStats(statsData);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Failed to load leads:', err);
-          toast.error('Failed to load lead assignments');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [search, assignedFilter, priorityFilter]);
+    load();
+  }, [load]);
 
   async function handleAssign(leadId: string, advisorId: string) {
     setAssigningId(null);

@@ -82,7 +82,11 @@ export default function SmsAccounts() {
   };
 
   useEffect(() => {
-    if (user?.org_id) loadAccounts();
+    if (user?.org_id) {
+      loadAccounts();
+    } else if (user) {
+      setLoading(false);
+    }
   }, [user?.org_id]);
 
   useEffect(() => {

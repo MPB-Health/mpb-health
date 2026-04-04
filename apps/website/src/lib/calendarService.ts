@@ -165,7 +165,7 @@ class CalendarService {
         .from('calendar_events')
         .select(`
           *,
-          lead:zoho_lead_submissions(first_name, last_name)
+          lead:lead_submissions(first_name, last_name)
         `)
         .eq('id', eventId)
         .single();
@@ -201,7 +201,7 @@ class CalendarService {
         .from('calendar_events')
         .select(`
           *,
-          lead:zoho_lead_submissions(first_name, last_name)
+          lead:lead_submissions(first_name, last_name)
         `)
         .eq('assigned_to', user.id)
         .order('start_time', { ascending: true });

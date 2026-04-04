@@ -28,10 +28,6 @@
       "import": "./dist/pipeline/index.js",
       "types": "./dist/pipeline/index.d.ts"
     },
-    "./zoho": {
-      "import": "./dist/zoho/index.js",
-      "types": "./dist/zoho/index.d.ts"
-    },
     "./notifications": {
       "import": "./dist/notifications/index.js",
       "types": "./dist/notifications/index.d.ts"
@@ -131,14 +127,50 @@
     "./audit": {
       "import": "./dist/audit/index.js",
       "types": "./dist/audit/index.d.ts"
+    },
+    "./forms": {
+      "import": "./dist/forms/index.js",
+      "types": "./dist/forms/index.d.ts"
+    },
+    "./forecasting": {
+      "import": "./dist/forecasting/index.js",
+      "types": "./dist/forecasting/index.d.ts"
+    },
+    "./approvals": {
+      "import": "./dist/approvals/index.js",
+      "types": "./dist/approvals/index.d.ts"
+    },
+    "./studio": {
+      "import": "./dist/studio/index.js",
+      "types": "./dist/studio/index.d.ts"
+    },
+    "./plan-interests": {
+      "import": "./dist/plan-interests/index.js",
+      "types": "./dist/plan-interests/index.d.ts"
+    },
+    "./cases": {
+      "import": "./dist/cases/index.js",
+      "types": "./dist/cases/index.d.ts"
+    },
+    "./documents": {
+      "import": "./dist/documents/index.js",
+      "types": "./dist/documents/index.d.ts"
+    },
+    "./saved-views": {
+      "import": "./dist/saved-views/index.js",
+      "types": "./dist/saved-views/index.d.ts"
+    },
+    "./import": {
+      "import": "./dist/import/index.js",
+      "types": "./dist/import/index.d.ts"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts src/dashboard/index.ts src/carriers/index.ts src/family/index.ts src/commissions/index.ts src/attachments/index.ts src/audit/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/zoho/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts src/dashboard/index.ts src/carriers/index.ts src/family/index.ts src/commissions/index.ts src/attachments/index.ts src/audit/index.ts --format esm --dts --watch",
+    "build": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts src/dashboard/index.ts src/carriers/index.ts src/family/index.ts src/commissions/index.ts src/attachments/index.ts src/audit/index.ts src/forms/index.ts src/forecasting/index.ts src/approvals/index.ts src/studio/index.ts src/plan-interests/index.ts src/cases/index.ts src/documents/index.ts src/saved-views/index.ts src/import/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts src/dashboard/index.ts src/carriers/index.ts src/family/index.ts src/commissions/index.ts src/attachments/index.ts src/audit/index.ts src/forms/index.ts src/forecasting/index.ts src/approvals/index.ts src/studio/index.ts src/plan-interests/index.ts src/cases/index.ts src/documents/index.ts src/saved-views/index.ts src/import/index.ts --format esm --dts --watch",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },

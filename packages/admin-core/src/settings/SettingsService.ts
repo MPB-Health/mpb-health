@@ -228,8 +228,6 @@ export class SettingsService {
 
     try {
       switch (integration.type) {
-        case 'zoho':
-          break;
         case 'mailchimp':
           break;
         case 'stripe':

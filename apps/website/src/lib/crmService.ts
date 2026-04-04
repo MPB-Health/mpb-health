@@ -1,4 +1,3 @@
-import { createZohoService } from '@mpbhealth/crm-core/zoho';
 import { supabase } from './supabase';
 
 // ============================================================================
@@ -120,7 +119,7 @@ class CRMService {
   ): Promise<{ leads: Lead[]; total: number }> {
     try {
       let query = supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact' });
 
       // Apply filters
@@ -167,7 +166,7 @@ class CRMService {
   async getLeadsByStage(): Promise<Record<string, Lead[]>> {
     try {
       const { data, error } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -195,7 +194,7 @@ class CRMService {
   async getLead(id: string): Promise<Lead | null> {
     try {
       const { data, error } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*')
         .eq('id', id)
         .single();
@@ -219,13 +218,13 @@ class CRMService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: currentLead } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('pipeline_stage, assigned_to, priority')
         .eq('id', id)
         .single();
 
       const { error } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update(updates)
         .eq('id', id);
 
@@ -305,7 +304,7 @@ class CRMService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: currentLead } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('tags')
         .eq('id', leadId)
         .single();
@@ -326,7 +325,7 @@ class CRMService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: currentLead } = await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('tags')
         .eq('id', leadId)
         .single();
@@ -393,7 +392,7 @@ class CRMService {
       // Update last_contacted_at for contact activities
       if (['call', 'email', 'meeting'].includes(activity.activity_type)) {
         await supabase
-          .from('zoho_lead_submissions')
+          .from('lead_submissions')
           .update({ last_contacted_at: new Date().toISOString() })
           .eq('id', leadId);
       }
@@ -556,7 +555,7 @@ class CRMService {
 
       // Update next followup date on lead
       await supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .update({ next_followup_at: task.due_date })
         .eq('id', task.lead_id);
 
@@ -662,7 +661,7 @@ class CRMService {
     filters?: LeadFilters
   ): Promise<Lead[]> {
     try {
-      let query = supabase.from('zoho_lead_submissions').select('*');
+      let query = supabase.from('lead_submissions').select('*');
 
       if (leadIds && leadIds.length > 0) {
         query = query.in('id', leadIds);
@@ -749,27 +748,6 @@ class CRMService {
     document.body.removeChild(link);
   }
 
-  // --------------------------------------------------------------------------
-  // Zoho Sync
-  // --------------------------------------------------------------------------
-
-  async syncLeadToZoho(leadId: string): Promise<{ success: boolean; leadId?: string; zohoLeadId?: string; error?: string }> {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      return { success: false, error: 'Supabase URL not configured' };
-    }
-    const zoho = createZohoService(supabase, supabaseUrl);
-    return zoho.syncLeadToZoho(leadId);
-  }
-
-  async bulkSyncToZoho(leadIds: string[]): Promise<{ success: boolean; synced: number; failed: number; errors: Array<{ leadId: string; error: string }> }> {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      return { success: false, synced: 0, failed: leadIds.length, errors: leadIds.map(id => ({ leadId: id, error: 'Supabase URL not configured' })) };
-    }
-    const zoho = createZohoService(supabase, supabaseUrl);
-    return zoho.bulkSyncToZoho(leadIds);
-  }
 }
 
 export const crmService = new CRMService();

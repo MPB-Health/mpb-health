@@ -293,6 +293,20 @@ export {
   type AnalyticsOverviewStats,
 } from './analytics/AnalyticsOverviewService';
 
+// Unified analytics hub (cross-project)
+export {
+  AnalyticsHubService,
+  analyticsHubService,
+  type ChampionEnrollmentStats,
+  type ChampionTrends,
+  type MobileAppStats,
+  type MobileTrends,
+  type ExternalSupportStats,
+  type CombinedAnalytics,
+  type GA4Overview,
+  type SchemaDiscovery,
+} from './analytics/AnalyticsHubService';
+
 // Enrollment links (advisor portal enrollment page)
 export {
   EnrollmentLinksAdminService,

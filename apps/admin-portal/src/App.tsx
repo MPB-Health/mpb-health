@@ -54,6 +54,7 @@ const EnrollmentLinks = lazyRetry(() => import('./pages/EnrollmentLinks'));
 const PortalSettings = lazyRetry(() => import('./pages/PortalSettings'));
 // Analytics
 const AnalyticsOverview = lazyRetry(() => import('./pages/AnalyticsOverview'));
+const UnifiedAnalytics = lazyRetry(() => import('./pages/UnifiedAnalytics'));
 // CRM extended pages
 const CRMTemplates = lazyRetry(() => import('./pages/CRMTemplates'));
 const CRMCalendar = lazyRetry(() => import('./pages/CRMCalendar'));
@@ -291,6 +292,7 @@ export default function App() {
               <Route path="operations/newsletter" element={<NewsletterAdmin />} />
               {/* Analytics */}
               <Route path="analytics/overview" element={<AnalyticsOverview />} />
+              <Route path="analytics/unified" element={<UnifiedAnalytics />} />
               <Route path="settings" element={<RequirePermission permission="settings.manage"><Settings /></RequirePermission>} />
               <Route path="settings/payments" element={<RequirePermission permission="settings.manage"><PaymentProcessors /></RequirePermission>} />
               <Route path="settings/sms" element={<RequirePermission permission="settings.manage"><SmsAccounts /></RequirePermission>} />

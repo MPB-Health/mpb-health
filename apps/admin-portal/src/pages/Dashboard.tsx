@@ -38,13 +38,16 @@ import {
   memberService,
   systemHealthService,
   crmBridgeService,
+  analyticsHubService,
   type ActivityMetric,
   type SystemHealthSummary,
   type MemberStats,
   type CRMSummary,
   type AuditLog,
+  type CombinedAnalytics,
 } from '@mpbhealth/admin-core';
 import { MetricCard, useChartTheme } from '@mpbhealth/ui';
+import { Smartphone, Globe } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -97,6 +100,7 @@ export default function Dashboard() {
   const [crmSummary, setCrmSummary] = useState<CRMSummary | null>(null);
   const [recentActivity, setRecentActivity] = useState<AuditLog[]>([]);
   const [contentStats, setContentStats] = useState<ContentStats | null>(null);
+  const [externalAnalytics, setExternalAnalytics] = useState<CombinedAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -110,6 +114,7 @@ export default function Dashboard() {
         crmBridgeService.getCRMSummary(),
         auditService.getLogs({ limit: 8 }),
         loadContentStats(),
+        analyticsHubService.getCombinedSummary(),
       ]);
 
       if (results[0].status === 'fulfilled') setLeadActivity(results[0].value);
@@ -119,6 +124,7 @@ export default function Dashboard() {
       if (results[4].status === 'fulfilled') setCrmSummary(results[4].value);
       if (results[5].status === 'fulfilled') setRecentActivity(results[5].value.logs);
       if (results[6].status === 'fulfilled') setContentStats(results[6].value);
+      if (results[7].status === 'fulfilled') setExternalAnalytics(results[7].value);
 
       setLoading(false);
     };
@@ -227,6 +233,45 @@ export default function Dashboard() {
       href: '/messaging/chat',
       color: 'from-purple-500 to-purple-600',
       metrics: [],
+    },
+    {
+      title: 'Champion Enrollment',
+      icon: Shield,
+      href: '/analytics/unified',
+      color: 'from-indigo-500 to-indigo-600',
+      metrics: externalAnalytics?.champion_enrollment?.configured
+        ? [
+            { label: 'Users', value: externalAnalytics.champion_enrollment.total_users },
+            { label: 'Agents', value: externalAnalytics.champion_enrollment.total_agents },
+            { label: 'Enrollments', value: externalAnalytics.champion_enrollment.total_enrollments },
+          ]
+        : [{ label: 'Status', value: 'Not configured' }],
+    },
+    {
+      title: 'Mobile App',
+      icon: Smartphone,
+      href: '/analytics/unified',
+      color: 'from-cyan-500 to-cyan-600',
+      metrics: externalAnalytics?.mobile_app?.configured
+        ? [
+            { label: 'Users', value: externalAnalytics.mobile_app.total_users },
+            { label: 'Active', value: externalAnalytics.mobile_app.active_users },
+            { label: 'Sessions (30d)', value: externalAnalytics.mobile_app.recent_sessions_30d },
+          ]
+        : [{ label: 'Status', value: 'Not configured' }],
+    },
+    {
+      title: 'Web Traffic',
+      icon: Globe,
+      href: '/analytics/unified',
+      color: 'from-green-500 to-green-600',
+      metrics: externalAnalytics?.ga4?.configured
+        ? [
+            { label: 'Sessions', value: externalAnalytics.ga4.total_sessions.toLocaleString() },
+            { label: 'Page Views', value: externalAnalytics.ga4.total_page_views.toLocaleString() },
+            { label: 'Bounce', value: `${externalAnalytics.ga4.bounce_rate.toFixed(1)}%` },
+          ]
+        : [{ label: 'Status', value: 'Not configured' }],
     },
     {
       title: 'System Health',

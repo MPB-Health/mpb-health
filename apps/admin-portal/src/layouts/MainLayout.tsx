@@ -106,6 +106,7 @@ const navigation: NavItem[] = [
     icon: LineChart,
     children: [
       { name: 'Overview', href: '/analytics/overview' },
+      { name: 'Unified Analytics', href: '/analytics/unified' },
     ],
   },
   {

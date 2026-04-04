@@ -97,6 +97,131 @@ async function safeCountSince(
   }
 }
 
+async function safeCountBool(
+  client: SupabaseClient,
+  table: string,
+  column: string,
+  value: boolean,
+): Promise<number> {
+  try {
+    const { count, error } = await client
+      .from(table)
+      .select("*", { count: "exact", head: true })
+      .eq(column, value);
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Auth Admin API — real user counts from the Supabase auth system
+// ---------------------------------------------------------------------------
+
+interface AuthCounts {
+  total: number;
+  active_30d: number;
+}
+
+async function getAuthCounts(
+  client: SupabaseClient,
+  recentDays = 30,
+): Promise<AuthCounts> {
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - recentDays);
+
+    let total = 0;
+    let active = 0;
+    let page = 1;
+    const perPage = 1000;
+
+    while (true) {
+      const { data, error } = await client.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+
+      if (error || !data?.users?.length) break;
+
+      for (const user of data.users) {
+        total++;
+        if (
+          user.last_sign_in_at &&
+          new Date(user.last_sign_in_at) >= since
+        ) {
+          active++;
+        }
+      }
+
+      if (data.users.length < perPage) break;
+      page++;
+      if (page > 50) break;
+    }
+
+    return { total, active_30d: active };
+  } catch (err) {
+    log.warn("Auth admin API unavailable", { error: String(err) });
+    return { total: 0, active_30d: 0 };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Multi-strategy active-user detection from tables
+// ---------------------------------------------------------------------------
+
+async function countActiveUsersFromTables(
+  client: SupabaseClient,
+  tables: string[],
+): Promise<number> {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const since = thirtyDaysAgo.toISOString();
+
+  const strategies: Promise<number>[] = [];
+
+  for (const table of tables) {
+    strategies.push(safeCount(client, table, { column: "status", value: "active" }));
+    strategies.push(safeCount(client, table, { column: "status", value: "enabled" }));
+    strategies.push(safeCount(client, table, { column: "status", value: "verified" }));
+    strategies.push(safeCount(client, table, { column: "status", value: "confirmed" }));
+    strategies.push(safeCountBool(client, table, "is_active", true));
+    strategies.push(safeCountBool(client, table, "active", true));
+    strategies.push(safeCountBool(client, table, "email_confirmed", true));
+    strategies.push(safeCountSince(client, table, "last_sign_in_at", since));
+    strategies.push(safeCountSince(client, table, "last_seen_at", since));
+    strategies.push(safeCountSince(client, table, "last_login_at", since));
+    strategies.push(safeCountSince(client, table, "last_active_at", since));
+  }
+
+  const results = await Promise.allSettled(strategies);
+  let best = 0;
+  for (const r of results) {
+    if (r.status === "fulfilled" && r.value > best) best = r.value;
+  }
+  return best;
+}
+
+// ---------------------------------------------------------------------------
+// Highest non-zero count across multiple tables
+// ---------------------------------------------------------------------------
+
+async function bestCount(
+  client: SupabaseClient,
+  tables: string[],
+  filter?: { column: string; value: string },
+): Promise<number> {
+  const results = await Promise.allSettled(
+    tables.map((t) => safeCount(client, t, filter)),
+  );
+  let best = 0;
+  for (const r of results) {
+    if (r.status === "fulfilled" && r.value > best) best = r.value;
+  }
+  return best;
+}
+
 async function safeTrendByDay(
   client: SupabaseClient,
   table: string,
@@ -160,12 +285,15 @@ async function discoverSchema(
 
   // Fallback: query well-known tables and see which ones exist
   const candidates = [
-    "profiles", "users", "agents", "agent_profiles",
+    "profiles", "users", "agents", "agent_profiles", "app_users", "accounts",
     "enrollments", "subscriptions", "billing", "payments", "invoices",
     "plans", "products", "organizations", "companies",
     "sessions", "app_sessions", "analytics", "app_analytics",
-    "notifications", "messages", "tickets", "activity_log",
-    "members", "dependents", "claims", "providers",
+    "user_activity", "app_events", "user_events", "login_history",
+    "user_sessions", "activity_log",
+    "notifications", "messages", "tickets",
+    "members", "enrollees", "beneficiaries", "clients", "customers",
+    "dependents", "claims", "providers", "patients",
   ];
 
   const tables: { name: string; row_count: number }[] = [];
@@ -220,43 +348,44 @@ async function getChampionStats(): Promise<ChampionStats> {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const since30 = thirtyDaysAgo.toISOString();
 
-  // Try multiple common table-name patterns for each entity
+  const userTables = [
+    "profiles", "users", "members", "enrollees",
+    "beneficiaries", "clients", "customers", "patients",
+  ];
+  const agentTables = ["agents", "agent_profiles"];
+  const enrollTables = ["enrollments", "subscriptions"];
+  const billingTables = ["billing", "payments", "invoices"];
+
   const [
-    totalUsers, activeUsers,
+    authCounts,
+    tableUsers, tableActiveUsers,
     totalAgents, activeAgents,
     totalEnrollments, pendingEnrollments, approvedEnrollments,
     totalBilling,
     recentSignups, recentEnrollments,
   ] = await Promise.all([
-    // Users (try profiles first, then users)
-    safeCount(client, "profiles").then(c => c || safeCount(client, "users")),
-    safeCount(client, "profiles", { column: "status", value: "active" })
-      .then(c => c || safeCount(client, "users", { column: "status", value: "active" })),
-    // Agents
-    safeCount(client, "agents").then(c => c || safeCount(client, "agent_profiles")),
-    safeCount(client, "agents", { column: "status", value: "active" })
-      .then(c => c || safeCount(client, "agent_profiles", { column: "status", value: "active" })),
-    // Enrollments
-    safeCount(client, "enrollments").then(c => c || safeCount(client, "subscriptions")),
-    safeCount(client, "enrollments", { column: "status", value: "pending" })
-      .then(c => c || safeCount(client, "subscriptions", { column: "status", value: "pending" })),
-    safeCount(client, "enrollments", { column: "status", value: "approved" })
-      .then(c => c || safeCount(client, "subscriptions", { column: "status", value: "approved" })
-        .then(c2 => c2 || safeCount(client, "enrollments", { column: "status", value: "active" }))),
-    // Billing
-    safeCount(client, "billing").then(c => c || safeCount(client, "payments")
-      .then(c2 => c2 || safeCount(client, "invoices"))),
-    // Recent activity
-    safeCountSince(client, "profiles", "created_at", since30)
-      .then(c => c || safeCountSince(client, "users", "created_at", since30)),
-    safeCountSince(client, "enrollments", "created_at", since30)
-      .then(c => c || safeCountSince(client, "subscriptions", "created_at", since30)),
+    getAuthCounts(client, 30),
+    bestCount(client, userTables),
+    countActiveUsersFromTables(client, userTables),
+    bestCount(client, agentTables),
+    countActiveUsersFromTables(client, agentTables),
+    bestCount(client, enrollTables),
+    bestCount(client, enrollTables, { column: "status", value: "pending" }),
+    bestCount(client, enrollTables, { column: "status", value: "approved" })
+      .then(c => c || bestCount(client, enrollTables, { column: "status", value: "active" })),
+    bestCount(client, billingTables),
+    Promise.all(
+      userTables.map(t => safeCountSince(client, t, "created_at", since30)),
+    ).then(r => Math.max(...r, 0)),
+    Promise.all(
+      enrollTables.map(t => safeCountSince(client, t, "created_at", since30)),
+    ).then(r => Math.max(...r, 0)),
   ]);
 
   return {
     configured: true,
-    total_users: totalUsers,
-    active_users: activeUsers,
+    total_users: Math.max(authCounts.total, tableUsers),
+    active_users: Math.max(authCounts.active_30d, tableActiveUsers),
     total_agents: totalAgents,
     active_agents: activeAgents,
     total_enrollments: totalEnrollments,
@@ -315,25 +444,36 @@ async function getMobileStats(): Promise<MobileStats> {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const since30 = thirtyDaysAgo.toISOString();
 
+  const userTables = [
+    "profiles", "users", "members", "app_users", "accounts",
+  ];
+  const sessionTables = [
+    "sessions", "app_sessions", "analytics", "app_analytics",
+    "user_activity", "app_events", "user_events", "login_history",
+    "activity_log", "user_sessions",
+  ];
+
   const [
-    totalUsers, activeUsers,
+    authCounts,
+    tableUsers, tableActiveUsers,
     totalSessions, recentSessions, recentSignups,
   ] = await Promise.all([
-    safeCount(client, "profiles").then(c => c || safeCount(client, "users")),
-    safeCount(client, "profiles", { column: "status", value: "active" })
-      .then(c => c || safeCount(client, "users", { column: "status", value: "active" })),
-    safeCount(client, "sessions").then(c => c || safeCount(client, "app_sessions")
-      .then(c2 => c2 || safeCount(client, "analytics"))),
-    safeCountSince(client, "sessions", "created_at", since30)
-      .then(c => c || safeCountSince(client, "app_sessions", "created_at", since30)),
-    safeCountSince(client, "profiles", "created_at", since30)
-      .then(c => c || safeCountSince(client, "users", "created_at", since30)),
+    getAuthCounts(client, 30),
+    bestCount(client, userTables),
+    countActiveUsersFromTables(client, userTables),
+    bestCount(client, sessionTables),
+    Promise.all(
+      sessionTables.map(t => safeCountSince(client, t, "created_at", since30)),
+    ).then(r => Math.max(...r, 0)),
+    Promise.all(
+      userTables.map(t => safeCountSince(client, t, "created_at", since30)),
+    ).then(r => Math.max(...r, 0)),
   ]);
 
   return {
     configured: true,
-    total_users: totalUsers,
-    active_users: activeUsers,
+    total_users: Math.max(authCounts.total, tableUsers),
+    active_users: Math.max(authCounts.active_30d, tableActiveUsers),
     total_sessions: totalSessions,
     recent_sessions_30d: recentSessions,
     recent_signups_30d: recentSignups,

@@ -1,0 +1,37 @@
+{
+  "name": "@mpbhealth/staff-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5178",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mpbhealth/auth": "workspace:*",
+    "@mpbhealth/config": "workspace:*",
+    "@mpbhealth/database": "workspace:*",
+    "@mpbhealth/ui": "workspace:*",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@mpbhealth/eslint-config": "workspace:*",
+    "@mpbhealth/tailwind-config": "workspace:*",
+    "@mpbhealth/typescript-config": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "autoprefixer": "catalog:",
+    "postcss": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

@@ -35,7 +35,7 @@ import {
   type ChampionTrends,
   type MobileTrends,
 } from '@mpbhealth/admin-core';
-import { MetricCard, useChartTheme } from '@mpbhealth/ui';
+import { MetricCard, InfoTip, useChartTheme } from '@mpbhealth/ui';
 
 type SourceTab = 'all' | 'champion' | 'mobile' | 'support' | 'web';
 type DateRange = 7 | 14 | 30 | 60 | 90;
@@ -110,7 +110,13 @@ export default function UnifiedAnalytics() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Unified Analytics</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-th-text-primary">Unified Analytics</h1>
+            <InfoTip
+              size="md"
+              content="All data on this page is pulled in real time via secure read-only Edge Function proxies. External Supabase projects are queried with service-role keys (read-only, no writes). GA4 data comes from the Google Analytics Data API. Nothing here modifies any external system."
+            />
+          </div>
           <p className="text-sm text-th-text-tertiary mt-1">
             Consolidated view across all platforms and systems
           </p>
@@ -175,33 +181,39 @@ export default function UnifiedAnalytics() {
                 label="Total Users (All)"
                 value={totalUsersAcross.toLocaleString()}
                 icon={<Users className="w-5 h-5" />}
+                tooltip="Combined user count across Champion Enrollment + Mobile App Supabase Auth systems. Does not include internal MPB admin users."
               />
               <MetricCard
                 label="Champion Users"
                 value={champion?.total_users?.toLocaleString() ?? '—'}
                 icon={<Shield className="w-5 h-5" />}
+                tooltip="Registered users in the Champion Enrollment System. Counted from Supabase Auth. Trend shows new signups in the last 30 days."
                 trend={champion?.recent_signups_30d ? { value: champion.recent_signups_30d, label: 'new 30d' } : undefined}
               />
               <MetricCard
                 label="Mobile Users"
                 value={mobile?.total_users?.toLocaleString() ?? '—'}
                 icon={<Smartphone className="w-5 h-5" />}
+                tooltip="Registered users in the Mobile App. Counted from Supabase Auth. Trend shows new signups in the last 30 days."
                 trend={mobile?.recent_signups_30d ? { value: mobile.recent_signups_30d, label: 'new 30d' } : undefined}
               />
               <MetricCard
                 label="Enrollments"
                 value={champion?.total_enrollments?.toLocaleString() ?? '—'}
                 icon={<UserCheck className="w-5 h-5" />}
+                tooltip="Total enrollment records in the Champion system across all statuses (pending, approved, active)."
               />
               <MetricCard
                 label="Agents"
                 value={champion?.total_agents?.toLocaleString() ?? '—'}
                 icon={<Briefcase className="w-5 h-5" />}
+                tooltip="Licensed agents and brokers registered in the Champion Enrollment System."
               />
               <MetricCard
                 label="Open Tickets"
                 value={(support?.open ?? 0) + (support?.pending ?? 0)}
                 icon={<LifeBuoy className="w-5 h-5" />}
+                tooltip="Support tickets currently open or pending a response. Sum of 'open' + 'pending' statuses from ITSTS."
               />
             </div>
           )}
@@ -212,6 +224,7 @@ export default function UnifiedAnalytics() {
               <h2 className="text-lg font-semibold text-th-text-primary flex items-center gap-2">
                 <Shield className="w-5 h-5 text-indigo-500" />
                 Champion Enrollment System
+                <InfoTip content="Data from the Champion Enrollment Supabase project. Fetched via secure read-only Edge Function proxy using a service-role key. No data is written back — this is strictly read-only." />
                 {!champion?.configured && (
                   <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
                     <AlertCircle className="w-3 h-3" /> Not Configured
@@ -222,29 +235,38 @@ export default function UnifiedAnalytics() {
               {champion?.configured ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    <MetricCard label="Total Users" value={champion.total_users.toLocaleString()} icon={<Users className="w-5 h-5" />} />
-                    <MetricCard label="Active Users" value={champion.active_users.toLocaleString()} icon={<UserCheck className="w-5 h-5" />} />
-                    <MetricCard label="Agents" value={champion.total_agents.toLocaleString()} icon={<Briefcase className="w-5 h-5" />} />
-                    <MetricCard label="Enrollments" value={champion.total_enrollments.toLocaleString()} icon={<TrendingUp className="w-5 h-5" />} />
-                    <MetricCard label="Billing Records" value={champion.total_billing_records.toLocaleString()} icon={<CreditCard className="w-5 h-5" />} />
+                    <MetricCard label="Total Users" value={champion.total_users.toLocaleString()} icon={<Users className="w-5 h-5" />} tooltip="All registered users in the Champion Supabase Auth system — includes admins, staff, agents, and enrollees. The higher of Auth count vs. profile table count is shown." />
+                    <MetricCard label="Active Users" value={champion.active_users.toLocaleString()} icon={<UserCheck className="w-5 h-5" />} tooltip="Users who signed in within the last 30 days. Detected via Supabase Auth last_sign_in_at or table-level activity columns." />
+                    <MetricCard label="Agents" value={champion.total_agents.toLocaleString()} icon={<Briefcase className="w-5 h-5" />} tooltip="Licensed agents/brokers registered in the Champion system. Counted from the agents or agent_profiles table." />
+                    <MetricCard label="Enrollments" value={champion.total_enrollments.toLocaleString()} icon={<TrendingUp className="w-5 h-5" />} tooltip="Total enrollment records across all statuses (pending, approved, active). From the enrollments or subscriptions table." />
+                    <MetricCard label="Billing Records" value={champion.total_billing_records.toLocaleString()} icon={<CreditCard className="w-5 h-5" />} tooltip="Billing, payment, or invoice records in the Champion database." />
                   </div>
 
                   {/* Enrollment breakdown */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="card-premium p-5">
-                      <p className="text-sm text-th-text-tertiary">Pending</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm text-th-text-tertiary">Pending</p>
+                        <InfoTip content="Enrollments submitted but not yet reviewed. These may need admin or agent action." />
+                      </div>
                       <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">
                         {champion.pending_enrollments.toLocaleString()}
                       </p>
                     </div>
                     <div className="card-premium p-5">
-                      <p className="text-sm text-th-text-tertiary">Approved</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm text-th-text-tertiary">Approved</p>
+                        <InfoTip content="Enrollments that have been reviewed and approved. May also include enrollments with status 'active'." />
+                      </div>
                       <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
                         {champion.approved_enrollments.toLocaleString()}
                       </p>
                     </div>
                     <div className="card-premium p-5">
-                      <p className="text-sm text-th-text-tertiary">New Signups (30d)</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm text-th-text-tertiary">New Signups (30d)</p>
+                        <InfoTip content="Users who registered in the Champion system within the last 30 days. Based on profile/user created_at timestamps." />
+                      </div>
                       <p className="text-3xl font-bold text-th-accent-600 mt-1">
                         {champion.recent_signups_30d.toLocaleString()}
                       </p>
@@ -255,7 +277,10 @@ export default function UnifiedAnalytics() {
                   {championTrends?.configured && (championTrends.user_signups.length > 0 || championTrends.enrollments.length > 0) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="card-premium p-6">
-                        <h3 className="font-semibold text-th-text-primary mb-1">User Signups</h3>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <h3 className="font-semibold text-th-text-primary">User Signups</h3>
+                          <InfoTip content="Daily new user registrations in the Champion system. Based on profile/user created_at dates." />
+                        </div>
                         <p className="text-xs text-th-text-tertiary mb-4">Last {dateRange} days</p>
                         <div className="h-56">
                           <ResponsiveContainer width="100%" height="100%">
@@ -270,7 +295,10 @@ export default function UnifiedAnalytics() {
                         </div>
                       </div>
                       <div className="card-premium p-6">
-                        <h3 className="font-semibold text-th-text-primary mb-1">Enrollments</h3>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <h3 className="font-semibold text-th-text-primary">Enrollments</h3>
+                          <InfoTip content="Daily enrollment submissions in the Champion system. From the enrollments/subscriptions table created_at dates." />
+                        </div>
                         <p className="text-xs text-th-text-tertiary mb-4">Last {dateRange} days</p>
                         <div className="h-56">
                           <ResponsiveContainer width="100%" height="100%">
@@ -299,6 +327,7 @@ export default function UnifiedAnalytics() {
               <h2 className="text-lg font-semibold text-th-text-primary flex items-center gap-2">
                 <Smartphone className="w-5 h-5 text-blue-500" />
                 Mobile App
+                <InfoTip content="Data from the Mobile App Supabase project. User counts come from Supabase Auth (real registered users). Active users = signed in within 30 days. Read-only proxy, no writes." />
                 {!mobile?.configured && (
                   <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
                     <AlertCircle className="w-3 h-3" /> Not Configured
@@ -309,17 +338,20 @@ export default function UnifiedAnalytics() {
               {mobile?.configured ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <MetricCard label="Total Users" value={mobile.total_users.toLocaleString()} icon={<Users className="w-5 h-5" />} />
-                    <MetricCard label="Active Users" value={mobile.active_users.toLocaleString()} icon={<UserCheck className="w-5 h-5" />} />
-                    <MetricCard label="Total Sessions" value={mobile.total_sessions.toLocaleString()} icon={<Activity className="w-5 h-5" />} />
-                    <MetricCard label="Sessions (30d)" value={mobile.recent_sessions_30d.toLocaleString()} icon={<TrendingUp className="w-5 h-5" />} />
-                    <MetricCard label="New Users (30d)" value={mobile.recent_signups_30d.toLocaleString()} icon={<Users className="w-5 h-5" />} />
+                    <MetricCard label="Total Users" value={mobile.total_users.toLocaleString()} icon={<Users className="w-5 h-5" />} tooltip="All registered users from the Mobile App Supabase Auth system. The higher of Auth count vs. profile table count is shown." />
+                    <MetricCard label="Active Users" value={mobile.active_users.toLocaleString()} icon={<UserCheck className="w-5 h-5" />} tooltip="Users who signed in to the mobile app within the last 30 days. Based on Supabase Auth last_sign_in_at or table-level activity columns." />
+                    <MetricCard label="Total Sessions" value={mobile.total_sessions.toLocaleString()} icon={<Activity className="w-5 h-5" />} tooltip="Total app session records if tracked in the database. Shows 0 if the app doesn't store session data in a sessions table." />
+                    <MetricCard label="Sessions (30d)" value={mobile.recent_sessions_30d.toLocaleString()} icon={<TrendingUp className="w-5 h-5" />} tooltip="App sessions recorded in the last 30 days. Requires a sessions/activity table in the mobile project." />
+                    <MetricCard label="New Users (30d)" value={mobile.recent_signups_30d.toLocaleString()} icon={<Users className="w-5 h-5" />} tooltip="Users who registered for the mobile app in the last 30 days. Based on profile/user created_at timestamps." />
                   </div>
 
                   {mobileTrends?.configured && (mobileTrends.user_signups.length > 0 || mobileTrends.sessions.length > 0) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="card-premium p-6">
-                        <h3 className="font-semibold text-th-text-primary mb-1">User Signups</h3>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <h3 className="font-semibold text-th-text-primary">User Signups</h3>
+                          <InfoTip content="Daily new user registrations in the mobile app. Based on profile created_at dates." />
+                        </div>
                         <p className="text-xs text-th-text-tertiary mb-4">Last {dateRange} days</p>
                         <div className="h-56">
                           <ResponsiveContainer width="100%" height="100%">
@@ -334,7 +366,10 @@ export default function UnifiedAnalytics() {
                         </div>
                       </div>
                       <div className="card-premium p-6">
-                        <h3 className="font-semibold text-th-text-primary mb-1">Sessions</h3>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <h3 className="font-semibold text-th-text-primary">Sessions</h3>
+                          <InfoTip content="Daily app session count from the mobile project's sessions or activity table." />
+                        </div>
                         <p className="text-xs text-th-text-tertiary mb-4">Last {dateRange} days</p>
                         <div className="h-56">
                           <ResponsiveContainer width="100%" height="100%">
@@ -363,6 +398,7 @@ export default function UnifiedAnalytics() {
               <h2 className="text-lg font-semibold text-th-text-primary flex items-center gap-2">
                 <Globe className="w-5 h-5 text-green-500" />
                 Web Traffic (Google Analytics)
+                <InfoTip content="Website analytics from Google Analytics 4 Data API. Data is fetched via an Edge Function that authenticates with a Google service account. Covers the mpb.health website." />
                 {ga4?.measurement_id && (
                   <span className="text-xs text-th-text-tertiary font-normal">
                     {ga4.measurement_id}
@@ -378,18 +414,21 @@ export default function UnifiedAnalytics() {
               {ga4?.configured ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <MetricCard label="Sessions" value={ga4.total_sessions.toLocaleString()} icon={<MousePointerClick className="w-5 h-5" />} />
-                    <MetricCard label="Page Views" value={ga4.total_page_views.toLocaleString()} icon={<Eye className="w-5 h-5" />} />
-                    <MetricCard label="Users" value={ga4.total_users.toLocaleString()} icon={<Users className="w-5 h-5" />} />
-                    <MetricCard label="New Users" value={ga4.new_users.toLocaleString()} icon={<UserCheck className="w-5 h-5" />} />
-                    <MetricCard label="Avg Duration" value={`${Math.round(ga4.avg_session_duration)}s`} icon={<Activity className="w-5 h-5" />} />
-                    <MetricCard label="Bounce Rate" value={`${ga4.bounce_rate.toFixed(1)}%`} icon={<TrendingUp className="w-5 h-5" />} />
+                    <MetricCard label="Sessions" value={ga4.total_sessions.toLocaleString()} icon={<MousePointerClick className="w-5 h-5" />} tooltip="Total website visits during the selected period. A session starts when a user visits and ends after 30 min of inactivity. Source: GA4 'sessions' metric." />
+                    <MetricCard label="Page Views" value={ga4.total_page_views.toLocaleString()} icon={<Eye className="w-5 h-5" />} tooltip="Total page views across all pages on mpb.health. Includes repeat views by the same user. Source: GA4 'screenPageViews' metric." />
+                    <MetricCard label="Users" value={ga4.total_users.toLocaleString()} icon={<Users className="w-5 h-5" />} tooltip="Unique visitors who accessed the website. Based on browser cookies/device ID. Source: GA4 'totalUsers' metric." />
+                    <MetricCard label="New Users" value={ga4.new_users.toLocaleString()} icon={<UserCheck className="w-5 h-5" />} tooltip="First-time visitors who had never visited the site before during this period. Source: GA4 'newUsers' metric." />
+                    <MetricCard label="Avg Duration" value={`${Math.round(ga4.avg_session_duration)}s`} icon={<Activity className="w-5 h-5" />} tooltip="Average time in seconds a visitor spends on the site per session. Longer = more engaged. Source: GA4 'averageSessionDuration' metric." />
+                    <MetricCard label="Bounce Rate" value={`${ga4.bounce_rate.toFixed(1)}%`} icon={<TrendingUp className="w-5 h-5" />} tooltip="Percentage of visitors who left after viewing only one page with no interaction. Lower is better. Source: GA4 'bounceRate' metric." />
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {ga4.top_pages.length > 0 && (
                       <div className="card-premium p-6">
-                        <h3 className="font-semibold text-th-text-primary mb-4">Top Pages</h3>
+                        <div className="flex items-center gap-1.5 mb-4">
+                          <h3 className="font-semibold text-th-text-primary">Top Pages</h3>
+                          <InfoTip content="Most viewed pages on mpb.health during the selected period, ranked by total page views. Source: GA4 pagePath dimension." />
+                        </div>
                         <div className="space-y-2">
                           {ga4.top_pages.map((page, i) => (
                             <div key={page.path} className="flex items-center justify-between py-2 border-b border-th-border/50 last:border-0">
@@ -408,7 +447,10 @@ export default function UnifiedAnalytics() {
 
                     {ga4.top_sources.length > 0 && (
                       <div className="card-premium p-6">
-                        <h3 className="font-semibold text-th-text-primary mb-4">Traffic Sources</h3>
+                        <div className="flex items-center gap-1.5 mb-4">
+                          <h3 className="font-semibold text-th-text-primary">Traffic Sources</h3>
+                          <InfoTip content="Where your website visitors come from — google, direct, social media, referrals, etc. Source: GA4 sessionSource dimension." />
+                        </div>
                         <div className="h-56">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={ga4.top_sources} layout="vertical">
@@ -436,6 +478,7 @@ export default function UnifiedAnalytics() {
               <h2 className="text-lg font-semibold text-th-text-primary flex items-center gap-2">
                 <LifeBuoy className="w-5 h-5 text-amber-500" />
                 Support System (ITSTS)
+                <InfoTip content="Data from the ITSTS support/ticketing Supabase project. Ticket counts by status are queried via secure read-only Edge Function proxy." />
                 {!support?.configured && (
                   <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
                     <AlertCircle className="w-3 h-3" /> Not Configured
@@ -445,21 +488,33 @@ export default function UnifiedAnalytics() {
 
               {support?.configured ? (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <MetricCard label="Total Tickets" value={support.total.toLocaleString()} icon={<LifeBuoy className="w-5 h-5" />} />
+                  <MetricCard label="Total Tickets" value={support.total.toLocaleString()} icon={<LifeBuoy className="w-5 h-5" />} tooltip="Sum of all tickets across every status. Source: tickets table in ITSTS Supabase project." />
                   <div className="card-premium p-5">
-                    <p className="text-sm text-th-text-tertiary">New</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm text-th-text-tertiary">New</p>
+                      <InfoTip content="Newly created tickets that haven't been reviewed or assigned yet." />
+                    </div>
                     <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{support.new_tickets}</p>
                   </div>
                   <div className="card-premium p-5">
-                    <p className="text-sm text-th-text-tertiary">Open</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm text-th-text-tertiary">Open</p>
+                      <InfoTip content="Tickets currently being worked on by support staff." />
+                    </div>
                     <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{support.open}</p>
                   </div>
                   <div className="card-premium p-5">
-                    <p className="text-sm text-th-text-tertiary">Pending</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm text-th-text-tertiary">Pending</p>
+                      <InfoTip content="Tickets awaiting additional information from the requester or an external action." />
+                    </div>
                     <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{support.pending}</p>
                   </div>
                   <div className="card-premium p-5">
-                    <p className="text-sm text-th-text-tertiary">Closed</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm text-th-text-tertiary">Closed</p>
+                      <InfoTip content="Tickets that have been resolved and closed. No further action needed." />
+                    </div>
                     <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{support.closed}</p>
                   </div>
                 </div>

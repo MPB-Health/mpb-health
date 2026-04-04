@@ -1,11 +1,13 @@
 import React from 'react';
 import { cn } from '../utils';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { InfoTip } from './InfoTip';
 
 export interface MetricCardProps {
   label: string;
   value: React.ReactNode;
   icon?: React.ReactNode;
+  tooltip?: string;
   trend?: {
     value: number;
     label?: string;
@@ -20,6 +22,7 @@ export function MetricCard({
   label,
   value,
   icon,
+  tooltip,
   trend,
   className,
   accentBorder = true,
@@ -50,9 +53,12 @@ export function MetricCard({
 
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-th-text-secondary truncate">
-            {label}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium text-th-text-secondary truncate">
+              {label}
+            </p>
+            {tooltip && <InfoTip content={tooltip} />}
+          </div>
           <p className="mt-2 text-2xl font-bold text-th-text-primary tracking-tight">
             {value}
           </p>

@@ -46,8 +46,8 @@ import {
   type AuditLog,
   type CombinedAnalytics,
 } from '@mpbhealth/admin-core';
-import { MetricCard, useChartTheme } from '@mpbhealth/ui';
-import { Smartphone, Globe } from 'lucide-react';
+import { MetricCard, InfoTip, useChartTheme } from '@mpbhealth/ui';
+import { Smartphone, Globe, Info } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -150,36 +150,42 @@ export default function Dashboard() {
       value: metrics?.total_users || 0,
       change: 12,
       icon: Users,
+      tooltip: 'All registered users in the MPB Health admin platform. Source: primary Supabase auth system.',
     },
     {
       name: 'Active Advisors',
       value: metrics?.active_advisors || 0,
       change: 5,
       icon: UserPlus,
+      tooltip: 'Insurance advisors currently active on the platform. Source: internal advisor profiles database.',
     },
     {
       name: 'Active Members',
       value: memberStats?.active || 0,
       change: memberStats?.new_this_month || 0,
       icon: Heart,
+      tooltip: 'Members with a current active enrollment. Trend shows new members added this month. Source: members table.',
     },
     {
       name: 'New Leads (Month)',
       value: metrics?.new_leads_this_month || 0,
       change: 23,
       icon: TrendingUp,
+      tooltip: 'New sales leads captured this calendar month across all channels. Source: CRM pipeline data.',
     },
     {
       name: 'Conversion Rate',
       value: `${(metrics?.conversion_rate || 0).toFixed(1)}%`,
       change: -2,
       icon: Activity,
+      tooltip: 'Percentage of leads that converted to enrolled members this month. Calculated as (converted / total leads) × 100.',
     },
     {
       name: 'Pending Enrollments',
       value: pendingEnrollments,
       change: 0,
       icon: Clock,
+      tooltip: 'Enrollment applications submitted but awaiting admin review and approval. These require manual action.',
     },
   ];
 
@@ -190,6 +196,7 @@ export default function Dashboard() {
       icon: TrendingUp,
       href: '/crm/dashboard',
       color: 'from-blue-500 to-blue-600',
+      source: 'Internal CRM — tracks leads from first contact through conversion',
       metrics: [
         { label: 'Total Leads', value: crmSummary?.total_leads ?? '—' },
         { label: 'New Today', value: crmSummary?.new_today ?? '—' },
@@ -201,6 +208,7 @@ export default function Dashboard() {
       icon: Heart,
       href: '/members',
       color: 'from-rose-500 to-rose-600',
+      source: 'Primary MPB database — active = currently enrolled members',
       metrics: [
         { label: 'Total', value: memberStats?.total ?? '—' },
         { label: 'Active', value: memberStats?.active ?? '—' },
@@ -212,6 +220,7 @@ export default function Dashboard() {
       icon: LifeBuoy,
       href: '/support/tickets',
       color: 'from-amber-500 to-amber-600',
+      source: 'Internal task system — action items requiring follow-up',
       metrics: [
         { label: 'Pending Tasks', value: crmSummary?.pending_tasks ?? '—' },
       ],
@@ -221,6 +230,7 @@ export default function Dashboard() {
       icon: FileText,
       href: '/content/bulletins',
       color: 'from-emerald-500 to-emerald-600',
+      source: 'Content management system — published items only',
       metrics: [
         { label: 'Bulletins', value: contentStats?.bulletins ?? '—' },
         { label: 'Videos', value: contentStats?.videos ?? '—' },
@@ -232,6 +242,7 @@ export default function Dashboard() {
       icon: MessageSquare,
       href: '/messaging/chat',
       color: 'from-purple-500 to-purple-600',
+      source: 'Internal messaging for team communication',
       metrics: [],
     },
     {
@@ -239,6 +250,7 @@ export default function Dashboard() {
       icon: Shield,
       href: '/analytics/unified',
       color: 'from-indigo-500 to-indigo-600',
+      source: 'External Supabase project — read-only via secure Edge Function proxy',
       metrics: externalAnalytics?.champion_enrollment?.configured
         ? [
             { label: 'Users', value: externalAnalytics.champion_enrollment.total_users },
@@ -252,6 +264,7 @@ export default function Dashboard() {
       icon: Smartphone,
       href: '/analytics/unified',
       color: 'from-cyan-500 to-cyan-600',
+      source: 'External Supabase project — active = signed in within 30 days',
       metrics: externalAnalytics?.mobile_app?.configured
         ? [
             { label: 'Users', value: externalAnalytics.mobile_app.total_users },
@@ -265,6 +278,7 @@ export default function Dashboard() {
       icon: Globe,
       href: '/analytics/unified',
       color: 'from-green-500 to-green-600',
+      source: 'Google Analytics 4 — mpb.health website data',
       metrics: externalAnalytics?.ga4?.configured
         ? [
             { label: 'Sessions', value: externalAnalytics.ga4.total_sessions.toLocaleString() },
@@ -282,6 +296,7 @@ export default function Dashboard() {
         : overallStatus === 'degraded'
           ? 'from-yellow-500 to-yellow-600'
           : 'from-red-500 to-red-600',
+      source: 'Real-time status of Edge Functions, database, and storage',
       metrics: [
         {
           label: 'Status',
@@ -428,6 +443,7 @@ export default function Dashboard() {
             label={stat.name}
             value={stat.value}
             icon={<stat.icon className="w-6 h-6" />}
+            tooltip={stat.tooltip}
             trend={stat.change !== 0 ? { value: stat.change } : undefined}
           />
         ))}
@@ -466,6 +482,12 @@ export default function Dashboard() {
                 ) : (
                   <p className="text-sm text-th-text-tertiary">View details &rarr;</p>
                 )}
+                {section.source && (
+                  <p className="mt-3 pt-3 border-t border-th-border/30 text-[10px] text-th-text-tertiary/70 flex items-center gap-1">
+                    <Info className="w-3 h-3 flex-shrink-0" />
+                    {section.source}
+                  </p>
+                )}
               </div>
             </button>
           ))}
@@ -476,7 +498,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Lead activity chart */}
         <div className="card-premium p-6">
-          <h2 className="font-semibold text-th-text-primary mb-1">Lead Activity</h2>
+          <div className="flex items-center gap-1.5 mb-1">
+            <h2 className="font-semibold text-th-text-primary">Lead Activity</h2>
+            <InfoTip content="Daily count of new CRM leads over the past 14 days. Source: internal CRM pipeline events." />
+          </div>
           <p className="text-xs text-th-text-tertiary mb-6">Last 14 days</p>
           <div className="h-64">
             {loading ? (
@@ -530,7 +555,10 @@ export default function Dashboard() {
 
         {/* Lead sources chart */}
         <div className="card-premium p-6">
-          <h2 className="font-semibold text-th-text-primary mb-1">Top Lead Sources</h2>
+          <div className="flex items-center gap-1.5 mb-1">
+            <h2 className="font-semibold text-th-text-primary">Top Lead Sources</h2>
+            <InfoTip content="Where your leads come from — referrals, organic search, social media, etc. All-time totals. Source: CRM lead attribution data." />
+          </div>
           <p className="text-xs text-th-text-tertiary mb-6">All time</p>
           <div className="h-64">
             {loading ? (
@@ -571,7 +599,10 @@ export default function Dashboard() {
         {crmSummary && crmSummary.leads_by_stage.length > 0 && (
           <div className="card-premium p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-th-text-primary">CRM Pipeline</h2>
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-semibold text-th-text-primary">CRM Pipeline</h2>
+                <InfoTip content="Visual breakdown of leads by sales stage. Each segment is proportional to the count at that stage. Source: CRM pipeline." />
+              </div>
               <button
                 type="button"
                 onClick={() => navigate('/crm/dashboard')}
@@ -627,8 +658,11 @@ export default function Dashboard() {
 
         {/* Recent Activity Feed */}
         <div className="card-premium p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-th-text-primary">Recent Activity</h2>
+            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <h2 className="font-semibold text-th-text-primary">Recent Activity</h2>
+              <InfoTip content="Latest admin actions across the platform — logins, edits, approvals, etc. Source: audit log system." />
+            </div>
             <button
               type="button"
               onClick={() => navigate('/audit-logs')}

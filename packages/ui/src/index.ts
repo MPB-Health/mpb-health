@@ -39,6 +39,9 @@ export type { GradientHeaderProps } from './components/GradientHeader';
 export { MetricCard } from './components/MetricCard';
 export type { MetricCardProps } from './components/MetricCard';
 
+export { InfoTip } from './components/InfoTip';
+export type { InfoTipProps } from './components/InfoTip';
+
 export { StatusDot } from './components/StatusDot';
 export type { StatusDotProps } from './components/StatusDot';
 

@@ -26,6 +26,7 @@ https://crm.mpbhealth.com/reset-password
 https://crm.mpbhealth.com/**
 https://app.mpbhealth.com/reset-password
 https://app.mpbhealth.com/**
+https://portal.mpb.health/**
 ```
 
 4. **Save** the configuration.

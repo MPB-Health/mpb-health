@@ -20,6 +20,7 @@ export const DOMAINS = {
   admin: 'admin.mpb.health',
   training: 'training.mpb.health',
   support: 'support.mpb.health',
+  'staff-hub': 'portal.mpb.health',
 } as const;
 
 export const DEV_PORTS = {
@@ -29,6 +30,7 @@ export const DEV_PORTS = {
   crm: 5174,
   advisors: 5175,
   training: 5177,
+  'staff-hub': 5178,
 } as const;
 
 export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website' | 'support';

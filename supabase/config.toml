@@ -371,6 +371,12 @@ deno_version = 2
 [functions.ticket-proxy]
 verify_jwt = true
 
+# analytics-hub-proxy handles its own auth + admin role verification internally.
+# verify_jwt = false so the gateway passes OPTIONS preflight requests through
+# to the function's CORS handler (browser preflight carries no JWT).
+[functions.analytics-hub-proxy]
+verify_jwt = false
+
 # send-ticket-notification is called server-side (via service role) so its
 # requests never carry a user JWT. Disable gateway JWT verification and rely
 # on the function's own secret/signature check instead.

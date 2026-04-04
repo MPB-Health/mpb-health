@@ -86,7 +86,7 @@ export function FlowShell() {
       // Submit to CRM if user opted in for contact
       if (answers.contactOptIn && (answers.contactEmail || answers.contactPhone)) {
         try {
-          await leadSubmissionService.submitLead({
+          const leadResult = await leadSubmissionService.submitLead({
             firstName: answers.contactEmail?.split('@')[0] || 'Quick Start',
             lastName: 'Lead',
             email: answers.contactEmail || '',
@@ -107,6 +107,9 @@ export function FlowShell() {
               form_type: 'quick_start_plan_finder',
             },
           });
+          if (!leadResult.success) {
+            console.error('Lead submission failed:', leadResult.error);
+          }
         } catch (crmError) {
           console.error('Error submitting to CRM:', crmError);
         }

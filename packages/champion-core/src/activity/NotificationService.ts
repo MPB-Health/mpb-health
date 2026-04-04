@@ -42,6 +42,11 @@ export class NotificationService {
 
     if (options.category) {
       query = query.eq('category', options.category);
+    } else {
+      // Exclude 'support' category — ticket notifications now flow exclusively
+      // through notification_events (Activity tab). Legacy support entries in
+      // this table came from the deprecated ticket-webhook-receiver.
+      query = query.neq('category', 'support');
     }
 
     if (options.limit) {
@@ -306,7 +311,10 @@ export class NotificationService {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          callback(payload.new as Notification);
+          const notification = payload.new as Notification;
+          // Skip support category — handled exclusively via notification_events
+          if (notification.category === 'support') return;
+          callback(notification);
         }
       )
       .subscribe();

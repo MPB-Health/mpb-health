@@ -80,11 +80,11 @@ CREATE TABLE IF NOT EXISTS public.member_account_events (
 
 ALTER TABLE public.member_account_events OWNER TO postgres;
 
-CREATE INDEX idx_account_events_member ON public.member_account_events USING btree (member_id);
-CREATE INDEX idx_account_events_actor ON public.member_account_events USING btree (actor_user_id);
-CREATE INDEX idx_account_events_created ON public.member_account_events USING btree (created_at DESC);
-CREATE INDEX idx_account_events_type ON public.member_account_events USING btree (event_type);
-CREATE INDEX idx_account_events_department ON public.member_account_events USING btree (actor_department);
+CREATE INDEX IF NOT EXISTS idx_account_events_member ON public.member_account_events USING btree (member_id);
+CREATE INDEX IF NOT EXISTS idx_account_events_actor ON public.member_account_events USING btree (actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_account_events_created ON public.member_account_events USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_account_events_type ON public.member_account_events USING btree (event_type);
+CREATE INDEX IF NOT EXISTS idx_account_events_department ON public.member_account_events USING btree (actor_department);
 
 
 -- 3. Notification rules configuration table

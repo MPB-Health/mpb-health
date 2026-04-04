@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
-import { htmlToPlainPreview, sanitizeTicketHtml } from "../_shared/ticketHtmlSanitize.ts";
+import { sanitizeTicketHtml } from "../_shared/ticketHtmlSanitize.ts";
 
 const log = createLogger("ticket-proxy");
 
@@ -658,34 +658,6 @@ async function getCategories(_itstsAdmin: ReturnType<typeof createClient>) {
   return { categories };
 }
 
-// ── Email notification (fire-and-forget) ──────────────────────────────────────
-function fireNotification(payload: Record<string, unknown>): void {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceRoleKey) {
-    log.warn("send-ticket-notification skipped: missing env");
-    return;
-  }
-  fetch(`${supabaseUrl}/functions/v1/send-ticket-notification`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${serviceRoleKey}`,
-    },
-    body: JSON.stringify(payload),
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        log.error("send-ticket-notification failed", {
-          status: res.status,
-          body: body.slice(0, 500),
-        });
-      }
-    })
-    .catch((err) => log.error("send-ticket-notification fetch error", { err: String(err) }));
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
@@ -923,26 +895,8 @@ Deno.serve(async (req: Request) => {
           Boolean(body.is_internal),
           fmt,
         );
-        // Internal notes are never sent to the advisor — skip notification
-        if (!body.is_internal && result._notif?.requester_email) {
-          const commentPreview = fmt === "html"
-            ? htmlToPlainPreview(sanitizeTicketHtml(raw), 500)
-            : raw.slice(0, 500);
-          fireNotification({
-            event: "staff_replied",
-            ticket_id: body.ticket_id!,
-            ticket_number: result._notif.ticket_number,
-            subject: result._notif.subject,
-            priority: result._notif.priority,
-            status: result._notif.status,
-            advisor_email: result._notif.requester_email,
-            advisor_name: result._notif.requester_name,
-            agent_id: null,
-            company_name: null,
-            comment: commentPreview,
-            actor_name: user.email,
-          });
-        }
+        // Advisor notification for staff replies is handled by ITSTS
+        // database triggers on ticket_comments → send-ticket-notification webhook.
         break;
       }
 
@@ -971,19 +925,8 @@ Deno.serve(async (req: Request) => {
             agentId: ap?.agent_id || null,
             idempotencyKey,
           });
-          fireNotification({
-            event: "created",
-            ticket_id: result.ticket_id,
-            ticket_number: result.ticket_number,
-            subject: body.subject,
-            priority: body.priority || "medium",
-            status: "new",
-            category: body.category || null,
-            advisor_email: user.email,
-            advisor_name: ap?.full_name || user.email,
-            agent_id: ap?.agent_id || null,
-            company_name: ap?.company_name || null,
-          });
+          // Notifications (confirmation email, staff alerts) are handled by
+          // ITSTS database triggers — this project must not duplicate them.
         }
         break;
       case "reply": {
@@ -1015,28 +958,8 @@ Deno.serve(async (req: Request) => {
           );
         }
         result = await replyToTicket(itstsAdmin, itstsUserId!, body.ticket_id, raw, fmt);
-        const commentPreview = fmt === "html"
-          ? htmlToPlainPreview(sanitizeTicketHtml(raw), 500)
-          : raw.slice(0, 500);
-        {
-          const [{ data: rTicket }, { data: rAp }] = await Promise.all([
-            itstsAdmin.from("tickets").select("ticket_number, subject, priority, status").eq("id", body.ticket_id!).maybeSingle(),
-            itstsAdmin.from("profiles").select("full_name, agent_id, company_name").eq("id", itstsUserId!).maybeSingle(),
-          ]);
-          fireNotification({
-            event: "advisor_replied",
-            ticket_id: body.ticket_id!,
-            ticket_number: rTicket?.ticket_number,
-            subject: rTicket?.subject,
-            priority: rTicket?.priority,
-            status: rTicket?.status,
-            advisor_email: user.email,
-            advisor_name: rAp?.full_name || user.email,
-            agent_id: rAp?.agent_id || null,
-            company_name: rAp?.company_name || null,
-            comment: commentPreview,
-          });
-        }
+        // Staff notifications for advisor replies are handled by ITSTS
+        // database triggers on ticket_comments — not by this project.
         break;
       }
       case "get_categories":
@@ -1055,23 +978,8 @@ Deno.serve(async (req: Request) => {
           status: body.status,
           priority: body.priority,
         });
-        if (result._notif?.requester_email) {
-          fireNotification({
-            event: "status_changed",
-            ticket_id: body.ticket_id!,
-            ticket_number: result._notif.ticket_number,
-            subject: result._notif.subject,
-            advisor_email: result._notif.requester_email,
-            advisor_name: result._notif.requester_name,
-            agent_id: null,
-            company_name: null,
-            old_status: result._notif.old_status,
-            new_status: body.status || null,
-            old_priority: result._notif.old_priority,
-            new_priority: body.priority || null,
-            actor_name: user.email,
-          });
-        }
+        // Advisor notification for status/priority changes is handled by
+        // ITSTS database triggers on tickets → send-ticket-notification webhook.
         break;
       case "create_for_advisor": {
         if (!body.advisor_email) {
@@ -1108,20 +1016,7 @@ Deno.serve(async (req: Request) => {
             agentId: caAp?.agent_id || null,
             idempotencyKey: req.headers.get("x-idempotency-key") || null,
           });
-          fireNotification({
-            event: "created_for_advisor",
-            ticket_id: result.ticket_id,
-            ticket_number: result.ticket_number,
-            subject: body.subject!,
-            priority: body.priority || "medium",
-            status: "new",
-            category: body.category || null,
-            advisor_email: body.advisor_email!,
-            advisor_name: caAp?.full_name || body.advisor_email!,
-            agent_id: caAp?.agent_id || null,
-            company_name: caAp?.company_name || null,
-            actor_name: user.email,
-          });
+          // Advisor notification is handled by ITSTS database triggers.
         }
         break;
       }

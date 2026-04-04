@@ -253,7 +253,7 @@ export default function HeroCalculator() {
       else if (data.householdType === 'member-child') householdSize = 1 + (data.dependentsCount || 0);
       else if (data.householdType === 'member-family') householdSize = 2 + (data.dependentsCount || 0);
 
-      await leadSubmissionService.submitLead({
+      const result = await leadSubmissionService.submitLead({
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -277,6 +277,10 @@ export default function HeroCalculator() {
           best_match_percentage: inlineResults.recommendations[0]?.matchPercentage || 0,
         },
       });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit lead');
+      }
 
       track({
         event: AnalyticsEvents.CALCULATE_RATE,

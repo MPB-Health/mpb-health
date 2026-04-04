@@ -565,7 +565,16 @@ async function isPushEnabledForTickets(
 }
 
 /**
+ * Deduplication window — ignore a notification_events insert if an identical
+ * (user_id + source_id + event_type) row was created within this many seconds.
+ * Prevents duplicates from ticket-proxy retries or overlapping ITSTS triggers.
+ */
+const DEDUP_WINDOW_SECONDS = 120;
+
+/**
  * Create in-app notification event and trigger browser/PWA push for a target user.
+ * Includes a deduplication check to prevent the same ticket event from producing
+ * multiple notifications within a short window.
  */
 async function sendInAppAndPush(
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -573,11 +582,32 @@ async function sendInAppAndPush(
   ticketId: string,
   supabaseUrl: string,
   serviceRoleKey: string,
-): Promise<void> {
-  // 1. Check user's notification preferences
+): Promise<boolean> {
+  // 1. Deduplication: skip if an identical notification was recently created
+  const cutoff = new Date(Date.now() - DEDUP_WINDOW_SECONDS * 1000).toISOString();
+  const { data: existing } = await supabaseAdmin
+    .from("notification_events")
+    .select("id")
+    .eq("user_id", target.user_id)
+    .eq("source_id", ticketId)
+    .eq("event_type", target.event_type)
+    .gte("created_at", cutoff)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    log.info("Dedup: skipping duplicate notification", {
+      userId: target.user_id,
+      ticketId,
+      eventType: target.event_type,
+      existingId: existing[0].id,
+    });
+    return false;
+  }
+
+  // 2. Check user's notification preferences
   const pushEnabled = await isPushEnabledForTickets(supabaseAdmin, target.user_id);
 
-  // 2. Insert in-app notification event (always — respects in-app bell icon)
+  // 3. Insert in-app notification event (always — respects in-app bell icon)
   const { error: eventErr } = await supabaseAdmin
     .from("notification_events")
     .insert({
@@ -595,9 +625,10 @@ async function sendInAppAndPush(
 
   if (eventErr) {
     log.error("Failed to create notification event", { userId: target.user_id, error: eventErr.message });
+    return false;
   }
 
-  // 3. Trigger push notification if user has it enabled
+  // 4. Trigger push notification if user has it enabled
   if (pushEnabled) {
     fetch(`${supabaseUrl}/functions/v1/push-service`, {
       method: "POST",
@@ -617,6 +648,8 @@ async function sendInAppAndPush(
       log.error("Push notification call failed", { userId: target.user_id, error: String(err) });
     });
   }
+
+  return true;
 }
 
 // ── Constant-time string comparison ───────────────────────────────────────────
@@ -671,13 +704,28 @@ Deno.serve(async (req: Request) => {
       advisor: payload.advisor_email,
     });
 
-    // ── 1. Email notifications (DISABLED) ─────────────────────────────────────
-    // Ticket email notifications via Resend are disabled to reduce advisor
-    // inbox noise caused by the ITSTS integration sending overlapping emails.
-    // In-app bell + push notifications below remain active.
-    const emailSent = 0;
-    const emailFailed = 0;
-    log.info("Email notifications disabled — in-app + push only");
+    // ── 1. Email notifications ────────────────────────────────────────────────
+    // Only send email for events initiated by ITSTS (staff actions directed at
+    // advisors). Ticket creation confirmations are handled by ITSTS directly,
+    // so "created" and "created_for_advisor" do NOT trigger email here.
+    const EMAILABLE_EVENTS: NotificationEvent[] = ["staff_replied", "status_changed"];
+    let emailSent = 0;
+    let emailFailed = 0;
+
+    if (RESEND_API_KEY && EMAILABLE_EVENTS.includes(payload.event)) {
+      const messages = buildMessages(payload, APP_URL, SUPPORT_TEAM_EMAIL);
+      for (const msg of messages) {
+        try {
+          await sendEmail(RESEND_API_KEY, FROM_EMAIL, FROM_NAME, msg);
+          emailSent++;
+        } catch (emailErr) {
+          emailFailed++;
+          log.error("Failed to send email", { to: msg.to, error: String(emailErr) });
+        }
+      }
+    } else if (!RESEND_API_KEY && EMAILABLE_EVENTS.includes(payload.event)) {
+      log.warn("RESEND_API_KEY not set — email skipped for event", { event: payload.event });
+    }
 
     // ── 2. In-app + Push notifications ───────────────────────────────────────
     let pushSent = 0;
@@ -694,17 +742,25 @@ Deno.serve(async (req: Request) => {
 
       const targets = buildPushTargets(payload, advisorUserId, adminUserIds);
 
-      // Fire all push + in-app notifications concurrently
-      await Promise.allSettled(
+      // Fire all push + in-app notifications concurrently (with dedup)
+      const results = await Promise.allSettled(
         targets.map((target) =>
           sendInAppAndPush(supabaseAdmin, target, payload.ticket_id, supabaseUrl, expectedKey!)
         ),
       );
 
-      pushSent = targets.length;
+      const actualSent = results.filter(
+        (r) => r.status === "fulfilled" && r.value === true,
+      ).length;
+      const deduped = results.filter(
+        (r) => r.status === "fulfilled" && r.value === false,
+      ).length;
+      pushSent = actualSent;
 
       log.info("In-app + push notifications sent", {
         targets: targets.length,
+        sent: actualSent,
+        deduplicated: deduped,
         advisorResolved: !!advisorUserId,
         adminCount: adminUserIds.length,
       });

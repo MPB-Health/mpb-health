@@ -1,13 +1,19 @@
--- Rename zoho_lead_submissions to lead_submissions
--- This removes the legacy Zoho branding from the core CRM leads table.
--- The table was never actually synced to Zoho CRM; it's the primary lead store.
--- Fully idempotent: handles both fresh renames and databases where lead_submissions already exists.
+-- Rename zoho_lead_submissions → lead_submissions
+-- Drops the empty legacy lead_submissions table first, then renames the real one.
 
 -- ============================================================================
--- STEP 1: Update dependent functions BEFORE renaming or dropping columns.
+-- STEP 1: Drop the old empty lead_submissions table (created by an early migration,
+-- never used — 0 rows). This clears the name for the rename.
 -- ============================================================================
 
--- 1a. Drop then recreate get_filtered_leads — return signature changed (zoho columns removed)
+DROP VIEW IF EXISTS public.admin_lead_submissions_view CASCADE;
+DROP TABLE IF EXISTS public.lead_submissions CASCADE;
+
+-- ============================================================================
+-- STEP 2: Update dependent functions BEFORE renaming (return signature changes
+-- require DROP + CREATE, not CREATE OR REPLACE).
+-- ============================================================================
+
 DROP FUNCTION IF EXISTS "public"."get_filtered_leads"(text, text, uuid, text, timestamptz, timestamptz, integer, integer);
 CREATE FUNCTION "public"."get_filtered_leads"(
   "p_stage" "text" DEFAULT NULL::"text",
@@ -94,7 +100,6 @@ BEGIN
 END;
 $$;
 
--- 1b. Replace update_goal_progress — use new table name in TG_TABLE_NAME check
 CREATE OR REPLACE FUNCTION update_goal_progress()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -146,7 +151,6 @@ BEGIN
 END;
 $$;
 
--- 1c. Create the generic updated_at trigger function
 CREATE OR REPLACE FUNCTION public.update_lead_submission_updated_at()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -156,136 +160,80 @@ END;
 $$;
 
 -- ============================================================================
--- STEP 2: Clean up old triggers BEFORE any table rename/drop
+-- STEP 3: Rename the table (safe — old lead_submissions was dropped in step 1)
 -- ============================================================================
 
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'zoho_lead_submissions'
-  ) THEN
-    EXECUTE 'DROP TRIGGER IF EXISTS update_zoho_lead_submissions_updated_at ON public.zoho_lead_submissions';
-    EXECUTE 'DROP TRIGGER IF EXISTS update_goal_progress_lead ON public.zoho_lead_submissions';
-  END IF;
-END $$;
+ALTER TABLE public.zoho_lead_submissions RENAME TO lead_submissions;
+
+-- ============================================================================
+-- STEP 4: Swap the trigger to use the new function name
+-- ============================================================================
 
 DROP TRIGGER IF EXISTS update_zoho_lead_submissions_updated_at ON public.lead_submissions;
-DROP TRIGGER IF EXISTS update_lead_submissions_updated_at ON public.lead_submissions;
-
--- Now safe to drop the old trigger function
-DROP FUNCTION IF EXISTS public.update_zoho_lead_submission_updated_at();
-
--- ============================================================================
--- STEP 3: Rename or drop the legacy table (idempotent)
--- ============================================================================
-
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'zoho_lead_submissions'
-  ) THEN
-    IF NOT EXISTS (
-      SELECT 1 FROM information_schema.tables
-      WHERE table_schema = 'public' AND table_name = 'lead_submissions'
-    ) THEN
-      ALTER TABLE public.zoho_lead_submissions RENAME TO lead_submissions;
-    ELSE
-      RAISE NOTICE 'lead_submissions already exists — dropping legacy zoho_lead_submissions';
-      DROP TABLE public.zoho_lead_submissions CASCADE;
-    END IF;
-  END IF;
-END $$;
-
--- ============================================================================
--- STEP 4: Create new trigger on lead_submissions
--- ============================================================================
-
 CREATE TRIGGER update_lead_submissions_updated_at
   BEFORE UPDATE ON public.lead_submissions
   FOR EACH ROW EXECUTE FUNCTION public.update_lead_submission_updated_at();
+
+DROP FUNCTION IF EXISTS public.update_zoho_lead_submission_updated_at();
 
 -- ============================================================================
 -- STEP 5: Rename constraints, indexes, and policies
 -- ============================================================================
 
 DO $$
-DECLARE
-  r RECORD;
+DECLARE r RECORD;
 BEGIN
   FOR r IN
     SELECT conname, conrelid::regclass AS child_table
     FROM pg_constraint
-    WHERE conname LIKE 'zoho_lead_submissions_%'
-      AND contype = 'f'
+    WHERE conname LIKE 'zoho_lead_submissions_%' AND contype = 'f'
   LOOP
-    EXECUTE format(
-      'ALTER TABLE %s RENAME CONSTRAINT %I TO %I',
-      r.child_table,
-      r.conname,
-      replace(r.conname, 'zoho_lead_submissions', 'lead_submissions')
-    );
+    EXECUTE format('ALTER TABLE %s RENAME CONSTRAINT %I TO %I',
+      r.child_table, r.conname,
+      replace(r.conname, 'zoho_lead_submissions', 'lead_submissions'));
   END LOOP;
 END $$;
 
 DO $$
-DECLARE
-  r RECORD;
+DECLARE r RECORD;
 BEGIN
   FOR r IN
-    SELECT conname
-    FROM pg_constraint
+    SELECT conname FROM pg_constraint
     WHERE conrelid = 'public.lead_submissions'::regclass
       AND conname LIKE 'zoho_lead_submissions_%'
   LOOP
-    EXECUTE format(
-      'ALTER TABLE public.lead_submissions RENAME CONSTRAINT %I TO %I',
-      r.conname,
-      replace(r.conname, 'zoho_lead_submissions', 'lead_submissions')
-    );
+    EXECUTE format('ALTER TABLE public.lead_submissions RENAME CONSTRAINT %I TO %I',
+      r.conname, replace(r.conname, 'zoho_lead_submissions', 'lead_submissions'));
   END LOOP;
 END $$;
 
 DO $$
-DECLARE
-  r RECORD;
+DECLARE r RECORD;
 BEGIN
   FOR r IN
-    SELECT indexname
-    FROM pg_indexes
-    WHERE schemaname = 'public'
-      AND indexname LIKE 'zoho_lead_submissions_%'
+    SELECT indexname FROM pg_indexes
+    WHERE schemaname = 'public' AND indexname LIKE 'zoho_lead_submissions_%'
   LOOP
-    EXECUTE format(
-      'ALTER INDEX IF EXISTS %I RENAME TO %I',
-      r.indexname,
-      replace(r.indexname, 'zoho_lead_submissions', 'lead_submissions')
-    );
+    EXECUTE format('ALTER INDEX IF EXISTS %I RENAME TO %I',
+      r.indexname, replace(r.indexname, 'zoho_lead_submissions', 'lead_submissions'));
   END LOOP;
 END $$;
 
 DO $$
-DECLARE
-  r RECORD;
+DECLARE r RECORD;
 BEGIN
   FOR r IN
-    SELECT policyname
-    FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'lead_submissions'
+    SELECT policyname FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'lead_submissions'
       AND policyname LIKE '%zoho%'
   LOOP
-    EXECUTE format(
-      'ALTER POLICY %I ON public.lead_submissions RENAME TO %I',
-      r.policyname,
-      replace(r.policyname, 'zoho_lead_submissions', 'lead_submissions')
-    );
+    EXECUTE format('ALTER POLICY %I ON public.lead_submissions RENAME TO %I',
+      r.policyname, replace(r.policyname, 'zoho_lead_submissions', 'lead_submissions'));
   END LOOP;
 END $$;
 
 -- ============================================================================
--- STEP 6: Drop the Zoho-specific sync columns (no longer needed)
+-- STEP 6: Drop the Zoho-specific sync columns
 -- ============================================================================
 
 ALTER TABLE public.lead_submissions

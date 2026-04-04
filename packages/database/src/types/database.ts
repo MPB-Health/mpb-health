@@ -1807,7 +1807,15 @@ export type Database = {
           score_factors?: Json | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_lead_insights_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       analytics_events: {
         Row: {
@@ -2339,6 +2347,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "automation_execution_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "automation_execution_log_rule_id_fkey"
             columns: ["rule_id"]
             isOneToOne: false
@@ -2810,6 +2825,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "calendar_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "calendar_events_original_event_id_fkey"
             columns: ["original_event_id"]
@@ -3493,6 +3515,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
             referencedColumns: ["id"]
           },
           {
@@ -5576,6 +5605,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "crm_email_drafts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "crm_email_drafts_signature_id_fkey"
             columns: ["signature_id"]
             isOneToOne: false
@@ -5706,6 +5742,13 @@ export type Database = {
           tracking_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "crm_email_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crm_email_log_signature_id_fkey"
             columns: ["signature_id"]
@@ -6068,7 +6111,15 @@ export type Database = {
           subject?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_threads_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_email_tracking: {
         Row: {
@@ -6190,6 +6241,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_family_members_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
             referencedColumns: ["id"]
           },
           {
@@ -6719,7 +6777,15 @@ export type Database = {
           website_submission_id?: string | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crm_lead_health_quotes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_lead_plan_interests: {
         Row: {
@@ -6786,6 +6852,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "crm_lead_plan_interests_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crm_lead_plan_interests_plan_id_fkey"
             columns: ["plan_id"]
@@ -8763,10 +8836,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "crm_website_quote_sync_crm_lead_id_fkey"
+            columns: ["crm_lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "crm_website_quote_sync_crm_quote_id_fkey"
             columns: ["crm_quote_id"]
             isOneToOne: false
             referencedRelation: "crm_lead_health_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_website_quote_sync_website_submission_id_fkey"
+            columns: ["website_submission_id"]
+            isOneToOne: true
+            referencedRelation: "lead_submissions"
             referencedColumns: ["id"]
           },
         ]
@@ -10269,6 +10356,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lead_activities_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -10329,6 +10423,13 @@ export type Database = {
             columns: ["acknowledged_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_notifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
             referencedColumns: ["id"]
           },
           {
@@ -10430,68 +10531,188 @@ export type Database = {
       lead_submissions: {
         Row: {
           assigned_to: string | null
+          carrier_id: string | null
+          city: string | null
           contact_preference: string | null
+          converted_at: string | null
           coverage_preference: string | null
           created_at: string | null
           current_insurance: string | null
+          dependent_count: number | null
           email: string
           first_name: string
+          form_data: Json | null
+          group_type: string | null
           household_size: number | null
+          household_type: string | null
           id: string
+          interested_plans: string[] | null
+          ip_address: unknown
+          last_contacted_at: string | null
           last_name: string
+          lead_score: number | null
+          lost_reason: string | null
+          member_responsibility: number | null
           monthly_premium: string | null
-          notes: string | null
+          next_followup_at: string | null
+          org_id: string | null
+          original_effective_date: string | null
           phone: string
+          pipeline_stage: string | null
+          pipeline_stage_id: string | null
+          plan_type: string | null
+          premium_amount: number | null
+          primary_age: number | null
           primary_concern: string | null
-          referral_source: string | null
-          source: string | null
-          status: string | null
-          submitted_at: string | null
+          priority: string | null
+          quoted_plans: string[] | null
+          referrer: string | null
+          source_cta: string | null
+          source_page: string | null
+          spouse_age: number | null
+          stage_changed_at: string | null
+          state: string | null
+          subsidy_amount: number | null
+          tags: string[] | null
+          tobacco_status: string | null
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
           zip_code: string | null
         }
         Insert: {
           assigned_to?: string | null
+          carrier_id?: string | null
+          city?: string | null
           contact_preference?: string | null
+          converted_at?: string | null
           coverage_preference?: string | null
           created_at?: string | null
           current_insurance?: string | null
+          dependent_count?: number | null
           email: string
           first_name: string
+          form_data?: Json | null
+          group_type?: string | null
           household_size?: number | null
+          household_type?: string | null
           id?: string
+          interested_plans?: string[] | null
+          ip_address?: unknown
+          last_contacted_at?: string | null
           last_name: string
+          lead_score?: number | null
+          lost_reason?: string | null
+          member_responsibility?: number | null
           monthly_premium?: string | null
-          notes?: string | null
+          next_followup_at?: string | null
+          org_id?: string | null
+          original_effective_date?: string | null
           phone: string
+          pipeline_stage?: string | null
+          pipeline_stage_id?: string | null
+          plan_type?: string | null
+          premium_amount?: number | null
+          primary_age?: number | null
           primary_concern?: string | null
-          referral_source?: string | null
-          source?: string | null
-          status?: string | null
-          submitted_at?: string | null
+          priority?: string | null
+          quoted_plans?: string[] | null
+          referrer?: string | null
+          source_cta?: string | null
+          source_page?: string | null
+          spouse_age?: number | null
+          stage_changed_at?: string | null
+          state?: string | null
+          subsidy_amount?: number | null
+          tags?: string[] | null
+          tobacco_status?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
           zip_code?: string | null
         }
         Update: {
           assigned_to?: string | null
+          carrier_id?: string | null
+          city?: string | null
           contact_preference?: string | null
+          converted_at?: string | null
           coverage_preference?: string | null
           created_at?: string | null
           current_insurance?: string | null
+          dependent_count?: number | null
           email?: string
           first_name?: string
+          form_data?: Json | null
+          group_type?: string | null
           household_size?: number | null
+          household_type?: string | null
           id?: string
+          interested_plans?: string[] | null
+          ip_address?: unknown
+          last_contacted_at?: string | null
           last_name?: string
+          lead_score?: number | null
+          lost_reason?: string | null
+          member_responsibility?: number | null
           monthly_premium?: string | null
-          notes?: string | null
+          next_followup_at?: string | null
+          org_id?: string | null
+          original_effective_date?: string | null
           phone?: string
+          pipeline_stage?: string | null
+          pipeline_stage_id?: string | null
+          plan_type?: string | null
+          premium_amount?: number | null
+          primary_age?: number | null
           primary_concern?: string | null
-          referral_source?: string | null
-          source?: string | null
-          status?: string | null
-          submitted_at?: string | null
+          priority?: string | null
+          quoted_plans?: string[] | null
+          referrer?: string | null
+          source_cta?: string | null
+          source_page?: string | null
+          spouse_age?: number | null
+          stage_changed_at?: string | null
+          state?: string | null
+          subsidy_amount?: number | null
+          tags?: string[] | null
+          tobacco_status?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lead_submissions_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_submissions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_tasks: {
         Row: {
@@ -10549,6 +10770,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lead_tasks_org_id_fkey"
             columns: ["org_id"]
@@ -12706,6 +12934,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notification_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notification_log_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
@@ -14240,6 +14475,13 @@ export type Database = {
             columns: ["lane_id"]
             isOneToOne: false
             referencedRelation: "priority_lanes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "priority_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_submissions"
             referencedColumns: ["id"]
           },
           {

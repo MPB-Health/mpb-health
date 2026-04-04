@@ -421,13 +421,13 @@ export default function Dashboard() {
       )}
 
       {/* ── KPI Stats grid ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {stats.map((stat) => (
           <MetricCard
             key={stat.name}
             label={stat.name}
             value={stat.value}
-            icon={<stat.icon className="w-5 h-5" />}
+            icon={<stat.icon className="w-6 h-6" />}
             trend={stat.change !== 0 ? { value: stat.change } : undefined}
           />
         ))}
@@ -435,8 +435,8 @@ export default function Dashboard() {
 
       {/* ── Command Center Grid ────────────────────────────────────────── */}
       <div>
-        <h2 className="text-lg font-semibold text-th-text-primary mb-4">Command Center</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="text-lg font-semibold text-th-text-primary mb-5">Command Center</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {commandSections.map((section) => (
             <button
               key={section.title}
@@ -445,21 +445,21 @@ export default function Dashboard() {
               className="group text-left bg-surface-primary rounded-2xl border border-th-border hover:border-th-accent-300 dark:hover:border-th-accent-700 transition-all hover:shadow-lg overflow-hidden"
             >
               {/* Colored header strip */}
-              <div className={`bg-gradient-to-r ${section.color} px-5 py-3 flex items-center justify-between`}>
-                <div className="flex items-center gap-2 text-white">
+              <div className={`bg-gradient-to-r ${section.color} px-6 py-4 flex items-center justify-between`}>
+                <div className="flex items-center gap-2.5 text-white">
                   <section.icon className="w-5 h-5" />
-                  <span className="font-semibold text-sm">{section.title}</span>
+                  <span className="font-semibold">{section.title}</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-white/60 group-hover:translate-x-1 transition-transform" />
               </div>
               {/* Metrics body */}
-              <div className="px-5 py-4">
+              <div className="px-6 py-5">
                 {section.metrics.length > 0 ? (
-                  <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  <div className="flex flex-wrap gap-x-8 gap-y-3">
                     {section.metrics.map((m) => (
                       <div key={m.label}>
-                        <p className="text-xs text-th-text-tertiary">{m.label}</p>
-                        <p className="text-lg font-bold text-th-text-primary">{m.value}</p>
+                        <p className="text-xs font-medium text-th-text-tertiary mb-1">{m.label}</p>
+                        <p className="text-xl font-bold text-th-text-primary">{m.value}</p>
                       </div>
                     ))}
                   </div>

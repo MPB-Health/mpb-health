@@ -50,6 +50,7 @@ import {
   CreditCard,
   Activity,
   Pill,
+  UserPlus,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -119,6 +120,7 @@ const iconMap: Record<string, LucideIcon> = {
   Headphones,
   Search,
   LogOut,
+  UserPlus,
 };
 
 // Get icon component from string name
@@ -310,17 +312,20 @@ export default function MainLayout() {
       base.push({ name: 'Support Tickets', href: '/tickets', icon: Headphones });
     }
 
-    // Admin-only: Ticket Management
+    // Admin-only items
     if (isAdminUser) {
+      if (!base.some((item: NavItem) => item.href === '/add-advisor' || item.name === 'Add Advisor')) {
+        base.push({ name: 'Add Advisor', href: '/add-advisor', icon: UserPlus });
+      }
       if (!base.some((item: NavItem) => item.href === '/admin/tickets' || item.name === 'Ticket Management')) {
         base.push({ name: 'Ticket Management', href: '/admin/tickets', icon: ShieldCheck });
       }
     } else {
-      base = base.filter((item: NavItem) => item.name !== 'Ticket Management');
+      base = base.filter((item: NavItem) => item.name !== 'Ticket Management' && item.name !== 'Add Advisor');
     }
 
     // Enforce sidebar order
-    const ORDER: string[] = ['Dashboard', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Ticket Management', 'Contact'];
+    const ORDER: string[] = ['Dashboard', 'Add Advisor', 'Bulletins', 'Resource Center', 'Resources', 'Forms', 'Training', 'Video Library', 'Submit Group', 'Support Tickets', 'Ticket Management', 'Contact'];
     base = [...base].sort((a: NavItem, b: NavItem) => {
       const ai = ORDER.indexOf(a.name);
       const bi = ORDER.indexOf(b.name);

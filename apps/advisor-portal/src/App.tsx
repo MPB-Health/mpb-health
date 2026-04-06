@@ -25,6 +25,7 @@ const Tickets = React.lazy(() => import('./pages/Tickets'));
 const NewTicket = React.lazy(() => import('./pages/NewTicket'));
 const ChatPage = React.lazy(() => import('./pages/Chat'));
 const AdminTickets = React.lazy(() => import('./pages/AdminTickets'));
+const AddAdvisor = React.lazy(() => import('./pages/AddAdvisor'));
 const Login = React.lazy(() => import('./pages/Login'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
@@ -206,6 +207,7 @@ export default function App() {
               <Route path="tickets" element={<Suspense fallback={<RouteSpinner />}><Tickets /></Suspense>} />
               <Route path="tickets/new" element={<Suspense fallback={<RouteSpinner />}><NewTicket /></Suspense>} />
               <Route path="admin/tickets" element={<Suspense fallback={<RouteSpinner />}><AdminTickets /></Suspense>} />
+              <Route path="add-advisor" element={<Suspense fallback={<RouteSpinner />}><AddAdvisor /></Suspense>} />
               <Route path="chat" element={<Suspense fallback={<RouteSpinner />}><ChatPage /></Suspense>} />
               <Route path="chat/:conversationId" element={<Suspense fallback={<RouteSpinner />}><ChatPage /></Suspense>} />
               <Route path="inbox" element={<Suspense fallback={<RouteSpinner />}><Inbox /></Suspense>} />

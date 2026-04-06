@@ -18,6 +18,7 @@ import {
   Inbox,
   LineChart,
   CalendarDays,
+  ShieldCheck,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
@@ -28,7 +29,15 @@ import { useAdmin } from '../contexts/AdminContext';
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Users', href: '/users', icon: Users },
+  {
+    name: 'Users',
+    href: '#',
+    icon: Users,
+    children: [
+      { name: 'All Users', href: '/users' },
+      { name: 'Advisor Access', href: '/advisor-access' },
+    ],
+  },
   {
     name: 'Members',
     href: '#',

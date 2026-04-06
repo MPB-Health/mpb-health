@@ -15,7 +15,8 @@ import {
   MapPin,
   Send,
 } from 'lucide-react';
-import { invokeWithResolvedAuth } from '@mpbhealth/database';
+import { supabaseUrl } from '@mpbhealth/database';
+import { getResolvedAuthHeader } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 interface CreateUserResponse {
@@ -94,33 +95,38 @@ export default function AddAdvisor() {
 
     setSaving(true);
     try {
-      const { data, error: invokeError } = await invokeWithResolvedAuth<CreateUserResponse>(
-        'create-user',
-        {
-          body: {
-            email: form.email.trim().toLowerCase(),
-            first_name: form.first_name.trim(),
-            last_name: form.last_name.trim(),
-            roles: ['advisor'],
-            send_invite: form.send_invite,
-            phone: form.phone || undefined,
-            specialization: form.specialization || undefined,
-            agent_id: form.agent_id || undefined,
-            company_name: form.company_name || undefined,
-          },
+      const authHeaders = await getResolvedAuthHeader();
+      if (!authHeaders) {
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
         },
-      );
+        body: JSON.stringify({
+          email: form.email.trim().toLowerCase(),
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
+          roles: ['advisor'],
+          send_invite: form.send_invite,
+          phone: form.phone || undefined,
+          specialization: form.specialization || undefined,
+          agent_id: form.agent_id || undefined,
+          company_name: form.company_name || undefined,
+        }),
+      });
 
-      if (invokeError) {
-        throw new Error(invokeError.message || 'Failed to add advisor');
+      const data: CreateUserResponse = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to add advisor');
       }
 
-      if (!data?.success) {
-        throw new Error(data?.error || 'Failed to add advisor');
-      }
-
-      if (form.send_invite && data?.email_sent === false) {
-        setError(data?.email_error || 'Advisor was created but the invitation email could not be sent.');
+      if (form.send_invite && data.email_sent === false) {
+        setError(data.email_error || 'Advisor was created but the invitation email could not be sent.');
       }
 
       setSuccess({ name: `${form.first_name} ${form.last_name}`, email: form.email });

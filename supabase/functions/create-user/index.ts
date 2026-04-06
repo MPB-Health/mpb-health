@@ -214,14 +214,13 @@ Deno.serve(async (req: Request) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", caller.id)
-      .eq("role", "super_admin")
-      .single();
+      .in("role", ["super_admin", "admin"]);
 
-    if (!callerRoles) {
+    if (!callerRoles || callerRoles.length === 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Only super admins can create users",
+          error: "Only admins can create users",
         }),
         { status: 403, headers },
       );

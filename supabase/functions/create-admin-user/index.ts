@@ -212,21 +212,48 @@ Deno.serve(async (req: Request) => {
 
     if (adminUserError) {
       log.error('Admin user insert error:', adminUserError);
-      // Continue anyway, user is created
     }
 
-    // Create user_roles entry
-    const { error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .insert({
-        user_id: userId,
-        role,
-        granted_by: caller.id,
-      });
+    // Map admin_users roles to valid user_role_type enum values for user_roles table.
+    // "manager" and "staff" are admin_users-only concepts; map them to "admin" for
+    // portal access, or skip if no portal role applies.
+    const ROLE_TO_USER_ROLE: Record<string, string | null> = {
+      super_admin: "super_admin",
+      admin: "admin",
+      manager: "admin",
+      staff: null,
+    };
+    const portalRole = ROLE_TO_USER_ROLE[role] ?? null;
 
-    if (roleError) {
-      log.error('User role insert error:', roleError);
-      // Continue anyway, user is created
+    if (portalRole) {
+      const { error: roleError } = await supabaseAdmin
+        .from("user_roles")
+        .insert({
+          user_id: userId,
+          role: portalRole,
+          granted_by: caller.id,
+        });
+
+      if (roleError) {
+        log.error('User role insert error:', roleError);
+      }
+    }
+
+    // Provision org_memberships so org-scoped queries work
+    const DEFAULT_ORG_ID = "00000000-0000-4000-a000-000000000001";
+    const orgRole = (role === "super_admin" || role === "admin") ? "admin" : "member";
+    const { error: orgError } = await supabaseAdmin
+      .from("org_memberships")
+      .upsert({
+        user_id: userId,
+        org_id: DEFAULT_ORG_ID,
+        role: orgRole,
+        status: "active",
+        joined_at: new Date().toISOString(),
+      }, { onConflict: "user_id,org_id" });
+
+    if (orgError) {
+      log.error('Org membership insert error:', orgError);
     }
 
     let emailSent = false;

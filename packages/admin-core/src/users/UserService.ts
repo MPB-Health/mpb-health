@@ -271,7 +271,10 @@ export class UserService {
       target_role: role,
     });
 
-    if (error) throw error;
+    if (error) {
+      const msg = error.message || error.details || error.hint || 'Failed to assign role';
+      throw new Error(`assign_user_role failed: ${msg} (code: ${error.code})`);
+    }
     if (data && !data.success) throw new Error(data.message || 'Failed to assign role');
   }
 
@@ -282,7 +285,10 @@ export class UserService {
       target_role: role,
     });
 
-    if (error) throw error;
+    if (error) {
+      const msg = error.message || error.details || error.hint || 'Failed to remove role';
+      throw new Error(`remove_user_role failed: ${msg} (code: ${error.code})`);
+    }
     if (data && !data.success) throw new Error(data.message || 'Failed to remove role');
   }
 

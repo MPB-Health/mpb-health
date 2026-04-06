@@ -25,7 +25,7 @@ import {
   type CrossPortalUser,
 } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
-import AddUserModal from '../components/AddUserModal';
+import AddAdvisorModal from '../components/AddAdvisorModal';
 
 type SortField = 'name' | 'email' | 'status' | 'created_at';
 type SortDir = 'asc' | 'desc';
@@ -623,8 +623,7 @@ export default function AdvisorAccess() {
         )}
       </div>
 
-      {/* Add User Modal (pre-selected to advisor portal) */}
-      <AddUserModal
+      <AddAdvisorModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSuccess={() => {

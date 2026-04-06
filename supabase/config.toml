@@ -383,6 +383,12 @@ verify_jwt = false
 [functions.send-ticket-notification]
 verify_jwt = false
 
+# advisor-forgot-password is called from the Advisor Portal forgot-password
+# page where there is no authenticated session. The function handles its own
+# security via rate limiting and never reveals whether an email exists.
+[functions.advisor-forgot-password]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

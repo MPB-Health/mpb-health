@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabaseUrl } from '@mpbhealth/database';
-import toast from 'react-hot-toast';
-import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 
 /**
  * Sends password reset via the advisor-forgot-password edge function.
@@ -14,9 +13,11 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
     try {
@@ -36,10 +37,9 @@ export default function ForgotPassword() {
       }
 
       setSent(true);
-      toast.success('Password reset email sent!');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to send reset email';
-      toast.error(message);
+      const message = err instanceof Error ? err.message : 'Failed to send reset email. Please try again or contact support.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -89,6 +89,16 @@ export default function ForgotPassword() {
               No worries, we'll send you reset instructions.
             </p>
           </div>
+
+          {error && (
+            <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500 mt-0.5" />
+              <div>
+                <p className="font-medium">Unable to send reset email</p>
+                <p className="mt-1">{error}</p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

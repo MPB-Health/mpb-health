@@ -278,6 +278,23 @@ Deno.serve(async (req: Request) => {
       log.error("User roles insert error:", roleError);
     }
 
+    // Provision org_memberships so org-scoped queries work
+    const DEFAULT_ORG_ID = "00000000-0000-4000-a000-000000000001";
+    const orgRole = roles.includes("super_admin") || roles.includes("admin") ? "admin" : "member";
+    const { error: orgError } = await supabaseAdmin
+      .from("org_memberships")
+      .upsert({
+        user_id: userId,
+        org_id: DEFAULT_ORG_ID,
+        role: orgRole,
+        status: "active",
+        joined_at: new Date().toISOString(),
+      }, { onConflict: "user_id,org_id" });
+
+    if (orgError) {
+      log.error("Org membership insert error:", orgError);
+    }
+
     if (shouldProvisionAdvisorProfile(roles)) {
       try {
         await provisionAdvisorProfile(supabaseAdmin, {

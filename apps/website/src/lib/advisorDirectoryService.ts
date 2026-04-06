@@ -49,6 +49,8 @@ export async function getAdvisors(filters?: AdvisorFilters): Promise<Advisor[]> 
       .from('advisors')
       .select('*')
       .eq('is_active', true)
+      .order('state', { ascending: true })
+      .order('active_date', { ascending: true, nullsFirst: false })
       .order('last_name', { ascending: true });
 
     if (filters?.state && filters.state !== 'all') {
@@ -210,6 +212,8 @@ export async function getAllAdvisors(filters?: AdminAdvisorFilters): Promise<Adv
     let query = supabase
       .from('advisors')
       .select('*')
+      .order('state', { ascending: true })
+      .order('active_date', { ascending: true, nullsFirst: false })
       .order('last_name', { ascending: true });
 
     if (filters?.activeStatus === 'active') {

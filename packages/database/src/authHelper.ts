@@ -58,9 +58,37 @@ export async function getResolvedAuthHeader(): Promise<{ Authorization: string }
 }
 
 /**
+ * Extract a human-readable message from a Supabase FunctionsHttpError.
+ *
+ * The Supabase client wraps non-2xx responses in a FunctionsHttpError whose
+ * `.message` is a generic string. The raw Response is stored in `.context`
+ * and must be read to get the edge function's actual JSON error body.
+ */
+async function extractEdgeFunctionError(error: unknown): Promise<string> {
+  if (error && typeof error === 'object' && 'context' in error) {
+    try {
+      const res = (error as { context: Response }).context;
+      if (res && typeof res.json === 'function') {
+        const body = await res.json();
+        if (body?.error && typeof body.error === 'string') return body.error;
+        if (body?.message && typeof body.message === 'string') return body.message;
+      }
+    } catch { /* fall through to generic message */ }
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return (error as { message: string }).message;
+  }
+  return 'An unexpected error occurred';
+}
+
+/**
  * Invoke a Supabase Edge Function with a freshly resolved bearer token.
  * Throws when the user is no longer authenticated so callers can surface a
  * clear re-login message instead of an opaque 401 from the function.
+ *
+ * When the edge function returns a non-2xx status the returned `error.message`
+ * is the edge function's own error string rather than the generic Supabase SDK
+ * message.
  */
 export async function invokeWithResolvedAuth<TData = unknown>(
   functionName: string,
@@ -71,11 +99,18 @@ export async function invokeWithResolvedAuth<TData = unknown>(
     throw new Error('Your session has expired. Please sign in again.');
   }
 
-  return supabase.functions.invoke<TData>(functionName, {
+  const result = await supabase.functions.invoke<TData>(functionName, {
     ...options,
     headers: {
       ...(options.headers ?? {}),
       ...authHeaders,
     },
   });
+
+  if (result.error) {
+    const message = await extractEdgeFunctionError(result.error);
+    return { data: null, error: { message } };
+  }
+
+  return result;
 }

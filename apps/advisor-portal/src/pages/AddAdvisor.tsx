@@ -100,24 +100,33 @@ export default function AddAdvisor() {
         throw new Error('Your session has expired. Please sign in again.');
       }
 
-      const res = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-        body: JSON.stringify({
-          email: form.email.trim().toLowerCase(),
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim(),
-          roles: ['advisor'],
-          send_invite: form.send_invite,
-          phone: form.phone || undefined,
-          specialization: form.specialization || undefined,
-          agent_id: form.agent_id || undefined,
-          company_name: form.company_name || undefined,
-        }),
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45_000);
+
+      let res: Response;
+      try {
+        res = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+          body: JSON.stringify({
+            email: form.email.trim().toLowerCase(),
+            first_name: form.first_name.trim(),
+            last_name: form.last_name.trim(),
+            roles: ['advisor'],
+            send_invite: form.send_invite,
+            phone: form.phone || undefined,
+            specialization: form.specialization || undefined,
+            agent_id: form.agent_id || undefined,
+            company_name: form.company_name || undefined,
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
       const data: CreateUserResponse = await res.json();
 
@@ -133,7 +142,11 @@ export default function AddAdvisor() {
       setForm(INITIAL_FORM);
     } catch (err) {
       console.error('Failed to add advisor:', err);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Request timed out. The advisor may have been created — please check the list before retrying.');
+      } else {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+      }
     } finally {
       setSaving(false);
     }

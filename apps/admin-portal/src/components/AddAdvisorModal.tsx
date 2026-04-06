@@ -63,25 +63,47 @@ export default function AddAdvisorModal({ isOpen, onClose, onSuccess }: AddAdvis
 
     setSaving(true);
     try {
-      const { data, error } = await invokeWithResolvedAuth<CreateUserResponse>(
-        'create-user',
-        {
-          body: {
-            email: form.email,
-            first_name: form.first_name,
-            last_name: form.last_name,
-            roles: ['advisor'],
-            send_invite: form.send_invite,
-            phone: form.phone || undefined,
-            specialization: form.specialization || undefined,
-            agent_id: form.agent_id || undefined,
-            company_name: form.company_name || undefined,
-          },
-        }
-      );
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45_000);
+
+      let data: CreateUserResponse | null;
+      let error: { message: string } | null;
+      try {
+        ({ data, error } = await invokeWithResolvedAuth<CreateUserResponse>(
+          'create-user',
+          {
+            body: {
+              email: form.email.trim().toLowerCase(),
+              first_name: form.first_name.trim(),
+              last_name: form.last_name.trim(),
+              roles: ['advisor'],
+              send_invite: form.send_invite,
+              phone: form.phone || undefined,
+              specialization: form.specialization || undefined,
+              agent_id: form.agent_id || undefined,
+              company_name: form.company_name || undefined,
+            },
+          }
+        ));
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      if (controller.signal.aborted) {
+        throw new Error('Request timed out. The advisor may have been created — please check the list before retrying.');
+      }
 
       if (error) {
-        throw new Error(error.message || 'Failed to create advisor');
+        let detail = 'Failed to create advisor';
+        if (error && typeof error === 'object' && 'context' in error) {
+          try {
+            const body = await (error as unknown as { context: Response }).context.json();
+            detail = body?.error || detail;
+          } catch { /* use fallback */ }
+        } else if (error.message) {
+          detail = error.message;
+        }
+        throw new Error(detail);
       }
 
       if (!data?.success) {

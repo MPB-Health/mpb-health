@@ -327,7 +327,13 @@ Deno.serve(async (req: Request) => {
     let emailError: string | undefined;
     if (send_invite) {
       try {
-        await sendInviteEmail(email, first_name, tempPassword, roles);
+        const emailTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Email send timed out after 15s")), 15_000)
+        );
+        await Promise.race([
+          sendInviteEmail(email, first_name, tempPassword, roles),
+          emailTimeout,
+        ]);
         emailSent = true;
       } catch (emailErr) {
         log.error("Email send error:", emailErr);

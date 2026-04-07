@@ -6,19 +6,20 @@ import { PermissionGate, AccessDenied } from './components/PermissionGate';
 import { lazyRetry } from './utils/lazyRetry';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import LeadsList from './pages/LeadsList';
-import LeadDetail from './pages/LeadDetail';
-import Pipeline from './pages/Pipeline';
-import Tasks from './pages/Tasks';
-import Calendar from './pages/Calendar';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import Today from './pages/Today';
-import Templates from './pages/Templates';
-import Automation from './pages/Automation';
-import SentEmails from './pages/SentEmails';
-import EmailSchedules from './pages/EmailSchedules';
+
+const Dashboard = lazyRetry(() => import('./pages/Dashboard'));
+const LeadsList = lazyRetry(() => import('./pages/LeadsList'));
+const LeadDetail = lazyRetry(() => import('./pages/LeadDetail'));
+const Pipeline = lazyRetry(() => import('./pages/Pipeline'));
+const Tasks = lazyRetry(() => import('./pages/Tasks'));
+const Calendar = lazyRetry(() => import('./pages/Calendar'));
+const Reports = lazyRetry(() => import('./pages/Reports'));
+const Settings = lazyRetry(() => import('./pages/Settings'));
+const Today = lazyRetry(() => import('./pages/Today'));
+const Templates = lazyRetry(() => import('./pages/Templates'));
+const Automation = lazyRetry(() => import('./pages/Automation'));
+const SentEmails = lazyRetry(() => import('./pages/SentEmails'));
+const EmailSchedules = lazyRetry(() => import('./pages/EmailSchedules'));
 
 // Lazy-loaded CRM module pages
 const Accounts = lazyRetry(() => import('./pages/Accounts'));

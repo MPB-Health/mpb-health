@@ -34,12 +34,12 @@
   --accent-800: 30 64 175;
   --accent-900: 30 58 138;
 
-  /* ---- Sidebar ---- */
-  --sidebar-bg: 15 23 42;
-  --sidebar-text: 203 213 225;
-  --sidebar-text-active: 255 255 255;
-  --sidebar-hover: 30 41 59;
-  --sidebar-active-bg: 255 255 255;
+  /* ---- Sidebar (light) ---- */
+  --sidebar-bg: 255 255 255;
+  --sidebar-text: 100 116 139;
+  --sidebar-text-active: 15 23 42;
+  --sidebar-hover: 241 245 249;
+  --sidebar-active-bg: 59 130 246;
 
   /* ---- Glass ---- */
   --glass-bg: 255 255 255;

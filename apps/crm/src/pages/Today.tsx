@@ -330,7 +330,7 @@ export default function Today() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8 animate-in fade-in duration-300">
+      <div className="w-full px-6 py-8 space-y-8 animate-in fade-in duration-300">
         {/* Hero skeleton */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -370,7 +370,7 @@ export default function Today() {
   // ========================================================================
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+    <div className="w-full px-6 py-8 space-y-8">
       {/* ================================================================
           SECTION 1: Hero
           ================================================================ */}

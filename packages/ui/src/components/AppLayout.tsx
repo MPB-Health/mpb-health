@@ -312,7 +312,7 @@ export function AppLayout({
         </header>
 
         {/* Page content */}
-        <main className="p-4 md:p-6 lg:p-8 max-w-[1920px] mx-auto">
+        <main className="p-4 md:p-6 lg:p-8 w-full">
           {children}
         </main>
       </div>

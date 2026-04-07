@@ -2,8 +2,8 @@
 // Service Worker for MPB Health Advisor Portal PWA
 // ============================================================================
 
-const CACHE_NAME = 'advisor-portal-v5';
-const RUNTIME_CACHE = 'advisor-runtime-v5';
+const CACHE_NAME = 'advisor-portal-v6';
+const RUNTIME_CACHE = 'advisor-runtime-v6';
 let hasBroadcastedReload = false;
 
 // Files to cache on install (app shell)
@@ -44,12 +44,16 @@ self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       console.log('[SW] Caching app shell');
-      return cache.addAll(APP_SHELL).catch((error) => {
-        console.log('[SW] Failed to cache some app shell files:', error);
-        // Continue even if some files fail to cache
-        return Promise.resolve();
+      // Cache each entry independently so one missing file doesn't fail all.
+      const results = await Promise.allSettled(
+        APP_SHELL.map((path) => cache.add(path))
+      );
+      results.forEach((result, i) => {
+        if (result.status === 'rejected') {
+          console.log('[SW] Failed to cache app-shell entry:', APP_SHELL[i], result.reason);
+        }
       });
     })
   );
@@ -251,6 +255,13 @@ async function navigationStrategy(request) {
       const indexResponse = cachedRoute || (await caches.match('/index.html'));
       if (indexResponse) {
         return indexResponse;
+      }
+      // Last fallback: try root document directly.
+      try {
+        const rootResponse = await fetch('/');
+        if (rootResponse.ok) return rootResponse;
+      } catch (_) {
+        // ignore
       }
     }
 

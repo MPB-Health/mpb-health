@@ -113,6 +113,7 @@ export { useSession } from './hooks/useSession';
 export { useOrg, type UseOrgReturn } from './hooks/useOrg';
 export { useOrgRole, useRequireRole } from './hooks/useOrgRole';
 export { usePermission, type UsePermissionReturn } from './hooks/usePermission';
+export { useSSONavigation, type UseSSONavigationReturn } from './hooks/useSSONavigation';
 export {
   useSessionTimeout,
   type UseSessionTimeoutOptions,

@@ -243,13 +243,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   };
 
-  const getPortalUrlSafe = useCallback((portal: PortalKey): string => {
-    return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
-  }, []);
-
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    return buildPortalSSOUrl(getPortalUrlSafe(portal), supabase);
-  }, [getPortalUrlSafe]);
+    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
+  }, []);
 
   const userSection = (
     <div className="space-y-3">
@@ -344,7 +340,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
-            getPortalUrl={getPortalUrlSafe}
+            getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />
         }

@@ -1,22 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 
-/**
- * ResetPassword — handles two recovery flows:
- *
- * 1. token_hash flow (preferred, scanner-proof):
- *    URL: /reset-password?token_hash=xxx&type=recovery
- *    Calls supabase.auth.verifyOtp() to exchange the token for a session.
- *    Email scanners fetch HTML but don't execute JS, so the token survives.
- *
- * 2. Legacy hash flow (Supabase default):
- *    URL: /reset-password#access_token=xxx&refresh_token=yyy&type=recovery
- *    Supabase client auto-detects and processes via detectSessionInUrl.
- *    Falls back to PASSWORD_RECOVERY auth state event.
- */
 export default function ResetPassword() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -27,23 +14,26 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState('');
+  const [linkError, setLinkError] = useState('');
   const [success, setSuccess] = useState(false);
   const sessionEstablished = useRef(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      toast.error('Authentication service is not configured');
-      navigate('/login');
+      setLinkError('Authentication service is not configured. Please contact support.');
+      setVerifying(false);
       return;
     }
 
     let cancelled = false;
 
     const verifyToken = async () => {
-      // ── Flow 1: token_hash in query params (scanner-proof) ──
       const tokenHash = searchParams.get('token_hash');
+      const emailParam = searchParams.get('email');
+      const rawToken = searchParams.get('token');
       const type = searchParams.get('type');
 
+      // ── Flow 1: token_hash (scanner-proof, preferred) ──
       if (tokenHash && type === 'recovery') {
         const { error: otpError } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
@@ -53,11 +43,12 @@ export default function ResetPassword() {
         if (cancelled) return;
 
         if (otpError) {
-          const msg = otpError.message.includes('expired')
-            ? 'This password reset link has expired. Please request a new one.'
-            : 'This password reset link is invalid or has already been used. Please request a new one.';
-          toast.error(msg);
-          navigate('/forgot-password', { replace: true });
+          setLinkError(
+            otpError.message.includes('expired')
+              ? 'This password reset link has expired. Please request a new one.'
+              : 'This password reset link is invalid or has already been used. Please request a new one.',
+          );
+          setVerifying(false);
           return;
         }
 
@@ -66,9 +57,32 @@ export default function ResetPassword() {
         return;
       }
 
-      // ── Flow 2: Hash-based tokens (legacy Supabase default) ──
-      // Supabase client auto-processes hash fragments via detectSessionInUrl.
-      // Check for existing session first.
+      // ── Flow 2: email + raw token fallback ──
+      if (emailParam && rawToken && type === 'recovery') {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          email: emailParam,
+          token: rawToken,
+          type: 'recovery',
+        });
+
+        if (cancelled) return;
+
+        if (otpError) {
+          setLinkError(
+            otpError.message.includes('expired')
+              ? 'This password reset link has expired. Please request a new one.'
+              : 'This password reset link is invalid or has already been used. Please request a new one.',
+          );
+          setVerifying(false);
+          return;
+        }
+
+        sessionEstablished.current = true;
+        setVerifying(false);
+        return;
+      }
+
+      // ── Flow 3: Hash-based tokens (legacy Supabase default) ──
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
@@ -80,13 +94,12 @@ export default function ResetPassword() {
         if (err instanceof Error && err.name === 'AbortError') return;
       }
 
-      // Wait for PASSWORD_RECOVERY event from hash processing
       setTimeout(() => {
         if (!cancelled && !sessionEstablished.current) {
-          toast.error('Invalid or expired reset link');
-          navigate('/forgot-password', { replace: true });
+          setLinkError('This reset link is invalid or has expired. Please request a new one below.');
+          setVerifying(false);
         }
-      }, 3000);
+      }, 4000);
     };
 
     verifyToken();
@@ -191,6 +204,36 @@ export default function ResetPassword() {
           <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-lg font-medium text-gray-700">Verifying your reset link...</p>
           <p className="text-sm text-gray-500 mt-1">Please wait a moment.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (linkError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Reset link not valid</h1>
+            <p className="text-gray-600 mb-6">{linkError}</p>
+            <div className="space-y-3">
+              <Link
+                to="/forgot-password"
+                className="block w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-colors text-center"
+              >
+                Request a new reset link
+              </Link>
+              <Link
+                to="/login"
+                className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-center"
+              >
+                Back to sign in
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );

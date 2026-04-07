@@ -553,16 +553,18 @@ export default function MainLayout() {
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
         portalSwitcher={
-          <PortalSwitcher
-            currentPortal="advisors"
-            canAccessAdmin={canAccessAdmin}
-            canAccessCRM={canAccessCrm}
-            canAccessAdvisor={canAccessAdvisor}
-            canAccessWebsite={canAccessWebsite}
-            canAccessSupport={canAccessSupport}
-            getPortalUrl={getPortalUrl}
-            getPortalUrlWithSSO={getPortalUrlWithSSO}
-          />
+          isAdminUser ? (
+            <PortalSwitcher
+              currentPortal="advisors"
+              canAccessAdmin={canAccessAdmin}
+              canAccessCRM={canAccessCrm}
+              canAccessAdvisor={canAccessAdvisor}
+              canAccessWebsite={canAccessWebsite}
+              canAccessSupport={canAccessSupport}
+              getPortalUrl={getPortalUrl}
+              getPortalUrlWithSSO={getPortalUrlWithSSO}
+            />
+          ) : undefined
         }
         userSection={userSection}
         topBarCenter={<GlobalSearch />}

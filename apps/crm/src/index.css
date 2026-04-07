@@ -1,4 +1,4 @@
-@import '@mpbhealth/ui/theme-tokens.css';
+@import '../../../packages/ui/src/theme/theme-tokens.css';
 
 @tailwind base;
 @tailwind components;

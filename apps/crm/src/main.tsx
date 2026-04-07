@@ -9,9 +9,9 @@ import { OrgProvider } from './contexts/OrgContext';
 import { CRMProvider } from './contexts/CRMContext';
 import { AppErrorBoundary } from './components/ErrorBoundary';
 import { CelebrationProvider } from './components/CelebrationSystem';
-import '@mpbhealth/ui/theme-tokens.css';
+import '../../../packages/ui/src/theme/theme-tokens.css';
 import './index.css';
-import '@mpbhealth/ui/login-animations.css';
+import '../../../packages/ui/src/components/login-animations.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

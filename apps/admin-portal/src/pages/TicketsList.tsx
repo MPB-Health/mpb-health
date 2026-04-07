@@ -39,6 +39,7 @@ const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: 
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
   open: { label: 'Open', color: 'bg-yellow-100 text-yellow-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
   pending: { label: 'Pending', color: 'bg-orange-100 text-orange-700', icon: <Clock className="w-3.5 h-3.5" /> },
+  resolved: { label: 'Resolved', color: 'bg-green-100 text-green-700', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
   closed: { label: 'Closed', color: 'bg-neutral-100 text-neutral-600', icon: <XCircle className="w-3.5 h-3.5" /> },
 };
 

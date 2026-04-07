@@ -100,6 +100,7 @@ async function extractFunctionError(error: unknown): Promise<string> {
 
 export type TicketStatus = 'new' | 'open' | 'pending' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type TicketContentFormat = 'plain' | 'html';
 
 export interface Ticket {
   id: string;
@@ -116,6 +117,7 @@ export interface Ticket {
 export interface TicketComment {
   id: string;
   content: string;
+  content_format?: TicketContentFormat;
   is_internal: boolean;
   created_at: string;
   author_id: string;
@@ -197,7 +199,7 @@ export interface CreateTicketResult {
   ticket_number: number;
 }
 
-interface TicketAttachmentUploadResult {
+export interface TicketAttachmentUploadResult {
   fileName: string;
   accessUrl: string;
   size: number;
@@ -499,8 +501,13 @@ export class TicketService {
 
   // ── Admin write methods ────────────────────────────────────────────────
 
-  async addComment(ticketId: string, content: string, isInternal = false): Promise<void> {
-    await this.call<{ success: boolean }>('add_comment', { ticket_id: ticketId, content, is_internal: isInternal });
+  async addComment(ticketId: string, content: string, isInternal = false, contentFormat?: TicketContentFormat): Promise<void> {
+    await this.call<{ success: boolean }>('add_comment', {
+      ticket_id: ticketId,
+      content,
+      is_internal: isInternal,
+      ...(contentFormat ? { content_format: contentFormat } : {}),
+    });
   }
 
   async updateTicket(ticketId: string, opts: UpdateTicketOptions): Promise<void> {
@@ -614,11 +621,34 @@ export class TicketService {
     });
   }
 
+  /** Upload a single image for inline embedding in a rich-text reply. Returns the signed URL. */
+  async uploadImageForTicketReply(ticketId: string, file: File): Promise<string> {
+    const [result] = await this.uploadAttachments(ticketId, [file]);
+    return result.accessUrl;
+  }
+
+  /** Upload multiple files for a reply. Returns metadata for each uploaded file. */
+  async uploadFilesForTicketReply(ticketId: string, files: File[]): Promise<TicketAttachmentUploadResult[]> {
+    return this.uploadAttachments(ticketId, files);
+  }
+
   /** Fire-and-forget warm-up ping to keep the ticket-proxy edge function warm.
    *  Silently no-ops when the user is not authenticated. */
   async ping(): Promise<void> {
     await this.call<{ success: boolean }>('ping', {}, { allowUnauthenticated: true });
   }
+}
+
+/** Append attachment download links as HTML to an existing HTML string. */
+export function appendTicketAttachmentsHtml(html: string, uploads: TicketAttachmentUploadResult[]): string {
+  if (!uploads.length) return html;
+  const links = uploads
+    .map((u) => {
+      const kb = Math.max(1, Math.round(u.size / 1024));
+      return `<li><a href="${u.accessUrl}" target="_blank" rel="noopener">${u.fileName}</a> (${kb} KB)</li>`;
+    })
+    .join('');
+  return `${html}<br/><p><strong>Attachments:</strong></p><ul>${links}</ul>`;
 }
 
 export const ticketService = new TicketService();

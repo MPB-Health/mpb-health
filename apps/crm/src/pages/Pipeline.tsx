@@ -581,9 +581,9 @@ export default function Pipeline() {
 
       if (targetStageObj?.is_won_stage) {
         celebrate('stage_won', `${leadName} moved to Won!`);
-        earnXP('deal_won', 'lead', activeId, `Won: ${leadName}`);
+        earnXP('deal_won', 'lead', active.id as string, `Won: ${leadName}`);
       } else {
-        earnXP('stage_advanced', 'lead', activeId, `${leadName} → ${targetStageObj?.display_name}`);
+        earnXP('stage_advanced', 'lead', active.id as string, `${leadName} → ${targetStageObj?.display_name}`);
       }
 
       toast.success(

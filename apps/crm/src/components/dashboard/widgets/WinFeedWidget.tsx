@@ -166,7 +166,7 @@ function WinCard({ item, currentUserId, onReact, isNew }: WinCardProps) {
             getGradient(item.user_id),
           )}
         >
-          {getInitials(item.user_name)}
+          {getInitials(item.user?.full_name ?? 'Team member')}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -174,7 +174,7 @@ function WinCard({ item, currentUserId, onReact, isNew }: WinCardProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-semibold text-th-text-primary truncate">
-                  {item.user_name}
+                  {item.user?.full_name ?? 'Team member'}
                 </span>
                 <div className={cn('p-0.5 rounded', config.bg)}>
                   <Icon className={cn('w-3 h-3', config.color)} />
@@ -405,7 +405,7 @@ export default function WinFeedWidget() {
       );
 
       try {
-        await gamificationService.toggleWinReaction(winId, user.id, emoji);
+        await gamificationService.reactToWin(winId, emoji);
       } catch (err) {
         console.error('[WinFeedWidget] Failed to toggle reaction:', err);
         fetchWins(true);
@@ -419,12 +419,7 @@ export default function WinFeedWidget() {
       if (!activeOrgId || !user?.id) return;
 
       try {
-        await gamificationService.postWin(activeOrgId, {
-          user_id: user.id,
-          title,
-          value,
-          win_type: 'deal_closed',
-        });
+        await gamificationService.postWin(activeOrgId, 'deal_closed', title, undefined, value);
         setShowForm(false);
         await fetchWins();
       } catch (err) {

@@ -251,13 +251,13 @@ function LeaderboardRow({ entry, rank, isCurrentUser, previousRank, isFirstLoad 
           isTop3 ? 'w-10 h-10 text-sm' : 'w-8 h-8 text-xs',
         )}
       >
-        {getInitials(entry.user_name)}
+        {getInitials(entry.full_name)}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className={cn('font-medium truncate', isTop3 ? 'text-sm' : 'text-xs', 'text-th-text-primary')}>
-            {entry.user_name}
+            {entry.full_name}
           </span>
           {isCurrentUser && (
             <span className="text-[9px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 px-1.5 py-0.5 rounded-full">
@@ -271,10 +271,10 @@ function LeaderboardRow({ entry, rank, isCurrentUser, previousRank, isFirstLoad 
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
-        {entry.streak > 0 && (
+        {entry.streak_days > 0 && (
           <span className="flex items-center gap-0.5 text-[10px] font-medium text-orange-600 dark:text-orange-400">
             <Flame className="w-3 h-3" />
-            {entry.streak}
+            {entry.streak_days}
           </span>
         )}
         <div className="text-right min-w-[50px]">
@@ -475,10 +475,10 @@ export default function LeaderboardWidget() {
                     getGradient(entry.user_id),
                   )}
                 >
-                  {getInitials(entry.user_name)}
+                  {getInitials(entry.full_name)}
                 </div>
                 <p className="text-[10px] font-medium text-th-text-primary truncate max-w-full">
-                  {entry.user_name.split(' ')[0]}
+                  {entry.full_name.split(' ')[0]}
                 </p>
                 <div
                   className={cn(

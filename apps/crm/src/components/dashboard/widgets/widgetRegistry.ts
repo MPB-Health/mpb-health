@@ -30,7 +30,6 @@ import {
   Medal,
   PartyPopper,
   Crosshair,
-  Gauge,
 } from 'lucide-react';
 import type { WidgetConfig, WidgetRegistry } from '../types';
 

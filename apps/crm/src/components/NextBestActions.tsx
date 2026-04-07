@@ -313,6 +313,7 @@ async function fetchLeadActions(
     else if (daysContact > 3 && lead.email) type = 'email';
     else if (lead.pipeline_stage === 'proposal') type = 'close';
     else if (lead.lead_score >= 80 && lead.pipeline_stage === 'qualified') type = 'meeting';
+    else if (lead.pipeline_stage === 'negotiation') type = 'review';
 
     // ---- Priority ----
     let priority: ActionItem['priority'] = 'low';

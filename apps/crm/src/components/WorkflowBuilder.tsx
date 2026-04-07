@@ -700,7 +700,7 @@ function NodeCard({
     onSelect,
   }: {
     show: boolean;
-    menuRef: React.RefObject<HTMLDivElement | null>;
+    menuRef: React.RefObject<HTMLDivElement>;
     onSelect: (type: NodeType) => void;
   }) {
     if (!show) return null;

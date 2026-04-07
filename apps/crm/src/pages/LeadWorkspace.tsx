@@ -253,7 +253,7 @@ export default function LeadWorkspace() {
   const handleSaveCall = async () => {
     if (!id) return;
     setCallSaving(true);
-    const result = await activityService.logCall(id, parseInt(callDuration, 10), callNotes.trim() || undefined);
+    const result = await activityService.logCall(id, `${callDuration} min call`, callNotes.trim() || undefined);
     if (result.success) {
       earnXP('call_logged', 'lead', id, 'Quick call from workspace');
       toast.success('Call logged');

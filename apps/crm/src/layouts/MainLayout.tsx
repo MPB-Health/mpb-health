@@ -174,7 +174,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
   // Portal access from global user_roles table
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(user?.id);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessSupport } = usePortalAccess(user?.id);
 
   const handleSignOut = async () => {
     await signOut();
@@ -361,6 +361,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
+            canAccessWebsite={canAccessWebsite}
             canAccessSupport={canAccessSupport}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}

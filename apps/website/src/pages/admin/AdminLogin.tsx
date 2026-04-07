@@ -4,8 +4,8 @@ export default function AdminLogin() {
   return (
     <UnifiedLoginPage
       portalType="admin"
-      title="Admin Portal"
-      subtitle="Welcome to MPB Health Admin Center"
+      title="Website CMS"
+      subtitle="Content & site management"
       redirectPath="/admin"
       allowedRoles={['admin', 'staff', 'superadmin']}
       showOnboarding={false}

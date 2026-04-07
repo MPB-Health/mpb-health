@@ -55,8 +55,8 @@ const PORTAL_OPTIONS: PortalOption[] = [
   },
   {
     key: 'website',
-    name: 'Website Backend',
-    description: 'CMS, blog & site settings',
+    name: 'Website CMS',
+    description: 'Blog, SEO & site settings',
     icon: Globe,
   },
   {

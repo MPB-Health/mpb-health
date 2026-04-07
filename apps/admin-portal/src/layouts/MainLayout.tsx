@@ -159,7 +159,7 @@ export default function MainLayout() {
       setAuthUserId(session?.user?.id ?? null);
     });
   }, []);
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(authUserId);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessSupport } = usePortalAccess(authUserId);
 
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
     try {
@@ -201,6 +201,7 @@ export default function MainLayout() {
           canAccessAdmin={canAccessAdmin}
           canAccessCRM={canAccessCrm}
           canAccessAdvisor={canAccessAdvisor}
+          canAccessWebsite={canAccessWebsite}
           canAccessSupport={canAccessSupport}
           getPortalUrl={getPortalUrl}
           getPortalUrlWithSSO={getPortalUrlWithSSO}

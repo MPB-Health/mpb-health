@@ -217,7 +217,7 @@ export function clearNavCache() {
 
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
+  const { profile, unreadBulletinCount, logout, loading, profileLoading, hasSession } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
@@ -233,7 +233,7 @@ export default function MainLayout() {
   }, [profile?.user_id]);
 
   // Portal access from global user_roles table
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(profile?.user_id);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessSupport } = usePortalAccess(profile?.user_id);
 
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
     try {
@@ -386,11 +386,11 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // Redirect to login if not authenticated.
-  // Also guard on profileLoading: INITIAL_SESSION sets loading=false before
-  // loadProfile() completes, so profile is transiently null while the fetch
-  // is in-flight. Without this guard a page refresh would redirect to /login.
-  if (!loading && !profileLoading && !profile) {
+  // Redirect to login only when we're certain there's no session.
+  // Guard on hasSession: after signInWithPassword, the SIGNED_IN event sets
+  // hasSession=true before loadProfile completes — this prevents a premature
+  // redirect to /login while the profile is still being fetched.
+  if (!loading && !profileLoading && !profile && !hasSession) {
     return <Navigate to="/login" replace />;
   }
 
@@ -558,6 +558,7 @@ export default function MainLayout() {
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
+            canAccessWebsite={canAccessWebsite}
             canAccessSupport={canAccessSupport}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}

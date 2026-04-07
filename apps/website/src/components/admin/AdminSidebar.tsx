@@ -391,8 +391,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         </div>
         {!collapsed && (
           <div>
-            <h1 className="text-lg font-bold text-white">MPB Admin</h1>
-            <p className="text-xs text-slate-400">Control Center</p>
+            <h1 className="text-lg font-bold text-white">Website CMS</h1>
+            <p className="text-xs text-slate-400">Content & Site Management</p>
           </div>
         )}
       </div>

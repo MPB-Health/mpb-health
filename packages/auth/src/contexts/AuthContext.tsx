@@ -72,11 +72,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user?.id, fetchRoles]);
 
   useEffect(() => {
+    // Safety timeout: if getSession() or onAuthStateChange never resolves
+    // (e.g. corrupted localStorage, stale service worker), force the app
+    // out of the loading state so users aren't stuck on an infinite spinner.
+    const timeout = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          console.warn('[AuthContext] Auth timed out after 8s — forcing load complete');
+          return false;
+        }
+        return prev;
+      });
+    }, 8_000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      // Fetch roles after getting session
       fetchRoles(session?.user?.id);
     });
 
@@ -86,11 +98,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      // Fetch roles on auth state change
       fetchRoles(session?.user?.id);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [fetchRoles]);
 
   const signIn = async (email: string, password: string) => {

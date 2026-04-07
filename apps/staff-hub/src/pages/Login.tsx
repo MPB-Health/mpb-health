@@ -12,7 +12,11 @@ export default function Login() {
       throw new Error('Authentication service is not configured. Please contact support.');
     }
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const loginPromise = supabase.auth.signInWithPassword({ email, password });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 15000),
+      );
+      const { error } = await Promise.race([loginPromise, timeoutPromise]);
       if (error) {
         throw new Error(error.message || 'Invalid email or password');
       }

@@ -41,10 +41,29 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: false,
-      // esbuild minification is ~20x faster than terser and equally effective
       minify: isProd ? 'esbuild' : false,
       cssMinify: isProd,
       chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('/react/')) {
+                return 'vendor-react';
+              }
+              if (id.includes('@supabase') || id.includes('gotrue-js')) {
+                return 'vendor-supabase';
+              }
+              if (id.includes('lucide-react') || id.includes('date-fns')) {
+                return 'vendor-ui';
+              }
+              if (id.includes('@tanstack/react-query')) {
+                return 'vendor-query';
+              }
+            }
+          },
+        },
+      },
     },
   };
 });

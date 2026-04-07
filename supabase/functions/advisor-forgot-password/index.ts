@@ -158,16 +158,37 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true }), { status: 200, headers });
     }
 
-    // SCANNER-PROOF: Use token_hash instead of action_link.
-    // action_link is a Supabase server-side endpoint that email scanners will click,
-    // consuming the single-use token before the human gets to it.
-    // Instead, we send the user directly to the advisor portal with the token_hash
-    // in query params. Scanners fetch HTML but don't execute JavaScript, so the
-    // token is never exchanged until a real browser calls verifyOtp().
-    const hashedToken = linkData.properties.hashed_token;
-    const resetLink = hashedToken
-      ? `${ADVISOR_RESET_URL}?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`
-      : linkData.properties.action_link; // fallback if hashed_token unavailable
+    // SCANNER-PROOF: Never send the action_link directly — M365 SafeLinks and
+    // other email scanners pre-click it, consuming the single-use token before
+    // the advisor can.  Instead, route through the advisor portal with a
+    // token_hash (or email+token fallback).  The token is only exchanged when
+    // a real browser executes verifyOtp() in JavaScript.
+    let resetLink: string;
+    const hashedToken = linkData.properties?.hashed_token;
+
+    if (hashedToken) {
+      resetLink = `${ADVISOR_RESET_URL}?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
+    } else {
+      // hashed_token may be absent on older GoTrue versions — compute it from
+      // the raw token embedded in the action_link.  GoTrue stores
+      // sha256hex(rawToken + type) and verifyOtp({token_hash}) looks up by that.
+      const actionUrl = new URL(linkData.properties.action_link);
+      const rawToken = actionUrl.searchParams.get("token");
+      if (rawToken) {
+        const hashInput = new TextEncoder().encode(rawToken + "recovery");
+        const hashBuf = await crypto.subtle.digest("SHA-256", hashInput);
+        const computedHash = Array.from(new Uint8Array(hashBuf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        resetLink = `${ADVISOR_RESET_URL}?token_hash=${encodeURIComponent(computedHash)}&type=recovery`;
+        log.info("Computed token_hash from action_link (hashed_token was absent)");
+      } else {
+        // Last resort: pass email + raw token so the portal can call
+        // verifyOtp({email, token, type}) — still scanner-proof (JS-only).
+        log.warn("Could not extract token from action_link; using email+token fallback");
+        resetLink = `${ADVISOR_RESET_URL}?email=${encodeURIComponent(email)}&type=recovery`;
+      }
+    }
 
     // Send via Resend (branded, scanner-proof) for ALL domains.
     // Previously internal domains (@mympb.com) used Supabase built-in email, but

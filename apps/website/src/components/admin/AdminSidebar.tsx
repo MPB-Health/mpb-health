@@ -39,11 +39,6 @@ import {
   Clock,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { PortalSwitcher } from '@mpbhealth/ui';
-import type { PortalKey } from '@mpbhealth/ui';
-import { getPortalUrl } from '@mpbhealth/config';
-import { usePortalAccess, getPortalSSOUrl } from '@mpbhealth/auth';
-import { supabase } from '../../lib/supabase';
 
 interface NavItem {
   id: string;
@@ -108,7 +103,6 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     items: [
       { id: 'content-panel', label: 'Content Analytics', icon: BarChart3, viewId: 'content' },
       { id: 'blog', label: 'Blog Management', icon: BookOpen, href: '/admin/blog' },
-      { id: 'events', label: 'Events', icon: Calendar, href: '/admin/events' },
       { id: 'ai-blog', label: 'AI Blog Generator', icon: Sparkles, href: '/admin/gemini-blog-generator' },
       { id: 'newsletter-subs', label: 'Newsletter Subscribers', icon: Mail, href: '/admin/newsletter-subscribers' },
       { id: 'newsletter-camp', label: 'Newsletter Campaigns', icon: Send, href: '/admin/newsletter-campaigns' },
@@ -172,23 +166,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const navigate = useNavigate();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Analytics', 'Marketing', 'CRM', 'Content']);
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  const [authUserId, setAuthUserId] = useState<string | null>(null);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthUserId(session?.user?.id ?? null);
-    });
-  }, []);
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(authUserId);
-
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    try {
-      const result = await getPortalSSOUrl(portal, supabase);
-      return result.url;
-    } catch {
-      return null;
-    }
-  }, []);
 
   // Search state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -391,8 +368,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         </div>
         {!collapsed && (
           <div>
-            <h1 className="text-lg font-bold text-white">Website CMS</h1>
-            <p className="text-xs text-slate-400">Content & Site Management</p>
+            <h1 className="text-lg font-bold text-white">MPB Admin</h1>
+            <p className="text-xs text-slate-400">Control Center</p>
           </div>
         )}
       </div>
@@ -425,22 +402,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           >
             <Search className="h-4 w-4" />
           </button>
-        </div>
-      )}
-
-      {/* Portal Switcher */}
-      {!collapsed && (
-        <div className="px-4 pb-2">
-          <PortalSwitcher
-            currentPortal="website"
-            canAccessAdmin={canAccessAdmin}
-            canAccessCRM={canAccessCrm}
-            canAccessAdvisor={canAccessAdvisor}
-            canAccessSupport={canAccessSupport}
-            canAccessWebsite
-            getPortalUrl={getPortalUrl}
-            getPortalUrlWithSSO={getPortalUrlWithSSO}
-          />
         </div>
       )}
 

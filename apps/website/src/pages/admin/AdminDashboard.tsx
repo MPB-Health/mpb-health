@@ -43,26 +43,7 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
   // Use shared stats from AdminLayout context - automatically refreshes every 2 minutes
   const { stats } = useAdminStats();
 
-  type AdminSection = {
-    title: string;
-    icon: React.ComponentType<{ className?: string }>;
-    description: string;
-    href: string;
-    color: string;
-    badge?: number;
-    urgent?: boolean;
-  };
-
-  const adminSections: AdminSection[] = [
-    {
-      title: 'Support Tickets',
-      icon: AlertCircle,
-      description: 'Manage support ticket requests',
-      href: '/admin/support',
-      color: 'red',
-      badge: stats.pending_support_tickets,
-      urgent: stats.pending_support_tickets > 0
-    },
+  const adminSections: Array<{ title: string; icon: React.FC<{ className?: string }>; description: string; href: string; color: string; badge?: number; urgent?: boolean }> = [
     {
       title: 'Reports & Analytics',
       icon: BarChart3,
@@ -318,16 +299,18 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
           </a>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
-          <h3 className="font-semibold text-gray-900 mb-2">MPB CRM</h3>
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+          <h3 className="font-semibold text-gray-900 mb-2">Zoho CRM</h3>
           <p className="text-sm text-gray-600 mb-4">
-            Manage leads, contacts, and pipeline.
+            Access Zoho CRM for customer relationship management.
           </p>
           <a
-            href="/admin/leads"
+            href="https://accounts.zoho.com/signin?servicename=ZohoCRM&signupurl=https://www.zoho.com/crm/signup.html&serviceurl=https%3A%2F%2Fcrm.zoho.com%2Fcrm%2FShowHomePage.do"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center w-full h-10 px-4 text-sm font-medium border border-neutral-300 bg-white hover:bg-neutral-50 active:bg-neutral-100 shadow-sm hover:shadow-md rounded-xl transition-all duration-200"
           >
-            Open CRM
+            Open Zoho CRM
           </a>
         </Card>
       </div>

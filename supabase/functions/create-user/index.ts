@@ -156,11 +156,9 @@ async function sendInviteEmail(
 function generateTempPassword(): string {
   const chars =
     "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
-  const randomBytes = new Uint8Array(14);
-  crypto.getRandomValues(randomBytes);
   let pw = "";
   for (let i = 0; i < 14; i++) {
-    pw += chars.charAt(randomBytes[i] % chars.length);
+    pw += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return pw;
 }
@@ -216,13 +214,14 @@ Deno.serve(async (req: Request) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", caller.id)
-      .in("role", ["super_admin", "admin"]);
+      .eq("role", "super_admin")
+      .single();
 
-    if (!callerRoles || callerRoles.length === 0) {
+    if (!callerRoles) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Only admins can create users",
+          error: "Only super admins can create users",
         }),
         { status: 403, headers },
       );
@@ -279,23 +278,6 @@ Deno.serve(async (req: Request) => {
       log.error("User roles insert error:", roleError);
     }
 
-    // Provision org_memberships so org-scoped queries work
-    const DEFAULT_ORG_ID = "00000000-0000-4000-a000-000000000001";
-    const orgRole = roles.includes("super_admin") || roles.includes("admin") ? "admin" : "member";
-    const { error: orgError } = await supabaseAdmin
-      .from("org_memberships")
-      .upsert({
-        user_id: userId,
-        org_id: DEFAULT_ORG_ID,
-        role: orgRole,
-        status: "active",
-        joined_at: new Date().toISOString(),
-      }, { onConflict: "user_id,org_id" });
-
-    if (orgError) {
-      log.error("Org membership insert error:", orgError);
-    }
-
     if (shouldProvisionAdvisorProfile(roles)) {
       try {
         await provisionAdvisorProfile(supabaseAdmin, {
@@ -329,19 +311,8 @@ Deno.serve(async (req: Request) => {
     let emailError: string | undefined;
     if (send_invite) {
       try {
-        let timer: ReturnType<typeof setTimeout>;
-        const emailTimeout = new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error("Email send timed out after 15 s")), 15_000);
-        });
-        try {
-          await Promise.race([
-            sendInviteEmail(email, first_name, tempPassword, roles),
-            emailTimeout,
-          ]);
-          emailSent = true;
-        } finally {
-          clearTimeout(timer!);
-        }
+        await sendInviteEmail(email, first_name, tempPassword, roles);
+        emailSent = true;
       } catch (emailErr) {
         log.error("Email send error:", emailErr);
         emailError = emailErr instanceof Error ? emailErr.message : String(emailErr);

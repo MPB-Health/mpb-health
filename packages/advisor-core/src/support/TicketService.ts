@@ -98,7 +98,7 @@ async function extractFunctionError(error: unknown): Promise<string> {
   return error instanceof Error ? error.message : 'Unknown error';
 }
 
-export type TicketStatus = 'new' | 'open' | 'pending' | 'closed';
+export type TicketStatus = 'new' | 'open' | 'pending' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface Ticket {
@@ -113,14 +113,9 @@ export interface Ticket {
   updated_at: string;
 }
 
-/** Stored in ITSTS `ticket_comments.content_format` — plain legacy, html = sanitized rich text */
-export type TicketContentFormat = 'plain' | 'html';
-
 export interface TicketComment {
   id: string;
   content: string;
-  /** Defaults to plain when omitted (legacy API responses). */
-  content_format?: TicketContentFormat;
   is_internal: boolean;
   created_at: string;
   author_id: string;
@@ -137,6 +132,7 @@ export interface TicketStats {
   new: number;
   open: number;
   pending: number;
+  resolved: number;
   closed: number;
 }
 
@@ -201,59 +197,10 @@ export interface CreateTicketResult {
   ticket_number: number;
 }
 
-export interface TicketAttachmentUploadResult {
+interface TicketAttachmentUploadResult {
   fileName: string;
   accessUrl: string;
-  storagePath: string;
   size: number;
-}
-
-/**
- * Appends a sanitized attachment list to ticket reply HTML (after inline images / body).
- */
-/**
- * If the filename is a UUID (e.g. iOS camera roll photo), return a
- * human-friendly label like "Photo 1.jpg" instead.
- */
-function friendlyDisplayName(name: string, index: number): string {
-  const dotIdx = name.lastIndexOf('.');
-  const base = dotIdx > 0 ? name.slice(0, dotIdx) : name;
-  const ext = dotIdx > 0 ? name.slice(dotIdx) : '';
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(base);
-  if (!isUuid) return name;
-  const typeLabel = /\.(jpe?g|png|gif|webp|heic|svg)$/i.test(ext) ? 'Photo'
-    : /\.(pdf)$/i.test(ext) ? 'Document'
-    : /\.(mp4|mov|avi|webm)$/i.test(ext) ? 'Video'
-    : 'Attachment';
-  return `${typeLabel} ${index}${ext}`;
-}
-
-export function appendTicketAttachmentsHtml(
-  baseHtml: string,
-  uploads: TicketAttachmentUploadResult[],
-): string {
-  if (!uploads.length) return baseHtml;
-  const esc = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-  const items = uploads
-    .map((u, i) => {
-      const name = esc(friendlyDisplayName(u.fileName, i + 1));
-      const href = esc(u.accessUrl);
-      const kb = Math.max(1, Math.round(u.size / 1024));
-      return `<li><a href="${href}" rel="noopener noreferrer" target="_blank">${name}</a> <span class="text-neutral-500">(${kb} KB)</span></li>`;
-    })
-    .join('');
-  const block = `<p><strong>Attachments</strong></p><ul>${items}</ul>`;
-  const trimmed = baseHtml.trim();
-  if (
-    !trimmed ||
-    trimmed === '<p></p>' ||
-    trimmed === '<p><br></p>' ||
-    trimmed === '<p><br class="ProseMirror-trailingBreak"></p>'
-  ) {
-    return block;
-  }
-  return `${trimmed}\n${block}`;
 }
 
 export interface UpdateTicketOptions {
@@ -277,37 +224,12 @@ export class TicketService {
     return ext ? `${base}.${ext.slice(0, 10)}` : base;
   }
 
-  private formatAttachmentHtml(uploads: TicketAttachmentUploadResult[]): string {
-    const esc = (s: string) =>
-      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    const items = uploads
-      .map((u, i) => {
-        const displayName = esc(friendlyDisplayName(u.fileName, i + 1));
-        const href = esc(u.accessUrl);
-        const storagePath = esc(u.storagePath);
-        const kb = Math.max(1, Math.round(u.size / 1024));
-        return `<li><a href="${href}" rel="noopener noreferrer" target="_blank" data-storage-path="${storagePath}">${displayName}</a> <span style="color:#737373">(${kb} KB)</span></li>`;
-      })
-      .join('');
-    return `<p><strong>Attachments</strong></p><ul>${items}</ul>`;
-  }
-
-  /**
-   * Upload files to `ticket-attachments` storage for a reply (same layout as new-ticket uploads).
-   * Returns signed URLs suitable for embedding in HTML (short expiry — same as new tickets).
-   */
-  async uploadFilesForTicketReply(
-    ticketId: string,
-    attachments: File[],
-  ): Promise<TicketAttachmentUploadResult[]> {
-    return this.uploadAttachments(ticketId, attachments);
-  }
-
-  /** Upload one image and return a signed URL for inline &lt;img src&gt; in the rich editor. */
-  async uploadImageForTicketReply(ticketId: string, file: File): Promise<string> {
-    const [first] = await this.uploadAttachments(ticketId, [file]);
-    if (!first?.accessUrl) throw new Error('Image upload failed.');
-    return first.accessUrl;
+  private formatAttachmentComment(uploads: TicketAttachmentUploadResult[]): string {
+    const lines = uploads.map((upload) => {
+      const kb = Math.max(1, Math.round(upload.size / 1024));
+      return `- ${upload.fileName} (${kb} KB): ${upload.accessUrl}`;
+    });
+    return ['Attachments uploaded by advisor:', ...lines].join('\n');
   }
 
   private async uploadAttachments(ticketId: string, attachments: File[]): Promise<TicketAttachmentUploadResult[]> {
@@ -351,7 +273,7 @@ export class TicketService {
 
         const { data: signedData, error: signedError } = await supabase.storage
           .from(TicketService.ATTACHMENTS_BUCKET)
-          .createSignedUrl(path, 60 * 60 * 24 * 365);
+          .createSignedUrl(path, 60 * 60 * 24);
 
         if (signedError || !signedData?.signedUrl) {
           throw signedError || new Error('Failed to create secure attachment URL.');
@@ -360,7 +282,6 @@ export class TicketService {
         uploaded.push({
           fileName: file.name,
           accessUrl: signedData.signedUrl,
-          storagePath: path,
           size: file.size,
         });
       }
@@ -386,23 +307,18 @@ export class TicketService {
    *
    * Built-in resilience:
    *  1. Resolves a guaranteed-fresh auth token (30 s expiry buffer).
-   *  2. 10 s timeout per attempt so the UI never hangs.
+   *  2. 20 s timeout per attempt so the UI never hangs.
    *  3. Automatic silent retry (up to 3 attempts) with exponential back-off
-   *     for transient failures (timeouts, network errors, 5xx) — READ-ONLY
-   *     actions only. Mutating actions (create, reply, etc.) are NEVER
-   *     retried to prevent duplicate inserts.
+   *     for transient failures (timeouts, network errors, 5xx).
    *  4. On auth errors, refreshes the session and retries silently.
-   *  5. Mutating calls include an x-idempotency-key header for server-side
-   *     deduplication as a second safety net.
+   *  5. Only throws after all retries are exhausted.
+   *
+   * The end user should never see a technical error; pages should receive
+   * either data or a clean, recoverable error.
    */
-  private static CALL_TIMEOUT_MS = 10_000;
+  private static CALL_TIMEOUT_MS = 20_000;
   private static MAX_RETRIES = 2; // 3 total attempts
-  private static RETRY_BACKOFF = [800, 2_000]; // ms between retries
-
-  private static MUTATING_ACTIONS = new Set([
-    'create', 'create_for_advisor', 'reply', 'staff_reply',
-    'update_status', 'assign', 'merge', 'delete',
-  ]);
+  private static RETRY_BACKOFF = [1_000, 3_000]; // ms between retries
 
   private async call<T extends { success: boolean }>(
     action: string,
@@ -411,12 +327,10 @@ export class TicketService {
   ): Promise<T> {
     const correlationId = newCorrelationId();
     const timeoutMs = opts.timeoutMs ?? TicketService.CALL_TIMEOUT_MS;
-    const isMutating = TicketService.MUTATING_ACTIONS.has(action);
-    const maxRetries = isMutating ? 0 : TicketService.MAX_RETRIES;
 
     let lastError: Error | null = null;
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    for (let attempt = 0; attempt <= TicketService.MAX_RETRIES; attempt++) {
       // Back-off before retries (not before the first attempt)
       if (attempt > 0) {
         const delay = TicketService.RETRY_BACKOFF[attempt - 1] ?? 3_000;
@@ -444,7 +358,6 @@ export class TicketService {
           headers: {
             ...authHeader,
             'x-request-id': correlationId,
-            ...(isMutating ? { 'x-idempotency-key': correlationId } : {}),
           },
         });
 
@@ -520,8 +433,8 @@ export class TicketService {
   async getTicketStats(): Promise<TicketStats> {
     // Unauthenticated → return zeros silently.
     const data = await this.call<TicketStats & { success: boolean }>('stats', {}, { allowUnauthenticated: true });
-    if (!data) return { total: 0, new: 0, open: 0, pending: 0, closed: 0 };
-    return { total: data.total, new: data.new, open: data.open, pending: data.pending, closed: data.closed };
+    if (!data) return { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 };
+    return { total: data.total, new: data.new, open: data.open, pending: data.pending, resolved: data.resolved, closed: data.closed };
   }
 
   async getCategories(): Promise<string[]> {
@@ -547,23 +460,15 @@ export class TicketService {
     if (opts.attachments?.length) {
       const uploads = await this.uploadAttachments(data.ticket_id, opts.attachments);
       if (uploads.length) {
-        await this.replyToTicket(data.ticket_id, this.formatAttachmentHtml(uploads), 'html');
+        await this.replyToTicket(data.ticket_id, this.formatAttachmentComment(uploads));
       }
     }
 
     return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
   }
 
-  async replyToTicket(
-    ticketId: string,
-    content: string,
-    contentFormat: TicketContentFormat = 'plain',
-  ): Promise<void> {
-    await this.call<{ success: boolean }>('reply', {
-      ticket_id: ticketId,
-      content,
-      content_format: contentFormat,
-    });
+  async replyToTicket(ticketId: string, content: string): Promise<void> {
+    await this.call<{ success: boolean }>('reply', { ticket_id: ticketId, content });
   }
 
   // ── Admin read methods ─────────────────────────────────────────────────
@@ -589,23 +494,13 @@ export class TicketService {
 
   async getAllTicketStats(): Promise<TicketStats> {
     const data = await this.call<TicketStats & { success: boolean }>('stats_all');
-    return { total: data.total, new: data.new, open: data.open, pending: data.pending, closed: data.closed };
+    return { total: data.total, new: data.new, open: data.open, pending: data.pending, resolved: data.resolved, closed: data.closed };
   }
 
   // ── Admin write methods ────────────────────────────────────────────────
 
-  async addComment(
-    ticketId: string,
-    content: string,
-    isInternal = false,
-    contentFormat: TicketContentFormat = 'plain',
-  ): Promise<void> {
-    await this.call<{ success: boolean }>('add_comment', {
-      ticket_id: ticketId,
-      content,
-      is_internal: isInternal,
-      content_format: contentFormat,
-    });
+  async addComment(ticketId: string, content: string, isInternal = false): Promise<void> {
+    await this.call<{ success: boolean }>('add_comment', { ticket_id: ticketId, content, is_internal: isInternal });
   }
 
   async updateTicket(ticketId: string, opts: UpdateTicketOptions): Promise<void> {
@@ -656,14 +551,11 @@ export class TicketService {
   }
 
   /**
-   * Permanently delete tickets and all associated data (comments, SLA,
-   * attachments) from both ITSTS and primary storage.
+   * Delete multiple tickets. Closes them since the proxy doesn't support
+   * hard-delete; this is the safest admin bulk action.
    */
   async bulkDeleteTickets(ticketIds: string[]): Promise<number> {
-    const data = await this.call<{ success: boolean; deleted: number }>('delete_tickets', {
-      ticket_ids: ticketIds,
-    });
-    return data.deleted;
+    return this.bulkUpdateTickets(ticketIds, { status: 'closed' });
   }
 
   /**
@@ -671,7 +563,7 @@ export class TicketService {
    * closes them in bulk.
    */
   async bulkCloseAll(): Promise<number> {
-    const openStatuses: TicketStatus[] = ['new', 'open', 'pending'];
+    const openStatuses: TicketStatus[] = ['new', 'open', 'pending', 'resolved'];
     let totalClosed = 0;
 
     for (const status of openStatuses) {
@@ -705,7 +597,8 @@ export class TicketService {
   }
 
   /**
-   * Knowledge base — returns closed tickets as searchable articles.
+   * Knowledge base — returns resolved tickets as searchable articles.
+   * Re-uses the admin list endpoint with a resolved/closed status filter.
    */
   async getKnowledgeBase(opts: {
     search?: string;
@@ -714,7 +607,7 @@ export class TicketService {
     perPage?: number;
   } = {}): Promise<AdminTicketListResult> {
     return this.getAllTickets({
-      status: 'closed',
+      status: 'resolved',
       search: opts.search,
       page: opts.page,
       perPage: opts.perPage,

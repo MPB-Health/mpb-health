@@ -19,8 +19,6 @@ export const DOMAINS = {
   advisors: 'advisor.mpb.health',
   admin: 'admin.mpb.health',
   training: 'training.mpb.health',
-  support: 'support.mpb.health',
-  'staff-hub': 'portal.mpb.health',
 } as const;
 
 export const DEV_PORTS = {
@@ -30,17 +28,14 @@ export const DEV_PORTS = {
   crm: 5174,
   advisors: 5175,
   training: 5177,
-  'staff-hub': 5178,
 } as const;
 
-export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website' | 'support';
+export type PortalKey = 'admin' | 'crm' | 'advisors';
 
 export interface PortalInfo {
   key: PortalKey;
   name: string;
   description: string;
-  /** When true, SSO navigation opens in a new tab (e.g. cross-project apps) */
-  openInNewTab?: boolean;
 }
 
 export const PORTALS: Record<PortalKey, PortalInfo> = {
@@ -59,31 +54,14 @@ export const PORTALS: Record<PortalKey, PortalInfo> = {
     name: 'Advisor Portal',
     description: 'Training, meetings, and resources',
   },
-  website: {
-    key: 'website',
-    name: 'Website CMS',
-    description: 'Blog, SEO & site settings',
-  },
-  support: {
-    key: 'support',
-    name: 'Support Portal',
-    description: 'IT Support Ticketing System',
-    openInNewTab: true,
-  },
 } as const;
 
 /**
- * Get the URL for a portal based on the current environment.
- * In development, uses localhost with the appropriate port.
- * In production, uses the configured domain.
- * For the support portal (ITSTS), always uses the production domain
- * since it is a separate Supabase project with no local dev port.
+ * Get the URL for a portal based on the current environment
+ * In development, uses localhost with the appropriate port
+ * In production, uses the configured domain
  */
 export function getPortalUrl(portal: keyof typeof DOMAINS): string {
-  if (portal === 'support') {
-    return `https://${DOMAINS.support}`;
-  }
-
   const isDev = typeof window !== 'undefined' && 
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   
@@ -151,6 +129,8 @@ export const FEATURES = {
   // CRM Features
   CRM_AI_INSIGHTS: 'crm_ai_insights',
   CRM_AUTOMATION: 'crm_automation',
+  CRM_ZOHO_SYNC: 'crm_zoho_sync',
+
   // Advisor Features
   ADVISOR_VIDEO_MEETINGS: 'advisor_video_meetings',
   ADVISOR_TRAINING_LMS: 'advisor_training_lms',

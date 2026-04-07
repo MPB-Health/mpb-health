@@ -1,9 +1,9 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
 import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { getPortalSSOUrl } from '@mpbhealth/auth';
+import { buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
 import {
   LayoutDashboard,
@@ -38,7 +38,6 @@ import {
   Calculator,
   Command,
   Download,
-  Sparkles,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,14 +46,8 @@ import { useCRM } from '../contexts/CRMContext';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { NotificationTicker } from '../components/NotificationTicker';
 import CommandPalette from '../components/CommandPalette';
-import { AICommandBar } from '../components/AICommandBar';
 import GlobalSearch from '../components/GlobalSearch';
 import { RouteErrorBoundary } from '../components/ErrorBoundary';
-import { FloatingActionButton } from '../components/FloatingActionButton';
-import { FavoritesBar, RecentlyVisited, useFavoritesStore } from '../components/FavoritesNav';
-import { MentionNotifications } from '../components/MentionsSystem';
-import { FieldSalesModeToggle } from '../components/FieldSalesMode';
-import { OnlineTeamList } from '../components/LivePresence';
 
 interface ExtendedNavChild {
   name: string;
@@ -81,7 +74,7 @@ const navigationSections: NavSection[] = [
   {
     id: 'main',
     items: [
-      { name: 'War Room', href: '/today', icon: Zap },
+      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     ],
   },
   {
@@ -91,6 +84,7 @@ const navigationSections: NavSection[] = [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
       { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
+      { name: 'Import from Zoho', href: '/import/zoho', icon: Download, permission: 'settings.manage' },
     ],
   },
   {
@@ -177,39 +171,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessSupport } = usePortalAccess(user?.id);
-  const recordVisit = useFavoritesStore((s) => s.recordVisit);
+  const zohoConfigured = !!import.meta.env.VITE_ZOHO_API_KEY;
 
-  useEffect(() => {
-    const pageNames: Record<string, string> = {
-      '/today': 'War Room', '/leads': 'Leads', '/pipeline': 'Pipeline',
-      '/accounts': 'Accounts', '/contacts': 'Contacts', '/deals': 'Deals',
-      '/deal-pipeline': 'Deal Pipeline', '/products': 'Products', '/quotes': 'Quotes',
-      '/invoices': 'Invoices', '/campaigns': 'Campaigns', '/tasks': 'Tasks',
-      '/calendar': 'Calendar', '/meetings': 'Meetings', '/reports': 'Reports',
-      '/sales-activity': 'Sales Activity', '/email/inbox': 'Inbox', '/settings': 'Settings',
-      '/forecasting': 'Forecasting', '/templates': 'Templates', '/automation': 'Automation',
-    };
-    const name = pageNames[location.pathname];
-    if (name) recordVisit(location.pathname, name);
-  }, [location.pathname, recordVisit]);
-
-  useEffect(() => {
-    const onLogCall = () => navigate('/leads?action=log-call');
-    const onAddTask = () => navigate('/tasks?action=create');
-    const onAddNote = () => navigate('/leads?action=add-note');
-    window.addEventListener('fab:log-call', onLogCall);
-    window.addEventListener('fab:add-task', onAddTask);
-    window.addEventListener('fab:add-note', onAddNote);
-    return () => {
-      window.removeEventListener('fab:log-call', onLogCall);
-      window.removeEventListener('fab:add-task', onAddTask);
-      window.removeEventListener('fab:add-note', onAddNote);
-    };
-  }, [navigate]);
+  // Portal access from global user_roles table
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(user?.id);
 
   const handleSignOut = async () => {
     await signOut();
+    // Hard reload to /login to fully clear in-memory state
     window.location.href = '/login';
   };
 
@@ -218,6 +187,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Filter nav items based on permissions and feature flags
   const visibleNav: NavItem[] = navigation
     .filter((item) => {
+      // Hide Zoho-specific items when Zoho is not configured
+      if (item.href === '/import/zoho' && !zohoConfigured) return false;
       if (!item.permission) return true;
       return can(item.permission);
     })
@@ -273,24 +244,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    try {
-      const result = await getPortalSSOUrl(portal, supabase);
-      return result.url;
-    } catch {
-      return null;
-    }
+    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
   }, []);
 
   const userSection = (
     <div className="space-y-3">
-      {/* Online Team */}
-      <div className="px-2">
-        <OnlineTeamList />
-      </div>
-      {/* Recently Visited */}
-      <div className="px-2">
-        <RecentlyVisited currentHref={location.pathname} />
-      </div>
       {/* Org Switcher */}
       <div className="px-2">
         <OrgSwitcher
@@ -331,23 +289,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const topBarActions = (
     <div className="flex items-center space-x-3">
-      {/* AI Command Bar Trigger */}
-      <button
-        onClick={() => {
-          const event = new KeyboardEvent('keydown', {
-            key: 'j',
-            metaKey: true,
-            bubbles: true,
-          });
-          document.dispatchEvent(event);
-        }}
-        className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-violet-500/10 to-blue-500/10 hover:from-violet-500/20 hover:to-blue-500/20 rounded-lg text-xs text-violet-600 dark:text-violet-400 transition-colors border border-violet-200/50 dark:border-violet-500/20"
-        title="AI Command Bar (⌘J)"
-      >
-        <Sparkles className="w-3.5 h-3.5" />
-        <kbd className="text-[10px] bg-violet-100/50 dark:bg-violet-500/10 px-1 py-0.5 rounded font-mono">⌘J</kbd>
-      </button>
-
       {/* Command Palette Trigger */}
       <button
         onClick={() => {
@@ -379,9 +320,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </div>
       )}
 
-      {/* Mentions */}
-      <MentionNotifications />
-
       {/* Notifications */}
       <NotificationCenter />
     </div>
@@ -389,9 +327,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <>
-      {/* Command Palette (Cmd+K) and AI Command Bar (Cmd+J) */}
+      {/* Command Palette - always rendered */}
       <CommandPalette />
-      <AICommandBar />
 
       <AppLayout
         appName="CRM"
@@ -403,8 +340,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
-            canAccessWebsite={canAccessWebsite}
-            canAccessSupport={canAccessSupport}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />
@@ -415,9 +350,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         renderNavLink={renderNavLink}
         renderChildNavLink={renderChildNavLink}
       >
-        {/* Favorites Bar - pinned pages for quick access */}
-        <FavoritesBar currentHref={location.pathname} />
-
         {/* Notification Ticker - real-time activity feed */}
         <NotificationTicker />
 
@@ -425,15 +357,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <RouteErrorBoundary>
           {children}
         </RouteErrorBoundary>
-
-        {/* Floating Action Button */}
-        <FloatingActionButton
-          onNavigate={navigate}
-          hasOverdueTasks={overdueTasks.length > 0}
-        />
-
-        {/* Mobile Field Sales Mode Toggle */}
-        <FieldSalesModeToggle />
       </AppLayout>
     </>
   );

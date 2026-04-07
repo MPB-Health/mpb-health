@@ -89,26 +89,26 @@ export class AnalyticsService {
 
     const [total, today, thisWeek, thisMonth, converted] = await Promise.all([
       supabase
-        .from('lead_submissions')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .then((r) => r.count || 0),
       supabase
-        .from('lead_submissions')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfDay.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('lead_submissions')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfWeek.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('lead_submissions')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfMonth.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('lead_submissions')
+        .from('zoho_lead_submissions')
         .select('*', { count: 'exact', head: true })
         .eq('pipeline_stage', 'closed_won')
         .then((r) => r.count || 0),
@@ -132,7 +132,7 @@ export class AnalyticsService {
     fromDate.setDate(fromDate.getDate() - days);
 
     const table = {
-      leads: 'lead_submissions',
+      leads: 'zoho_lead_submissions',
       users: 'admin_users',
       enrollments: 'enrollments',
     }[metric];
@@ -169,7 +169,7 @@ export class AnalyticsService {
   // Get top performers (advisors with most conversions)
   async getTopPerformers(limit = 5): Promise<TopPerformer[]> {
     const { data, error } = await supabase
-      .from('lead_submissions')
+      .from('zoho_lead_submissions')
       .select('assigned_to, pipeline_stage')
       .not('assigned_to', 'is', null);
 
@@ -216,7 +216,7 @@ export class AnalyticsService {
   // Get lead sources breakdown
   async getLeadSources(): Promise<{ source: string; count: number }[]> {
     const { data, error } = await supabase
-      .from('lead_submissions')
+      .from('zoho_lead_submissions')
       .select('utm_source');
 
     if (error) return [];
@@ -235,7 +235,7 @@ export class AnalyticsService {
   // Get pipeline breakdown
   async getPipelineBreakdown(): Promise<{ stage: string; count: number }[]> {
     const { data, error } = await supabase
-      .from('lead_submissions')
+      .from('zoho_lead_submissions')
       .select('pipeline_stage');
 
     if (error) return [];
@@ -258,7 +258,7 @@ export class AnalyticsService {
     toDate: string
   ): Promise<string> {
     const table = {
-      leads: 'lead_submissions',
+      leads: 'zoho_lead_submissions',
       users: 'admin_users',
       enrollments: 'enrollments',
     }[type];
@@ -274,22 +274,13 @@ export class AnalyticsService {
     // Convert to CSV
     if (!data || data.length === 0) return '';
 
+    // TODO: HIPAA compliance — replace with logPhiExport() from @mpbhealth/auth
+    // once @mpbhealth/auth is added as a dependency of admin-core.
+    // PHI export events MUST be logged per HIPAA §164.312(b) audit controls.
     const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id ?? 'unknown';
-
-    // HIPAA §164.312(b) — log PHI export to audit trail
-    try {
-      await supabase.from('phi_access_log').insert({
-        user_id: userId,
-        phi_table: table,
-        phi_record_id: `export:csv:${data.length}`,
-        access_type: 'export',
-        fields_accessed: Object.keys(data[0] || {}),
-        justification: `Data export: csv format, ${data.length} records, range ${fromDate}..${toDate}`,
-      });
-    } catch (auditErr) {
-      console.error('[HIPAA] Failed to log PHI export:', auditErr);
-    }
+    console.warn(
+      `[PHI-EXPORT] type=${type} table=${table} records=${data.length} range=${fromDate}..${toDate} user=${session?.user?.id ?? 'unknown'}`
+    );
 
     const headers = Object.keys(data[0]);
     const rows = data.map((row) =>

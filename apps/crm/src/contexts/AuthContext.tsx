@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -22,18 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-
-    // Safety timeout: never stay stuck on loading spinner.
-    // If getSession() hangs (stale token, network) force loading=false.
-    const timeout = setTimeout(() => {
-      setLoading((prev) => {
-        if (prev) {
-          console.warn('[CRM Auth] Timed out after 8 s — treating as unauthenticated');
-          return false;
-        }
-        return prev;
-      });
-    }, 8_000);
 
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
@@ -59,39 +47,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => {
-      clearTimeout(timeout);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     return { error };
-  }, []);
+  };
 
-  const signOut = useCallback(async () => {
+  const signOut = async () => {
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (e) {
       console.warn('Sign out API error (session cleared locally):', e);
     }
+    // Safety net: forcibly remove persisted session from storage
     try {
       localStorage.removeItem('mpb-auth-token');
     } catch (_) { /* storage may not be available */ }
     setUser(null);
     setSession(null);
-  }, []);
+  };
 
-  const authValue = useMemo<AuthContextType>(
-    () => ({ user, session, loading, signIn, signOut }),
-    [user, session, loading, signIn, signOut]
+  return (
+    <AuthContext.Provider value={{ user, session, loading, signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

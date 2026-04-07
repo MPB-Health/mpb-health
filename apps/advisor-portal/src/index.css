@@ -9,9 +9,10 @@
    Brand palette: #0A4E8E, #0C71C3, #A4CC43, #E2EAF0, #0E2D41
    ============================================================================ */
 
-/* Use `:root` (not `html`) so these values beat theme-tokens.css: `:root` there
-   sets a dark sidebar; type selector `html` loses to `:root` on specificity. */
-:root {
+/* Use `html` (same specificity as :root but declared later) so these values
+   always beat the dark --sidebar-bg from the imported theme-tokens.css,
+   regardless of whether dark mode is active. */
+html {
   --accent-50: 232 244 253;
   --accent-100: 209 233 251;
   --accent-200: 163 211 247;
@@ -39,8 +40,9 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Dark mode: keep sidebar light — same tokens as light mode for contrast. */
-:root.dark {
+/* Dark mode: keep sidebar white — the advisor portal uses a light sidebar
+   in all themes so text always stays visible. */
+html.dark {
   --sidebar-bg: 255 255 255;
   --sidebar-hover: 241 245 249;
   --sidebar-text: 51 65 85;

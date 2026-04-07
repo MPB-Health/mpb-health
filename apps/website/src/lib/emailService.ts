@@ -192,6 +192,13 @@ export async function sendLeadNotification(data: {
   estimatedCost?: number;
   source: string;
 }): Promise<EmailResponse> {
+  const LEAD_NOTIFICATION_RECIPIENTS = [
+    'info@mympb.com',
+    'leonardo@mympb.com',
+    'catherine@mympb.com',
+    'julia@mympb.com',
+  ];
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -241,7 +248,7 @@ export async function sendLeadNotification(data: {
   `;
 
   return sendEmail({
-    to: 'info@mympb.com',
+    to: LEAD_NOTIFICATION_RECIPIENTS,
     subject: `🎯 New Lead: ${data.name || data.email}`,
     html,
     replyTo: data.email,

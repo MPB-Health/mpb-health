@@ -73,7 +73,6 @@ export {
   canAccessAdvisorPortal,
   canAccessCrmPortal,
   canAccessMemberPortal,
-  canAccessSupportPortal,
   getAccessiblePortals,
 } from './services/userRolesService';
 
@@ -189,20 +188,6 @@ export {
 
 // Portal SSO (client-side cross-portal session transfer)
 export { buildPortalSSOUrl } from './services/portalSSO';
-
-// Unified SSO service (dispatches to hash-transfer or edge function)
-export {
-  ssoService,
-  getPortalSSOUrl,
-  shouldOpenInNewTab,
-  type SSOResult,
-} from './services/ssoService';
-
-// SSO Navigation hook
-export {
-  useSSONavigation,
-  type UseSSONavigationReturn,
-} from './hooks/useSSONavigation';
 
 // PHI Security Service (HIPAA §164.312 Compliance)
 export {

@@ -93,17 +93,20 @@ export default function ChangePassword() {
       if (lastError) throw lastError;
 
       // Clear the must_change_password flag BEFORE refreshing profile.
-      // This MUST complete before refreshProfile() or MainLayout will
-      // see the old flag and redirect back to /change-password (loop).
-      if (profile?.id) {
-        try {
-          const { error: flagError } = await supabase
+      // Uses SECURITY DEFINER RPC to bypass RLS — the direct .update() call
+      // was silently failing because advisor_profiles had no UPDATE policy,
+      // trapping users in an infinite /change-password loop.
+      try {
+        const { error: flagError } = await supabase.rpc('clear_must_change_password_after_reset');
+        if (flagError) console.error('Failed to clear must_change_password flag:', flagError);
+      } catch {
+        // Fallback: try direct update (now works with the UPDATE policy fix)
+        if (profile?.id) {
+          await supabase
             .from('advisor_profiles')
             .update({ must_change_password: false })
-            .eq('id', profile.id);
-          if (flagError) console.error('Failed to clear must_change_password flag:', flagError);
-        } catch {
-          // If this fails, still continue — user changed their password
+            .eq('id', profile.id)
+            .catch(() => {});
         }
       }
 

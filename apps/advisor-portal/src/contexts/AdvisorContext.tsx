@@ -18,6 +18,7 @@ interface AdvisorContextType {
   loading: boolean;
   profileLoading: boolean;
   error: string | null;
+  hasSession: boolean;
 
   // Training
   trainingModules: TrainingModule[];
@@ -45,6 +46,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSession, setHasSession] = useState(false);
 
   const [trainingModules, setTrainingModules] = useState<TrainingModule[]>([]);
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgress[]>([]);
@@ -255,6 +257,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        setHasSession(!!session);
+
         if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && !initialHandled.current)) {
           initialHandled.current = true;
           setLoading(false);
@@ -311,6 +315,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     loading,
     profileLoading,
     error,
+    hasSession,
     trainingModules,
     trainingProgress,
     trainingStats,
@@ -324,6 +329,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     loading,
     profileLoading,
     error,
+    hasSession,
     trainingModules,
     trainingProgress,
     trainingStats,

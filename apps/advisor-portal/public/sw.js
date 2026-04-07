@@ -450,8 +450,16 @@ self.addEventListener('message', (event) => {
 
   if (event.data.type === 'CACHE_URLS') {
     event.waitUntil(
-      caches.open(RUNTIME_CACHE).then((cache) => {
-        return cache.addAll(event.data.urls);
+      caches.open(RUNTIME_CACHE).then(async (cache) => {
+        const urls = Array.isArray(event.data?.urls) ? event.data.urls : [];
+        const results = await Promise.allSettled(
+          urls.map((url) => cache.add(url))
+        );
+        results.forEach((result, i) => {
+          if (result.status === 'rejected') {
+            console.log('[SW] Failed to cache runtime URL:', urls[i], result.reason);
+          }
+        });
       })
     );
   }

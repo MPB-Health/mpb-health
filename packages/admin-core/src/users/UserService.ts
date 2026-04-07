@@ -1,4 +1,4 @@
-import { supabase } from '@mpbhealth/database';
+import { supabase, invokeWithResolvedAuth } from '@mpbhealth/database';
 import type { AdminUser, Role, Permission } from '../types';
 
 export interface CrossPortalUser {
@@ -324,19 +324,20 @@ export class UserService {
 
   /** Send a password reset email via edge function (scanner-proof, uses Resend) */
   async sendPasswordReset(email: string): Promise<void> {
-    const { data, error } = await supabase.functions.invoke('advisor-forgot-password', {
+    const { data, error } = await invokeWithResolvedAuth<{ success?: boolean; error?: string }>('advisor-forgot-password', {
       body: { email },
     });
-    if (error) throw error;
+    if (error) throw new Error(error.message || 'Failed to send reset email');
     if (data && !data.success) throw new Error(data.error || 'Failed to send reset email');
   }
 
   /** Directly set a new password for a user (super_admin only — calls admin-update-password edge function) */
   async setUserPassword(userId: string, password: string): Promise<void> {
-    const { error } = await supabase.functions.invoke('admin-update-password', {
+    const { data, error } = await invokeWithResolvedAuth<{ success?: boolean; error?: string }>('admin-update-password', {
       body: { userId, password },
     });
-    if (error) throw error;
+    if (error) throw new Error(error.message || 'Failed to update password');
+    if (data && data.success === false) throw new Error(data.error || 'Failed to update password');
   }
 
   /** Update advisor profile status */

@@ -55,10 +55,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Create client with user's token to verify they're authenticated and authorized
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || "", {
+    // Create caller-scoped client to verify caller identity and role.
+    // Some environments omit SUPABASE_ANON_KEY for functions, so fall back
+    // to service role key while still using the caller's Authorization header.
+    const userClient = createClient(
+      supabaseUrl,
+      Deno.env.get("SUPABASE_ANON_KEY") || supabaseServiceKey,
+      {
       global: { headers: { Authorization: authHeader } },
-    });
+      },
+    );
 
     // Verify caller is authenticated
     const { data: { user: callingUser }, error: authError } = await userClient.auth.getUser();
@@ -69,16 +75,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check if caller is a super_admin
+    // Check if caller is privileged enough to set passwords.
+    // Both super_admin and admin are allowed.
     const { data: roles, error: rolesError } = await userClient
       .from("user_roles")
       .select("role")
       .eq("user_id", callingUser.id)
-      .eq("role", "super_admin");
+      .in("role", ["super_admin", "admin"]);
 
     if (rolesError || !roles || roles.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Only super admins can update user passwords" }),
+        JSON.stringify({ error: "Only admins can update user passwords" }),
         { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }

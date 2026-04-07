@@ -226,10 +226,20 @@ export default function MainLayout() {
   // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
 
+  const safeGetPortalUrl = useCallback((portal: PortalKey): string => {
+    try {
+      return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
+    } catch {
+      return '#';
+    }
+  }, []);
+
   // SSO-aware portal navigation (client-side session transfer)
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
-  }, []);
+    const baseUrl = safeGetPortalUrl(portal);
+    if (!baseUrl || baseUrl === '#') return null;
+    return buildPortalSSOUrl(baseUrl, supabase);
+  }, [safeGetPortalUrl]);
 
   // CMS navigation via React Query — automatic dedup, caching, and stale-while-revalidate
   const { data: cmsNavItems = [] } = useQuery<NavItem[]>({
@@ -521,7 +531,7 @@ export default function MainLayout() {
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
-            getPortalUrl={getPortalUrl}
+            getPortalUrl={safeGetPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />
         }

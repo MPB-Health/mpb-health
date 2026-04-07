@@ -469,12 +469,8 @@ export class TicketService {
     return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
   }
 
-  async replyToTicket(ticketId: string, content: string, contentFormat?: TicketContentFormat): Promise<void> {
-    await this.call<{ success: boolean }>('reply', {
-      ticket_id: ticketId,
-      content,
-      ...(contentFormat ? { content_format: contentFormat } : {}),
-    });
+  async replyToTicket(ticketId: string, content: string): Promise<void> {
+    await this.call<{ success: boolean }>('reply', { ticket_id: ticketId, content });
   }
 
   // ── Admin read methods ─────────────────────────────────────────────────

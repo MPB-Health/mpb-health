@@ -1,0 +1,78 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - img [ref=e6]
+    - img [ref=e14]
+    - img [ref=e17]
+    - img [ref=e20]
+    - img [ref=e23]
+    - img [ref=e27]
+    - img [ref=e31]
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - img [ref=e38]
+        - heading "MPB Health" [level=1] [ref=e40]
+        - paragraph [ref=e41]: Empowering Health, Securing Futures
+        - paragraph [ref=e42]: Advisor Portal
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - img [ref=e45]
+          - text: HIPAA Compliant
+        - generic [ref=e47]:
+          - img [ref=e48]
+          - text: 256-bit Encrypted
+        - generic [ref=e51]:
+          - img [ref=e52]
+          - text: SOC 2 Type II
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - img [ref=e58]
+          - generic [ref=e60]:
+            - paragraph [ref=e61]: 50,000+ Members
+            - paragraph [ref=e62]: Trusted by healthcare professionals nationwide
+        - generic [ref=e63]:
+          - img [ref=e65]
+          - generic [ref=e67]:
+            - paragraph [ref=e68]: Enterprise Security
+            - paragraph [ref=e69]: Bank-grade encryption & compliance
+        - generic [ref=e70]:
+          - img [ref=e72]
+          - generic [ref=e74]:
+            - paragraph [ref=e75]: 99.9% Uptime
+            - paragraph [ref=e76]: Reliable access when you need it most
+  - generic [ref=e78]:
+    - generic [ref=e79]:
+      - heading "Welcome back" [level=2] [ref=e80]
+      - paragraph [ref=e81]: Sign in to access your dashboard
+    - generic [ref=e82]:
+      - generic [ref=e83]:
+        - generic [ref=e84]: Email address
+        - generic [ref=e85]:
+          - img [ref=e86]
+          - textbox "Email address" [ref=e89]:
+            - /placeholder: advisor@mympb.com
+      - generic [ref=e90]:
+        - generic [ref=e91]: Password
+        - generic [ref=e92]:
+          - img [ref=e93]
+          - textbox "Password" [ref=e96]:
+            - /placeholder: ••••••••
+          - button "Show password" [ref=e97] [cursor=pointer]:
+            - img [ref=e98]
+      - generic [ref=e101]:
+        - generic [ref=e102] [cursor=pointer]:
+          - checkbox "Remember me" [ref=e103]
+          - generic [ref=e104]: Remember me
+        - button "Forgot password?" [ref=e105] [cursor=pointer]
+      - button "Sign in" [ref=e106] [cursor=pointer]
+    - paragraph [ref=e107]:
+      - text: Need help?
+      - link "Contact Support" [ref=e108] [cursor=pointer]:
+        - /url: "#"
+    - generic [ref=e109]:
+      - generic [ref=e110]:
+        - img [ref=e111]
+        - text: 256-bit encrypted
+      - generic [ref=e114]: ·
+      - generic [ref=e115]:
+        - img [ref=e116]
+        - text: HIPAA Compliant

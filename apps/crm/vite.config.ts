@@ -31,12 +31,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        '@mpbhealth/auth': path.resolve(__dirname, '../../packages/auth/src/index.ts'),
-        '@mpbhealth/config': path.resolve(__dirname, '../../packages/config/src/index.ts'),
-        '@mpbhealth/ui': path.resolve(__dirname, '../../packages/ui/src/index.ts'),
-        '@mpbhealth/utils': path.resolve(__dirname, '../../packages/utils/src/index.ts'),
-        '@mpbhealth/database': path.resolve(__dirname, '../../packages/database/src/index.ts'),
-        '@mpbhealth/crm-core': path.resolve(__dirname, '../../packages/crm-core/src/index.ts'),
       },
       dedupe: ['react', 'react-dom', 'react-router-dom'],
     },

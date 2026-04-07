@@ -102,11 +102,12 @@ export default function ChangePassword() {
       } catch {
         // Fallback: try direct update (now works with the UPDATE policy fix)
         if (profile?.id) {
-          await supabase
-            .from('advisor_profiles')
-            .update({ must_change_password: false })
-            .eq('id', profile.id)
-            .catch(() => {});
+          try {
+            await supabase
+              .from('advisor_profiles')
+              .update({ must_change_password: false })
+              .eq('id', profile.id);
+          } catch { /* best-effort */ }
         }
       }
 

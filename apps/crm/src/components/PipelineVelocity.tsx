@@ -85,14 +85,22 @@ export function PipelineVelocityBar() {
   const [stages, setStages] = useState<StageVelocity[]>([]);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const unavailableRef = useRef(false);
 
   const fetchVelocity = useCallback(async () => {
-    if (!activeOrgId) return;
+    if (!activeOrgId || unavailableRef.current) return;
     try {
       const { data, error } = await supabase.rpc('crm_lead_stage_velocity', {
         p_org_id: activeOrgId,
       });
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST202' || error.code === '42883') {
+          unavailableRef.current = true;
+          setStages([]);
+          return;
+        }
+        throw error;
+      }
       setStages((data as StageVelocity[]) ?? []);
     } catch (err) {
       console.error('[PipelineVelocityBar] fetch failed:', err);
@@ -209,14 +217,22 @@ export function StuckLeadsAlert({ onNavigateToLead }: StuckLeadsAlertProps) {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const unavailableRef = useRef(false);
 
   const fetchStuck = useCallback(async () => {
-    if (!activeOrgId) return;
+    if (!activeOrgId || unavailableRef.current) return;
     try {
       const { data, error } = await supabase.rpc('crm_get_stuck_leads', {
         p_org_id: activeOrgId,
       });
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST202' || error.code === '42883') {
+          unavailableRef.current = true;
+          setLeads([]);
+          return;
+        }
+        throw error;
+      }
       setLeads((data as StuckLead[]) ?? []);
     } catch (err) {
       console.error('[StuckLeadsAlert] fetch failed:', err);

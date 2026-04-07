@@ -77,6 +77,19 @@ export function useGamification(): GamificationState {
 
   const streakCheckedRef = useRef(false);
   const wasPerfectDayRef = useRef(false);
+  const unavailableRef = useRef(false);
+
+  const isMissingGamificationObject = (err: unknown): boolean => {
+    const code = (err as { code?: string } | null)?.code;
+    const msg = (err as { message?: string } | null)?.message ?? '';
+    return (
+      code === 'PGRST205' || // table/view not found
+      code === 'PGRST202' || // rpc not found
+      code === '42883' || // function not found
+      msg.includes('Could not find the table') ||
+      msg.includes('Could not find the function')
+    );
+  };
 
   const gamificationService = useMemo(
     () => createGamificationService(supabase),
@@ -96,7 +109,12 @@ export function useGamification(): GamificationState {
       const data = await gamificationService.getMyXP(activeOrgId);
       setUserXP(data);
     } catch (err) {
-      console.error('[useGamification] Failed to load XP:', err);
+      if (isMissingGamificationObject(err)) {
+        unavailableRef.current = true;
+        setUserXP(null);
+      } else {
+        console.error('[useGamification] Failed to load XP:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -111,7 +129,7 @@ export function useGamification(): GamificationState {
   // ── Update streak on first load of the day ──────────────────────────────
 
   useEffect(() => {
-    if (!activeOrgId || !user || streakCheckedRef.current) return;
+    if (!activeOrgId || !user || streakCheckedRef.current || unavailableRef.current) return;
 
     streakCheckedRef.current = true;
 
@@ -186,7 +204,7 @@ export function useGamification(): GamificationState {
       entityId?: string,
       description?: string,
     ) => {
-      if (!activeOrgId || !user) return;
+      if (!activeOrgId || !user || unavailableRef.current) return;
 
       try {
         const result = await gamificationService.awardXP(
@@ -266,6 +284,10 @@ export function useGamification(): GamificationState {
           }
         }
       } catch (err) {
+        if (isMissingGamificationObject(err)) {
+          unavailableRef.current = true;
+          return;
+        }
         console.error('[useGamification] earnXP failed:', err);
       }
     },

@@ -125,21 +125,28 @@ export function LivePresenceBar({ entityType, entityId }: LivePresenceBarProps) 
   const { user } = useAuth();
   const [viewers, setViewers] = useState<PresenceUser[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const unavailableRef = useRef(false);
 
   // Track this user's presence on this entity
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || unavailableRef.current) return;
 
     supabase
       .from('user_presence')
       .update({
         viewing_entity_type: entityType,
         viewing_entity_id: entityId,
-        last_seen_at: new Date().toISOString(),
+        last_activity_at: new Date().toISOString(),
       })
       .eq('user_id', user.id)
       .then(({ error }) => {
-        if (error) console.error('[LivePresenceBar] Failed to update presence:', error);
+        if (error) {
+          if (error.code?.startsWith('PGRST') || error.code === '42703') {
+            unavailableRef.current = true;
+            return;
+          }
+          console.error('[LivePresenceBar] Failed to update presence:', error);
+        }
       });
 
     return () => {
@@ -158,17 +165,22 @@ export function LivePresenceBar({ entityType, entityId }: LivePresenceBarProps) 
 
   // Subscribe to presence changes for this entity
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || unavailableRef.current) return;
 
     const loadViewers = async () => {
       const { data, error } = await supabase
         .from('user_presence')
-        .select('user_id, status, profiles!user_presence_user_id_fkey(full_name, avatar_url)')
+        .select('user_id, status')
         .eq('viewing_entity_type', entityType)
         .eq('viewing_entity_id', entityId)
         .neq('user_id', user.id);
 
       if (error) {
+        if (error.code?.startsWith('PGRST') || error.code === '42703') {
+          unavailableRef.current = true;
+          setViewers([]);
+          return;
+        }
         console.error('[LivePresenceBar] Failed to fetch viewers:', error);
         return;
       }
@@ -177,8 +189,7 @@ export function LivePresenceBar({ entityType, entityId }: LivePresenceBarProps) 
         setViewers(
           (data as any[]).map((row) => ({
             userId: row.user_id,
-            name: row.profiles?.full_name || 'Team Member',
-            avatarUrl: row.profiles?.avatar_url || undefined,
+            name: 'Team Member',
             status: (row.status as PresenceUser['status']) || 'online',
           })),
         );
@@ -278,18 +289,25 @@ export function OnlineTeamList() {
   const [members, setMembers] = useState<PresenceUser[]>([]);
   const [loading, setLoading] = useState(true);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const unavailableRef = useRef(false);
 
   const loadOnlineMembers = useCallback(async () => {
-    if (!activeOrgId) return;
+    if (!activeOrgId || unavailableRef.current) return;
 
     const { data, error } = await supabase
       .from('user_presence')
-      .select('user_id, status, current_page, profiles!user_presence_user_id_fkey(full_name, avatar_url)')
+      .select('user_id, status, current_page')
       .eq('org_id', activeOrgId)
       .in('status', ['online', 'away', 'busy'])
       .neq('user_id', user?.id ?? '');
 
     if (error) {
+      if (error.code?.startsWith('PGRST') || error.code === '42703') {
+        unavailableRef.current = true;
+        setMembers([]);
+        setLoading(false);
+        return;
+      }
       console.error('[OnlineTeamList] Failed to fetch members:', error);
       setLoading(false);
       return;
@@ -299,8 +317,7 @@ export function OnlineTeamList() {
       setMembers(
         (data as any[]).map((row) => ({
           userId: row.user_id,
-          name: row.profiles?.full_name || 'Team Member',
-          avatarUrl: row.profiles?.avatar_url || undefined,
+          name: 'Team Member',
           status: (row.status as PresenceUser['status']) || 'online',
           currentPage: row.current_page,
         })),

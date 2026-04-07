@@ -28,13 +28,11 @@ interface OrgMember {
 interface Mention {
   id: string;
   mentioned_user_id: string;
-  mentioner_user_id: string;
+  mentioned_by: string;
   mentioner_name: string;
   mentioner_avatar_url?: string;
   entity_type: string;
   entity_id: string;
-  entity_label?: string;
-  context_text?: string;
   read: boolean;
   created_at: string;
 }
@@ -107,22 +105,27 @@ export function useMentions(entityType: string, entityId: string) {
   const { activeOrgId } = useOrg();
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [loading, setLoading] = useState(true);
+  const unavailableRef = useRef(false);
 
   const loadMentions = useCallback(async () => {
-    if (!entityType || !entityId) return;
+    if (!entityType || !entityId || unavailableRef.current) return;
 
     const { data, error } = await supabase
       .from('crm_mentions')
       .select(`
-        id, mentioned_user_id, mentioner_user_id, entity_type, entity_id,
-        entity_label, context_text, read, created_at,
-        mentioner:profiles!crm_mentions_mentioner_user_id_fkey(full_name, avatar_url)
+        id, mentioned_user_id, mentioned_by, entity_type, entity_id, read, created_at
       `)
       .eq('entity_type', entityType)
       .eq('entity_id', entityId)
       .order('created_at', { ascending: false });
 
     if (error) {
+      if (error.code?.startsWith('PGRST') || error.code === '42P01') {
+        unavailableRef.current = true;
+        setMentions([]);
+        setLoading(false);
+        return;
+      }
       console.error('[useMentions] Failed to load mentions:', error);
       setLoading(false);
       return;
@@ -133,13 +136,10 @@ export function useMentions(entityType: string, entityId: string) {
         (data as any[]).map((row) => ({
           id: row.id,
           mentioned_user_id: row.mentioned_user_id,
-          mentioner_user_id: row.mentioner_user_id,
-          mentioner_name: row.mentioner?.full_name || 'Someone',
-          mentioner_avatar_url: row.mentioner?.avatar_url || undefined,
+          mentioned_by: row.mentioned_by,
+          mentioner_name: 'Someone',
           entity_type: row.entity_type,
           entity_id: row.entity_id,
-          entity_label: row.entity_label,
-          context_text: row.context_text,
           read: row.read,
           created_at: row.created_at,
         })),
@@ -153,21 +153,23 @@ export function useMentions(entityType: string, entityId: string) {
   }, [loadMentions]);
 
   const addMention = useCallback(
-    async (mentionedUserId: string, contextText?: string, entityLabel?: string) => {
-      if (!user?.id || !activeOrgId) return;
+    async (mentionedUserId: string) => {
+      if (!user?.id || !activeOrgId || unavailableRef.current) return;
 
       const { error } = await supabase.from('crm_mentions').insert({
         org_id: activeOrgId,
         mentioned_user_id: mentionedUserId,
-        mentioner_user_id: user.id,
+        mentioned_by: user.id,
         entity_type: entityType,
         entity_id: entityId,
-        entity_label: entityLabel,
-        context_text: contextText,
         read: false,
       });
 
       if (error) {
+        if (error.code?.startsWith('PGRST') || error.code === '42P01') {
+          unavailableRef.current = true;
+          return;
+        }
         console.error('[useMentions] Failed to add mention:', error);
       } else {
         await loadMentions();
@@ -413,22 +415,27 @@ export function MentionNotifications() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const unavailableRef = useRef(false);
 
   const loadMentions = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || unavailableRef.current) return;
 
     const { data, error } = await supabase
       .from('crm_mentions')
       .select(`
-        id, mentioned_user_id, mentioner_user_id, entity_type, entity_id,
-        entity_label, context_text, read, created_at,
-        mentioner:profiles!crm_mentions_mentioner_user_id_fkey(full_name, avatar_url)
+        id, mentioned_user_id, mentioned_by, entity_type, entity_id, read, created_at
       `)
       .eq('mentioned_user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20);
 
     if (error) {
+      if (error.code?.startsWith('PGRST') || error.code === '42P01') {
+        unavailableRef.current = true;
+        setMentions([]);
+        setUnreadCount(0);
+        return;
+      }
       console.error('[MentionNotifications] Failed to load:', error);
       return;
     }
@@ -437,13 +444,10 @@ export function MentionNotifications() {
       const mapped: Mention[] = (data as any[]).map((row) => ({
         id: row.id,
         mentioned_user_id: row.mentioned_user_id,
-        mentioner_user_id: row.mentioner_user_id,
-        mentioner_name: row.mentioner?.full_name || 'Someone',
-        mentioner_avatar_url: row.mentioner?.avatar_url || undefined,
+        mentioned_by: row.mentioned_by,
+        mentioner_name: 'Someone',
         entity_type: row.entity_type,
         entity_id: row.entity_id,
-        entity_label: row.entity_label,
-        context_text: row.context_text,
         read: row.read,
         created_at: row.created_at,
       }));
@@ -455,7 +459,7 @@ export function MentionNotifications() {
   useEffect(() => {
     loadMentions();
 
-    if (!user?.id) return;
+    if (!user?.id || unavailableRef.current) return;
 
     const channel = supabase
       .channel(`mentions:${user.id}`)
@@ -612,7 +616,7 @@ export function MentionNotifications() {
                   ) : (
                     <div className={cn(
                       'h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0',
-                      getAvatarColor(mention.mentioner_user_id),
+                      getAvatarColor(mention.mentioned_by),
                     )}>
                       {getInitials(mention.mentioner_name)}
                     </div>
@@ -623,15 +627,7 @@ export function MentionNotifications() {
                     <p className="text-sm text-th-text-primary">
                       <span className="font-semibold">{mention.mentioner_name}</span>
                       <span className="text-th-text-secondary"> mentioned you</span>
-                      {mention.entity_label && (
-                        <span className="text-th-text-secondary"> in {mention.entity_label}</span>
-                      )}
                     </p>
-                    {mention.context_text && (
-                      <p className="text-xs text-th-text-tertiary mt-0.5 truncate">
-                        "{mention.context_text}"
-                      </p>
-                    )}
                     <p className="text-[10px] text-th-text-tertiary mt-1">
                       {formatTimeAgo(mention.created_at)}
                     </p>

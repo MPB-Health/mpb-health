@@ -30,6 +30,8 @@ serve(async (req) => {
     return handleCorsPreflightRequest(req);
   }
 
+  const headers = { ...getCorsHeaders(req), 'Content-Type': 'application/json' };
+
   // Rate limit: authenticated CRUD endpoint
   const clientIp = getClientIdentifier(req);
   const rateLimitResponse = checkRateLimit(clientIp, {
@@ -40,9 +42,33 @@ serve(async (req) => {
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    // Verify caller is an admin — this endpoint can send bulk emails
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401, headers });
+    }
+
+    const supabaseAuth = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: caller }, error: authError } = await supabaseAuth.auth.getUser(token);
+    if (authError || !caller) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), { status: 401, headers });
+    }
+
+    const { data: callerRoles } = await supabaseAuth
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', caller.id)
+      .in('role', ['super_admin', 'admin']);
+
+    if (!callerRoles || callerRoles.length === 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Only admins can send bulletin notifications' }), { status: 403, headers });
+    }
+
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     const APP_URL = Deno.env.get('APP_URL') || 'https://mpbhealth.com';
     const FROM_EMAIL = Deno.env.get('BULLETIN_FROM_EMAIL') || 'advisors@mpb.health';
     const FROM_NAME = Deno.env.get('BULLETIN_FROM_NAME') || 'MPB Health Advisor Portal';

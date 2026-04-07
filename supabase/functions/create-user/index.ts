@@ -156,9 +156,11 @@ async function sendInviteEmail(
 function generateTempPassword(): string {
   const chars =
     "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+  const randomBytes = new Uint8Array(14);
+  crypto.getRandomValues(randomBytes);
   let pw = "";
   for (let i = 0; i < 14; i++) {
-    pw += chars.charAt(Math.floor(Math.random() * chars.length));
+    pw += chars.charAt(randomBytes[i] % chars.length);
   }
   return pw;
 }

@@ -61,8 +61,8 @@ export const PORTALS: Record<PortalKey, PortalInfo> = {
   },
   website: {
     key: 'website',
-    name: 'Website Backend',
-    description: 'CMS, blog & site settings',
+    name: 'Website CMS',
+    description: 'Blog, SEO & site settings',
   },
   support: {
     key: 'support',

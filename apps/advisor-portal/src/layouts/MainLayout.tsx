@@ -233,7 +233,7 @@ export default function MainLayout() {
   }, [profile?.user_id]);
 
   // Portal access from global user_roles table
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessSupport } = usePortalAccess(profile?.user_id);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessSupport } = usePortalAccess(profile?.user_id);
 
   const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
     try {
@@ -558,6 +558,7 @@ export default function MainLayout() {
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
+            canAccessWebsite={canAccessWebsite}
             canAccessSupport={canAccessSupport}
             getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}

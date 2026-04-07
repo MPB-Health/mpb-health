@@ -243,9 +243,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   };
 
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    return buildPortalSSOUrl(getPortalUrl(portal), supabase);
+  const safeGetPortalUrl = useCallback((portal: PortalKey): string => {
+    try {
+      return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
+    } catch {
+      return '#';
+    }
   }, []);
+
+  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
+    const baseUrl = safeGetPortalUrl(portal);
+    if (!baseUrl || baseUrl === '#') return null;
+    return buildPortalSSOUrl(baseUrl, supabase);
+  }, [safeGetPortalUrl]);
 
   const userSection = (
     <div className="space-y-3">
@@ -340,7 +350,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
-            getPortalUrl={getPortalUrl}
+            getPortalUrl={safeGetPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />
         }

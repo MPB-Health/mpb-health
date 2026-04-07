@@ -27,6 +27,10 @@ import {
   DollarSign,
   Building2,
   HeartPulse,
+  Medal,
+  PartyPopper,
+  Crosshair,
+  Gauge,
 } from 'lucide-react';
 import type { WidgetConfig, WidgetRegistry } from '../types';
 
@@ -53,6 +57,14 @@ const PipelineBreakdownWidget = lazy(() => import('./PipelineBreakdownWidget'));
 const RevenueIntelligenceWidget = lazy(() => import('./RevenueIntelligenceWidget'));
 const RelationshipMapWidget = lazy(() => import('./RelationshipMapWidget'));
 const ActivityPulseWidget = lazy(() => import('./ActivityPulseWidget'));
+const LeaderboardWidget = lazy(() => import('./LeaderboardWidget'));
+const WinFeedWidget = lazy(() => import('./WinFeedWidget'));
+const NextBestActionWidgetLazy = lazy(() =>
+  import('../../NextBestActions').then((m) => ({ default: m.NextBestActionWidget }))
+);
+const DealWinProbabilityWidgetLazy = lazy(() =>
+  import('../../DealWinProbability').then((m) => ({ default: m.DealWinProbabilityWidget }))
+);
 
 // ============================================================================
 // Widget Registry
@@ -745,6 +757,119 @@ export const widgetRegistry: WidgetRegistry = {
           label: 'Show Engagement Score',
           type: 'checkbox',
           defaultValue: true,
+        },
+      ],
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Gamification Category
+  // ---------------------------------------------------------------------------
+  leaderboard: {
+    id: 'leaderboard',
+    title: 'Team Leaderboard',
+    description: 'Live team rankings with XP, levels, and streak tracking',
+    icon: Medal,
+    category: 'collaboration',
+    defaultSize: 'md',
+    allowedSizes: ['md', 'lg'],
+    minWidth: 6,
+    component: LeaderboardWidget,
+    dataRefreshInterval: 30000,
+    configSchema: {
+      fields: [
+        {
+          key: 'defaultPeriod',
+          label: 'Default Period',
+          type: 'select',
+          options: [
+            { value: 'daily', label: 'Daily' },
+            { value: 'weekly', label: 'Weekly' },
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'all_time', label: 'All Time' },
+          ],
+          defaultValue: 'weekly',
+        },
+        {
+          key: 'maxEntries',
+          label: 'Max Entries',
+          type: 'number',
+          defaultValue: 10,
+        },
+      ],
+    },
+  },
+
+  'win-feed': {
+    id: 'win-feed',
+    title: 'Win Feed',
+    description: 'Team celebration feed — deals closed, achievements earned, milestones reached',
+    icon: PartyPopper,
+    category: 'collaboration',
+    defaultSize: 'md',
+    allowedSizes: ['md', 'lg'],
+    minWidth: 6,
+    component: WinFeedWidget,
+    dataRefreshInterval: 60000,
+    configSchema: {
+      fields: [
+        {
+          key: 'maxItems',
+          label: 'Max Items',
+          type: 'number',
+          defaultValue: 15,
+        },
+        {
+          key: 'showReactions',
+          label: 'Show Reactions',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+      ],
+    },
+  },
+
+  'deal-win-probability': {
+    id: 'deal-win-probability',
+    title: 'Deal Win Probability',
+    description: 'AI-predicted win probability for top deals with risk signals',
+    icon: Gauge,
+    category: 'sales',
+    defaultSize: 'md',
+    allowedSizes: ['md', 'lg'],
+    minWidth: 6,
+    component: DealWinProbabilityWidgetLazy,
+    dataRefreshInterval: 120000,
+    configSchema: {
+      fields: [
+        {
+          key: 'maxDeals',
+          label: 'Max Deals',
+          type: 'number',
+          defaultValue: 10,
+        },
+      ],
+    },
+  },
+
+  'next-best-actions': {
+    id: 'next-best-actions',
+    title: 'Next Best Actions',
+    description: 'AI-powered action queue — ranked suggestions for what to do next',
+    icon: Crosshair,
+    category: 'sales',
+    defaultSize: 'md',
+    allowedSizes: ['sm', 'md', 'lg'],
+    minWidth: 4,
+    component: NextBestActionWidgetLazy,
+    dataRefreshInterval: 120000,
+    configSchema: {
+      fields: [
+        {
+          key: 'maxItems',
+          label: 'Max Actions',
+          type: 'number',
+          defaultValue: 5,
         },
       ],
     },

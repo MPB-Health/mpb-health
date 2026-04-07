@@ -229,23 +229,20 @@ const SystemSettings: React.FC = () => {
         };
       });
 
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('system_settings')
-          .upsert(update, { onConflict: 'key' });
-        
-        if (error) {
-          // Handle missing table error
-          if (error.message?.includes('schema cache') || 
-              error.code === 'PGRST204' ||
-              error.code === 'PGRST205') {
-            setSaveError('Cannot save: Database table does not exist. Please run migrations first.');
-            setTableExists(false);
-            setSaving(false);
-            return;
-          }
-          throw error;
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert(updates, { onConflict: 'key' });
+
+      if (error) {
+        if (error.message?.includes('schema cache') ||
+            error.code === 'PGRST204' ||
+            error.code === 'PGRST205') {
+          setSaveError('Cannot save: Database table does not exist. Please run migrations first.');
+          setTableExists(false);
+          setSaving(false);
+          return;
         }
+        throw error;
       }
 
       // Clear media cache so website immediately shows updated videos
@@ -254,10 +251,31 @@ const SystemSettings: React.FC = () => {
       setUnsavedChanges({});
       await loadSettings();
       toast.success('Settings saved successfully. Video changes are now live on the website.');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error saving settings:', error);
-      const errMsg = error instanceof Error ? error.message : 'Unknown error';
-      setSaveError(`Failed to save: ${errMsg}`);
+      const fromPostgrest =
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof (error as { message: unknown }).message === 'string'
+          ? (error as { message: string; code?: string }).message
+          : null;
+      const code =
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        typeof (error as { code: unknown }).code === 'string'
+          ? (error as { code: string }).code
+          : null;
+      const errMsg =
+        fromPostgrest ||
+        (error instanceof Error ? error.message : null) ||
+        'Unknown error';
+      const hint =
+        code === '42501' || /permission denied|403/i.test(errMsg)
+          ? ' (sign in as an admin, or apply migration 20260407500000_system_settings_write_rls if RLS blocks writes)'
+          : '';
+      setSaveError(`Failed to save: ${errMsg}${hint}`);
     }
 
     setSaving(false);

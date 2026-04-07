@@ -18,6 +18,9 @@ import {
   ChevronUp,
   X,
   Loader2,
+  LogIn,
+  ExternalLink,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   userService,
@@ -75,6 +78,12 @@ export default function AdvisorAccess() {
   const [sendingResetFor, setSendingResetFor] = useState<string | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Impersonation
+  const [impersonateTarget, setImpersonateTarget] = useState<AdvisorProfileSummary | null>(null);
+  const [impersonateMode, setImpersonateMode] = useState<'magiclink' | 'temp_password'>('magiclink');
+  const [impersonating, setImpersonating] = useState(false);
+  const [impersonateTempPw, setImpersonateTempPw] = useState('');
 
   // Debounce search
   useEffect(() => {
@@ -233,6 +242,27 @@ export default function AdvisorAccess() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
+  };
+
+  const handleImpersonate = async () => {
+    if (!impersonateTarget) return;
+    setImpersonating(true);
+    setImpersonateTempPw('');
+    try {
+      const result = await userService.impersonateAdvisor(impersonateTarget.id, impersonateMode);
+      if (impersonateMode === 'magiclink' && result.url) {
+        window.open(result.url, '_blank');
+        toast.success(`Opening advisor portal as ${impersonateTarget.first_name} ${impersonateTarget.last_name}`);
+        setImpersonateTarget(null);
+      } else if (impersonateMode === 'temp_password' && result.temp_password) {
+        setImpersonateTempPw(result.temp_password);
+        toast.success('Temporary password set');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Impersonation failed');
+    } finally {
+      setImpersonating(false);
+    }
   };
 
   return (
@@ -517,6 +547,22 @@ export default function AdvisorAccess() {
                             </button>
                           )}
 
+                          {/* Login as advisor */}
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setImpersonateTarget(advisor);
+                                setImpersonateMode('magiclink');
+                                setImpersonateTempPw('');
+                              }}
+                              title="Login as this advisor"
+                              className="p-1.5 text-th-text-tertiary hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                            >
+                              <LogIn className="w-4 h-4" />
+                            </button>
+                          )}
+
                           {/* View full profile */}
                           <button
                             type="button"
@@ -631,6 +677,157 @@ export default function AdvisorAccess() {
           loadData();
         }}
       />
+
+      {/* Impersonation confirmation dialog */}
+      {impersonateTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); }}
+          />
+          <div className="relative bg-surface-primary rounded-2xl border border-th-border shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                  <LogIn className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-th-text-primary">Login as Advisor</h3>
+                  <p className="text-sm text-th-text-tertiary">Impersonate this advisor account</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); }}
+                aria-label="Close dialog"
+                className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-surface-secondary rounded-lg p-3 space-y-1">
+              <p className="text-sm font-medium text-th-text-primary">
+                {impersonateTarget.first_name} {impersonateTarget.last_name}
+              </p>
+              <p className="text-sm text-th-text-tertiary">{impersonateTarget.email}</p>
+              {impersonateTarget.agent_id && (
+                <p className="text-xs text-th-text-tertiary font-mono">Agent: {impersonateTarget.agent_id}</p>
+              )}
+            </div>
+
+            {!impersonateTempPw && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-2">Method</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setImpersonateMode('magiclink')}
+                      className={`px-3 py-2.5 text-sm rounded-lg border transition-colors text-left ${
+                        impersonateMode === 'magiclink'
+                          ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 ring-1 ring-violet-500'
+                          : 'border-th-border text-th-text-secondary hover:border-violet-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <ExternalLink className="w-4 h-4" />
+                        <span className="font-medium">Magic Link</span>
+                      </div>
+                      <p className="text-xs opacity-70">Opens portal in a new tab</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImpersonateMode('temp_password')}
+                      className={`px-3 py-2.5 text-sm rounded-lg border transition-colors text-left ${
+                        impersonateMode === 'temp_password'
+                          ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 ring-1 ring-violet-500'
+                          : 'border-th-border text-th-text-secondary hover:border-violet-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <KeyRound className="w-4 h-4" />
+                        <span className="font-medium">Temp Password</span>
+                      </div>
+                      <p className="text-xs opacity-70">Sets a temporary password</p>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    This action will be logged. {impersonateMode === 'temp_password' ? 'Remember to reset the password after testing.' : 'A session will be created for this advisor.'}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); }}
+                    className="px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImpersonate}
+                    disabled={impersonating}
+                    className="flex items-center gap-2 px-4 py-2 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
+                  >
+                    {impersonating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <LogIn className="w-4 h-4" />
+                    )}
+                    {impersonating ? 'Processing...' : impersonateMode === 'magiclink' ? 'Open Portal' : 'Set Password'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {impersonateTempPw && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-th-text-secondary mb-1.5">
+                    Temporary Password
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={impersonateTempPw}
+                      aria-label="Temporary password"
+                      className="flex-1 px-3 py-2 text-sm font-mono bg-surface-secondary border border-th-border rounded-lg text-th-text-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(impersonateTempPw)}
+                      title="Copy password"
+                      className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Use this to sign in at the advisor portal. Remember to reset the advisor's password after testing.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); }}
+                  className="w-full px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

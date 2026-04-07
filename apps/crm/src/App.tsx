@@ -10,6 +10,7 @@ import Login from './pages/Login';
 const Dashboard = lazyRetry(() => import('./pages/Dashboard'));
 const LeadsList = lazyRetry(() => import('./pages/LeadsList'));
 const LeadDetail = lazyRetry(() => import('./pages/LeadDetail'));
+const LeadWorkspace = lazyRetry(() => import('./pages/LeadWorkspace'));
 const Pipeline = lazyRetry(() => import('./pages/Pipeline'));
 const Tasks = lazyRetry(() => import('./pages/Tasks'));
 const Calendar = lazyRetry(() => import('./pages/Calendar'));
@@ -48,6 +49,9 @@ const CustomModuleDetail = lazyRetry(() => import('./pages/studio/CustomModuleDe
 
 // Quick Rate Estimate Leads (from website quote system)
 const QuickRateEstimateLeads = lazyRetry(() => import('./pages/QuickRateEstimateLeads'));
+const WorkflowBuilderPage = lazyRetry(() =>
+  import('./components/WorkflowBuilder').then((m) => ({ default: m.WorkflowBuilder as React.ComponentType }))
+);
 
 // Email System
 const Inbox = lazyRetry(() => import('./pages/Inbox'));
@@ -193,13 +197,25 @@ export default function App() {
           <ProtectedRoute>
             <MainLayout>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/today" element={<Today />} />
+                <Route path="/" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
+                <Route path="/today" element={<Suspense fallback={<PageLoader />}><Today /></Suspense>} />
                 <Route
                   path="/leads"
                   element={
                     <Guarded permission="leads.read">
-                      <LeadsList />
+                      <Suspense fallback={<PageLoader />}>
+                        <LeadsList />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/leads/workspace/:id"
+                  element={
+                    <Guarded permission="leads.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <LeadWorkspace />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -207,7 +223,9 @@ export default function App() {
                   path="/leads/:id"
                   element={
                     <Guarded permission="leads.read">
-                      <LeadDetail />
+                      <Suspense fallback={<PageLoader />}>
+                        <LeadDetail />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -225,7 +243,9 @@ export default function App() {
                   path="/pipeline"
                   element={
                     <Guarded permission="pipeline.read">
-                      <Pipeline />
+                      <Suspense fallback={<PageLoader />}>
+                        <Pipeline />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -233,7 +253,9 @@ export default function App() {
                   path="/tasks"
                   element={
                     <Guarded permission="tasks.read">
-                      <Tasks />
+                      <Suspense fallback={<PageLoader />}>
+                        <Tasks />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -241,7 +263,9 @@ export default function App() {
                   path="/calendar"
                   element={
                     <Guarded permission="tasks.read">
-                      <Calendar />
+                      <Suspense fallback={<PageLoader />}>
+                        <Calendar />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -249,7 +273,9 @@ export default function App() {
                   path="/reports"
                   element={
                     <Guarded permission="reports.read">
-                      <Reports />
+                      <Suspense fallback={<PageLoader />}>
+                        <Reports />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -257,7 +283,9 @@ export default function App() {
                   path="/settings"
                   element={
                     <Guarded permission="settings.manage">
-                      <Settings />
+                      <Suspense fallback={<PageLoader />}>
+                        <Settings />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -265,7 +293,9 @@ export default function App() {
                   path="/templates"
                   element={
                     <Guarded permission="settings.manage">
-                      <Templates />
+                      <Suspense fallback={<PageLoader />}>
+                        <Templates />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -273,7 +303,29 @@ export default function App() {
                   path="/automation"
                   element={
                     <Guarded permission="settings.manage">
-                      <Automation />
+                      <Suspense fallback={<PageLoader />}>
+                        <Automation />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/automation/builder"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <WorkflowBuilderPage />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/automation/builder/:ruleId"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <WorkflowBuilderPage />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -291,7 +343,9 @@ export default function App() {
                   path="/email/sent"
                   element={
                     <Guarded permission="email.read">
-                      <SentEmails />
+                      <Suspense fallback={<PageLoader />}>
+                        <SentEmails />
+                      </Suspense>
                     </Guarded>
                   }
                 />
@@ -299,7 +353,9 @@ export default function App() {
                   path="/email/schedules"
                   element={
                     <Guarded permission="email.templates">
-                      <EmailSchedules />
+                      <Suspense fallback={<PageLoader />}>
+                        <EmailSchedules />
+                      </Suspense>
                     </Guarded>
                   }
                 />

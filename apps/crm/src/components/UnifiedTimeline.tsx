@@ -721,6 +721,40 @@ export function UnifiedTimeline({
     [dealId, supabase],
   );
 
+  const fetchCrmActivities = useCallback(
+    async (offset: number, pageSize: number): Promise<TimelineEntry[]> => {
+      if (!leadId && !contactId && !accountId && !dealId) return [];
+
+      let query = supabase
+        .from('crm_activities')
+        .select('id, subject, activity_type, notes, created_at, completed_at, scheduled_at, deal_id, contact_id, account_id, lead_id')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + pageSize - 1);
+
+      if (leadId) query = query.eq('lead_id', leadId);
+      else if (contactId) query = query.eq('contact_id', contactId);
+      else if (accountId) query = query.eq('account_id', accountId);
+      else if (dealId) query = query.eq('deal_id', dealId);
+
+      const { data, error } = await query;
+      if (error || !data) return [];
+
+      return data.map((a: Record<string, unknown>) => {
+        const aType = mapActivityType(String(a.activity_type || 'note'));
+        return {
+          id: `crm-act-${a.id}`,
+          type: aType,
+          timestamp: String(a.completed_at || a.scheduled_at || a.created_at),
+          title: String(a.subject || 'Activity'),
+          description: a.notes ? String(a.notes) : undefined,
+          metadata: { source: 'crm_activities' },
+          raw: a,
+        };
+      });
+    },
+    [leadId, contactId, accountId, dealId, supabase],
+  );
+
   const loadTimeline = useCallback(
     async (pageNum: number, append = false) => {
       if (!leadId && !dealId) {
@@ -742,6 +776,7 @@ export function UnifiedTimeline({
           fetchCalendarEvents(offset, limit),
           fetchTasks(offset, limit),
           fetchDealActivities(offset, limit),
+          fetchCrmActivities(offset, limit),
         ]);
 
         const newEntries = results
@@ -768,7 +803,7 @@ export function UnifiedTimeline({
         setLoadingMore(false);
       }
     },
-    [leadId, dealId, limit, fetchEmails, fetchActivities, fetchCalendarEvents, fetchTasks, fetchDealActivities],
+    [leadId, dealId, limit, fetchEmails, fetchActivities, fetchCalendarEvents, fetchTasks, fetchDealActivities, fetchCrmActivities],
   );
 
   useEffect(() => {

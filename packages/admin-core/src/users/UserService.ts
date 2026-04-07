@@ -401,6 +401,32 @@ export class UserService {
     if (error) throw error;
   }
 
+  // ── Advisor Impersonation ────────────────────────────────────────────────────
+
+  /**
+   * Impersonate an advisor by generating a magic link or setting a temporary password.
+   * Restricted to super_admin / admin roles (enforced server-side by the edge function).
+   */
+  async impersonateAdvisor(
+    advisorId: string,
+    mode: 'magiclink' | 'temp_password',
+  ): Promise<{ success: boolean; url?: string; temp_password?: string; advisor_email?: string; advisor_name?: string; error?: string }> {
+    const { data, error } = await supabase.functions.invoke('impersonate-advisor', {
+      body: { advisor_id: advisorId, mode },
+    });
+
+    if (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new Error(msg || 'Impersonation failed');
+    }
+
+    if (data && !data.success) {
+      throw new Error(data.error || 'Impersonation failed');
+    }
+
+    return data;
+  }
+
   // ── ITSTS / Support Portal sync ──────────────────────────────────────────────
 
   /**

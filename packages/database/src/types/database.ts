@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       activities: {
@@ -10011,6 +9986,33 @@ export type Database = {
         }
         Relationships: []
       }
+      impersonation_log: {
+        Row: {
+          admin_id: string
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          mode: string
+          target_user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          mode: string
+          target_user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          mode?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       insurance_carriers: {
         Row: {
           carrier_type: string
@@ -12313,6 +12315,48 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           zip_code?: string | null
+        }
+        Relationships: []
+      }
+      message_templates: {
+        Row: {
+          body: string
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          last_used_at: string | null
+          name: string
+          org_id: string | null
+          subject: string | null
+          times_used: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_used_at?: string | null
+          name: string
+          org_id?: string | null
+          subject?: string | null
+          times_used?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          org_id?: string | null
+          subject?: string | null
+          times_used?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -15195,6 +15239,45 @@ export type Database = {
           },
         ]
       }
+      saved_searches: {
+        Row: {
+          created_at: string | null
+          filters: Json | null
+          id: string
+          last_used_at: string | null
+          name: string
+          org_id: string | null
+          search_type: string | null
+          updated_at: string | null
+          use_count: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          last_used_at?: string | null
+          name: string
+          org_id?: string | null
+          search_type?: string | null
+          updated_at?: string | null
+          use_count?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          org_id?: string | null
+          search_type?: string | null
+          updated_at?: string | null
+          use_count?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       scoring_rules: {
         Row: {
           conditions: Json
@@ -18073,7 +18156,6 @@ export type Database = {
       }
       generate_quote_number: { Args: { p_org_id: string }; Returns: string }
       generate_ticket_number: { Args: never; Returns: string }
-      generate_tracking_token: { Args: never; Returns: string }
       get_active_advisor_emails: {
         Args: never
         Returns: {
@@ -18082,56 +18164,6 @@ export type Database = {
           first_name: string
           last_name: string
         }[]
-      }
-      get_active_advisor_meeting: {
-        Args: never
-        Returns: {
-          agenda: string | null
-          allow_guests: boolean | null
-          attendee_count: number | null
-          auto_record: boolean | null
-          co_host_ids: string[] | null
-          created_at: string | null
-          description: string | null
-          duration_minutes: number | null
-          ended_at: string | null
-          host_id: string | null
-          host_name: string | null
-          id: string
-          is_recurring: boolean | null
-          max_attendees: number | null
-          max_participants: number | null
-          meeting_link: string | null
-          meeting_notes: string | null
-          meeting_type: string | null
-          metadata: Json | null
-          notes: string | null
-          org_id: string | null
-          passcode: string | null
-          recording_url: string | null
-          recurrence_day: number | null
-          recurrence_pattern: string | null
-          recurrence_time: string | null
-          reminder_minutes: number | null
-          reminder_sent: boolean | null
-          require_registration: boolean | null
-          resources: Json | null
-          room_name: string
-          room_password: string | null
-          scheduled_at: string
-          started_at: string | null
-          status: string | null
-          tags: string[] | null
-          title: string
-          updated_at: string | null
-          visibility: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "advisor_meetings"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       get_activity_feed: {
         Args: {
@@ -18148,22 +18180,6 @@ export type Database = {
           entity_type: string
           id: string
           metadata: Json
-        }[]
-      }
-      get_advisor_hierarchy_tree: {
-        Args: { root_advisor_id: string }
-        Returns: {
-          agent_id: string
-          agent_label: string
-          email: string
-          full_name: string
-          hire_date: string
-          id: string
-          is_active: boolean
-          level: number
-          parent_id: string
-          phone: string
-          territory: string
         }[]
       }
       get_all_users_with_roles: {
@@ -18271,7 +18287,6 @@ export type Database = {
           zip_code: string
         }[]
       }
-      get_hierarchy_stats: { Args: { root_advisor_id: string }; Returns: Json }
       get_highest_role: { Args: { check_user_id: string }; Returns: string }
       get_inbox_summary: {
         Args: { p_org_id: string; p_user_id: string }
@@ -18368,17 +18383,6 @@ export type Database = {
               user_name: string
             }[]
           }
-      get_meeting_with_stats: {
-        Args: { p_meeting_id: string }
-        Returns: {
-          accepted: number
-          declined: number
-          meeting: Database["public"]["Tables"]["advisor_meetings"]["Row"]
-          pending: number
-          tentative: number
-          total_invited: number
-        }[]
-      }
       get_metric_timeseries: {
         Args: {
           p_end_date?: string
@@ -18525,20 +18529,6 @@ export type Database = {
           keyword: string
           position_change: number
           previous_position: number
-        }[]
-      }
-      get_unified_user_roles: {
-        Args: never
-        Returns: {
-          admin_permissions: Json
-          admin_role: string
-          admin_status: string
-          email: string
-          full_name: string
-          highest_role: string
-          profile_role: string
-          roles: string[]
-          user_id: string
         }[]
       }
       get_unread_notification_count: {
@@ -18892,15 +18882,6 @@ export type Database = {
         Args: { user_email: string; user_id: string }
         Returns: undefined
       }
-      share_note_with_role: {
-        Args: {
-          p_note_id: string
-          p_permission_level?: string
-          p_share_message?: string
-          p_target_role: string
-        }
-        Returns: Json
-      }
       snooze_priority_item: {
         Args: { p_item_id: string; p_reason?: string; p_until: string }
         Returns: boolean
@@ -19190,9 +19171,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       activity_type: [

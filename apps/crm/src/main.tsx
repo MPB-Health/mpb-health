@@ -8,6 +8,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { OrgProvider } from './contexts/OrgContext';
 import { CRMProvider } from './contexts/CRMContext';
 import { AppErrorBoundary } from './components/ErrorBoundary';
+import { CelebrationProvider } from './components/CelebrationSystem';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
@@ -20,6 +21,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <AuthProvider>
             <OrgProvider>
               <CRMProvider>
+                <CelebrationProvider>
                 <App />
                 <Toaster
                 position="top-right"
@@ -43,6 +45,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                   },
                 }}
               />
+              </CelebrationProvider>
               </CRMProvider>
             </OrgProvider>
           </AuthProvider>

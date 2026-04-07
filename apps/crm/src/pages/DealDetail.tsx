@@ -31,8 +31,11 @@ import { Modal } from '../components/Modal';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type { DealWithRelations, DealStageHistory } from '@mpbhealth/crm-core';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
+import { DealWinProbability } from '../components/DealWinProbability';
+import { DealRoom } from '../components/DealRoom';
+import { LivePresenceBar } from '../components/LivePresence';
 
-type TabType = 'overview' | 'contacts' | 'products' | 'quotes' | 'activities' | 'history';
+type TabType = 'overview' | 'contacts' | 'products' | 'quotes' | 'activities' | 'history' | 'room';
 
 export default function DealDetail() {
   const { id } = useParams<{ id: string }>();
@@ -209,6 +212,7 @@ export default function DealDetail() {
     { id: 'quotes', label: 'Quotes', icon: <Receipt className="w-4 h-4" /> },
     { id: 'activities', label: 'Activities', icon: <Activity className="w-4 h-4" /> },
     { id: 'history', label: 'Stage History', icon: <History className="w-4 h-4" /> },
+    { id: 'room', label: 'Deal Room', icon: <Users className="w-4 h-4" /> },
   ];
 
   return (
@@ -288,6 +292,9 @@ export default function DealDetail() {
           </PermissionGate>
         </div>
       </div>
+
+      {/* Live Presence */}
+      {id && <LivePresenceBar entityType="deal" entityId={id} />}
 
       {/* Tabs */}
       <div className="border-b border-th-border">
@@ -594,10 +601,19 @@ export default function DealDetail() {
               )}
             </div>
           )}
+
+          {activeTab === 'room' && id && (
+            <DealRoom dealId={id} dealName={deal.name} />
+          )}
         </div>
 
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-6">
+          {/* Win Probability */}
+          {id && !isClosed && (
+            <DealWinProbability dealId={id} dealName={deal.name} />
+          )}
+
           {/* Stage selector */}
           {!isClosed && (
             <div className="bg-surface-primary rounded-xl border border-th-border p-6">

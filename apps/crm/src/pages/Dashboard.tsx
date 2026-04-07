@@ -1,10 +1,5 @@
-// ============================================================================
-// Dashboard Page
-// Championship Command Center - Customizable widget dashboard
-// ============================================================================
-
-import { DashboardContainer } from '../components/dashboard/DashboardContainer';
+import { Navigate } from 'react-router-dom';
 
 export default function Dashboard() {
-  return <DashboardContainer />;
+  return <Navigate to="/today" replace />;
 }

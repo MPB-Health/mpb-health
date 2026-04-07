@@ -42,13 +42,12 @@ export class SettingsService {
   async updateSetting(
     key: string,
     value: unknown,
-    updatedBy: string
+    _updatedBy: string
   ): Promise<SystemSetting> {
     const { data, error } = await supabase
       .from('system_settings')
       .update({
         value,
-        updated_by: updatedBy,
         updated_at: new Date().toISOString(),
       })
       .eq('key', key)
@@ -65,7 +64,7 @@ export class SettingsService {
     value: unknown,
     category: string,
     description: string,
-    updatedBy: string,
+    _updatedBy: string,
     isSensitive = false
   ): Promise<SystemSetting> {
     const { data, error } = await supabase
@@ -76,7 +75,6 @@ export class SettingsService {
         category,
         description,
         is_sensitive: isSensitive,
-        updated_by: updatedBy,
         updated_at: new Date().toISOString(),
       })
       .select()

@@ -29,6 +29,9 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
+import { useCelebration } from '../components/CelebrationSystem';
+import { useGamification } from '../hooks/useGamification';
+import { LivePresenceBar } from '../components/LivePresence';
 import { PermissionGate } from '../components/PermissionGate';
 import { EditLeadModal } from '../components/EditLeadModal';
 import { AddNoteModal, LogCallModal, LogMeetingModal } from '../components/QuickActionModals';
@@ -127,6 +130,8 @@ export default function LeadDetail() {
   const navigate = useNavigate();
   const { leadService, activityService, taskService, automationService, pipelineStages } = useCRM();
   const { activeOrgId } = useOrg();
+  const { celebrate } = useCelebration();
+  const { earnXP } = useGamification();
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<LeadActivity[]>([]);
@@ -186,6 +191,13 @@ export default function LeadDetail() {
         leadId: lead.id,
         data: { from_stage: lead.pipeline_stage, to_stage: newStage },
       }).catch(console.error);
+      if (newStage === 'won') {
+        celebrate('deal_closed', `${lead.first_name} ${lead.last_name} — Won!`);
+        earnXP('deal_won', 'lead', lead.id, `Won: ${lead.first_name} ${lead.last_name}`);
+      } else {
+        celebrate('stage_won', `Moved to ${pipelineStages.find(s => s.name === newStage)?.display_name || newStage}`);
+        earnXP('stage_advanced', 'lead', lead.id, `${lead.first_name} ${lead.last_name} → ${newStage}`);
+      }
       toast.success('Stage updated');
       loadLead();
     } else {
@@ -202,6 +214,7 @@ export default function LeadDetail() {
         entityType: 'task',
         entityId: taskId,
       }).catch(console.error);
+      earnXP('task_completed', 'task', taskId, 'Completed task from lead detail');
       toast.success('Task completed');
       loadLead();
     } else {
@@ -249,13 +262,16 @@ export default function LeadDetail() {
 
   return (
     <div className="space-y-8 pb-8">
-      {/* Breadcrumbs */}
-      <Breadcrumbs
-        items={[
-          { label: 'Leads', href: '/leads' },
-          { label: `${lead.first_name} ${lead.last_name}` },
-        ]}
-      />
+      {/* Breadcrumbs + Presence */}
+      <div className="flex items-center justify-between">
+        <Breadcrumbs
+          items={[
+            { label: 'Leads', href: '/leads' },
+            { label: `${lead.first_name} ${lead.last_name}` },
+          ]}
+        />
+        {id && <LivePresenceBar entityType="lead" entityId={id} />}
+      </div>
 
       {/* ─── Hero Header ─── */}
       <div className="bg-surface-primary rounded-2xl border border-th-border p-6 lg:p-8">
@@ -355,6 +371,14 @@ export default function LeadDetail() {
               <Zap className="w-4 h-4" />
               {id && focusItems.isPinned('lead', id) ? 'Pinned' : 'Pin to Today'}
             </button>
+            <Link
+              to={`/leads/workspace/${id}`}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+              title="Open Lead Workspace"
+            >
+              <Zap className="w-4 h-4" />
+              Workspace
+            </Link>
             <PermissionGate permission="leads.update">
               <button
                 onClick={() => setShowEditLead(true)}
@@ -367,40 +391,87 @@ export default function LeadDetail() {
           </div>
         </div>
 
-        {/* Status bar */}
-        <div className="mt-6 pt-6 border-t border-th-border flex items-center gap-6 flex-wrap">
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">Stage</label>
-            <select
-              value={lead.pipeline_stage}
-              onChange={(e) => handleStageChange(e.target.value)}
-              aria-label="Pipeline stage"
-              className="border border-th-border rounded-lg px-3 py-1.5 text-sm font-medium bg-surface-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
-            >
-              {pipelineStages.map((s) => (
-                <option key={s.id} value={s.name}>{s.display_name}</option>
-              ))}
-            </select>
-          </div>
-          {lead.lead_score > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">Score</span>
-              <span className="text-sm font-bold text-th-text-primary">{lead.lead_score}</span>
-            </div>
-          )}
-          {lead.next_followup_at && (
-            <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-th-text-tertiary" />
-              <span className="text-sm text-th-text-secondary">
-                Follow-up: {new Date(lead.next_followup_at).toLocaleDateString()}
+        {/* Stage Progression Stepper */}
+        <div className="mt-6 pt-6 border-t border-th-border">
+          <div className="flex items-center gap-2 mb-3">
+            <label className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">Pipeline Stage</label>
+            {lead.next_followup_at && (
+              <span className="text-xs text-th-text-tertiary flex items-center gap-1 ml-auto">
+                <Clock className="w-3 h-3" />
+                Follow-up {new Date(lead.next_followup_at).toLocaleDateString()}
               </span>
-            </div>
-          )}
-          {lead.tobacco_status && lead.tobacco_status !== 'none' && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-              {TOBACCO_STATUS_LABELS[lead.tobacco_status as keyof typeof TOBACCO_STATUS_LABELS] || lead.tobacco_status}
-            </span>
-          )}
+            )}
+          </div>
+          <div className="flex items-center gap-1 overflow-x-auto pb-2">
+            {pipelineStages.map((s, idx) => {
+              const currentIdx = pipelineStages.findIndex(ps => ps.name === lead.pipeline_stage);
+              const isActive = s.name === lead.pipeline_stage;
+              const isPast = idx < currentIdx;
+              const isNext = idx === currentIdx + 1;
+              const isWon = s.name === 'won';
+              const isLost = s.name === 'lost';
+
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    if (!isActive) handleStageChange(s.name);
+                  }}
+                  disabled={isActive}
+                  className={`
+                    relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap
+                    ${isActive
+                      ? 'bg-th-accent-600 text-white shadow-md shadow-th-accent-500/25 ring-2 ring-th-accent-400/30 scale-105'
+                      : isPast
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                        : isNext
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-2 border-blue-300 dark:border-blue-700 border-dashed hover:border-solid hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer'
+                          : isWon
+                            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 cursor-pointer'
+                            : isLost
+                              ? 'bg-red-50 dark:bg-red-900/20 text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 cursor-pointer'
+                              : 'bg-surface-secondary text-th-text-secondary border border-th-border hover:bg-surface-tertiary cursor-pointer'
+                    }
+                  `}
+                  title={isActive ? 'Current stage' : `Move to ${s.display_name}`}
+                >
+                  {isPast && (
+                    <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: isActive || isPast ? 'currentColor' : s.color }}
+                  />
+                  {s.display_name}
+                  {isNext && (
+                    <svg className="w-3 h-3 ml-0.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {/* Meta info row */}
+          <div className="flex items-center gap-4 mt-3 flex-wrap">
+            {lead.lead_score > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">Score</span>
+                <span className={`text-sm font-bold px-2 py-0.5 rounded-md ${
+                  lead.lead_score >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                  lead.lead_score >= 50 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                }`}>{lead.lead_score}</span>
+              </div>
+            )}
+            {lead.tobacco_status && lead.tobacco_status !== 'none' && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+                {TOBACCO_STATUS_LABELS[lead.tobacco_status as keyof typeof TOBACCO_STATUS_LABELS] || lead.tobacco_status}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -410,6 +481,12 @@ export default function LeadDetail() {
 
         {/* ─── Left Column ─── */}
         <div className="space-y-6">
+
+          {/* AI Insights — prominent position */}
+          <AIInsightsPanel leadId={lead.id} leadEmail={lead.email} />
+
+          {/* Health Score — prominent position */}
+          <ScoreBreakdownPanel leadId={lead.id} />
 
           {/* Coverage Details */}
           <div className="bg-surface-primary rounded-2xl border border-th-border p-6">
@@ -545,9 +622,7 @@ export default function LeadDetail() {
             </div>
           )}
 
-          {/* AI + Score panels */}
-          <AIInsightsPanel leadId={lead.id} leadEmail={lead.email} />
-          <ScoreBreakdownPanel leadId={lead.id} />
+          {/* AI + Score panels moved to top of left column for prominence */}
         </div>
 
         {/* ─── Right Column (2/3 width) ─── */}

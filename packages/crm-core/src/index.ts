@@ -673,5 +673,20 @@ export type {
 } from './audit/auditTypes';
 export * from './audit';
 
+// Gamification
+export { GamificationService, createGamificationService } from './gamification/gamificationService';
+export type {
+  UserXP,
+  Achievement,
+  UserAchievement,
+  XPEvent,
+  LeaderboardEntry,
+  WinFeedItem,
+  Challenge,
+  XPAction,
+} from './gamification/gamificationService';
+export { XP_VALUES, LEVEL_THRESHOLDS } from './gamification/gamificationService';
+export * from './gamification';
+
 // Utilities
 export { sanitizeSearchInput } from './utils/sanitize';

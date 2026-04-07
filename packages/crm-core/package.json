@@ -163,14 +163,18 @@
     "./import": {
       "import": "./dist/import/index.js",
       "types": "./dist/import/index.d.ts"
+    },
+    "./gamification": {
+      "import": "./dist/gamification/index.js",
+      "types": "./dist/gamification/index.d.ts"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts src/dashboard/index.ts src/carriers/index.ts src/family/index.ts src/commissions/index.ts src/attachments/index.ts src/audit/index.ts src/forms/index.ts src/forecasting/index.ts src/approvals/index.ts src/studio/index.ts src/plan-interests/index.ts src/cases/index.ts src/documents/index.ts src/saved-views/index.ts src/import/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts src/dashboard/index.ts src/carriers/index.ts src/family/index.ts src/commissions/index.ts src/attachments/index.ts src/audit/index.ts src/forms/index.ts src/forecasting/index.ts src/approvals/index.ts src/studio/index.ts src/plan-interests/index.ts src/cases/index.ts src/documents/index.ts src/saved-views/index.ts src/import/index.ts --format esm --dts --watch",
+    "build": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts src/dashboard/index.ts src/carriers/index.ts src/family/index.ts src/commissions/index.ts src/attachments/index.ts src/audit/index.ts src/forms/index.ts src/forecasting/index.ts src/approvals/index.ts src/studio/index.ts src/plan-interests/index.ts src/cases/index.ts src/documents/index.ts src/saved-views/index.ts src/import/index.ts src/gamification/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts src/leads/index.ts src/activities/index.ts src/tasks/index.ts src/pipeline/index.ts src/notifications/index.ts src/priority/index.ts src/calendar/index.ts src/insights/index.ts src/templates/index.ts src/email/index.ts src/automation/index.ts src/reporting/index.ts src/scoring/index.ts src/accounts/index.ts src/contacts/index.ts src/deals/index.ts src/products/index.ts src/quotes/index.ts src/invoices/index.ts src/campaigns/index.ts src/vendors/index.ts src/purchase-orders/index.ts src/sales-orders/index.ts src/dashboard/index.ts src/carriers/index.ts src/family/index.ts src/commissions/index.ts src/attachments/index.ts src/audit/index.ts src/forms/index.ts src/forecasting/index.ts src/approvals/index.ts src/studio/index.ts src/plan-interests/index.ts src/cases/index.ts src/documents/index.ts src/saved-views/index.ts src/import/index.ts src/gamification/index.ts --format esm --dts --watch",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },

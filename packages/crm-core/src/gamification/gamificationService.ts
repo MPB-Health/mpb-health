@@ -237,12 +237,13 @@ export class GamificationService {
 
       if (!existing) return;
 
-      const currentValue = (existing as Record<string, number>)[counter] ?? 0;
+      const row = existing as unknown as Record<string, unknown>;
+      const currentValue = (typeof row[counter] === 'number' ? row[counter] : 0) as number;
 
       const { error } = await this.supabase
         .from('crm_user_xp')
         .update({ [counter]: currentValue + 1 })
-        .eq('id', existing.id);
+        .eq('id', row.id as string);
 
       if (error) {
         console.error('Failed to increment daily counter:', error);
@@ -597,7 +598,7 @@ export class GamificationService {
         return;
       }
 
-      const reactions: Record<string, string[]> = (win.reactions as Record<string, string[]>) || {};
+      const reactions: Record<string, string[]> = (win.reactions as unknown as Record<string, string[]>) || {};
       const users = reactions[emoji] || [];
 
       if (users.includes(userId)) {

@@ -44,20 +44,25 @@ const richTicketEditor = true;
 const MAX_REPLY_ATTACHMENTS = 10;
 const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;
 
-const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
   open: { label: 'Open', color: 'bg-yellow-100 text-yellow-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
   pending: { label: 'Pending', color: 'bg-orange-100 text-orange-700', icon: <Clock className="w-3.5 h-3.5" /> },
+  in_progress: { label: 'In Progress', color: 'bg-blue-100 text-blue-600', icon: <Loader2 className="w-3.5 h-3.5" /> },
   resolved: { label: 'Resolved', color: 'bg-green-100 text-green-700', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
   closed: { label: 'Closed', color: 'bg-neutral-100 text-neutral-600', icon: <XCircle className="w-3.5 h-3.5" /> },
 };
 
-const PRIORITY_CONFIG: Record<TicketPriority, { label: string; color: string }> = {
+const DEFAULT_STATUS = { label: 'Unknown', color: 'bg-neutral-100 text-neutral-500', icon: <CircleDot className="w-3.5 h-3.5" /> };
+
+const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
   low: { label: 'Low', color: 'bg-neutral-100 text-neutral-600' },
   medium: { label: 'Medium', color: 'bg-blue-100 text-blue-600' },
   high: { label: 'High', color: 'bg-orange-100 text-orange-600' },
   urgent: { label: 'Urgent', color: 'bg-red-100 text-red-700' },
 };
+
+const DEFAULT_PRIORITY = { label: 'Normal', color: 'bg-neutral-100 text-neutral-500' };
 
 export default function Tickets() {
   const { profile, loading: authLoading } = useAdvisor();
@@ -335,8 +340,8 @@ export default function Tickets() {
 
   if (selectedTicket) {
     const { ticket, comments } = selectedTicket;
-    const sc = STATUS_CONFIG[ticket.status];
-    const pc = PRIORITY_CONFIG[ticket.priority];
+    const sc = STATUS_CONFIG[ticket.status] ?? DEFAULT_STATUS;
+    const pc = PRIORITY_CONFIG[ticket.priority] ?? DEFAULT_PRIORITY;
 
     return (
       <div className="space-y-6">
@@ -625,8 +630,8 @@ export default function Tickets() {
       ) : (
         <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
           {filteredTickets.map((ticket) => {
-            const sc = STATUS_CONFIG[ticket.status];
-            const pc = PRIORITY_CONFIG[ticket.priority];
+            const sc = STATUS_CONFIG[ticket.status] ?? DEFAULT_STATUS;
+            const pc = PRIORITY_CONFIG[ticket.priority] ?? DEFAULT_PRIORITY;
 
             return (
               <button

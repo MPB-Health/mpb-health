@@ -1,0 +1,73 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e8]:
+      - button "Collapse sidebar" [ref=e10] [cursor=pointer]:
+        - img [ref=e11]
+      - img "Advisor Portal" [ref=e13]
+      - generic [ref=e14]: Advisor Portal
+    - navigation [ref=e16]:
+      - link "Dashboard" [ref=e17] [cursor=pointer]:
+        - /url: /
+        - img [ref=e18]
+        - generic [ref=e23]: Dashboard
+      - link "Bulletins" [ref=e24] [cursor=pointer]:
+        - /url: /bulletins
+        - img [ref=e25]
+        - generic [ref=e28]: Bulletins
+      - link "Resource Center" [ref=e29] [cursor=pointer]:
+        - /url: /quick-links
+        - img [ref=e30]
+        - generic [ref=e33]: Resource Center
+      - button "Resources" [ref=e35] [cursor=pointer]:
+        - img [ref=e36]
+        - generic [ref=e38]: Resources
+        - img [ref=e39]
+      - button "Forms" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - generic [ref=e46]: Forms
+        - img [ref=e47]
+      - button "Training" [ref=e50] [cursor=pointer]:
+        - img [ref=e51]
+        - generic [ref=e54]: Training
+        - img [ref=e55]
+      - link "Video Library" [ref=e57] [cursor=pointer]:
+        - /url: /videos
+        - img [ref=e58]
+        - generic [ref=e61]: Video Library
+      - link "Submit Group" [ref=e62] [cursor=pointer]:
+        - /url: /submit-group
+        - img [ref=e63]
+        - generic [ref=e67]: Submit Group
+      - link "Support Tickets" [ref=e68] [cursor=pointer]:
+        - /url: /tickets
+        - img [ref=e69]
+        - generic [ref=e71]: Support Tickets
+      - link "Contact" [ref=e72] [cursor=pointer]:
+        - /url: /contact
+        - img [ref=e73]
+        - generic [ref=e76]: Contact
+    - generic [ref=e77]:
+      - button "Switch to Dark theme" [ref=e79] [cursor=pointer]:
+        - img [ref=e80]
+        - generic [ref=e86]: Light
+      - generic [ref=e87]:
+        - button "Support Portal" [ref=e93] [cursor=pointer]:
+          - img [ref=e94]
+          - generic [ref=e96]: Support Portal
+        - button "Sign Out" [ref=e97] [cursor=pointer]:
+          - img [ref=e98]
+          - generic [ref=e101]: Sign Out
+  - generic [ref=e102]:
+    - banner [ref=e103]:
+      - generic [ref=e104]:
+        - generic [ref=e107]:
+          - img [ref=e108]
+          - textbox "Search leads, tasks, messages..." [ref=e111]
+          - generic [ref=e112]: ⌘K
+        - generic [ref=e113]:
+          - button "Meeting" [disabled] [ref=e115]:
+            - img [ref=e116]
+            - generic [ref=e119]: Meeting
+          - button "Notifications" [ref=e121] [cursor=pointer]:
+            - img [ref=e122]
+    - main [ref=e125]

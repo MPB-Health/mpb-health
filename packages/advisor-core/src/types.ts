@@ -14,6 +14,8 @@ export interface AdvisorProfile {
   company_name: string | null;
   must_change_password: boolean;
   status: 'pending' | 'active' | 'suspended' | 'inactive';
+  training_completed: boolean;
+  training_completed_at: string | null;
   onboarding_completed: boolean;
   onboarding_completed_at: string | null;
   created_at: string;

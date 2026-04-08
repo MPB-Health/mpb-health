@@ -32,6 +32,7 @@ import { trainingService } from '@mpbhealth/advisor-core';
 import { generateCertificate, type CertificateOptions } from '../utils/generateCertificate';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import DocumentCard from '../components/DocumentCard';
+import { TrainingRequiredBanner } from '../components/TrainingRequiredBanner';
 import type { SOPDocument } from '@mpbhealth/advisor-core';
 
 interface TrainingProps {
@@ -934,6 +935,7 @@ function QuizViewer({
   advisorName,
   advisorId,
   onMarkComplete,
+  onTrainingComplete,
   completed,
 }: {
   questions: QuizQuestion[];
@@ -944,6 +946,7 @@ function QuizViewer({
   advisorName: string;
   advisorId: string | null;
   onMarkComplete: () => void;
+  onTrainingComplete?: () => void;
   completed: boolean;
 }) {
   const [answers, setAnswers] = useState<Record<number, number | number[]>>({});
@@ -999,6 +1002,9 @@ function QuizViewer({
       saveQuizResult(resultKey, result);
       if (advisorId && resultKey === QUIZ_RESULT_KEY) {
         trainingService.saveQuizCertification(advisorId, correct);
+        trainingService.markTrainingCompleted(advisorId).then(() => {
+          onTrainingComplete?.();
+        });
       }
       if (!completed) onMarkComplete();
     }
@@ -1647,7 +1653,7 @@ const courseConfigs = {
 
 export default function Training({ section }: TrainingProps) {
   const navigate = useNavigate();
-  const { profile } = useAdvisor();
+  const { profile, refreshProfile } = useAdvisor();
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['introduction']));
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -1713,6 +1719,7 @@ export default function Training({ section }: TrainingProps) {
   if (!section) {
     return (
       <div className="space-y-6">
+        {profile && !profile.training_completed && <TrainingRequiredBanner />}
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-surface-tertiary">
             <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
@@ -1803,6 +1810,7 @@ export default function Training({ section }: TrainingProps) {
     const mpbCards = courses.filter((c) => ['mpb', 'secure-hsa', 'care-plus'].includes(c.id));
     return (
       <div className="space-y-6">
+        {profile && !profile.training_completed && <TrainingRequiredBanner />}
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-surface-tertiary">
             <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
@@ -1914,8 +1922,11 @@ export default function Training({ section }: TrainingProps) {
   }
 
   /* -------------------- MPB or Secure HSA Course Detail (Sidebar + Content) ---- */
+  const showTrainingBanner = profile && !profile.training_completed;
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
+      {showTrainingBanner && <TrainingRequiredBanner />}
       {/* Top Bar */}
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white flex-shrink-0 rounded-t-xl">
         <div className="flex items-center gap-3">
@@ -2072,6 +2083,7 @@ export default function Training({ section }: TrainingProps) {
               }
               advisorId={profile?.id || null}
               onMarkComplete={handleMarkComplete}
+              onTrainingComplete={refreshProfile}
               completed={completedLessons.has(activeLesson.id)}
             />
           ) : (

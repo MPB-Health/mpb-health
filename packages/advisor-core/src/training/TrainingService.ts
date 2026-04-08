@@ -279,6 +279,33 @@ export class TrainingService {
     return issued;
   }
 
+  async markTrainingCompleted(advisorId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('advisor_profiles')
+      .update({
+        training_completed: true,
+        training_completed_at: new Date().toISOString(),
+      })
+      .eq('id', advisorId);
+
+    if (error) {
+      console.error('Failed to mark training as completed:', error);
+      return false;
+    }
+    return true;
+  }
+
+  async isTrainingCompleted(advisorId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from('advisor_profiles')
+      .select('training_completed')
+      .eq('id', advisorId)
+      .single();
+
+    if (error || !data) return false;
+    return data.training_completed === true;
+  }
+
   // Get required modules that are not yet completed
   async getRequiredIncomplete(advisorId: string): Promise<TrainingModule[]> {
     const [modules, progress] = await Promise.all([

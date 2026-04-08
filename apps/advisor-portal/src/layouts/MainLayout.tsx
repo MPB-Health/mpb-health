@@ -62,6 +62,7 @@ import { CommandPalette } from '../components/command-palette';
 import { MobileBottomNav } from '../components/mobile';
 import { PWAInstallPrompt } from '../components/pwa';
 import { OnboardingWizard } from '../components/onboarding';
+import { TrainingGate } from '../components/TrainingGate';
 import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -313,8 +314,16 @@ export default function MainLayout() {
       return (ai === -1 ? ORDER.length : ai) - (bi === -1 ? ORDER.length : bi);
     });
 
+    // If training not completed and not admin, only show Training
+    const trainingRequired = profile && !profile.training_completed && !isAdminUser;
+    if (trainingRequired) {
+      return base.filter(
+        (item) => item.name === 'Training' || item.href === '/training'
+      );
+    }
+
     return base;
-  }, [cmsNavItems, isAdminUser]);
+  }, [cmsNavItems, isAdminUser, profile?.training_completed]);
 
   // Determine if today is a meeting day (2nd or 4th Tuesday)
   // NOTE: This useMemo MUST be above the early returns to satisfy React's Rules of Hooks.
@@ -589,7 +598,9 @@ export default function MainLayout() {
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-th-accent-600" />
           </div>
         ) : (
-          <Outlet />
+          <TrainingGate isAdmin={isAdminUser}>
+            <Outlet />
+          </TrainingGate>
         )}
       </AppLayout>
       </div>

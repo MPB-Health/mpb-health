@@ -83,6 +83,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       company_name: null,
       must_change_password: false,
       status: 'active',
+      training_completed: false,
+      training_completed_at: null,
       onboarding_completed: true,
       onboarding_completed_at: nowIso,
       created_at: sessionUser.created_at || nowIso,

@@ -57,6 +57,8 @@ async function provisionAdvisorProfile(
         company_name: input.companyName || null,
         avatar_url: input.avatarUrl || null,
         status: "active",
+        training_completed: false,
+        training_completed_at: null,
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
         metadata: {

@@ -451,7 +451,7 @@ export class TicketService {
 
   // ── Advisor write methods ──────────────────────────────────────────────
 
-  async createTicket(opts: CreateTicketOptions): Promise<CreateTicketResult> {
+  async createTicket(opts: CreateTicketOptions): Promise<CreateTicketResult & { attachmentError?: string }> {
     const data = await this.call<CreateTicketResult & { success: boolean }>('create', {
       subject: opts.subject,
       description: opts.description,
@@ -459,14 +459,36 @@ export class TicketService {
       priority: opts.priority,
     });
 
+    const result: CreateTicketResult & { attachmentError?: string } = {
+      ticket_id: data.ticket_id,
+      ticket_number: data.ticket_number,
+    };
+
+    // Attachment upload is best-effort — ticket is already created in ITSTS
     if (opts.attachments?.length) {
-      const uploads = await this.uploadAttachments(data.ticket_id, opts.attachments);
-      if (uploads.length) {
-        await this.replyToTicket(data.ticket_id, this.formatAttachmentComment(uploads));
+      try {
+        const uploadPromise = (async () => {
+          const uploads = await this.uploadAttachments(data.ticket_id, opts.attachments!);
+          if (uploads.length) {
+            await this.replyToTicket(data.ticket_id, this.formatAttachmentComment(uploads));
+          }
+        })();
+
+        // 45-second timeout for attachment upload
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Attachment upload timed out')), 45_000),
+        );
+
+        await Promise.race([uploadPromise, timeout]);
+      } catch (attachErr) {
+        // Ticket was created — don't throw, just report the attachment failure
+        result.attachmentError = attachErr instanceof Error
+          ? attachErr.message
+          : 'Failed to upload attachments';
       }
     }
 
-    return { ticket_id: data.ticket_id, ticket_number: data.ticket_number };
+    return result;
   }
 
   async replyToTicket(ticketId: string, content: string, contentFormat?: TicketContentFormat): Promise<void> {

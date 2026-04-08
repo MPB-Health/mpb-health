@@ -144,10 +144,19 @@ export default function NewTicket() {
         priority,
         attachments,
       });
-      toast.success(`Ticket #${result.ticket_number} submitted! Our team will be in touch shortly.`);
+      if (result.attachmentError) {
+        toast.success(`Ticket #${result.ticket_number} submitted, but attachments failed to upload. You can re-attach them from the ticket detail page.`, { duration: 6000 });
+      } else {
+        toast.success(`Ticket #${result.ticket_number} submitted! Our team will be in touch shortly.`);
+      }
       navigate('/tickets', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit ticket. Please try again.');
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('SESSION_EXPIRED') || msg.includes('refresh_token') || msg.includes('Invalid login')) {
+        setError('Your session has expired. Please sign in again.');
+      } else {
+        setError(msg || 'Failed to submit ticket. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }

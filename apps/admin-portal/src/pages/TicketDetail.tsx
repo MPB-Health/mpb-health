@@ -34,7 +34,9 @@ const richTicketEditor = true;
 const MAX_REPLY_ATTACHMENTS = 10;
 const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;
 
-const STATUS_CONFIG: Record<TicketStatus, { label: string; color: string; icon: React.ReactNode }> = {
+const DEFAULT_STATUS = { label: 'Unknown', color: 'bg-neutral-100 text-neutral-600', icon: <CircleDot className="w-3.5 h-3.5" /> };
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
   open: { label: 'Open', color: 'bg-yellow-100 text-yellow-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
   pending: { label: 'Pending', color: 'bg-orange-100 text-orange-700', icon: <Clock className="w-3.5 h-3.5" /> },
@@ -228,8 +230,8 @@ export default function TicketDetail() {
   }
 
   const { ticket, comments } = detail;
-  const sc = STATUS_CONFIG[ticket.status];
-  const pc = PRIORITY_CONFIG[ticket.priority];
+  const sc = STATUS_CONFIG[ticket.status] ?? DEFAULT_STATUS;
+  const pc = PRIORITY_CONFIG[ticket.priority] ?? { label: ticket.priority, color: 'bg-neutral-100 text-neutral-600' };
 
   return (
     <div className="space-y-6">

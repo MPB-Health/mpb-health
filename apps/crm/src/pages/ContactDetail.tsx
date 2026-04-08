@@ -26,6 +26,11 @@ import {
   AlertCircle,
   Activity,
   FileText,
+  MessageSquare,
+  PhoneCall,
+  Video,
+  Loader2,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
@@ -140,6 +145,10 @@ export default function ContactDetail() {
   const [activeTab, setActiveTab] = useState<'overview' | 'deals' | 'timeline' | 'attachments'>('overview');
   const [showEditContact, setShowEditContact] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   const loadContact = useCallback(async () => {
     if (!id) return;
@@ -171,6 +180,36 @@ export default function ContactDetail() {
   useEffect(() => {
     loadContact();
   }, [loadContact]);
+
+  const handleAddNote = async () => {
+    if (!id || !noteTitle.trim()) {
+      toast.error('Title is required');
+      return;
+    }
+    setSavingNote(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from('crm_activities').insert({
+        org_id: contact?.org_id ?? '00000000-0000-4000-a000-000000000001',
+        activity_type: 'note',
+        subject: noteTitle.trim(),
+        description: noteContent.trim() || null,
+        contact_id: id,
+        lead_id: contact?.converted_from_lead_id ?? null,
+        status: 'completed',
+        created_by: user?.id ?? '',
+      });
+      if (error) throw error;
+      setNoteTitle('');
+      setNoteContent('');
+      setShowAddNote(false);
+      toast.success('Note added');
+    } catch {
+      toast.error('Failed to add note');
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   const formatAddress = (address: Record<string, string> | null | undefined): string => {
     if (!address || Object.keys(address).length === 0) return '';
@@ -306,15 +345,23 @@ export default function ContactDetail() {
             </div>
           </div>
 
-          <PermissionGate permission="contacts.write">
-            <button
-              onClick={() => setShowEditContact(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-th-accent-600 text-white rounded-xl text-sm font-medium hover:bg-th-accent-700 transition-colors shadow-sm shrink-0"
-            >
-              <Edit2 className="w-4 h-4" />
-              Edit Contact
-            </button>
-          </PermissionGate>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden sm:flex items-center bg-surface-secondary rounded-xl p-1 gap-1">
+              <button type="button" onClick={() => setShowAddNote(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all">
+                <MessageSquare className="w-3.5 h-3.5" /> Note
+              </button>
+            </div>
+            <PermissionGate permission="contacts.write">
+              <button
+                type="button"
+                onClick={() => setShowEditContact(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-th-accent-600 text-white rounded-xl text-sm font-medium hover:bg-th-accent-700 transition-colors shadow-sm"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit Contact
+              </button>
+            </PermissionGate>
+          </div>
         </div>
 
         {/* Status line */}
@@ -636,6 +683,51 @@ export default function ContactDetail() {
         onSuccess={() => loadContact()}
         contact={contact}
       />
+
+      {/* Add Note Modal */}
+      {showAddNote && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => !savingNote && setShowAddNote(false)}>
+          <div className="bg-surface-primary rounded-2xl border border-th-border shadow-xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-th-text-primary">Add Note</h3>
+              <button type="button" onClick={() => setShowAddNote(false)} title="Close" className="text-th-text-tertiary hover:text-th-text-secondary">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={noteTitle}
+                onChange={(e) => setNoteTitle(e.target.value)}
+                placeholder="Note title"
+                autoFocus
+                className="w-full px-3 py-2 border border-th-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-surface-primary text-th-text-primary"
+              />
+              <textarea
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                placeholder="Details (optional)"
+                rows={4}
+                className="w-full px-3 py-2 border border-th-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none bg-surface-primary text-th-text-primary"
+              />
+            </div>
+            <div className="flex justify-end gap-3 mt-4">
+              <button type="button" onClick={() => setShowAddNote(false)} className="px-4 py-2 text-sm text-th-text-secondary hover:bg-surface-secondary rounded-lg">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddNote}
+                disabled={savingNote || !noteTitle.trim()}
+                className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white text-sm font-medium rounded-lg hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+              >
+                {savingNote ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                Add Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

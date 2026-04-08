@@ -26,6 +26,10 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
+  Trash2,
+  UserPlus,
+  Loader2,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
@@ -141,6 +145,11 @@ export default function LeadDetail() {
   const [showLogMeeting, setShowLogMeeting] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showAssign, setShowAssign] = useState(false);
+  const [staffUsers, setStaffUsers] = useState<{ id: string; email: string; first_name: string; last_name: string }[]>([]);
+  const [assigning, setAssigning] = useState(false);
   const focusItems = useFocusItems();
 
   const loadLead = useCallback(async () => {
@@ -207,6 +216,44 @@ export default function LeadDetail() {
     } else {
       toast.error('Failed to complete task');
     }
+  };
+
+  const handleDeleteLead = async () => {
+    if (!lead) return;
+    setDeleting(true);
+    const result = await leadService.deleteLead(lead.id);
+    if (result.success) {
+      toast.success('Lead deleted');
+      navigate('/leads', { replace: true });
+    } else {
+      toast.error(result.error || 'Failed to delete lead');
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const loadStaffUsers = async () => {
+    const { data } = await supabase
+      .from('admin_users')
+      .select('id, email, first_name, last_name')
+      .in('status', ['active', 'Active'])
+      .order('first_name');
+    setStaffUsers(data ?? []);
+  };
+
+  const handleAssignLead = async (userId: string) => {
+    if (!lead) return;
+    setAssigning(true);
+    const result = await leadService.assignLead(lead.id, userId);
+    if (result.success) {
+      await activityService.logAssignment(lead.id, userId);
+      toast.success('Lead assigned');
+      setShowAssign(false);
+      loadLead();
+    } else {
+      toast.error('Failed to assign lead');
+    }
+    setAssigning(false);
   };
 
   if (loading) {
@@ -356,12 +403,59 @@ export default function LeadDetail() {
               {id && focusItems.isPinned('lead', id) ? 'Pinned' : 'Pin to Today'}
             </button>
             <PermissionGate permission="leads.update">
+              <div className="relative">
+                <button
+                  onClick={() => { setShowAssign(!showAssign); if (!staffUsers.length) loadStaffUsers(); }}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-th-border text-th-text-secondary hover:bg-surface-secondary transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Assign
+                </button>
+                {showAssign && (
+                  <div className="absolute right-0 top-full mt-2 w-72 bg-surface-primary border border-th-border rounded-xl shadow-xl z-50 overflow-hidden">
+                    <div className="px-3 py-2 border-b border-th-border-subtle flex items-center justify-between">
+                      <span className="text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Assign to</span>
+                      <button onClick={() => setShowAssign(false)} className="text-th-text-tertiary hover:text-th-text-secondary">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {staffUsers.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-th-text-tertiary">Loading...</div>
+                      ) : (
+                        staffUsers.map((u) => (
+                          <button
+                            key={u.id}
+                            onClick={() => handleAssignLead(u.id)}
+                            disabled={assigning}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-secondary transition-colors flex items-center justify-between ${
+                              lead?.assigned_to === u.id ? 'bg-th-accent-50 text-th-accent-700' : 'text-th-text-primary'
+                            }`}
+                          >
+                            <span>{u.first_name} {u.last_name}</span>
+                            <span className="text-xs text-th-text-tertiary">{u.email.split('@')[0]}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={() => setShowEditLead(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-th-accent-600 text-white rounded-xl text-sm font-medium hover:bg-th-accent-700 transition-colors shadow-sm"
               >
                 <Edit2 className="w-4 h-4" />
                 Edit Lead
+              </button>
+            </PermissionGate>
+            <PermissionGate permission="leads.delete">
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                title="Delete lead"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             </PermissionGate>
           </div>
@@ -666,6 +760,45 @@ export default function LeadDetail() {
       <LogCallModal open={showLogCall} onClose={() => setShowLogCall(false)} leadId={lead.id} onSuccess={() => loadLead()} />
       <LogMeetingModal open={showLogMeeting} onClose={() => setShowLogMeeting(false)} leadId={lead.id} onSuccess={() => loadLead()} />
       <AddTaskModal open={showAddTask} onClose={() => setShowAddTask(false)} leadId={lead.id} onSuccess={() => loadLead()} />
+
+      {/* Delete Confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => !deleting && setShowDeleteConfirm(false)}>
+          <div className="bg-surface-primary rounded-2xl border border-th-border shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-th-text-primary">Delete Lead</h3>
+                <p className="text-sm text-th-text-tertiary">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-th-text-secondary mb-6">
+              Are you sure you want to delete <strong>{lead.first_name} {lead.last_name}</strong>? All activities, tasks, and attachments for this lead will be permanently removed.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-secondary rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteLead}
+                disabled={deleting}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Delete Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -117,52 +117,70 @@ export default function Bulletins() {
         </div>
       </GradientHeader>
 
-      {/* Latest bulletin marquee — single prominent banner so advisors don't miss it */}
+      {/* Latest bulletin — editorial hero card */}
       {latestBulletin && (
         <button
           type="button"
           onClick={() => navigate(`/bulletins/${latestBulletin.slug}`)}
-          className="w-full text-left relative rounded-2xl overflow-hidden shadow-lg border border-th-border group transition-shadow hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#0A4E8E]/50"
+          className="w-full text-left relative rounded-2xl overflow-hidden group focus:outline-none focus:ring-2 focus:ring-white/20"
         >
-          <div className="flex h-[140px] md:h-[160px]">
+          <div className="relative h-[220px] md:h-[260px]">
             {latestBulletin.featured_image_url ? (
-              <div className="hidden md:block w-2/5 relative shrink-0">
+              <>
                 <img
                   src={latestBulletin.featured_image_url}
                   alt=""
                   loading="eager"
                   decoding="async"
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0E2D41]/90" />
-              </div>
-            ) : null}
-            <div className={`flex flex-col justify-center p-6 md:p-8 bg-gradient-to-br from-[#0E2D41] to-[#0A4E8E] ${
-              latestBulletin.featured_image_url ? 'md:w-3/5' : 'w-full'
-            }`}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#A4CC43]/20 text-[#A4CC43] uppercase tracking-wider">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#060e1a] via-[#060e1a]/70 to-[#060e1a]/10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#060e1a]/60 via-transparent to-transparent" />
+              </>
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-[#071525]" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_80%_-20%,_#0A4E8E_0%,_transparent_60%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_80%_at_10%_100%,_rgba(164,204,67,0.06)_0%,_transparent_50%)]" />
+                <div
+                  className="absolute inset-0 opacity-[0.04]"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
+                    backgroundSize: '24px 24px',
+                  }}
+                />
+              </>
+            )}
+
+            {/* Content */}
+            <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8 lg:p-10">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#A4CC43] text-[#0a1628] uppercase tracking-widest shadow-lg shadow-[#A4CC43]/25">
                   <Sparkles className="w-2.5 h-2.5" />
                   Latest
                 </span>
-                <span className="text-white/50 text-xs">
+                <span className="flex items-center gap-1.5 text-white/40 text-xs font-medium tracking-wide">
+                  <CalendarDays className="w-3 h-3" />
                   {format(new Date(latestBulletin.published_date), 'MMMM d, yyyy')}
                 </span>
               </div>
-              <h2 className="text-lg md:text-xl font-bold text-white line-clamp-2 leading-snug group-hover:text-white/95">
+              <h2 className="text-xl md:text-2xl lg:text-[1.7rem] font-bold text-white line-clamp-2 leading-tight max-w-3xl tracking-[-0.01em]">
                 {latestBulletin.title}
               </h2>
               {latestBulletin.excerpt && (
-                <p className="text-white/60 text-sm line-clamp-2 mt-1 max-w-2xl">
+                <p className="text-white/45 text-sm line-clamp-1 max-w-2xl mt-2 hidden md:block leading-relaxed">
                   {latestBulletin.excerpt}
                 </p>
               )}
-              <span className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-white/90 group-hover:text-white">
+              <span className="inline-flex items-center gap-2 mt-4 text-sm font-semibold text-[#A4CC43] group-hover:gap-3 transition-all duration-300">
                 Read Bulletin
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </span>
             </div>
           </div>
+
+          {/* Accent stripe */}
+          <div className="h-[3px] bg-gradient-to-r from-[#A4CC43] via-[#0A4E8E] to-transparent" />
         </button>
       )}
 

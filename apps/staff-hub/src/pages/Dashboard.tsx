@@ -12,7 +12,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
-import { usePortalAccess, useSSONavigation } from '@mpbhealth/auth';
+import { usePortalAccess } from '@mpbhealth/auth';
 import { getPortalUrl, PORTALS, type PortalKey } from '@mpbhealth/config';
 import toast from 'react-hot-toast';
 
@@ -102,7 +102,7 @@ export default function Dashboard() {
     roles,
   } = usePortalAccess(user?.id);
 
-  const { navigateToPortal, loadingPortal } = useSSONavigation();
+  const [loadingPortal, setLoadingPortal] = useState<string | null>(null);
 
   const canAccess = (key: PortalKey): boolean => {
     switch (key) {
@@ -118,15 +118,18 @@ export default function Dashboard() {
   const visiblePortals = PORTAL_CARDS.filter((p) => canAccess(p.key));
 
   const handleNavigate = async (portal: PortalCardDef) => {
+    setLoadingPortal(portal.key);
     try {
-      await navigateToPortal(portal.key, { newTab: portal.openInNewTab });
-    } catch {
-      const fallback = getPortalUrl(portal.key as keyof typeof PORTALS);
+      const url = getPortalUrl(portal.key);
       if (portal.openInNewTab) {
-        window.open(fallback, '_blank', 'noopener,noreferrer');
+        window.open(url, '_blank', 'noopener,noreferrer');
       } else {
-        window.location.href = fallback;
+        window.location.href = url;
       }
+    } catch {
+      toast.error('Failed to navigate to portal');
+    } finally {
+      setLoadingPortal(null);
     }
   };
 

@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
 import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { buildPortalSSOUrl } from '@mpbhealth/auth';
+import { getPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
 import {
   LayoutDashboard,
@@ -38,6 +38,7 @@ import {
   Calculator,
   Command,
   Download,
+  Sparkles,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,6 +47,7 @@ import { useCRM } from '../contexts/CRMContext';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { NotificationTicker } from '../components/NotificationTicker';
 import CommandPalette from '../components/CommandPalette';
+import { AICommandBar } from '../components/AICommandBar';
 import GlobalSearch from '../components/GlobalSearch';
 import { RouteErrorBoundary } from '../components/ErrorBoundary';
 
@@ -74,6 +76,7 @@ const navigationSections: NavSection[] = [
   {
     id: 'main',
     items: [
+      { name: 'Today', href: '/today', icon: Zap },
       { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     ],
   },
@@ -84,7 +87,6 @@ const navigationSections: NavSection[] = [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
       { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
-      { name: 'Import from Zoho', href: '/import/zoho', icon: Download, permission: 'settings.manage' },
     ],
   },
   {
@@ -171,10 +173,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
-  const zohoConfigured = !!import.meta.env.VITE_ZOHO_API_KEY;
-
   // Portal access from global user_roles table
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(user?.id);
+  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessSupport } = usePortalAccess(user?.id);
 
   const handleSignOut = async () => {
     await signOut();
@@ -187,8 +187,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Filter nav items based on permissions and feature flags
   const visibleNav: NavItem[] = navigation
     .filter((item) => {
-      // Hide Zoho-specific items when Zoho is not configured
-      if (item.href === '/import/zoho' && !zohoConfigured) return false;
       if (!item.permission) return true;
       return can(item.permission);
     })
@@ -243,19 +241,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   };
 
-  const safeGetPortalUrl = useCallback((portal: PortalKey): string => {
+  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
     try {
-      return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
+      const result = await getPortalSSOUrl(portal, supabase);
+      return result.url;
     } catch {
-      return '#';
+      return null;
     }
   }, []);
-
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    const baseUrl = safeGetPortalUrl(portal);
-    if (!baseUrl || baseUrl === '#') return null;
-    return buildPortalSSOUrl(baseUrl, supabase);
-  }, [safeGetPortalUrl]);
 
   const userSection = (
     <div className="space-y-3">
@@ -299,6 +292,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const topBarActions = (
     <div className="flex items-center space-x-3">
+      {/* AI Command Bar Trigger */}
+      <button
+        onClick={() => {
+          const event = new KeyboardEvent('keydown', {
+            key: 'j',
+            metaKey: true,
+            bubbles: true,
+          });
+          document.dispatchEvent(event);
+        }}
+        className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-violet-500/10 to-blue-500/10 hover:from-violet-500/20 hover:to-blue-500/20 rounded-lg text-xs text-violet-600 dark:text-violet-400 transition-colors border border-violet-200/50 dark:border-violet-500/20"
+        title="AI Command Bar (⌘J)"
+      >
+        <Sparkles className="w-3.5 h-3.5" />
+        <kbd className="text-[10px] bg-violet-100/50 dark:bg-violet-500/10 px-1 py-0.5 rounded font-mono">⌘J</kbd>
+      </button>
+
       {/* Command Palette Trigger */}
       <button
         onClick={() => {
@@ -337,8 +347,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <>
-      {/* Command Palette - always rendered */}
+      {/* Command Palette (Cmd+K) and AI Command Bar (Cmd+J) */}
       <CommandPalette />
+      <AICommandBar />
 
       <AppLayout
         appName="CRM"
@@ -350,7 +361,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessAdmin={canAccessAdmin}
             canAccessCRM={canAccessCrm}
             canAccessAdvisor={canAccessAdvisor}
-            getPortalUrl={safeGetPortalUrl}
+            canAccessWebsite={canAccessWebsite}
+            canAccessSupport={canAccessSupport}
+            getPortalUrl={getPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />
         }

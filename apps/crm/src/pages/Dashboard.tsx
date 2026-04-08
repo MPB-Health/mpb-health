@@ -1,5 +1,10 @@
-import { Navigate } from 'react-router-dom';
+// ============================================================================
+// Dashboard Page
+// Championship Command Center - Customizable widget dashboard
+// ============================================================================
+
+import { DashboardContainer } from '../components/dashboard/DashboardContainer';
 
 export default function Dashboard() {
-  return <Navigate to="/today" replace />;
+  return <DashboardContainer />;
 }

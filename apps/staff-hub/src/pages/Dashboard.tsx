@@ -7,7 +7,6 @@ import {
   HeadsetIcon,
   ExternalLink,
   Loader2,
-  LogOut,
   Shield,
   Clock,
   FileSpreadsheet,
@@ -17,6 +16,8 @@ import {
   Phone,
   Heart,
   ShieldPlus,
+  Mail,
+  Calendar,
 } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
 import { usePortalAccess } from '@mpbhealth/auth';
@@ -138,6 +139,24 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     iconBg: 'bg-cyan-500/15 text-cyan-600',
   },
   {
+    key: 'outlook',
+    name: 'Outlook',
+    description: 'Email, calendar, and contacts',
+    url: 'https://outlook.office.com/mail/',
+    icon: Mail,
+    gradient: 'from-blue-500/10 to-blue-600/5',
+    iconBg: 'bg-blue-500/15 text-blue-600',
+  },
+  {
+    key: 'outlook-calendar',
+    name: 'Outlook Calendar',
+    description: 'Schedule meetings and manage events',
+    url: 'https://outlook.office.com/calendar/',
+    icon: Calendar,
+    gradient: 'from-blue-400/10 to-indigo-500/5',
+    iconBg: 'bg-indigo-500/15 text-indigo-600',
+  },
+  {
     key: 'zion-healthshare',
     name: 'Zion HealthShare',
     description: 'Health sharing community portal',
@@ -220,17 +239,11 @@ export default function Dashboard() {
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast.success('Signed out');
-    window.location.href = '/login';
-  };
-
   if (sessionLoading || rolesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="flex items-center justify-center py-16">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
           <p className="text-sm text-slate-500">Loading your portals...</p>
         </div>
       </div>
@@ -240,34 +253,9 @@ export default function Dashboard() {
   const greeting = getGreeting();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      {/* Header */}
-      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">MPB</span>
-            </div>
-            <span className="font-semibold text-slate-800 text-lg">Staff Hub</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500 hidden sm:block">{user?.email}</span>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <main className="max-w-5xl mx-auto px-6 py-12">
-        {/* Greeting */}
-        <div className="mb-10 animate-fade-up">
+    <div className="space-y-8">
+      {/* Greeting */}
+      <div className="animate-fade-up">
           <h1 className="text-3xl font-bold text-slate-900 mb-2">{greeting}</h1>
           <p className="text-slate-500 text-lg">Select a portal to get started.</p>
         </div>
@@ -373,18 +361,6 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200/60 mt-auto">
-        <div className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between text-xs text-slate-400">
-          <span>MPB Health, Inc.</span>
-          <span className="inline-flex items-center gap-1.5">
-            <Shield className="w-3 h-3" />
-            HIPAA Compliant
-          </span>
-        </div>
-      </footer>
     </div>
   );
 }

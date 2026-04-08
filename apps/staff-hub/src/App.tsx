@@ -1,9 +1,22 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from '@mpbhealth/database';
 import { Loader2 } from 'lucide-react';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import MainLayout from './layouts/MainLayout';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Notes = lazy(() => import('./pages/Notes'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const Profile = lazy(() => import('./pages/Profile'));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+    </div>
+  );
+}
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
@@ -74,10 +87,15 @@ export default function App() {
         path="/"
         element={
           <AuthGuard>
-            <Dashboard />
+            <MainLayout />
           </AuthGuard>
         }
-      />
+      >
+        <Route index element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
+        <Route path="notes" element={<Suspense fallback={<PageLoader />}><Notes /></Suspense>} />
+        <Route path="tasks" element={<Suspense fallback={<PageLoader />}><Tasks /></Suspense>} />
+        <Route path="profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -15,6 +15,8 @@ import {
   Database,
   MessageSquare,
   Phone,
+  Heart,
+  ShieldPlus,
 } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
 import { usePortalAccess } from '@mpbhealth/auth';
@@ -134,6 +136,24 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     icon: Phone,
     gradient: 'from-cyan-500/10 to-cyan-600/5',
     iconBg: 'bg-cyan-500/15 text-cyan-600',
+  },
+  {
+    key: 'zion-healthshare',
+    name: 'Zion HealthShare',
+    description: 'Health sharing community portal',
+    url: 'https://zionhealthshare.org/',
+    icon: Heart,
+    gradient: 'from-rose-500/10 to-rose-600/5',
+    iconBg: 'bg-rose-500/15 text-rose-600',
+  },
+  {
+    key: 'sedera',
+    name: 'Sedera',
+    description: 'Medical cost sharing platform',
+    url: 'https://sedera.com/',
+    icon: ShieldPlus,
+    gradient: 'from-green-500/10 to-green-600/5',
+    iconBg: 'bg-green-500/15 text-green-600',
   },
 ];
 

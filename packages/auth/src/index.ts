@@ -188,6 +188,7 @@ export {
 
 // Portal SSO (client-side cross-portal session transfer)
 export { buildPortalSSOUrl } from './services/portalSSO';
+export { useSSONavigation, type UseSSONavigationReturn } from './hooks/useSSONavigation';
 
 // PHI Security Service (HIPAA §164.312 Compliance)
 export {

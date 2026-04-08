@@ -151,10 +151,7 @@ export default function Tickets() {
       setError('We\u2019re having trouble loading your tickets right now. Please check your internet connection and try again.');
     } finally {
       if (id === ticketFetchId.current && mountedRef.current) {
-        // Only stop loading if we're NOT silently retrying
-        if (retryCountRef.current === 0 || retryCountRef.current >= MAX_PAGE_RETRIES) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     }
   }, [statusFilter, priorityFilter, searchDebounced, page, executeWithAuth]);

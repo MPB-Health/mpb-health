@@ -53,7 +53,7 @@ import {
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
+import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl, useSSONavigation } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem, isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -68,7 +68,6 @@ import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
-import { useSupportSSO } from '../hooks/useSupportSSO';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { setClearQueryCache } from '../utils/navCache';
 
@@ -208,7 +207,9 @@ export default function MainLayout() {
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
-  const { openSupport, loading: ssoLoading } = useSupportSSO();
+  const { navigateToPortal, loadingPortal } = useSSONavigation();
+  const ssoLoading = loadingPortal === 'support';
+  const openSupport = useCallback(() => navigateToPortal('support', { newTab: true }), [navigateToPortal]);
   const queryClient = useQueryClient();
 
   // Register the query-cache clear function so logout can purge nav cache

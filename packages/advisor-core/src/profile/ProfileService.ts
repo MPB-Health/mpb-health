@@ -136,7 +136,10 @@ export class ProfileService {
     phone?: string | null;
     specialization?: string;
     status?: string;
+    training_completed?: boolean;
+    training_completed_at?: string | null;
   }): Promise<AdvisorProfile | null> {
+    const trainingCompleted = profile.training_completed ?? false;
     const { data, error } = await supabase
       .from('advisor_profiles')
       .upsert(
@@ -149,6 +152,8 @@ export class ProfileService {
           phone: profile.phone || null,
           specialization: profile.specialization || 'Health Share',
           status: profile.status || 'active',
+          training_completed: trainingCompleted,
+          training_completed_at: profile.training_completed_at ?? (trainingCompleted ? new Date().toISOString() : null),
           onboarding_completed: false,
           metadata: { provisioned_by: 'advisor-context-self-heal', source: 'advisor-portal' },
           updated_at: new Date().toISOString(),

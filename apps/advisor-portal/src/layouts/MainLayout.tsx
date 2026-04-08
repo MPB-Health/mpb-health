@@ -55,13 +55,14 @@ import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhea
 import { getPortalUrl } from '@mpbhealth/config';
 import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
-import { navigationService, type NavMenuItem } from '@mpbhealth/advisor-core';
+import { navigationService, type NavMenuItem, isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { NotificationCenter } from '../components/notifications';
 import { CommandPalette } from '../components/command-palette';
 import { MobileBottomNav } from '../components/mobile';
 import { PWAInstallPrompt } from '../components/pwa';
 import { OnboardingWizard } from '../components/onboarding';
+import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 import { TrainingGate } from '../components/TrainingGate';
 import { KeyboardShortcutsModal } from '../components/command-palette';
 import { useCommandPalette } from '../hooks/useSearch';
@@ -203,7 +204,7 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
 
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
+  const { profile, sessionUserCreatedAt, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
@@ -314,8 +315,11 @@ export default function MainLayout() {
       return (ai === -1 ? ORDER.length : ai) - (bi === -1 ? ORDER.length : bi);
     });
 
-    // If training not completed and not admin, only show Training
-    const trainingRequired = profile && !profile.training_completed && !isAdminUser;
+    // If training gate applies and not admin, only show Training in the nav
+    const trainingRequired =
+      profile &&
+      !isAdminUser &&
+      !isAdvisorExemptFromTrainingGate(profile, ADVISOR_TRAINING_GATE_CUTOFF_MS, sessionUserCreatedAt);
     if (trainingRequired) {
       return base.filter(
         (item) => item.name === 'Training' || item.href === '/training'
@@ -323,7 +327,7 @@ export default function MainLayout() {
     }
 
     return base;
-  }, [cmsNavItems, isAdminUser, profile?.training_completed]);
+  }, [cmsNavItems, isAdminUser, profile, sessionUserCreatedAt]);
 
   // Determine if today is a meeting day (2nd or 4th Tuesday)
   // NOTE: This useMemo MUST be above the early returns to satisfy React's Rules of Hooks.

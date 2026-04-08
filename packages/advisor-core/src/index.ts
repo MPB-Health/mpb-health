@@ -1,6 +1,13 @@
 // Types
 export * from './types';
 
+// Training gate (grandfather cutoff + exemption helper)
+export {
+  DEFAULT_ADVISOR_TRAINING_GATE_CUTOFF_ISO,
+  resolveAdvisorTrainingGateCutoffMs,
+  isAdvisorExemptFromTrainingGate,
+} from './training/trainingGatePolicy';
+
 // Services
 export { TrainingService, trainingService } from './training/TrainingService';
 export { MeetingService, meetingService } from './meetings/MeetingService';

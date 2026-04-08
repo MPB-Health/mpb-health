@@ -28,7 +28,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
-import { trainingService } from '@mpbhealth/advisor-core';
+import { trainingService, isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
+import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 import { generateCertificate, type CertificateOptions } from '../utils/generateCertificate';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import DocumentCard from '../components/DocumentCard';
@@ -1653,7 +1654,12 @@ const courseConfigs = {
 
 export default function Training({ section }: TrainingProps) {
   const navigate = useNavigate();
-  const { profile, refreshProfile } = useAdvisor();
+  const { profile, sessionUserCreatedAt, refreshProfile } = useAdvisor();
+
+  const showTrainingRequiredUi = Boolean(
+    profile &&
+      !isAdvisorExemptFromTrainingGate(profile, ADVISOR_TRAINING_GATE_CUTOFF_MS, sessionUserCreatedAt)
+  );
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['introduction']));
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -1719,7 +1725,7 @@ export default function Training({ section }: TrainingProps) {
   if (!section) {
     return (
       <div className="space-y-6">
-        {profile && !profile.training_completed && <TrainingRequiredBanner />}
+        {showTrainingRequiredUi && <TrainingRequiredBanner />}
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-surface-tertiary">
             <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
@@ -1810,7 +1816,7 @@ export default function Training({ section }: TrainingProps) {
     const mpbCards = courses.filter((c) => ['mpb', 'secure-hsa', 'care-plus'].includes(c.id));
     return (
       <div className="space-y-6">
-        {profile && !profile.training_completed && <TrainingRequiredBanner />}
+        {showTrainingRequiredUi && <TrainingRequiredBanner />}
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-surface-tertiary">
             <GraduationCap className="w-6 h-6 text-th-text-tertiary" />
@@ -1922,11 +1928,9 @@ export default function Training({ section }: TrainingProps) {
   }
 
   /* -------------------- MPB or Secure HSA Course Detail (Sidebar + Content) ---- */
-  const showTrainingBanner = profile && !profile.training_completed;
-
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
-      {showTrainingBanner && <TrainingRequiredBanner />}
+      {showTrainingRequiredUi && <TrainingRequiredBanner />}
       {/* Top Bar */}
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white flex-shrink-0 rounded-t-xl">
         <div className="flex items-center gap-3">

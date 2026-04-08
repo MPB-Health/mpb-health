@@ -4,17 +4,21 @@ import {
   profileService,
   trainingService,
   contentService,
+  isAdvisorExemptFromTrainingGate,
   type AdvisorProfile,
   type TrainingModule,
   type TrainingProgress,
   type Bulletin,
 } from '@mpbhealth/advisor-core';
+import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 import { secureAuthService } from '@mpbhealth/auth';
 import { clearNavCache } from '../utils/navCache';
 
 interface AdvisorContextType {
   // Profile
   profile: AdvisorProfile | null;
+  /** Supabase auth.users.created_at — used with training gate cutoff when profile row is new or missing. */
+  sessionUserCreatedAt: string | undefined;
   loading: boolean;
   profileLoading: boolean;
   error: string | null;
@@ -43,6 +47,7 @@ const AdvisorContext = createContext<AdvisorContextType | undefined>(undefined);
 
 export function AdvisorProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AdvisorProfile | null>(null);
+  const [sessionUserCreatedAt, setSessionUserCreatedAt] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +72,11 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     const firstName = String(sessionUser.user_metadata?.first_name || firstFromFull || 'Advisor').trim();
     const lastName = String(sessionUser.user_metadata?.last_name || lastFromFull || '').trim();
     const nowIso = new Date().toISOString();
+    const grandfatherTraining = isAdvisorExemptFromTrainingGate(
+      { training_completed: false, created_at: null },
+      ADVISOR_TRAINING_GATE_CUTOFF_MS,
+      sessionUser.created_at
+    );
 
     return {
       id: sessionUser.id,
@@ -83,8 +93,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       company_name: null,
       must_change_password: false,
       status: 'active',
-      training_completed: false,
-      training_completed_at: null,
+      training_completed: grandfatherTraining,
+      training_completed_at: grandfatherTraining ? (sessionUser.created_at || nowIso) : null,
       onboarding_completed: true,
       onboarding_completed_at: nowIso,
       created_at: sessionUser.created_at || nowIso,
@@ -99,9 +109,12 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         setProfile(null);
+        setSessionUserCreatedAt(undefined);
         setProfileLoading(false);
         return;
       }
+
+      setSessionUserCreatedAt(session.user.created_at);
 
       const advisorProfile = await profileService.getProfile(session.user.id);
       if (advisorProfile) {
@@ -111,6 +124,12 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         const fallback = buildSessionFallbackProfile(session.user);
         setProfile(fallback);
 
+        const healExempt = isAdvisorExemptFromTrainingGate(
+          { training_completed: false, created_at: null },
+          ADVISOR_TRAINING_GATE_CUTOFF_MS,
+          session.user.created_at
+        );
+
         try {
           const healed = await profileService.ensureProfile({
             id: session.user.id,
@@ -118,6 +137,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
             first_name: fallback.first_name,
             last_name: fallback.last_name,
             user_id: session.user.id,
+            training_completed: healExempt,
+            training_completed_at: healExempt ? new Date().toISOString() : null,
           });
           if (healed) {
             console.info('[AdvisorContext] Self-healed advisor_profiles row created');
@@ -193,6 +214,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       if (!session?.user) {
         // No valid session, redirect to login
         setProfile(null);
+        setSessionUserCreatedAt(undefined);
         window.location.href = '/login';
         return;
       }
@@ -203,6 +225,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       console.error('Auth error handling failed:', err);
       // Force logout if refresh fails
       setProfile(null);
+      setSessionUserCreatedAt(undefined);
       window.location.href = '/login';
     } finally {
       setProfileLoading(false);
@@ -228,6 +251,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     } catch (_) { /* storage may not be available */ }
     clearNavCache();
     setProfile(null);
+    setSessionUserCreatedAt(undefined);
     // Redirect to login page within the advisor portal
     window.location.href = '/login';
   }, [profile?.user_id]);
@@ -268,11 +292,13 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
             loadProfile();
           } else {
             setProfile(null);
+            setSessionUserCreatedAt(undefined);
           }
         } else if (event === 'SIGNED_IN') {
           await loadProfile();
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
+          setSessionUserCreatedAt(undefined);
         } else if (event === 'TOKEN_REFRESHED') {
           // Session refreshed — no need to reload profile
         }
@@ -314,6 +340,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AdvisorContextType>(() => ({
     profile,
+    sessionUserCreatedAt,
     loading,
     profileLoading,
     error,
@@ -328,6 +355,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     handleAuthError,
   }), [
     profile,
+    sessionUserCreatedAt,
     loading,
     profileLoading,
     error,

@@ -1,5 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 
 const TRAINING_ALLOWED_PATHS = [
   '/training',
@@ -14,12 +16,11 @@ function isTrainingAllowedPath(pathname: string): boolean {
 }
 
 /**
- * Redirects advisors who haven't completed training to the training page.
- * Admins and super_admins bypass this gate entirely.
- * Renders children if training is completed or the current path is training-related.
+ * Redirects advisors who must complete the new training track to /training.
+ * Admins bypass. Advisors created before the configured cutoff are grandfathered.
  */
 export function TrainingGate({ children, isAdmin }: { children: React.ReactNode; isAdmin: boolean }) {
-  const { profile } = useAdvisor();
+  const { profile, sessionUserCreatedAt } = useAdvisor();
   const location = useLocation();
 
   if (!profile) return <>{children}</>;
@@ -27,8 +28,8 @@ export function TrainingGate({ children, isAdmin }: { children: React.ReactNode;
   // Admins/super_admins bypass training requirement
   if (isAdmin) return <>{children}</>;
 
-  // Already completed training — full access
-  if (profile.training_completed) return <>{children}</>;
+  if (isAdvisorExemptFromTrainingGate(profile, ADVISOR_TRAINING_GATE_CUTOFF_MS, sessionUserCreatedAt))
+    return <>{children}</>;
 
   // Allow access to training pages and profile
   if (isTrainingAllowedPath(location.pathname)) return <>{children}</>;

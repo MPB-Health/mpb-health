@@ -10,6 +10,11 @@ import {
   LogOut,
   Shield,
   Clock,
+  FileSpreadsheet,
+  FormInput,
+  Database,
+  MessageSquare,
+  Phone,
 } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
 import { usePortalAccess } from '@mpbhealth/auth';
@@ -34,6 +39,7 @@ const PORTAL_CARDS: PortalCardDef[] = [
     icon: LayoutDashboard,
     gradient: 'from-blue-500/10 to-blue-600/5',
     iconBg: 'bg-blue-500/15 text-blue-600',
+    openInNewTab: true,
   },
   {
     key: 'crm',
@@ -42,6 +48,7 @@ const PORTAL_CARDS: PortalCardDef[] = [
     icon: Users,
     gradient: 'from-indigo-500/10 to-indigo-600/5',
     iconBg: 'bg-indigo-500/15 text-indigo-600',
+    openInNewTab: true,
   },
   {
     key: 'advisors',
@@ -50,6 +57,7 @@ const PORTAL_CARDS: PortalCardDef[] = [
     icon: GraduationCap,
     gradient: 'from-emerald-500/10 to-emerald-600/5',
     iconBg: 'bg-emerald-500/15 text-emerald-600',
+    openInNewTab: true,
   },
   {
     key: 'website',
@@ -58,6 +66,7 @@ const PORTAL_CARDS: PortalCardDef[] = [
     icon: Globe,
     gradient: 'from-amber-500/10 to-amber-600/5',
     iconBg: 'bg-amber-500/15 text-amber-600',
+    openInNewTab: true,
   },
   {
     key: 'support',
@@ -67,6 +76,64 @@ const PORTAL_CARDS: PortalCardDef[] = [
     gradient: 'from-purple-500/10 to-purple-600/5',
     iconBg: 'bg-purple-500/15 text-purple-600',
     openInNewTab: true,
+  },
+];
+
+interface ExternalLinkDef {
+  key: string;
+  name: string;
+  description: string;
+  url: string;
+  icon: React.ElementType;
+  gradient: string;
+  iconBg: string;
+}
+
+const EXTERNAL_LINKS: ExternalLinkDef[] = [
+  {
+    key: 'e123',
+    name: 'E123',
+    description: 'Enrollment administration platform',
+    url: 'https://www.1administration.com/manage/',
+    icon: FileSpreadsheet,
+    gradient: 'from-teal-500/10 to-teal-600/5',
+    iconBg: 'bg-teal-500/15 text-teal-600',
+  },
+  {
+    key: 'cognito-forms',
+    name: 'Cognito Forms',
+    description: 'Form builder and data collection',
+    url: 'https://www.cognitoforms.com/login',
+    icon: FormInput,
+    gradient: 'from-sky-500/10 to-sky-600/5',
+    iconBg: 'bg-sky-500/15 text-sky-600',
+  },
+  {
+    key: 'zoho-crm',
+    name: 'Zoho CRM',
+    description: 'Legacy CRM and customer management',
+    url: 'https://www.zoho.com/crm/login.html',
+    icon: Database,
+    gradient: 'from-red-500/10 to-red-600/5',
+    iconBg: 'bg-red-500/15 text-red-600',
+  },
+  {
+    key: 'zoho-salesiq',
+    name: 'Zoho Sales IQ',
+    description: 'Live chat and visitor tracking',
+    url: 'https://www.zoho.com/salesiq/login.html',
+    icon: MessageSquare,
+    gradient: 'from-orange-500/10 to-orange-600/5',
+    iconBg: 'bg-orange-500/15 text-orange-600',
+  },
+  {
+    key: 'goto-connect',
+    name: 'GoTo Connect',
+    description: 'Phone system and communications',
+    url: 'https://identity.goto.com/login',
+    icon: Phone,
+    gradient: 'from-cyan-500/10 to-cyan-600/5',
+    iconBg: 'bg-cyan-500/15 text-cyan-600',
   },
 ];
 
@@ -233,6 +300,38 @@ export default function Dashboard() {
             })}
           </div>
         )}
+
+        {/* External tools */}
+        <div className="mt-10 animate-fade-up" style={{ animationDelay: '300ms' }}>
+          <h2 className="text-lg font-semibold text-slate-700 mb-4">Tools & Services</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {EXTERNAL_LINKS.map((link, i) => {
+              const Icon = link.icon;
+              return (
+                <a
+                  key={link.key}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="animate-fade-up group relative text-left rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-lg hover:border-slate-300 hover:-translate-y-1 transition-all duration-200"
+                  style={{ animationDelay: `${(i + visiblePortals.length) * 80}ms` }}
+                >
+                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${link.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                  <div className="relative">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${link.iconBg} transition-transform group-hover:scale-110`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors" />
+                    </div>
+                    <h3 className="font-semibold text-slate-800 mb-1 group-hover:text-slate-900">{link.name}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">{link.description}</p>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Role badges */}
         {roles.length > 0 && (

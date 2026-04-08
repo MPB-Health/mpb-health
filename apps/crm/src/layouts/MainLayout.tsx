@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
 import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
-import { getPortalSSOUrl } from '@mpbhealth/auth';
+import { buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
 import {
   LayoutDashboard,
@@ -241,14 +241,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   };
 
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
+  const safeGetPortalUrl = useCallback((portal: PortalKey): string => {
     try {
-      const result = await getPortalSSOUrl(portal, supabase);
-      return result.url;
+      return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
     } catch {
-      return null;
+      return '#';
     }
   }, []);
+
+  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
+    const baseUrl = safeGetPortalUrl(portal);
+    if (!baseUrl || baseUrl === '#') return null;
+    return buildPortalSSOUrl(baseUrl, supabase);
+  }, [safeGetPortalUrl]);
 
   const userSection = (
     <div className="space-y-3">
@@ -363,7 +368,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             canAccessAdvisor={canAccessAdvisor}
             canAccessWebsite={canAccessWebsite}
             canAccessSupport={canAccessSupport}
-            getPortalUrl={getPortalUrl}
+            getPortalUrl={safeGetPortalUrl}
             getPortalUrlWithSSO={getPortalUrlWithSSO}
           />
         }

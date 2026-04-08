@@ -134,7 +134,7 @@ export default function LeadDetail() {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'activities' | 'tasks' | 'timeline' | 'attachments'>('activities');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'timeline' | 'attachments'>('timeline');
   const [showEditLead, setShowEditLead] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
   const [showLogCall, setShowLogCall] = useState(false);
@@ -556,9 +556,8 @@ export default function LeadDetail() {
             {/* Tabs */}
             <div className="flex border-b border-th-border">
               {([
-                { key: 'activities' as const, label: 'Activities', count: activities.length },
-                { key: 'tasks' as const, label: 'Tasks', count: pendingTaskCount },
                 { key: 'timeline' as const, label: 'Timeline', count: undefined as number | undefined },
+                { key: 'tasks' as const, label: 'Tasks', count: pendingTaskCount },
                 { key: 'attachments' as const, label: 'Files', count: undefined as number | undefined },
               ]).map((tab) => (
                 <button
@@ -598,27 +597,7 @@ export default function LeadDetail() {
 
             {/* Tab content */}
             <div className="p-6">
-              {activeTab === 'activities' ? (
-                activities.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Activity className="w-10 h-10 text-th-text-tertiary mx-auto mb-3 opacity-40" />
-                    <p className="text-sm font-medium text-th-text-secondary">No activities yet</p>
-                    <p className="text-xs text-th-text-tertiary mt-1">Log a call, note, or meeting to start tracking interactions</p>
-                  </div>
-                ) : (
-                  <div className="activity-timeline">
-                    {activities.map((activity) => (
-                      <div key={activity.id} className="activity-item">
-                        <p className="text-sm font-medium text-th-text-primary">{activity.title}</p>
-                        {activity.description && (
-                          <p className="text-sm text-th-text-tertiary mt-1 leading-relaxed">{activity.description}</p>
-                        )}
-                        <p className="text-xs text-th-text-tertiary mt-1.5">{formatTimeAgo(activity.created_at)}</p>
-                      </div>
-                    ))}
-                  </div>
-                )
-              ) : activeTab === 'timeline' ? (
+              {activeTab === 'timeline' ? (
                 <UnifiedTimeline leadId={id} />
               ) : activeTab === 'attachments' ? (
                 <AttachmentList entityType="lead" entityId={id!} />

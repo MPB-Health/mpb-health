@@ -137,7 +137,7 @@ export default function ContactDetail() {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'deals' | 'activities' | 'timeline' | 'attachments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'deals' | 'timeline' | 'attachments'>('overview');
   const [showEditContact, setShowEditContact] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
 
@@ -475,7 +475,6 @@ export default function ContactDetail() {
               {([
                 { key: 'overview' as const, label: 'Overview', count: undefined as number | undefined },
                 { key: 'deals' as const, label: 'Deals', count: deals.length },
-                { key: 'activities' as const, label: 'Activities', count: activities.length },
                 { key: 'timeline' as const, label: 'Timeline', count: undefined as number | undefined },
                 { key: 'attachments' as const, label: 'Files', count: undefined as number | undefined },
               ]).map((tab) => (
@@ -599,28 +598,6 @@ export default function ContactDetail() {
                           </div>
                         </div>
                       </Link>
-                    ))}
-                  </div>
-                )
-              )}
-
-              {activeTab === 'activities' && (
-                activities.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Activity className="w-10 h-10 text-th-text-tertiary mx-auto mb-3 opacity-40" />
-                    <p className="text-sm font-medium text-th-text-secondary">No activities recorded</p>
-                    <p className="text-xs text-th-text-tertiary mt-1">Activity history will appear here</p>
-                  </div>
-                ) : (
-                  <div className="activity-timeline">
-                    {activities.map((activity) => (
-                      <div key={activity.id} className="activity-item">
-                        <p className="text-sm font-medium text-th-text-primary">{activity.title}</p>
-                        {activity.description && (
-                          <p className="text-sm text-th-text-tertiary mt-1 leading-relaxed">{activity.description}</p>
-                        )}
-                        <p className="text-xs text-th-text-tertiary mt-1.5">{formatTimeAgo(activity.created_at)}</p>
-                      </div>
                     ))}
                   </div>
                 )

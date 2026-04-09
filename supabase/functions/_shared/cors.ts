@@ -20,6 +20,7 @@ const ALLOWED_ORIGINS: string[] = [
   "https://crm.mpb.health",
   "https://admin.mpb.health",
   "https://advisor.mpb.health",
+  "https://concierge.mpb.health",
   "https://support.mpb.health",
 
   // Vercel preview / branch deploys (any subdomain)

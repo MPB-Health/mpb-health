@@ -26,9 +26,9 @@ import { useAdmin } from '../contexts/AdminContext';
 import AddUserModal from '../components/AddUserModal';
 import InviteUserModal from '../components/InviteUserModal';
 
-type PortalTab = 'admin' | 'advisor' | 'member' | 'support' | 'all';
+type PortalTab = 'admin' | 'advisor' | 'member' | 'concierge' | 'support' | 'all';
 
-const SUPPORT_ACCESS_ROLES = ['super_admin', 'admin', 'advisor'];
+const SUPPORT_ACCESS_ROLES = ['super_admin', 'admin', 'advisor', 'concierge'];
 
 interface MassPasswordResetResponse {
   success: boolean;
@@ -41,6 +41,7 @@ interface MassPasswordResetResponse {
 const PORTAL_TABS: { id: PortalTab; label: string }[] = [
   { id: 'admin', label: 'Admin' },
   { id: 'advisor', label: 'Advisor' },
+  { id: 'concierge', label: 'Concierge' },
   { id: 'member', label: 'Member' },
   { id: 'support', label: 'Support' },
   { id: 'all', label: 'All Portals' },
@@ -52,6 +53,7 @@ const PORTAL_ROLE_COLORS: Record<string, string> = {
   advisor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   member: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   crm_user: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  concierge: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
 };
 
 function getRoleColor(role: string) {
@@ -144,6 +146,8 @@ export default function Users() {
       loadAdminUsers();
     } else if (activeTab === 'advisor') {
       loadCrossPortalUsers('advisor');
+    } else if (activeTab === 'concierge') {
+      loadCrossPortalUsers('concierge');
     } else if (activeTab === 'member') {
       loadCrossPortalUsers('member');
     } else if (activeTab === 'support') {
@@ -606,7 +610,7 @@ export default function Users() {
       {/* Support tab hint */}
       {activeTab === 'support' && filteredCrossUsers.length > 0 && (
         <p className="text-xs text-th-text-tertiary">
-          Showing users with Support Portal access (Super Admin, Admin, or Advisor roles).
+          Showing users with Support Portal access (Super Admin, Admin, Advisor, or Concierge roles).
         </p>
       )}
 

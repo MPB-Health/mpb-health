@@ -30,9 +30,11 @@ export interface PortalAccessState {
   canAccessCrm: boolean;
   /** User can access Website Backend / CMS (super_admin or admin) */
   canAccessWebsite: boolean;
+  /** User can access Concierge Portal (super_admin or concierge) */
+  canAccessConcierge: boolean;
   /** User can access Member Portal (always true for authenticated users) */
   canAccessMember: boolean;
-  /** User can access Support Portal / ITSTS (super_admin, admin, or advisor) */
+  /** User can access Support Portal / ITSTS (super_admin, admin, advisor, or concierge) */
   canAccessSupport: boolean;
   /** Re-fetch roles from the database */
   refreshAccess: () => Promise<void>;
@@ -115,8 +117,9 @@ export function usePortalAccess(userId: string | null | undefined): PortalAccess
     canAccessAdvisor: isSuperAdmin || roles.includes('advisor'),
     canAccessCrm: isSuperAdmin || roles.includes('crm_user'),
     canAccessWebsite: isSuperAdmin || roles.includes('admin'),
+    canAccessConcierge: isSuperAdmin || roles.includes('concierge'),
     canAccessMember: true,
-    canAccessSupport: isSuperAdmin || roles.includes('admin') || roles.includes('advisor'),
+    canAccessSupport: isSuperAdmin || roles.includes('admin') || roles.includes('advisor') || roles.includes('concierge'),
     refreshAccess,
   };
 }

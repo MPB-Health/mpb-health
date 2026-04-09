@@ -18,6 +18,7 @@ export const DOMAINS = {
   crm: 'crm.mpb.health',
   advisors: 'advisor.mpb.health',
   admin: 'admin.mpb.health',
+  concierge: 'concierge.mpb.health',
   training: 'training.mpb.health',
   support: 'support.mpb.health',
 } as const;
@@ -29,9 +30,10 @@ export const DEV_PORTS = {
   crm: 5174,
   advisors: 5175,
   training: 5177,
+  concierge: 5179,
 } as const;
 
-export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website' | 'support';
+export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website' | 'support' | 'concierge';
 
 export interface PortalInfo {
   key: PortalKey;
@@ -59,6 +61,11 @@ export const PORTALS: Record<PortalKey, PortalInfo> = {
     key: 'website',
     name: 'Website Backend',
     description: 'CMS, blog management, and site configuration',
+  },
+  concierge: {
+    key: 'concierge',
+    name: 'Concierge Portal',
+    description: 'Training resources and member services',
   },
   support: {
     key: 'support',
@@ -111,6 +118,11 @@ export const AUTH_URLS = {
     resetPassword: 'https://crm.mpb.health/reset-password',
     login: 'https://crm.mpb.health/login',
   },
+  concierge: {
+    origin: 'https://concierge.mpb.health',
+    resetPassword: 'https://concierge.mpb.health/reset-password',
+    login: 'https://concierge.mpb.health/login',
+  },
   member: {
     origin: 'https://mpb.health',
     resetPassword: 'https://mpb.health/reset-password',
@@ -131,6 +143,8 @@ export const AUTH_SAFE_REDIRECT_DESTINATIONS: ReadonlySet<string> = new Set([
   AUTH_URLS.admin.login,
   AUTH_URLS.crm.resetPassword,
   AUTH_URLS.crm.login,
+  AUTH_URLS.concierge.resetPassword,
+  AUTH_URLS.concierge.login,
   AUTH_URLS.member.resetPassword,
   AUTH_URLS.member.login,
   AUTH_URLS.member.authConfirm,

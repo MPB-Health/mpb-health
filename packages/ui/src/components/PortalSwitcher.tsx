@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDown, LayoutDashboard, Users, GraduationCap, Globe, HeadsetIcon, Check, ExternalLink, Loader2 } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, Users, GraduationCap, Globe, HeadsetIcon, HeartHandshake, Check, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '../utils';
 
-export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website' | 'support';
+export type PortalKey = 'admin' | 'crm' | 'advisors' | 'website' | 'support' | 'concierge';
 
 export interface PortalSwitcherProps {
   /** The current portal the user is on */
@@ -15,6 +15,8 @@ export interface PortalSwitcherProps {
   canAccessAdvisor: boolean;
   /** Whether the user can access the Website Backend */
   canAccessWebsite?: boolean;
+  /** Whether the user can access the Concierge Portal */
+  canAccessConcierge?: boolean;
   /** Whether the user can access the Support Portal (ITSTS) */
   canAccessSupport?: boolean;
   /** Function to get the URL for a portal */
@@ -60,6 +62,12 @@ const PORTAL_OPTIONS: PortalOption[] = [
     icon: Globe,
   },
   {
+    key: 'concierge',
+    name: 'Concierge Portal',
+    description: 'Training & member services',
+    icon: HeartHandshake,
+  },
+  {
     key: 'support',
     name: 'Support Portal',
     description: 'IT Support & Tickets',
@@ -74,6 +82,7 @@ export function PortalSwitcher({
   canAccessCRM,
   canAccessAdvisor,
   canAccessWebsite,
+  canAccessConcierge,
   canAccessSupport,
   getPortalUrl,
   getPortalUrlWithSSO,
@@ -99,9 +108,10 @@ export function PortalSwitcher({
     if (portal.key === 'crm') return canAccessCRM;
     if (portal.key === 'advisors') return canAccessAdvisor;
     if (portal.key === 'website') return !!canAccessWebsite;
+    if (portal.key === 'concierge') return !!canAccessConcierge;
     if (portal.key === 'support') return !!canAccessSupport;
     return false;
-  }), [canAccessAdmin, canAccessCRM, canAccessAdvisor, canAccessWebsite, canAccessSupport]);
+  }), [canAccessAdmin, canAccessCRM, canAccessAdvisor, canAccessWebsite, canAccessConcierge, canAccessSupport]);
 
   if (availablePortals.length <= 1) {
     return null;

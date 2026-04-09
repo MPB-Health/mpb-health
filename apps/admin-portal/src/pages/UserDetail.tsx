@@ -36,7 +36,7 @@ import {
 } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
 
-const ALL_PORTAL_ROLES: PortalRole[] = ['super_admin', 'admin', 'advisor', 'member', 'crm_user'];
+const ALL_PORTAL_ROLES: PortalRole[] = ['super_admin', 'admin', 'advisor', 'member', 'crm_user', 'concierge'];
 
 const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
   super_admin: 'Super Admin',
@@ -44,6 +44,7 @@ const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
   advisor: 'Advisor',
   member: 'Member',
   crm_user: 'CRM User',
+  concierge: 'Concierge',
 };
 
 const PORTAL_ROLE_COLORS: Record<PortalRole, string> = {
@@ -52,6 +53,7 @@ const PORTAL_ROLE_COLORS: Record<PortalRole, string> = {
   advisor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   member: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   crm_user: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  concierge: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
 };
 
 const ADVISOR_STATUS_OPTIONS: AdvisorProfileSummary['status'][] = [

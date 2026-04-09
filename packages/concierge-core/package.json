@@ -1,0 +1,21 @@
+{
+  "name": "@mpbhealth/concierge-core",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "echo 'No build needed — source-only package'",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mpbhealth/database": "workspace:*",
+    "@mpbhealth/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@mpbhealth/eslint-config": "workspace:*",
+    "@mpbhealth/typescript-config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

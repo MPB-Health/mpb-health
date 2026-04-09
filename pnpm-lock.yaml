@@ -398,6 +398,82 @@ importers:
         specifier: 'catalog:'
         version: 5.4.21(@types/node@25.3.2)(terser@5.46.0)
 
+  apps/concierge-portal:
+    dependencies:
+      '@mpbhealth/advisor-core':
+        specifier: workspace:*
+        version: link:../../packages/advisor-core
+      '@mpbhealth/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@mpbhealth/concierge-core':
+        specifier: workspace:*
+        version: link:../../packages/concierge-core
+      '@mpbhealth/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@mpbhealth/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@mpbhealth/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@mpbhealth/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
+      date-fns:
+        specifier: 'catalog:'
+        version: 3.6.0
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.564.0(react@18.3.1)
+      react:
+        specifier: 'catalog:'
+        version: 18.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 18.3.1(react@18.3.1)
+      react-hot-toast:
+        specifier: ^2.6.0
+        version: 2.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-router-dom:
+        specifier: 'catalog:'
+        version: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+    devDependencies:
+      '@mpbhealth/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@mpbhealth/tailwind-config':
+        specifier: workspace:*
+        version: link:../../packages/tailwind-config
+      '@mpbhealth/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
+      '@types/react':
+        specifier: 'catalog:'
+        version: 18.3.27
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 18.3.7(@types/react@18.3.27)
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 4.7.0(vite@5.4.21(@types/node@25.3.2)(terser@5.46.0))
+      autoprefixer:
+        specifier: 'catalog:'
+        version: 10.4.23(postcss@8.5.6)
+      postcss:
+        specifier: 'catalog:'
+        version: 8.5.6
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 3.4.19
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.21(@types/node@25.3.2)(terser@5.46.0)
+
   apps/crm:
     dependencies:
       '@dnd-kit/core':
@@ -882,6 +958,25 @@ importers:
       '@supabase/supabase-js':
         specifier: 'catalog:'
         version: 2.98.0
+    devDependencies:
+      '@mpbhealth/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@mpbhealth/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/concierge-core:
+    dependencies:
+      '@mpbhealth/database':
+        specifier: workspace:*
+        version: link:../database
+      '@mpbhealth/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@mpbhealth/eslint-config':
         specifier: workspace:*
@@ -6246,7 +6341,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@25.3.2)(@vitest/ui@3.2.4)(jsdom@27.4.0)(terser@5.46.0)
+      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@25.3.2)(@vitest/ui@3.2.4)(jsdom@25.0.1)(terser@5.46.0)
 
   '@vitest/utils@3.2.4':
     dependencies:

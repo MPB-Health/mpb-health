@@ -24,7 +24,7 @@ export interface AdvisorProfileSummary {
   created_at: string;
 }
 
-export type PortalRole = 'super_admin' | 'admin' | 'advisor' | 'member' | 'crm_user';
+export type PortalRole = 'super_admin' | 'admin' | 'advisor' | 'member' | 'crm_user' | 'concierge';
 
 export class UserService {
   // Get all users with optional filters

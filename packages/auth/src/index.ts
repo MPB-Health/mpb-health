@@ -73,6 +73,7 @@ export {
   canAccessAdvisorPortal,
   canAccessCrmPortal,
   canAccessMemberPortal,
+  canAccessConciergePortal,
   getAccessiblePortals,
 } from './services/userRolesService';
 

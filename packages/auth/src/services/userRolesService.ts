@@ -8,7 +8,7 @@ import { supabase } from '@mpbhealth/database';
 // Types
 // ============================================================================
 
-export type UserRole = 'super_admin' | 'admin' | 'advisor' | 'member' | 'crm_user';
+export type UserRole = 'super_admin' | 'admin' | 'advisor' | 'member' | 'crm_user' | 'concierge';
 
 export interface UserRoleRecord {
   id: string;
@@ -44,14 +44,16 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   advisor: 'Advisor',
   member: 'Member',
   crm_user: 'CRM User',
+  concierge: 'Concierge',
 };
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  super_admin: 'Full access to all portals (Admin, Advisor, Member, CRM)',
+  super_admin: 'Full access to all portals (Admin, Advisor, Member, CRM, Concierge)',
   admin: 'Access to Admin portal',
   advisor: 'Access to Advisor portal',
   member: 'Access to Member portal',
   crm_user: 'Access to CRM portal',
+  concierge: 'Access to Concierge portal',
 };
 
 export const ROLE_COLORS: Record<UserRole, string> = {
@@ -60,9 +62,10 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   advisor: 'bg-green-100 text-green-800 border-green-200',
   member: 'bg-gray-100 text-gray-800 border-gray-200',
   crm_user: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  concierge: 'bg-teal-100 text-teal-800 border-teal-200',
 };
 
-export const ALL_ROLES: UserRole[] = ['super_admin', 'admin', 'advisor', 'crm_user', 'member'];
+export const ALL_ROLES: UserRole[] = ['super_admin', 'admin', 'advisor', 'crm_user', 'concierge', 'member'];
 
 // ============================================================================
 // Cache
@@ -414,11 +417,19 @@ export async function canAccessMemberPortal(_userId: string): Promise<boolean> {
 }
 
 /**
+ * Check if user can access concierge portal
+ */
+export async function canAccessConciergePortal(userId: string): Promise<boolean> {
+  const roles = await getUserRoles(userId);
+  return roles.includes('super_admin') || roles.includes('concierge');
+}
+
+/**
  * Check if user can access support portal (ITSTS)
  */
 export async function canAccessSupportPortal(userId: string): Promise<boolean> {
   const roles = await getUserRoles(userId);
-  return roles.includes('super_admin') || roles.includes('admin') || roles.includes('advisor');
+  return roles.includes('super_admin') || roles.includes('admin') || roles.includes('advisor') || roles.includes('concierge');
 }
 
 /**
@@ -429,12 +440,13 @@ export async function getAccessiblePortals(userId: string): Promise<string[]> {
   const portals: string[] = ['member'];
 
   if (roles.includes('super_admin')) {
-    portals.push('admin', 'advisor', 'crm', 'support');
+    portals.push('admin', 'advisor', 'crm', 'concierge', 'support');
   } else {
     if (roles.includes('admin')) portals.push('admin');
     if (roles.includes('advisor')) portals.push('advisor');
     if (roles.includes('crm_user')) portals.push('crm');
-    if (roles.includes('admin') || roles.includes('advisor')) portals.push('support');
+    if (roles.includes('concierge')) portals.push('concierge');
+    if (roles.includes('admin') || roles.includes('advisor') || roles.includes('concierge')) portals.push('support');
   }
 
   return portals;
@@ -462,6 +474,7 @@ export const userRolesService = {
   canAccessAdvisorPortal,
   canAccessCrmPortal,
   canAccessMemberPortal,
+  canAccessConciergePortal,
   canAccessSupportPortal,
   getAccessiblePortals,
   invalidateCache,

@@ -5,11 +5,16 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
   {
     id: 'how-healthshare-works',
     title: 'How Our Healthshare Works',
-    description: 'Overview of how the Zion HealthShare model operates',
-    url: 'https://zionhealthshare.org/how-it-works/',
+    description: 'Overview of how the health sharing model operates across our partner networks',
+    url: 'https://mpb.health/how-it-works',
     category: 'health-sharing',
     type: 'document',
     external: true,
+    links: [
+      { label: 'MPB Health', url: 'https://mpb.health/how-it-works' },
+      { label: 'Zion HealthShare', url: 'https://zionhealthshare.org/how-it-works/' },
+      { label: 'Sedera', url: 'https://sedera.com/' },
+    ],
   },
   {
     id: 'zion-member-guidelines',

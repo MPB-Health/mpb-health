@@ -58,6 +58,36 @@ const CATEGORIES: TrainingCategory[] = [
 
 function ResourceCard({ resource }: { resource: TrainingResource }) {
   const colors = CATEGORY_COLORS[resource.category];
+
+  if (resource.links && resource.links.length > 1) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colors.badge}`}>
+            {TYPE_ICONS[resource.type] || <FileText className="w-3 h-3" />}
+            {resource.type.charAt(0).toUpperCase() + resource.type.slice(1)}
+          </span>
+        </div>
+        <h3 className="text-sm font-semibold text-slate-800 line-clamp-2">{resource.title}</h3>
+        <p className="mt-1 text-xs text-slate-500 line-clamp-2">{resource.description}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {resource.links.map((link) => (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all"
+            >
+              {link.label}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <a
       href={resource.url}

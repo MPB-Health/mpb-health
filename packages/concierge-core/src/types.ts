@@ -1,3 +1,8 @@
+export interface ResourceLink {
+  label: string;
+  url: string;
+}
+
 export interface TrainingResource {
   id: string;
   title: string;
@@ -8,6 +13,8 @@ export interface TrainingResource {
   type: ResourceType;
   /** Whether the link opens in a new tab (external) */
   external: boolean;
+  /** Multiple links displayed as separate buttons within the card */
+  links?: ResourceLink[];
 }
 
 export type TrainingCategory =

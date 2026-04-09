@@ -136,7 +136,7 @@ const ObjectionBlocks: React.FC = () => {
                 Call (855) 816-4650
               </a>
               <a
-                href="https://calendly.com/mpbhealth/consultation"
+                href="https://outlook.office.com/book/SpeakWithaAdvisor@NETORG6712533.onmicrosoft.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center px-6 py-3 border border-neutral-300 text-neutral-700 rounded-lg font-medium hover:bg-neutral-50 transition-colors"

@@ -26,21 +26,22 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     body: (
       <>
         <p className="mb-3">
-          Choose the MPB Health membership that fits your family's needs and budget.
-          Our advisors guide you through the simple enrollment process.
+          Pick the membership tier that matches your household size and budget.
+          One of our advisors walks you through the entire enrollment process so
+          there are no surprises.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Personalized plan matching based on family size and budget</span>
+            <span>Advisor-guided plan matching tailored to your family</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Dedicated advisor support throughout enrollment</span>
+            <span>One-on-one support from application through activation</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Quick 10-minute application with transparent guidelines</span>
+            <span>Straightforward 10-minute application with clear guidelines</span>
           </li>
         </ul>
       </>
@@ -58,25 +59,26 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     body: (
       <>
         <p className="mb-3">
-          Understand our member guidelines and know which medical expenses are
-          eligible for sharing. Our team is always available to answer questions.
+          Get familiar with the member guidelines so you know exactly which
+          expenses qualify for sharing. Our support team is available whenever
+          you have questions.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Review sharing eligibility and member expectations</span>
+            <span>Review what qualifies for sharing and what the community expects</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
             <span>
-              Understand your{" "}
-              <GlossaryTooltip term="IUA" definition="Initial Unshareable Amount -- your portion of an eligible medical need before community sharing begins." />{" "}
-              options ($1,250, $2,500, or $5,000)
+              Choose your{" "}
+              <GlossaryTooltip term="IUA" definition="Initial Unshareable Amount -- the portion you cover per eligible need before community sharing begins." />{" "}
+              tier ($1,250, $2,500, or $5,000)
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Learn about waiting periods and pre-membership conditions</span>
+            <span>Understand phase-in periods for pre-existing conditions</span>
           </li>
         </ul>
       </>
@@ -93,21 +95,22 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     body: (
       <>
         <p className="mb-3">
-          Make your monthly share contribution to the community. Select your IUA
-          level to balance monthly costs with out-of-pocket responsibility.
+          Set up your monthly share contribution to the community fund. Your IUA
+          selection determines the balance between monthly cost and out-of-pocket
+          responsibility.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Automatic monthly payments for convenience</span>
+            <span>Auto-pay keeps your membership current effortlessly</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Transparent pricing with no hidden fees</span>
+            <span>Predictable pricing with zero hidden fees</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Higher IUA means lower monthly share amounts</span>
+            <span>Selecting a higher IUA lowers your monthly amount</span>
           </li>
         </ul>
       </>
@@ -121,21 +124,22 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     body: (
       <>
         <p className="mb-3">
-          When you have an eligible medical need, submit your sharing request
-          through our secure member portal. The community shares the cost.
+          When an eligible medical need comes up, file a sharing request through
+          our secure portal. The community steps in to cover costs beyond your
+          IUA.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>See any doctor or hospital with no network restrictions</span>
+            <span>Visit any doctor or hospital without network limits</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Upload bills through our secure member portal</span>
+            <span>Upload documentation directly in the member portal</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Payments sent directly to providers when possible</span>
+            <span>Direct provider payment available when possible</span>
           </li>
         </ul>
       </>
@@ -153,23 +157,24 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     body: (
       <>
         <p className="mb-3">
-          Live confidently with ongoing advisor support, virtual care access,
-          wellness resources, and a community that has your back.
+          Your membership goes well beyond bill sharing. Enjoy unlimited
+          telehealth, behavioral health resources, and ongoing advisor access
+          that keep you covered for whatever comes next.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>24/7 virtual care and behavioral health resources</span>
+            <span>$0 unlimited virtual care around the clock</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Dedicated advisor access throughout membership</span>
+            <span>Personal advisor available throughout your membership</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
             <span>
-              <GlossaryTooltip term="HSA-compatible" definition="Designed to meet Health Savings Account rules; consult your tax advisor." />{" "}
-              plans for tax-advantaged savings
+              <GlossaryTooltip term="HSA-compatible" definition="Qualifies for Health Savings Account contributions; consult your tax advisor for details." />{" "}
+              memberships paired with a MEC plan
             </span>
           </li>
         </ul>

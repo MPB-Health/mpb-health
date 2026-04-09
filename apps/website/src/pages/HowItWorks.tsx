@@ -20,6 +20,8 @@ import {
   AlertCircle,
   Hourglass,
   ArrowRight,
+  Video,
+  ShieldCheck,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -28,86 +30,90 @@ import {
 
 const faqsForSchema = [
   {
-    question: 'How long does the entire process take from enrollment to first sharing?',
-    answer: 'Enrollment takes 10-15 minutes and your membership becomes effective on the first day of the following month if enrolled by the 20th of the prior month. Eligible needs may be submitted immediately. Typical processing is ~60 days, sometimes as little as 2 weeks.',
+    question: 'How quickly can I go from enrollment to my first sharing request?',
+    answer: 'The application itself takes roughly 10\u201315 minutes. If you enroll by the 20th of any month, coverage starts the first of the following month. From there, eligible needs can be submitted right away. Most sharing requests are processed within about 60 days, though some resolve in as little as two weeks.',
   },
   {
-    question: 'What happens if I need medical care during a waiting period?',
-    answer: "We don't decline membership based on medical history. New medical needs are shareable right away, while pre-existing conditions may have a phase-in period. Certain managed conditions\u2014like diabetes, high blood pressure, and high cholesterol\u2014can be eligible from Day One if there's been no hospitalization in the past year. Pre-membership conditions have a 12-month waiting period before they become eligible for sharing. Accidents are eligible immediately.",
+    question: 'What if I need care while a waiting period is in effect?',
+    answer: 'MPB Health does not turn anyone away based on medical history. Brand-new medical needs qualify for sharing immediately. Pre-existing conditions follow a 12-month phase-in window, but certain managed conditions\u2014diabetes, high blood pressure, high cholesterol\u2014can be eligible from Day One provided there has been no related hospitalization in the past year. Accidents are always eligible from the start.',
   },
   {
-    question: 'How do I know if a medical expense will be shared?',
-    answer: 'Your membership guidelines outline what types of medical expenses are eligible for sharing. Our member support team can answer questions about specific situations and help you understand your sharing eligibility.',
+    question: 'How can I tell whether a specific expense will be shared?',
+    answer: 'Our member guidelines spell out which categories of medical expenses qualify. If you have questions about a particular situation, our member support team can walk you through your sharing eligibility before you receive care.',
   },
   {
-    question: 'Can I switch my IUA level after enrollment?',
-    answer: 'Yes. You may change your IUA once per year.',
+    question: 'Am I able to change my IUA after I enroll?',
+    answer: 'Yes. Members may adjust their IUA level once each calendar year.',
   },
   {
-    question: 'What if I disagree with a sharing decision?',
-    answer: 'If you believe a submission was incorrectly denied or partially shared, you can request a formal review. Our appeals process includes a thorough re-evaluation by senior reviewers. Contact member support to initiate an appeal.',
+    question: 'What recourse do I have if I disagree with a sharing outcome?',
+    answer: 'You can request a formal review. Our appeals process involves a thorough re-evaluation by senior staff. Reach out to member support to get the process started.',
   },
   {
-    question: 'What happens if I miss a monthly share payment?',
-    answer: "Monthly share amounts are automatically billed on the 20th of the month for the following month's payment. If the share amount is not paid by the last business day of the month, the membership will be cancelled effective on the last business day of the month.",
+    question: 'What happens when a monthly share payment is missed?',
+    answer: 'Share amounts are billed automatically on the 20th for the upcoming month. If the payment is not received by the final business day of the month, the membership is cancelled as of that date.',
   },
   {
-    question: 'Can I submit bills for care received before joining MPB Health?',
-    answer: "No, only medical expenses incurred after your effective membership date are eligible for sharing consideration. Medical care received before joining, even if you haven't been billed yet, is not eligible.",
+    question: 'Can I submit bills for care I received before becoming a member?',
+    answer: 'No. Only expenses incurred after your membership effective date are eligible for sharing\u2014even if the provider has not billed you yet.',
+  },
+  {
+    question: 'What is a MEC plan and why is it paired with my membership?',
+    answer: 'A Minimum Essential Coverage (MEC) plan is a federally recognized health plan that satisfies state individual mandate requirements. MPB Health pairs every membership with a MEC plan so you remain compliant with state laws while keeping your membership HSA-eligible for tax-advantaged savings.',
   },
 ];
 
 const benefits = [
   {
     icon: TrendingDown,
-    title: 'Cost Efficiency',
+    title: 'Significant Savings',
     description:
-      'MPB Health memberships typically cost 30\u201360% less than traditional insurance premiums. Your monthly share is transparent, predictable, and goes directly toward supporting fellow members.',
+      'Members typically pay 30\u201360% less each month compared to traditional insurance premiums. Every dollar goes toward the community\u2014no corporate profit margins in between.',
   },
   {
     icon: Stethoscope,
-    title: 'Freedom of Choice',
+    title: 'Pick Any Provider',
     description:
-      'Choose any doctor, specialist, or hospital nationwide. MPB Health has zero network restrictions\u2014your healthcare decisions are yours to make.',
+      'There are no network restrictions at MPB Health. Visit whichever doctor, specialist, or hospital you prefer\u2014the choice is entirely yours.',
   },
   {
     icon: CalendarCheck,
-    title: 'Year-Round Enrollment',
+    title: 'Enroll Any Time',
     description:
-      'Join MPB Health any time\u2014no waiting for open enrollment periods. Apply today and your membership can be effective as soon as the first of next month.',
+      'Open enrollment windows do not apply here. Submit your application on any day of the year and your membership can begin as early as the first of next month.',
   },
   {
     icon: Eye,
-    title: 'Transparent & Simple',
+    title: 'Clear & Straightforward',
     description:
-      'As a nonprofit community, MPB Health openly shares how contributions are used. No hidden fees, no complicated billing, no surprises.',
+      'MPB Health operates as a nonprofit community with full visibility into how contributions are allocated. No hidden charges, no confusing bills, no fine-print surprises.',
   },
 ];
 
 const whatToKnow = [
   {
     icon: FileText,
-    title: 'Eligibility & Member Guidelines',
+    title: 'Eligibility & Guidelines',
     description:
-      'MPB Health welcomes individuals and families committed to a healthy lifestyle. Review our member guidelines to understand sharing eligibility and community expectations.',
+      'MPB Health is open to individuals and families who embrace a healthy lifestyle. Our member guidelines detail exactly which expenses qualify for sharing and what the community expects from its members.',
   },
   {
     icon: AlertCircle,
-    title: 'Medical Expense Sharing',
+    title: 'Sharing Limitations',
     description:
-      'Not all medical expenses are eligible for sharing. Pre-membership conditions, elective procedures, and certain non-emergency treatments may have limitations. Our team helps you understand what\u2019s eligible.',
+      'Certain expenses fall outside the sharing guidelines. Conditions that existed before membership, elective procedures, and some non-emergency treatments may be limited or subject to waiting periods. Our team is available to clarify specifics.',
   },
   {
     icon: DollarSign,
-    title: 'Initial Unshareable Amount (IUA)',
+    title: 'Your IUA Explained',
     description:
-      'Your IUA ($1,250, $2,500, or $5,000) is the amount you\u2019re responsible for before community sharing begins. Unlike insurance deductibles that reset annually, the IUA applies per medical need.',
+      'The Initial Unshareable Amount ($1,250, $2,500, or $5,000) is what you cover before the community begins sharing. It applies per medical need rather than resetting each year like an insurance deductible.',
   },
   {
     icon: Hourglass,
-    title: 'Waiting Periods',
+    title: 'Phase-In Periods',
     description:
-      'New medical needs are shareable right away. Pre-existing conditions may have a 12-month phase-in period. Managed conditions like diabetes, high blood pressure, and high cholesterol can be eligible from Day One if there\u2019s been no hospitalization in the past year.',
+      'Brand-new medical needs are eligible for sharing from day one. Pre-existing conditions carry a 12-month phase-in. Managed conditions such as diabetes, high blood pressure, and high cholesterol may qualify immediately if no related hospitalization occurred in the prior year.',
   },
 ];
 
@@ -116,49 +122,49 @@ const comparisonRows = [
   { healthshare: 'Initial Unshareable Amount (IUA)', insurance: 'Deductible' },
   { healthshare: 'Sharing Request', insurance: 'Claim' },
   { healthshare: 'Member Guidelines', insurance: 'Policy' },
-  { healthshare: 'Community-shared', insurance: 'Company-paid' },
-  { healthshare: 'Any provider, no networks', insurance: 'In-network / Out-of-network' },
-  { healthshare: 'Year-round enrollment', insurance: 'Open enrollment periods' },
-  { healthshare: 'Nonprofit community', insurance: 'For-profit corporation' },
-  { healthshare: 'Voluntary sharing', insurance: 'Contractual obligation' },
+  { healthshare: 'Community-funded', insurance: 'Corporation-funded' },
+  { healthshare: 'Any provider, zero restrictions', insurance: 'In-network / Out-of-network tiers' },
+  { healthshare: 'Enroll any day of the year', insurance: 'Annual open enrollment windows' },
+  { healthshare: 'Nonprofit member community', insurance: 'For-profit insurer' },
+  { healthshare: 'Voluntary cost sharing', insurance: 'Binding contract' },
 ];
 
 const whyDifferent = [
   {
     icon: Users,
-    title: 'No Religious Requirements',
+    title: 'Open to Everyone',
     description:
-      'Many healthshare communities require a statement of faith. MPB Health is open to everyone\u2014we\u2019re built on shared values of community support and healthy living, not religious affiliation.',
+      'Unlike many healthshare organizations that require a faith statement, MPB Health has no religious prerequisites. Membership is built around shared values of mutual support and wellness.',
   },
   {
     icon: Stethoscope,
-    title: 'Freedom to Choose Providers',
+    title: 'Total Provider Freedom',
     description:
-      'See any doctor, hospital, or specialist. No referrals needed, no network restrictions, no prior authorization for routine care.',
+      'Visit any licensed doctor, hospital, or specialist without referrals, network limitations, or prior-authorization hurdles for everyday care.',
   },
   {
     icon: Heart,
-    title: 'Comprehensive Support Services',
+    title: 'Built-In Wellness Resources',
     description:
-      'Beyond medical cost sharing\u2014access telemedicine, virtual behavioral health, prescription discounts, and dedicated advisor support.',
+      'Every membership includes telehealth access, virtual behavioral health, prescription savings, and one-on-one advisor guidance\u2014at no extra cost.',
   },
   {
     icon: Zap,
-    title: 'Fast & Transparent Sharing',
+    title: 'Quick, Transparent Processing',
     description:
-      'Our streamlined process means eligible expenses are typically processed in about 60 days, sometimes as quickly as 2 weeks. Clear explanations every step of the way.',
+      'Eligible expenses are typically resolved within 60 days\u2014sometimes in as few as two weeks. Every sharing summary breaks down exactly what was covered and why.',
   },
   {
     icon: CalendarCheck,
-    title: 'Year-Round Enrollment',
+    title: 'No Enrollment Windows',
     description:
-      'Apply any day of the year. No open enrollment windows, no waiting for a special period. Your membership can start as soon as the first of next month.',
+      'Apply whenever it suits you. There is no annual window to wait for\u2014your membership can take effect as soon as the first of the following month.',
   },
   {
     icon: TrendingDown,
-    title: 'Affordable Monthly Contributions',
+    title: 'Budget-Friendly Contributions',
     description:
-      'MPB Health memberships are often 30\u201360% less than traditional insurance premiums, with multiple IUA options to fit your budget.',
+      'Monthly share amounts frequently run 30\u201360% below comparable insurance premiums. Multiple IUA tiers let you dial in the right balance of monthly cost and out-of-pocket responsibility.',
   },
 ];
 
@@ -190,7 +196,8 @@ const HowItWorksPage: React.FC = () => {
                 How Medical Cost Sharing Works
               </h1>
               <p className="text-xl text-neutral-600 leading-relaxed">
-                All about the MPB Health medical cost sharing community
+                A closer look at the MPB Health community and the straightforward
+                way members manage healthcare costs together.
               </p>
             </div>
           </div>
@@ -205,16 +212,19 @@ const HowItWorksPage: React.FC = () => {
                   What Is a Healthshare?
                 </h2>
                 <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                  A healthshare is a nonprofit, membership-based community where members share the
-                  cost of medical care instead of relying on traditional health insurance. Rather than
-                  functioning through policies and premiums, MPB Health is built on the concept of
-                  shared responsibility.
+                  A healthshare is a member-driven, nonprofit community where
+                  participants pool resources to cover each other&rsquo;s medical
+                  expenses. Instead of premiums and policies, the model runs on
+                  shared responsibility&mdash;everyone contributes a monthly amount,
+                  and those funds go toward eligible healthcare costs across the
+                  membership.
                 </p>
                 <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-                  Members contribute monthly and those contributions help cover eligible medical
-                  expenses for the community. While healthsharing is not insurance, it provides a
-                  proven, community-based approach to managing healthcare costs that thousands of
-                  families trust every day.
+                  Healthsharing is not insurance, but it offers a practical,
+                  time-tested path to affordable care. Thousands of families
+                  across the country rely on this approach every day, and MPB
+                  Health is designed to make that experience as seamless as
+                  possible.
                 </p>
                 <Link
                   to="/member-guidelines"
@@ -256,19 +266,75 @@ const HowItWorksPage: React.FC = () => {
                   How Does MPB Health Work?
                 </h2>
                 <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                  Each month, members contribute a share amount based on their membership type. When
-                  a member has an eligible medical need, they submit a sharing request through our
-                  member portal.
+                  Every member makes a fixed monthly contribution based on their
+                  chosen membership tier. When a medical need arises, the member
+                  submits a sharing request through our online portal along with
+                  the relevant documentation.
                 </p>
                 <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                  Members are responsible for their Initial Unshareable Amount (IUA)&mdash;the
-                  portion they pay before community sharing begins. Once the IUA is met, eligible
-                  medical expenses are shared by the community according to our member guidelines.
+                  Before sharing kicks in, you cover your Initial Unshareable
+                  Amount (IUA)&mdash;the personal portion of each eligible need.
+                  After that threshold is met, the community pools together to
+                  cover the remainder based on the member guidelines. Payments
+                  can go directly to your provider or be reimbursed to you, and
+                  every sharing summary spells out exactly how the funds were
+                  applied.
                 </p>
-                <p className="text-lg text-neutral-700 leading-relaxed">
-                  The community can facilitate direct provider payment or reimburse the member if
-                  they&rsquo;ve already paid. You&rsquo;ll receive detailed sharing summaries
-                  explaining exactly what was shared and why.
+              </div>
+            </div>
+
+            {/* ── MEC Plan + Telehealth cards ─────────────────────── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16">
+              {/* MEC Plan card */}
+              <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-8">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+                    <ShieldCheck className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-neutral-900 mb-1">
+                      Paired with a MEC Plan
+                    </h3>
+                    <p className="text-sm text-blue-600 font-medium">HSA-Eligible &bull; State-Compliant</p>
+                  </div>
+                </div>
+                <p className="text-neutral-700 leading-relaxed mb-3">
+                  Every MPB Health membership is bundled with a Minimum Essential
+                  Coverage (MEC) plan. This pairing satisfies state individual
+                  mandate requirements so you stay compliant without purchasing a
+                  separate policy.
+                </p>
+                <p className="text-neutral-700 leading-relaxed">
+                  Because the MEC plan meets federal guidelines, your membership
+                  also qualifies as HSA-eligible&mdash;meaning you can contribute
+                  to a Health Savings Account and take advantage of tax-free
+                  dollars for qualified medical expenses.
+                </p>
+              </div>
+
+              {/* Unlimited Telehealth card */}
+              <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-8">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
+                    <Video className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-neutral-900 mb-1">
+                      Unlimited Telehealth Included
+                    </h3>
+                    <p className="text-sm text-teal-600 font-medium">$0 per visit &bull; Available 24/7</p>
+                  </div>
+                </div>
+                <p className="text-neutral-700 leading-relaxed mb-3">
+                  Every MPB Health member gets unlimited virtual doctor visits at
+                  no additional cost. Whether it&rsquo;s a cold, a rash, a
+                  prescription refill, or a quick medical question, you can
+                  connect with a licensed provider from anywhere.
+                </p>
+                <p className="text-neutral-700 leading-relaxed">
+                  Telehealth is available around the clock, seven days a week.
+                  Skip the waiting room, avoid unnecessary urgent-care bills, and
+                  get the care you need on your schedule.
                 </p>
               </div>
             </div>
@@ -280,10 +346,11 @@ const HowItWorksPage: React.FC = () => {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">
-                Benefits of a Healthshare
+                Why Families Choose Healthsharing
               </h2>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                Why thousands of families choose community-based healthcare over traditional insurance.
+                A growing number of households are moving away from traditional
+                insurance. Here is what draws them to the healthshare model.
               </p>
             </div>
 
@@ -312,10 +379,11 @@ const HowItWorksPage: React.FC = () => {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">
-                What to Know Before Joining
+                Before You Join
               </h2>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                Transparency is a core value. Here&rsquo;s what every prospective member should understand.
+                We believe in full transparency. Here are the key details every
+                prospective member should review.
               </p>
             </div>
 
@@ -351,7 +419,8 @@ const HowItWorksPage: React.FC = () => {
                 Healthshare vs. Traditional Insurance
               </h2>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                Understand how the terms and structure compare side by side.
+                Different language, different structure. Here is how the two
+                models line up term for term.
               </p>
             </div>
 
@@ -389,9 +458,10 @@ const HowItWorksPage: React.FC = () => {
             </div>
 
             <p className="mt-6 text-center text-sm text-neutral-500 max-w-2xl mx-auto">
-              While healthsharing is not insurance, it provides a proven, community-based approach
-              to managing healthcare costs. MPB Health members have been sharing medical expenses
-              together since 2011, with transparent operations and dedicated member support.
+              Healthsharing is not insurance, but it is a well-established,
+              community-driven way to handle medical costs. MPB Health members
+              have been sharing expenses together since 2011 with consistent
+              service and complete financial transparency.
             </p>
           </div>
         </div>
@@ -401,11 +471,11 @@ const HowItWorksPage: React.FC = () => {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">
-                What Makes MPB Health Different
+                What Sets MPB Health Apart
               </h2>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                We&rsquo;re not just another health sharing organization. Here&rsquo;s what sets us apart
-                and makes us the trusted choice for thousands of families.
+                Not every healthshare is the same. Here is why families across
+                the country trust MPB Health with their care.
               </p>
             </div>
 
@@ -439,10 +509,10 @@ const HowItWorksPage: React.FC = () => {
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 mb-4">
-                Common Questions About the Process
+                Frequently Asked Questions
               </h2>
               <p className="text-lg text-neutral-600">
-                Get answers to frequently asked questions about how health sharing works at MPB Health.
+                Answers to the most common questions about the MPB Health sharing process.
               </p>
             </div>
 
@@ -465,12 +535,12 @@ const HowItWorksPage: React.FC = () => {
 
             <div className="mt-8 text-center">
               <p className="text-neutral-600 mb-4">
-                Have more questions?{' '}
+                Still have questions?{' '}
                 <Link
                   to="/faq"
                   className="text-blue-600 hover:text-blue-700 font-semibold hover:underline"
                 >
-                  Visit our full FAQ page
+                  Browse the full FAQ
                 </Link>
               </p>
             </div>
@@ -482,8 +552,9 @@ const HowItWorksPage: React.FC = () => {
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">Ready to Get Started?</h2>
             <p className="text-xl text-blue-50 mb-8 max-w-2xl mx-auto">
-              Join thousands of families who have discovered a better way to manage healthcare costs.
-              Get a personalized quote in minutes or speak with an advisor.
+              See what thousands of families already know&mdash;there is a better
+              way to handle healthcare costs. Get a personalized quote in minutes
+              or speak directly with an advisor.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -508,7 +579,7 @@ const HowItWorksPage: React.FC = () => {
             </div>
 
             <p className="text-blue-100 text-sm mt-6">
-              No obligation. No pressure. Just honest answers to your questions.
+              Zero obligation, zero pressure&mdash;just straightforward answers.
             </p>
           </div>
         </div>

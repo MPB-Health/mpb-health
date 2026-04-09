@@ -377,12 +377,14 @@ export class TicketService {
           const isAuthError = /authorization|unauthorized|auth/i.test(msg);
 
           if (isAuthError) {
-            // Auth error → force refresh and retry on next iteration
             lastError = new Error('SESSION_EXPIRED');
             continue;
           }
 
-          // Non-auth server error → retry
+          if (/not yet configured|not configured|account not found|not been synced/i.test(msg)) {
+            throw new Error(msg);
+          }
+
           lastError = new Error(msg);
           continue;
         }

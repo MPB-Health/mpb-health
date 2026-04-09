@@ -14,6 +14,7 @@ import {
   List,
   Loader2,
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, GradientHeader } from '@mpbhealth/ui';
 import { videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
 import { supabase } from '@mpbhealth/database';
@@ -26,37 +27,25 @@ function getThumbnail(video: AdvisorVideo): string {
 
 export default function VideoLibrary() {
   const navigate = useNavigate();
-  const [videos, setVideos] = useState<AdvisorVideo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<VideoCategory>('all');
   const [playingVideo, setPlayingVideo] = useState<AdvisorVideo | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    videoService.getVideos()
-      .then((data) => {
-        if (!cancelled) setVideos(data);
-      })
-      .catch(() => {
-        if (!cancelled) setVideos([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, []);
+  const { data: videos = [], isLoading: loading } = useQuery({
+    queryKey: ['videos'],
+    queryFn: () => videoService.getVideos(),
+  });
 
   // Realtime: refresh when admin adds/edits/removes videos
   useEffect(() => {
     const channel = videoService.subscribeToVideoChanges((updated) => {
-      setVideos(updated);
+      queryClient.setQueryData(['videos'], updated);
     });
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [queryClient]);
 
   const categoryOptions: { value: VideoCategory; label: string; icon: typeof GraduationCap; count: number }[] = useMemo(() => [
     { value: 'all', label: 'All Videos', icon: Grid3X3, count: videos.length },
@@ -189,9 +178,24 @@ export default function VideoLibrary() {
 
       {/* Loading state */}
       {loading ? (
-        <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
-          <Loader2 className="w-8 h-8 text-th-text-tertiary mx-auto mb-3 animate-spin" />
-          <p className="text-th-text-primary font-medium">Loading videos...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+              <div className="aspect-video bg-surface-tertiary" />
+              <div className="p-4 space-y-3">
+                <div className="h-4 w-3/4 bg-surface-tertiary rounded" />
+                <div className="h-3 w-full bg-surface-tertiary rounded" />
+                <div className="flex gap-1">
+                  <div className="h-5 w-12 bg-surface-tertiary rounded" />
+                  <div className="h-5 w-12 bg-surface-tertiary rounded" />
+                </div>
+                <div className="flex gap-2 pt-3 border-t border-th-border-subtle">
+                  <div className="h-8 flex-1 bg-surface-tertiary rounded-lg" />
+                  <div className="h-8 w-24 bg-surface-tertiary rounded-lg" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">

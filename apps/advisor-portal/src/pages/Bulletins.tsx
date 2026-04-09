@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useDeferredValue } from 'react';
+import { useState, useEffect, useDeferredValue } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   CalendarDays,
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
 import { Button, GradientHeader } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -21,43 +22,23 @@ import { supabase } from '@mpbhealth/database';
 export default function Bulletins() {
   const { profile, unreadBulletinCount } = useAdvisor();
   const navigate = useNavigate();
-  const [bulletins, setBulletins] = useState<Bulletin[]>([]);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const loadBulletins = useCallback(async (showLoader = false) => {
-    if (showLoader) {
-      setLoading(true);
-    }
-
-    try {
-      const bulletinsData = await contentService.getBulletins(
-        {},
-        profile?.id,
-        { includeContent: false },
-      );
-      setBulletins(bulletinsData);
-    } catch (err) {
-      console.error('Failed to load bulletins:', err);
-    } finally {
-      if (showLoader) {
-        setLoading(false);
-      }
-    }
-  }, [profile?.id]);
-
-  useEffect(() => {
-    loadBulletins(true);
-  }, [loadBulletins]);
+  const { data: bulletins = [], isLoading: loading } = useQuery({
+    queryKey: ['bulletins', profile?.id],
+    queryFn: () => contentService.getBulletins({}, profile?.id, { includeContent: false }),
+    enabled: true,
+  });
 
   // Realtime: refresh when admin publishes, edits, or removes bulletins
   useEffect(() => {
     const channel = contentService.subscribeToBulletins(() => {
-      loadBulletins();
+      queryClient.invalidateQueries({ queryKey: ['bulletins'] });
     });
     return () => { supabase.removeChannel(channel); };
-  }, [loadBulletins]);
+  }, [queryClient]);
 
   const latestBulletin = bulletins[0];
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
@@ -71,8 +52,22 @@ export default function Bulletins() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600" />
+      <div className="space-y-6 animate-pulse">
+        <div className="h-10 w-64 bg-surface-tertiary rounded-lg" />
+        <div className="h-[220px] bg-surface-tertiary rounded-2xl" />
+        <div className="h-12 bg-surface-tertiary rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+              <div className="h-44 bg-surface-tertiary" />
+              <div className="p-5 space-y-3">
+                <div className="h-4 w-20 bg-surface-tertiary rounded" />
+                <div className="h-5 w-3/4 bg-surface-tertiary rounded" />
+                <div className="h-4 w-full bg-surface-tertiary rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

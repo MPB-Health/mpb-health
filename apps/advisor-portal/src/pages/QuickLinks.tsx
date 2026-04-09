@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, X, Smartphone, ArrowRight, Video, Calendar } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabaseUrl } from '@mpbhealth/database';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 
@@ -129,34 +130,19 @@ function LinkCard({
 
 export default function QuickLinks() {
   const [popupLink, setPopupLink] = useState<{ label: string; url: string } | null>(null);
-  const [cmsQuickLinks, setCmsQuickLinks] = useState<QuickLink[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: cmsQuickLinks = [], isLoading: loading } = useQuery({
+    queryKey: ['quickLinks'],
+    queryFn: () => navigationService.getResourceCenterQuickLinks(),
+  });
 
   useEffect(() => {
-    let cancelled = false;
-
-    navigationService.getResourceCenterQuickLinks().then((links) => {
-      if (!cancelled) {
-        setCmsQuickLinks(links);
-        setLoading(false);
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setLoading(false);
-      }
-    });
-
     const channel = navigationService.subscribeToQuickLinkChanges((all) => {
-      if (!cancelled) {
-        setCmsQuickLinks(navigationService.selectResourceCenterQuickLinks(all));
-      }
+      queryClient.setQueryData(['quickLinks'], navigationService.selectResourceCenterQuickLinks(all));
     });
-
-    return () => {
-      cancelled = true;
-      channel.unsubscribe();
-    };
-  }, []);
+    return () => { channel.unsubscribe(); };
+  }, [queryClient]);
 
   const displayQuickLinks: QuickLinkItem[] = cmsQuickLinks.length > 0
     ? cmsQuickLinks.map((link) => ({
@@ -261,8 +247,17 @@ export default function QuickLinks() {
       </a>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 text-sm text-th-text-tertiary">
-          Loading resources...
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 animate-pulse">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <div key={i} className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+              <div className="aspect-[16/9] bg-surface-tertiary" />
+              <div className="p-4 space-y-2">
+                <div className="h-4 w-3/4 bg-surface-tertiary rounded" />
+                <div className="h-3 w-full bg-surface-tertiary rounded" />
+                <div className="h-3 w-2/3 bg-surface-tertiary rounded" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

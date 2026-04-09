@@ -332,43 +332,33 @@ export default function Dashboard() {
     ? `${advisorLandingPageBase.replace(/\/+$/, '')}/${advisorSlug}`
     : advisorLandingPageBase;
 
-  // Fetch CMS meetings when profile is available
+  // Batch all profile-dependent dashboard data into a single effect
   useEffect(() => {
     if (!profile?.id) {
       setMeetingsLoading(false);
       return;
     }
     let cancelled = false;
-    (async () => {
-      try {
-        const meetings = await meetingService.getUpcomingMeetings(profile.id, 4);
-        if (!cancelled) setUpcomingMeetings(meetings);
-      } catch (err) {
-        console.error('Failed to load upcoming meetings:', err);
-      } finally {
-        if (!cancelled) setMeetingsLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [profile?.id]);
 
-  useEffect(() => {
-    if (!profile?.email) {
-      setHasAdvisorPageAccess(false);
-      return;
-    }
-    let cancelled = false;
-    supabase
-      .from('advisor_access')
-      .select('has_advisor_page_access')
-      .ilike('email', profile.email)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
+    Promise.allSettled([
+      meetingService.getUpcomingMeetings(profile.id, 4),
+      supabase
+        .from('advisor_access')
+        .select('has_advisor_page_access')
+        .ilike('email', profile.email || '')
+        .maybeSingle(),
+    ]).then(([meetingsResult, accessResult]) => {
+      if (cancelled) return;
+      if (meetingsResult.status === 'fulfilled') setUpcomingMeetings(meetingsResult.value);
+      if (accessResult.status === 'fulfilled') {
+        const { data, error } = accessResult.value;
         setHasAdvisorPageAccess(!error && data?.has_advisor_page_access === true);
-      });
+      }
+      setMeetingsLoading(false);
+    });
+
     return () => { cancelled = true; };
-  }, [profile?.email]);
+  }, [profile?.id, profile?.email]);
 
   // Use CMS-backed resource center links when available; fall back to hardcoded cards.
   const displayQuickLinks: FallbackQuickLink[] = cmsQuickLinks.length > 0

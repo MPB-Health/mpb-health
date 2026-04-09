@@ -604,8 +604,21 @@ export default function Tickets() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+        <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100 animate-pulse">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="flex items-center gap-4 px-5 py-4">
+              <div className="flex-1 space-y-2">
+                <div className="flex gap-2">
+                  <div className="h-4 w-12 bg-neutral-100 rounded" />
+                  <div className="h-4 w-16 bg-neutral-100 rounded-full" />
+                  <div className="h-4 w-14 bg-neutral-100 rounded-full" />
+                </div>
+                <div className="h-4 w-2/3 bg-neutral-100 rounded" />
+                <div className="h-3 w-24 bg-neutral-100 rounded" />
+              </div>
+              <div className="w-4 h-4 bg-neutral-100 rounded" />
+            </div>
+          ))}
         </div>
       ) : tickets.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-neutral-200">

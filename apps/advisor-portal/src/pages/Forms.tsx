@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Share2,
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@mpbhealth/ui';
 import { Tooltip } from '../components/Tooltip';
 import {
@@ -86,10 +87,8 @@ const sectionConfig = {
 
 export default function Forms({ section }: FormsProps) {
   const { profile } = useAdvisor();
-  const [forms, setForms] = useState<AdvisorForm[]>([]);
-  const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
   const [selectedForm, setSelectedForm] = useState<AdvisorForm | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -102,34 +101,28 @@ export default function Forms({ section }: FormsProps) {
     setTimeout(() => setCopiedId(null), 2000);
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!profile) return;
+  const { data: formsData, isLoading: loading } = useQuery({
+    queryKey: ['forms', profile?.id],
+    queryFn: async () => {
+      const [formsList, subs] = await Promise.all([
+        formsService.getForms(),
+        formsService.getSubmissions(profile!.id),
+      ]);
+      return { forms: formsList, submissions: subs };
+    },
+    enabled: !!profile?.id,
+  });
 
-      try {
-        const [formsList, subs] = await Promise.all([
-          formsService.getForms(),
-          formsService.getSubmissions(profile.id),
-        ]);
-        setForms(formsList);
-        setSubmissions(subs);
-      } catch (err) {
-        console.error('Failed to load forms:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [profile?.id]);
+  const forms = formsData?.forms ?? [];
+  const submissions = formsData?.submissions ?? [];
 
   // Realtime: refresh forms when admin adds/edits/removes form in CMS
   useEffect(() => {
     const channel = formsService.subscribeToFormChanges(() => {
-      formsService.getForms().then(setForms).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ['forms'] });
     });
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [queryClient]);
 
   const getFormSubmission = (formId: string) => {
     return submissions.find((s) => s.form_id === formId);
@@ -153,8 +146,32 @@ export default function Forms({ section }: FormsProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-surface-tertiary rounded-xl" />
+          <div className="space-y-2">
+            <div className="h-6 w-32 bg-surface-tertiary rounded" />
+            <div className="h-4 w-56 bg-surface-tertiary rounded" />
+          </div>
+        </div>
+        <div className="h-11 bg-surface-tertiary rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-surface-primary rounded-xl border border-th-border p-5 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 bg-surface-tertiary rounded-lg" />
+                <div className="w-8 h-8 bg-surface-tertiary rounded" />
+              </div>
+              <div className="h-5 w-2/3 bg-surface-tertiary rounded" />
+              <div className="h-4 w-full bg-surface-tertiary rounded" />
+              <div className="h-px bg-surface-tertiary" />
+              <div className="flex justify-between">
+                <div className="h-4 w-20 bg-surface-tertiary rounded" />
+                <div className="h-4 w-16 bg-surface-tertiary rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

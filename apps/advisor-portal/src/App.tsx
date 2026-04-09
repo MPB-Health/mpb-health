@@ -4,41 +4,111 @@ import { AdvisorProvider } from './contexts/AdvisorContext';
 import { TourProvider } from './contexts/TourContext';
 import MainLayout from './layouts/MainLayout';
 
-// ── Lazy-loaded page components ──────────────────────────────────────────────
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const Training = React.lazy(() => import('./pages/Training'));
-const TrainingModule = React.lazy(() => import('./pages/TrainingModule'));
-const Forms = React.lazy(() => import('./pages/Forms'));
-const QuickLinks = React.lazy(() => import('./pages/QuickLinks'));
-const SOPLibrary = React.lazy(() => import('./pages/SOPLibrary'));
-const SOPDocument = React.lazy(() => import('./pages/SOPDocument'));
-const Bulletins = React.lazy(() => import('./pages/Bulletins'));
-const BulletinDetail = React.lazy(() => import('./pages/BulletinDetail'));
-const SubmitGroup = React.lazy(() => import('./pages/SubmitGroup'));
-const Contact = React.lazy(() => import('./pages/Contact'));
-const Profile = React.lazy(() => import('./pages/Profile'));
-const Inbox = React.lazy(() => import('./pages/Inbox'));
-const ConversationThread = React.lazy(() => import('./pages/ConversationThread'));
-const AuditLog = React.lazy(() => import('./pages/AuditLog'));
-const VideoLibrary = React.lazy(() => import('./pages/VideoLibrary'));
-const Tickets = React.lazy(() => import('./pages/Tickets'));
-const NewTicket = React.lazy(() => import('./pages/NewTicket'));
-const ChatPage = React.lazy(() => import('./pages/Chat'));
-const AdminTickets = React.lazy(() => import('./pages/AdminTickets'));
-const AddAdvisor = React.lazy(() => import('./pages/AddAdvisor'));
-const Login = React.lazy(() => import('./pages/Login'));
-const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
-const ChangePassword = React.lazy(() => import('./pages/ChangePassword'));
+// Route module factories for lazy loading + prefetching
+const routeModules = {
+  Dashboard: () => import('./pages/Dashboard'),
+  Training: () => import('./pages/Training'),
+  TrainingModule: () => import('./pages/TrainingModule'),
+  Forms: () => import('./pages/Forms'),
+  QuickLinks: () => import('./pages/QuickLinks'),
+  SOPLibrary: () => import('./pages/SOPLibrary'),
+  SOPDocument: () => import('./pages/SOPDocument'),
+  Bulletins: () => import('./pages/Bulletins'),
+  BulletinDetail: () => import('./pages/BulletinDetail'),
+  SubmitGroup: () => import('./pages/SubmitGroup'),
+  Contact: () => import('./pages/Contact'),
+  Profile: () => import('./pages/Profile'),
+  Inbox: () => import('./pages/Inbox'),
+  ConversationThread: () => import('./pages/ConversationThread'),
+  AuditLog: () => import('./pages/AuditLog'),
+  VideoLibrary: () => import('./pages/VideoLibrary'),
+  Tickets: () => import('./pages/Tickets'),
+  NewTicket: () => import('./pages/NewTicket'),
+  ChatPage: () => import('./pages/Chat'),
+  AdminTickets: () => import('./pages/AdminTickets'),
+  AddAdvisor: () => import('./pages/AddAdvisor'),
+  Login: () => import('./pages/Login'),
+  ForgotPassword: () => import('./pages/ForgotPassword'),
+  ResetPassword: () => import('./pages/ResetPassword'),
+  ChangePassword: () => import('./pages/ChangePassword'),
+  SettingsHub: () => import('./pages/settings/SettingsHub'),
+  OrganizationSettings: () => import('./pages/settings/OrganizationSettings'),
+  TeamManagement: () => import('./pages/settings/TeamManagement'),
+  NotificationPreferences: () => import('./pages/settings/NotificationPreferences'),
+  UserPreferences: () => import('./pages/settings/UserPreferences'),
+  ApiKeys: () => import('./pages/settings/ApiKeys'),
+  Integrations: () => import('./pages/settings/Integrations'),
+} as const;
 
-// Settings pages (lazy-loaded individually instead of barrel import)
-const SettingsHub = React.lazy(() => import('./pages/settings/SettingsHub'));
-const OrganizationSettings = React.lazy(() => import('./pages/settings/OrganizationSettings'));
-const TeamManagement = React.lazy(() => import('./pages/settings/TeamManagement'));
-const NotificationPreferences = React.lazy(() => import('./pages/settings/NotificationPreferences'));
-const UserPreferences = React.lazy(() => import('./pages/settings/UserPreferences'));
-const ApiKeys = React.lazy(() => import('./pages/settings/ApiKeys'));
-const Integrations = React.lazy(() => import('./pages/settings/Integrations'));
+// Prefetch cache to avoid duplicate requests
+const prefetched = new Set<string>();
+
+/** Eagerly fetch a route's JS chunk so navigation feels instant. */
+export function prefetchRoute(name: keyof typeof routeModules) {
+  if (prefetched.has(name)) return;
+  prefetched.add(name);
+  routeModules[name]().catch(() => prefetched.delete(name));
+}
+
+// Map route paths to module names for link-based prefetching
+const pathToModule: Record<string, keyof typeof routeModules> = {
+  '/': 'Dashboard',
+  '/training': 'Training',
+  '/forms': 'Forms',
+  '/quick-links': 'QuickLinks',
+  '/sops': 'SOPLibrary',
+  '/bulletins': 'Bulletins',
+  '/videos': 'VideoLibrary',
+  '/tickets': 'Tickets',
+  '/tickets/new': 'NewTicket',
+  '/contact': 'Contact',
+  '/submit-group': 'SubmitGroup',
+  '/chat': 'ChatPage',
+  '/inbox': 'Inbox',
+  '/profile': 'Profile',
+  '/settings': 'SettingsHub',
+  '/audit-log': 'AuditLog',
+};
+
+/** Prefetch a route chunk by path (for use in nav link onMouseEnter/onFocus). */
+export function prefetchRouteByPath(path: string) {
+  const mod = pathToModule[path];
+  if (mod) prefetchRoute(mod);
+}
+
+// Lazy-loaded page components (using shared module factories)
+const Dashboard = React.lazy(routeModules.Dashboard);
+const Training = React.lazy(routeModules.Training);
+const TrainingModule = React.lazy(routeModules.TrainingModule);
+const Forms = React.lazy(routeModules.Forms);
+const QuickLinks = React.lazy(routeModules.QuickLinks);
+const SOPLibrary = React.lazy(routeModules.SOPLibrary);
+const SOPDocument = React.lazy(routeModules.SOPDocument);
+const Bulletins = React.lazy(routeModules.Bulletins);
+const BulletinDetail = React.lazy(routeModules.BulletinDetail);
+const SubmitGroup = React.lazy(routeModules.SubmitGroup);
+const Contact = React.lazy(routeModules.Contact);
+const Profile = React.lazy(routeModules.Profile);
+const Inbox = React.lazy(routeModules.Inbox);
+const ConversationThread = React.lazy(routeModules.ConversationThread);
+const AuditLog = React.lazy(routeModules.AuditLog);
+const VideoLibrary = React.lazy(routeModules.VideoLibrary);
+const Tickets = React.lazy(routeModules.Tickets);
+const NewTicket = React.lazy(routeModules.NewTicket);
+const ChatPage = React.lazy(routeModules.ChatPage);
+const AdminTickets = React.lazy(routeModules.AdminTickets);
+const AddAdvisor = React.lazy(routeModules.AddAdvisor);
+const Login = React.lazy(routeModules.Login);
+const ForgotPassword = React.lazy(routeModules.ForgotPassword);
+const ResetPassword = React.lazy(routeModules.ResetPassword);
+const ChangePassword = React.lazy(routeModules.ChangePassword);
+const SettingsHub = React.lazy(routeModules.SettingsHub);
+const OrganizationSettings = React.lazy(routeModules.OrganizationSettings);
+const TeamManagement = React.lazy(routeModules.TeamManagement);
+const NotificationPreferences = React.lazy(routeModules.NotificationPreferences);
+const UserPreferences = React.lazy(routeModules.UserPreferences);
+const ApiKeys = React.lazy(routeModules.ApiKeys);
+const Integrations = React.lazy(routeModules.Integrations);
 
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function LoadingSpinner() {
@@ -154,6 +224,20 @@ function RouteSpinner() {
         }}
       />
     </div>
+  );
+}
+
+// Eagerly prefetch the most-visited routes after initial paint
+if (typeof window !== 'undefined') {
+  const requestIdleCallback = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1));
+  requestIdleCallback(
+    () => {
+      prefetchRoute('Dashboard');
+      prefetchRoute('Bulletins');
+      prefetchRoute('Training');
+      prefetchRoute('QuickLinks');
+    },
+    { timeout: 3000 },
   );
 }
 

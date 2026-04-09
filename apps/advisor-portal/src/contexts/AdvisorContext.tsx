@@ -13,6 +13,7 @@ import {
 import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 import { secureAuthService } from '@mpbhealth/auth';
 import { clearNavCache } from '../utils/navCache';
+import { startEdgeFunctionWarmup, stopEdgeFunctionWarmup } from '../utils/edgeFunctionWarmup';
 
 interface AdvisorContextType {
   // Profile
@@ -320,8 +321,12 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(() => {
       refreshTraining();
       loadBulletinCount();
+      startEdgeFunctionWarmup();
     }, 0);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      stopEdgeFunctionWarmup();
+    };
   }, [profile?.id]);
 
   // Subscribe to bulletins — skip when must_change_password to avoid WebSocket

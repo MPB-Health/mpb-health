@@ -70,6 +70,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { setClearQueryCache } from '../utils/navCache';
+import { prefetchRouteByPath } from '../App';
 
 // Icon mapping for dynamic icons from CMS
 // NOTE: Keep this as named imports only — never use `import * as LucideIcons`
@@ -564,6 +565,8 @@ export default function MainLayout() {
               }`
             }
             onClick={props.onClick}
+            onMouseEnter={() => prefetchRouteByPath(item.href)}
+            onFocus={() => prefetchRouteByPath(item.href)}
           >
             {props.children}
           </NavLink>
@@ -599,8 +602,19 @@ export default function MainLayout() {
         }
       >
         {isShellLoading ? (
-          <div className="flex items-center justify-center py-32">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-th-accent-600" />
+          <div className="space-y-6 animate-pulse">
+            <div className="h-8 w-48 bg-surface-tertiary rounded-lg" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-32 bg-surface-tertiary rounded-xl" />
+              ))}
+            </div>
+            <div className="h-64 bg-surface-tertiary rounded-xl" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2].map(i => (
+                <div key={i} className="h-48 bg-surface-tertiary rounded-xl" />
+              ))}
+            </div>
           </div>
         ) : (
           <TrainingGate isAdmin={isAdminUser}>

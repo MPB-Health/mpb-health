@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -17,6 +17,7 @@ import {
   Library,
   ExternalLink,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import {
   contentService,
   type SOPDocument,
@@ -158,50 +159,30 @@ function buildSectionConfig(categories: SOPCategory[]): Record<string, SectionEn
 
 export default function SOPLibrary({ section }: SOPLibraryProps) {
   const navigate = useNavigate();
-  const [documents, setDocuments] = useState<SOPDocument[]>([]);
-  const [categories, setCategories] = useState<SOPCategory[]>([]);
-  const [popularDocs, setPopularDocs] = useState<SOPDocument[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
   const [previewDoc, setPreviewDoc] = useState<SOPDocument | null>(null);
+
+  const { data: sopData, isLoading: loading } = useQuery({
+    queryKey: ['sopLibrary', section],
+    queryFn: async () => {
+      const [docs, cats, popular] = await Promise.all([
+        contentService.getSOPDocuments().catch(() => []),
+        contentService.getSOPCategories().catch(() => []),
+        contentService.getPopularSOPs(5).catch(() => []),
+      ]);
+      return { documents: docs, categories: cats, popularDocs: popular };
+    },
+  });
+
+  const documents = sopData?.documents ?? [];
+  const categories = sopData?.categories ?? [];
+  const popularDocs = sopData?.popularDocs ?? [];
 
   // Build section config dynamically from CMS categories, with hardcoded fallback
   const sectionConfig = useMemo(() => buildSectionConfig(categories), [categories]);
 
   // Get section config if section is specified
   const currentSection = section ? sectionConfig[section] : null;
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Fetch documents independently to avoid one failure blocking all
-        const docs = await contentService.getSOPDocuments().catch(err => {
-          console.error('Failed to load SOP documents:', err);
-          return [];
-        });
-        
-        const cats = await contentService.getSOPCategories().catch(err => {
-          console.error('Failed to load SOP categories:', err);
-          return [];
-        });
-        
-        const popular = await contentService.getPopularSOPs(5).catch(err => {
-          console.error('Failed to load popular SOPs:', err);
-          return [];
-        });
-        
-        setDocuments(docs);
-        setCategories(cats);
-        setPopularDocs(popular);
-      } catch (err) {
-        console.error('Failed to load SOPs:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [section]);
 
   // Categories grouped under "Advisor Toolkit"
   const TOOLKIT_CATEGORIES = ['presentations', 'advisor handbook', 'commission structure'];
@@ -292,8 +273,24 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-surface-tertiary rounded-xl" />
+          <div className="space-y-2">
+            <div className="h-6 w-40 bg-surface-tertiary rounded" />
+            <div className="h-4 w-64 bg-surface-tertiary rounded" />
+          </div>
+        </div>
+        <div className="h-11 bg-surface-tertiary rounded-lg" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-surface-primary rounded-xl border border-th-border p-5 space-y-3">
+              <div className="h-5 w-3/4 bg-surface-tertiary rounded" />
+              <div className="h-4 w-full bg-surface-tertiary rounded" />
+              <div className="h-4 w-1/2 bg-surface-tertiary rounded" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

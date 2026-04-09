@@ -17,13 +17,17 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     ],
   },
   {
-    id: 'zion-member-guidelines',
+    id: 'member-guidelines',
     title: 'Member Guidelines',
-    description: 'Zion HealthShare member guidelines and policies',
+    description: 'Health sharing member guidelines and policies',
     url: 'https://zionhealthshare.org/how-it-works/member-guidelines/',
     category: 'health-sharing',
     type: 'document',
     external: true,
+    links: [
+      { label: 'Zion HealthShare', url: 'https://zionhealthshare.org/how-it-works/member-guidelines/' },
+      { label: 'Sedera', url: 'https://assets.ctfassets.net/01zqqfy0bb2m/BdCi3f2zO5AcFTHBLcNkJ/3cdf28f268d4186cc7550e11b11664c7/SELECT__Guidelines_-_Community_20231001.pdf' },
+    ],
   },
   {
     id: 'zion-faq',

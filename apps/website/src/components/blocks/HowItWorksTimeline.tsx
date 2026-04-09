@@ -1,111 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/button';
-import { ChevronLeft, ChevronRight, Pause, Play, UserPlus, DollarSign, CreditCard, Stethoscope, FileText, Upload, Users, HeartHandshake } from 'lucide-react';
-import { GlossaryTooltip } from './GlossaryTooltip';
-
-interface Step {
-  id: number;
-  title: string;
-  body: React.ReactNode;
-  icon: React.ElementType;
-}
-
-const STEPS: Step[] = [
-  {
-    id: 1,
-    title: "Join MPB Health",
-    icon: UserPlus,
-    body: (
-      <p>
-        Become a member of a community that shares eligible medical costs. Your
-        advisor helps you pick the right membership for your needs.
-      </p>
-    ),
-  },
-  {
-    id: 2,
-    title: "Choose your IUA",
-    icon: DollarSign,
-    body: (
-      <p>
-        Select your{" "}
-        <GlossaryTooltip term="IUA" definition="Initial Unshareable Amount — your portion of an eligible medical need before community sharing begins." />{" "}
-        level to match your budget and risk tolerance.
-      </p>
-    ),
-  },
-  {
-    id: 3,
-    title: "Make your Monthly Share",
-    icon: CreditCard,
-    body: (
-      <p>
-        Contribute a fixed monthly share to the community pool. Staying current
-        keeps your eligibility for sharing active.
-      </p>
-    ),
-  },
-  {
-    id: 4,
-    title: "Get Care When You Need It",
-    icon: Stethoscope,
-    body: (
-      <p>
-        Start with $0 virtual care for everyday needs. For in-person visits, choose
-        any doctor or hospital with no network restrictions.
-      </p>
-    ),
-  },
-  {
-    id: 5,
-    title: "An Expense Happens",
-    icon: FileText,
-    body: (
-      <p>
-        For a new medical need, keep itemized bills, notes, and provider details
-        so everything's ready for submission.
-      </p>
-    ),
-  },
-  {
-    id: 6,
-    title: "Submit Your Bills",
-    icon: Upload,
-    body: (
-      <p>
-        Upload bills through the member portal. Our team reviews against
-        guidelines, including{" "}
-        <GlossaryTooltip term="Pre-membership conditions" definition="Conditions present before joining; waiting periods or limits may apply per guidelines." />
-        .
-      </p>
-    ),
-  },
-  {
-    id: 7,
-    title: "Community Shares the Cost",
-    icon: Users,
-    body: (
-      <p>
-        After your IUA, the community pool helps pay eligible expenses per the
-        sharing guidelines. You receive clear explanations of what's shared.
-      </p>
-    ),
-  },
-  {
-    id: 8,
-    title: "Ongoing Support",
-    icon: HeartHandshake,
-    body: (
-      <p>
-        Advisors, virtual behavioral health resources, and more keep you
-        confident across future health events. Consider{" "}
-        <GlossaryTooltip term="HSA-compatible" definition="Designed to meet Health Savings Account rules; consult your tax advisor." />{" "}
-        options if tax-advantaged saving matters to you.
-      </p>
-    ),
-  },
-];
+import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { HOW_IT_WORKS_STEPS } from '../../lib/onboarding/howItWorksSteps';
 
 const AUTO_ADVANCE_MS = 6000;
 
@@ -126,13 +23,13 @@ const HowItWorksTimeline: React.FC = () => {
   useEffect(() => {
     if (!playing) return;
     const id = setInterval(() => {
-      setIndex((i) => (i + 1) % STEPS.length);
+      setIndex((i) => (i + 1) % HOW_IT_WORKS_STEPS.length);
     }, AUTO_ADVANCE_MS);
     return () => clearInterval(id);
   }, [playing]);
 
   const go = (dir: -1 | 1) => {
-    setIndex((i) => (i + dir + STEPS.length) % STEPS.length);
+    setIndex((i) => (i + dir + HOW_IT_WORKS_STEPS.length) % HOW_IT_WORKS_STEPS.length);
     setPlaying(false);
   };
 
@@ -141,8 +38,8 @@ const HowItWorksTimeline: React.FC = () => {
     setPlaying(false);
   };
 
-  const progress = (index + 1) / STEPS.length;
-  const currentStep = STEPS[index];
+  const progress = (index + 1) / HOW_IT_WORKS_STEPS.length;
+  const currentStep = HOW_IT_WORKS_STEPS[index];
   const StepIcon = currentStep.icon;
 
   return (
@@ -207,8 +104,8 @@ const HowItWorksTimeline: React.FC = () => {
         </div>
 
         {/* Step nodes */}
-        <div className="mt-4 grid grid-cols-4 gap-2 md:grid-cols-8">
-          {STEPS.map((s, i) => {
+        <div className="mt-4 grid grid-cols-5 gap-2">
+          {HOW_IT_WORKS_STEPS.map((s, i) => {
             const active = i === index;
             const completed = i < index;
             const Icon = s.icon;
@@ -234,7 +131,7 @@ const HowItWorksTimeline: React.FC = () => {
                   active && "scale-110"
                 ].join(" ")} />
                 <span className="hidden md:inline text-center leading-tight font-medium">
-                  {s.title}
+                  {s.shortTitle}
                 </span>
                 <span className="md:hidden font-semibold">
                   {s.id}

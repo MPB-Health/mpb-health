@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserPlus, DollarSign, CreditCard, Stethoscope, FileText, Upload, Users, HeartHandshake } from 'lucide-react';
+import { UserPlus, BookOpen, CreditCard, HeartHandshake, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { GlossaryTooltip } from '../../components/blocks/GlossaryTooltip';
 
@@ -26,21 +26,21 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     body: (
       <>
         <p className="mb-3">
-          Become a member of a community that shares eligible medical costs. Your
-          advisor helps you pick the right membership for your needs.
+          Choose the MPB Health membership that fits your family's needs and budget.
+          Our advisors guide you through the simple enrollment process.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Personalized plan matching based on your family size and budget</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>Personalized plan matching based on family size and budget</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
             <span>Dedicated advisor support throughout enrollment</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Quick application process with transparent guidelines</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>Quick 10-minute application with transparent guidelines</span>
           </li>
         </ul>
       </>
@@ -52,59 +52,62 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
   },
   {
     id: 2,
-    title: "Choose your IUA",
-    shortTitle: "Set IUA",
-    icon: DollarSign,
+    title: "Learn the Guidelines",
+    shortTitle: "Learn",
+    icon: BookOpen,
     body: (
       <>
         <p className="mb-3">
-          Select your{" "}
-          <GlossaryTooltip term="IUA" definition="Initial Unshareable Amount — your portion of an eligible medical need before community sharing begins." />{" "}
-          level to match your budget and risk tolerance.
+          Understand our member guidelines and know which medical expenses are
+          eligible for sharing. Our team is always available to answer questions.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>IUA ($1,250, $2,500 or $5,000)</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>Review sharing eligibility and member expectations</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Choose the IUA that fits your budget</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>
+              Understand your{" "}
+              <GlossaryTooltip term="IUA" definition="Initial Unshareable Amount -- your portion of an eligible medical need before community sharing begins." />{" "}
+              options ($1,250, $2,500, or $5,000)
+            </span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Flexibility to adjust annually based on needs</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>Learn about waiting periods and pre-membership conditions</span>
           </li>
         </ul>
       </>
     ),
     meta: {
-      timeEstimate: "5 minutes",
       faqLink: "/faq#iua-selection",
     },
   },
   {
     id: 3,
-    title: "Make your Monthly Share",
-    shortTitle: "Pay Share",
+    title: "Contribute Monthly",
+    shortTitle: "Contribute",
     icon: CreditCard,
     body: (
       <>
         <p className="mb-3">
-          Contribute a fixed monthly share to the community pool to remain in good standing.
+          Make your monthly share contribution to the community. Select your IUA
+          level to balance monthly costs with out-of-pocket responsibility.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
             <span>Automatic monthly payments for convenience</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
             <span>Transparent pricing with no hidden fees</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Easy online portal for payment management</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>Higher IUA means lower monthly share amounts</span>
           </li>
         </ul>
       </>
@@ -112,149 +115,62 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
   },
   {
     id: 4,
-    title: "Get Care When You Need It",
-    shortTitle: "Get Care",
-    icon: Stethoscope,
-    body: (
-      <>
-        <p className="mb-3">
-          Start with $0 virtual care for everyday needs. For in-person visits, choose
-          any doctor or hospital with no network restrictions.
-        </p>
-        <ul className="space-y-2 text-sm">
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>24/7 Virtual Care access at no additional cost</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Advisor support for care navigation</span>
-          </li>
-        </ul>
-      </>
-    ),
-    meta: {
-      faqLink: "/faq#getting-care",
-    },
-  },
-  {
-    id: 5,
-    title: "An Expense Happens",
-    shortTitle: "Track Bills",
-    icon: FileText,
-    body: (
-      <>
-        <p className="mb-3">
-          For a new medical need, keep itemized bills, notes, and provider details
-          so everything's ready for submission.
-        </p>
-        <ul className="space-y-2 text-sm">
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Request itemized bills from your providers</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Keep records of dates, diagnoses, and treatments</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Note your provider and date of service</span>
-          </li>
-        </ul>
-      </>
-    ),
-    meta: {
-      docsNeeded: "Itemized bills, provider info",
-    },
-  },
-  {
-    id: 6,
-    title: "Submit Your Bills",
-    shortTitle: "Submit",
-    icon: Upload,
-    body: (
-      <>
-        <p className="mb-3">
-          Upload bills through the member portal. Our team reviews against
-          guidelines, including{" "}
-          <GlossaryTooltip term="Pre-membership conditions" definition="Conditions present before joining; waiting periods or limits may apply per guidelines." />
-          .
-        </p>
-        <ul className="space-y-2 text-sm">
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Secure online portal for document uploads</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Expert review team evaluates eligibility</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Clear communication throughout the review process</span>
-          </li>
-        </ul>
-      </>
-    ),
-    meta: {
-      timeEstimate: "10-15 minutes",
-      docsNeeded: "Bills, medical records",
-    },
-  },
-  {
-    id: 7,
-    title: "Community Shares the Cost",
-    shortTitle: "Sharing",
-    icon: Users,
-    body: (
-      <>
-        <p className="mb-3">
-          After your IUA, the community pool helps pay eligible expenses per the
-          sharing guidelines. You receive clear explanations of what's shared.
-        </p>
-        <ul className="space-y-2 text-sm">
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Payments sent directly to providers when possible</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Detailed sharing summaries for your records</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Transparent breakdown of shared and unshared amounts</span>
-          </li>
-        </ul>
-      </>
-    ),
-  },
-  {
-    id: 8,
-    title: "Ongoing Support",
-    shortTitle: "Support",
+    title: "Share Medical Costs",
+    shortTitle: "Share",
     icon: HeartHandshake,
     body: (
       <>
         <p className="mb-3">
-          Advisors, virtual behavioral health resources, and more keep you
-          confident across future health events. Consider{" "}
-          <GlossaryTooltip term="HSA-compatible" definition="Designed to meet Health Savings Account rules; consult your tax advisor." />{" "}
-          options if tax-advantaged saving matters to you.
+          When you have an eligible medical need, submit your sharing request
+          through our secure member portal. The community shares the cost.
         </p>
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>24/7 member support and advisor access</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>See any doctor or hospital with no network restrictions</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>Virtual behavioral health and wellness resources included</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>Upload bills through our secure member portal</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-teal-600 font-bold">•</span>
-            <span>HSA-compatible plans for tax-advantaged savings</span>
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>Payments sent directly to providers when possible</span>
+          </li>
+        </ul>
+      </>
+    ),
+    meta: {
+      timeEstimate: "~60 days processing",
+      docsNeeded: "Itemized bills, provider info",
+    },
+  },
+  {
+    id: 5,
+    title: "Thrive With Support",
+    shortTitle: "Thrive",
+    icon: Sparkles,
+    body: (
+      <>
+        <p className="mb-3">
+          Live confidently with ongoing advisor support, virtual care access,
+          wellness resources, and a community that has your back.
+        </p>
+        <ul className="space-y-2 text-sm">
+          <li className="flex items-start gap-2">
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>24/7 virtual care and behavioral health resources</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>Dedicated advisor access throughout membership</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-teal-600 font-bold">&bull;</span>
+            <span>
+              <GlossaryTooltip term="HSA-compatible" definition="Designed to meet Health Savings Account rules; consult your tax advisor." />{" "}
+              plans for tax-advantaged savings
+            </span>
           </li>
         </ul>
       </>

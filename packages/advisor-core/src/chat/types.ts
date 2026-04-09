@@ -71,3 +71,12 @@ export interface CreateChannelOptions {
   slug?: string;
   is_admin_only_posting?: boolean;
 }
+
+export interface ChatUserSearchResult {
+  id: string;
+  display_name: string;
+  first_name: string;
+  last_name: string;
+  avatar_url: string | null;
+  status: string;
+}

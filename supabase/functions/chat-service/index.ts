@@ -21,6 +21,7 @@ type ChatAction =
   | "create_channel"
   | "delete_message"
   | "search_messages"
+  | "search_users"
   | "mark_read"
   | "list_members"
   | "ping";
@@ -333,7 +334,31 @@ Deno.serve(async (req: Request) => {
           p_conversation_id: conversation_id,
         });
 
-        return respond({ success: true, message });
+        // Enrich with sender profile
+        const { data: senderProfile } = await supabaseAdmin
+          .from("advisor_profiles")
+          .select("first_name, last_name, avatar_url")
+          .eq("id", userId)
+          .single();
+
+        const enrichedMessage = {
+          ...message,
+          sender_name: senderProfile ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim() : "Unknown",
+          sender_avatar: senderProfile?.avatar_url || null,
+        };
+
+        // Update conversation preview
+        await supabaseAdmin
+          .from("chat_conversations")
+          .update({
+            last_message_at: message.created_at,
+            last_message_preview: sanitizedContent.length > 100
+              ? sanitizedContent.slice(0, 100) + "..."
+              : sanitizedContent,
+          })
+          .eq("id", conversation_id);
+
+        return respond({ success: true, message: enrichedMessage });
       }
 
       // ================================================================
@@ -682,6 +707,76 @@ Deno.serve(async (req: Request) => {
         });
 
         return respond({ success: true, members: enriched });
+      }
+
+      // ================================================================
+      // SEARCH USERS (for DM creation)
+      // ================================================================
+      case "search_users": {
+        const { query, limit = 20 } = body;
+
+        if (!query || typeof query !== "string" || query.trim().length < 1) {
+          return respondError("Search query is required", 400);
+        }
+
+        const searchTerm = `%${sanitizeInput(query.trim(), 100).toLowerCase()}%`;
+
+        // Search advisor_profiles by name
+        const { data: advisors, error: searchErr } = await supabaseAdmin
+          .from("advisor_profiles")
+          .select("id, first_name, last_name, avatar_url, status")
+          .eq("status", "active")
+          .neq("id", userId)
+          .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm}`)
+          .order("first_name")
+          .limit(Math.min(limit, 50));
+
+        if (searchErr) {
+          log.error("User search failed", searchErr);
+          return respondError("Search failed", 500);
+        }
+
+        // Also search org_memberships users
+        const { data: orgUsers, error: orgErr } = await supabaseAdmin
+          .from("org_memberships")
+          .select("user_id")
+          .eq("org_id", ORG_ID)
+          .eq("status", "active")
+          .neq("user_id", userId);
+
+        const orgUserIds = new Set((orgUsers || []).map((u: { user_id: string }) => u.user_id));
+
+        // Combine: advisors + org members profiles
+        const advisorIds = new Set((advisors || []).map((a: { id: string }) => a.id));
+        const missingOrgUserIds = [...orgUserIds].filter((id) => !advisorIds.has(id));
+
+        let orgProfiles: Array<{ id: string; first_name: string; last_name: string; avatar_url: string | null; status: string }> = [];
+        if (missingOrgUserIds.length > 0) {
+          const { data: extraProfiles } = await supabaseAdmin
+            .from("advisor_profiles")
+            .select("id, first_name, last_name, avatar_url, status")
+            .in("id", missingOrgUserIds)
+            .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm}`)
+            .eq("status", "active")
+            .limit(20);
+          orgProfiles = extraProfiles || [];
+        }
+
+        const allResults = [...(advisors || []), ...orgProfiles];
+        const uniqueResults = Array.from(
+          new Map(allResults.map((u) => [u.id, u])).values()
+        ).slice(0, Math.min(limit, 50));
+
+        const users = uniqueResults.map((u) => ({
+          id: u.id,
+          display_name: `${u.first_name} ${u.last_name}`.trim(),
+          first_name: u.first_name,
+          last_name: u.last_name,
+          avatar_url: u.avatar_url,
+          status: u.status,
+        }));
+
+        return respond({ success: true, users });
       }
 
       default:

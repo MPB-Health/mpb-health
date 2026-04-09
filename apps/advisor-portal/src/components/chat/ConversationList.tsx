@@ -1,5 +1,5 @@
 import { useState, memo } from 'react';
-import { Hash, Lock, MessageSquare, Search, Plus, Users, RefreshCw, AlertCircle } from 'lucide-react';
+import { Hash, Lock, Search, Plus, Users, RefreshCw, AlertCircle } from 'lucide-react';
 import type { ChatConversation } from '@mpbhealth/advisor-core';
 
 function formatTime(dateStr: string | null) {

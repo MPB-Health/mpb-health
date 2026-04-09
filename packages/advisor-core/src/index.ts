@@ -45,6 +45,6 @@ export {
   type TicketAttachmentUploadResult,
 } from './support/TicketService';
 export { ChatService, chatService } from './chat/ChatService';
-export type { ChatConversation, ChatConversationType, ChatMember, ChatMemberRole, ChatMessage, ChatSearchResult, ListMessagesResult, CreateChannelOptions } from './chat/types';
+export type { ChatConversation, ChatConversationType, ChatMember, ChatMemberRole, ChatMessage, ChatSearchResult, ChatUserSearchResult, ListMessagesResult, CreateChannelOptions } from './chat/types';
 export { PushService, pushService, type PushSubscriptionData, type PushSettings } from './push/PushService';
 export { EventsService, eventsService, type EventFilters } from './events/EventsService';

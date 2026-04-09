@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { chatService } from '@mpbhealth/advisor-core';
-import type { ChatConversation, ChatMessage, ListMessagesResult } from '@mpbhealth/advisor-core';
+import type { ChatConversation, ChatMessage } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
 // ============================================================================

@@ -6,6 +6,7 @@ import type {
   ChatSearchResult,
   ListMessagesResult,
   CreateChannelOptions,
+  ChatUserSearchResult,
 } from './types';
 
 function newCorrelationId(): string {
@@ -210,6 +211,17 @@ export class ChatService {
       { query, ...opts },
     );
     return result.results;
+  }
+
+  async searchUsers(
+    query: string,
+    opts: { limit?: number } = {},
+  ): Promise<ChatUserSearchResult[]> {
+    const result = await this.call<{ success: boolean; users: ChatUserSearchResult[] }>(
+      'search_users',
+      { query, ...opts },
+    );
+    return result.users;
   }
 
   // =========================================================================

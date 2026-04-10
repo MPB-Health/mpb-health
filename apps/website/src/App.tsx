@@ -306,6 +306,7 @@ const App = () => {
                   <Route path="/get-a-quote" element={<GetAQuote />} />
                   <Route path="/quote" element={<Navigate to="/get-a-quote" replace />} />
                   <Route path="/calculator" element={<Navigate to="/get-started" replace />} />
+                  <Route path="/freequote" element={<Navigate to="/get-started" replace />} />
                   {/* Redirects for old SEO paths — preserve link equity */}
                   <Route path="/individuals-families" element={<Navigate to="/individuals-and-families" replace />} />
                   <Route path="/businesses-organizations" element={<Navigate to="/businesses-and-organizations" replace />} />

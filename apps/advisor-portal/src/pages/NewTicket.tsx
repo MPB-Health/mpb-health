@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Headphones, ArrowLeft, Loader2, AlertCircle, PlusCircle, Paperclip, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -64,6 +64,10 @@ export default function NewTicket() {
   const [stats, setStats] = useState<{ open: number; pending: number; resolved: number; total: number } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
 
+  const mountedRef = useRef(true);
+  const submitGuardRef = useRef(false);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
   const handleFilesSelected = (list: FileList | null) => {
     if (!list || list.length === 0) return;
 
@@ -105,8 +109,8 @@ export default function NewTicket() {
 
     // Show fallback categories after 3 s so the form is never blocked even if
     // the edge function is cold-starting or the network is slow.
-    const fallbackTimer = setTimeout(() => {
-      if (!cancelled && categories.length === 0) {
+    const catFallbackTimer = setTimeout(() => {
+      if (!cancelled && mountedRef.current && categories.length === 0) {
         setCategories(FALLBACK_CATEGORIES);
         setCatLoading(false);
       }
@@ -114,9 +118,15 @@ export default function NewTicket() {
 
     ticketService
       .getCategories()
-      .then((cats) => { if (!cancelled) setCategories(cats.length ? cats : FALLBACK_CATEGORIES); })
-      .catch(() => { if (!cancelled) setCategories(FALLBACK_CATEGORIES); })
-      .finally(() => { if (!cancelled) setCatLoading(false); });
+      .then((cats) => { if (!cancelled && mountedRef.current) setCategories(cats.length ? cats : FALLBACK_CATEGORIES); })
+      .catch(() => { if (!cancelled && mountedRef.current) setCategories(FALLBACK_CATEGORIES); })
+      .finally(() => { if (!cancelled && mountedRef.current) setCatLoading(false); });
+
+    // Safety cap: stop the history spinner after 15 s regardless of API state.
+    // The panel is non-critical — better to show "No tickets yet" than spin forever.
+    const historyTimeout = setTimeout(() => {
+      if (!cancelled && mountedRef.current) setHistoryLoading(false);
+    }, 15_000);
 
     // History panel loads independently — failures are non-blocking
     Promise.all([
@@ -124,18 +134,26 @@ export default function NewTicket() {
       ticketService.getTicketStats(),
     ])
       .then(([list, s]) => {
-        if (cancelled) return;
+        if (cancelled || !mountedRef.current) return;
         setTickets(list.tickets);
         setStats({ open: s.open, pending: s.pending, resolved: s.resolved, total: s.total });
       })
       .catch(() => {})
-      .finally(() => { if (!cancelled) setHistoryLoading(false); });
+      .finally(() => { if (!cancelled && mountedRef.current) setHistoryLoading(false); });
 
-    return () => { cancelled = true; clearTimeout(fallbackTimer); };
+    return () => {
+      cancelled = true;
+      clearTimeout(catFallbackTimer);
+      clearTimeout(historyTimeout);
+    };
   }, [authLoading, profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent double-click / rapid re-submission while already in-flight
+    if (submitGuardRef.current) return;
+
     if (!subject.trim()) {
       setError('Subject is required.');
       return;
@@ -146,6 +164,7 @@ export default function NewTicket() {
     }
     setError('');
     setSubmitting(true);
+    submitGuardRef.current = true;
     try {
       const result = await ticketService.createTicket({
         subject: subject.trim(),
@@ -154,6 +173,7 @@ export default function NewTicket() {
         priority,
         attachments,
       });
+      if (!mountedRef.current) return;
       if (result.attachmentError) {
         toast.success(`Ticket #${result.ticket_number} submitted, but attachments failed to upload. You can re-attach them from the ticket detail page.`, { duration: 6000 });
       } else {
@@ -161,14 +181,17 @@ export default function NewTicket() {
       }
       navigate('/tickets', { replace: true });
     } catch (err) {
+      if (!mountedRef.current) return;
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('SESSION_EXPIRED') || msg.includes('refresh_token') || msg.includes('Invalid login')) {
-        setError('Your session has expired. Please sign in again.');
-      } else {
-        setError(msg || 'Failed to submit ticket. Please try again.');
+        toast.error('Your session has expired. Redirecting to sign in…');
+        navigate('/login', { replace: true });
+        return;
       }
+      setError(msg || 'Failed to submit ticket. Please try again.');
     } finally {
-      setSubmitting(false);
+      submitGuardRef.current = false;
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 

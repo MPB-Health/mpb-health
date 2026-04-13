@@ -68,8 +68,13 @@ export default function EventForm() {
   // Load event for editing
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     setLoading(true);
+
+    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15_000);
+
     eventsService.getEvent(id).then((event) => {
+      if (cancelled) return;
       if (!event) {
         toast.error('Event not found');
         navigate('/events/manage');
@@ -97,9 +102,12 @@ export default function EventForm() {
       });
       setSlugManuallyEdited(true);
     }).catch((err) => {
+      if (cancelled) return;
       console.error(err);
       toast.error('Failed to load event');
-    }).finally(() => setLoading(false));
+    }).finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, [id, navigate]);
 
   const updateField = <K extends keyof EventFormData>(field: K, value: EventFormData[K]) => {

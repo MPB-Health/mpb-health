@@ -99,19 +99,28 @@ export default function SubmitGroup() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const timeout = setTimeout(() => {
+      if (!cancelled) { setForms(fallbackGroups); setLoading(false); }
+    }, 10_000);
+
     const loadForms = async () => {
       try {
         const cmsForms = await formsService.getForms('employer');
+        if (cancelled) return;
         setForms(cmsForms.length > 0 ? cmsForms : fallbackGroups);
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load employer forms:', err);
         setForms(fallbackGroups);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadForms();
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, []);
 
   const filteredForms = forms.filter((form) => {

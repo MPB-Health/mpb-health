@@ -263,6 +263,10 @@ export default function Dashboard() {
       if (!cancelled) setAnnouncements(updated);
     });
 
+    const dashboardTimeout = setTimeout(() => {
+      if (!cancelled) { setMemberFormsLoading(false); setMeetingsLoading(false); }
+    }, 15_000);
+
     Promise.allSettled([
       announcementService.getActiveAnnouncements(),
       portalSettingsService.getMultipleSettings([
@@ -286,6 +290,7 @@ export default function Dashboard() {
 
     return () => {
       cancelled = true;
+      clearTimeout(dashboardTimeout);
       channel.unsubscribe();
     };
   }, []);

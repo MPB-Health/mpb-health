@@ -21,6 +21,9 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+
       // Call the edge function directly via fetch — NOT through supabase.functions.invoke().
       // invoke() calls getSession() internally to attach an auth header, but on the
       // forgot-password page there is no valid session. If a stale session exists in
@@ -29,7 +32,9 @@ export default function ForgotPassword() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -38,8 +43,12 @@ export default function ForgotPassword() {
 
       setSent(true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to send reset email. Please try again or contact support.';
-      setError(message);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Request timed out. Please check your connection and try again.');
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to send reset email. Please try again or contact support.';
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }

@@ -20,26 +20,34 @@ export default function SOPDocument() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadDocument = async () => {
-      if (!documentId) return;
+    if (!documentId) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
 
+    const loadDocument = async () => {
       try {
         const doc = await contentService.getSOPDocument(documentId);
+        if (cancelled) return;
         setDocument(doc);
 
-        // Track view
         if (doc) {
           await contentService.trackSOPView(documentId);
         }
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load document:', err);
         navigate('/sops');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
+    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15_000);
     loadDocument();
+
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, [documentId, navigate]);
 
   if (loading) {

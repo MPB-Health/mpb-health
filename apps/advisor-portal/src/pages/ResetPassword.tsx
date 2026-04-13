@@ -146,9 +146,11 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
-      });
+      const updateResult = await Promise.race([
+        supabase.auth.updateUser({ password }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Password reset timed out. Please try again.')), 15_000)),
+      ]);
+      const { error: updateError } = updateResult;
 
       if (updateError) throw updateError;
 

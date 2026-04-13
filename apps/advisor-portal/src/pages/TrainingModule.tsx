@@ -31,14 +31,19 @@ export default function TrainingModule() {
   const [isMpbCourse, setIsMpbCourse] = useState(false);
 
   useEffect(() => {
-    const loadModule = async () => {
-      if (!moduleId || !profile) return;
+    if (!moduleId || !profile) {
+      if (!moduleId) setLoading(false);
+      return;
+    }
+    let cancelled = false;
 
+    const loadModule = async () => {
       try {
         const [mod, prog] = await Promise.all([
           trainingService.getModule(moduleId),
           trainingService.getModuleProgress(profile.id, moduleId),
         ]);
+        if (cancelled) return;
 
         if (
           mod?.category?.toLowerCase().includes('mpb') ||
@@ -52,14 +57,18 @@ export default function TrainingModule() {
         setModule(mod);
         setProgress(prog);
       } catch (err) {
+        if (cancelled) return;
         toast.error('Failed to load module');
         navigate('/training');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
+    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15_000);
     loadModule();
+
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, [moduleId, profile?.id, navigate]);
 
   const handleStart = async () => {

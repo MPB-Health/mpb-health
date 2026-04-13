@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus, Search, Calendar, MapPin, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
@@ -31,6 +31,8 @@ export default function EventsManager() {
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | 'published' | 'draft'>('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -40,16 +42,20 @@ export default function EventsManager() {
         event_type: filterType || undefined,
         is_published: filterStatus === '' ? undefined : filterStatus === 'published',
       });
-      setEvents(data);
+      if (mountedRef.current) setEvents(data);
     } catch (err) {
       console.error('Failed to load events:', err);
-      toast.error('Failed to load events');
+      if (mountedRef.current) toast.error('Failed to load events');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
-  useEffect(() => { fetchEvents(); }, [search, filterType, filterStatus]);
+  useEffect(() => {
+    const timeout = setTimeout(() => { if (mountedRef.current) setLoading(false); }, 15_000);
+    fetchEvents();
+    return () => clearTimeout(timeout);
+  }, [search, filterType, filterStatus]);
 
   const handleDelete = async (id: string) => {
     try {

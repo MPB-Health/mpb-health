@@ -32,24 +32,33 @@ export default function BulletinDetail() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!slug) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+
     const loadBulletin = async () => {
-      if (!slug) return;
       try {
         const data = await contentService.getBulletinBySlug(slug);
+        if (cancelled) return;
         setBulletin(data);
 
-        // Mark as read
         if (data && profile?.id) {
           await contentService.markBulletinRead(data.id, profile.id);
         }
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load bulletin:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
+    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15_000);
     loadBulletin();
+
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, [slug, profile?.id]);
 
   const handleBookmark = async () => {

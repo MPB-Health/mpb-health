@@ -103,12 +103,22 @@ export default function NewTicket() {
     if (authLoading || !profile) return;
     let cancelled = false;
 
+    // Show fallback categories after 3 s so the form is never blocked even if
+    // the edge function is cold-starting or the network is slow.
+    const fallbackTimer = setTimeout(() => {
+      if (!cancelled && categories.length === 0) {
+        setCategories(FALLBACK_CATEGORIES);
+        setCatLoading(false);
+      }
+    }, 3_000);
+
     ticketService
       .getCategories()
       .then((cats) => { if (!cancelled) setCategories(cats.length ? cats : FALLBACK_CATEGORIES); })
       .catch(() => { if (!cancelled) setCategories(FALLBACK_CATEGORIES); })
       .finally(() => { if (!cancelled) setCatLoading(false); });
 
+    // History panel loads independently — failures are non-blocking
     Promise.all([
       ticketService.getMyTickets({ perPage: 20, page: 1 }),
       ticketService.getTicketStats(),
@@ -121,7 +131,7 @@ export default function NewTicket() {
       .catch(() => {})
       .finally(() => { if (!cancelled) setHistoryLoading(false); });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(fallbackTimer); };
   }, [authLoading, profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,20 +238,25 @@ export default function NewTicket() {
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-900 mb-1.5">Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  disabled={catLoading}
-                  title="Category"
-                  className="w-full px-3 py-2.5 border border-neutral-300 rounded-lg text-sm text-neutral-900 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-60"
-                >
-                  <option value="">Select a category...</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    disabled={catLoading}
+                    title="Category"
+                    className="w-full px-3 py-2.5 border border-neutral-300 rounded-lg text-sm text-neutral-900 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-60"
+                  >
+                    <option value="">{catLoading ? 'Loading categories...' : 'Select a category...'}</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  {catLoading && (
+                    <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 animate-spin pointer-events-none" />
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-900 mb-1.5">Priority</label>

@@ -325,14 +325,15 @@ export class TicketService {
   private async call<T extends { success: boolean }>(
     action: string,
     body: Record<string, unknown> = {},
-    opts: { allowUnauthenticated?: boolean; timeoutMs?: number } = {},
+    opts: { allowUnauthenticated?: boolean; timeoutMs?: number; maxRetries?: number } = {},
   ): Promise<T> {
     const correlationId = newCorrelationId();
     const timeoutMs = opts.timeoutMs ?? TicketService.CALL_TIMEOUT_MS;
+    const maxRetries = opts.maxRetries ?? TicketService.MAX_RETRIES;
 
     let lastError: Error | null = null;
 
-    for (let attempt = 0; attempt <= TicketService.MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       // Back-off before retries (not before the first attempt)
       if (attempt > 0) {
         const delay = TicketService.RETRY_BACKOFF[attempt - 1] ?? 3_000;
@@ -442,9 +443,15 @@ export class TicketService {
   }
 
   async getCategories(): Promise<string[]> {
-    // Best-effort — return empty array on any failure.
+    // Fast-fail with a short timeout and no retries — the UI has hardcoded
+    // fallback categories, so there's no value in blocking the form for 60+ s
+    // while the retry loop exhausts on a cold-start or flaky connection.
     try {
-      const data = await this.call<{ success: boolean; categories: string[] }>('get_categories', {}, { allowUnauthenticated: true });
+      const data = await this.call<{ success: boolean; categories: string[] }>(
+        'get_categories',
+        {},
+        { allowUnauthenticated: true, timeoutMs: 5_000, maxRetries: 0 },
+      );
       return data?.categories ?? [];
     } catch {
       return [];

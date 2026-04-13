@@ -18,6 +18,7 @@
     "@mpbhealth/plans-core": "workspace:*",
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
+    "@supabase/supabase-js": "catalog:",
     "@tiptap/extension-image": "catalog:",
     "@tiptap/extension-link": "catalog:",
     "@tiptap/extension-placeholder": "catalog:",
@@ -32,7 +33,8 @@
     "react-dom": "catalog:",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "catalog:",
-    "recharts": "catalog:"
+    "recharts": "catalog:",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@mpbhealth/eslint-config": "workspace:*",

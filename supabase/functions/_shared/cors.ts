@@ -12,6 +12,13 @@ const isDev =
   Deno.env.get("ENVIRONMENT") === "development" ||
   Deno.env.get("DENO_ENV") === "development";
 
+/** Comma-separated extra origins (e.g. staging) — set on the Edge Function if needed */
+function extraOriginsFromEnv(): string[] {
+  const raw = Deno.env.get("CORS_EXTRA_ORIGINS")?.trim();
+  if (!raw) return [];
+  return raw.split(",").map((o) => o.trim()).filter(Boolean);
+}
+
 const ALLOWED_ORIGINS: string[] = [
   // Production
   "https://www.mpb.health",
@@ -26,15 +33,19 @@ const ALLOWED_ORIGINS: string[] = [
   // Vercel preview / branch deploys (any subdomain)
   // Matched via pattern below, not listed literally.
 
-  // Local development (only in dev mode)
+  // Common local dev ports (also covered by localhost regex below)
   ...(isDev
     ? [
         "http://localhost:3000",
         "http://localhost:4173",
         "http://localhost:5173",
+        "http://localhost:5176",
+        "http://localhost:5178",
         "http://localhost:8080",
       ]
     : []),
+
+  ...extraOriginsFromEnv(),
 ];
 
 /**
@@ -51,10 +62,12 @@ function isOriginAllowed(origin: string): boolean {
     return true;
   }
 
-  // Allow any localhost port for local development (only in dev mode)
-  if (isDev && /^http:\/\/localhost:\d+$/.test(origin)) {
-    return true;
-  }
+  // Local admin / Vite dev against deployed Supabase: allow loopback on any port.
+  // (Still requires valid JWT + admin role on functions that enforce it.)
+  if (/^http:\/\/localhost:\d+$/.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) return true;
+  if (/^https:\/\/localhost:\d+$/.test(origin)) return true;
+  if (/^https:\/\/127\.0\.0\.1:\d+$/.test(origin)) return true;
 
   return false;
 }

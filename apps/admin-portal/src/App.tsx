@@ -55,6 +55,7 @@ const PortalSettings = lazyRetry(() => import('./pages/PortalSettings'));
 // Analytics
 const AnalyticsOverview = lazyRetry(() => import('./pages/AnalyticsOverview'));
 const UnifiedAnalytics = lazyRetry(() => import('./pages/UnifiedAnalytics'));
+const MembershipSalesAnalyticsPage = lazyRetry(() => import('./pages/MembershipSalesAnalyticsPage'));
 // CRM extended pages
 const CRMTemplates = lazyRetry(() => import('./pages/CRMTemplates'));
 const CRMCalendar = lazyRetry(() => import('./pages/CRMCalendar'));
@@ -293,6 +294,7 @@ export default function App() {
               {/* Analytics */}
               <Route path="analytics/overview" element={<AnalyticsOverview />} />
               <Route path="analytics/unified" element={<UnifiedAnalytics />} />
+              <Route path="analytics/membership-sales" element={<MembershipSalesAnalyticsPage />} />
               <Route path="settings" element={<RequirePermission permission="settings.manage"><Settings /></RequirePermission>} />
               <Route path="settings/payments" element={<RequirePermission permission="settings.manage"><PaymentProcessors /></RequirePermission>} />
               <Route path="settings/sms" element={<RequirePermission permission="settings.manage"><SmsAccounts /></RequirePermission>} />

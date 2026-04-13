@@ -116,6 +116,7 @@ const navigation: NavItem[] = [
     children: [
       { name: 'Overview', href: '/analytics/overview' },
       { name: 'Unified Analytics', href: '/analytics/unified' },
+      { name: 'Membership & Sales', href: '/analytics/membership-sales' },
     ],
   },
   {

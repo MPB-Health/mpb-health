@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   Smartphone,
@@ -14,6 +14,7 @@ import {
   Globe,
   Eye,
   MousePointerClick,
+  BarChart3,
 } from 'lucide-react';
 import {
   LineChart,
@@ -36,8 +37,11 @@ import {
   type MobileTrends,
 } from '@mpbhealth/admin-core';
 import { MetricCard, InfoTip, useChartTheme } from '@mpbhealth/ui';
+import { isMembershipAnalyticsConfigured } from '@/lib/membershipAnalyticsClient';
+import MembershipUnifiedMobileAppPanel from '@/components/analytics/MembershipUnifiedMobileAppPanel';
+import MembershipSalesAnalyticsPanel from './membership-sales/MembershipSalesAnalyticsPanel';
 
-type SourceTab = 'all' | 'champion' | 'mobile' | 'support' | 'web';
+type SourceTab = 'all' | 'champion' | 'mobile' | 'support' | 'web' | 'membership';
 type DateRange = 7 | 14 | 30 | 60 | 90;
 
 export default function UnifiedAnalytics() {
@@ -53,6 +57,8 @@ export default function UnifiedAnalytics() {
   const [ga4, setGA4] = useState<GA4Overview | null>(null);
   const [championTrends, setChampionTrends] = useState<ChampionTrends | null>(null);
   const [mobileTrends, setMobileTrends] = useState<MobileTrends | null>(null);
+  /** Net registered app users from membership DB (users table), when Mobile App tab uses VITE_MEMBERSHIP_ANALYTICS_* */
+  const [membershipAppRegisteredNet, setMembershipAppRegisteredNet] = useState<number | null>(null);
 
   const loadData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -86,6 +92,7 @@ export default function UnifiedAnalytics() {
     { key: 'mobile', label: 'Mobile App', icon: Smartphone },
     { key: 'web', label: 'Web Traffic (GA4)', icon: Globe },
     { key: 'support', label: 'Support', icon: LifeBuoy },
+    { key: 'membership', label: 'Membership & Sales', icon: BarChart3 },
   ];
 
   const dateRanges: { value: DateRange; label: string }[] = [
@@ -96,14 +103,47 @@ export default function UnifiedAnalytics() {
     { value: 90, label: '90d' },
   ];
 
-  const totalUsersAcross = useMemo(() => {
-    return (champion?.total_users ?? 0) + (mobile?.total_users ?? 0);
-  }, [champion, mobile]);
-
   const showChampion = activeTab === 'all' || activeTab === 'champion';
   const showMobile = activeTab === 'all' || activeTab === 'mobile';
   const showWeb = activeTab === 'all' || activeTab === 'web';
   const showSupport = activeTab === 'all' || activeTab === 'support';
+
+  if (activeTab === 'membership') {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-th-text-primary">Unified Analytics</h1>
+              <InfoTip
+                size="md"
+                content="Membership & sales metrics use a separate Supabase project (VITE_MEMBERSHIP_ANALYTICS_*). All queries use the anon key from the browser; ensure RLS policies allow the operations you need."
+              />
+            </div>
+            <p className="text-sm text-th-text-tertiary mt-1">Primary membership, sales, predictive, and advisor views</p>
+          </div>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                activeTab === tab.key
+                  ? 'bg-th-accent-600 text-white shadow-md'
+                  : 'bg-surface-primary border border-th-border text-th-text-secondary hover:border-th-accent-300 hover:text-th-text-primary'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <MembershipSalesAnalyticsPanel />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -176,13 +216,7 @@ export default function UnifiedAnalytics() {
         <>
           {/* Aggregate KPI Row (All tab) */}
           {activeTab === 'all' && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <MetricCard
-                label="Total Users (All)"
-                value={totalUsersAcross.toLocaleString()}
-                icon={<Users className="w-5 h-5" />}
-                tooltip="Combined user count across Champion Enrollment + Mobile App Supabase Auth systems. Does not include internal MPB admin users."
-              />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <MetricCard
                 label="Champion Users"
                 value={champion?.total_users?.toLocaleString() ?? '—'}
@@ -192,10 +226,24 @@ export default function UnifiedAnalytics() {
               />
               <MetricCard
                 label="Mobile Users"
-                value={mobile?.total_users?.toLocaleString() ?? '—'}
+                value={
+                  isMembershipAnalyticsConfigured && membershipAppRegisteredNet != null
+                    ? membershipAppRegisteredNet.toLocaleString()
+                    : (mobile?.total_users?.toLocaleString() ?? '—')
+                }
                 icon={<Smartphone className="w-5 h-5" />}
-                tooltip="Registered users in the Mobile App. Counted from Supabase Auth. Trend shows new signups in the last 30 days."
-                trend={mobile?.recent_signups_30d ? { value: mobile.recent_signups_30d, label: 'new 30d' } : undefined}
+                tooltip={
+                  isMembershipAnalyticsConfigured
+                    ? 'Registered on app (users table, net of effective cancellations) from the membership analytics Supabase project. Same data as the Mobile App tab below.'
+                    : 'Registered users in the Mobile App via analytics hub proxy (Supabase Auth). Trend shows new signups in the last 30 days.'
+                }
+                trend={
+                  isMembershipAnalyticsConfigured
+                    ? undefined
+                    : mobile?.recent_signups_30d
+                      ? { value: mobile.recent_signups_30d, label: 'new 30d' }
+                      : undefined
+                }
               />
               <MetricCard
                 label="Enrollments"
@@ -321,21 +369,31 @@ export default function UnifiedAnalytics() {
             </div>
           )}
 
-          {/* Mobile App Section */}
+          {/* Mobile App Section — membership DB (same project as Membership & Sales) when configured */}
           {showMobile && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-th-text-primary flex items-center gap-2">
                 <Smartphone className="w-5 h-5 text-blue-500" />
                 Mobile App
-                <InfoTip content="Data from the Mobile App Supabase project. User counts come from Supabase Auth (real registered users). Active users = signed in within 30 days. Read-only proxy, no writes." />
-                {!mobile?.configured && (
+                <InfoTip
+                  content={
+                    isMembershipAnalyticsConfigured
+                      ? 'App membership metrics from VITE_MEMBERSHIP_ANALYTICS_*: registered users (users table), active primary, plans, and V2.3 next-month prediction. Read-only via anon key; ensure RLS allows these reads.'
+                      : 'Legacy path: Mobile App Supabase via analytics-hub proxy (service role on the server). Configure VITE_MEMBERSHIP_ANALYTICS_* for the dashboard-style app metrics instead.'
+                  }
+                />
+                {!isMembershipAnalyticsConfigured && !mobile?.configured && (
                   <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
                     <AlertCircle className="w-3 h-3" /> Not Configured
                   </span>
                 )}
               </h2>
 
-              {mobile?.configured ? (
+              {isMembershipAnalyticsConfigured ? (
+                <MembershipUnifiedMobileAppPanel
+                  onStatsLoaded={(s) => setMembershipAppRegisteredNet(s.registeredUsers)}
+                />
+              ) : mobile?.configured ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <MetricCard label="Total Users" value={mobile.total_users.toLocaleString()} icon={<Users className="w-5 h-5" />} tooltip="All registered users from the Mobile App Supabase Auth system. The higher of Auth count vs. profile table count is shown." />
@@ -387,7 +445,14 @@ export default function UnifiedAnalytics() {
                   )}
                 </>
               ) : (
-                <NotConfiguredBanner source="Mobile App" secretNames={['MOBILE_APP_SUPABASE_URL', 'MOBILE_APP_SERVICE_ROLE_KEY']} />
+                <NotConfiguredBanner
+                  source="Mobile App"
+                  secretNames={[
+                    'VITE_MEMBERSHIP_ANALYTICS_SUPABASE_URL',
+                    'VITE_MEMBERSHIP_ANALYTICS_SUPABASE_ANON_KEY',
+                    '(or legacy MOBILE_APP_SUPABASE_URL + MOBILE_APP_SERVICE_ROLE_KEY on Edge)',
+                  ]}
+                />
               )}
             </div>
           )}

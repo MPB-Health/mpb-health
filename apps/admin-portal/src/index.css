@@ -1,3 +1,4 @@
+/* theme-tokens must stay first: defines --surface-*, --text-*, etc. used below */
 @import '@mpbhealth/ui/theme-tokens.css';
 
 @tailwind base;

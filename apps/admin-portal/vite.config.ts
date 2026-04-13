@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        '@mpbhealth/utils': path.resolve(__dirname, '../../packages/utils'),
       },
       dedupe: ['react', 'react-dom', 'react-router-dom'],
     },

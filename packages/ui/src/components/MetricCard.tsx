@@ -8,6 +8,7 @@ export interface MetricCardProps {
   value: React.ReactNode;
   icon?: React.ReactNode;
   tooltip?: string;
+  detail?: React.ReactNode;
   trend?: {
     value: number;
     label?: string;
@@ -23,6 +24,7 @@ export function MetricCard({
   value,
   icon,
   tooltip,
+  detail,
   trend,
   className,
   accentBorder = true,
@@ -62,6 +64,9 @@ export function MetricCard({
           <p className="mt-2 text-2xl font-bold text-th-text-primary tracking-tight">
             {value}
           </p>
+          {detail && (
+            <p className="mt-1.5 text-xs font-medium text-th-text-secondary">{detail}</p>
+          )}
           {trend && (
             <div className="mt-2 flex items-center gap-1.5">
               {trendDirection === 'up' && (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -49,6 +49,14 @@ import {
 import { MetricCard, InfoTip, useChartTheme } from '@mpbhealth/ui';
 import { Smartphone, Globe, Info } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
+import {
+  isMembershipAnalyticsConfigured,
+  membershipAnalyticsSupabase,
+} from '../lib/membershipAnalyticsClient';
+import {
+  loadMembershipAppDashboardData,
+  type MembershipAppDashboardStats,
+} from '../utils/membershipAnalytics/membershipAppDashboardLoad';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,6 +109,8 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<AuditLog[]>([]);
   const [contentStats, setContentStats] = useState<ContentStats | null>(null);
   const [externalAnalytics, setExternalAnalytics] = useState<CombinedAnalytics | null>(null);
+  const [membershipAppStats, setMembershipAppStats] =
+    useState<MembershipAppDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -132,6 +142,19 @@ export default function Dashboard() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!isMembershipAnalyticsConfigured || !membershipAnalyticsSupabase) return;
+    let cancelled = false;
+    loadMembershipAppDashboardData(membershipAnalyticsSupabase)
+      .then((payload) => {
+        if (!cancelled) setMembershipAppStats(payload.stats);
+      })
+      .catch((err) => console.error('[Dashboard] membership app dashboard stats', err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const overallStatus = useMemo(() => getOverallStatus(systemHealth), [systemHealth]);
   const statusConfig = SYSTEM_STATUS_CONFIG[overallStatus];
   const StatusIcon = statusConfig.icon;
@@ -144,50 +167,81 @@ export default function Dashboard() {
   })();
 
   // ── Top-level KPI stats ───────────────────────────────────────────────
-  const stats = [
-    {
-      name: 'Total Users',
-      value: metrics?.total_users || 0,
-      change: 12,
-      icon: Users,
-      tooltip: 'All registered users in the MPB Health admin platform. Source: primary Supabase auth system.',
-    },
-    {
-      name: 'Active Advisors',
-      value: metrics?.active_advisors || 0,
-      change: 5,
-      icon: UserPlus,
-      tooltip: 'Insurance advisors currently active on the platform. Source: internal advisor profiles database.',
-    },
-    {
-      name: 'Active Members',
-      value: memberStats?.active || 0,
-      change: memberStats?.new_this_month || 0,
-      icon: Heart,
-      tooltip: 'Members with a current active enrollment. Trend shows new members added this month. Source: members table.',
-    },
-    {
-      name: 'New Leads (Month)',
-      value: metrics?.new_leads_this_month || 0,
-      change: 23,
-      icon: TrendingUp,
-      tooltip: 'New sales leads captured this calendar month across all channels. Source: CRM pipeline data.',
-    },
-    {
-      name: 'Conversion Rate',
-      value: `${(metrics?.conversion_rate || 0).toFixed(1)}%`,
-      change: -2,
-      icon: Activity,
-      tooltip: 'Percentage of leads that converted to enrolled members this month. Calculated as (converted / total leads) × 100.',
-    },
-    {
-      name: 'Pending Enrollments',
-      value: pendingEnrollments,
-      change: 0,
-      icon: Clock,
-      tooltip: 'Enrollment applications submitted but awaiting admin review and approval. These require manual action.',
-    },
-  ];
+  type KpiStat = {
+    name: string;
+    value: ReactNode;
+    change?: number;
+    detail?: ReactNode;
+    icon: typeof Users;
+    tooltip: string;
+  };
+
+  const stats: KpiStat[] = useMemo(() => {
+    const useMembershipActive =
+      isMembershipAnalyticsConfigured && membershipAppStats !== null;
+    const activeMembersTotal = useMembershipActive
+      ? membershipAppStats!.primaryMembers + membershipAppStats!.dependentMembers
+      : memberStats?.active ?? 0;
+
+    return [
+      {
+        name: 'Total Users',
+        value: metrics?.total_users || 0,
+        change: 12,
+        icon: Users,
+        tooltip:
+          'All registered users in the MPB Health admin platform. Source: primary Supabase auth system.',
+      },
+      {
+        name: 'Active Advisors',
+        value: metrics?.active_advisors || 0,
+        change: 5,
+        icon: UserPlus,
+        tooltip:
+          'Insurance advisors currently active on the platform. Source: internal advisor profiles database.',
+      },
+      {
+        name: 'Active Members',
+        value: activeMembersTotal.toLocaleString(),
+        ...(useMembershipActive
+          ? {
+              detail: `${membershipAppStats!.primaryMembers.toLocaleString()} active primary`,
+              tooltip:
+                'Total active in the membership analytics project: active primary plans plus active dependents (same logic as Membership & Sales / mobile app dashboards). Source: membership analytics Supabase (sales_analytics_view + dependents).',
+            }
+          : {
+              change: memberStats?.new_this_month ?? 0,
+              tooltip:
+                'Members with a current active enrollment. Trend shows new members added this month. Source: members table.',
+            }),
+        icon: Heart,
+      },
+      {
+        name: 'New Leads (Month)',
+        value: metrics?.new_leads_this_month || 0,
+        change: 23,
+        icon: TrendingUp,
+        tooltip:
+          'New sales leads captured this calendar month across all channels. Source: CRM pipeline data.',
+      },
+      {
+        name: 'Conversion Rate',
+        value: `${(metrics?.conversion_rate || 0).toFixed(1)}%`,
+        change: -2,
+        icon: Activity,
+        tooltip:
+          'Percentage of leads that converted to enrolled members this month. Calculated as (converted / total leads) × 100.',
+      },
+      {
+        name: 'Pending Enrollments',
+        value: pendingEnrollments,
+        change: 0,
+        icon: Clock,
+        tooltip:
+          'Enrollment applications submitted but awaiting admin review and approval. These require manual action.',
+      },
+    ];
+  }, [metrics, memberStats, membershipAppStats, pendingEnrollments]);
 
   // ── Command center section cards ──────────────────────────────────────
   const commandSections = [
@@ -444,7 +498,12 @@ export default function Dashboard() {
             value={stat.value}
             icon={<stat.icon className="w-6 h-6" />}
             tooltip={stat.tooltip}
-            trend={stat.change !== 0 ? { value: stat.change } : undefined}
+            detail={stat.detail}
+            trend={
+              typeof stat.change === 'number' && stat.change !== 0
+                ? { value: stat.change }
+                : undefined
+            }
           />
         ))}
       </div>

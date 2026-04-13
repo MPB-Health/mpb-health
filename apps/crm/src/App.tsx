@@ -14,6 +14,7 @@ const LeadWorkspace = lazyRetry(() => import('./pages/LeadWorkspace'));
 const Pipeline = lazyRetry(() => import('./pages/Pipeline'));
 const Tasks = lazyRetry(() => import('./pages/Tasks'));
 const Calendar = lazyRetry(() => import('./pages/Calendar'));
+const EndOfDay = lazyRetry(() => import('./pages/EndOfDay'));
 const Reports = lazyRetry(() => import('./pages/Reports'));
 const Settings = lazyRetry(() => import('./pages/Settings'));
 const Today = lazyRetry(() => import('./pages/Today'));
@@ -90,6 +91,26 @@ const Calls = lazyRetry(() => import('./pages/Calls'));
 // Sales Forecasting
 const Forecasting = lazyRetry(() => import('./pages/Forecasting'));
 const DealVelocity = lazyRetry(() => import('./pages/DealVelocity'));
+
+// Sales Plan 2026 Reports
+const PerformanceReport = lazyRetry(() => import('./pages/reports/PerformanceReport'));
+const LeadsSplitReport = lazyRetry(() => import('./pages/reports/LeadsSplitReport'));
+const SourceBreakdownReport = lazyRetry(() => import('./pages/reports/SourceBreakdownReport'));
+const RevenueReport = lazyRetry(() => import('./pages/reports/RevenueReport'));
+const ConversionReport = lazyRetry(() => import('./pages/reports/ConversionReport'));
+const ActivityTargetsReport = lazyRetry(() => import('./pages/reports/ActivityTargetsReport'));
+const AdvisorProductionReport = lazyRetry(() => import('./pages/reports/AdvisorProductionReport'));
+const AnnualOverview = lazyRetry(() => import('./pages/reports/AnnualOverview'));
+
+// Sales Plan 2026 Entities
+const ReferralPartners = lazyRetry(() => import('./pages/ReferralPartners'));
+const ReferralPartnerDetail = lazyRetry(() => import('./pages/ReferralPartnerDetail'));
+const OutsideAdvisors = lazyRetry(() => import('./pages/OutsideAdvisors'));
+const OutsideAdvisorDetail = lazyRetry(() => import('./pages/OutsideAdvisorDetail'));
+const CommunityEvents = lazyRetry(() => import('./pages/CommunityEvents'));
+const CommunityEventDetail = lazyRetry(() => import('./pages/CommunityEventDetail'));
+const Reactivation = lazyRetry(() => import('./pages/Reactivation'));
+const Milestones = lazyRetry(() => import('./pages/Milestones'));
 
 // Approval Workflows
 const Approvals = lazyRetry(() => import('./pages/Approvals'));
@@ -270,6 +291,16 @@ export default function App() {
                   }
                 />
                 <Route
+                  path="/end-of-day"
+                  element={
+                    <Guarded permission="leads.write">
+                      <Suspense fallback={<PageLoader />}>
+                        <EndOfDay />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
                   path="/reports"
                   element={
                     <Guarded permission="reports.read">
@@ -279,6 +310,25 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                <Route path="/reports/performance" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><PerformanceReport /></Suspense></Guarded>} />
+                <Route path="/reports/leads-split" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><LeadsSplitReport /></Suspense></Guarded>} />
+                <Route path="/reports/source-breakdown" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><SourceBreakdownReport /></Suspense></Guarded>} />
+                <Route path="/reports/revenue" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><RevenueReport /></Suspense></Guarded>} />
+                <Route path="/reports/conversion" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><ConversionReport /></Suspense></Guarded>} />
+                <Route path="/reports/activity-targets" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><ActivityTargetsReport /></Suspense></Guarded>} />
+                <Route path="/reports/advisor-production" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AdvisorProductionReport /></Suspense></Guarded>} />
+                <Route path="/reports/annual" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AnnualOverview /></Suspense></Guarded>} />
+
+                {/* Sales Plan 2026 Entities */}
+                <Route path="/referral-partners" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartners /></Suspense></Guarded>} />
+                <Route path="/referral-partners/:id" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartnerDetail /></Suspense></Guarded>} />
+                <Route path="/outside-advisors" element={<Guarded permission="outside_advisors.read"><Suspense fallback={<PageLoader />}><OutsideAdvisors /></Suspense></Guarded>} />
+                <Route path="/outside-advisors/:id" element={<Guarded permission="outside_advisors.read"><Suspense fallback={<PageLoader />}><OutsideAdvisorDetail /></Suspense></Guarded>} />
+                <Route path="/community-events" element={<Guarded permission="community_events.read"><Suspense fallback={<PageLoader />}><CommunityEvents /></Suspense></Guarded>} />
+                <Route path="/community-events/:id" element={<Guarded permission="community_events.read"><Suspense fallback={<PageLoader />}><CommunityEventDetail /></Suspense></Guarded>} />
+                <Route path="/reactivation" element={<Guarded permission="leads.read"><Suspense fallback={<PageLoader />}><Reactivation /></Suspense></Guarded>} />
+                <Route path="/milestones" element={<Guarded permission="targets.read"><Suspense fallback={<PageLoader />}><Milestones /></Suspense></Guarded>} />
+
                 <Route
                   path="/settings"
                   element={

@@ -11,6 +11,7 @@ import {
   Kanban,
   CheckSquare,
   CalendarDays,
+  Sunset,
   BarChart3,
   Settings,
   LogOut,
@@ -39,6 +40,9 @@ import {
   Command,
   Download,
   Sparkles,
+  Handshake,
+  UserCheck,
+  Heart,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -86,6 +90,7 @@ const navigationSections: NavSection[] = [
     items: [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
       { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
+      { name: 'Reactivation', href: '/reactivation', icon: Clock, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
     ],
   },
@@ -116,11 +121,21 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
+    id: 'network',
+    label: 'Network',
+    items: [
+      { name: 'Referral Partners', href: '/referral-partners', icon: Handshake, permission: 'referrals.read' },
+      { name: 'Outside Advisors', href: '/outside-advisors', icon: UserCheck, permission: 'outside_advisors.read' },
+      { name: 'Community Events', href: '/community-events', icon: Heart, permission: 'community_events.read' },
+    ],
+  },
+  {
     id: 'productivity',
     label: 'Productivity',
     items: [
       { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
       { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
+      { name: 'End of Day', href: '/end-of-day', icon: Sunset, permission: 'leads.write' },
       { name: 'Meetings', href: '/meetings', icon: Video, permission: 'tasks.read' },
     ],
   },
@@ -128,7 +143,22 @@ const navigationSections: NavSection[] = [
     id: 'analytics',
     label: 'Analytics',
     items: [
-      { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports.read' },
+      {
+        name: 'Reports',
+        href: '#',
+        icon: BarChart3,
+        children: [
+          { name: 'Overview', href: '/reports', permission: 'reports.read' },
+          { name: 'Annual Overview', href: '/reports/annual', permission: 'reports.read' },
+          { name: 'Performance', href: '/reports/performance', permission: 'reports.read' },
+          { name: 'Lead Sources', href: '/reports/source-breakdown', permission: 'reports.read' },
+          { name: 'Revenue', href: '/reports/revenue', permission: 'reports.read' },
+          { name: 'Conversion', href: '/reports/conversion', permission: 'reports.read' },
+          { name: 'Activity vs Targets', href: '/reports/activity-targets', permission: 'reports.read' },
+          { name: 'Advisor Production', href: '/reports/advisor-production', permission: 'reports.read' },
+          { name: 'Milestones', href: '/milestones', permission: 'targets.read' },
+        ],
+      },
       { name: 'Sales Activity', href: '/sales-activity', icon: Activity, permission: 'reports.read' },
     ],
   },
@@ -187,6 +217,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Filter nav items based on permissions and feature flags
   const visibleNav: NavItem[] = navigation
     .filter((item) => {
+      if (item.children?.length) {
+        const anyChildVisible = item.children.some(
+          (child) => !child.permission || can(child.permission),
+        );
+        if (!anyChildVisible) return false;
+        if (item.permission) return can(item.permission);
+        return true;
+      }
       if (!item.permission) return true;
       return can(item.permission);
     })
@@ -203,7 +241,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {totalPendingTasks}
           </span>
         ) : undefined,
-    }));
+    }))
+    .filter((item) => !item.children || item.children.length > 0);
 
   const renderNavLink = (item: NavItem, props: NavLinkRenderProps) => {
     const isActive = location.pathname === item.href ||

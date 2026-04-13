@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { LeadActivity, ActivityCreateInput } from './types';
+import type { LeadActivity, ActivityCreateInput, ActivityType } from './types';
 
 export class ActivityService {
   constructor(private supabase: SupabaseClient) {}
@@ -206,6 +206,51 @@ export class ActivityService {
       console.error('Delete activity error:', error);
       return { success: false, error: 'Failed to delete activity' };
     }
+  }
+
+  /**
+   * Bulk log activities (End of Day form)
+   */
+  async logBulkActivities(
+    entries: Array<{
+      lead_id: string;
+      activity_type: ActivityType;
+      title: string;
+      description?: string;
+      metadata?: Record<string, unknown>;
+    }>
+  ): Promise<{ success: number; failed: number }> {
+    const { data: { user } } = await this.supabase.auth.getUser();
+    let success = 0;
+    let failed = 0;
+
+    const contactTypes: ActivityType[] = ['call', 'email', 'meeting', 'sms', 'linkedin_message', 'live_chat'];
+
+    for (const entry of entries) {
+      const { error } = await this.supabase.from('lead_activities').insert({
+        lead_id: entry.lead_id,
+        activity_type: entry.activity_type,
+        title: entry.title,
+        description: entry.description,
+        metadata: entry.metadata || {},
+        created_by: user?.id,
+      });
+
+      if (error) {
+        failed++;
+        continue;
+      }
+      success++;
+
+      if (contactTypes.includes(entry.activity_type)) {
+        await this.supabase
+          .from('lead_submissions')
+          .update({ last_contacted_at: new Date().toISOString() })
+          .eq('id', entry.lead_id);
+      }
+    }
+
+    return { success, failed };
   }
 }
 

@@ -688,5 +688,91 @@ export type {
 export { XP_VALUES, LEVEL_THRESHOLDS } from './gamification/gamificationService';
 export * from './gamification';
 
+// Round-Robin Lead Distribution
+export { RoundRobinService, createRoundRobinService } from './round-robin';
+export type {
+  RoundRobinConfig,
+  RoundRobinConfigInput,
+  RoundRobinAuditEntry,
+  AssignmentResult,
+  PoolMember,
+} from './round-robin';
+export * from './round-robin';
+
+// SLA Enforcement
+export { SLAService, createSLAService } from './sla';
+export type { SLAConfig, SLAConfigInput, SLAOverdueLead } from './sla';
+export * from './sla';
+
+// Follow-Up Cadences
+export { CadenceService, createCadenceService } from './cadence';
+export type {
+  CadenceStep,
+  FollowUpCadence,
+  CadenceCreateInput,
+  CadenceUpdateInput,
+  LeadCadenceState,
+} from './cadence';
+export * from './cadence';
+
+// Referral Partners
+export { ReferralService, createReferralService } from './referrals';
+export type {
+  PartnerType,
+  ReferralPartner,
+  ReferralPartnerInput,
+  ReferralDirection,
+  ReferralStatus,
+  Referral,
+  ReferralInput,
+  PartnerStats,
+  RepReferralStats,
+} from './referrals';
+export * from './referrals';
+
+// Outside Advisors
+export { OutsideAdvisorService, createOutsideAdvisorService } from './outside-advisors';
+export type {
+  OutsideAdvisor,
+  OutsideAdvisorInput,
+  AdvisorProduction,
+} from './outside-advisors';
+export * from './outside-advisors';
+
+// Community Events
+export { CommunityEventService, createCommunityEventService } from './community-events';
+export type {
+  CommunityEventType,
+  CommunityEvent,
+  CommunityEventInput,
+  CommunityEventStats,
+} from './community-events';
+export * from './community-events';
+
+// Activity Targets
+export { TargetsService, createTargetsService } from './targets';
+export type {
+  TargetType,
+  ActivityTarget,
+  ActivityTargetInput,
+  TargetProgress,
+  RepTargetSummary,
+} from './targets';
+export { DEFAULT_MONTHLY_TARGETS, QUARTERLY_TEAM_TARGETS } from './targets';
+export * from './targets';
+
+// Quarterly Milestones
+export { MilestoneService, createMilestoneService } from './milestones';
+export type {
+  QuarterlyMilestone,
+  MilestoneActuals,
+  MilestoneInput,
+  MilestoneProgress,
+  ForecastScenario,
+  ForecastResult,
+} from './milestones';
+export { DEFAULT_MILESTONES } from './milestones';
+export * from './milestones';
+
 // Utilities
 export { sanitizeSearchInput } from './utils/sanitize';

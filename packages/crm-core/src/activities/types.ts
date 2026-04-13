@@ -1,4 +1,4 @@
-// Activity types for lead interactions
+// Activity types for lead interactions — matches DB CHECK constraint
 export type ActivityType =
   | 'note'
   | 'call'
@@ -9,7 +9,19 @@ export type ActivityType =
   | 'stage_change'
   | 'assignment'
   | 'task_created'
-  | 'task_completed';
+  | 'task_completed'
+  | 'linkedin_connection_sent'
+  | 'linkedin_connection_accepted'
+  | 'linkedin_message'
+  | 'linkedin_post'
+  | 'linkedin_engagement'
+  | 'presentation'
+  | 'networking_event'
+  | 'community_outreach'
+  | 'referral_requested'
+  | 'live_chat'
+  | 'crm_lead_entered'
+  | 'proposal_sent';
 
 // Lead activity record
 export interface LeadActivity {

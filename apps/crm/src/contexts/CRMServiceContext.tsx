@@ -53,6 +53,14 @@ import {
   createMailSyncService,
   createMailRulesService,
   createDomainService,
+  createRoundRobinService,
+  createSLAService,
+  createCadenceService,
+  createReferralService,
+  createOutsideAdvisorService,
+  createCommunityEventService,
+  createTargetsService,
+  createMilestoneService,
   type LeadService,
   type PipelineService,
   type ActivityService,
@@ -99,6 +107,14 @@ import {
   type MailSyncService,
   type MailRulesService,
   type DomainService,
+  type RoundRobinService,
+  type SLAService,
+  type CadenceService,
+  type ReferralService,
+  type OutsideAdvisorService,
+  type CommunityEventService,
+  type TargetsService,
+  type MilestoneService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -154,6 +170,14 @@ export interface CRMServiceContextType {
   mailSyncService: MailSyncService;
   mailRulesService: MailRulesService;
   domainService: DomainService;
+  roundRobinService: RoundRobinService;
+  slaService: SLAService;
+  cadenceService: CadenceService;
+  referralService: ReferralService;
+  outsideAdvisorService: OutsideAdvisorService;
+  communityEventService: CommunityEventService;
+  targetsService: TargetsService;
+  milestoneService: MilestoneService;
 }
 
 const CRMServiceContext = createContext<CRMServiceContextType | null>(null);
@@ -211,14 +235,29 @@ export function CRMServiceProvider({ children }: { children: ReactNode }) {
     domainService: createDomainService(supabase, supabaseUrl),
   }));
 
+  const orgScopedServices = useMemo(() => {
+    const oid = activeOrgId ?? '';
+    return {
+      roundRobinService: createRoundRobinService(supabase, oid),
+      slaService: createSLAService(supabase, oid),
+      cadenceService: createCadenceService(supabase, oid),
+      referralService: createReferralService(supabase, oid),
+      outsideAdvisorService: createOutsideAdvisorService(supabase, oid),
+      communityEventService: createCommunityEventService(supabase, oid),
+      targetsService: createTargetsService(supabase, oid),
+      milestoneService: createMilestoneService(supabase, oid),
+    };
+  }, [activeOrgId]);
+
   const value = useMemo<CRMServiceContextType>(
     () => ({
       supabase,
       orgId: activeOrgId,
       user,
       ...services,
+      ...orgScopedServices,
     }),
-    [activeOrgId, user, services]
+    [activeOrgId, user, services, orgScopedServices]
   );
 
   return <CRMServiceContext.Provider value={value}>{children}</CRMServiceContext.Provider>;

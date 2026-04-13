@@ -54,22 +54,30 @@ export default function ChartsWidget({ config, size }: BaseWidgetProps) {
       }
 
       case 'conversion_funnel': {
-        return [
-          { name: 'New', value: 100, color: COLORS[0] },
-          { name: 'Contacted', value: 75, color: COLORS[1] },
-          { name: 'Qualified', value: 50, color: COLORS[2] },
-          { name: 'Proposal', value: 30, color: COLORS[3] },
-          { name: 'Won', value: 15, color: COLORS[4] },
-        ];
+        const byStage2 = (stats.leads_by_stage as Record<string, number>) || {};
+        const funnelStages = ['new', 'contacted', 'qualified', 'proposal', 'won'];
+        return funnelStages.map((stage, i) => ({
+          name: stage.charAt(0).toUpperCase() + stage.slice(1),
+          value: byStage2[stage] || 0,
+          color: COLORS[i % COLORS.length],
+        }));
       }
 
       case 'leads_over_time': {
-        // Mock time series data
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        return days.map((day) => ({
-          name: day,
-          value: Math.floor(Math.random() * 20) + 5,
-          color: COLORS[0],
+        const byStage3 = (stats.leads_by_stage as Record<string, number>) || {};
+        return pipelineStages.map((stage, i) => ({
+          name: stage.display_name,
+          value: byStage3[stage.name] || 0,
+          color: stage.color || COLORS[i % COLORS.length],
+        }));
+      }
+
+      case 'leads_by_source': {
+        const bySource = (stats.leads_by_source as Record<string, number>) || {};
+        return Object.entries(bySource).map(([source, count], i) => ({
+          name: source.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+          value: count as number,
+          color: COLORS[i % COLORS.length],
         }));
       }
 

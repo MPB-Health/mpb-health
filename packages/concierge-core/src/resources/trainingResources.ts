@@ -199,10 +199,19 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
 
   // ─── Telehealth & MEC ───────────────────────────────────────────────
   {
-    id: 'arm-lyric-sop',
-    title: 'ARM and Lyric SOP',
-    description: 'Standard operating procedures for ARM and Lyric telehealth services',
+    id: 'arm-sop',
+    title: 'ARM SOP',
+    description: 'Standard operating procedures for ARM telehealth services',
     url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/EV08fw4Mge1BmqRj2MG3bsIBNgN1yh783WdIK0rJ3Qnevg',
+    category: 'telehealth',
+    type: 'sop',
+    external: true,
+  },
+  {
+    id: 'mpb-telehealth-sop',
+    title: 'MPB Telehealth',
+    description: 'Standard operating procedures for Lyric telehealth services',
+    url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/IQB3dzaWvLFLTb2H4TDBD32pAS1YD0NP8EscdVq1tL716uQ?e=cLLmyD',
     category: 'telehealth',
     type: 'sop',
     external: true,

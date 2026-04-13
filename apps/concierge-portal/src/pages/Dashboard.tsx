@@ -50,10 +50,10 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 
 const CATEGORIES: TrainingCategory[] = [
   'health-sharing',
-  'mpb-plans',
-  'welcome-scripts',
   'telehealth',
   'internal-sops',
+  'mpb-plans',
+  'welcome-scripts',
 ];
 
 function ResourceCard({ resource }: { resource: TrainingResource }) {

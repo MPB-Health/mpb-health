@@ -30,14 +30,14 @@ export const CATEGORY_LABELS: Record<TrainingCategory, string> = {
   'health-sharing': 'Health Sharing Introduction & Processes',
   'mpb-plans': 'MPB Plans: Member Handbooks',
   'welcome-scripts': 'Welcome Call Scripts',
-  'telehealth': 'Telehealth & MEC',
-  'internal-sops': 'Internal Daily SOPs',
+  'telehealth': 'MEC and Telehealth',
+  'internal-sops': 'RX, Labs, Imaging, Appts',
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<TrainingCategory, string> = {
   'health-sharing': 'Learn how health sharing works, member guidelines, terminology, and de-escalation procedures',
   'mpb-plans': 'Membership comparison charts, plan handbooks, and quick reference guides for all plan types',
   'welcome-scripts': 'Welcome call scripts for each plan type to onboard new members effectively',
-  'telehealth': 'ARM and Lyric SOP for telehealth and MEC services',
-  'internal-sops': 'Daily checklists, task management, healthcare pricing, prescriptions, imaging, and appointment setting',
+  'telehealth': 'ARM and MPB Telehealth SOPs for MEC and telehealth services',
+  'internal-sops': 'Prescriptions, lab work, imaging services, and appointment setting procedures',
 };

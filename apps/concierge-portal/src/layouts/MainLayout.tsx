@@ -177,7 +177,7 @@ export default function MainLayout() {
       {/* Quick Links Bar */}
       <div className="bg-brand-navy border-b border-white/10 relative z-40" ref={dropdownRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-13 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-between h-13">
             {QUICK_LINKS.map((link) =>
               link.children ? (
                 <div key={link.name} className="relative flex-1 flex justify-center">
@@ -189,7 +189,7 @@ export default function MainLayout() {
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdown === link.name ? 'rotate-180' : ''}`} />
                   </button>
                   {openDropdown === link.name && (
-                    <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-lg border border-slate-200 py-1 min-w-[180px] z-50">
+                    <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[200px] z-[9999]">
                       {link.children.map((child) => (
                         <a
                           key={child.url}
@@ -253,7 +253,7 @@ export default function MainLayout() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-0">
         <Outlet />
       </main>
     </div>

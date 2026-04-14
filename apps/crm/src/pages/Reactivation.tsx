@@ -3,10 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { differenceInCalendarDays } from 'date-fns';
 import toast from 'react-hot-toast';
+import { Plus } from 'lucide-react';
 import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
+import type { CadenceStep } from '@mpbhealth/crm-core';
 
 interface StaleLeadRow {
   id: string;
@@ -35,10 +37,38 @@ export default function Reactivation() {
     enabled: !!activeOrgId,
   });
 
-  const reactivationCadenceId = useMemo(() => {
-    const c = cadences.find((x) => x.is_active && x.name.toLowerCase().includes('reactivation'));
-    return c?.id ?? null;
-  }, [cadences]);
+  const reactivationCadence = useMemo(
+    () => cadences.find((x) => x.is_active && x.name.toLowerCase().includes('reactivation')) ?? null,
+    [cadences],
+  );
+  const reactivationCadenceId = reactivationCadence?.id ?? null;
+
+  const DEFAULT_REACTIVATION_STEPS: CadenceStep[] = [
+    { delay_hours: 0, action_type: 'email', description: 'Re-engagement email — check in and offer help' },
+    { delay_hours: 48, action_type: 'call', description: 'Follow-up call — personal touch' },
+    { delay_hours: 120, action_type: 'email', description: 'Value-add email — share a relevant resource' },
+    { delay_hours: 240, action_type: 'call', description: 'Second call attempt' },
+    { delay_hours: 336, action_type: 'email', description: 'Final reactivation email — last chance offer' },
+  ];
+
+  const createCadenceMutation = useMutation({
+    mutationFn: () =>
+      cadenceService.createCadence({
+        name: 'Reactivation',
+        steps: DEFAULT_REACTIVATION_STEPS,
+        is_default: !cadences.some((c) => c.is_default),
+        is_active: true,
+      }),
+    onSuccess: (result) => {
+      if (result) {
+        toast.success('Reactivation cadence created');
+        queryClient.invalidateQueries({ queryKey: crmQueryKeys.cadences(activeOrgId) });
+      } else {
+        toast.error('Failed to create cadence — check permissions');
+      }
+    },
+    onError: () => toast.error('Failed to create cadence'),
+  });
 
   const { data: staleLeads = [], isLoading } = useQuery({
     queryKey: crmQueryKeys.reactivationStaleLeads(activeOrgId, minDaysInactive, stageKey),
@@ -112,10 +142,20 @@ export default function Reactivation() {
       />
 
       {!reactivationCadenceId && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
-          No active cadence with &quot;reactivation&quot; in the name was found. Enrollment will fall back
-          to the org default cadence if one exists. Create a cadence named e.g. &quot;Reactivation&quot; for
-          explicit routing.
+        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-4 py-3 text-sm text-amber-900 dark:text-amber-100 flex items-center justify-between gap-4">
+          <span>
+            No active reactivation cadence found. Enrollment will fall back to the org default cadence
+            if one exists, or you can create one now with a 5-step follow-up sequence.
+          </span>
+          <button
+            type="button"
+            disabled={createCadenceMutation.isPending}
+            onClick={() => createCadenceMutation.mutate()}
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-60"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {createCadenceMutation.isPending ? 'Creating…' : 'Create Reactivation Cadence'}
+          </button>
         </div>
       )}
 

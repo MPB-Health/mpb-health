@@ -3,7 +3,9 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   UserPlus, CheckSquare, Phone, StickyNote, Calendar,
   Mail, Briefcase, MessageSquare, Search, Keyboard,
-  HelpCircle, Plus, X, Zap,
+  HelpCircle, Plus, X, Zap, ShieldCheck, DollarSign,
+  Heart, Shield, RefreshCw, Sparkles, Globe, Handshake,
+  FileText, MapPin, Mic, Target,
 } from 'lucide-react';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
@@ -28,6 +30,21 @@ const ACTIONS: FooterAction[] = [
   { id: 'ai-chat', label: 'AI Chat', icon: MessageSquare, color: 'text-th-accent-500' },
 ];
 
+const POWER_ACTIONS: FooterAction[] = [
+  { id: 'ai-command', label: 'AI Command', icon: Sparkles, color: 'text-violet-500' },
+  { id: 'compliance', label: 'Compliance', icon: ShieldCheck, color: 'text-emerald-500' },
+  { id: 'commission-sim', label: 'Commission Sim', icon: DollarSign, color: 'text-amber-500' },
+  { id: 'needs-analysis', label: 'Needs Analysis', icon: Heart, color: 'text-rose-500' },
+  { id: 'plan-comparison', label: 'Plan Compare', icon: Shield, color: 'text-blue-500' },
+  { id: 'policy-renewal', label: 'Renewals', icon: RefreshCw, color: 'text-orange-500' },
+  { id: 'call-coaching', label: 'Call Coach', icon: Mic, color: 'text-green-500' },
+  { id: 'smart-cadence', label: 'Smart Cadence', icon: Target, color: 'text-cyan-500' },
+  { id: 'client-portal', label: 'Client Portal', icon: Globe, color: 'text-blue-500' },
+  { id: 'referral-attribution', label: 'Referrals', icon: Handshake, color: 'text-violet-500' },
+  { id: 'document-generate', label: 'Documents', icon: FileText, color: 'text-amber-500' },
+  { id: 'territory-map', label: 'Territory Map', icon: MapPin, color: 'text-emerald-500' },
+];
+
 interface FooterCommandBarProps {
   onAction?: (actionId: string) => void;
   selectionCount?: number;
@@ -37,7 +54,9 @@ interface FooterCommandBarProps {
 export function FooterCommandBar({ onAction, selectionCount = 0, recordCount }: FooterCommandBarProps) {
   const [hoveredAction, setHoveredAction] = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [showPowerMenu, setShowPowerMenu] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const powerMenuRef = useRef<HTMLDivElement>(null);
 
   const handleAction = useCallback((actionId: string) => {
     window.dispatchEvent(new CustomEvent('crm:quick-action', { detail: { action: actionId } }));
@@ -130,6 +149,47 @@ export function FooterCommandBar({ onAction, selectionCount = 0, recordCount }: 
 
               <div className="w-px h-5 bg-th-border/50 mx-1" />
 
+              {/* Power Features Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowPowerMenu(!showPowerMenu)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium',
+                    'transition-all duration-150',
+                    showPowerMenu
+                      ? 'bg-violet-500/10 text-violet-500'
+                      : 'text-th-text-tertiary hover:text-th-text-secondary hover:bg-surface-tertiary/80'
+                  )}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">Power</span>
+                </button>
+                {showPowerMenu && (
+                  <div
+                    ref={powerMenuRef}
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[280px] rounded-xl bg-surface-primary border border-th-border shadow-xl overflow-hidden animate-scale-in"
+                  >
+                    <div className="px-3 py-2 border-b border-th-border/50">
+                      <p className="text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">Power Features</p>
+                    </div>
+                    <div className="max-h-[280px] overflow-y-auto p-1">
+                      {POWER_ACTIONS.map((action) => (
+                        <button
+                          key={action.id}
+                          onClick={() => { handleAction(action.id); setShowPowerMenu(false); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left hover:bg-surface-tertiary/80 transition-colors"
+                        >
+                          <action.icon className={cn('w-4 h-4', action.color)} />
+                          <span className="text-xs font-medium text-th-text-primary">{action.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-px h-5 bg-th-border/50 mx-1" />
+
               <button
                 onClick={() => {
                   const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true });
@@ -169,8 +229,20 @@ export function FooterCommandBar({ onAction, selectionCount = 0, recordCount }: 
       {/* Mobile FAB */}
       <div className="md:hidden fixed bottom-4 right-4 z-40">
         {mobileExpanded && (
-          <div className="absolute bottom-14 right-0 glass rounded-2xl shadow-xl border border-th-border/50 p-2 min-w-[180px] animate-scale-in">
+          <div className="absolute bottom-14 right-0 glass rounded-2xl shadow-xl border border-th-border/50 p-2 min-w-[200px] max-h-[70vh] overflow-y-auto animate-scale-in">
             {ACTIONS.map((action) => (
+              <button
+                key={action.id}
+                onClick={() => handleAction(action.id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-surface-tertiary/80 transition-colors"
+              >
+                <action.icon className={cn('w-4 h-4', action.color)} />
+                <span className="text-th-text-primary font-medium">{action.label}</span>
+              </button>
+            ))}
+            <div className="h-px bg-th-border/50 my-1" />
+            <p className="px-3 py-1 text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">Power Features</p>
+            {POWER_ACTIONS.map((action) => (
               <button
                 key={action.id}
                 onClick={() => handleAction(action.id)}

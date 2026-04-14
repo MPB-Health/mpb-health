@@ -1,4 +1,4 @@
-import { Users, GitBranch, Mail, Download, Trash2, X, RefreshCw, UserCheck, GitMerge } from 'lucide-react';
+import { Users, GitBranch, Mail, Download, Trash2, X, RefreshCw, UserCheck, GitMerge, Tag } from 'lucide-react';
 
 interface Props {
   selectedCount: number;
@@ -10,6 +10,7 @@ interface Props {
   onMassUpdate?: () => void;
   onMassTransfer?: () => void;
   onMerge?: () => void;
+  onTagManager?: () => void;
   onClear: () => void;
 }
 
@@ -23,6 +24,7 @@ export function BulkActionsToolbar({
   onMassUpdate,
   onMassTransfer,
   onMerge,
+  onTagManager,
   onClear,
 }: Props) {
   if (selectedCount === 0) return null;
@@ -78,6 +80,15 @@ export function BulkActionsToolbar({
           >
             <GitMerge className="w-4 h-4" />
             <span>Merge</span>
+          </button>
+        )}
+        {onTagManager && (
+          <button
+            onClick={onTagManager}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+          >
+            <Tag className="w-4 h-4" />
+            <span>Tags</span>
           </button>
         )}
         <button

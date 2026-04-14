@@ -61,6 +61,18 @@ import { AddLeadModal } from '../components/AddLeadModal';
 import { AddTaskModal } from '../components/AddTaskModal';
 import { AddDealModal } from '../components/AddDealModal';
 import { AddNoteModal, LogCallModal, LogMeetingModal } from '../components/QuickActionModals';
+import { AICommandPaletteModal } from '../components/AICommandPaletteModal';
+import { ComplianceChecklistModal } from '../components/ComplianceChecklistModal';
+import { CommissionSimulatorModal } from '../components/CommissionSimulatorModal';
+import { NeedsAnalysisWizard } from '../components/NeedsAnalysisWizard';
+import { PlanComparisonModal } from '../components/PlanComparisonModal';
+import { PolicyRenewalModal } from '../components/PolicyRenewalModal';
+import { CallCoachingPanel } from '../components/CallCoachingPanel';
+import { SmartCadenceModal } from '../components/SmartCadenceModal';
+import { ClientPortalModal } from '../components/ClientPortalModal';
+import { ReferralAttributionModal } from '../components/ReferralAttributionModal';
+import { DocumentGenerateModal } from '../components/DocumentGenerateModal';
+import { TerritoryMapModal } from '../components/TerritoryMapModal';
 import toast from 'react-hot-toast';
 
 interface ExtendedNavChild {
@@ -222,6 +234,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [showLogCall, setShowLogCall] = useState(false);
   const [showLogMeeting, setShowLogMeeting] = useState(false);
 
+  // Phase 1-3 modal state
+  const [showAICommandPalette, setShowAICommandPalette] = useState(false);
+  const [showCompliance, setShowCompliance] = useState(false);
+  const [showCommissionSim, setShowCommissionSim] = useState(false);
+  const [showNeedsAnalysis, setShowNeedsAnalysis] = useState(false);
+  const [showPlanComparison, setShowPlanComparison] = useState(false);
+  const [showPolicyRenewal, setShowPolicyRenewal] = useState(false);
+  const [showCallCoaching, setShowCallCoaching] = useState(false);
+  const [showSmartCadence, setShowSmartCadence] = useState(false);
+  const [showClientPortal, setShowClientPortal] = useState(false);
+  const [showReferralAttribution, setShowReferralAttribution] = useState(false);
+  const [showDocumentGenerate, setShowDocumentGenerate] = useState(false);
+  const [showTerritoryMap, setShowTerritoryMap] = useState(false);
+
   // Extract leadId from URL when on a lead detail page
   const leadIdMatch = location.pathname.match(/^\/leads\/([a-f0-9-]+)$/i);
   const currentLeadId = leadIdMatch?.[1] ?? null;
@@ -254,12 +280,51 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         case 'send-email':
           navigate('/email/inbox?compose=true');
           break;
-        // ai-chat handled by AIChatWidget, search handled by FooterCommandBar directly
+        case 'ai-command': setShowAICommandPalette(true); break;
+        case 'compliance': setShowCompliance(true); break;
+        case 'commission-sim': setShowCommissionSim(true); break;
+        case 'needs-analysis': setShowNeedsAnalysis(true); break;
+        case 'plan-comparison': setShowPlanComparison(true); break;
+        case 'policy-renewal': setShowPolicyRenewal(true); break;
+        case 'call-coaching':
+          if (currentLeadId) { setShowCallCoaching(true); }
+          else { toast('Navigate to a lead first for call coaching', { icon: '🎯' }); }
+          break;
+        case 'smart-cadence': setShowSmartCadence(true); break;
+        case 'client-portal':
+          if (currentLeadId) { setShowClientPortal(true); }
+          else { toast('Navigate to a lead first to generate a portal', { icon: '🌐' }); }
+          break;
+        case 'referral-attribution': setShowReferralAttribution(true); break;
+        case 'document-generate': setShowDocumentGenerate(true); break;
+        case 'territory-map': setShowTerritoryMap(true); break;
       }
     };
     window.addEventListener('crm:quick-action', handler);
     return () => window.removeEventListener('crm:quick-action', handler);
   }, [currentLeadId, navigate]);
+
+  // Global keyboard shortcuts for power features
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.shiftKey) {
+        switch (e.key.toLowerCase()) {
+          case 'a': e.preventDefault(); setShowAICommandPalette(true); break;
+          case 'c': e.preventDefault(); setShowCompliance(true); break;
+          case 'm': e.preventDefault(); setShowCommissionSim(true); break;
+          case 'n': e.preventDefault(); setShowNeedsAnalysis(true); break;
+          case 'p': e.preventDefault(); setShowPlanComparison(true); break;
+          case 'r': e.preventDefault(); setShowPolicyRenewal(true); break;
+          case 'd': e.preventDefault(); setShowDocumentGenerate(true); break;
+          case 't': e.preventDefault(); setShowTerritoryMap(true); break;
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const handleModalSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] });
@@ -578,6 +643,50 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           />
         </>
       )}
+
+      {/* ---- Phase 1-3 Power Feature Modals ---- */}
+      <AICommandPaletteModal open={showAICommandPalette} onClose={() => setShowAICommandPalette(false)} />
+      <ComplianceChecklistModal
+        open={showCompliance}
+        onClose={() => setShowCompliance(false)}
+        leadName={currentLeadId ? 'Current Lead' : 'Client'}
+        leadId={currentLeadId || ''}
+        items={[]}
+        onMarkComplete={async () => {}}
+        onUploadDocument={async () => {}}
+      />
+      <CommissionSimulatorModal open={showCommissionSim} onClose={() => setShowCommissionSim(false)} />
+      <NeedsAnalysisWizard
+        open={showNeedsAnalysis}
+        onClose={() => setShowNeedsAnalysis(false)}
+        leadId={currentLeadId || undefined}
+        leadName={currentLeadId ? 'Client' : undefined}
+      />
+      <PlanComparisonModal open={showPlanComparison} onClose={() => setShowPlanComparison(false)} />
+      <PolicyRenewalModal open={showPolicyRenewal} onClose={() => setShowPolicyRenewal(false)} />
+      <CallCoachingPanel
+        open={showCallCoaching}
+        onClose={() => setShowCallCoaching(false)}
+        leadName={currentLeadId ? 'Client' : 'Lead'}
+        leadId={currentLeadId || undefined}
+      />
+      <SmartCadenceModal open={showSmartCadence} onClose={() => setShowSmartCadence(false)} />
+      <ClientPortalModal
+        open={showClientPortal}
+        onClose={() => setShowClientPortal(false)}
+        clientName={currentLeadId ? 'Client' : 'Client'}
+        clientEmail="client@example.com"
+        clientId={currentLeadId || ''}
+      />
+      <ReferralAttributionModal open={showReferralAttribution} onClose={() => setShowReferralAttribution(false)} />
+      <DocumentGenerateModal
+        open={showDocumentGenerate}
+        onClose={() => setShowDocumentGenerate(false)}
+        clientName={currentLeadId ? 'Client' : 'Client'}
+        clientEmail="client@example.com"
+        leadId={currentLeadId || undefined}
+      />
+      <TerritoryMapModal open={showTerritoryMap} onClose={() => setShowTerritoryMap(false)} />
     </>
   );
 }

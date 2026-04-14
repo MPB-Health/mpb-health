@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -13,8 +13,11 @@ import {
   Shield,
   X,
   Users,
+  Gauge,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
+import { useCRMService } from '../contexts/CRMServiceContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddLeadModal } from '../components/AddLeadModal';
 import { AdvancedFiltersPanel } from '../components/AdvancedFiltersPanel';
@@ -25,16 +28,21 @@ import { BulkEmailModal } from '../components/BulkEmailModal';
 import { ImportModal } from '../components/ImportModal';
 import { MassUpdateModal } from '../components/MassUpdateModal';
 import { MassTransferModal } from '../components/MassTransferModal';
+import { MergeRecordsModal } from '../components/MergeRecordsModal';
+import { TagManagerModal } from '../components/TagManagerModal';
+import { ScoringRulesModal } from '../components/ScoringRulesModal';
+import { LeadRowActionsMenu } from '../components/LeadRowActionsMenu';
+import { SidePeek } from '../components/SidePeek';
 import { SavedViewsBar } from '../components/SavedViewsBar';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSavedViews } from '../hooks/useSavedViews';
 import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel, PLAN_TYPE_LABELS } from '@mpbhealth/crm-core';
 import { SkeletonTable, GradientHeader } from '@mpbhealth/ui';
-import toast from 'react-hot-toast';
 
 export default function LeadsList() {
   const { leadService, pipelineStages } = useCRM();
+  const { supabase, scoringService } = useCRMService();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<LeadFilters>({});
   const [searchInput, setSearchInput] = useState('');
@@ -44,6 +52,7 @@ export default function LeadsList() {
   const [showAddLead, setShowAddLead] = useState(false);
   const pageSize = 20;
 
+  // Selection + existing bulk modals
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [showBulkAssign, setShowBulkAssign] = useState(false);
   const [showBulkStage, setShowBulkStage] = useState(false);
@@ -54,20 +63,76 @@ export default function LeadsList() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // New bulk modals
+  const [showMerge, setShowMerge] = useState(false);
+  const [showBulkTags, setShowBulkTags] = useState(false);
+  const [showScoringRules, setShowScoringRules] = useState(false);
+
   const savedViews = useSavedViews('leads');
+
+  // ── Data queries ──
 
   const { data: leadsData, isLoading: loading } = useQuery({
     queryKey: ['crmLeadsList', filters, page, pageSize],
-    queryFn: async () => {
-      const result = await leadService.getLeads(filters, pageSize, page * pageSize);
-      return result;
-    },
+    queryFn: () => leadService.getLeads(filters, pageSize, page * pageSize),
     enabled: !!leadService,
-    staleTime: 30 * 1000,
+    staleTime: 30_000,
   });
 
   const leads = leadsData?.leads ?? [];
   const total = leadsData?.total ?? 0;
+
+  // Team members for MassTransfer
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['crmTeamMembers'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('org_memberships')
+        .select('user_id, role, profiles!inner(id, email, full_name, avatar_url)')
+        .eq('status', 'active')
+        .limit(100);
+      return (data || []).map((m: Record<string, unknown>) => {
+        const p = m.profiles as Record<string, unknown>;
+        return {
+          id: (p?.id || m.user_id) as string,
+          name: (p?.full_name || p?.email || 'Unknown') as string,
+          email: (p?.email || '') as string,
+          avatar: (p?.avatar_url || '') as string,
+          role: (m.role as string) || 'member',
+          activeLeads: 0,
+        };
+      });
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  // Aggregate known tags across visible leads + a broader sample
+  const allKnownTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    leads.forEach((l) => (l.tags || []).forEach((t) => tagSet.add(t)));
+    return Array.from(tagSet).sort();
+  }, [leads]);
+
+  // Scoring rules for the config modal
+  const { data: scoringWeights = [] } = useQuery({
+    queryKey: ['crmScoringWeights'],
+    queryFn: () => scoringService.getWeights(),
+    staleTime: 60_000,
+  });
+
+  const scoringRulesForModal = useMemo(() =>
+    scoringWeights
+      .filter((w) => w.is_enabled)
+      .map((w) => ({
+        id: w.factor_key,
+        field: w.factor_key,
+        operator: 'is_set' as const,
+        value: '',
+        points: w.weight,
+      })),
+  [scoringWeights]);
+
+  // ── Effects ──
 
   useEffect(() => {
     setFilters((prev) => ({ ...prev, search: debouncedSearch || undefined }));
@@ -77,14 +142,14 @@ export default function LeadsList() {
   useEffect(() => {
     const source = savedViews.activeView || savedViews.activeSmartView;
     if (source) {
-      const viewFilters = source.filters as Record<string, unknown>;
+      const vf = source.filters as Record<string, unknown>;
       setFilters({
         search: debouncedSearch || undefined,
-        stage: (viewFilters.stage as string) || undefined,
-        priority: (viewFilters.priority as LeadFilters['priority']) || undefined,
-        planType: (viewFilters.planType as LeadFilters['planType']) || undefined,
-        carrierId: (viewFilters.carrierId as string) || undefined,
-        dateFrom: (viewFilters.dateFrom as string) || undefined,
+        stage: (vf.stage as string) || undefined,
+        priority: (vf.priority as LeadFilters['priority']) || undefined,
+        planType: (vf.planType as LeadFilters['planType']) || undefined,
+        carrierId: (vf.carrierId as string) || undefined,
+        dateFrom: (vf.dateFrom as string) || undefined,
       });
       setPage(0);
     }
@@ -93,6 +158,8 @@ export default function LeadsList() {
   useEffect(() => {
     setSelectedLeads(new Set());
   }, [filters, page]);
+
+  // ── Handlers ──
 
   const handleStageFilter = (stage: string) => {
     setFilters((prev) => ({ ...prev, stage: stage || undefined }));
@@ -136,7 +203,7 @@ export default function LeadsList() {
 
   const toggleSelectAll = useCallback(() => {
     setSelectedLeads((prev) =>
-      prev.size === leads.length ? new Set() : new Set(leads.map((l) => l.id))
+      prev.size === leads.length ? new Set() : new Set(leads.map((l) => l.id)),
     );
   }, [leads]);
 
@@ -176,9 +243,99 @@ export default function LeadsList() {
     }
   };
 
+  const handleBulkTagApply = async (addTags: string[], removeTags: string[]) => {
+    const ids = Array.from(selectedLeads);
+    let ok = 0;
+    for (const id of ids) {
+      const lead = leads.find((l) => l.id === id);
+      if (!lead) continue;
+      const updated = [...(lead.tags || []).filter((t) => !removeTags.includes(t)), ...addTags];
+      const unique = [...new Set(updated)];
+      try {
+        await leadService.updateLead(id, { tags: unique });
+        ok++;
+      } catch { /* continue */ }
+    }
+    if (ok > 0) toast.success(`Updated tags on ${ok} lead${ok !== 1 ? 's' : ''}`);
+    handleBulkSuccess();
+  };
+
+  const handleScoringRulesSave = async (rules: Array<{ id: string; field: string; operator: string; value: string; points: number }>) => {
+    const inputs = rules.map((r) => ({
+      factor_key: r.id,
+      weight: r.points,
+      is_enabled: true,
+    }));
+    const result = await scoringService.updateWeights(inputs);
+    if (result.success) {
+      toast.success('Scoring rules updated');
+      queryClient.invalidateQueries({ queryKey: ['crmScoringWeights'] });
+    } else {
+      toast.error(result.error || 'Failed to update scoring rules');
+    }
+  };
+
+  // ── Merge helpers ──
+
+  const selectedLeadObjects = useMemo(
+    () => leads.filter((l) => selectedLeads.has(l.id)),
+    [leads, selectedLeads],
+  );
+
+  const mergePrimary = selectedLeadObjects[0];
+  const mergeDuplicates = selectedLeadObjects.slice(1);
+
+  const toMergeRecord = (l: Lead) => ({
+    id: l.id,
+    name: `${l.first_name} ${l.last_name}`,
+    email: l.email,
+    phone: l.phone,
+    createdAt: l.created_at,
+    source: l.utm_source || l.source_cta || undefined,
+    score: l.lead_score,
+    fields: {
+      first_name: l.first_name,
+      last_name: l.last_name,
+      email: l.email,
+      phone: l.phone,
+      pipeline_stage: l.pipeline_stage,
+      priority: l.priority,
+      zip_code: l.zip_code || '',
+    },
+  });
+
+  const handleMerge = async (
+    primaryId: string,
+    mergedFields: Record<string, string>,
+    duplicateIds: string[],
+  ) => {
+    try {
+      await leadService.updateLead(primaryId, mergedFields);
+      for (const dupId of duplicateIds) {
+        await leadService.deleteLead(dupId);
+      }
+      toast.success(`Merged ${duplicateIds.length + 1} leads into one`);
+      handleBulkSuccess();
+      setShowMerge(false);
+    } catch {
+      toast.error('Failed to merge leads');
+    }
+  };
+
+  // ── Computed ──
+
   const activeFilterCount = [filters.stage, filters.priority, filters.planType, filters.carrierId, filters.dateFrom].filter(Boolean).length;
   const selectedIds = Array.from(selectedLeads);
   const totalPages = Math.ceil(total / pageSize);
+
+  // Tags of currently selected leads (union)
+  const selectedLeadTags = useMemo(() => {
+    const tags = new Set<string>();
+    leads.filter((l) => selectedLeads.has(l.id)).forEach((l) => (l.tags || []).forEach((t) => tags.add(t)));
+    return Array.from(tags);
+  }, [leads, selectedLeads]);
+
+  const refreshList = () => queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] });
 
   return (
     <div className="space-y-6">
@@ -190,6 +347,8 @@ export default function LeadsList() {
         onSendEmail={() => setShowBulkEmail(true)}
         onMassUpdate={() => setShowMassUpdate(true)}
         onMassTransfer={() => setShowMassTransfer(true)}
+        onMerge={() => setShowMerge(true)}
+        onTagManager={() => setShowBulkTags(true)}
         onExport={handleExportSelected}
         onDelete={() => setShowDeleteConfirm(true)}
         onClear={() => setSelectedLeads(new Set())}
@@ -203,6 +362,14 @@ export default function LeadsList() {
         size="sm"
         actions={
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowScoringRules(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
+              title="Lead Scoring Rules"
+            >
+              <Gauge className="w-4 h-4" />
+              <span className="hidden sm:inline">Scoring</span>
+            </button>
             <button
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2.5 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
@@ -256,7 +423,6 @@ export default function LeadsList() {
       {/* ─── Filter Bar ─── */}
       <div className="bg-surface-primary rounded-2xl border border-th-border p-4">
         <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
           <div className="flex-1 min-w-[240px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
             <input
@@ -273,7 +439,6 @@ export default function LeadsList() {
             )}
           </div>
 
-          {/* Stage */}
           <div className="relative">
             <select
               value={filters.stage || ''}
@@ -289,7 +454,6 @@ export default function LeadsList() {
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary pointer-events-none" />
           </div>
 
-          {/* Filters toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-all ${
@@ -309,7 +473,6 @@ export default function LeadsList() {
         </div>
       </div>
 
-      {/* Advanced filters */}
       {showFilters && (
         <AdvancedFiltersPanel
           filters={filters}
@@ -323,7 +486,7 @@ export default function LeadsList() {
       {/* ─── Table ─── */}
       <div className="bg-surface-primary rounded-2xl border border-th-border overflow-hidden">
         {loading ? (
-          <SkeletonTable rows={8} cols={6} />
+          <SkeletonTable rows={8} cols={7} />
         ) : leads.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-th-text-tertiary">
             <Search className="w-10 h-10 mb-3 opacity-40" />
@@ -351,6 +514,7 @@ export default function LeadsList() {
                     <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Stage</th>
                     <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Priority</th>
                     <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Created</th>
+                    <th className="w-12 px-2 py-3.5" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-th-border">
@@ -374,38 +538,50 @@ export default function LeadsList() {
                           />
                         </td>
                         <td className="px-6 py-4">
-                          <Link to={`/leads/${lead.id}`} className="flex items-center gap-3.5">
-                            <div className="w-10 h-10 bg-th-accent-50 rounded-xl flex items-center justify-center shrink-0">
-                              <span className="text-th-accent-700 font-semibold text-sm">
-                                {lead.first_name.charAt(0)}{lead.last_name.charAt(0)}
-                              </span>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-th-text-primary group-hover:text-th-accent-600 truncate transition-colors">
-                                {lead.first_name} {lead.last_name}
-                              </p>
-                              {(lead.city || lead.state || lead.zip_code) && (
-                                <p className="text-xs text-th-text-tertiary truncate">
-                                  {[lead.city, lead.state, lead.zip_code].filter(Boolean).join(', ')}
+                          <SidePeek
+                            entityType="lead"
+                            entityId={lead.id}
+                            href={`/leads/${lead.id}`}
+                            data={{
+                              id: lead.id,
+                              type: 'lead',
+                              name: `${lead.first_name} ${lead.last_name}`,
+                              email: lead.email,
+                              phone: lead.phone,
+                              location: [lead.city, lead.state, lead.zip_code].filter(Boolean).join(', ') || undefined,
+                              stage: stage?.display_name || lead.pipeline_stage,
+                              owner: lead.assigned_user?.full_name || lead.assigned_user?.email,
+                              tags: lead.tags,
+                              createdAt: lead.created_at,
+                            }}
+                          >
+                            <Link to={`/leads/${lead.id}`} className="flex items-center gap-3.5">
+                              <div className="w-10 h-10 bg-th-accent-50 rounded-xl flex items-center justify-center shrink-0">
+                                <span className="text-th-accent-700 font-semibold text-sm">
+                                  {lead.first_name.charAt(0)}{lead.last_name.charAt(0)}
+                                </span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-th-text-primary group-hover:text-th-accent-600 truncate transition-colors">
+                                  {lead.first_name} {lead.last_name}
                                 </p>
-                              )}
-                            </div>
-                          </Link>
+                                {(lead.city || lead.state || lead.zip_code) && (
+                                  <p className="text-xs text-th-text-tertiary truncate">
+                                    {[lead.city, lead.state, lead.zip_code].filter(Boolean).join(', ')}
+                                  </p>
+                                )}
+                              </div>
+                            </Link>
+                          </SidePeek>
                         </td>
                         <td className="px-6 py-4">
                           <div className="space-y-1.5 max-w-[200px]">
-                            <a
-                              href={`mailto:${lead.email}`}
-                              className="flex items-center gap-1.5 text-sm text-th-text-secondary hover:text-th-accent-600 truncate transition-colors"
-                            >
+                            <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 text-sm text-th-text-secondary hover:text-th-accent-600 truncate transition-colors">
                               <Mail className="w-3.5 h-3.5 shrink-0" />
                               <span className="truncate">{lead.email}</span>
                             </a>
                             {lead.phone && (
-                              <a
-                                href={`tel:${lead.phone}`}
-                                className="flex items-center gap-1.5 text-sm text-th-text-secondary hover:text-th-accent-600 transition-colors"
-                              >
+                              <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 text-sm text-th-text-secondary hover:text-th-accent-600 transition-colors">
                                 <Phone className="w-3.5 h-3.5 shrink-0" />
                                 {lead.phone}
                               </a>
@@ -442,6 +618,13 @@ export default function LeadsList() {
                         <td className="px-6 py-4 text-sm text-th-text-tertiary whitespace-nowrap">
                           {formatTimeAgo(lead.created_at)}
                         </td>
+                        <td className="w-12 px-2 py-4">
+                          <LeadRowActionsMenu
+                            lead={lead}
+                            allKnownTags={allKnownTags}
+                            onRefresh={refreshList}
+                          />
+                        </td>
                       </tr>
                     );
                   })}
@@ -449,7 +632,6 @@ export default function LeadsList() {
               </table>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-6 py-4 border-t border-th-border bg-surface-secondary/50">
                 <p className="text-sm text-th-text-tertiary">
@@ -482,19 +664,21 @@ export default function LeadsList() {
         )}
       </div>
 
-      {/* Modals */}
-      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] })} />
+      {/* ──────────── Modals ──────────── */}
+
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onSuccess={refreshList} />
       <BulkAssignModal open={showBulkAssign} onClose={() => setShowBulkAssign(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
       <BulkStageModal open={showBulkStage} onClose={() => setShowBulkStage(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
       <BulkEmailModal open={showBulkEmail} onClose={() => setShowBulkEmail(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
-      <ImportModal isOpen={showImport} onClose={() => setShowImport(false)} entityType="leads" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] })} />
+      <ImportModal isOpen={showImport} onClose={() => setShowImport(false)} entityType="leads" onSuccess={refreshList} />
+
       <MassUpdateModal
         open={showMassUpdate}
         onClose={() => setShowMassUpdate(false)}
         entityType="lead"
         selectedCount={selectedLeads.size}
         fields={[
-          { name: 'pipeline_stage', label: 'Pipeline Stage', type: 'select', options: pipelineStages?.map((s) => ({ value: s.id, label: s.name })) || [] },
+          { name: 'pipeline_stage', label: 'Pipeline Stage', type: 'select', options: pipelineStages?.map((s) => ({ value: s.name, label: s.display_name })) || [] },
           { name: 'priority', label: 'Priority', type: 'select', options: [{ value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }, { value: 'urgent', label: 'Urgent' }] },
           { name: 'source', label: 'Source', type: 'text' },
           { name: 'tags', label: 'Tags', type: 'text' },
@@ -508,13 +692,14 @@ export default function LeadsList() {
           handleBulkSuccess();
         }}
       />
+
       <MassTransferModal
         open={showMassTransfer}
         onClose={() => setShowMassTransfer(false)}
         entityType="lead"
         selectedCount={selectedLeads.size}
-        teamMembers={[]}
-        onTransfer={async (newOwnerId, _options) => {
+        teamMembers={teamMembers}
+        onTransfer={async (newOwnerId) => {
           for (const id of selectedIds) {
             await leadService.updateLead(id, { assigned_to: newOwnerId });
           }
@@ -522,7 +707,39 @@ export default function LeadsList() {
         }}
       />
 
-      {/* Delete Confirmation Modal */}
+      {/* Merge (requires 2+ selected) */}
+      {mergePrimary && mergeDuplicates.length > 0 && (
+        <MergeRecordsModal
+          open={showMerge}
+          onClose={() => setShowMerge(false)}
+          entityType="lead"
+          primaryRecord={toMergeRecord(mergePrimary)}
+          duplicates={mergeDuplicates.map(toMergeRecord)}
+          onMerge={handleMerge}
+        />
+      )}
+
+      {/* Bulk Tag Manager */}
+      <TagManagerModal
+        open={showBulkTags}
+        onClose={() => setShowBulkTags(false)}
+        entityType="lead"
+        selectedCount={selectedLeads.size}
+        currentTags={selectedLeadTags}
+        allKnownTags={allKnownTags}
+        onApply={handleBulkTagApply}
+      />
+
+      {/* Scoring Rules */}
+      <ScoringRulesModal
+        open={showScoringRules}
+        onClose={() => setShowScoringRules(false)}
+        entityType="lead"
+        rules={scoringRulesForModal}
+        onSave={handleScoringRulesSave}
+      />
+
+      {/* Delete Confirmation */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">

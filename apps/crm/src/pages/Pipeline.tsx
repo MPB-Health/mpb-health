@@ -1,20 +1,70 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { RefreshCw, Filter, GitBranch } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  RefreshCw, Filter, GitBranch, BarChart3, ArrowDown, Clock,
+  Camera, Users, AlertTriangle, Zap, MapPin, Target, ArrowLeftRight,
+  Heart, DollarSign, Flag,
+} from 'lucide-react';
 import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { PipelineFilters } from '../components/PipelineFilters';
 import type { Lead } from '@mpbhealth/crm-core';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
+import {
+  PipelineAnalyticsModal,
+  ConversionFunnelModal,
+  PipelineVelocityModal,
+  PipelineSnapshotModal,
+  BatchStageChangeModal,
+  StuckLeadAlertModal,
+  StageAutomationModal,
+  LeadRoutingModal,
+  StageProbabilityModal,
+  PipelineComparisonModal,
+  PipelineGoalsModal,
+  PipelineHealthScoreModal,
+} from '../components/pipeline';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(' ');
 
 export default function Pipeline() {
+  const navigate = useNavigate();
   const { leadService, activityService, pipelineStages, refreshDashboard } = useCRM();
   const [leadsByStage, setLeadsByStage] = useState<Record<string, Lead[]>>({});
   const [loading, setLoading] = useState(true);
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filterFn, setFilterFn] = useState<((lead: Lead) => boolean) | null>(null);
+
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showFunnel, setShowFunnel] = useState(false);
+  const [showVelocity, setShowVelocity] = useState(false);
+  const [showSnapshots, setShowSnapshots] = useState(false);
+  const [showBatchMove, setShowBatchMove] = useState(false);
+  const [showStuckAlerts, setShowStuckAlerts] = useState(false);
+  const [showAutomation, setShowAutomation] = useState(false);
+  const [showRouting, setShowRouting] = useState(false);
+  const [showProbability, setShowProbability] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
+  const [showHealthScore, setShowHealthScore] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'funnel', label: 'Funnel', icon: ArrowDown, color: 'text-violet-500', action: () => setShowFunnel(true) },
+    { id: 'velocity', label: 'Velocity', icon: Clock, color: 'text-amber-500', action: () => setShowVelocity(true) },
+    { id: 'snapshots', label: 'Snapshots', icon: Camera, color: 'text-cyan-500', action: () => setShowSnapshots(true) },
+    { id: 'batch', label: 'Batch Move', icon: Users, color: 'text-green-500', action: () => setShowBatchMove(true) },
+    { id: 'stuck', label: 'Stuck Alerts', icon: AlertTriangle, color: 'text-red-500', action: () => setShowStuckAlerts(true) },
+    { id: 'automation', label: 'Automation', icon: Zap, color: 'text-orange-500', action: () => setShowAutomation(true) },
+    { id: 'routing', label: 'Routing', icon: MapPin, color: 'text-teal-500', action: () => setShowRouting(true) },
+    { id: 'probability', label: 'Win Prob', icon: Target, color: 'text-emerald-500', action: () => setShowProbability(true) },
+    { id: 'comparison', label: 'Compare', icon: ArrowLeftRight, color: 'text-indigo-500', action: () => setShowComparison(true) },
+    { id: 'goals', label: 'Goals', icon: Flag, color: 'text-pink-500', action: () => setShowGoals(true) },
+    { id: 'health', label: 'Health', icon: Heart, color: 'text-rose-500', action: () => setShowHealthScore(true) },
+  ];
 
   const loadLeads = async () => {
     setLoading(true);
@@ -129,6 +179,17 @@ export default function Pipeline() {
         }
       />
 
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
+
       {/* Pipeline board */}
       <div className="flex space-x-4 overflow-x-auto pb-4">
         {pipelineStages.map((stage) => {
@@ -220,6 +281,35 @@ export default function Pipeline() {
           );
         })}
       </div>
+
+      {/* ---- Pipeline Power Modals ---- */}
+      <PipelineAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)} />
+      <ConversionFunnelModal open={showFunnel} onClose={() => setShowFunnel(false)} />
+      <PipelineVelocityModal open={showVelocity} onClose={() => setShowVelocity(false)}
+        onNavigateToLead={(id) => { setShowVelocity(false); navigate(`/leads/${id}`); }} />
+      <PipelineSnapshotModal open={showSnapshots} onClose={() => setShowSnapshots(false)} />
+      <BatchStageChangeModal open={showBatchMove} onClose={() => setShowBatchMove(false)}
+        onBatchMove={async (leadIds, targetStage) => {
+          let count = 0;
+          for (const id of leadIds) {
+            try {
+              const res = await leadService.updateLeadStage(id, targetStage);
+              if (res.success) count++;
+            } catch { /* skip */ }
+          }
+          loadLeads();
+          refreshDashboard();
+          toast.success(`Moved ${count} leads to ${targetStage}`);
+          return count;
+        }} />
+      <StuckLeadAlertModal open={showStuckAlerts} onClose={() => setShowStuckAlerts(false)}
+        onNavigateToLead={(id) => { setShowStuckAlerts(false); navigate(`/leads/${id}`); }} />
+      <StageAutomationModal open={showAutomation} onClose={() => setShowAutomation(false)} />
+      <LeadRoutingModal open={showRouting} onClose={() => setShowRouting(false)} />
+      <StageProbabilityModal open={showProbability} onClose={() => setShowProbability(false)} />
+      <PipelineComparisonModal open={showComparison} onClose={() => setShowComparison(false)} />
+      <PipelineGoalsModal open={showGoals} onClose={() => setShowGoals(false)} />
+      <PipelineHealthScoreModal open={showHealthScore} onClose={() => setShowHealthScore(false)} />
     </div>
   );
 }

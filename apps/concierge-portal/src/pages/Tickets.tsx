@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -19,7 +20,6 @@ import toast from 'react-hot-toast';
 import {
   ticketService,
   type Ticket,
-  type TicketStats,
   type TicketStatus,
   type TicketPriority,
 } from '@mpbhealth/advisor-core';
@@ -46,65 +46,43 @@ const DEFAULT_PRIORITY = { label: 'Normal', color: 'bg-neutral-100 text-neutral-
 const PER_PAGE = 20;
 
 export default function Tickets() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [stats, setStats] = useState<TicketStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | ''>('');
   const [searchInput, setSearchInput] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
   const [page, setPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearchDebounced(searchInput), 400);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const loadTickets = useCallback(async () => {
-    try {
-      setError('');
-      const result = await ticketService.getMyTickets({
-        status: statusFilter || undefined,
-        priority: priorityFilter || undefined,
-        search: searchDebounced || undefined,
-        page,
-        perPage: PER_PAGE,
-      });
-      setTickets(result.tickets);
-      setTotalCount(result.total);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load tickets');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [statusFilter, priorityFilter, searchDebounced, page]);
+  const { data: ticketsData, isLoading: loading, isFetching: refreshing, error: ticketError, refetch: refetchTickets } = useQuery({
+    queryKey: ['conciergeTickets', statusFilter, priorityFilter, searchDebounced, page],
+    queryFn: () => ticketService.getMyTickets({
+      status: statusFilter || undefined,
+      priority: priorityFilter || undefined,
+      search: searchDebounced || undefined,
+      page,
+      perPage: PER_PAGE,
+    }),
+    staleTime: 30 * 1000,
+  });
 
-  const loadStats = useCallback(async () => {
-    try {
-      const result = await ticketService.getTicketStats();
-      setStats(result);
-    } catch {
-      // Stats are non-critical
-    }
-  }, []);
+  const tickets = ticketsData?.tickets ?? [];
+  const totalCount = ticketsData?.total ?? 0;
+  const error = ticketError ? (ticketError instanceof Error ? ticketError.message : 'Failed to load tickets') : '';
 
-  useEffect(() => {
-    setLoading(true);
-    loadTickets();
-  }, [loadTickets]);
-
-  useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+  const { data: stats = null } = useQuery({
+    queryKey: ['conciergeTicketStats'],
+    queryFn: () => ticketService.getTicketStats(),
+    staleTime: 60 * 1000,
+  });
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    loadTickets();
-    loadStats();
+    refetchTickets();
+    queryClient.invalidateQueries({ queryKey: ['conciergeTicketStats'] });
   };
 
   const totalPages = Math.ceil(totalCount / PER_PAGE);

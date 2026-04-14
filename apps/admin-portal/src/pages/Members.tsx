@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Search, Users as UsersIcon, UserCheck, UserX, Clock, TrendingUp, Bell, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { memberService, type MemberProfile, type MemberStats } from '@mpbhealth/admin-core';
@@ -13,16 +14,12 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function Members() {
   const navigate = useNavigate();
-  const [members, setMembers] = useState<MemberProfile[]>([]);
-  const [stats, setStats] = useState<MemberStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [totalCount, setTotalCount] = useState(0);
 
-  const loadMembers = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data: membersData, isLoading: loading } = useQuery({
+    queryKey: ['adminMembers', statusFilter, searchQuery],
+    queryFn: async () => {
       const [result, memberStats] = await Promise.all([
         memberService.getMembers({
           status: statusFilter || undefined,
@@ -31,20 +28,14 @@ export default function Members() {
         }),
         memberService.getStats(),
       ]);
-      setMembers(result.data);
-      setTotalCount(result.count);
-      setStats(memberStats);
-    } catch (err) {
-      console.error('Failed to load members:', err);
-      toast.error('Failed to load members');
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, searchQuery]);
+      return { members: result.data, totalCount: result.count, stats: memberStats };
+    },
+    staleTime: 60 * 1000,
+  });
 
-  useEffect(() => {
-    loadMembers();
-  }, [loadMembers]);
+  const members = membersData?.members ?? [];
+  const totalCount = membersData?.totalCount ?? 0;
+  const stats = membersData?.stats ?? null;
 
   return (
     <div className="space-y-6">

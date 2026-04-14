@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -53,9 +54,8 @@ export default function AdvisorAccess() {
   const navigate = useNavigate();
   const { isSuperAdmin } = useAdmin();
 
-  const [advisors, setAdvisors] = useState<AdvisorProfileSummary[]>([]);
-  const [authMap, setAuthMap] = useState<Map<string, CrossPortalUser>>(new Map());
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -91,30 +91,24 @@ export default function AdvisorAccess() {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data: advisorData, isLoading: loading } = useQuery({
+    queryKey: ['adminAdvisorAccess', debouncedSearch],
+    queryFn: async () => {
       const [profileData, crossData] = await Promise.all([
         userService.getAdvisorProfiles(debouncedSearch || undefined),
         userService.getCrossPortalUsers({ role: 'advisor' }),
       ]);
-      setAdvisors(profileData);
       const map = new Map<string, CrossPortalUser>();
       for (const u of crossData) {
         map.set(u.id, u);
       }
-      setAuthMap(map);
-    } catch (err) {
-      console.error('Failed to load advisor data:', err);
-      toast.error('Failed to load advisors');
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedSearch]);
+      return { advisors: profileData, authMap: map };
+    },
+    staleTime: 60 * 1000,
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const advisors = advisorData?.advisors ?? [];
+  const authMap = advisorData?.authMap ?? new Map<string, CrossPortalUser>();
 
   // Stats
   const totalAdvisors = advisors.length;
@@ -230,9 +224,7 @@ export default function AdvisorAccess() {
     const newStatus = advisor.status === 'active' ? 'suspended' : 'active';
     try {
       await userService.updateAdvisorProfileStatus(advisor.id, newStatus);
-      setAdvisors((prev) =>
-        prev.map((a) => (a.id === advisor.id ? { ...a, status: newStatus } : a))
-      );
+      queryClient.invalidateQueries({ queryKey: ['adminAdvisorAccess'] });
       toast.success(`Advisor ${newStatus === 'active' ? 'activated' : 'suspended'}`);
     } catch {
       toast.error('Failed to update status');
@@ -674,7 +666,7 @@ export default function AdvisorAccess() {
         onClose={() => setShowAddModal(false)}
         onSuccess={() => {
           setShowAddModal(false);
-          loadData();
+          queryClient.invalidateQueries({ queryKey: ['adminAdvisorAccess'] });
         }}
       />
 

@@ -625,7 +625,9 @@ export default function Users() {
       <InviteUserModal
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}
-        onSuccess={() => {}}
+        onSuccess={() => {
+          loadAdminUsers();
+        }}
       />
 
       {/* Mass Password Reset Modal */}

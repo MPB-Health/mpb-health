@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -11,6 +12,7 @@ import {
   Upload,
   Shield,
   X,
+  Users,
 } from 'lucide-react';
 import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
@@ -26,14 +28,12 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useSavedViews } from '../hooks/useSavedViews';
 import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel, PLAN_TYPE_LABELS } from '@mpbhealth/crm-core';
-import { SkeletonTable } from '@mpbhealth/ui';
+import { SkeletonTable, GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
 
 export default function LeadsList() {
   const { leadService, pipelineStages } = useCRM();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<LeadFilters>({});
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -51,6 +51,18 @@ export default function LeadsList() {
   const [deleting, setDeleting] = useState(false);
 
   const savedViews = useSavedViews('leads');
+
+  const { data: leadsData, isLoading: loading } = useQuery({
+    queryKey: ['crmLeadsList', filters, page, pageSize],
+    queryFn: async () => {
+      const result = await leadService.getLeads(filters, pageSize, page * pageSize);
+      return result;
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const leads = leadsData?.leads ?? [];
+  const total = leadsData?.total ?? 0;
 
   useEffect(() => {
     setFilters((prev) => ({ ...prev, search: debouncedSearch || undefined }));
@@ -72,24 +84,6 @@ export default function LeadsList() {
       setPage(0);
     }
   }, [savedViews.activeView, savedViews.activeSmartView, debouncedSearch]);
-
-  const loadLeads = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { leads, total } = await leadService.getLeads(filters, pageSize, page * pageSize);
-      setLeads(leads);
-      setTotal(total);
-    } catch (err) {
-      console.error('Failed to load leads:', err);
-      toast.error('Failed to load leads. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [leadService, filters, page]);
-
-  useEffect(() => {
-    loadLeads();
-  }, [loadLeads]);
 
   useEffect(() => {
     setSelectedLeads(new Set());
@@ -151,7 +145,7 @@ export default function LeadsList() {
 
   const handleBulkSuccess = () => {
     setSelectedLeads(new Set());
-    loadLeads();
+    queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] });
   };
 
   const handleBulkDelete = async () => {
@@ -166,7 +160,7 @@ export default function LeadsList() {
         toast.error(`Deleted ${result.success}, failed ${result.failed}`);
       }
       setSelectedLeads(new Set());
-      loadLeads();
+      queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] });
     } catch {
       toast.error('Failed to delete leads');
     } finally {
@@ -193,41 +187,41 @@ export default function LeadsList() {
       />
 
       {/* ─── Page Header ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Leads</h1>
-          <p className="text-sm text-th-text-tertiary mt-0.5">
-            {total.toLocaleString()} total {total === 1 ? 'lead' : 'leads'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2.5 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
-          <PermissionGate permission="leads.write">
+      <GradientHeader
+        title="Leads"
+        subtitle={`${total.toLocaleString()} total ${total === 1 ? 'lead' : 'leads'}`}
+        icon={<Users className="w-5 h-5" />}
+        size="sm"
+        actions={
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowImport(true)}
+              onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2.5 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
             >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Import</span>
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
             </button>
-          </PermissionGate>
-          <PermissionGate permission="leads.create">
-            <button
-              onClick={() => setShowAddLead(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-th-accent-600 rounded-xl text-sm font-medium text-white hover:bg-th-accent-700 transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Add Lead
-            </button>
-          </PermissionGate>
-        </div>
-      </div>
+            <PermissionGate permission="leads.write">
+              <button
+                onClick={() => setShowImport(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Import</span>
+              </button>
+            </PermissionGate>
+            <PermissionGate permission="leads.create">
+              <button
+                onClick={() => setShowAddLead(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-th-accent-600 rounded-xl text-sm font-medium text-white hover:bg-th-accent-700 transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Lead
+              </button>
+            </PermissionGate>
+          </div>
+        }
+      />
 
       {/* ─── Saved Views ─── */}
       <div className="bg-surface-primary rounded-2xl border border-th-border">
@@ -480,11 +474,11 @@ export default function LeadsList() {
       </div>
 
       {/* Modals */}
-      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onSuccess={() => loadLeads()} />
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] })} />
       <BulkAssignModal open={showBulkAssign} onClose={() => setShowBulkAssign(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
       <BulkStageModal open={showBulkStage} onClose={() => setShowBulkStage(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
       <BulkEmailModal open={showBulkEmail} onClose={() => setShowBulkEmail(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
-      <ImportModal isOpen={showImport} onClose={() => setShowImport(false)} entityType="leads" onSuccess={() => loadLeads()} />
+      <ImportModal isOpen={showImport} onClose={() => setShowImport(false)} entityType="leads" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] })} />
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

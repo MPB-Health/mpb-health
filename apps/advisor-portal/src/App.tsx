@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AdvisorProvider } from './contexts/AdvisorContext';
 import { TourProvider } from './contexts/TourContext';
@@ -209,8 +209,15 @@ class RouteErrorBoundary extends React.Component<
   }
 }
 
-// Content-area spinner for lazy route chunks (rendered inside the layout shell)
+// Content-area spinner for lazy route chunks.
+// Delays visibility by 150 ms so fast chunk loads never flash a spinner.
 function RouteSpinner() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(id);
+  }, []);
+  if (!visible) return null;
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
       <div
@@ -227,17 +234,39 @@ function RouteSpinner() {
   );
 }
 
-// Eagerly prefetch the most-visited routes after initial paint
+// Eagerly prefetch all route chunks after initial paint so in-app
+// navigation never shows a loading spinner (the full set is ~200 KB
+// gzipped — acceptable on any broadband or LTE connection).
 if (typeof window !== 'undefined') {
-  const requestIdleCallback = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1));
-  requestIdleCallback(
+  const ric = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1));
+
+  // High-priority routes first (most-visited)
+  ric(
     () => {
       prefetchRoute('Dashboard');
       prefetchRoute('Bulletins');
       prefetchRoute('Training');
       prefetchRoute('QuickLinks');
+      prefetchRoute('Forms');
+      prefetchRoute('SOPLibrary');
+      prefetchRoute('Tickets');
+      prefetchRoute('VideoLibrary');
     },
     { timeout: 3000 },
+  );
+
+  // Everything else on next idle
+  ric(
+    () => {
+      const alreadyQueued = new Set([
+        'Dashboard', 'Bulletins', 'Training', 'QuickLinks',
+        'Forms', 'SOPLibrary', 'Tickets', 'VideoLibrary',
+      ]);
+      (Object.keys(routeModules) as (keyof typeof routeModules)[]).forEach((name) => {
+        if (!alreadyQueued.has(name)) prefetchRoute(name);
+      });
+    },
+    { timeout: 8000 },
   );
 }
 

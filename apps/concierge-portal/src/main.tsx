@@ -1,12 +1,27 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@mpbhealth/ui';
 import App from './App';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -49,22 +64,24 @@ class ErrorBoundary extends React.Component<
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
-        <BrowserRouter>
-          <App />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#1e293b',
-                color: '#f8fafc',
-                borderRadius: '0.5rem',
-              },
-            }}
-          />
-        </BrowserRouter>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="light">
+          <BrowserRouter>
+            <App />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#1e293b',
+                  color: '#f8fafc',
+                  borderRadius: '0.5rem',
+                },
+              }}
+            />
+          </BrowserRouter>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

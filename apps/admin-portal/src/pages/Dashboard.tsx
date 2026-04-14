@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -101,21 +102,9 @@ export default function Dashboard() {
   const { user, metrics, pendingEnrollments } = useAdmin();
   const chartTheme = useChartTheme();
 
-  const [leadActivity, setLeadActivity] = useState<ActivityMetric[]>([]);
-  const [leadSources, setLeadSources] = useState<{ source: string; count: number }[]>([]);
-  const [systemHealth, setSystemHealth] = useState<SystemHealthSummary | null>(null);
-  const [memberStats, setMemberStats] = useState<MemberStats | null>(null);
-  const [crmSummary, setCrmSummary] = useState<CRMSummary | null>(null);
-  const [recentActivity, setRecentActivity] = useState<AuditLog[]>([]);
-  const [contentStats, setContentStats] = useState<ContentStats | null>(null);
-  const [externalAnalytics, setExternalAnalytics] = useState<CombinedAnalytics | null>(null);
-  const [membershipAppStats, setMembershipAppStats] =
-    useState<MembershipAppDashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      // Fire all requests in parallel — each one is independent
+  const { data: dashboardData, isLoading: loading } = useQuery({
+    queryKey: ['adminDashboard'],
+    queryFn: async () => {
       const results = await Promise.allSettled([
         analyticsService.getActivityOverTime('leads', 14),
         analyticsService.getLeadSources(),
@@ -126,34 +115,35 @@ export default function Dashboard() {
         loadContentStats(),
         analyticsHubService.getCombinedSummary(),
       ]);
+      return {
+        leadActivity: results[0].status === 'fulfilled' ? results[0].value : [],
+        leadSources: results[1].status === 'fulfilled' ? results[1].value.slice(0, 5) : [],
+        systemHealth: results[2].status === 'fulfilled' ? results[2].value : null,
+        memberStats: results[3].status === 'fulfilled' ? results[3].value : null,
+        crmSummary: results[4].status === 'fulfilled' ? results[4].value : null,
+        recentActivity: results[5].status === 'fulfilled' ? results[5].value.logs : [],
+        contentStats: results[6].status === 'fulfilled' ? results[6].value : null,
+        externalAnalytics: results[7].status === 'fulfilled' ? results[7].value : null,
+      };
+    },
+    staleTime: 2 * 60 * 1000,
+  });
 
-      if (results[0].status === 'fulfilled') setLeadActivity(results[0].value);
-      if (results[1].status === 'fulfilled') setLeadSources(results[1].value.slice(0, 5));
-      if (results[2].status === 'fulfilled') setSystemHealth(results[2].value);
-      if (results[3].status === 'fulfilled') setMemberStats(results[3].value);
-      if (results[4].status === 'fulfilled') setCrmSummary(results[4].value);
-      if (results[5].status === 'fulfilled') setRecentActivity(results[5].value.logs);
-      if (results[6].status === 'fulfilled') setContentStats(results[6].value);
-      if (results[7].status === 'fulfilled') setExternalAnalytics(results[7].value);
+  const leadActivity = dashboardData?.leadActivity ?? [];
+  const leadSources = dashboardData?.leadSources ?? [];
+  const systemHealth = dashboardData?.systemHealth ?? null;
+  const memberStats = dashboardData?.memberStats ?? null;
+  const crmSummary = dashboardData?.crmSummary ?? null;
+  const recentActivity = dashboardData?.recentActivity ?? [];
+  const contentStats = dashboardData?.contentStats ?? null;
+  const externalAnalytics = dashboardData?.externalAnalytics ?? null;
 
-      setLoading(false);
-    };
-
-    load();
-  }, []);
-
-  useEffect(() => {
-    if (!isMembershipAnalyticsConfigured || !membershipAnalyticsSupabase) return;
-    let cancelled = false;
-    loadMembershipAppDashboardData(membershipAnalyticsSupabase)
-      .then((payload) => {
-        if (!cancelled) setMembershipAppStats(payload.stats);
-      })
-      .catch((err) => console.error('[Dashboard] membership app dashboard stats', err));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data: membershipAppStats = null } = useQuery({
+    queryKey: ['membershipAppDashboard'],
+    queryFn: () => loadMembershipAppDashboardData(membershipAnalyticsSupabase!).then(p => p.stats),
+    enabled: isMembershipAnalyticsConfigured && !!membershipAnalyticsSupabase,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const overallStatus = useMemo(() => getOverallStatus(systemHealth), [systemHealth]);
   const statusConfig = SYSTEM_STATUS_CONFIG[overallStatus];

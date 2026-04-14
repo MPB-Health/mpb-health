@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Breadcrumbs } from '@mpbhealth/ui';
 import {
@@ -132,12 +133,31 @@ export default function LeadDetail() {
   const { leadService, activityService, taskService, automationService, pipelineStages } = useCRM();
   const { activeOrgId } = useOrg();
 
-  const [lead, setLead] = useState<Lead | null>(null);
-  const [activities, setActivities] = useState<LeadActivity[]>([]);
-  const [tasks, setTasks] = useState<LeadTask[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: leadData, isLoading: loading } = useQuery({
+    queryKey: ['crmLeadDetail', id],
+    queryFn: async () => {
+      const [leadResult, activityData, taskData, familyData, phoneData] = await Promise.all([
+        leadService.getLead(id!),
+        activityService.getActivities(id!),
+        taskService.getTasks(id!, true),
+        familyService.getFamilyMembers('lead', id!),
+        familyService.getPhoneNumbers('lead', id!),
+      ]);
+      return { lead: leadResult, activities: activityData, tasks: taskData, familyMembers: familyData, phoneNumbers: phoneData };
+    },
+    enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+
+  const lead = leadData?.lead ?? null;
+  const activities = leadData?.activities ?? [];
+  const tasks = leadData?.tasks ?? [];
+  const familyMembers = leadData?.familyMembers ?? [];
+  const phoneNumbers = leadData?.phoneNumbers ?? [];
+
+  const refreshLead = () => queryClient.invalidateQueries({ queryKey: ['crmLeadDetail', id] });
   const [activeTab, setActiveTab] = useState<'tasks' | 'timeline' | 'attachments'>('timeline');
   const [showEditLead, setShowEditLead] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
@@ -151,30 +171,6 @@ export default function LeadDetail() {
   const [staffUsers, setStaffUsers] = useState<{ id: string; email: string; first_name: string; last_name: string }[]>([]);
   const [assigning, setAssigning] = useState(false);
   const focusItems = useFocusItems();
-
-  const loadLead = useCallback(async () => {
-    if (!id) return;
-
-    setLoading(true);
-    const [leadData, activityData, taskData, familyData, phoneData] = await Promise.all([
-      leadService.getLead(id),
-      activityService.getActivities(id),
-      taskService.getTasks(id, true),
-      familyService.getFamilyMembers('lead', id),
-      familyService.getPhoneNumbers('lead', id),
-    ]);
-
-    setLead(leadData);
-    setActivities(activityData);
-    setTasks(taskData);
-    setFamilyMembers(familyData);
-    setPhoneNumbers(phoneData);
-    setLoading(false);
-  }, [id, leadService, activityService, taskService, familyService]);
-
-  useEffect(() => {
-    loadLead();
-  }, [loadLead]);
 
   const handleStageChange = async (newStage: string) => {
     if (!lead) return;
@@ -196,7 +192,7 @@ export default function LeadDetail() {
         data: { from_stage: lead.pipeline_stage, to_stage: newStage },
       }).catch(console.error);
       toast.success('Stage updated');
-      loadLead();
+      refreshLead();
     } else {
       toast.error('Failed to update stage');
     }
@@ -212,7 +208,7 @@ export default function LeadDetail() {
         entityId: taskId,
       }).catch(console.error);
       toast.success('Task completed');
-      loadLead();
+      refreshLead();
     } else {
       toast.error('Failed to complete task');
     }
@@ -249,7 +245,7 @@ export default function LeadDetail() {
       await activityService.logAssignment(lead.id, userId);
       toast.success('Lead assigned');
       setShowAssign(false);
-      loadLead();
+      refreshLead();
     } else {
       toast.error('Failed to assign lead');
     }
@@ -755,11 +751,11 @@ export default function LeadDetail() {
       </div>
 
       {/* Modals */}
-      <EditLeadModal open={showEditLead} onClose={() => setShowEditLead(false)} lead={lead} onSuccess={() => loadLead()} />
-      <AddNoteModal open={showAddNote} onClose={() => setShowAddNote(false)} leadId={lead.id} onSuccess={() => loadLead()} />
-      <LogCallModal open={showLogCall} onClose={() => setShowLogCall(false)} leadId={lead.id} onSuccess={() => loadLead()} />
-      <LogMeetingModal open={showLogMeeting} onClose={() => setShowLogMeeting(false)} leadId={lead.id} onSuccess={() => loadLead()} />
-      <AddTaskModal open={showAddTask} onClose={() => setShowAddTask(false)} leadId={lead.id} onSuccess={() => loadLead()} />
+      <EditLeadModal open={showEditLead} onClose={() => setShowEditLead(false)} lead={lead} onSuccess={() => refreshLead()} />
+      <AddNoteModal open={showAddNote} onClose={() => setShowAddNote(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
+      <LogCallModal open={showLogCall} onClose={() => setShowLogCall(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
+      <LogMeetingModal open={showLogMeeting} onClose={() => setShowLogMeeting(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
+      <AddTaskModal open={showAddTask} onClose={() => setShowAddTask(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (

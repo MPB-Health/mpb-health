@@ -12,7 +12,22 @@ const Tickets = lazy(() => import('./pages/Tickets'));
 const NewTicket = lazy(() => import('./pages/NewTicket'));
 const Profile = lazy(() => import('./pages/Profile'));
 
+// Prefetch common routes when the browser is idle
+if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+  window.requestIdleCallback(() => {
+    import('./pages/Dashboard').catch(() => {});
+    import('./pages/Tickets').catch(() => {});
+    import('./pages/Profile').catch(() => {});
+  });
+}
+
 function PageLoader() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(id);
+  }, []);
+  if (!visible) return null;
   return (
     <div className="flex items-center justify-center py-16">
       <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
@@ -21,6 +36,12 @@ function PageLoader() {
 }
 
 function FullPageLoader() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(id);
+  }, []);
+  if (!visible) return null;
   return (
     <div className="min-h-screen flex items-center justify-center">
       <Loader2 className="w-8 h-8 animate-spin text-primary-600" />

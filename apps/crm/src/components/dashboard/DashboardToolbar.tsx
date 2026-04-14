@@ -12,7 +12,9 @@ import {
   Keyboard,
   Check,
   Loader2,
+  LayoutDashboard,
 } from 'lucide-react';
+import { GradientHeader } from '@mpbhealth/ui';
 import { useDashboardStore } from '../../contexts/DashboardContext';
 import { useOrg } from '../../contexts/OrgContext';
 import { WidgetCatalog } from './WidgetCatalog';
@@ -57,97 +59,87 @@ export function DashboardToolbar() {
 
   return (
     <>
-      <div className="flex items-center justify-between px-4 py-3 bg-surface-primary border-b border-th-border">
-        {/* Left side */}
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-xl font-semibold">Command Center</h1>
-            <p className="text-sm text-th-text-secondary">
-              {editMode ? 'Editing dashboard layout' : 'Your personalized dashboard'}
-            </p>
-          </div>
-        </div>
-
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          {/* Last saved indicator */}
-          {lastSaved && !editMode && (
-            <span className="text-xs text-th-text-tertiary mr-2">
-              Saved {formatTimeAgo(lastSaved)}
-            </span>
-          )}
-
-          {/* Save success indicator */}
-          {saveSuccess && (
-            <span className="flex items-center gap-1 text-xs text-green-600 mr-2">
-              <Check className="h-3 w-3" />
-              Saved
-            </span>
-          )}
-
-          {/* Edit mode actions */}
-          {editMode && (
-            <>
-              <button
-                onClick={() => setShowCatalog(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Add Widget
-              </button>
-
-              <button
-                onClick={handleReset}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-tertiary rounded-lg transition-colors"
-                title="Reset to default layout"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset
-              </button>
-
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                  'bg-th-accent-primary text-white hover:bg-th-accent-hover',
-                  isSaving && 'opacity-50 cursor-not-allowed'
-                )}
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                Save
-              </button>
-            </>
-          )}
-
-          {/* Keyboard shortcuts */}
-          <button
-            onClick={() => setShowShortcuts(true)}
-            className="p-2 text-th-text-secondary hover:bg-surface-tertiary rounded-lg transition-colors"
-            title="Keyboard shortcuts"
-          >
-            <Keyboard className="h-5 w-5" />
-          </button>
-
-          {/* Edit mode toggle */}
-          <button
-            onClick={toggleEditMode}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
-              editMode
-                ? 'bg-th-accent-primary text-white hover:bg-th-accent-hover'
-                : 'bg-surface-tertiary text-th-text-primary hover:bg-surface-tertiary'
+      <GradientHeader
+        title="Command Center"
+        subtitle={editMode ? 'Editing dashboard layout' : 'Your personalized workspace — real-time insights at a glance'}
+        icon={<LayoutDashboard className="w-5 h-5" />}
+        size="md"
+        actions={
+          <div className="flex items-center gap-2">
+            {lastSaved && !editMode && (
+              <span className="text-xs text-th-text-tertiary mr-1">
+                Saved {formatTimeAgo(lastSaved)}
+              </span>
             )}
-          >
-            <Edit3 className="h-4 w-4" />
-            {editMode ? 'Done Editing' : 'Edit Dashboard'}
-          </button>
-        </div>
-      </div>
+
+            {saveSuccess && (
+              <span className="flex items-center gap-1 text-xs text-green-600 mr-1">
+                <Check className="h-3 w-3" />
+                Saved
+              </span>
+            )}
+
+            {editMode && (
+              <>
+                <button
+                  onClick={() => setShowCatalog(true)}
+                  className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-th-accent-600 hover:bg-th-accent-50 dark:hover:bg-th-accent-900/20 rounded-xl border border-th-accent-200 dark:border-th-accent-700 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Widget
+                </button>
+
+                <button
+                  onClick={handleReset}
+                  className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-tertiary rounded-xl border border-th-border transition-colors"
+                  title="Reset to default layout"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Reset
+                </button>
+
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-colors shadow-sm',
+                    'bg-th-accent-600 text-white hover:bg-th-accent-700',
+                    isSaving && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Save
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => setShowShortcuts(true)}
+              className="p-2 text-th-text-tertiary hover:text-th-text-secondary hover:bg-surface-tertiary rounded-xl transition-colors"
+              title="Keyboard shortcuts"
+            >
+              <Keyboard className="h-4.5 w-4.5" />
+            </button>
+
+            <button
+              onClick={toggleEditMode}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all',
+                editMode
+                  ? 'bg-th-accent-600 text-white hover:bg-th-accent-700 shadow-sm'
+                  : 'bg-surface-tertiary text-th-text-primary hover:bg-surface-secondary border border-th-border'
+              )}
+            >
+              <Edit3 className="h-4 w-4" />
+              {editMode ? 'Done' : 'Customize'}
+            </button>
+          </div>
+        }
+      />
 
       {/* Widget Catalog Modal */}
       <WidgetCatalog

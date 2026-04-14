@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   settingsService,
   integrationService,
@@ -230,78 +231,73 @@ export function useTeamManagement() {
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
 
-  const [members, setMembers] = useState<OrgMember[]>([]);
-  const [invitations, setInvitations] = useState<OrganizationInvitation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchData = useCallback(async () => {
-    if (!orgId) return;
-
-    try {
-      setLoading(true);
+  const { data: teamData, isLoading: loading, error: queryError } = useQuery({
+    queryKey: ['advisorTeam', orgId],
+    queryFn: async () => {
       const [membersData, invitationsData] = await Promise.all([
-        settingsService.getOrgMembers(orgId),
-        settingsService.getInvitations(orgId),
+        settingsService.getOrgMembers(orgId!),
+        settingsService.getInvitations(orgId!),
       ]);
-      setMembers(membersData);
-      setInvitations(invitationsData);
-      setError(null);
-    } catch (err) {
-      console.error('[useTeamManagement] Failed to fetch:', err);
-      setError('Failed to load team data');
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
+      return { members: membersData, invitations: invitationsData };
+    },
+    enabled: !!orgId,
+    staleTime: 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const members = teamData?.members ?? [];
+  const invitations = teamData?.invitations ?? [];
+  const error = queryError ? 'Failed to load team data' : null;
+
+  const invalidateTeam = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['advisorTeam', orgId] }),
+    [queryClient, orgId]
+  );
 
   const updateMemberRole = useCallback(
     async (memberId: string, role: string) => {
       if (!orgId) return;
       await settingsService.updateMemberRole(orgId, memberId, role);
-      await fetchData();
+      await invalidateTeam();
     },
-    [orgId, fetchData]
+    [orgId, invalidateTeam]
   );
 
   const removeMember = useCallback(
     async (memberId: string) => {
       if (!orgId) return;
       await settingsService.removeMember(orgId, memberId);
-      await fetchData();
+      await invalidateTeam();
     },
-    [orgId, fetchData]
+    [orgId, invalidateTeam]
   );
 
   const inviteMember = useCallback(
     async (input: CreateInvitationInput) => {
       if (!orgId || !userId) return;
       const invitation = await settingsService.createInvitation(orgId, userId, input);
-      await fetchData();
+      await invalidateTeam();
       return invitation;
     },
-    [orgId, userId, fetchData]
+    [orgId, userId, invalidateTeam]
   );
 
   const revokeInvitation = useCallback(
     async (invitationId: string) => {
       await settingsService.revokeInvitation(invitationId);
-      await fetchData();
+      await invalidateTeam();
     },
-    [fetchData]
+    [invalidateTeam]
   );
 
   const resendInvitation = useCallback(
     async (invitationId: string) => {
       if (!userId) return;
       await settingsService.resendInvitation(invitationId, userId);
-      await fetchData();
+      await invalidateTeam();
     },
-    [userId, fetchData]
+    [userId, invalidateTeam]
   );
 
   return {
@@ -314,7 +310,7 @@ export function useTeamManagement() {
     inviteMember,
     revokeInvitation,
     resendInvitation,
-    refresh: fetchData,
+    refresh: invalidateTeam,
   };
 }
 

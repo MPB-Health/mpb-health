@@ -19,6 +19,7 @@
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
     "@supabase/supabase-js": "catalog:",
+    "@tanstack/react-query": "^5.90.21",
     "@tiptap/extension-image": "catalog:",
     "@tiptap/extension-link": "catalog:",
     "@tiptap/extension-placeholder": "catalog:",

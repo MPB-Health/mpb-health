@@ -79,6 +79,42 @@ const PushNotifications = lazyRetry(() => import('./pages/PushNotifications'));
 const Reports = lazyRetry(() => import('./pages/Reports'));
 const AdvisorAccess = lazyRetry(() => import('./pages/AdvisorAccess'));
 
+// Eagerly prefetch all route chunks after initial paint
+if (typeof window !== 'undefined') {
+  const ric = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1));
+  ric(
+    () => {
+      // Prefetch high-priority routes
+      import('./pages/Dashboard').catch(() => {});
+      import('./pages/Users').catch(() => {});
+      import('./pages/Members').catch(() => {});
+      import('./pages/TicketsList').catch(() => {});
+      import('./pages/AdvisorAccess').catch(() => {});
+      import('./pages/BulletinsList').catch(() => {});
+    },
+    { timeout: 3000 },
+  );
+  ric(
+    () => {
+      // Prefetch remaining routes
+      import('./pages/Settings').catch(() => {});
+      import('./pages/Reports').catch(() => {});
+      import('./pages/CRMDashboard').catch(() => {});
+      import('./pages/CRMLeads').catch(() => {});
+      import('./pages/Enrollments').catch(() => {});
+      import('./pages/LeadSubmissions').catch(() => {});
+      import('./pages/NavigationManager').catch(() => {});
+      import('./pages/FormsList').catch(() => {});
+      import('./pages/SOPsList').catch(() => {});
+      import('./pages/TrainingModulesList').catch(() => {});
+      import('./pages/QuickLinksList').catch(() => {});
+      import('./pages/VideoLibraryList').catch(() => {});
+      import('./pages/AuditLogs').catch(() => {});
+    },
+    { timeout: 8000 },
+  );
+}
+
 // ── GA4 page-view tracker ─────────────────────────────────────────────────────
 function GAPageTracker() {
   const location = useLocation();
@@ -95,6 +131,12 @@ function GAPageTracker() {
 
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function LoadingSpinner() {
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const id = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(id);
+  }, []);
+  if (!visible) return null;
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
       <div

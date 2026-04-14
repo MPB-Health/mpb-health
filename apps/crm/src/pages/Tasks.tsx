@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, CheckCircle2, Clock, AlertCircle, Calendar } from 'lucide-react';
+import { Plus, CheckCircle2, Clock, AlertCircle, Calendar, ClipboardList } from 'lucide-react';
+import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
@@ -80,23 +81,23 @@ export default function Tasks() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Tasks</h1>
-          <p className="text-th-text-tertiary text-sm mt-1">
-            {incompleteTasks} pending, {completedTasks} completed
-          </p>
-        </div>
-        <PermissionGate permission="tasks.create">
-          <button
-            onClick={() => setShowAddTask(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Task</span>
-          </button>
-        </PermissionGate>
-      </div>
+      <GradientHeader
+        title="Tasks"
+        subtitle={`${incompleteTasks} pending, ${completedTasks} completed`}
+        icon={<ClipboardList className="w-5 h-5" />}
+        size="sm"
+        actions={
+          <PermissionGate permission="tasks.create">
+            <button
+              onClick={() => setShowAddTask(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-xl text-sm font-medium text-white hover:bg-th-accent-700 shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Task</span>
+            </button>
+          </PermissionGate>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

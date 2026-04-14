@@ -167,27 +167,29 @@ export function WidgetWrapper({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'bg-surface-primary rounded-xl border border-th-border shadow-sm overflow-hidden transition-all duration-200',
-        isSelected && isEditMode && 'ring-2 ring-blue-500 border-blue-500',
-        isDragging && 'shadow-lg',
-        !isEditMode && 'hover:shadow-md'
+        'bg-surface-primary rounded-2xl border border-th-border/60 shadow-sm overflow-hidden transition-all duration-200',
+        isSelected && isEditMode && 'ring-2 ring-th-accent-500 border-th-accent-500',
+        isDragging && 'shadow-xl scale-[1.02]',
+        !isEditMode && 'hover:shadow-md hover:border-th-border'
       )}
       onClick={isEditMode ? onSelect : undefined}
     >
       {/* Header */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 py-3 border-b border-th-border',
+          'flex items-center justify-between px-4 py-3 border-b border-th-border/50 bg-surface-secondary/30',
           isEditMode && 'cursor-grab active:cursor-grabbing'
         )}
         {...(isEditMode ? { ...attributes, ...listeners } : {})}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           {isEditMode && (
             <GripVertical className="h-4 w-4 text-th-text-tertiary flex-shrink-0" />
           )}
-          <Icon className="h-4 w-4 text-blue-500 flex-shrink-0" />
-          <span className="font-medium text-sm truncate">{widgetConfig.title}</span>
+          <div className="w-7 h-7 rounded-lg bg-th-accent-50 dark:bg-th-accent-900/20 flex items-center justify-center flex-shrink-0">
+            <Icon className="h-3.5 w-3.5 text-th-accent-600" />
+          </div>
+          <span className="font-semibold text-sm text-th-text-primary truncate">{widgetConfig.title}</span>
         </div>
 
         <div className="flex items-center gap-1">

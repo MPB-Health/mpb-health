@@ -30,7 +30,7 @@ import {
   type ContactFilters,
   type AccountWithRelations,
 } from '@mpbhealth/crm-core';
-import { SkeletonTable } from '@mpbhealth/ui';
+import { SkeletonTable, GradientHeader } from '@mpbhealth/ui';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSavedViews } from '../hooks/useSavedViews';
 import { SavedViewsBar } from '../components/SavedViewsBar';
@@ -204,44 +204,41 @@ export default function Contacts() {
       )}
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-th-text-primary flex items-center gap-2">
-            <Users className="w-7 h-7" />
-            Contacts
-          </h1>
-          <p className="text-th-text-tertiary text-sm mt-1">
-            {total.toLocaleString()} total contacts
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
-          <PermissionGate permission="contacts.write">
+      <GradientHeader
+        title="Contacts"
+        subtitle={`${total.toLocaleString()} total contacts`}
+        icon={<Users className="w-5 h-5" />}
+        size="sm"
+        actions={
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowImport(true)}
+              onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
             >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Import</span>
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
             </button>
-          </PermissionGate>
-          <PermissionGate permission="contacts.write">
-            <button
-              onClick={() => setShowAddContact(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-th-accent-600 rounded-xl text-sm font-semibold text-white hover:bg-th-accent-700 transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Contact</span>
-            </button>
-          </PermissionGate>
-        </div>
-      </div>
+            <PermissionGate permission="contacts.write">
+              <button
+                onClick={() => setShowImport(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Import</span>
+              </button>
+            </PermissionGate>
+            <PermissionGate permission="contacts.write">
+              <button
+                onClick={() => setShowAddContact(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-th-accent-600 rounded-xl text-sm font-semibold text-white hover:bg-th-accent-700 transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New Contact</span>
+              </button>
+            </PermissionGate>
+          </div>
+        }
+      />
 
       {/* Saved Views */}
       <div className="bg-surface-primary rounded-2xl border border-th-border">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { RefreshCw, Filter } from 'lucide-react';
+import { RefreshCw, Filter, GitBranch } from 'lucide-react';
+import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { PipelineFilters } from '../components/PipelineFilters';
@@ -94,39 +95,39 @@ export default function Pipeline() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Pipeline</h1>
-          <p className="text-th-text-tertiary text-sm mt-1">
-            Drag and drop leads between stages
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <div className="relative">
+      <GradientHeader
+        title="Pipeline"
+        subtitle="Drag and drop leads between stages"
+        icon={<GitBranch className="w-5 h-5" />}
+        size="sm"
+        actions={
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center space-x-2 px-4 py-2 border rounded-xl text-sm font-medium transition-colors ${
+                  showFilters || filterFn
+                    ? 'border-th-accent-500 text-th-accent-700 bg-th-accent-50'
+                    : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filter</span>
+              </button>
+              {showFilters && (
+                <PipelineFilters onFilter={(fn) => setFilterFn(() => fn)} />
+              )}
+            </div>
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center space-x-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
-                showFilters || filterFn
-                  ? 'border-th-accent-500 text-th-accent-700 bg-th-accent-50'
-                  : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
-              }`}
+              onClick={loadLeads}
+              className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
             >
-              <Filter className="w-4 h-4" />
-              <span>Filter</span>
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
             </button>
-            {showFilters && (
-              <PipelineFilters onFilter={(fn) => setFilterFn(() => fn)} />
-            )}
           </div>
-          <button
-            onClick={loadLeads}
-            className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Pipeline board */}
       <div className="flex space-x-4 overflow-x-auto pb-4">

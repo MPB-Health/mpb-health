@@ -1,41 +1,28 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp, Users, Target, DollarSign,
   CheckCircle, Clock, ArrowRight, AlertCircle,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 import { crmBridgeService, type CRMSummary } from '@mpbhealth/admin-core';
 
 export default function CRMDashboard() {
   const navigate = useNavigate();
-  const [summary, setSummary] = useState<CRMSummary | null>(null);
-  const [revenue, setRevenue] = useState<{
-    total_invoiced: number;
-    total_paid: number;
-    outstanding: number;
-    this_month: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [sum, rev] = await Promise.all([
-          crmBridgeService.getCRMSummary(),
-          crmBridgeService.getRevenueMetrics(),
-        ]);
-        setSummary(sum);
-        setRevenue(rev);
-      } catch (err) {
-        console.error('Failed to load CRM dashboard:', err);
-        toast.error('Failed to load CRM dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['adminCRMDashboard'],
+    queryFn: async () => {
+      const [sum, rev] = await Promise.all([
+        crmBridgeService.getCRMSummary(),
+        crmBridgeService.getRevenueMetrics(),
+      ]);
+      return { summary: sum, revenue: rev };
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const summary = data?.summary ?? null;
+  const revenue = data?.revenue ?? null;
 
   if (loading) {
     return (

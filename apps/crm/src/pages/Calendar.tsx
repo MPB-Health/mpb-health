@@ -36,6 +36,7 @@ import {
 import { useCRM } from '../contexts/CRMContext';
 import { AddEventModal } from '../components/AddEventModal';
 import type { CalendarEvent, CalendarEventType } from '@mpbhealth/crm-core';
+import { GradientHeader } from '@mpbhealth/ui';
 
 // ─── Extended type for new columns ────────────────────────────────
 interface ExtendedCalendarEvent extends CalendarEvent {
@@ -1483,66 +1484,62 @@ export default function Calendar() {
   return (
     <div className="space-y-4">
       {/* ─── Header ──────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Calendar</h1>
-          <p className="text-th-text-tertiary text-sm mt-0.5">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-          </p>
-        </div>
+      <GradientHeader
+        title="Calendar"
+        subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+        icon={<CalendarIcon className="w-5 h-5" />}
+        size="sm"
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center bg-surface-secondary rounded-lg p-0.5">
+              {(['month', 'week', 'day', 'agenda'] as ViewType[]).map(v => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
+                    view === v
+                      ? 'bg-surface-primary text-th-text-primary shadow-sm'
+                      : 'text-th-text-tertiary hover:text-th-text-secondary'
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* View switcher */}
-          <div className="flex items-center bg-surface-secondary rounded-lg p-0.5">
-            {(['month', 'week', 'day', 'agenda'] as ViewType[]).map(v => (
+            <div className="flex items-center gap-1">
               <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
-                  view === v
-                    ? 'bg-surface-primary text-th-text-primary shadow-sm'
-                    : 'text-th-text-tertiary hover:text-th-text-secondary'
-                }`}
+                onClick={goPrev}
+                aria-label="Previous"
+                className="p-1.5 hover:bg-surface-secondary rounded-lg transition-colors"
               >
-                {v}
+                <ChevronLeft className="w-4 h-4 text-th-text-secondary" />
               </button>
-            ))}
-          </div>
+              <button
+                onClick={goToday}
+                className="px-3 py-1.5 text-xs font-medium text-th-accent-600 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                Today
+              </button>
+              <button
+                onClick={goNext}
+                aria-label="Next"
+                className="p-1.5 hover:bg-surface-secondary rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-4 h-4 text-th-text-secondary" />
+              </button>
+            </div>
 
-          {/* Navigation */}
-          <div className="flex items-center gap-1">
             <button
-              onClick={goPrev}
-              aria-label="Previous"
-              className="p-1.5 hover:bg-surface-secondary rounded-lg transition-colors"
+              onClick={() => { setSelectedDate(undefined); setShowAddEvent(true); }}
+              className="flex items-center gap-1.5 px-4 py-2 bg-th-accent-600 rounded-xl text-sm font-medium text-white hover:opacity-90 transition-opacity shadow-sm"
             >
-              <ChevronLeft className="w-4 h-4 text-th-text-secondary" />
-            </button>
-            <button
-              onClick={goToday}
-              className="px-3 py-1.5 text-xs font-medium text-th-accent-600 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              Today
-            </button>
-            <button
-              onClick={goNext}
-              aria-label="Next"
-              className="p-1.5 hover:bg-surface-secondary rounded-lg transition-colors"
-            >
-              <ChevronRight className="w-4 h-4 text-th-text-secondary" />
+              <Plus className="w-4 h-4" />
+              <span>Add Event</span>
             </button>
           </div>
-
-          {/* Add Event */}
-          <button
-            onClick={() => { setSelectedDate(undefined); setShowAddEvent(true); }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:opacity-90 transition-opacity shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Event</span>
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ─── Sub-header: title + filters ─────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

@@ -13,6 +13,7 @@ import {
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddAccountModal } from '../components/AddAccountModal';
+import { GradientHeader } from '@mpbhealth/ui';
 import { useOrg } from '../contexts/OrgContext';
 import {
   createAccountService,
@@ -254,32 +255,34 @@ export default function Accounts() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Accounts</h1>
-          <p className="text-th-text-tertiary text-sm mt-1">{total} total accounts</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <PermissionGate permission="accounts.read">
-            <button
-              onClick={handleExport}
-              className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export</span>
-            </button>
-          </PermissionGate>
-          <PermissionGate permission="accounts.write">
-            <button
-              onClick={() => setShowAddAccount(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Account</span>
-            </button>
-          </PermissionGate>
-        </div>
-      </div>
+      <GradientHeader
+        title="Accounts"
+        subtitle={`${total} total accounts`}
+        icon={<Building2 className="w-5 h-5" />}
+        size="sm"
+        actions={
+          <div className="flex items-center space-x-3">
+            <PermissionGate permission="accounts.read">
+              <button
+                onClick={handleExport}
+                className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export</span>
+              </button>
+            </PermissionGate>
+            <PermissionGate permission="accounts.write">
+              <button
+                onClick={() => setShowAddAccount(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-xl text-sm font-medium text-white hover:bg-th-accent-700 shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New Account</span>
+              </button>
+            </PermissionGate>
+          </div>
+        }
+      />
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">

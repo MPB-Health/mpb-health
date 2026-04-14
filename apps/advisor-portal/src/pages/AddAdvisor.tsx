@@ -78,7 +78,8 @@ export default function AddAdvisor() {
   const [form, setForm] = useState<IntakeForm>(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState<{ name: string; email: string } | null>(null);
+  const [success, setSuccess] = useState<{ name: string; email: string; inviteSent: boolean } | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   const updateField = <K extends keyof IntakeForm>(key: K, value: IntakeForm[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -138,7 +139,7 @@ export default function AddAdvisor() {
         setError(data.email_error || 'Advisor was created but the invitation email could not be sent.');
       }
 
-      setSuccess({ name: `${form.first_name} ${form.last_name}`, email: form.email });
+      setSuccess({ name: `${form.first_name} ${form.last_name}`, email: form.email, inviteSent: form.send_invite });
       setForm(INITIAL_FORM);
     } catch (err) {
       console.error('Failed to add advisor:', err);
@@ -166,13 +167,13 @@ export default function AddAdvisor() {
             <span className="font-medium text-gray-900 dark:text-white">{success.name}</span> has been added to the system.
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-            {form.send_invite
+            {success.inviteSent
               ? `An invitation email was sent to ${success.email} with login credentials.`
               : `No invitation email was sent. You can send one later from the admin panel.`}
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
-              onClick={() => setSuccess(null)}
+              onClick={() => { setSuccess(null); setError(''); setFormKey(k => k + 1); }}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
             >
               <UserPlus className="w-4 h-4" />
@@ -227,7 +228,7 @@ export default function AddAdvisor() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form key={formKey} onSubmit={handleSubmit} className="space-y-6">
         {/* Section: Personal Information */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-5">

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -28,7 +29,6 @@ import {
   appendTicketAttachmentsHtml,
   type Ticket,
   type TicketDetail,
-  type TicketStats,
   type TicketStatus,
   type TicketPriority,
 } from '@mpbhealth/advisor-core';
@@ -67,9 +67,6 @@ const DEFAULT_PRIORITY = { label: 'Normal', color: 'bg-neutral-100 text-neutral-
 export default function Tickets() {
   const { profile, loading: authLoading } = useAdvisor();
   const { executeWithAuth } = useTicketAuth();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [stats, setStats] = useState<TicketStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | ''>('');
@@ -78,7 +75,6 @@ export default function Tickets() {
   const [searchInput, setSearchInput] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [selectedTicket, setSelectedTicket] = useState<TicketDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   // Reply state
@@ -96,75 +92,36 @@ export default function Tickets() {
   const categoriesRequestedRef = useRef(false);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  // Track the latest ticket-list fetch so rapid filter changes cancel prior calls
-  const ticketFetchId = useRef(0);
+  const queryClient = useQueryClient();
 
-  // Silent auto-retry: if loadTickets fails even after TicketService's built-in
-  // retries, schedule another attempt after a short delay so the user never
-  // sees a broken page — it just keeps trying in the background.
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const retryCountRef = useRef(0);
-  const MAX_PAGE_RETRIES = 3;
-  const PAGE_RETRY_DELAYS = [1_500, 3_000, 5_000];
+  const { data: ticketsData, isLoading: loading, error: ticketError, refetch: refetchTickets } = useQuery({
+    queryKey: ['advisorTickets', statusFilter, priorityFilter, searchDebounced, page],
+    queryFn: () => executeWithAuth(() => ticketService.getMyTickets({
+      status: statusFilter || undefined,
+      priority: priorityFilter || undefined,
+      search: searchDebounced || undefined,
+      page,
+      perPage,
+    })),
+    enabled: !authLoading && !!profile,
+    staleTime: 30 * 1000,
+  });
 
-  // Clean up retry timer on unmount
-  useEffect(() => () => { clearTimeout(retryTimerRef.current); }, []);
+  const tickets = ticketsData?.tickets ?? [];
+  const total = ticketsData?.total ?? 0;
 
-  const loadTickets = useCallback(async () => {
-    const id = ++ticketFetchId.current;
-    setLoading(true);
-    setError('');
-    try {
-      const result = await executeWithAuth(() => ticketService.getMyTickets({
-        status: statusFilter || undefined,
-        priority: priorityFilter || undefined,
-        search: searchDebounced || undefined,
-        page,
-        perPage,
-      }));
-      // Only apply result if this is still the latest request and component is mounted
-      if (id !== ticketFetchId.current || !mountedRef.current) return;
-      setTickets(result.tickets);
-      setTotal(result.total);
-      retryCountRef.current = 0; // reset on success
-    } catch (err) {
-      if (id !== ticketFetchId.current || !mountedRef.current) return;
+  const { data: stats = null } = useQuery({
+    queryKey: ['advisorTicketStats'],
+    queryFn: () => executeWithAuth(() => ticketService.getTicketStats()),
+    enabled: !authLoading && !!profile,
+    staleTime: 60 * 1000,
+  });
 
-      // Session completely gone — redirect to login silently
-      if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
-        window.location.href = '/login';
-        return;
-      }
-
-      // Auto-retry silently in the background instead of showing error
-      if (retryCountRef.current < MAX_PAGE_RETRIES) {
-        const delay = PAGE_RETRY_DELAYS[retryCountRef.current] ?? 20_000;
-        retryCountRef.current++;
-        retryTimerRef.current = setTimeout(() => {
-          if (mountedRef.current) loadTickets();
-        }, delay);
-        // Keep showing spinner — user doesn't know anything is wrong
-        return;
-      }
-
-      // All retries exhausted — show a gentle, non-technical message
+  useEffect(() => {
+    if (ticketError) {
       setError('We\u2019re having trouble loading your tickets right now. Please check your internet connection and try again.');
-    } finally {
-      if (id === ticketFetchId.current && mountedRef.current) {
-        setLoading(false);
-      }
     }
-  }, [statusFilter, priorityFilter, searchDebounced, page, executeWithAuth]);
-
-  const loadStats = useCallback(async () => {
-    try {
-      const s = await executeWithAuth(() => ticketService.getTicketStats());
-      if (!mountedRef.current) return;
-      setStats(s);
-    } catch {
-      // Stats are non-critical — never surface errors for these
-    }
-  }, [executeWithAuth]);
+  }, [ticketError]);
 
   // Debounce search input — reset page and trigger server-side search
   useEffect(() => {
@@ -200,21 +157,6 @@ export default function Tickets() {
       window.clearTimeout(timer);
     };
   }, [authLoading, profile, loading, executeWithAuth]);
-
-  // Clear the loading spinner when auth is resolved but there is no profile
-  // (user is not logged in). Without this, loading stays true forever because
-  // loadTickets() — which calls setLoading(false) — never runs.
-  useEffect(() => {
-    if (!authLoading && !profile) setLoading(false);
-  }, [authLoading, profile]);
-
-  useEffect(() => {
-    if (!authLoading && profile) loadTickets();
-  }, [authLoading, profile, loadTickets]);
-
-  useEffect(() => {
-    if (!authLoading && profile) loadStats();
-  }, [authLoading, profile, loadStats]);
 
   const openTicketDetail = async (ticketId: string) => {
     setDetailLoading(true);
@@ -580,7 +522,7 @@ export default function Tickets() {
         </div>
 
         <button
-          onClick={() => { setPage(1); loadTickets(); loadStats(); }}
+          onClick={() => { setPage(1); refetchTickets(); queryClient.invalidateQueries({ queryKey: ['advisorTicketStats'] }); }}
           className="p-2 text-neutral-400 hover:text-neutral-600 transition-colors"
           title="Refresh"
         >
@@ -595,7 +537,7 @@ export default function Tickets() {
           <p className="text-sm text-neutral-600 text-center max-w-sm">{error}</p>
           <button
             type="button"
-            onClick={() => { retryCountRef.current = 0; setError(''); loadTickets(); loadStats(); }}
+            onClick={() => { setError(''); refetchTickets(); queryClient.invalidateQueries({ queryKey: ['advisorTicketStats'] }); }}
             className="mt-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
           >
             Try Again

@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useOrg } from './contexts/OrgContext';
@@ -124,8 +124,24 @@ const FormBuilder = lazyRetry(() => import('./pages/FormBuilder'));
 const FormSubmissions = lazyRetry(() => import('./pages/FormSubmissions'));
 const PublicForm = lazyRetry(() => import('./pages/PublicForm'));
 
-// Loading component for Suspense
+// Prefetch common routes when the browser is idle
+if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+  window.requestIdleCallback(() => {
+    import('./pages/Dashboard').catch(() => {});
+    import('./pages/LeadsList').catch(() => {});
+    import('./pages/Pipeline').catch(() => {});
+    import('./pages/Tasks').catch(() => {});
+    import('./pages/Calendar').catch(() => {});
+  });
+}
+
 function PageLoader() {
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const id = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(id);
+  }, []);
+  if (!visible) return null;
   return (
     <div className="flex items-center justify-center h-64">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
@@ -930,6 +946,8 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                {/* Catch-all: redirect unknown paths to dashboard */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </MainLayout>
           </ProtectedRoute>

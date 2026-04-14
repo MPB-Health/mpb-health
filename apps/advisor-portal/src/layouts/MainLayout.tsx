@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useTransition } from 'react';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -205,6 +205,7 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
 export default function MainLayout() {
   const navigate = useNavigate();
   const { profile, sessionUserCreatedAt, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
+  const [isPending, startTransition] = useTransition();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
@@ -564,7 +565,11 @@ export default function MainLayout() {
                   : 'text-[rgb(var(--sidebar-text))] hover:text-[rgb(var(--sidebar-text-active))] hover:bg-[rgb(var(--sidebar-hover))]'
               }`
             }
-            onClick={props.onClick}
+            onClick={(e) => {
+              e.preventDefault();
+              props.onClick?.();
+              startTransition(() => { navigate(item.href); });
+            }}
             onMouseEnter={() => prefetchRouteByPath(item.href)}
             onFocus={() => prefetchRouteByPath(item.href)}
           >
@@ -594,7 +599,11 @@ export default function MainLayout() {
                     : 'text-[rgb(var(--sidebar-text)_/_0.7)] hover:text-[rgb(var(--sidebar-text-active))]'
                 }`
               }
-              onClick={props.onClick}
+              onClick={(e) => {
+                e.preventDefault();
+                props.onClick?.();
+                startTransition(() => { navigate(child.href); });
+              }}
             >
               {props.children}
             </NavLink>
@@ -617,9 +626,11 @@ export default function MainLayout() {
             </div>
           </div>
         ) : (
-          <TrainingGate isAdmin={isAdminUser}>
-            <Outlet />
-          </TrainingGate>
+          <div className={isPending ? 'opacity-60 pointer-events-none transition-opacity duration-150' : 'transition-opacity duration-150'}>
+            <TrainingGate isAdmin={isAdminUser}>
+              <Outlet />
+            </TrainingGate>
+          </div>
         )}
       </AppLayout>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Plus, DollarSign } from 'lucide-react';
+import { RefreshCw, Plus, DollarSign, Layers } from 'lucide-react';
+import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
 import {
   DndContext,
@@ -208,32 +209,32 @@ export default function DealPipeline() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Deal Pipeline</h1>
-          <p className="text-th-text-tertiary text-sm mt-1">
-            Drag and drop deals between stages
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={loadDeals}
-            className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-lg text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Refresh</span>
-          </button>
-          <PermissionGate permission="deals.write">
+      <GradientHeader
+        title="Deal Pipeline"
+        subtitle="Drag and drop deals between stages"
+        icon={<Layers className="w-5 h-5" />}
+        size="sm"
+        actions={
+          <div className="flex items-center space-x-3">
             <button
-              onClick={() => setShowAddDeal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
+              onClick={loadDeals}
+              className="flex items-center space-x-2 px-4 py-2 bg-surface-primary border border-th-border rounded-xl text-sm font-medium text-th-text-secondary hover:bg-surface-secondary"
             >
-              <Plus className="w-4 h-4" />
-              <span>New Deal</span>
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
             </button>
-          </PermissionGate>
-        </div>
-      </div>
+            <PermissionGate permission="deals.write">
+              <button
+                onClick={() => setShowAddDeal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-xl text-sm font-medium text-white hover:bg-th-accent-700 shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New Deal</span>
+              </button>
+            </PermissionGate>
+          </div>
+        }
+      />
 
       {/* Pipeline board */}
       <DndContext

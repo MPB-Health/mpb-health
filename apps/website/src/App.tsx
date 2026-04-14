@@ -190,6 +190,35 @@ const DownloadApp = lazyAuto(() => import('./pages/DownloadApp'));
 // Handbooks - All use dynamic page for CMS control
 const DynamicHandbookPage = lazyAuto(() => import('./pages/handbooks/DynamicHandbookPage'));
 
+// Prefetch common routes when the browser is idle
+if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+  window.requestIdleCallback(() => {
+    import('./pages/FAQ').catch(() => {});
+    import('./pages/AboutUs').catch(() => {});
+    import('./pages/Blog').catch(() => {});
+    import('./pages/GetStarted').catch(() => {});
+    import('./pages/IndividualsAndFamilies').catch(() => {});
+    import('./pages/Contact').catch(() => {});
+  });
+}
+
+function PageSpinner() {
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const id = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(id);
+  }, []);
+  if (!visible) return null;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e8f3fc] to-white">
+      <div className="text-center">
+        <div className="inline-block w-16 h-16 border-4 border-[#0a4c8f] border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-lg font-medium text-[#0a4c8f]">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
 // Analytics tracking wrapper - must be inside Router to use useLocation
 const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -288,14 +317,7 @@ const App = () => {
               <HeaderWithAuth />
             <main className="flex-1 overflow-x-hidden pt-[104px]">
               <LazyLoadErrorBoundary>
-                <Suspense fallback={
-                  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e8f3fc] to-white">
-                    <div className="text-center">
-                      <div className="inline-block w-16 h-16 border-4 border-[#0a4c8f] border-t-transparent rounded-full animate-spin mb-4"></div>
-                      <p className="text-lg font-medium text-[#0a4c8f]">Loading...</p>
-                    </div>
-                  </div>
-                }>
+                <Suspense fallback={<PageSpinner />}>
                   <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/mvp" element={<LandingMVP />} />

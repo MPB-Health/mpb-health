@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   User,
@@ -17,7 +18,6 @@ import {
 import {
   profileService,
   trainingService,
-  type Certification,
 } from '@mpbhealth/advisor-core';
 import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -27,17 +27,28 @@ export default function Profile() {
   const { profile, trainingStats, refreshProfile } = useAdvisor();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [certifications, setCertifications] = useState<Certification[]>([]);
   const [generating, setGenerating] = useState(false);
-  const [stats, setStats] = useState({
-    meetingsAttended: 0,
-    formsSubmitted: 0,
-  });
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     phone: '',
   });
+
+  const { data: profileData } = useQuery({
+    queryKey: ['advisorProfileData', profile?.id],
+    queryFn: async () => {
+      const [certs, advisorStats] = await Promise.all([
+        trainingService.getCertifications(profile!.id),
+        profileService.getAdvisorStats(profile!.id),
+      ]);
+      return { certifications: certs, stats: advisorStats };
+    },
+    enabled: !!profile?.id,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const certifications = profileData?.certifications ?? [];
+  const stats = profileData?.stats ?? { meetingsAttended: 0, formsSubmitted: 0 };
 
   useEffect(() => {
     if (profile) {
@@ -46,20 +57,6 @@ export default function Profile() {
         last_name: profile.last_name,
         phone: profile.phone || '',
       });
-
-      // Load certifications and stats
-      const loadData = async () => {
-        const [certs, advisorStats] = await Promise.all([
-          trainingService.getCertifications(profile.id),
-          profileService.getAdvisorStats(profile.id),
-        ]);
-        setCertifications(certs);
-        setStats({
-          meetingsAttended: advisorStats.meetingsAttended,
-          formsSubmitted: advisorStats.formsSubmitted,
-        });
-      };
-      loadData();
     }
   }, [profile]);
 

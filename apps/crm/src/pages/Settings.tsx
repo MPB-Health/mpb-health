@@ -22,6 +22,7 @@ import type { FollowUpCadence, CadenceStep } from '@mpbhealth/crm-core/cadence';
 import type { CRMTemplate } from '@mpbhealth/crm-core/templates';
 import { DEFAULT_MONTHLY_TARGETS, QUARTERLY_TEAM_TARGETS } from '@mpbhealth/crm-core/targets';
 import { importContactsFromCSV, type ImportResult } from '../utils/csvImporter';
+import { GradientHeader } from '@mpbhealth/ui';
 
 type SettingsTab =
   | 'general'
@@ -284,12 +285,12 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-th-text-primary">Settings</h1>
-        <p className="text-th-text-tertiary text-sm mt-1">
-          Configure your CRM platform
-        </p>
-      </div>
+      <GradientHeader
+        title="Settings"
+        subtitle="Configure your CRM platform"
+        icon={<Settings2 className="w-5 h-5" />}
+        size="sm"
+      />
 
       {/* Tab navigation */}
       <div className="bg-surface-primary rounded-2xl border border-th-border">

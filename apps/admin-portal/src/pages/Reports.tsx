@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
   Users, DollarSign,
   Download, Target, Activity, RefreshCw, AlertCircle,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import {
   analyticsService,
   memberService,
@@ -20,48 +21,28 @@ interface ReportData {
 }
 
 export default function Reports() {
-  const [data, setData] = useState<ReportData>({
-    metrics: null,
-    memberStats: null,
-    crmSummary: null,
-    revenue: null,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [dateRange, setDateRange] = useState('this_month');
 
-  const loadReports = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
+  const { data: reportData, isLoading: loading, isError: error, refetch: loadReports } = useQuery({
+    queryKey: ['adminReports', dateRange],
+    queryFn: async () => {
       const [metrics, memberStats, crmSummary, revenue] = await Promise.allSettled([
         analyticsService.getDashboardMetrics(),
         memberService.getStats(),
         crmBridgeService.getCRMSummary(),
         crmBridgeService.getRevenueMetrics(),
       ]);
-
-      const newData = {
+      return {
         metrics: metrics.status === 'fulfilled' ? metrics.value : null,
         memberStats: memberStats.status === 'fulfilled' ? memberStats.value : null,
         crmSummary: crmSummary.status === 'fulfilled' ? crmSummary.value : null,
         revenue: revenue.status === 'fulfilled' ? revenue.value : null,
       };
-      setData(newData);
+    },
+    staleTime: 2 * 60 * 1000,
+  });
 
-      const allFailed = !newData.metrics && !newData.memberStats && !newData.crmSummary && !newData.revenue;
-      if (allFailed) setError(true);
-    } catch (err) {
-      console.error('Failed to load reports:', err);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange]);
-
-  useEffect(() => {
-    loadReports();
-  }, [loadReports]);
+  const data: ReportData = reportData ?? { metrics: null, memberStats: null, crmSummary: null, revenue: null };
 
   const exportCSV = () => {
     const rows: string[][] = [['Metric', 'Value']];
@@ -124,7 +105,7 @@ export default function Reports() {
             <option value="this_year">This Year</option>
           </select>
           <button
-            onClick={loadReports}
+            onClick={() => loadReports()}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary transition-colors text-sm"
           >
@@ -148,7 +129,7 @@ export default function Reports() {
             Failed to load some report data. Try refreshing the page.
           </p>
           <button
-            onClick={loadReports}
+            onClick={() => loadReports()}
             className="ml-auto text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
           >
             Retry

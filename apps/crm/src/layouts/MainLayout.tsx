@@ -334,8 +334,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 
+  // Breadcrumb from current path
+  const breadcrumbSegments = location.pathname.split('/').filter(Boolean);
+  const currentSection = navigationSections.find(s =>
+    s.items.some(item => location.pathname.startsWith(item.href) && item.href !== '#')
+  );
+
   const topBarActions = (
-    <div className="flex items-center space-x-3">
+    <div className="flex items-center gap-2">
       {/* AI Command Bar Trigger */}
       <button
         onClick={() => {
@@ -370,16 +376,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <kbd className="text-[10px] bg-white/10 px-1 py-0.5 rounded font-mono">⌘K</kbd>
       </button>
 
+      {/* Divider */}
+      <div className="hidden lg:block h-6 w-px bg-th-border/60" />
+
       {/* Stats badges */}
       {dashboardStats && (
-        <div className="hidden lg:flex items-center space-x-3 text-sm">
-          <div className="flex items-center text-green-600">
-            <span className="font-medium">{dashboardStats.new_leads}</span>
-            <span className="ml-1 text-th-text-tertiary">new</span>
+        <div className="hidden lg:flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{dashboardStats.new_leads}</span>
+            <span className="text-xs text-emerald-600/70 dark:text-emerald-400/70">new</span>
           </div>
-          <div className="flex items-center text-blue-600">
-            <span className="font-medium">{dashboardStats.total_leads}</span>
-            <span className="ml-1 text-th-text-tertiary">total</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10">
+            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 tabular-nums">{dashboardStats.total_leads}</span>
+            <span className="text-xs text-blue-600/70 dark:text-blue-400/70">total</span>
           </div>
         </div>
       )}
@@ -412,7 +422,31 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           />
         }
         userSection={userSection}
-        topBarCenter={<GlobalSearch />}
+        topBarCenter={
+          <div className="flex items-center gap-4 w-full">
+            {/* Breadcrumb */}
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-th-text-tertiary shrink-0">
+              <span className="font-medium text-th-text-secondary">CRM</span>
+              {currentSection?.label && (
+                <>
+                  <span className="text-th-border-strong">/</span>
+                  <span>{currentSection.label}</span>
+                </>
+              )}
+              {breadcrumbSegments.length > 0 && (
+                <>
+                  <span className="text-th-border-strong">/</span>
+                  <span className="text-th-text-primary font-medium capitalize">
+                    {breadcrumbSegments[breadcrumbSegments.length - 1].replace(/-/g, ' ')}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <GlobalSearch />
+            </div>
+          </div>
+        }
         topBarActions={topBarActions}
         renderNavLink={renderNavLink}
         renderChildNavLink={renderChildNavLink}

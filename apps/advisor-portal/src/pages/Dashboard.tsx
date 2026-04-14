@@ -35,6 +35,7 @@ import {
   Stethoscope,
   ClipboardList,
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, GradientHeader, MetricCard, SkeletonLine, SkeletonAvatar } from '@mpbhealth/ui';
 import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, navigationService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm, type QuickLink } from '@mpbhealth/advisor-core';
 import { supabase, supabaseUrl } from '@mpbhealth/database';
@@ -216,13 +217,12 @@ export default function Dashboard() {
   } = useAdvisor();
 
   const { isVisible } = useWidgetVisibility();
-  const [hasAdvisorPageAccess, setHasAdvisorPageAccess] = useState(false);
+  const queryClient = useQueryClient();
   const [enrollDropdownOpen, setEnrollDropdownOpen] = useState(false);
   const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const [applicationFormOpen, setApplicationFormOpen] = useState(false);
   const [scheduleCallOpen, setScheduleCallOpen] = useState(false);
 
-  const showMyAdvisorPage = profile && hasAdvisorPageAccess;
   const [quickLinkPopup, setQuickLinkPopup] = useState<{ label: string; url: string } | null>(null);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -235,90 +235,100 @@ export default function Dashboard() {
   const enrollDropdownRef = useRef<HTMLDivElement>(null);
 
   const [copiedFormSlug, setCopiedFormSlug] = useState<string | null>(null);
-  const [memberForms, setMemberForms] = useState<AdvisorForm[]>([]);
-  const [memberFormsLoading, setMemberFormsLoading] = useState(true);
-
-  // CMS-driven meetings
-  const [upcomingMeetings, setUpcomingMeetings] = useState<AdvisorMeeting[]>([]);
-  const [meetingsLoading, setMeetingsLoading] = useState(true);
-
-  // CMS-driven enrollment links
-  const [cmsEnrollLinks, setCmsEnrollLinks] = useState<EnrollmentLink[]>([]);
-
-  // Portal settings (affiliate modal, advisor landing page)
-  const [portalSettings, setPortalSettings] = useState<Record<string, string>>({});
-
-  // CMS-driven announcements
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set(announcementService.getDismissedIds()));
 
-  // CMS-driven resource center links shown on the dashboard.
-  const [cmsQuickLinks, setCmsQuickLinks] = useState<QuickLink[]>([]);
+  // ── React Query hooks — data survives unmount/re-mount so returning
+  //    to Dashboard is instant (no spinners) while fresh data is fetched
+  //    in the background thanks to stale-while-revalidate. ──
 
-  // Fetch all independent dashboard data in parallel on mount
+  const PORTAL_SETTINGS_KEYS = [
+    'affiliate_form_url',
+    'schedule_call_url',
+    'affiliate_phone',
+    'advisor_landing_page_url',
+  ] as const;
+
+  const { data: announcements = [] } = useQuery({
+    queryKey: ['dashboardAnnouncements'],
+    queryFn: () => announcementService.getActiveAnnouncements(),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: portalSettings = {} } = useQuery({
+    queryKey: ['dashboardPortalSettings'],
+    queryFn: () => portalSettingsService.getMultipleSettings([...PORTAL_SETTINGS_KEYS]),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: cmsEnrollLinks = [] } = useQuery({
+    queryKey: ['dashboardEnrollLinks'],
+    queryFn: () => enrollmentService.getLinks(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: memberForms = [], isLoading: memberFormsLoading } = useQuery({
+    queryKey: ['dashboardMemberForms'],
+    queryFn: async () => {
+      const forms = await formsService.getForms('member');
+      return [...forms].sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label));
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: cmsQuickLinks = [] } = useQuery({
+    queryKey: ['dashboardQuickLinks'],
+    queryFn: () => navigationService.getResourceCenterQuickLinks(8),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: upcomingMeetings = [], isLoading: meetingsLoading } = useQuery({
+    queryKey: ['dashboardMeetings', profile?.id],
+    queryFn: () => meetingService.getUpcomingMeetings(profile!.id, 4),
+    enabled: !!profile?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: hasAdvisorPageAccess = false } = useQuery({
+    queryKey: ['advisorPageAccess', profile?.email],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('advisor_access')
+        .select('has_advisor_page_access')
+        .ilike('email', profile!.email || '')
+        .maybeSingle();
+      return !error && data?.has_advisor_page_access === true;
+    },
+    enabled: !!profile?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const showMyAdvisorPage = profile && hasAdvisorPageAccess;
+
+  // Realtime subscriptions — invalidate query cache so stale-while-revalidate kicks in
   useEffect(() => {
-    let cancelled = false;
-
-    const channel = announcementService.subscribeToAnnouncements((updated) => {
-      if (!cancelled) setAnnouncements(updated);
+    const annChannel = announcementService.subscribeToAnnouncements(() => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardAnnouncements'] });
     });
-
-    const dashboardTimeout = setTimeout(() => {
-      if (!cancelled) { setMemberFormsLoading(false); setMeetingsLoading(false); }
-    }, 15_000);
-
-    Promise.allSettled([
-      announcementService.getActiveAnnouncements(),
-      portalSettingsService.getMultipleSettings([
-        'affiliate_form_url',
-        'schedule_call_url',
-        'affiliate_phone',
-        'advisor_landing_page_url',
-      ]),
-      enrollmentService.getLinks(),
-      formsService.getForms('member'),
-      navigationService.getResourceCenterQuickLinks(8),
-    ]).then(([annResult, settingsResult, linksResult, formsResult, quickLinksResult]) => {
-      if (cancelled) return;
-      if (annResult.status === 'fulfilled') setAnnouncements(annResult.value);
-      if (settingsResult.status === 'fulfilled') setPortalSettings(settingsResult.value);
-      if (linksResult.status === 'fulfilled') setCmsEnrollLinks(linksResult.value);
-      if (formsResult.status === 'fulfilled') setMemberForms([...formsResult.value].sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label)));
-      if (quickLinksResult.status === 'fulfilled') setCmsQuickLinks(quickLinksResult.value);
-      setMemberFormsLoading(false);
+    const enrollChannel = enrollmentService.subscribeToChanges(() => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardEnrollLinks'] });
     });
-
-    return () => {
-      cancelled = true;
-      clearTimeout(dashboardTimeout);
-      channel.unsubscribe();
-    };
-  }, []);
-
-  // Realtime subscriptions for all dashboard CMS data
-  useEffect(() => {
-    const enrollChannel = enrollmentService.subscribeToChanges(setCmsEnrollLinks);
     const formsChannel = formsService.subscribeToFormChanges(() => {
-      formsService.getForms('member').then(forms => setMemberForms([...forms].sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label)))).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ['dashboardMemberForms'] });
     });
     const settingsChannel = portalSettingsService.subscribeToSettingChanges(() => {
-      portalSettingsService.getMultipleSettings([
-        'affiliate_form_url',
-        'schedule_call_url',
-        'affiliate_phone',
-        'advisor_landing_page_url',
-      ]).then(setPortalSettings).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ['dashboardPortalSettings'] });
     });
-    const quickLinksChannel = navigationService.subscribeToQuickLinkChanges((all) => {
-      setCmsQuickLinks(navigationService.selectResourceCenterQuickLinks(all, 8));
+    const quickLinksChannel = navigationService.subscribeToQuickLinkChanges(() => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardQuickLinks'] });
     });
     return () => {
+      annChannel.unsubscribe();
       supabase.removeChannel(enrollChannel);
       supabase.removeChannel(formsChannel);
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(quickLinksChannel);
     };
-  }, []);
+  }, [queryClient]);
 
   const handleDismissAnnouncement = (id: string) => {
     announcementService.dismissAnnouncement(id);
@@ -336,34 +346,6 @@ export default function Dashboard() {
   const advisorLandingPageUrl = advisorSlug
     ? `${advisorLandingPageBase.replace(/\/+$/, '')}/${advisorSlug}`
     : advisorLandingPageBase;
-
-  // Batch all profile-dependent dashboard data into a single effect
-  useEffect(() => {
-    if (!profile?.id) {
-      setMeetingsLoading(false);
-      return;
-    }
-    let cancelled = false;
-
-    Promise.allSettled([
-      meetingService.getUpcomingMeetings(profile.id, 4),
-      supabase
-        .from('advisor_access')
-        .select('has_advisor_page_access')
-        .ilike('email', profile.email || '')
-        .maybeSingle(),
-    ]).then(([meetingsResult, accessResult]) => {
-      if (cancelled) return;
-      if (meetingsResult.status === 'fulfilled') setUpcomingMeetings(meetingsResult.value);
-      if (accessResult.status === 'fulfilled') {
-        const { data, error } = accessResult.value;
-        setHasAdvisorPageAccess(!error && data?.has_advisor_page_access === true);
-      }
-      setMeetingsLoading(false);
-    });
-
-    return () => { cancelled = true; };
-  }, [profile?.id, profile?.email]);
 
   // Use CMS-backed resource center links when available; fall back to hardcoded cards.
   const displayQuickLinks: FallbackQuickLink[] = cmsQuickLinks.length > 0

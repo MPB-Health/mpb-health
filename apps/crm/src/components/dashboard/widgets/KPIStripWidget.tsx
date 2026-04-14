@@ -126,49 +126,57 @@ interface KPICardProps {
   metric: KPIMetric;
 }
 
+const ACCENT_GRADIENT: Record<string, string> = {
+  blue: 'from-blue-500 to-blue-600',
+  green: 'from-emerald-500 to-emerald-600',
+  orange: 'from-orange-500 to-orange-600',
+  red: 'from-red-500 to-red-600',
+  gray: 'from-slate-400 to-slate-500',
+};
+
 function KPICard({ metric }: KPICardProps) {
   const Icon = metric.icon;
   const colorStyles = getColorStyles(metric.color);
   const TrendIcon = metric.trend === 'up' ? TrendingUp : metric.trend === 'down' ? TrendingDown : Minus;
-  const trendColor = metric.trend === 'up' ? 'text-green-500' : metric.trend === 'down' ? 'text-red-500' : 'text-th-text-tertiary';
+  const trendColor = metric.trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : metric.trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-th-text-tertiary';
 
   return (
     <div
       className={cn(
-        'relative p-4 rounded-xl border transition-all',
+        'relative p-4 rounded-2xl border transition-all duration-200 overflow-hidden',
         'bg-surface-primary',
-        'border-th-border',
-        'hover:shadow-md hover:border-th-border',
+        'border-th-border/60',
+        'hover:shadow-md hover:border-th-border hover:-translate-y-0.5',
         metric.onClick && 'cursor-pointer'
       )}
       onClick={metric.onClick}
     >
-      {/* Icon */}
-      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center mb-3', colorStyles.bg)}>
-        <Icon className={cn('h-5 w-5', colorStyles.icon)} />
-      </div>
+      <div className={cn('absolute top-0 left-0 w-1 h-full bg-gradient-to-b', ACCENT_GRADIENT[metric.color] || ACCENT_GRADIENT.blue)} />
 
-      {/* Value */}
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="text-2xl font-bold text-th-text-primary">
-            {metric.value}
-          </p>
-          <p className="text-sm text-th-text-secondary mt-0.5">
-            {metric.label}
-          </p>
+      <div className="flex items-start justify-between mb-3">
+        <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', colorStyles.bg)}>
+          <Icon className={cn('h-4.5 w-4.5', colorStyles.icon)} />
         </div>
-
-        {/* Trend */}
         {metric.trend && (
-          <div className={cn('flex items-center gap-1', trendColor)}>
-            <TrendIcon className="h-4 w-4" />
-            {metric.trendValue && (
-              <span className="text-xs font-medium">{metric.trendValue}</span>
-            )}
+          <div className={cn(
+            'flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold',
+            metric.trend === 'up' ? 'bg-emerald-50 dark:bg-emerald-900/20' :
+            metric.trend === 'down' ? 'bg-red-50 dark:bg-red-900/20' :
+            'bg-surface-tertiary',
+            trendColor
+          )}>
+            <TrendIcon className="h-3 w-3" />
+            {metric.trendValue && <span>{metric.trendValue}</span>}
           </div>
         )}
       </div>
+
+      <p className="text-2xl font-bold text-th-text-primary tabular-nums tracking-tight">
+        {metric.value}
+      </p>
+      <p className="text-xs font-medium text-th-text-tertiary mt-1 uppercase tracking-wider">
+        {metric.label}
+      </p>
     </div>
   );
 }
@@ -180,19 +188,19 @@ function KPICard({ metric }: KPICardProps) {
 function getColorStyles(color: KPIMetric['color']) {
   const colors = {
     blue: {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
       icon: 'text-blue-600 dark:text-blue-400',
     },
     green: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      icon: 'text-green-600 dark:text-green-400',
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+      icon: 'text-emerald-600 dark:text-emerald-400',
     },
     orange: {
-      bg: 'bg-orange-100 dark:bg-orange-900/30',
+      bg: 'bg-orange-50 dark:bg-orange-900/20',
       icon: 'text-orange-600 dark:text-orange-400',
     },
     red: {
-      bg: 'bg-red-100 dark:bg-red-900/30',
+      bg: 'bg-red-50 dark:bg-red-900/20',
       icon: 'text-red-600 dark:text-red-400',
     },
     gray: {
@@ -234,19 +242,18 @@ export function KPIStrip() {
   ];
 
   return (
-    <div className="flex items-center gap-6 px-6 py-3 bg-surface-secondary border-b border-th-border">
+    <div className="flex items-center gap-5 px-6 py-3 bg-surface-secondary/60 border-b border-th-border/50">
       {metrics.map((metric, i) => (
         <div key={i} className="flex items-center gap-2">
           <span className={cn(
-            'text-lg font-bold',
-            metric.color === 'green' ? 'text-green-600' :
-            metric.color === 'red' ? 'text-red-600' :
-            metric.color === 'blue' ? 'text-blue-600' :
-            'text-blue-600'
+            'text-lg font-bold tabular-nums',
+            metric.color === 'green' ? 'text-emerald-600 dark:text-emerald-400' :
+            metric.color === 'red' ? 'text-red-600 dark:text-red-400' :
+            'text-blue-600 dark:text-blue-400'
           )}>
             {metric.value}
           </span>
-          <span className="text-sm text-th-text-secondary">
+          <span className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
             {metric.label}
           </span>
         </div>

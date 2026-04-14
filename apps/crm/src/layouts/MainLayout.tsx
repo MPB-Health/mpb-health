@@ -1,5 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
 import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -56,6 +57,11 @@ import CommandPalette from '../components/CommandPalette';
 import { AICommandBar } from '../components/AICommandBar';
 import GlobalSearch from '../components/GlobalSearch';
 import { RouteErrorBoundary } from '../components/ErrorBoundary';
+import { AddLeadModal } from '../components/AddLeadModal';
+import { AddTaskModal } from '../components/AddTaskModal';
+import { AddDealModal } from '../components/AddDealModal';
+import { AddNoteModal, LogCallModal, LogMeetingModal } from '../components/QuickActionModals';
+import toast from 'react-hot-toast';
 
 interface ExtendedNavChild {
   name: string;
@@ -202,15 +208,66 @@ const navigation: ExtendedNavItem[] = navigationSections.flatMap(section => sect
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
-  // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessSupport } = usePortalAccess(user?.id);
+
+  // Footer command bar modal state
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [showAddDeal, setShowAddDeal] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [showLogCall, setShowLogCall] = useState(false);
+  const [showLogMeeting, setShowLogMeeting] = useState(false);
+
+  // Extract leadId from URL when on a lead detail page
+  const leadIdMatch = location.pathname.match(/^\/leads\/([a-f0-9-]+)$/i);
+  const currentLeadId = leadIdMatch?.[1] ?? null;
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const actionId = (e as CustomEvent).detail?.action;
+      switch (actionId) {
+        case 'add-lead':
+          setShowAddLead(true);
+          break;
+        case 'add-task':
+          setShowAddTask(true);
+          break;
+        case 'add-deal':
+          setShowAddDeal(true);
+          break;
+        case 'add-note':
+          if (currentLeadId) { setShowAddNote(true); }
+          else { toast('Navigate to a lead first to add a note', { icon: '📝' }); }
+          break;
+        case 'log-call':
+          if (currentLeadId) { setShowLogCall(true); }
+          else { toast('Navigate to a lead first to log a call', { icon: '📞' }); }
+          break;
+        case 'add-event':
+          if (currentLeadId) { setShowLogMeeting(true); }
+          else { toast('Navigate to a lead first to log a meeting', { icon: '📅' }); }
+          break;
+        case 'send-email':
+          navigate('/email/inbox?compose=true');
+          break;
+        // ai-chat handled by AIChatWidget, search handled by FooterCommandBar directly
+      }
+    };
+    window.addEventListener('crm:quick-action', handler);
+    return () => window.removeEventListener('crm:quick-action', handler);
+  }, [currentLeadId, navigate]);
+
+  const handleModalSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] });
+    queryClient.invalidateQueries({ queryKey: ['crmLeadDetail'] });
+  };
 
   const handleSignOut = async () => {
     await signOut();
-    // Hard reload to /login to fully clear in-memory state
     window.location.href = '/login';
   };
 
@@ -461,6 +518,66 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           {children}
         </RouteErrorBoundary>
       </AppLayout>
+
+      {/* Footer command bar modals */}
+      <AddLeadModal
+        open={showAddLead}
+        onClose={() => setShowAddLead(false)}
+        onSuccess={(leadId) => {
+          setShowAddLead(false);
+          handleModalSuccess();
+          navigate(`/leads/${leadId}`);
+        }}
+      />
+      <AddTaskModal
+        open={showAddTask}
+        onClose={() => setShowAddTask(false)}
+        leadId={currentLeadId ?? undefined}
+        onSuccess={() => {
+          setShowAddTask(false);
+          handleModalSuccess();
+        }}
+      />
+      <AddDealModal
+        open={showAddDeal}
+        onClose={() => setShowAddDeal(false)}
+        onSuccess={(dealId) => {
+          setShowAddDeal(false);
+          handleModalSuccess();
+          navigate(`/deals/${dealId}`);
+        }}
+      />
+      {currentLeadId && (
+        <>
+          <AddNoteModal
+            open={showAddNote}
+            onClose={() => setShowAddNote(false)}
+            leadId={currentLeadId}
+            onSuccess={() => {
+              setShowAddNote(false);
+              handleModalSuccess();
+            }}
+          />
+          <LogCallModal
+            open={showLogCall}
+            onClose={() => setShowLogCall(false)}
+            leadId={currentLeadId}
+            onSuccess={() => {
+              setShowLogCall(false);
+              handleModalSuccess();
+            }}
+          />
+          <LogMeetingModal
+            open={showLogMeeting}
+            onClose={() => setShowLogMeeting(false)}
+            leadId={currentLeadId}
+            onSuccess={() => {
+              setShowLogMeeting(false);
+              handleModalSuccess();
+            }}
+          />
+        </>
+      )}
     </>
   );
 }

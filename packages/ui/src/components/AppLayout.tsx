@@ -110,9 +110,10 @@ export function AppLayout({
       {/* ---- Sidebar ---- */}
       <aside
         className={cn(
-          'fixed top-0 left-0 z-50 h-full flex flex-col',
+          'fixed top-0 left-0 z-50 flex flex-col',
           'bg-[rgb(var(--sidebar-bg))] text-[rgb(var(--sidebar-text))]',
           'border-r border-[rgb(var(--sidebar-text)_/_0.1)] transition-all duration-300 ease-in-out',
+          footerBar ? 'h-[calc(100vh-48px)]' : 'h-full',
           sidebarWidth,
           isMobile
             ? sidebarOpen ? 'translate-x-0' : '-translate-x-full'

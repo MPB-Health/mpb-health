@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   X,
+  ExternalLink,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -15,6 +16,15 @@ const NAV_ITEMS = [
   { name: 'Resources', href: '/', icon: LayoutDashboard },
   { name: 'Tickets', href: '/tickets', icon: Headphones },
   { name: 'Profile', href: '/profile', icon: UserCircle },
+];
+
+const QUICK_LINKS = [
+  { name: 'MPB Platforms', url: '#' },
+  { name: 'Portals', url: '#' },
+  { name: 'Preventive', url: '#' },
+  { name: 'RX', url: '#' },
+  { name: 'Labs', url: '#' },
+  { name: 'Imaging', url: '#' },
 ];
 
 export default function MainLayout() {
@@ -40,7 +50,25 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm sticky top-0 z-30">
+      <div className="bg-brand-navy sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center gap-1 h-9 overflow-x-auto scrollbar-hide">
+            {QUICK_LINKS.map((link) => (
+              <a
+                key={link.name}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-1 rounded text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap"
+              >
+                {link.name}
+                <ExternalLink className="w-3 h-3 opacity-50" />
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm sticky top-9 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -96,7 +124,7 @@ export default function MainLayout() {
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-20 bg-black/20" onClick={() => setMobileOpen(false)}>
           <nav
-            className="absolute top-14 left-0 right-0 bg-white border-b border-slate-200 shadow-lg p-3 space-y-1"
+            className="absolute top-[5.75rem] left-0 right-0 bg-white border-b border-slate-200 shadow-lg p-3 space-y-1"
             onClick={(e) => e.stopPropagation()}
           >
             {NAV_ITEMS.map((item) => {

@@ -36,11 +36,53 @@ const QUICK_LINKS: QuickLink[] = [
       { name: 'GoTo Call Reports', url: 'https://my.jive.com/cr/mpoweringbenefitsl/summary' },
     ],
   },
-  { name: 'Portals', url: '#' },
-  { name: 'Preventive', url: '#' },
-  { name: 'RX', url: '#' },
-  { name: 'Labs', url: '#' },
-  { name: 'Imaging', url: '#' },
+  {
+    name: 'Portals',
+    children: [
+      { name: 'ARM', url: 'https://www.mediconnx.com/MediClm/Login.aspx' },
+      { name: 'Lyric', url: 'https://portal.getlyric.com/lyric/login' },
+      { name: 'Zion', url: 'https://zionhealthshare.org/members/' },
+      { name: 'Sedera', url: 'https://sedera.my.site.com/MemberPortal/s/login/' },
+    ],
+  },
+  {
+    name: 'Preventive',
+    children: [
+      { name: 'PHCS', url: 'https://providersearch.multiplan.com/' },
+      { name: 'ZocDoc', url: 'https://www.zocdoc.com/' },
+      { name: 'PHCS Nominate Provider', url: 'https://www.multiplan.com/providernominations/patient?siteid=84559' },
+      { name: 'Preventive Task Force', url: 'https://www.uspreventiveservicestaskforce.org/uspstf/' },
+    ],
+  },
+  {
+    name: 'RX',
+    children: [
+      { name: 'RX Valet', url: 'https://web.thehealthwallet.com/login' },
+      { name: 'Good RX', url: 'https://www.goodrx.com/' },
+      { name: 'RX Go', url: 'https://www.rxgo.com/' },
+      { name: 'Single Care', url: 'https://www.singlecare.com/' },
+      { name: 'Mark Cuban', url: 'https://www.costplusdrugs.com/medications/' },
+      { name: 'Canadian Drug Store', url: 'https://www.canadianmedstore.com/' },
+    ],
+  },
+  {
+    name: 'Labs',
+    children: [
+      { name: 'LaboratoryAssist', url: 'https://laboratoryassist.com/' },
+      { name: 'Lab Tests Online', url: 'https://www.healthlabs.com/' },
+      { name: 'Jason Health', url: 'https://www.jasonhealth.com/' },
+      { name: 'Ulta Lab Tests', url: 'https://www.ultalabtests.com/' },
+    ],
+  },
+  {
+    name: 'Imaging & More',
+    children: [
+      { name: 'RadiologyAssist', url: 'https://radiologyassist.com/' },
+      { name: 'Healthcare Bluebook', url: 'https://www.healthcarebluebook.com/ui/signinpublic' },
+      { name: 'MD Save', url: 'https://www.mdsave.com/' },
+      { name: 'Colonoscopy Assist', url: 'https://colonoscopyassist.com/' },
+    ],
+  },
 ];
 
 export default function MainLayout() {
@@ -133,18 +175,18 @@ export default function MainLayout() {
       </header>
 
       {/* Quick Links Bar */}
-      <div className="bg-brand-navy border-b border-white/10" ref={dropdownRef}>
+      <div className="bg-brand-navy border-b border-white/10 relative z-40" ref={dropdownRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-10 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-between h-13 overflow-x-auto scrollbar-hide">
             {QUICK_LINKS.map((link) =>
               link.children ? (
                 <div key={link.name} className="relative flex-1 flex justify-center">
                   <button
                     onClick={() => setOpenDropdown(openDropdown === link.name ? null : link.name)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap"
                   >
                     {link.name}
-                    <ChevronDown className={`w-3 h-3 transition-transform ${openDropdown === link.name ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdown === link.name ? 'rotate-180' : ''}`} />
                   </button>
                   {openDropdown === link.name && (
                     <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-lg border border-slate-200 py-1 min-w-[180px] z-50">
@@ -170,10 +212,10 @@ export default function MainLayout() {
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap"
                 >
                   {link.name}
-                  <ExternalLink className="w-3 h-3 opacity-50" />
+                  <ExternalLink className="w-3.5 h-3.5 opacity-50" />
                 </a>
               ),
             )}

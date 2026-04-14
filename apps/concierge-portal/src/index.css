@@ -5,16 +5,16 @@
 @tailwind utilities;
 
 :root {
-  --accent-50: 232 244 253;
-  --accent-100: 209 233 251;
-  --accent-200: 163 211 247;
-  --accent-300: 117 189 243;
-  --accent-400: 71 167 239;
-  --accent-500: 12 113 195;
-  --accent-600: 10 78 142;
-  --accent-700: 15 101 161;
-  --accent-800: 10 78 142;
-  --accent-900: 8 61 113;
+  --accent-50: 238 244 246;
+  --accent-100: 216 232 236;
+  --accent-200: 177 208 217;
+  --accent-300: 138 185 198;
+  --accent-400: 99 161 179;
+  --accent-500: 74 124 138;
+  --accent-600: 61 103 115;
+  --accent-700: 47 79 89;
+  --accent-800: 35 59 67;
+  --accent-900: 26 44 50;
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

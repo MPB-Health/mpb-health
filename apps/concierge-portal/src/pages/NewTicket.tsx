@@ -116,11 +116,11 @@ export default function NewTicket() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2F3E2F] to-[#4A7C8A] flex items-center justify-center">
             <Headphones className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">New Support Ticket</h1>
+            <h1 className="text-xl font-bold text-[#2F3E2F]">New Support Ticket</h1>
             <p className="text-sm text-slate-500">Submit a ticket on behalf of a member</p>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function NewTicket() {
             onChange={(e) => setSubject(e.target.value)}
             required
             placeholder="Brief summary of the issue..."
-            className="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm transition-colors"
+            className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm transition-colors"
           />
         </div>
 
@@ -167,7 +167,7 @@ export default function NewTicket() {
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
               >
                 <option value="">Select category</option>
                 {categories.map((cat) => (
@@ -189,7 +189,7 @@ export default function NewTicket() {
                   onClick={() => setPriority(p.value)}
                   className={`py-2 px-2 rounded-lg text-xs font-medium border transition-colors ${
                     priority === p.value
-                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                      ? 'bg-[#4A7C8A]/10 border-[#4A7C8A]/40 text-[#4A7C8A]'
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                   title={p.desc}
@@ -212,7 +212,7 @@ export default function NewTicket() {
             onChange={(e) => setDescription(e.target.value)}
             rows={5}
             placeholder="Detailed description of the issue, member information, steps taken..."
-            className="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm resize-y min-h-[120px] transition-colors"
+            className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm resize-y min-h-[120px] transition-colors"
           />
         </div>
 
@@ -258,7 +258,7 @@ export default function NewTicket() {
           <button
             type="submit"
             disabled={submitting || !subject.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4A7C8A] rounded-lg hover:bg-[#3D6773] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? (
               <>

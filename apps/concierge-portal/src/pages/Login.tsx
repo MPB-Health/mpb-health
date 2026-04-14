@@ -37,7 +37,7 @@ export default function Login() {
       appDescription="Sign in to access training resources and member services"
       onSubmit={handleSubmit}
       onForgotPassword={handleForgotPassword}
-      accentVariant="blue"
+      accentVariant="forest"
       showForgotPassword={true}
       showRememberMe={true}
       emailPlaceholder="concierge@mympb.com"

@@ -28,7 +28,7 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#4A7C8A]" />
       </div>
     );
   }
@@ -39,11 +39,11 @@ export default function Profile() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-up">
-      <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
+      <h1 className="text-2xl font-bold text-[#2F3E2F]">Profile</h1>
 
       <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
         <div className="flex items-center gap-4 p-5">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2F3E2F] to-[#4A7C8A] flex items-center justify-center">
             <User className="w-6 h-6 text-white" />
           </div>
           <div>

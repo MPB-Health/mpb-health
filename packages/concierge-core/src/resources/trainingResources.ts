@@ -15,6 +15,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
       { label: 'Zion HealthShare', url: 'https://zionhealthshare.org/how-it-works/' },
       { label: 'Sedera', url: 'https://sedera.com/' },
     ],
+    keywords: ['sharing request', 'IUA', 'initial unshareable amount', 'monthly share', 'pre-existing condition', 'eligible expenses', 'community', 'cost sharing', 'not insurance', 'membership', 'enrollment', 'network', 'provider'],
   },
   {
     id: 'member-guidelines',
@@ -28,6 +29,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
       { label: 'Zion HealthShare', url: 'https://zionhealthshare.org/how-it-works/member-guidelines/' },
       { label: 'Sedera', url: 'https://assets.ctfassets.net/01zqqfy0bb2m/BdCi3f2zO5AcFTHBLcNkJ/3cdf28f268d4186cc7550e11b11664c7/SELECT__Guidelines_-_Community_20231001.pdf' },
     ],
+    keywords: ['eligibility', 'waiting period', 'pre-existing', 'pre-notification', 'maternity', 'mental health', 'substance abuse', 'tobacco', 'lifestyle', 'exclusions', 'limitations', 'appeal', 'needs processing'],
   },
   {
     id: 'zion-faq',
@@ -37,6 +39,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'health-sharing',
     type: 'document',
     external: true,
+    keywords: ['frequently asked questions', 'how does it work', 'who is eligible', 'cancel', 'refund', 'what is covered', 'emergency', 'urgent care', 'prescription', 'dental', 'vision', 'pre-existing'],
   },
   {
     id: 'terminology-sheet',
@@ -46,6 +49,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'health-sharing',
     type: 'pdf',
     external: true,
+    keywords: ['IUA', 'initial unshareable amount', 'sharing request', 'monthly share', 'pre-notification', 'eligible expense', 'EOB', 'explanation of benefits', 'copay', 'deductible', 'coinsurance', 'out of pocket', 'maximum', 'PPO', 'HMO', 'network'],
   },
   {
     id: 'medical-expenses-hsa',
@@ -55,6 +59,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'health-sharing',
     type: 'pdf',
     external: true,
+    keywords: ['HSA', 'health savings account', 'tax deductible', 'qualified medical expense', 'IRS', 'contribution limits', 'HDHP', 'high deductible', 'triple tax advantage', 'eligible expenses', 'rollover', 'savings'],
   },
   {
     id: 'healthshare-sop',
@@ -64,6 +69,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'health-sharing',
     type: 'sop',
     external: true,
+    keywords: ['sharing request', 'pre-notification', 'submit', 'claims', 'member call', 'escalation', 'provider call', 'billing', 'EOB', 'repricing', 'PHCS', 'network discount', 'needs processing', 'step by step'],
   },
 
   // ─── MPB Plans: Member Handbooks ─────────────────────────────────────
@@ -75,6 +81,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'mpb-plans',
     type: 'pdf',
     external: true,
+    keywords: ['essentials', 'care plus', 'secure HSA', 'direct', 'MEC', 'comparison', 'pricing', 'benefits', 'IUA', 'monthly cost', 'telehealth', 'copay', 'preventive', 'maternity', 'mental health'],
   },
   {
     id: 'essentials-handbook',
@@ -85,6 +92,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'Essentials',
     type: 'handbook',
     external: true,
+    keywords: ['Zion', 'IUA', 'sharing request', 'eligible expenses', 'network', 'PHCS', 'pre-notification', 'emergency', 'urgent care', 'prescription', 'telehealth', 'preventive', 'wellness'],
   },
   {
     id: 'mec-essentials-handbook',
@@ -95,6 +103,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'MEC + Essentials',
     type: 'handbook',
     external: true,
+    keywords: ['minimum essential coverage', 'ACA', 'Affordable Care Act', 'Zion', 'ARM', 'telehealth', 'IUA', 'sharing request', 'preventive', 'wellness', 'copay', 'network', 'PHCS'],
   },
   {
     id: 'care-plus-handbook',
@@ -105,6 +114,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'Care Plus',
     type: 'handbook',
     external: true,
+    keywords: ['Zion', 'Sedera', 'IUA', 'sharing request', 'maternity', 'mental health', 'prescription', 'network', 'PHCS', 'preventive', 'emergency', 'specialist', 'copay'],
   },
   {
     id: 'secure-hsa-handbook',
@@ -115,6 +125,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'Secure HSA',
     type: 'handbook',
     external: true,
+    keywords: ['HSA', 'health savings account', 'high deductible', 'HDHP', 'tax advantage', 'Zion', 'Sedera', 'IUA', 'sharing request', 'eligible expenses', 'network', 'PHCS', 'preventive'],
   },
   {
     id: 'direct-handbook',
@@ -125,6 +136,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'Direct',
     type: 'handbook',
     external: true,
+    keywords: ['Sedera', 'direct primary care', 'DPC', 'sharing request', 'IUA', 'community', 'eligible expenses', 'network', 'PHCS', 'preventive', 'telehealth'],
   },
 
   // ─── Welcome Call Scripts ────────────────────────────────────────────
@@ -137,6 +149,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'Essentials',
     type: 'script',
     external: true,
+    keywords: ['onboarding', 'new member', 'introduction', 'benefits overview', 'ID card', 'telehealth', 'portal login', 'concierge number', 'Zion', 'PHCS', 'welcome'],
   },
   {
     id: 'mec-essentials-welcome-call',
@@ -147,6 +160,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'MEC + Essentials',
     type: 'script',
     external: true,
+    keywords: ['onboarding', 'new member', 'MEC', 'ARM', 'minimum essential coverage', 'ACA', 'telehealth', 'ID card', 'portal', 'concierge', 'Zion', 'welcome'],
   },
   {
     id: 'care-plus-welcome-call',
@@ -157,6 +171,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'Care Plus',
     type: 'script',
     external: true,
+    keywords: ['onboarding', 'new member', 'benefits overview', 'ID card', 'telehealth', 'portal', 'concierge', 'Zion', 'Sedera', 'PHCS', 'maternity', 'mental health', 'welcome'],
   },
   {
     id: 'secure-hsa-welcome-call',
@@ -167,6 +182,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'Secure HSA',
     type: 'script',
     external: true,
+    keywords: ['onboarding', 'new member', 'HSA', 'health savings account', 'HDHP', 'tax advantage', 'benefits overview', 'ID card', 'telehealth', 'portal', 'concierge', 'welcome'],
   },
   {
     id: 'direct-welcome-call',
@@ -177,6 +193,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'Direct',
     type: 'script',
     external: true,
+    keywords: ['onboarding', 'new member', 'direct primary care', 'DPC', 'Sedera', 'benefits overview', 'ID card', 'telehealth', 'portal', 'concierge', 'welcome'],
   },
 
   // ─── Telehealth & MEC ───────────────────────────────────────────────
@@ -188,6 +205,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'telehealth',
     type: 'sop',
     external: true,
+    keywords: ['ARM', 'MEC', 'minimum essential coverage', 'telehealth visit', 'virtual doctor', 'copay', 'ID card', 'eligibility', 'activation', 'enrollment', 'portal', 'mediconnx'],
   },
   {
     id: 'arm-hdhp-sbc-2026',
@@ -198,6 +216,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'ARM',
     type: 'pdf',
     external: true,
+    keywords: ['SBC', 'summary of benefits', 'HDHP', 'high deductible', 'deductible', 'out of pocket maximum', 'copay', 'coinsurance', 'preventive', 'emergency', 'hospitalization', 'prescription', 'specialist', '2026'],
   },
   {
     id: 'arm-proof-of-coverage',
@@ -208,6 +227,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'ARM',
     type: 'document',
     external: true,
+    keywords: ['proof of coverage', 'verification', 'insurance verification', 'coverage letter', 'member ID', 'effective date', 'employer', 'group number'],
   },
   {
     id: 'arm-welcome-letter-2026',
@@ -218,6 +238,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'ARM',
     type: 'pdf',
     external: true,
+    keywords: ['welcome', 'new member', 'enrollment', 'ID card', 'portal access', 'telehealth', 'benefits', 'effective date', '2026'],
   },
   {
     id: 'mpb-telehealth-sop',
@@ -227,6 +248,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'telehealth',
     type: 'sop',
     external: true,
+    keywords: ['Lyric', 'telehealth', 'virtual visit', 'video call', 'doctor', 'copay', 'activation', 'registration', 'portal', 'app', 'urgent care', 'prescription', 'mental health', 'behavioral health'],
   },
 
   // ─── Internal Daily SOPs ────────────────────────────────────────────
@@ -238,6 +260,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'internal-sops',
     type: 'checklist',
     external: true,
+    keywords: ['daily tasks', 'morning', 'Teams', 'voicemail', 'email', 'follow up', 'Zoho', 'queue', 'clock in', 'clock out', 'end of day', 'mandatory', 'attendance'],
   },
   {
     id: 'tasks-follow-up-sop',
@@ -247,6 +270,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'internal-sops',
     type: 'sop',
     external: true,
+    keywords: ['task management', 'follow up', 'callback', 'member outreach', 'Zoho', 'CRM', 'notes', 'status update', 'pending', 'overdue', 'priority', 'scheduling'],
   },
   {
     id: 'healthcare-blue-book-sop',
@@ -256,6 +280,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'internal-sops',
     type: 'sop',
     external: true,
+    keywords: ['fair price', 'cost estimate', 'procedure cost', 'surgery cost', 'pricing', 'negotiation', 'Valenz', 'blue book', 'CPT code', 'provider search', 'cost comparison', 'out of pocket'],
   },
   {
     id: 'rx-labs-sop',
@@ -265,6 +290,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'internal-sops',
     type: 'sop',
     external: true,
+    keywords: ['prescription', 'medication', 'pharmacy', 'GoodRx', 'RxGo', 'discount card', 'lab work', 'blood test', 'CBC', 'CMP', 'lipid panel', 'lab order', 'LabCorp', 'Quest', 'LaboratoryAssist', 'Canadian drug store', 'Cost Plus'],
   },
   {
     id: 'imaging-search-sop',
@@ -274,6 +300,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'internal-sops',
     type: 'sop',
     external: true,
+    keywords: ['MRI', 'CT scan', 'X-ray', 'ultrasound', 'mammogram', 'PET scan', 'RadiologyAssist', 'imaging center', 'scheduling', 'referral', 'authorization', 'cost estimate', 'cash pay', 'radiology'],
   },
   {
     id: 'appointment-setting-sop',
@@ -283,6 +310,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'internal-sops',
     type: 'sop',
     external: true,
+    keywords: ['appointment', 'scheduling', 'provider', 'specialist', 'referral', 'PCP', 'primary care', 'ZocDoc', 'PHCS', 'network', 'in-network', 'out-of-network', 'authorization', 'three-way call'],
   },
 
   // ─── Customer Service ────────────────────────────────────────────────
@@ -294,6 +322,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'customer-service',
     type: 'document',
     external: true,
+    keywords: ['angry member', 'frustrated', 'complaint', 'de-escalate', 'calm down', 'empathy', 'active listening', 'apologize', 'resolution', 'supervisor', 'escalation', 'refund', 'cancellation', 'conflict', 'difficult conversation'],
   },
   {
     id: 'customer-service-101',
@@ -303,5 +332,6 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'customer-service',
     type: 'document',
     external: true,
+    keywords: ['greeting', 'phone etiquette', 'hold', 'transfer', 'tone of voice', 'professionalism', 'empathy', 'active listening', 'first call resolution', 'follow up', 'member satisfaction', 'communication skills', 'rapport'],
   },
 ];

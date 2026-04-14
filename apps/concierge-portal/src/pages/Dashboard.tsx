@@ -35,12 +35,12 @@ const CATEGORY_ICONS: Record<TrainingCategory, React.ReactNode> = {
 };
 
 const CATEGORY_COLORS: Record<TrainingCategory, { bg: string; border: string; icon: string; badge: string }> = {
-  'health-sharing': { bg: 'bg-rose-50', border: 'border-rose-200', icon: 'text-rose-600', badge: 'bg-rose-100 text-rose-700' },
-  'mpb-plans': { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600', badge: 'bg-blue-100 text-blue-700' },
-  'welcome-scripts': { bg: 'bg-violet-50', border: 'border-violet-200', icon: 'text-violet-600', badge: 'bg-violet-100 text-violet-700' },
-  'telehealth': { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700' },
-  'internal-sops': { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-600', badge: 'bg-amber-100 text-amber-700' },
-  'customer-service': { bg: 'bg-cyan-50', border: 'border-cyan-200', icon: 'text-cyan-600', badge: 'bg-cyan-100 text-cyan-700' },
+  'health-sharing': { bg: 'bg-[#4A7C8A]/5', border: 'border-[#4A7C8A]/20', icon: 'text-[#4A7C8A]', badge: 'bg-[#4A7C8A]/10 text-[#4A7C8A]' },
+  'mpb-plans': { bg: 'bg-[#2F3E2F]/5', border: 'border-[#2F3E2F]/20', icon: 'text-[#2F3E2F]', badge: 'bg-[#2F3E2F]/10 text-[#2F3E2F]' },
+  'welcome-scripts': { bg: 'bg-[#8B9B3A]/5', border: 'border-[#8B9B3A]/20', icon: 'text-[#8B9B3A]', badge: 'bg-[#8B9B3A]/10 text-[#5B6B2E]' },
+  'telehealth': { bg: 'bg-[#5B6B2E]/5', border: 'border-[#5B6B2E]/20', icon: 'text-[#5B6B2E]', badge: 'bg-[#5B6B2E]/10 text-[#5B6B2E]' },
+  'internal-sops': { bg: 'bg-[#A8B8AC]/10', border: 'border-[#A8B8AC]/30', icon: 'text-[#5B6B2E]', badge: 'bg-[#A8B8AC]/20 text-[#2F3E2F]' },
+  'customer-service': { bg: 'bg-[#4A7C8A]/5', border: 'border-[#4A7C8A]/15', icon: 'text-[#4A7C8A]', badge: 'bg-[#4A7C8A]/10 text-[#2F3E2F]' },
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -69,7 +69,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">{text.slice(idx, idx + query.length)}</mark>
+      <mark className="bg-[#8B9B3A]/25 text-[#2F3E2F] rounded-sm px-0.5">{text.slice(idx, idx + query.length)}</mark>
       {text.slice(idx + query.length)}
     </>
   );
@@ -96,7 +96,7 @@ function ResourceCard({ resource, query }: { resource: TrainingResource; query: 
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#A8B8AC]/40 bg-[#A8B8AC]/10 text-[#2F3E2F] hover:bg-[#4A7C8A]/10 hover:border-[#4A7C8A]/40 hover:text-[#4A7C8A] transition-all"
             >
               <HighlightMatch text={link.label} query={query} />
               <ExternalLink className="w-3 h-3" />
@@ -125,12 +125,12 @@ function ResourceCard({ resource, query }: { resource: TrainingResource; query: 
               <span className="text-xs text-slate-500">{resource.subcategory}</span>
             )}
           </div>
-          <h3 className="text-sm font-semibold text-slate-800 group-hover:text-blue-700 transition-colors line-clamp-2">
+          <h3 className="text-sm font-semibold text-slate-800 group-hover:text-[#4A7C8A] transition-colors line-clamp-2">
             <HighlightMatch text={resource.title} query={query} />
           </h3>
           <p className="mt-1 text-xs text-slate-500 line-clamp-2"><HighlightMatch text={resource.description} query={query} /></p>
         </div>
-        <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-500 shrink-0 mt-1 transition-colors" />
+        <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#4A7C8A] shrink-0 mt-1 transition-colors" />
       </div>
     </a>
   );
@@ -200,6 +200,9 @@ export default function Dashboard() {
         resource.url.toLowerCase().includes(query) ||
         (resource.links && resource.links.some(
           (l) => l.label.toLowerCase().includes(query) || l.url.toLowerCase().includes(query),
+        )) ||
+        (resource.keywords && resource.keywords.some(
+          (k) => k.toLowerCase().includes(query),
         ))
       ) {
         result[resource.category].push(resource);
@@ -246,8 +249,8 @@ export default function Dashboard() {
     <div className="space-y-6 animate-fade-up">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Training Resources</h1>
-        <p className="mt-1 text-slate-600">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#2F3E2F]">Information and Training Hub</h1>
+        <p className="mt-1 text-[#5B6B2E]">
           Access all concierge training materials, SOPs, handbooks, and scripts
         </p>
       </div>
@@ -260,7 +263,7 @@ export default function Dashboard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search resources, links, tools..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all placeholder:text-slate-400"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm transition-all placeholder:text-slate-400"
         />
         {search && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
@@ -271,9 +274,9 @@ export default function Dashboard() {
 
       {/* Quick Links Results */}
       {filteredQuickLinks.length > 0 && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 overflow-hidden">
+        <div className="rounded-2xl border border-[#4A7C8A]/20 bg-[#4A7C8A]/5 overflow-hidden">
           <div className="flex items-center gap-3 p-4 pb-3">
-            <div className="w-9 h-9 rounded-xl bg-white/80 flex items-center justify-center text-indigo-600 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-white/80 flex items-center justify-center text-[#4A7C8A] shrink-0">
               <Link2 className="w-5 h-5" />
             </div>
             <div>
@@ -288,10 +291,10 @@ export default function Dashboard() {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:shadow-md hover:border-indigo-300 transition-all duration-200"
+                className="group flex items-center gap-3 rounded-xl border border-[#A8B8AC]/30 bg-white p-3 hover:shadow-md hover:border-[#4A7C8A]/40 transition-all duration-200"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors truncate">
+                  <p className="text-sm font-semibold text-slate-800 group-hover:text-[#4A7C8A] transition-colors truncate">
                     <HighlightMatch text={link.name} query={query} />
                   </p>
                   {link.group && (
@@ -300,7 +303,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 shrink-0 transition-colors" />
+                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#4A7C8A] shrink-0 transition-colors" />
               </a>
             ))}
           </div>
@@ -317,7 +320,7 @@ export default function Dashboard() {
               key={cat}
               category={cat}
               resources={resources}
-              defaultOpen={!search || resources.length > 0}
+              defaultOpen={!!search && resources.length > 0}
               query={query}
             />
           );

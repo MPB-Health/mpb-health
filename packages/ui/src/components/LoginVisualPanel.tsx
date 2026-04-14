@@ -12,7 +12,7 @@ import {
 export interface LoginVisualPanelProps {
   appName: string;
   tagline?: string;
-  accentVariant?: 'blue' | 'teal' | 'cyan' | 'red';
+  accentVariant?: 'blue' | 'teal' | 'cyan' | 'red' | 'forest';
   features?: Array<{ icon: React.ReactNode; title: string; description: string }>;
 }
 
@@ -21,6 +21,7 @@ const accentGradients: Record<string, string> = {
   teal: 'from-[#042f2e] via-[#0f766e] to-[#115e59]',
   cyan: 'from-[#083344] via-[#0e7490] to-[#155e75]',
   red: 'from-[#450A0A] via-[#991B1B] to-[#7F1D1D]',
+  forest: 'from-[#1E2B1E] via-[#2F3E2F] to-[#4A7C8A]',
 };
 
 const floatingIcons = [

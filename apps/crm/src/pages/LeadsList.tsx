@@ -47,6 +47,8 @@ export default function LeadsList() {
   const [showBulkStage, setShowBulkStage] = useState(false);
   const [showBulkEmail, setShowBulkEmail] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const savedViews = useSavedViews('leads');
 
@@ -152,6 +154,27 @@ export default function LeadsList() {
     loadLeads();
   };
 
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedLeads);
+    if (ids.length === 0) return;
+    setDeleting(true);
+    try {
+      const result = await leadService.bulkDeleteLeads(ids);
+      if (result.failCount === 0) {
+        toast.success(`Deleted ${result.successCount} lead${result.successCount !== 1 ? 's' : ''}`);
+      } else {
+        toast.error(`Deleted ${result.successCount}, failed ${result.failCount}`);
+      }
+      setSelectedLeads(new Set());
+      loadLeads();
+    } catch {
+      toast.error('Failed to delete leads');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   const activeFilterCount = [filters.stage, filters.priority, filters.planType, filters.carrierId, filters.dateFrom].filter(Boolean).length;
   const selectedIds = Array.from(selectedLeads);
   const totalPages = Math.ceil(total / pageSize);
@@ -165,6 +188,7 @@ export default function LeadsList() {
         onChangeStage={() => setShowBulkStage(true)}
         onSendEmail={() => setShowBulkEmail(true)}
         onExport={handleExportSelected}
+        onDelete={() => setShowDeleteConfirm(true)}
         onClear={() => setSelectedLeads(new Set())}
       />
 
@@ -461,6 +485,36 @@ export default function LeadsList() {
       <BulkStageModal open={showBulkStage} onClose={() => setShowBulkStage(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
       <BulkEmailModal open={showBulkEmail} onClose={() => setShowBulkEmail(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
       <ImportModal isOpen={showImport} onClose={() => setShowImport(false)} entityType="leads" onSuccess={() => loadLeads()} />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-semibold text-th-text-primary mb-2">
+              Delete {selectedLeads.size} Lead{selectedLeads.size !== 1 ? 's' : ''}?
+            </h3>
+            <p className="text-sm text-th-text-secondary mb-6">
+              This action cannot be undone. All associated activities, tasks, and notes for the selected leads will also be removed.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium border border-th-border rounded-lg hover:bg-surface-primary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

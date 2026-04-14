@@ -1,4 +1,4 @@
-import { Users, GitBranch, Mail, Download, X } from 'lucide-react';
+import { Users, GitBranch, Mail, Download, Trash2, X } from 'lucide-react';
 
 interface Props {
   selectedCount: number;
@@ -6,6 +6,7 @@ interface Props {
   onChangeStage: () => void;
   onSendEmail: () => void;
   onExport: () => void;
+  onDelete?: () => void;
   onClear: () => void;
 }
 
@@ -15,6 +16,7 @@ export function BulkActionsToolbar({
   onChangeStage,
   onSendEmail,
   onExport,
+  onDelete,
   onClear,
 }: Props) {
   if (selectedCount === 0) return null;
@@ -52,6 +54,15 @@ export function BulkActionsToolbar({
           <Download className="w-4 h-4" />
           <span>Export</span>
         </button>
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-500/80 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete</span>
+          </button>
+        )}
       </div>
       <button
         onClick={onClear}

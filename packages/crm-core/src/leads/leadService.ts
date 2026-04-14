@@ -318,6 +318,31 @@ export class LeadService {
   }
 
   /**
+   * Bulk delete leads by IDs
+   */
+  async bulkDeleteLeads(ids: string[]): Promise<BulkUpdateResult> {
+    let successCount = 0;
+    let failCount = 0;
+    const errors: string[] = [];
+
+    for (const id of ids) {
+      const { error } = await this.supabase
+        .from('lead_submissions')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        failCount++;
+        errors.push(`${id}: ${error.message}`);
+      } else {
+        successCount++;
+      }
+    }
+
+    return { successCount, failCount, errors };
+  }
+
+  /**
    * Get leads for CSV export
    */
   async getLeadsForExport(

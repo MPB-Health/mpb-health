@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -16,6 +16,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const validatedRef = useRef(false);
+
+  const clearSession = useCallback(() => {
+    setSession(null);
+    setUser(null);
+    try { localStorage.removeItem('mpb-auth-token'); } catch (_) { /* noop */ }
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -23,32 +30,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    supabase.auth.getSession()
-      .then(({ data: { session }, error }) => {
-        if (error) {
-          console.error('Failed to get session:', error);
+    let cancelled = false;
+
+    // Validate the session server-side with getUser() instead of trusting
+    // the cached session from getSession(). getSession() returns stale
+    // tokens from localStorage that may have been revoked, causing a
+    // cascade of 401s before onAuthStateChange catches up.
+    async function init() {
+      try {
+        const { data: { session: cached } } = await supabase.auth.getSession();
+
+        if (!cached) {
+          if (!cancelled) { clearSession(); }
+          return;
         }
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Session retrieval failed:', error);
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-      });
+
+        // Server-side validation — catches revoked / expired tokens
+        const { data: { user: verified }, error: verifyError } = await supabase.auth.getUser();
+        if (cancelled) return;
+
+        if (verifyError || !verified) {
+          console.warn('[Auth] Stored session failed server validation, signing out:', verifyError?.message);
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+          clearSession();
+        } else {
+          setSession(cached);
+          setUser(verified);
+        }
+      } catch (err) {
+        console.error('[Auth] Session init failed:', err);
+        if (!cancelled) clearSession();
+      } finally {
+        if (!cancelled) {
+          validatedRef.current = true;
+          setLoading(false);
+        }
+      }
+    }
+
+    init();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // While init() is running, ignore INITIAL_SESSION with a stale cached
+      // session — init validates server-side before trusting it. Once init
+      // finishes (validatedRef flips to true), handle all events normally
+      // (SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, etc.).
+      if (!validatedRef.current && newSession) return;
+
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [clearSession]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

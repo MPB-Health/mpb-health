@@ -1,14 +1,34 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { differenceInCalendarDays } from 'date-fns';
 import toast from 'react-hot-toast';
-import { Plus } from 'lucide-react';
+import {
+  Plus, BarChart3, Sparkles, Users, Eye, Megaphone, FileText,
+  Zap, Shield, TrendingDown, Target, Clock, DollarSign,
+} from 'lucide-react';
 import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
 import type { CadenceStep } from '@mpbhealth/crm-core';
+import {
+  ReactivationAnalyticsModal,
+  AIReengagementScorer,
+  BulkReactivationModal,
+  CadencePreviewModal,
+  WinBackCampaignModal,
+  ReengagementScriptModal,
+  AutoReactivationRulesModal,
+  CompetitivePitchModal,
+  LeadDecayInsightsModal,
+  ReactivationCohortModal,
+  ContactTimelineModal,
+  ReactivationForecastModal,
+} from '../components/reactivation';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(' ');
 
 interface StaleLeadRow {
   id: string;
@@ -28,6 +48,22 @@ export default function Reactivation() {
 
   const [minDaysInactive, setMinDaysInactive] = useState(90);
   const [stageFilter, setStageFilter] = useState<string>('all');
+
+  // Modal state
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAIScorer, setShowAIScorer] = useState(false);
+  const [showBulkEnroll, setShowBulkEnroll] = useState(false);
+  const [showCadencePreview, setShowCadencePreview] = useState(false);
+  const [showWinBack, setShowWinBack] = useState(false);
+  const [showScripts, setShowScripts] = useState(false);
+  const [showAutoRules, setShowAutoRules] = useState(false);
+  const [showCompetitivePitch, setShowCompetitivePitch] = useState(false);
+  const [showDecayInsights, setShowDecayInsights] = useState(false);
+  const [showCohorts, setShowCohorts] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
+  const [timelineLeadId, setTimelineLeadId] = useState<string>('');
+  const [timelineLeadName, setTimelineLeadName] = useState<string>('');
 
   const stageKey = stageFilter;
 
@@ -134,12 +170,43 @@ export default function Reactivation() {
     return differenceInCalendarDays(new Date(), new Date(row.last_contacted_at));
   };
 
+  const openTimeline = useCallback((row: StaleLeadRow) => {
+    setTimelineLeadId(row.id);
+    setTimelineLeadName(displayName(row));
+    setShowTimeline(true);
+  }, []);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'ai-score', label: 'AI Score', icon: Sparkles, color: 'text-violet-500', action: () => setShowAIScorer(true) },
+    { id: 'bulk-enroll', label: 'Bulk Enroll', icon: Users, color: 'text-green-500', action: () => setShowBulkEnroll(true) },
+    { id: 'cadence', label: 'Cadence', icon: Eye, color: 'text-cyan-500', action: () => setShowCadencePreview(true) },
+    { id: 'win-back', label: 'Win-Back', icon: Megaphone, color: 'text-orange-500', action: () => setShowWinBack(true) },
+    { id: 'scripts', label: 'Scripts', icon: FileText, color: 'text-amber-500', action: () => setShowScripts(true) },
+    { id: 'auto-rules', label: 'Auto Rules', icon: Zap, color: 'text-yellow-500', action: () => setShowAutoRules(true) },
+    { id: 'pitch', label: 'Pitch', icon: Shield, color: 'text-red-500', action: () => setShowCompetitivePitch(true) },
+    { id: 'decay', label: 'Decay', icon: TrendingDown, color: 'text-rose-500', action: () => setShowDecayInsights(true) },
+    { id: 'cohorts', label: 'Cohorts', icon: Target, color: 'text-emerald-500', action: () => setShowCohorts(true) },
+    { id: 'forecast', label: 'Forecast', icon: DollarSign, color: 'text-green-500', action: () => setShowForecast(true) },
+  ];
+
   return (
     <div className="space-y-6">
       <GradientHeader
         title="Reactivation pipeline"
         subtitle="Open leads with no recent contact — enroll into a follow-up cadence to bring them back."
       />
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
 
       {!reactivationCadenceId && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-4 py-3 text-sm text-amber-900 dark:text-amber-100 flex items-center justify-between gap-4">
@@ -241,14 +308,23 @@ export default function Reactivation() {
                           : 'Never'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          disabled={enrollMutation.isPending}
-                          onClick={() => enrollMutation.mutate(row.id)}
-                          className="rounded-lg bg-th-accent-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-th-accent-700 disabled:opacity-60"
-                        >
-                          Enroll in reactivation
-                        </button>
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => openTimeline(row)}
+                            className="rounded-lg border border-th-border px-2.5 py-1.5 text-xs font-medium text-th-text-secondary hover:bg-surface-secondary transition-colors"
+                          >
+                            <Clock className="w-3 h-3 inline mr-1" />Timeline
+                          </button>
+                          <button
+                            type="button"
+                            disabled={enrollMutation.isPending}
+                            onClick={() => enrollMutation.mutate(row.id)}
+                            className="rounded-lg bg-th-accent-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-th-accent-700 disabled:opacity-60"
+                          >
+                            Enroll
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -258,6 +334,51 @@ export default function Reactivation() {
           </div>
         )}
       </div>
+      {/* ---- Reactivation Power Modals ---- */}
+      <ReactivationAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)} staleLeadCount={staleLeads.length} />
+      <AIReengagementScorer
+        open={showAIScorer}
+        onClose={() => setShowAIScorer(false)}
+        onEnrollLead={(leadId) => { enrollMutation.mutate(leadId); setShowAIScorer(false); }}
+      />
+      <BulkReactivationModal
+        open={showBulkEnroll}
+        onClose={() => setShowBulkEnroll(false)}
+        leads={staleLeads.map((r) => ({
+          id: r.id,
+          name: displayName(r),
+          email: r.email,
+          stage: r.pipeline_stage,
+          daysSinceContact: daysSinceContact(r),
+        }))}
+        onBulkEnroll={async (leadIds) => {
+          let count = 0;
+          for (const id of leadIds) {
+            try { await cadenceService.enrollLead(id, reactivationCadenceId ?? undefined); count++; } catch { /* skip */ }
+          }
+          queryClient.invalidateQueries({ queryKey: crmQueryKeys.reactivationStaleLeads(activeOrgId, minDaysInactive, stageKey) });
+          toast.success(`Enrolled ${count} leads`);
+          return count;
+        }}
+      />
+      <CadencePreviewModal
+        open={showCadencePreview}
+        onClose={() => setShowCadencePreview(false)}
+        cadenceName={reactivationCadence?.name || 'Reactivation'}
+      />
+      <WinBackCampaignModal open={showWinBack} onClose={() => setShowWinBack(false)} totalStaleLeads={staleLeads.length} />
+      <ReengagementScriptModal open={showScripts} onClose={() => setShowScripts(false)} />
+      <AutoReactivationRulesModal open={showAutoRules} onClose={() => setShowAutoRules(false)} />
+      <CompetitivePitchModal open={showCompetitivePitch} onClose={() => setShowCompetitivePitch(false)} />
+      <LeadDecayInsightsModal open={showDecayInsights} onClose={() => setShowDecayInsights(false)} />
+      <ReactivationCohortModal open={showCohorts} onClose={() => setShowCohorts(false)} />
+      <ContactTimelineModal
+        open={showTimeline}
+        onClose={() => setShowTimeline(false)}
+        leadName={timelineLeadName}
+        leadId={timelineLeadId}
+      />
+      <ReactivationForecastModal open={showForecast} onClose={() => setShowForecast(false)} staleLeadCount={staleLeads.length} />
     </div>
   );
 }

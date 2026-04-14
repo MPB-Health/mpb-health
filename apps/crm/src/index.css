@@ -5,29 +5,30 @@
 @tailwind utilities;
 
 /* ============================================================================
-   MPB Health CRM — Enterprise Design System Overrides
-   Brand palette: #0A4E8E, #0C71C3, #A4CC43, #E2EAF0, #0E2D41
+   MPB Health CRM — Starship-Level Design System
+   High-tech palette: electric cyan/blue accents, deep space sidebar
+   Brand: #0EA5E9 (electric sky), #0284C7 (deep sky), #0A0F1A (space dark)
    ============================================================================ */
 
 :root {
-  /* ---- Accent Scale (MPB Brand Blue) ---- */
-  --accent-50: 232 244 253;
-  --accent-100: 209 233 251;
-  --accent-200: 163 211 247;
-  --accent-300: 117 189 243;
-  --accent-400: 71 167 239;
-  --accent-500: 12 113 195;
-  --accent-600: 10 78 142;
-  --accent-700: 15 101 161;
-  --accent-800: 10 78 142;
-  --accent-900: 8 61 113;
+  /* ---- Accent Scale (Electric Sky Blue — high-tech, vivid) ---- */
+  --accent-50: 240 249 255;
+  --accent-100: 224 242 254;
+  --accent-200: 186 230 253;
+  --accent-300: 125 211 252;
+  --accent-400: 56 189 248;
+  --accent-500: 14 165 233;
+  --accent-600: 2 132 199;
+  --accent-700: 3 105 161;
+  --accent-800: 7 89 133;
+  --accent-900: 12 74 110;
 
-  /* ---- Dark Navy Sidebar (enterprise split-tone layout) ---- */
-  --sidebar-bg: 14 45 65;
-  --sidebar-text: 148 175 200;
+  /* ---- Deep Space Sidebar ---- */
+  --sidebar-bg: 10 15 26;
+  --sidebar-text: 148 175 210;
   --sidebar-text-active: 255 255 255;
-  --sidebar-hover: 10 60 95;
-  --sidebar-active-bg: 12 113 195;
+  --sidebar-hover: 15 25 50;
+  --sidebar-active-bg: 14 165 233;
 
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -38,11 +39,17 @@
 }
 
 .dark {
-  --sidebar-bg: 2 6 23;
-  --sidebar-hover: 15 23 42;
-  --sidebar-text: 148 163 184;
-  --sidebar-text-active: 241 245 249;
-  --sidebar-active-bg: 59 130 246;
+  --surface-primary: 3 7 18;
+  --surface-secondary: 15 23 42;
+  --surface-tertiary: 30 41 59;
+  --surface-elevated: 20 30 52;
+  --surface-inset: 2 6 23;
+
+  --sidebar-bg: 2 5 15;
+  --sidebar-hover: 12 20 40;
+  --sidebar-text: 148 175 210;
+  --sidebar-text-active: 240 249 255;
+  --sidebar-active-bg: 14 165 233;
 }
 
 body {
@@ -167,13 +174,13 @@ h1, h2, h3 {
 }
 
 /* ============================================================================
-   Enterprise Card Polish
+   Starship Card System
    ============================================================================ */
 
 @layer components {
   .crm-card {
     @apply bg-surface-primary rounded-2xl border border-th-border/60 shadow-sm
-           hover:shadow-md hover:border-th-border transition-all duration-200;
+           hover:shadow-md hover:border-th-accent-200/30 transition-all duration-200;
   }
 
   .crm-card-elevated {
@@ -190,6 +197,26 @@ h1, h2, h3 {
     content: '';
     @apply absolute top-0 left-0 w-1 h-full rounded-l-2xl bg-gradient-to-b from-th-accent-400 to-th-accent-600;
   }
+
+  .crm-card-glow {
+    @apply bg-surface-primary rounded-2xl border border-th-accent-500/10 shadow-sm
+           transition-all duration-300 relative overflow-hidden;
+  }
+
+  .crm-card-glow:hover {
+    @apply border-th-accent-500/20;
+    box-shadow: 0 4px 24px rgb(var(--accent-500) / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
+  }
+}
+
+.dark .crm-card:hover {
+  border-color: rgb(var(--accent-500) / 0.2);
+  box-shadow: 0 4px 20px rgb(var(--accent-500) / 0.06), 0 1px 3px rgb(0 0 0 / 0.2);
+}
+
+.dark .crm-card-glow:hover {
+  border-color: rgb(var(--accent-500) / 0.25);
+  box-shadow: 0 4px 30px rgb(var(--accent-500) / 0.12), 0 1px 3px rgb(0 0 0 / 0.3);
 }
 
 /* ============================================================================

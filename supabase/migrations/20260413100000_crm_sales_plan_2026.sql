@@ -484,14 +484,14 @@ CREATE POLICY crm_milestones_delete ON public.crm_quarterly_milestones
 -- ============================================================================
 
 -- Add lead_source and is_self_generated to lead submissions
-ALTER TABLE public.zoho_lead_submissions
+ALTER TABLE public.lead_submissions
     ADD COLUMN IF NOT EXISTS lead_source text,
     ADD COLUMN IF NOT EXISTS is_self_generated boolean DEFAULT false,
     ADD COLUMN IF NOT EXISTS reactivation_source_lead_id uuid;
 
-CREATE INDEX IF NOT EXISTS idx_zls_lead_source ON public.zoho_lead_submissions(lead_source);
-CREATE INDEX IF NOT EXISTS idx_zls_is_self_generated ON public.zoho_lead_submissions(is_self_generated);
-CREATE INDEX IF NOT EXISTS idx_zls_reactivation_source ON public.zoho_lead_submissions(reactivation_source_lead_id)
+CREATE INDEX IF NOT EXISTS idx_zls_lead_source ON public.lead_submissions(lead_source);
+CREATE INDEX IF NOT EXISTS idx_zls_is_self_generated ON public.lead_submissions(is_self_generated);
+CREATE INDEX IF NOT EXISTS idx_zls_reactivation_source ON public.lead_submissions(reactivation_source_lead_id)
     WHERE reactivation_source_lead_id IS NOT NULL;
 
 -- ============================================================================
@@ -589,7 +589,7 @@ BEGIN
         ) AS activities_this_month
     FROM auth.users u
     INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
-    LEFT JOIN public.zoho_lead_submissions l ON l.assigned_to = u.id AND l.org_id = p_org_id
+    LEFT JOIN public.lead_submissions l ON l.assigned_to = u.id AND l.org_id = p_org_id
     GROUP BY u.id, u.email, u.raw_user_meta_data
     ORDER BY total_leads DESC;
 END;
@@ -625,7 +625,7 @@ BEGIN
         COUNT(l.id) FILTER (WHERE l.plan_type IN ('traditional', 'traditional_insurance'))::bigint AS traditional_count,
         COUNT(l.id) FILTER (WHERE l.plan_type IS NULL OR l.plan_type NOT IN ('healthshare', 'traditional', 'traditional_insurance'))::bigint AS unspecified_count
     FROM public.crm_pipeline_stages ps
-    LEFT JOIN public.zoho_lead_submissions l
+    LEFT JOIN public.lead_submissions l
         ON l.pipeline_stage = ps.name
         AND l.org_id = p_org_id
     WHERE ps.org_id = p_org_id
@@ -790,7 +790,7 @@ ON CONFLICT (org_id, role, permission_id) DO NOTHING;
 -- Propagate to all existing orgs
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT DISTINCT o.id, rp.role, rp.permission_id
-FROM public.organizations o
+FROM public.orgs o
 CROSS JOIN public.role_permissions rp
 WHERE rp.org_id = '00000000-0000-4000-a000-000000000001'
   AND o.id != '00000000-0000-4000-a000-000000000001'

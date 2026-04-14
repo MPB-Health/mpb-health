@@ -89,26 +89,26 @@ export class AnalyticsService {
 
     const [total, today, thisWeek, thisMonth, converted] = await Promise.all([
       supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact', head: true })
         .then((r) => r.count || 0),
       supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfDay.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfWeek.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfMonth.toISOString())
         .then((r) => r.count || 0),
       supabase
-        .from('zoho_lead_submissions')
+        .from('lead_submissions')
         .select('*', { count: 'exact', head: true })
         .eq('pipeline_stage', 'closed_won')
         .then((r) => r.count || 0),
@@ -132,7 +132,7 @@ export class AnalyticsService {
     fromDate.setDate(fromDate.getDate() - days);
 
     const table = {
-      leads: 'zoho_lead_submissions',
+      leads: 'lead_submissions',
       users: 'admin_users',
       enrollments: 'enrollments',
     }[metric];
@@ -169,7 +169,7 @@ export class AnalyticsService {
   // Get top performers (advisors with most conversions)
   async getTopPerformers(limit = 5): Promise<TopPerformer[]> {
     const { data, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('assigned_to, pipeline_stage')
       .not('assigned_to', 'is', null);
 
@@ -216,7 +216,7 @@ export class AnalyticsService {
   // Get lead sources breakdown
   async getLeadSources(): Promise<{ source: string; count: number }[]> {
     const { data, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('utm_source');
 
     if (error) return [];
@@ -235,7 +235,7 @@ export class AnalyticsService {
   // Get pipeline breakdown
   async getPipelineBreakdown(): Promise<{ stage: string; count: number }[]> {
     const { data, error } = await supabase
-      .from('zoho_lead_submissions')
+      .from('lead_submissions')
       .select('pipeline_stage');
 
     if (error) return [];
@@ -258,7 +258,7 @@ export class AnalyticsService {
     toDate: string
   ): Promise<string> {
     const table = {
-      leads: 'zoho_lead_submissions',
+      leads: 'lead_submissions',
       users: 'admin_users',
       enrollments: 'enrollments',
     }[type];

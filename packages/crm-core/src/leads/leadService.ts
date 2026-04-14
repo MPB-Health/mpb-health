@@ -301,13 +301,18 @@ export class LeadService {
    */
   async deleteLead(id: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('lead_submissions')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
 
       if (error) {
         return { success: false, error: error.message };
+      }
+
+      if (!data || data.length === 0) {
+        return { success: false, error: 'Permission denied – you may not have delete access' };
       }
 
       return { success: true };
@@ -318,23 +323,39 @@ export class LeadService {
   }
 
   /**
-   * Bulk delete leads by IDs
+   * Bulk delete leads by IDs — single batch query with row-count verification
    */
   async bulkDeleteLeads(ids: string[]): Promise<BulkUpdateResult> {
     const result: BulkUpdateResult = { success: 0, failed: 0, errors: [] };
+    if (ids.length === 0) return result;
 
-    for (const id of ids) {
-      const { error } = await this.supabase
+    try {
+      const { data, error } = await this.supabase
         .from('lead_submissions')
         .delete()
-        .eq('id', id);
+        .in('id', ids)
+        .select('id');
 
       if (error) {
-        result.failed++;
-        result.errors.push(`${id}: ${error.message}`);
-      } else {
-        result.success++;
+        result.failed = ids.length;
+        result.errors.push(error.message);
+        return result;
       }
+
+      const deletedIds = new Set((data ?? []).map((r: { id: string }) => r.id));
+      result.success = deletedIds.size;
+      result.failed = ids.length - deletedIds.size;
+
+      if (result.failed > 0) {
+        const blocked = ids.filter(id => !deletedIds.has(id));
+        result.errors.push(
+          `${result.failed} lead(s) could not be deleted — check RLS / permissions (ids: ${blocked.slice(0, 5).join(', ')}${blocked.length > 5 ? '…' : ''})`
+        );
+      }
+    } catch (err) {
+      console.error('Bulk delete leads error:', err);
+      result.failed = ids.length;
+      result.errors.push('Unexpected error during bulk delete');
     }
 
     return result;

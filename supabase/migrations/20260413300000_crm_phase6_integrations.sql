@@ -114,7 +114,8 @@ BEGIN
                 'email_replied', 'form_submitted', 'deal_created', 'deal_stage_changed',
                 'deal_won', 'deal_lost', 'contact_created', 'activity_logged',
                 'sla_breach', 'cadence_step_due', 'referral_received',
-                'time_based', 'field_updated', 'no_activity'
+                'time_based', 'field_updated', 'no_activity',
+                'new_lead', 'stage_change', 'high_score'
             ));
 
         ALTER TABLE public.ai_automation_rules

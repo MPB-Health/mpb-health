@@ -1,4 +1,4 @@
-import { Users, GitBranch, Mail, Download, Trash2, X } from 'lucide-react';
+import { Users, GitBranch, Mail, Download, Trash2, X, RefreshCw, UserCheck, GitMerge } from 'lucide-react';
 
 interface Props {
   selectedCount: number;
@@ -7,6 +7,9 @@ interface Props {
   onSendEmail: () => void;
   onExport: () => void;
   onDelete?: () => void;
+  onMassUpdate?: () => void;
+  onMassTransfer?: () => void;
+  onMerge?: () => void;
   onClear: () => void;
 }
 
@@ -17,14 +20,17 @@ export function BulkActionsToolbar({
   onSendEmail,
   onExport,
   onDelete,
+  onMassUpdate,
+  onMassTransfer,
+  onMerge,
   onClear,
 }: Props) {
   if (selectedCount === 0) return null;
 
   return (
-    <div className="sticky top-0 z-20 bg-th-accent-600 text-white rounded-xl px-6 py-3 flex items-center justify-between shadow-lg">
-      <div className="flex items-center space-x-3">
-        <span className="text-sm font-semibold">{selectedCount} selected</span>
+    <div className="sticky top-0 z-20 bg-th-accent-600 text-white rounded-xl px-6 py-3 flex items-center justify-between shadow-lg glow-accent">
+      <div className="flex items-center space-x-3 flex-wrap gap-y-2">
+        <span className="text-sm font-semibold tabular-nums">{selectedCount} selected</span>
         <div className="h-5 w-px bg-white/30" />
         <button
           onClick={onAssign}
@@ -47,6 +53,33 @@ export function BulkActionsToolbar({
           <Mail className="w-4 h-4" />
           <span>Send Email</span>
         </button>
+        {onMassUpdate && (
+          <button
+            onClick={onMassUpdate}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Mass Update</span>
+          </button>
+        )}
+        {onMassTransfer && (
+          <button
+            onClick={onMassTransfer}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+          >
+            <UserCheck className="w-4 h-4" />
+            <span>Transfer</span>
+          </button>
+        )}
+        {onMerge && selectedCount >= 2 && (
+          <button
+            onClick={onMerge}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+          >
+            <GitMerge className="w-4 h-4" />
+            <span>Merge</span>
+          </button>
+        )}
         <button
           onClick={onExport}
           className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"

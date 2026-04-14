@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { cn } from '../utils';
-import { Menu, X, ChevronLeft, Search } from 'lucide-react';
+import { Menu, X, ChevronLeft } from 'lucide-react';
 import { ThemeToggle } from '../theme/ThemeToggle';
 
 /* ============================================================================
@@ -26,6 +26,8 @@ export interface AppLayoutProps {
   topBarCenter?: React.ReactNode;
   /** Optional portal switcher dropdown to enable navigation between portals */
   portalSwitcher?: React.ReactNode;
+  /** Persistent footer bar rendered at the bottom of the viewport */
+  footerBar?: React.ReactNode;
   /** Initial collapsed state for the sidebar */
   initialCollapsed?: boolean;
   renderNavLink: (item: NavItem, props: NavLinkRenderProps) => React.ReactNode;
@@ -57,6 +59,7 @@ export function AppLayout({
   topBarActions,
   topBarCenter,
   portalSwitcher,
+  footerBar,
   initialCollapsed = false,
   renderNavLink,
   renderChildNavLink,
@@ -312,9 +315,12 @@ export function AppLayout({
         </header>
 
         {/* Page content */}
-        <main className="p-4 md:p-6 lg:p-8 w-full">
+        <main className={cn('p-4 md:p-6 lg:p-8 w-full', footerBar && 'pb-16 md:pb-20')}>
           {children}
         </main>
+
+        {/* Footer bar */}
+        {footerBar}
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ import { attachCRMQueryDiagnostics } from '../query/crmQueryDiagnostics';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { CRMServiceProvider, useCRMService, type CRMServiceContextType } from './CRMServiceContext';
 import { useOrg } from './OrgContext';
+import { useAuth } from './AuthContext';
 
 /** Coalesce realtime-driven invalidations */
 const REALTIME_INVALIDATION_DEBOUNCE_MS = 1_200;
@@ -56,7 +57,8 @@ function CRMQueryDataProvider({ children }: { children: ReactNode }) {
   const svc = useCRMService();
   const queryClient = useQueryClient();
   const { activeOrgId, orgLoading } = useOrg();
-  const orgReady = !!activeOrgId && !orgLoading;
+  const { user, loading: authLoading } = useAuth();
+  const orgReady = !!activeOrgId && !orgLoading && !!user && !authLoading;
 
   const dashboardQuery = useQuery({
     queryKey: crmQueryKeys.dashboard(activeOrgId),

@@ -23,6 +23,8 @@ import { BulkAssignModal } from '../components/BulkAssignModal';
 import { BulkStageModal } from '../components/BulkStageModal';
 import { BulkEmailModal } from '../components/BulkEmailModal';
 import { ImportModal } from '../components/ImportModal';
+import { MassUpdateModal } from '../components/MassUpdateModal';
+import { MassTransferModal } from '../components/MassTransferModal';
 import { SavedViewsBar } from '../components/SavedViewsBar';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSavedViews } from '../hooks/useSavedViews';
@@ -47,6 +49,8 @@ export default function LeadsList() {
   const [showBulkStage, setShowBulkStage] = useState(false);
   const [showBulkEmail, setShowBulkEmail] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showMassUpdate, setShowMassUpdate] = useState(false);
+  const [showMassTransfer, setShowMassTransfer] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -58,6 +62,7 @@ export default function LeadsList() {
       const result = await leadService.getLeads(filters, pageSize, page * pageSize);
       return result;
     },
+    enabled: !!leadService,
     staleTime: 30 * 1000,
   });
 
@@ -154,10 +159,12 @@ export default function LeadsList() {
     setDeleting(true);
     try {
       const result = await leadService.bulkDeleteLeads(ids);
-      if (result.failed === 0) {
+      if (result.success > 0 && result.failed === 0) {
         toast.success(`Deleted ${result.success} lead${result.success !== 1 ? 's' : ''}`);
+      } else if (result.success > 0 && result.failed > 0) {
+        toast.error(`Deleted ${result.success}, failed ${result.failed}. ${result.errors[0] || ''}`);
       } else {
-        toast.error(`Deleted ${result.success}, failed ${result.failed}`);
+        toast.error(result.errors[0] || 'No leads were deleted — you may not have permission');
       }
       setSelectedLeads(new Set());
       queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] });
@@ -181,6 +188,8 @@ export default function LeadsList() {
         onAssign={() => setShowBulkAssign(true)}
         onChangeStage={() => setShowBulkStage(true)}
         onSendEmail={() => setShowBulkEmail(true)}
+        onMassUpdate={() => setShowMassUpdate(true)}
+        onMassTransfer={() => setShowMassTransfer(true)}
         onExport={handleExportSelected}
         onDelete={() => setShowDeleteConfirm(true)}
         onClear={() => setSelectedLeads(new Set())}
@@ -479,6 +488,39 @@ export default function LeadsList() {
       <BulkStageModal open={showBulkStage} onClose={() => setShowBulkStage(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
       <BulkEmailModal open={showBulkEmail} onClose={() => setShowBulkEmail(false)} leadIds={selectedIds} onSuccess={handleBulkSuccess} />
       <ImportModal isOpen={showImport} onClose={() => setShowImport(false)} entityType="leads" onSuccess={() => queryClient.invalidateQueries({ queryKey: ['crmLeadsList'] })} />
+      <MassUpdateModal
+        open={showMassUpdate}
+        onClose={() => setShowMassUpdate(false)}
+        entityType="lead"
+        selectedCount={selectedLeads.size}
+        fields={[
+          { name: 'pipeline_stage', label: 'Pipeline Stage', type: 'select', options: pipelineStages?.map((s) => ({ value: s.id, label: s.name })) || [] },
+          { name: 'priority', label: 'Priority', type: 'select', options: [{ value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }, { value: 'urgent', label: 'Urgent' }] },
+          { name: 'source', label: 'Source', type: 'text' },
+          { name: 'tags', label: 'Tags', type: 'text' },
+        ]}
+        onUpdate={async (updates) => {
+          for (const id of selectedIds) {
+            const fieldMap: Record<string, unknown> = {};
+            updates.forEach((u) => { fieldMap[u.field] = u.value; });
+            await leadService.updateLead(id, fieldMap);
+          }
+          handleBulkSuccess();
+        }}
+      />
+      <MassTransferModal
+        open={showMassTransfer}
+        onClose={() => setShowMassTransfer(false)}
+        entityType="lead"
+        selectedCount={selectedLeads.size}
+        teamMembers={[]}
+        onTransfer={async (newOwnerId, _options) => {
+          for (const id of selectedIds) {
+            await leadService.updateLead(id, { assigned_to: newOwnerId });
+          }
+          handleBulkSuccess();
+        }}
+      />
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

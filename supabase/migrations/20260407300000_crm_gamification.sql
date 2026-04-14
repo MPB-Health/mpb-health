@@ -233,9 +233,9 @@ returns table (
 ) language sql stable security definer as $$
   select
     x.user_id,
-    coalesce(p.full_name, p.email) as full_name,
-    p.email,
-    p.avatar_url,
+    coalesce(u.raw_user_meta_data->>'full_name', u.email) as full_name,
+    u.email,
+    u.raw_user_meta_data->>'avatar_url' as avatar_url,
     x.total_xp,
     case p_period
       when 'daily' then x.daily_xp
@@ -255,7 +255,7 @@ returns table (
       end desc
     ) as rank
   from crm_user_xp x
-  join profiles p on p.id = x.user_id
+  join auth.users u on u.id = x.user_id
   where x.org_id = p_org_id
   order by period_xp desc;
 $$;

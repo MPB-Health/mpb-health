@@ -408,9 +408,9 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_lead_stage_change ON zoho_lead_submissions;
+DROP TRIGGER IF EXISTS trg_lead_stage_change ON lead_submissions;
 CREATE TRIGGER trg_lead_stage_change
-  AFTER UPDATE OF pipeline_stage ON zoho_lead_submissions
+  AFTER UPDATE OF pipeline_stage ON lead_submissions
   FOR EACH ROW
   EXECUTE FUNCTION fn_lead_stage_change_notify();
 

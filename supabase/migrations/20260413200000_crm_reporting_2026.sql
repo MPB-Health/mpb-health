@@ -51,7 +51,7 @@ BEGIN
         COUNT(*) FILTER (WHERE la.activity_type = 'presentation')::bigint AS presentations_given,
         COUNT(*) FILTER (WHERE la.activity_type = 'proposal_sent')::bigint AS proposals_sent,
         COUNT(*) FILTER (WHERE la.activity_type = 'meeting')::bigint AS meetings_held,
-        (SELECT COUNT(*)::bigint FROM public.zoho_lead_submissions ls
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls
          WHERE ls.assigned_to = u.id AND ls.org_id = p_org_id
          AND ls.pipeline_stage IN ('won','converted','closed_won')
          AND ls.converted_at >= v_start AND ls.converted_at < v_end
@@ -62,21 +62,21 @@ BEGIN
          AND d.closed_at >= v_start AND d.closed_at < v_end
         ) AS revenue,
         CASE
-            WHEN (SELECT COUNT(*) FROM public.zoho_lead_submissions ls2
+            WHEN (SELECT COUNT(*) FROM public.lead_submissions ls2
                   WHERE ls2.assigned_to = u.id AND ls2.org_id = p_org_id
                   AND ls2.created_at >= v_start AND ls2.created_at < v_end) > 0
             THEN ROUND(
-                (SELECT COUNT(*)::numeric FROM public.zoho_lead_submissions ls3
+                (SELECT COUNT(*)::numeric FROM public.lead_submissions ls3
                  WHERE ls3.assigned_to = u.id AND ls3.org_id = p_org_id
                  AND ls3.pipeline_stage IN ('won','converted','closed_won')
                  AND ls3.converted_at >= v_start AND ls3.converted_at < v_end) * 100.0 /
-                NULLIF((SELECT COUNT(*) FROM public.zoho_lead_submissions ls4
+                NULLIF((SELECT COUNT(*) FROM public.lead_submissions ls4
                         WHERE ls4.assigned_to = u.id AND ls4.org_id = p_org_id
                         AND ls4.created_at >= v_start AND ls4.created_at < v_end), 0), 1)
             ELSE 0
         END AS close_rate,
         CASE
-            WHEN (SELECT COUNT(*) FROM public.zoho_lead_submissions ls5
+            WHEN (SELECT COUNT(*) FROM public.lead_submissions ls5
                   WHERE ls5.assigned_to = u.id AND ls5.org_id = p_org_id
                   AND ls5.pipeline_stage IN ('won','converted','closed_won')
                   AND ls5.converted_at >= v_start AND ls5.converted_at < v_end) > 0
@@ -85,7 +85,7 @@ BEGIN
                  WHERE d2.owner_id = u.id AND d2.org_id = p_org_id
                  AND d2.stage_name IN ('won','closed_won')
                  AND d2.closed_at >= v_start AND d2.closed_at < v_end) /
-                NULLIF((SELECT COUNT(*) FROM public.zoho_lead_submissions ls6
+                NULLIF((SELECT COUNT(*) FROM public.lead_submissions ls6
                         WHERE ls6.assigned_to = u.id AND ls6.org_id = p_org_id
                         AND ls6.pipeline_stage IN ('won','converted','closed_won')
                         AND ls6.converted_at >= v_start AND ls6.converted_at < v_end), 0), 2)
@@ -134,7 +134,7 @@ BEGIN
         COALESCE(ls.lead_source, 'unknown')::text AS source_label,
         COUNT(*)::bigint AS lead_count,
         COALESCE(ls.is_self_generated, false) AS is_self_generated
-    FROM public.zoho_lead_submissions ls
+    FROM public.lead_submissions ls
     WHERE ls.org_id = p_org_id
       AND ls.created_at >= v_start AND ls.created_at < v_end
     GROUP BY ls.lead_source, ls.is_self_generated
@@ -177,7 +177,7 @@ BEGIN
             THEN ROUND(COUNT(*) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 / COUNT(*), 1)
             ELSE 0
         END AS conversion_pct
-    FROM public.zoho_lead_submissions ls
+    FROM public.lead_submissions ls
     WHERE ls.org_id = p_org_id
       AND ls.created_at >= v_start AND ls.created_at < v_end
     GROUP BY ls.lead_source
@@ -220,7 +220,7 @@ BEGIN
     SELECT
         u.id AS rep_id,
         COALESCE(u.raw_user_meta_data->>'full_name', u.email)::text AS rep_name,
-        (SELECT COUNT(*)::bigint FROM public.zoho_lead_submissions ls
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls
          WHERE ls.assigned_to = u.id AND ls.org_id = p_org_id
          AND ls.pipeline_stage IN ('won','converted','closed_won')
          AND ls.converted_at >= v_month_start AND ls.converted_at < v_month_end
@@ -230,7 +230,7 @@ BEGIN
          AND d.stage_name IN ('won','closed_won')
          AND d.closed_at >= v_month_start AND d.closed_at < v_month_end
         ) AS revenue_month,
-        (SELECT COUNT(*)::bigint FROM public.zoho_lead_submissions ls2
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls2
          WHERE ls2.assigned_to = u.id AND ls2.org_id = p_org_id
          AND ls2.pipeline_stage IN ('won','converted','closed_won')
          AND ls2.converted_at >= v_year_start AND ls2.converted_at < v_month_end
@@ -240,7 +240,7 @@ BEGIN
          AND d2.stage_name IN ('won','closed_won')
          AND d2.closed_at >= v_year_start AND d2.closed_at < v_month_end
         ) AS revenue_ytd,
-        CASE WHEN (SELECT COUNT(*) FROM public.zoho_lead_submissions ls3
+        CASE WHEN (SELECT COUNT(*) FROM public.lead_submissions ls3
                    WHERE ls3.assigned_to = u.id AND ls3.org_id = p_org_id
                    AND ls3.pipeline_stage IN ('won','converted','closed_won')
                    AND ls3.converted_at >= v_year_start AND ls3.converted_at < v_month_end) > 0
@@ -249,7 +249,7 @@ BEGIN
                  WHERE d3.owner_id = u.id AND d3.org_id = p_org_id
                  AND d3.stage_name IN ('won','closed_won')
                  AND d3.closed_at >= v_year_start AND d3.closed_at < v_month_end) /
-                NULLIF((SELECT COUNT(*) FROM public.zoho_lead_submissions ls4
+                NULLIF((SELECT COUNT(*) FROM public.lead_submissions ls4
                         WHERE ls4.assigned_to = u.id AND ls4.org_id = p_org_id
                         AND ls4.pipeline_stage IN ('won','converted','closed_won')
                         AND ls4.converted_at >= v_year_start AND ls4.converted_at < v_month_end), 0), 2)
@@ -316,7 +316,7 @@ BEGIN
             ELSE 0 END AS overall_conv_pct
     FROM auth.users u
     INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
-    LEFT JOIN public.zoho_lead_submissions ls
+    LEFT JOIN public.lead_submissions ls
         ON ls.assigned_to = u.id AND ls.org_id = p_org_id
         AND ls.created_at >= v_start AND ls.created_at < v_end
     GROUP BY u.id, u.email, u.raw_user_meta_data
@@ -411,20 +411,20 @@ BEGIN
     SELECT
         oa.id AS advisor_id,
         oa.name::text AS advisor_name,
-        (SELECT COUNT(*)::bigint FROM public.zoho_lead_submissions ls
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls
          WHERE ls.org_id = p_org_id AND ls.lead_source = 'outside_advisors'
          AND ls.created_at >= v_month_start AND ls.created_at < v_month_end
         ) AS leads_month,
-        (SELECT COUNT(*)::bigint FROM public.zoho_lead_submissions ls2
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls2
          WHERE ls2.org_id = p_org_id AND ls2.lead_source = 'outside_advisors'
          AND ls2.pipeline_stage IN ('won','converted','closed_won')
          AND ls2.converted_at >= v_month_start AND ls2.converted_at < v_month_end
         ) AS closed_month,
-        (SELECT COUNT(*)::bigint FROM public.zoho_lead_submissions ls3
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls3
          WHERE ls3.org_id = p_org_id AND ls3.lead_source = 'outside_advisors'
          AND ls3.created_at >= v_year_start AND ls3.created_at < v_month_end
         ) AS leads_ytd,
-        (SELECT COUNT(*)::bigint FROM public.zoho_lead_submissions ls4
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls4
          WHERE ls4.org_id = p_org_id AND ls4.lead_source = 'outside_advisors'
          AND ls4.pipeline_stage IN ('won','converted','closed_won')
          AND ls4.converted_at >= v_year_start AND ls4.converted_at < v_month_end
@@ -457,7 +457,7 @@ BEGIN
     SELECT
         m.n AS month_num,
         TO_CHAR(make_date(p_year, m.n, 1), 'Mon')::text AS month_label,
-        (SELECT COUNT(*)::bigint FROM public.zoho_lead_submissions ls
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls
          WHERE ls.org_id = p_org_id
          AND ls.created_at >= make_timestamptz(p_year, m.n, 1, 0, 0, 0, 'UTC')
          AND ls.created_at < make_timestamptz(p_year, m.n, 1, 0, 0, 0, 'UTC') + interval '1 month'
@@ -539,7 +539,7 @@ BEGIN
             THEN ROUND(COUNT(*) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 / COUNT(*), 1)
             ELSE 0
         END AS conversion_pct
-    FROM public.zoho_lead_submissions ls
+    FROM public.lead_submissions ls
     WHERE ls.org_id = p_org_id
       AND ls.created_at >= v_start AND ls.created_at < v_end
     GROUP BY ls.lead_source
@@ -594,7 +594,7 @@ BEGIN
             ELSE 0 END AS selfgen_conv_pct
     FROM auth.users u
     INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
-    LEFT JOIN public.zoho_lead_submissions ls
+    LEFT JOIN public.lead_submissions ls
         ON ls.assigned_to = u.id AND ls.org_id = p_org_id
         AND ls.created_at >= v_start AND ls.created_at < v_end
     GROUP BY u.id, u.email, u.raw_user_meta_data

@@ -1,9 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Users, CheckSquare, Calendar, Check, AlertCircle } from 'lucide-react';
+import {
+  Bell, Users, CheckSquare, Calendar, Check,
+  AlertCircle, AlertTriangle, Eye, CheckCircle2,
+  Info, Sparkles,
+} from 'lucide-react';
 import { useCRM } from '../contexts/CRMContext';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
 import type { UnifiedNotification } from '@mpbhealth/crm-core';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(' ');
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   lead: Users,
@@ -17,6 +24,44 @@ const PRIORITY_COLORS = {
   critical: 'border-l-2 border-l-red-500',
 };
 
+type SmartCategory = 'attention' | 'fyi' | 'completed';
+
+interface CategorizedNotification extends UnifiedNotification {
+  category: SmartCategory;
+}
+
+function categorizeNotification(n: UnifiedNotification): SmartCategory {
+  if (n.priority === 'critical' || n.priority === 'high') return 'attention';
+  if (!n.read && (n.type === 'task' || n.type === 'lead')) return 'attention';
+
+  if (n.read) return 'completed';
+
+  return 'fyi';
+}
+
+const CATEGORY_CONFIG: Record<SmartCategory, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; bgColor: string }> = {
+  attention: {
+    label: 'Needs Your Attention',
+    icon: AlertTriangle,
+    color: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-amber-500/5',
+  },
+  fyi: {
+    label: 'For Your Information',
+    icon: Eye,
+    color: 'text-sky-600 dark:text-sky-400',
+    bgColor: 'bg-sky-500/5',
+  },
+  completed: {
+    label: 'Completed',
+    icon: CheckCircle2,
+    color: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-green-500/5',
+  },
+};
+
+type ViewMode = 'smart' | 'all';
+
 export function NotificationCenter() {
   const navigate = useNavigate();
   const { notificationCenterService, loading: crmLoading } = useCRM();
@@ -24,9 +69,9 @@ export function NotificationCenter() {
   const [notifications, setNotifications] = useState<UnifiedNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('smart');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load unread count on mount and periodically (only after CRM is ready)
   useEffect(() => {
     if (crmLoading) return;
     loadUnreadCount();
@@ -34,7 +79,6 @@ export function NotificationCenter() {
     return () => clearInterval(interval);
   }, [crmLoading]);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -57,7 +101,7 @@ export function NotificationCenter() {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const data = await notificationCenterService.getNotifications(20);
+      const data = await notificationCenterService.getNotifications(30);
       setNotifications(data);
     } catch (err) {
       console.error('Failed to load notifications:', err);
@@ -67,9 +111,7 @@ export function NotificationCenter() {
   };
 
   const handleToggle = () => {
-    if (!open) {
-      loadNotifications();
-    }
+    if (!open) loadNotifications();
     setOpen(!open);
   };
 
@@ -94,16 +136,22 @@ export function NotificationCenter() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  // Group notifications
-  const leadNotifs = notifications.filter((n) => n.type === 'lead');
-  const taskNotifs = notifications.filter((n) => n.type === 'task');
-  const eventNotifs = notifications.filter((n) => n.type === 'event');
+  const categorized = useMemo<Record<SmartCategory, CategorizedNotification[]>>(() => {
+    const result: Record<SmartCategory, CategorizedNotification[]> = { attention: [], fyi: [], completed: [] };
+    for (const n of notifications) {
+      const cat = categorizeNotification(n);
+      result[cat].push({ ...n, category: cat });
+    }
+    return result;
+  }, [notifications]);
+
+  const attentionCount = categorized.attention.length;
 
   return (
     <div ref={dropdownRef} className="relative">
       <button
         onClick={handleToggle}
-        className="relative p-2 text-th-text-tertiary hover:text-th-text-secondary"
+        className="relative p-2 text-th-text-tertiary hover:text-th-text-secondary transition-colors"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
@@ -114,44 +162,86 @@ export function NotificationCenter() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-surface-primary border border-th-border rounded-xl shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-96 bg-surface-primary border border-th-border/60 rounded-2xl shadow-2xl dark:shadow-[0_20px_50px_rgb(0_0_0/0.4)] z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-th-border">
-            <h3 className="text-sm font-semibold text-th-text-primary">Notifications</h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="text-xs text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
-              >
-                <Check className="w-3 h-3" />
-                Mark all read
-              </button>
-            )}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-th-border/50">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-th-text-primary">Notifications</h3>
+              {attentionCount > 0 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 tabular-nums">
+                  {attentionCount} need action
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {/* View toggle */}
+              <div className="flex items-center bg-surface-secondary rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('smart')}
+                  className={cn(
+                    'px-2 py-1 rounded-md text-[10px] font-medium transition-all',
+                    viewMode === 'smart' ? 'bg-surface-primary text-th-text-primary shadow-sm' : 'text-th-text-tertiary'
+                  )}
+                >
+                  <Sparkles className="w-3 h-3 inline mr-0.5" />
+                  Smart
+                </button>
+                <button
+                  onClick={() => setViewMode('all')}
+                  className={cn(
+                    'px-2 py-1 rounded-md text-[10px] font-medium transition-all',
+                    viewMode === 'all' ? 'bg-surface-primary text-th-text-primary shadow-sm' : 'text-th-text-tertiary'
+                  )}
+                >
+                  All
+                </button>
+              </div>
+              {unreadCount > 0 && (
+                <button onClick={handleMarkAllRead} className="text-[10px] text-th-accent-500 hover:text-th-accent-600 flex items-center gap-0.5">
+                  <Check className="w-3 h-3" /> Read all
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Content */}
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[420px] overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-th-accent-600" />
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-th-accent-500" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-8 text-center">
                 <Bell className="w-8 h-8 text-th-text-tertiary mx-auto mb-2" />
                 <p className="text-sm text-th-text-tertiary">No notifications</p>
               </div>
-            ) : (
+            ) : viewMode === 'smart' ? (
               <>
-                {leadNotifs.length > 0 && (
-                  <NotificationGroup label="New Leads" notifications={leadNotifs} onClick={handleClick} />
-                )}
-                {taskNotifs.length > 0 && (
-                  <NotificationGroup label="Tasks Due" notifications={taskNotifs} onClick={handleClick} />
-                )}
-                {eventNotifs.length > 0 && (
-                  <NotificationGroup label="Upcoming Events" notifications={eventNotifs} onClick={handleClick} />
-                )}
+                {(['attention', 'fyi', 'completed'] as SmartCategory[]).map((cat) => {
+                  const items = categorized[cat];
+                  if (items.length === 0) return null;
+                  const config = CATEGORY_CONFIG[cat];
+                  const CatIcon = config.icon;
+                  return (
+                    <div key={cat}>
+                      <div className={cn('px-4 py-2 flex items-center gap-2', config.bgColor)}>
+                        <CatIcon className={cn('w-3.5 h-3.5', config.color)} />
+                        <span className={cn('text-[10px] font-semibold uppercase tracking-wider', config.color)}>
+                          {config.label}
+                        </span>
+                        <span className="text-[10px] text-th-text-tertiary tabular-nums">({items.length})</span>
+                      </div>
+                      {items.map((notification) => (
+                        <NotificationItem key={notification.id} notification={notification} onClick={handleClick} />
+                      ))}
+                    </div>
+                  );
+                })}
               </>
+            ) : (
+              notifications.map((notification) => (
+                <NotificationItem key={notification.id} notification={notification} onClick={handleClick} />
+              ))
             )}
           </div>
         </div>
@@ -160,52 +250,48 @@ export function NotificationCenter() {
   );
 }
 
-function NotificationGroup({
-  label,
-  notifications,
+function NotificationItem({
+  notification,
   onClick,
 }: {
-  label: string;
-  notifications: UnifiedNotification[];
+  notification: UnifiedNotification;
   onClick: (n: UnifiedNotification) => void;
 }) {
+  const Icon = ICON_MAP[notification.type] || AlertCircle;
   return (
-    <div>
-      <div className="px-4 py-1.5 bg-surface-secondary">
-        <span className="text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">
-          {label}
-        </span>
+    <button
+      onClick={() => onClick(notification)}
+      className={cn(
+        'w-full text-left px-4 py-3 hover:bg-surface-secondary/60 flex items-start gap-3 transition-colors',
+        !notification.read && 'bg-th-accent-500/5',
+        PRIORITY_COLORS[notification.priority]
+      )}
+    >
+      <div className={cn(
+        'mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0',
+        notification.priority === 'critical' ? 'bg-red-500/10' :
+        notification.priority === 'high' ? 'bg-amber-500/10' : 'bg-surface-tertiary'
+      )}>
+        <Icon className={cn(
+          'w-4 h-4',
+          notification.priority === 'critical' ? 'text-red-500' :
+          notification.priority === 'high' ? 'text-amber-500' : 'text-th-text-tertiary'
+        )} />
       </div>
-      {notifications.map((notification) => {
-        const Icon = ICON_MAP[notification.type] || AlertCircle;
-        return (
-          <button
-            key={notification.id}
-            onClick={() => onClick(notification)}
-            className={`w-full text-left px-4 py-3 hover:bg-surface-secondary flex items-start gap-3 ${
-              !notification.read ? 'bg-blue-50/50' : ''
-            } ${PRIORITY_COLORS[notification.priority]}`}
-          >
-            <div className="mt-0.5">
-              <Icon className="w-4 h-4 text-th-text-tertiary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm ${!notification.read ? 'font-medium text-th-text-primary' : 'text-th-text-secondary'}`}>
-                {notification.title}
-              </p>
-              {notification.body && (
-                <p className="text-xs text-th-text-tertiary mt-0.5">{notification.body}</p>
-              )}
-              <p className="text-[10px] text-th-text-tertiary mt-0.5">
-                {formatTimeAgo(notification.created_at)}
-              </p>
-            </div>
-            {!notification.read && (
-              <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />
-            )}
-          </button>
-        );
-      })}
-    </div>
+      <div className="flex-1 min-w-0">
+        <p className={cn('text-sm', !notification.read ? 'font-medium text-th-text-primary' : 'text-th-text-secondary')}>
+          {notification.title}
+        </p>
+        {notification.body && (
+          <p className="text-xs text-th-text-tertiary mt-0.5 line-clamp-2">{notification.body}</p>
+        )}
+        <p className="text-[10px] text-th-text-tertiary mt-1">
+          {formatTimeAgo(notification.created_at)}
+        </p>
+      </div>
+      {!notification.read && (
+        <span className="w-2 h-2 bg-th-accent-500 rounded-full mt-2 flex-shrink-0" />
+      )}
+    </button>
   );
 }

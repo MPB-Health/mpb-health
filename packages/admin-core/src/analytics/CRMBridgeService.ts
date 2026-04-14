@@ -181,11 +181,11 @@ export class CRMBridgeService {
       .limit(1);
 
     if (!stages || stages.length === 0) {
-      // Fallback: count leads marked as converted
+      // Fallback: count leads with a converted_at timestamp
       const { count } = await supabase
         .from('lead_submissions')
         .select('id', { count: 'exact', head: true })
-        .eq('status', 'converted');
+        .not('converted_at', 'is', null);
       return count || 0;
     }
 
@@ -367,7 +367,7 @@ export class CRMBridgeService {
       .limit(1);
 
     const leadUpdate: Record<string, unknown> = {
-      status: 'converted',
+      pipeline_stage: 'closed_won',
       converted_at: now,
       updated_at: now,
     };

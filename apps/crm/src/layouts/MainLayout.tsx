@@ -50,6 +50,8 @@ import { useOrg } from '../contexts/OrgContext';
 import { useCRM } from '../contexts/CRMContext';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { NotificationTicker } from '../components/NotificationTicker';
+import { FooterCommandBar } from '../components/FooterCommandBar';
+import { AIChatWidget } from '../components/ai-chat';
 import CommandPalette from '../components/CommandPalette';
 import { AICommandBar } from '../components/AICommandBar';
 import GlobalSearch from '../components/GlobalSearch';
@@ -404,6 +406,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* Command Palette (Cmd+K) and AI Command Bar (Cmd+J) */}
       <CommandPalette />
       <AICommandBar />
+      <AIChatWidget />
 
       <AppLayout
         appName="CRM"
@@ -450,11 +453,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         topBarActions={topBarActions}
         renderNavLink={renderNavLink}
         renderChildNavLink={renderChildNavLink}
+        footerBar={<FooterCommandBar />}
       >
-        {/* Notification Ticker - real-time activity feed */}
         <NotificationTicker />
 
-        {/* Route Error Boundary - shell stays intact on page errors */}
         <RouteErrorBoundary>
           {children}
         </RouteErrorBoundary>

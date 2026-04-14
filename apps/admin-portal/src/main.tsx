@@ -8,12 +8,25 @@ import App from './App';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 
+function isAuthError(error: unknown): boolean {
+  if (error && typeof error === 'object') {
+    const status = (error as { status?: number }).status ?? (error as { code?: number }).code;
+    if (status === 401 || status === 403) return true;
+    const msg = String((error as { message?: string }).message ?? '');
+    if (/unauthorized|forbidden|jwt expired|invalid.*token/i.test(msg)) return true;
+  }
+  return false;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 2 * 60 * 1000,
       gcTime: 5 * 60 * 1000,
-      retry: 1,
+      retry: (failureCount, error) => {
+        if (isAuthError(error)) return false;
+        return failureCount < 1;
+      },
       refetchOnWindowFocus: false,
     },
   },

@@ -147,7 +147,7 @@ export default function LeadDetail() {
       ]);
       return { lead: leadResult, activities: activityData, tasks: taskData, familyMembers: familyData, phoneNumbers: phoneData };
     },
-    enabled: !!id,
+    enabled: !!id && !!leadService,
     staleTime: 30 * 1000,
   });
 

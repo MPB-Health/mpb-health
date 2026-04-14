@@ -144,7 +144,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     id: 'essentials-welcome-call',
     title: 'Essentials Welcome Call',
     description: 'Welcome call script for Essentials plan members',
-    url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/ERPNv_Q6e0RElpA8ijlGZ8QBao0iKGiyuLoH7kcH8cQekQ',
+    url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/IQBzKuBNbNxUQLqUQYkqNJm7AY9HkeLRS3SUZCFZ_IRQB5Y?e=USndq3',
     category: 'welcome-scripts',
     subcategory: 'Essentials',
     type: 'script',

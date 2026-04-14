@@ -8,6 +8,7 @@ const Login = lazy(() => import('./pages/Login'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DailyLogs = lazy(() => import('./pages/DailyLogs'));
 const Tickets = lazy(() => import('./pages/Tickets'));
 const NewTicket = lazy(() => import('./pages/NewTicket'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -16,6 +17,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
   window.requestIdleCallback(() => {
     import('./pages/Dashboard').catch(() => {});
+    import('./pages/DailyLogs').catch(() => {});
     import('./pages/Tickets').catch(() => {});
     import('./pages/Profile').catch(() => {});
   });
@@ -92,6 +94,7 @@ export default function App() {
 
       <Route path="/" element={<AuthGuard><MainLayout /></AuthGuard>}>
         <Route index element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
+        <Route path="daily-logs" element={<Suspense fallback={<PageLoader />}><DailyLogs /></Suspense>} />
         <Route path="tickets" element={<Suspense fallback={<PageLoader />}><Tickets /></Suspense>} />
         <Route path="tickets/new" element={<Suspense fallback={<PageLoader />}><NewTicket /></Suspense>} />
         <Route path="profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />

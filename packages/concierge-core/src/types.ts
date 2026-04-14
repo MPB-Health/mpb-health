@@ -15,6 +15,8 @@ export interface TrainingResource {
   external: boolean;
   /** Multiple links displayed as separate buttons within the card */
   links?: ResourceLink[];
+  /** Searchable terms from within the document — enables deep-content search */
+  keywords?: string[];
 }
 
 export type TrainingCategory =

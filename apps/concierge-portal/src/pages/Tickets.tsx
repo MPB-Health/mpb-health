@@ -25,10 +25,10 @@ import {
 } from '@mpbhealth/advisor-core';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
-  open: { label: 'Open', color: 'bg-yellow-100 text-yellow-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
+  new: { label: 'New', color: 'bg-[#4A7C8A]/15 text-[#4A7C8A]', icon: <CircleDot className="w-3.5 h-3.5" /> },
+  open: { label: 'Open', color: 'bg-[#8B9B3A]/15 text-[#5B6B2E]', icon: <AlertCircle className="w-3.5 h-3.5" /> },
   pending: { label: 'Pending', color: 'bg-orange-100 text-orange-700', icon: <Clock className="w-3.5 h-3.5" /> },
-  in_progress: { label: 'In Progress', color: 'bg-blue-100 text-blue-600', icon: <Loader2 className="w-3.5 h-3.5" /> },
+  in_progress: { label: 'In Progress', color: 'bg-[#4A7C8A]/10 text-[#4A7C8A]', icon: <Loader2 className="w-3.5 h-3.5" /> },
   resolved: { label: 'Resolved', color: 'bg-green-100 text-green-700', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
   closed: { label: 'Closed', color: 'bg-neutral-100 text-neutral-600', icon: <XCircle className="w-3.5 h-3.5" /> },
 };
@@ -37,7 +37,7 @@ const DEFAULT_STATUS = { label: 'Unknown', color: 'bg-neutral-100 text-neutral-5
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
   low: { label: 'Low', color: 'bg-neutral-100 text-neutral-600' },
-  medium: { label: 'Medium', color: 'bg-blue-100 text-blue-600' },
+  medium: { label: 'Medium', color: 'bg-[#4A7C8A]/10 text-[#4A7C8A]' },
   high: { label: 'High', color: 'bg-orange-100 text-orange-600' },
   urgent: { label: 'Urgent', color: 'bg-red-100 text-red-700' },
 };
@@ -92,11 +92,11 @@ export default function Tickets() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2F3E2F] to-[#4A7C8A] flex items-center justify-center">
             <Headphones className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Support Tickets</h1>
+            <h1 className="text-2xl font-bold text-[#2F3E2F]">Support Tickets</h1>
             <p className="text-sm text-slate-500">Submit and track tickets on behalf of members</p>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function Tickets() {
           </button>
           <Link
             to="/tickets/new"
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#4A7C8A] rounded-lg hover:bg-[#3D6773] transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
             New Ticket
@@ -123,7 +123,7 @@ export default function Tickets() {
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Open', value: stats.open + stats.new, color: 'text-yellow-600' },
+            { label: 'Open', value: stats.open + stats.new, color: 'text-[#8B9B3A]' },
             { label: 'Pending', value: stats.pending, color: 'text-orange-600' },
             { label: 'Resolved', value: stats.resolved, color: 'text-green-600' },
             { label: 'Total', value: stats.total, color: 'text-slate-700' },
@@ -145,14 +145,14 @@ export default function Tickets() {
             value={searchInput}
             onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
             placeholder="Search tickets..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 transition-colors"
           />
         </div>
         <select
           aria-label="Filter by status"
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value as TicketStatus | ''); setPage(1); }}
-          className="px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          className="px-3 py-2 text-sm rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15"
         >
           <option value="">All statuses</option>
           <option value="new">New</option>
@@ -165,7 +165,7 @@ export default function Tickets() {
           aria-label="Filter by priority"
           value={priorityFilter}
           onChange={(e) => { setPriorityFilter(e.target.value as TicketPriority | ''); setPage(1); }}
-          className="px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          className="px-3 py-2 text-sm rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15"
         >
           <option value="">All priorities</option>
           <option value="low">Low</option>
@@ -187,7 +187,7 @@ export default function Tickets() {
       {/* Ticket List */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          <Loader2 className="w-6 h-6 animate-spin text-[#4A7C8A]" />
         </div>
       ) : tickets.length === 0 ? (
         <div className="text-center py-16">
@@ -199,7 +199,7 @@ export default function Tickets() {
           {!searchInput && !statusFilter && !priorityFilter && (
             <Link
               to="/tickets/new"
-              className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 text-sm font-medium text-white bg-[#4A7C8A] rounded-lg hover:bg-[#3D6773] transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
               New Ticket

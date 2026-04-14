@@ -99,9 +99,9 @@ export default function ResetPassword() {
 
   if (verifying) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#A8B8AC]/15 via-white to-[#A8B8AC]/10">
         <div className="text-center space-y-4">
-          <div className="w-8 h-8 mx-auto border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+          <div className="w-8 h-8 mx-auto border-4 border-[#A8B8AC]/30 border-t-[#4A7C8A] rounded-full animate-spin" />
           <p className="text-slate-600">Verifying your reset link...</p>
         </div>
       </div>
@@ -110,16 +110,16 @@ export default function ResetPassword() {
 
   if (linkError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#A8B8AC]/15 via-white to-[#A8B8AC]/10 px-4">
         <div className="max-w-md w-full text-center space-y-6">
           <div className="w-16 h-16 mx-auto rounded-full bg-red-50 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Link expired</h1>
+          <h1 className="text-2xl font-bold text-[#2F3E2F]">Link expired</h1>
           <p className="text-slate-600">{linkError}</p>
           <Link
             to="/forgot-password"
-            className="inline-block px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors"
+            className="inline-block px-6 py-2.5 rounded-lg bg-[#4A7C8A] text-white font-medium text-sm hover:bg-[#3D6773] transition-colors"
           >
             Request a new link
           </Link>
@@ -130,12 +130,12 @@ export default function ResetPassword() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#A8B8AC]/15 via-white to-[#A8B8AC]/10 px-4">
         <div className="max-w-md w-full text-center space-y-6">
-          <div className="w-16 h-16 mx-auto rounded-full bg-green-50 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-green-600" />
+          <div className="w-16 h-16 mx-auto rounded-full bg-[#8B9B3A]/10 flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-[#5B6B2E]" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Password updated</h1>
+          <h1 className="text-2xl font-bold text-[#2F3E2F]">Password updated</h1>
           <p className="text-slate-600">Redirecting you to sign in...</p>
         </div>
       </div>
@@ -143,13 +143,13 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#A8B8AC]/15 via-white to-[#A8B8AC]/10 px-4">
       <div className="max-w-md w-full space-y-6">
         <div className="text-center">
-          <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-teal-600 to-cyan-500 flex items-center justify-center mb-4">
+          <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-[#2F3E2F] to-[#4A7C8A] flex items-center justify-center mb-4">
             <span className="text-white font-bold text-lg">MPB</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Set your new password</h1>
+          <h1 className="text-2xl font-bold text-[#2F3E2F]">Set your new password</h1>
           <p className="mt-2 text-slate-600">Choose a strong password with at least 8 characters</p>
         </div>
 
@@ -172,7 +172,7 @@ export default function ResetPassword() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm transition-colors"
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -191,7 +191,7 @@ export default function ResetPassword() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={8}
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm transition-colors"
               />
             </div>
           </div>
@@ -199,7 +199,7 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={loading || !password || !confirmPassword}
-            className="w-full py-2.5 px-4 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2.5 px-4 rounded-lg bg-[#4A7C8A] text-white font-medium text-sm hover:bg-[#3D6773] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Updating...' : 'Reset password'}
           </button>

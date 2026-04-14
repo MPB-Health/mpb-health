@@ -30,7 +30,7 @@ function PageLoader() {
   if (!visible) return null;
   return (
     <div className="flex items-center justify-center py-16">
-      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+      <Loader2 className="w-6 h-6 animate-spin text-[#4A7C8A]" />
     </div>
   );
 }

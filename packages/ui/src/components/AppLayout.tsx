@@ -287,7 +287,7 @@ export function AppLayout({
       <div className={cn('transition-all duration-300 ease-in-out', mainMargin)}>
         {/* Top bar */}
         <header className="sticky top-0 z-30 glass border-b border-th-border/50">
-          <div className="flex items-center h-14 px-4 md:px-6 gap-4">
+          <div className="flex items-center h-11 px-3 md:px-4 gap-3">
             <div className="flex items-center gap-3 shrink-0">
               {/* Mobile menu button */}
               <button
@@ -315,7 +315,7 @@ export function AppLayout({
         </header>
 
         {/* Page content */}
-        <main className={cn('p-4 md:p-6 lg:p-8 w-full', footerBar && 'pb-16 md:pb-20')}>
+        <main className={cn('p-2.5 md:p-4 lg:p-5 w-full', footerBar && 'pb-14 md:pb-16')}>
           {children}
         </main>
 

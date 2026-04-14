@@ -167,7 +167,7 @@ export function WidgetWrapper({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'bg-surface-primary rounded-2xl border border-th-border/60 shadow-sm overflow-hidden transition-all duration-200',
+        'bg-surface-primary rounded-xl border border-th-border/60 shadow-sm overflow-hidden transition-all duration-200',
         isSelected && isEditMode && 'ring-2 ring-th-accent-500 border-th-accent-500',
         isDragging && 'shadow-xl scale-[1.02]',
         !isEditMode && 'hover:shadow-md hover:border-th-border'
@@ -177,7 +177,7 @@ export function WidgetWrapper({
       {/* Header */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 py-3 border-b border-th-border/50 bg-surface-secondary/30',
+          'flex items-center justify-between px-3 py-2 border-b border-th-border/50 bg-surface-secondary/30',
           isEditMode && 'cursor-grab active:cursor-grabbing'
         )}
         {...(isEditMode ? { ...attributes, ...listeners } : {})}
@@ -186,8 +186,8 @@ export function WidgetWrapper({
           {isEditMode && (
             <GripVertical className="h-4 w-4 text-th-text-tertiary flex-shrink-0" />
           )}
-          <div className="w-7 h-7 rounded-lg bg-th-accent-50 dark:bg-th-accent-900/20 flex items-center justify-center flex-shrink-0">
-            <Icon className="h-3.5 w-3.5 text-th-accent-600" />
+          <div className="w-6 h-6 rounded-md bg-th-accent-50 dark:bg-th-accent-900/20 flex items-center justify-center flex-shrink-0">
+            <Icon className="h-3 w-3 text-th-accent-600" />
           </div>
           <span className="font-semibold text-sm text-th-text-primary truncate">{widgetConfig.title}</span>
         </div>
@@ -273,7 +273,7 @@ export function WidgetWrapper({
 
       {/* Content */}
       {!widget.collapsed && (
-        <div className="min-h-[100px]">
+        <div className="min-h-[72px]">
           {hasError ? (
             <WidgetError error={hasError} />
           ) : (

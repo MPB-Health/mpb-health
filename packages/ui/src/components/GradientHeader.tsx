@@ -12,9 +12,9 @@ export interface GradientHeaderProps {
 }
 
 const sizeClasses = {
-  sm: 'px-5 py-4 md:px-6 md:py-5',
-  md: 'px-6 py-5 md:px-8 md:py-6',
-  lg: 'px-6 py-6 md:px-10 md:py-8',
+  sm: 'px-4 py-3 md:px-5 md:py-3.5',
+  md: 'px-5 py-4 md:px-6 md:py-5',
+  lg: 'px-6 py-5 md:px-8 md:py-6',
 };
 
 const titleSizes = {
@@ -35,7 +35,7 @@ export function GradientHeader({
   return (
     <div
       className={cn(
-        'rounded-2xl bg-surface-primary border border-th-border relative overflow-hidden',
+        'rounded-xl bg-surface-primary border border-th-border relative overflow-hidden',
         sizeClasses[size],
         className
       )}
@@ -48,7 +48,7 @@ export function GradientHeader({
           <div className="space-y-1.5">
             <div className="flex items-center gap-3">
               {icon && (
-                <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-th-accent-50 dark:bg-th-accent-900/20 flex items-center justify-center text-th-accent-600">
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-th-accent-50 dark:bg-th-accent-900/20 flex items-center justify-center text-th-accent-600">
                   {icon}
                 </div>
               )}

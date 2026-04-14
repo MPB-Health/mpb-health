@@ -114,8 +114,7 @@ export function WidgetGrid() {
         >
           <div
             className={cn(
-              'grid gap-4 p-4',
-              'grid-cols-12' // 12-column grid
+              'grid gap-3 grid-cols-12'
             )}
             style={{
               gridAutoRows: 'minmax(100px, auto)',

@@ -63,7 +63,7 @@ export function DashboardToolbar() {
         title="Command Center"
         subtitle={editMode ? 'Editing dashboard layout' : 'Your personalized workspace — real-time insights at a glance'}
         icon={<LayoutDashboard className="w-5 h-5" />}
-        size="md"
+        size="sm"
         actions={
           <div className="flex items-center gap-2">
             {lastSaved && !editMode && (

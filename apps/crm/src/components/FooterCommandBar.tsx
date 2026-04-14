@@ -5,7 +5,8 @@ import {
   Mail, Briefcase, MessageSquare, Search, Keyboard,
   HelpCircle, Plus, X, Zap, ShieldCheck, DollarSign,
   Heart, Shield, RefreshCw, Sparkles, Globe, Handshake,
-  FileText, MapPin, Mic, Target,
+  FileText, MapPin, Mic, Target, Calculator, User, Users,
+  Trophy, Bell, Link, Clock, Flame, Wand2,
 } from 'lucide-react';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
@@ -43,6 +44,21 @@ const POWER_ACTIONS: FooterAction[] = [
   { id: 'referral-attribution', label: 'Referrals', icon: Handshake, color: 'text-violet-500' },
   { id: 'document-generate', label: 'Documents', icon: FileText, color: 'text-amber-500' },
   { id: 'territory-map', label: 'Territory Map', icon: MapPin, color: 'text-emerald-500' },
+];
+
+const WAVE2_ACTIONS: FooterAction[] = [
+  { id: 'rate-quote', label: 'Rate Quote', icon: Calculator, color: 'text-green-500' },
+  { id: 'client-360', label: 'Client 360', icon: User, color: 'text-blue-500' },
+  { id: 'household', label: 'Household', icon: Users, color: 'text-violet-500' },
+  { id: 'win-loss', label: 'Win/Loss', icon: Trophy, color: 'text-amber-500' },
+  { id: 'email-studio', label: 'Email Studio', icon: Mail, color: 'text-cyan-500' },
+  { id: 'bulk-sms', label: 'Bulk SMS', icon: MessageSquare, color: 'text-green-500' },
+  { id: 'team-challenge', label: 'Challenges', icon: Flame, color: 'text-orange-500' },
+  { id: 'carrier-alerts', label: 'Carrier Alerts', icon: Bell, color: 'text-red-500' },
+  { id: 'calendar-sync', label: 'Calendar Sync', icon: Link, color: 'text-blue-500' },
+  { id: 'sla-dashboard', label: 'SLA Monitor', icon: Clock, color: 'text-amber-500' },
+  { id: 'goal-tracker', label: 'Goals', icon: Target, color: 'text-emerald-500' },
+  { id: 'ai-email-writer', label: 'AI Email', icon: Wand2, color: 'text-violet-500' },
 ];
 
 interface FooterCommandBarProps {
@@ -169,11 +185,25 @@ export function FooterCommandBar({ onAction, selectionCount = 0, recordCount }: 
                     ref={powerMenuRef}
                     className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[280px] rounded-xl bg-surface-primary border border-th-border shadow-xl overflow-hidden animate-scale-in"
                   >
-                    <div className="px-3 py-2 border-b border-th-border/50">
-                      <p className="text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">Power Features</p>
-                    </div>
-                    <div className="max-h-[280px] overflow-y-auto p-1">
+                    <div className="max-h-[400px] overflow-y-auto p-1">
+                      <div className="px-2 py-1">
+                        <p className="text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">Core Power</p>
+                      </div>
                       {POWER_ACTIONS.map((action) => (
+                        <button
+                          key={action.id}
+                          onClick={() => { handleAction(action.id); setShowPowerMenu(false); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left hover:bg-surface-tertiary/80 transition-colors"
+                        >
+                          <action.icon className={cn('w-4 h-4', action.color)} />
+                          <span className="text-xs font-medium text-th-text-primary">{action.label}</span>
+                        </button>
+                      ))}
+                      <div className="h-px bg-th-border/50 my-1" />
+                      <div className="px-2 py-1">
+                        <p className="text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">Advanced</p>
+                      </div>
+                      {WAVE2_ACTIONS.map((action) => (
                         <button
                           key={action.id}
                           onClick={() => { handleAction(action.id); setShowPowerMenu(false); }}
@@ -243,6 +273,18 @@ export function FooterCommandBar({ onAction, selectionCount = 0, recordCount }: 
             <div className="h-px bg-th-border/50 my-1" />
             <p className="px-3 py-1 text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">Power Features</p>
             {POWER_ACTIONS.map((action) => (
+              <button
+                key={action.id}
+                onClick={() => handleAction(action.id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-surface-tertiary/80 transition-colors"
+              >
+                <action.icon className={cn('w-4 h-4', action.color)} />
+                <span className="text-th-text-primary font-medium">{action.label}</span>
+              </button>
+            ))}
+            <div className="h-px bg-th-border/50 my-1" />
+            <p className="px-3 py-1 text-[10px] font-semibold text-th-text-tertiary uppercase tracking-wider">Advanced</p>
+            {WAVE2_ACTIONS.map((action) => (
               <button
                 key={action.id}
                 onClick={() => handleAction(action.id)}

@@ -73,6 +73,18 @@ import { ClientPortalModal } from '../components/ClientPortalModal';
 import { ReferralAttributionModal } from '../components/ReferralAttributionModal';
 import { DocumentGenerateModal } from '../components/DocumentGenerateModal';
 import { TerritoryMapModal } from '../components/TerritoryMapModal';
+import { RateQuoteCalculator } from '../components/RateQuoteCalculator';
+import { Client360Modal } from '../components/Client360Modal';
+import { HouseholdManagerModal } from '../components/HouseholdManagerModal';
+import { WinLossAnalysisModal } from '../components/WinLossAnalysisModal';
+import { EmailTemplateStudio } from '../components/EmailTemplateStudio';
+import { BulkSMSCampaignModal } from '../components/BulkSMSCampaignModal';
+import { TeamChallengeModal } from '../components/TeamChallengeModal';
+import { CarrierRateAlertModal } from '../components/CarrierRateAlertModal';
+import { CalendarSyncModal } from '../components/CalendarSyncModal';
+import { SLADashboardModal } from '../components/SLADashboardModal';
+import { GoalTrackerModal } from '../components/GoalTrackerModal';
+import { AIEmailWriterModal } from '../components/AIEmailWriterModal';
 import toast from 'react-hot-toast';
 
 interface ExtendedNavChild {
@@ -248,6 +260,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [showDocumentGenerate, setShowDocumentGenerate] = useState(false);
   const [showTerritoryMap, setShowTerritoryMap] = useState(false);
 
+  // Wave 2 modal state
+  const [showRateQuote, setShowRateQuote] = useState(false);
+  const [showClient360, setShowClient360] = useState(false);
+  const [showHousehold, setShowHousehold] = useState(false);
+  const [showWinLoss, setShowWinLoss] = useState(false);
+  const [showEmailStudio, setShowEmailStudio] = useState(false);
+  const [showBulkSMS, setShowBulkSMS] = useState(false);
+  const [showTeamChallenge, setShowTeamChallenge] = useState(false);
+  const [showCarrierAlerts, setShowCarrierAlerts] = useState(false);
+  const [showCalendarSync, setShowCalendarSync] = useState(false);
+  const [showSLADashboard, setShowSLADashboard] = useState(false);
+  const [showGoalTracker, setShowGoalTracker] = useState(false);
+  const [showAIEmailWriter, setShowAIEmailWriter] = useState(false);
+
   // Extract leadId from URL when on a lead detail page
   const leadIdMatch = location.pathname.match(/^\/leads\/([a-f0-9-]+)$/i);
   const currentLeadId = leadIdMatch?.[1] ?? null;
@@ -298,6 +324,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         case 'referral-attribution': setShowReferralAttribution(true); break;
         case 'document-generate': setShowDocumentGenerate(true); break;
         case 'territory-map': setShowTerritoryMap(true); break;
+        case 'rate-quote': setShowRateQuote(true); break;
+        case 'client-360':
+          if (currentLeadId) { setShowClient360(true); }
+          else { toast('Navigate to a lead first for Client 360', { icon: '👤' }); }
+          break;
+        case 'household':
+          if (currentLeadId) { setShowHousehold(true); }
+          else { toast('Navigate to a lead first for Household Manager', { icon: '👨‍👩‍👧‍👦' }); }
+          break;
+        case 'win-loss': setShowWinLoss(true); break;
+        case 'email-studio': setShowEmailStudio(true); break;
+        case 'bulk-sms': setShowBulkSMS(true); break;
+        case 'team-challenge': setShowTeamChallenge(true); break;
+        case 'carrier-alerts': setShowCarrierAlerts(true); break;
+        case 'calendar-sync': setShowCalendarSync(true); break;
+        case 'sla-dashboard': setShowSLADashboard(true); break;
+        case 'goal-tracker': setShowGoalTracker(true); break;
+        case 'ai-email-writer': setShowAIEmailWriter(true); break;
       }
     };
     window.addEventListener('crm:quick-action', handler);
@@ -687,6 +731,38 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         leadId={currentLeadId || undefined}
       />
       <TerritoryMapModal open={showTerritoryMap} onClose={() => setShowTerritoryMap(false)} />
+
+      {/* ---- Wave 2 Power Feature Modals ---- */}
+      <RateQuoteCalculator
+        open={showRateQuote}
+        onClose={() => setShowRateQuote(false)}
+        leadName={currentLeadId ? 'Current Lead' : 'Client'}
+        leadId={currentLeadId || undefined}
+      />
+      <Client360Modal
+        open={showClient360}
+        onClose={() => setShowClient360(false)}
+        leadId={currentLeadId || undefined}
+      />
+      <HouseholdManagerModal
+        open={showHousehold}
+        onClose={() => setShowHousehold(false)}
+        primaryName={currentLeadId ? 'Current Lead' : 'Client'}
+        leadId={currentLeadId || undefined}
+      />
+      <WinLossAnalysisModal open={showWinLoss} onClose={() => setShowWinLoss(false)} />
+      <EmailTemplateStudio open={showEmailStudio} onClose={() => setShowEmailStudio(false)} />
+      <BulkSMSCampaignModal open={showBulkSMS} onClose={() => setShowBulkSMS(false)} />
+      <TeamChallengeModal open={showTeamChallenge} onClose={() => setShowTeamChallenge(false)} />
+      <CarrierRateAlertModal open={showCarrierAlerts} onClose={() => setShowCarrierAlerts(false)} />
+      <CalendarSyncModal open={showCalendarSync} onClose={() => setShowCalendarSync(false)} />
+      <SLADashboardModal open={showSLADashboard} onClose={() => setShowSLADashboard(false)} />
+      <GoalTrackerModal open={showGoalTracker} onClose={() => setShowGoalTracker(false)} />
+      <AIEmailWriterModal
+        open={showAIEmailWriter}
+        onClose={() => setShowAIEmailWriter(false)}
+        recipientName={currentLeadId ? 'Client' : undefined}
+      />
     </>
   );
 }

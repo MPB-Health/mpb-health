@@ -65,24 +65,6 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     type: 'sop',
     external: true,
   },
-  {
-    id: 'member-deescalation',
-    title: 'Member De-escalation',
-    description: 'How to handle difficult members and de-escalate situations',
-    url: 'https://netorg6712533.sharepoint.com/:w:/s/ConciergeTraining900/EZmTc_IDN6lLhnSFMOVZfBoBu7WPDnfo5s_xlp8FGD06Pw?e=WCfrdo',
-    category: 'health-sharing',
-    type: 'document',
-    external: true,
-  },
-  {
-    id: 'customer-service-101',
-    title: 'Customer Service 101',
-    description: 'Foundational customer service training for concierge staff',
-    url: 'https://netorg6712533.sharepoint.com/:w:/s/ConciergeTraining900/EaselpITM_5FsOC3TugMl_0BsAIBHJ1risN7y7mZKsDbQg?e=Rpbhaz',
-    category: 'health-sharing',
-    type: 'document',
-    external: true,
-  },
 
   // ─── MPB Plans: Member Handbooks ─────────────────────────────────────
   {
@@ -208,6 +190,36 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     external: true,
   },
   {
+    id: 'arm-hdhp-sbc-2026',
+    title: 'ARM HDHP Plan SBC 2026',
+    description: 'Summary of Benefits and Coverage for the ARM High Deductible Health Plan (2026)',
+    url: '#',
+    category: 'telehealth',
+    subcategory: 'ARM',
+    type: 'pdf',
+    external: true,
+  },
+  {
+    id: 'arm-proof-of-coverage',
+    title: 'ARM Proof of Coverage Letter',
+    description: 'Proof of coverage letter template for ARM plan members',
+    url: '#',
+    category: 'telehealth',
+    subcategory: 'ARM',
+    type: 'document',
+    external: true,
+  },
+  {
+    id: 'arm-welcome-letter-2026',
+    title: 'ARM Welcome Letter 2026',
+    description: 'Welcome letter for new ARM plan members (2026)',
+    url: '#',
+    category: 'telehealth',
+    subcategory: 'ARM',
+    type: 'pdf',
+    external: true,
+  },
+  {
     id: 'mpb-telehealth-sop',
     title: 'MPB Telehealth',
     description: 'Standard operating procedures for Lyric telehealth services',
@@ -270,6 +282,26 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/EW6RPk9jIJVOjH53SHbMzYcBAaPYxMsUW6VW5tRlyZDmyQ',
     category: 'internal-sops',
     type: 'sop',
+    external: true,
+  },
+
+  // ─── Customer Service ────────────────────────────────────────────────
+  {
+    id: 'member-deescalation',
+    title: 'Member De-escalation',
+    description: 'How to handle difficult members and de-escalate situations',
+    url: 'https://netorg6712533.sharepoint.com/:w:/s/ConciergeTraining900/EZmTc_IDN6lLhnSFMOVZfBoBu7WPDnfo5s_xlp8FGD06Pw?e=WCfrdo',
+    category: 'customer-service',
+    type: 'document',
+    external: true,
+  },
+  {
+    id: 'customer-service-101',
+    title: 'Customer Service 101',
+    description: 'Foundational customer service training for concierge staff',
+    url: 'https://netorg6712533.sharepoint.com/:w:/s/ConciergeTraining900/EaselpITM_5FsOC3TugMl_0BsAIBHJ1risN7y7mZKsDbQg?e=Rpbhaz',
+    category: 'customer-service',
+    type: 'document',
     external: true,
   },
 ];

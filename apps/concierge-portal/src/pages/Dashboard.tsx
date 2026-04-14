@@ -18,6 +18,7 @@ import {
   Heart,
   Stethoscope,
   ClipboardList,
+  Headphones,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ const CATEGORY_ICONS: Record<TrainingCategory, React.ReactNode> = {
   'welcome-scripts': <PhoneCall className="w-5 h-5" />,
   'telehealth': <Stethoscope className="w-5 h-5" />,
   'internal-sops': <ClipboardList className="w-5 h-5" />,
+  'customer-service': <Headphones className="w-5 h-5" />,
 };
 
 const CATEGORY_COLORS: Record<TrainingCategory, { bg: string; border: string; icon: string; badge: string }> = {
@@ -36,6 +38,7 @@ const CATEGORY_COLORS: Record<TrainingCategory, { bg: string; border: string; ic
   'welcome-scripts': { bg: 'bg-violet-50', border: 'border-violet-200', icon: 'text-violet-600', badge: 'bg-violet-100 text-violet-700' },
   'telehealth': { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700' },
   'internal-sops': { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-600', badge: 'bg-amber-100 text-amber-700' },
+  'customer-service': { bg: 'bg-cyan-50', border: 'border-cyan-200', icon: 'text-cyan-600', badge: 'bg-cyan-100 text-cyan-700' },
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -54,6 +57,7 @@ const CATEGORIES: TrainingCategory[] = [
   'internal-sops',
   'mpb-plans',
   'welcome-scripts',
+  'customer-service',
 ];
 
 function ResourceCard({ resource }: { resource: TrainingResource }) {
@@ -166,6 +170,7 @@ export default function Dashboard() {
       'welcome-scripts': [],
       'telehealth': [],
       'internal-sops': [],
+      'customer-service': [],
     };
 
     for (const resource of TRAINING_RESOURCES) {

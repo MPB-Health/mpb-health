@@ -154,7 +154,7 @@ export default function Today() {
           </div>
         </div>
         <Link
-          to="/"
+          to="/dashboard"
           className="text-sm text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
         >
           Full Dashboard <ArrowUpRight className="w-3.5 h-3.5" />

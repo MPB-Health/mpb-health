@@ -1,7 +1,8 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { LoginLayout } from '@mpbhealth/ui';
+import { ArrowLeft } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function Login() {
       if (error) {
         throw new Error(error.message || 'Invalid email or password');
       }
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       throw err instanceof Error ? err : new Error('Login failed. Please try again.');
     }
@@ -36,6 +37,23 @@ export default function Login() {
       showRememberMe={true}
       emailPlaceholder="you@mympb.com"
       tagline="Empowering Health, Securing Futures"
+      formHeader={
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700 transition-colors mb-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </Link>
+      }
+      formFooter={
+        <p className="text-center text-sm text-neutral-500">
+          Don&apos;t have an account?{' '}
+          <Link to="/#pricing" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+            Start your free trial
+          </Link>
+        </p>
+      }
     />
   );
 }

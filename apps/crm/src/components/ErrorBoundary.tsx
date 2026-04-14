@@ -49,7 +49,7 @@ export class RouteErrorBoundary extends Component<ErrorBoundaryProps, ErrorBound
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = '/dashboard';
   };
 
   render() {

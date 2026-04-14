@@ -7,6 +7,8 @@ import { lazyRetry } from './utils/lazyRetry';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
 
+const LandingPage = lazyRetry(() => import('./pages/LandingPage'));
+
 const Dashboard = lazyRetry(() => import('./pages/Dashboard'));
 const LeadsList = lazyRetry(() => import('./pages/LeadsList'));
 const LeadDetail = lazyRetry(() => import('./pages/LeadDetail'));
@@ -175,9 +177,18 @@ function Guarded({ permission, children }: { permission: string; children: React
   );
 }
 
+/** Public landing page -- redirects to /dashboard if already logged in */
+function LandingRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (user) return <Navigate to="/dashboard" replace />;
+  return <Suspense fallback={<PageLoader />}><LandingPage /></Suspense>;
+}
+
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingRoute />} />
       <Route path="/login" element={<Login />} />
 
       {/* Public form renderer - no auth required */}
@@ -218,7 +229,7 @@ export default function App() {
           <ProtectedRoute>
             <MainLayout>
               <Routes>
-                <Route path="/" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
+                <Route path="/dashboard" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
                 <Route path="/today" element={<Suspense fallback={<PageLoader />}><Today /></Suspense>} />
                 <Route
                   path="/leads"

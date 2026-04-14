@@ -321,9 +321,7 @@ export class LeadService {
    * Bulk delete leads by IDs
    */
   async bulkDeleteLeads(ids: string[]): Promise<BulkUpdateResult> {
-    let successCount = 0;
-    let failCount = 0;
-    const errors: string[] = [];
+    const result: BulkUpdateResult = { success: 0, failed: 0, errors: [] };
 
     for (const id of ids) {
       const { error } = await this.supabase
@@ -332,14 +330,14 @@ export class LeadService {
         .eq('id', id);
 
       if (error) {
-        failCount++;
-        errors.push(`${id}: ${error.message}`);
+        result.failed++;
+        result.errors.push(`${id}: ${error.message}`);
       } else {
-        successCount++;
+        result.success++;
       }
     }
 
-    return { successCount, failCount, errors };
+    return result;
   }
 
   /**

@@ -160,10 +160,10 @@ export default function LeadsList() {
     setDeleting(true);
     try {
       const result = await leadService.bulkDeleteLeads(ids);
-      if (result.failCount === 0) {
-        toast.success(`Deleted ${result.successCount} lead${result.successCount !== 1 ? 's' : ''}`);
+      if (result.failed === 0) {
+        toast.success(`Deleted ${result.success} lead${result.success !== 1 ? 's' : ''}`);
       } else {
-        toast.error(`Deleted ${result.successCount}, failed ${result.failCount}`);
+        toast.error(`Deleted ${result.success}, failed ${result.failed}`);
       }
       setSelectedLeads(new Set());
       loadLeads();

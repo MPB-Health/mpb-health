@@ -10,79 +10,16 @@ import {
   X,
   ExternalLink,
   ChevronDown,
+  Globe,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { QUICK_LINKS } from '@mpbhealth/concierge-core';
 
 const NAV_ITEMS = [
   { name: 'Resources', href: '/', icon: LayoutDashboard },
   { name: 'Tickets', href: '/tickets', icon: Headphones },
+  { name: 'Member Portal', href: 'https://app.mpb.health/', icon: Globe, external: true },
   { name: 'Profile', href: '/profile', icon: UserCircle },
-];
-
-interface QuickLink {
-  name: string;
-  url?: string;
-  children?: { name: string; url: string }[];
-}
-
-const QUICK_LINKS: QuickLink[] = [
-  {
-    name: 'MPB Platforms',
-    children: [
-      { name: 'Zoho CRM', url: 'https://crm.zoho.com/crm/org55989130/tab/Home/begin' },
-      { name: 'Admin123', url: 'https://www.administration123.com/manage/logout.cfm' },
-      { name: 'APP Dashboard', url: 'https://app.mpbcloud.com/' },
-      { name: 'GoTo Admin', url: 'https://admin.goto.com/8944090994408875270/phone-system/phone-numbers/phone-numbers-all?page=0&sort=id-number_direction-asc' },
-      { name: 'GoTo Call Reports', url: 'https://my.jive.com/cr/mpoweringbenefitsl/summary' },
-    ],
-  },
-  {
-    name: 'Portals',
-    children: [
-      { name: 'ARM', url: 'https://www.mediconnx.com/MediClm/Login.aspx' },
-      { name: 'Lyric', url: 'https://portal.getlyric.com/lyric/login' },
-      { name: 'Zion', url: 'https://zionhealthshare.org/members/' },
-      { name: 'Sedera', url: 'https://sedera.my.site.com/MemberPortal/s/login/' },
-    ],
-  },
-  {
-    name: 'Preventive',
-    children: [
-      { name: 'PHCS', url: 'https://providersearch.multiplan.com/' },
-      { name: 'ZocDoc', url: 'https://www.zocdoc.com/' },
-      { name: 'PHCS Nominate Provider', url: 'https://www.multiplan.com/providernominations/patient?siteid=84559' },
-      { name: 'Preventive Task Force', url: 'https://www.uspreventiveservicestaskforce.org/uspstf/' },
-    ],
-  },
-  {
-    name: 'RX',
-    children: [
-      { name: 'RX Valet', url: 'https://web.thehealthwallet.com/login' },
-      { name: 'Good RX', url: 'https://www.goodrx.com/' },
-      { name: 'RX Go', url: 'https://www.rxgo.com/' },
-      { name: 'Single Care', url: 'https://www.singlecare.com/' },
-      { name: 'Mark Cuban', url: 'https://www.costplusdrugs.com/medications/' },
-      { name: 'Canadian Drug Store', url: 'https://www.canadianmedstore.com/' },
-    ],
-  },
-  {
-    name: 'Labs',
-    children: [
-      { name: 'LaboratoryAssist', url: 'https://laboratoryassist.com/' },
-      { name: 'Lab Tests Online', url: 'https://www.healthlabs.com/' },
-      { name: 'Jason Health', url: 'https://www.jasonhealth.com/' },
-      { name: 'Ulta Lab Tests', url: 'https://www.ultalabtests.com/' },
-    ],
-  },
-  {
-    name: 'Imaging & More',
-    children: [
-      { name: 'RadiologyAssist', url: 'https://radiologyassist.com/' },
-      { name: 'Healthcare Bluebook', url: 'https://www.healthcarebluebook.com/ui/signinpublic' },
-      { name: 'MD Save', url: 'https://www.mdsave.com/' },
-      { name: 'Colonoscopy Assist', url: 'https://colonoscopyassist.com/' },
-    ],
-  },
 ];
 
 export default function MainLayout() {
@@ -141,6 +78,21 @@ export default function MainLayout() {
           <nav className="hidden lg:flex items-center gap-1">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
+              if (item.external) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.name}
+                    <ExternalLink className="w-3 h-3 opacity-50" />
+                  </a>
+                );
+              }
               return (
                 <NavLink
                   key={item.href}
@@ -231,6 +183,21 @@ export default function MainLayout() {
           >
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
+              if (item.external) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                  >
+                    <Icon className="w-5 h-5" />
+                    {item.name}
+                    <ExternalLink className="w-3.5 h-3.5 opacity-50 ml-auto" />
+                  </a>
+                );
+              }
               return (
                 <NavLink
                   key={item.href}

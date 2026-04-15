@@ -62,7 +62,7 @@ export default function Profile() {
         setProfile({
           first_name: '',
           last_name: '',
-          email: session.user.email ?? '',
+          email: user.email ?? '',
           phone: '',
           department: '',
           title: '',

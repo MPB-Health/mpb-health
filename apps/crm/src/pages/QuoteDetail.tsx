@@ -991,22 +991,25 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
       tax_rate: taxRate ? parseFloat(taxRate) : undefined,
     };
 
-    let result;
+    let result: { success: boolean; lineItemId?: string; error?: string };
     if (lineItem) {
       result = await quoteService.updateLineItem(lineItem.id, input);
     } else {
       result = await quoteService.addLineItem(quoteId, input);
     }
 
-    if (result.success && result.lineItemId && configFields.length > 0) {
-      const answers = Object.entries(configAnswers)
-        .filter(([, v]) => v !== undefined && v !== '')
-        .map(([field_id, value]) => ({ field_id, value }));
-      if (answers.length > 0) {
-        await productFormService.saveLineItemAnswers(
-          lineItem?.id || result.lineItemId,
-          answers
-        );
+    if (result.success && configFields.length > 0) {
+      const resolvedLineItemId = lineItem?.id || result.lineItemId;
+      if (resolvedLineItemId) {
+        const answers = Object.entries(configAnswers)
+          .filter(([, v]) => v !== undefined && v !== '')
+          .map(([field_id, value]) => ({ field_id, value }));
+        if (answers.length > 0) {
+          await productFormService.saveLineItemAnswers(
+            resolvedLineItemId,
+            answers
+          );
+        }
       }
     }
 

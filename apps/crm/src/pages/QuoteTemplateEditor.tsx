@@ -199,7 +199,7 @@ function HeaderProperties({
         >
           {section.config.logoUrl ? 'Change Logo' : 'Upload Logo'}
         </button>
-        {section.config.logoUrl && (
+        {!!section.config.logoUrl && (
           <div className="mt-2 flex items-center gap-2">
             <img src={section.config.logoUrl as string} alt="Logo" className="h-8 object-contain" />
             <button onClick={() => onUpdate({ ...section.config, logoUrl: '' })} className="text-red-500 hover:text-red-700" aria-label="Remove logo">

@@ -35,7 +35,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [rolesLoading, setRolesLoading] = useState(true);
   const initialRolesLoaded = useRef(false);
 
-  // Fetch roles for the current user
+  // Prevents onAuthStateChange from acting until the initial getUser()
+  // validation completes, avoiding duplicate role fetches and state flicker.
+  const validatedRef = useRef(false);
+
   const fetchRoles = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setUserRoles([]);
@@ -62,7 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Refresh roles (can be called manually after role changes)
   const refreshRoles = useCallback(async () => {
     if (user?.id) {
       userRolesService.invalidateCache(user.id);
@@ -77,35 +79,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Safety timeout: never stay stuck on a loading spinner.
     const timeout = setTimeout(() => {
       setLoading((prev) => {
         if (prev) {
           console.warn('[AuthContext] Auth timed out after 8 s — treating as unauthenticated');
           setRolesLoading(false);
+          validatedRef.current = true;
           return false;
         }
         return prev;
       });
     }, 8_000);
 
-    // Validate server-side: getSession() can return stale/expired JWTs from
-    // localStorage. Use getUser() to confirm the session is still valid and
-    // avoid 401 errors on subsequent data queries.
+    // Server-side validation with getUser() before any data queries.
+    // getSession() returns stale JWTs from localStorage which cause 401 errors.
     supabase.auth.getUser()
       .then(async ({ data: { user: verified }, error: verifyError }) => {
         if (verifyError || !verified) {
-          await supabase.auth.signOut({ scope: 'local' });
+          if (verifyError) await supabase.auth.signOut({ scope: 'local' });
           setSession(null);
           setUser(null);
           setLoading(false);
           setRolesLoading(false);
+          validatedRef.current = true;
           return;
         }
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
         setUser(verified);
         setLoading(false);
+        validatedRef.current = true;
         fetchRoles(verified.id);
       })
       .catch((error) => {
@@ -113,15 +116,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(null);
         setUser(null);
         setLoading(false);
+        validatedRef.current = true;
       });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // Ignore events until the initial getUser() validation completes to
+      // prevent duplicate state updates and role fetches.
+      if (!validatedRef.current) return;
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
       setLoading(false);
-      fetchRoles(session?.user?.id);
+      fetchRoles(newSession?.user?.id);
     });
 
     return () => {

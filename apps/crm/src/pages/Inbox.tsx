@@ -45,6 +45,7 @@ import type {
   EnhancedEmailFilters,
 } from '@mpbhealth/crm-core';
 import { sanitizeHtml } from '@mpbhealth/utils';
+import { HelpBanner } from '../components/help';
 
 // ============================================================================
 // Constants
@@ -1521,7 +1522,13 @@ export default function Inbox() {
 
   // ---- Render ----
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-surface-primary overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-surface-primary overflow-hidden">
+      <HelpBanner
+        pageKey="email-inbox"
+        title="Welcome to Your Inbox"
+        tip="Manage all your CRM emails in one place. Compose new messages, reply to conversations, and use templates for quick responses. Connect your email account in Settings for full sync."
+      />
+      <div className="flex flex-1 overflow-hidden">
       {/* Left Sidebar */}
       <FolderSidebar
         activeFolder={folder}
@@ -1691,6 +1698,7 @@ export default function Inbox() {
           loadStats();
         }}
       />
+      </div>
     </div>
   );
 }

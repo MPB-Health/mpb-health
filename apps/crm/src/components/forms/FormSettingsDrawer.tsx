@@ -127,6 +127,7 @@ export function FormSettingsDrawer({
                 >
                   <option value="lead">Lead</option>
                   <option value="contact">Contact</option>
+                  <option value="quote_request">Quote Request</option>
                 </select>
               </div>
             </>

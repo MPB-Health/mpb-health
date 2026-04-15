@@ -38,6 +38,7 @@ import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import { PermissionGate } from '../components/PermissionGate';
 import type { CRMTemplate, TemplateFilters, TemplateType } from '@mpbhealth/crm-core';
+import { HelpBanner } from '../components/help';
 
 // =============================================================================
 // Constants
@@ -1535,6 +1536,8 @@ export default function Templates() {
           </PermissionGate>
         </div>
       </div>
+
+      <HelpBanner pageKey="templates" title="Welcome to Templates" tip="Create reusable email and document templates. Use merge fields to personalize content automatically. Templates save time and ensure consistent messaging." />
 
       {/* Analytics Panel */}
       {showAnalytics && (

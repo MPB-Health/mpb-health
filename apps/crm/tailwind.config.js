@@ -34,6 +34,25 @@ export default {
           navy: '#0E2D41',
         },
       },
+      animation: {
+        scroll: 'scroll 30s linear infinite',
+        shimmer: 'shimmer 3s ease-in-out infinite',
+        'button-shimmer': 'button-shimmer 2.5s ease-in-out infinite',
+      },
+      keyframes: {
+        scroll: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        shimmer: {
+          '0%, 100%': { backgroundSize: '200% 200%', backgroundPosition: 'left center' },
+          '50%': { backgroundSize: '200% 200%', backgroundPosition: 'right center' },
+        },
+        'button-shimmer': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
     },
   },
 };

@@ -12,6 +12,11 @@ import type {
 } from './campaignTypes';
 import { sanitizeSearchInput } from '../utils/sanitize';
 
+function mapCampaignRow(row: Record<string, unknown>): Record<string, unknown> {
+  const { type, ...rest } = row;
+  return { ...rest, campaign_type: type };
+}
+
 export class CampaignService {
   constructor(private supabase: SupabaseClient) {}
 
@@ -36,7 +41,7 @@ export class CampaignService {
         query = query.eq('status', filters.status);
       }
       if (filters.campaign_type) {
-        query = query.eq('campaign_type', filters.campaign_type);
+        query = query.eq('type', filters.campaign_type);
       }
       if (filters.owner_id) {
         query = query.eq('owner_id', filters.owner_id);
@@ -87,7 +92,7 @@ export class CampaignService {
         return { campaigns: [], total: 0 };
       }
 
-      return { campaigns: data as CampaignWithRelations[], total: count || 0 };
+      return { campaigns: (data || []).map(r => mapCampaignRow(r as Record<string, unknown>)) as unknown as CampaignWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get campaigns error:', error);
       return { campaigns: [], total: 0 };
@@ -131,8 +136,9 @@ export class CampaignService {
         .eq('campaign_id', id)
         .not('contact_id', 'is', null);
 
+      const mapped = mapCampaignRow(data as Record<string, unknown>);
       return {
-        ...data,
+        ...mapped,
         members_count: membersCount || 0,
         leads_count: leadsCount || 0,
         contacts_count: contactsCount || 0,
@@ -155,11 +161,12 @@ export class CampaignService {
         return { success: false, error: 'Not authenticated' };
       }
 
+      const { campaign_type: _ct, ...rest } = input;
       const { data, error } = await this.supabase
         .from('crm_campaigns')
         .insert({
-          ...input,
-          campaign_type: input.campaign_type || 'email',
+          ...rest,
+          type: input.campaign_type || 'email',
           status: input.status || 'draft',
           tags: input.tags || [],
           metadata: input.metadata || {},
@@ -190,9 +197,11 @@ export class CampaignService {
     updates: CampaignUpdateInput
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      const { campaign_type: ct, ...rest } = updates;
+      const dbUpdates = ct !== undefined ? { ...rest, type: ct } : rest;
       const { error } = await this.supabase
         .from('crm_campaigns')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id);
 
       if (error) {
@@ -566,7 +575,7 @@ export class CampaignService {
         return [];
       }
 
-      return data as Campaign[];
+      return (data || []).map(r => mapCampaignRow(r as Record<string, unknown>)) as unknown as Campaign[];
     } catch (error) {
       console.error('Get active campaigns error:', error);
       return [];

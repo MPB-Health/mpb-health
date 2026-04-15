@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Check, Star, ArrowRight } from 'lucide-react';
 
 const tiers = [
@@ -68,7 +68,7 @@ export function PricingSection() {
   const inView = useInView(ref, { once: true, margin: '-80px' });
 
   return (
-    <section id="pricing" className="py-24 bg-neutral-50" ref={ref}>
+    <section id="pricing" className="py-24 bg-white" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -98,16 +98,22 @@ export function PricingSection() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="flex items-center justify-center gap-4 mb-14"
         >
-          <span className={`text-sm font-medium ${!annual ? 'text-neutral-900' : 'text-neutral-400'}`}>Monthly</span>
+          <span className={`text-sm font-medium transition-colors ${!annual ? 'text-neutral-900' : 'text-neutral-400'}`}>
+            Monthly
+          </span>
           <button
             onClick={() => setAnnual(!annual)}
             className={`relative w-14 h-7 rounded-full transition-colors ${annual ? 'bg-primary-600' : 'bg-neutral-300'}`}
+            aria-label="Toggle annual pricing"
           >
-            <div
-              className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${annual ? 'translate-x-7' : 'translate-x-0.5'}`}
+            <motion.div
+              layout
+              className="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md"
+              animate={{ x: annual ? 28 : 2 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             />
           </button>
-          <span className={`text-sm font-medium ${annual ? 'text-neutral-900' : 'text-neutral-400'}`}>
+          <span className={`text-sm font-medium transition-colors ${annual ? 'text-neutral-900' : 'text-neutral-400'}`}>
             Annual
             <span className="ml-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
               Save 20%
@@ -130,12 +136,17 @@ export function PricingSection() {
               }`}
             >
               {tier.badge && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <motion.div
+                  initial={{ scale: 0, y: 10 }}
+                  animate={inView ? { scale: 1, y: 0 } : {}}
+                  transition={{ duration: 0.4, delay: 0.8, type: 'spring', stiffness: 300 }}
+                  className="absolute -top-4 left-1/2 -translate-x-1/2"
+                >
                   <span className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-primary-600 text-white text-xs font-bold shadow-lg shadow-primary-600/25">
                     <Star className="w-3.5 h-3.5" fill="currentColor" />
                     {tier.badge}
                   </span>
-                </div>
+                </motion.div>
               )}
 
               <div className="mb-6">
@@ -143,16 +154,36 @@ export function PricingSection() {
                 <p className="text-sm text-neutral-500 mt-1">{tier.description}</p>
               </div>
 
+              {/* Animated price */}
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-extrabold text-neutral-900">
-                    ${annual ? tier.annualPrice : tier.monthlyPrice}
-                  </span>
+                  <span className="text-lg text-neutral-500 font-medium">$</span>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={`${tier.name}-${annual}`}
+                      initial={{ opacity: 0, y: -12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 12 }}
+                      transition={{ duration: 0.25 }}
+                      className="text-5xl font-extrabold text-neutral-900"
+                    >
+                      {annual ? tier.annualPrice : tier.monthlyPrice}
+                    </motion.span>
+                  </AnimatePresence>
                   <span className="text-neutral-500 text-sm">/user/mo</span>
                 </div>
-                {annual && (
-                  <p className="text-xs text-neutral-400 mt-1">billed annually</p>
-                )}
+                <AnimatePresence>
+                  {annual && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-xs text-neutral-400 mt-1"
+                    >
+                      billed annually
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
 
               <Link
@@ -167,12 +198,19 @@ export function PricingSection() {
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
 
+              {/* Feature list with staggered animation */}
               <ul className="mt-8 space-y-3">
-                {tier.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
+                {tier.features.map((feature, fi) => (
+                  <motion.li
+                    key={feature}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                    transition={{ duration: 0.3, delay: 0.5 + i * 0.15 + fi * 0.04 }}
+                    className="flex items-start gap-3"
+                  >
                     <Check className={`w-5 h-5 shrink-0 mt-0.5 ${tier.highlighted ? 'text-primary-600' : 'text-emerald-500'}`} />
                     <span className="text-sm text-neutral-600">{feature}</span>
-                  </li>
+                  </motion.li>
                 ))}
               </ul>
             </motion.div>

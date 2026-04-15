@@ -29,6 +29,9 @@ const DEFAULT_LABEL: Record<FormFieldType, string> = {
   hidden: 'Hidden Field',
   heading: 'Section Heading',
   paragraph: 'Paragraph',
+  product_selector: 'Product Selector',
+  product_quantity: 'Product Quantity',
+  product_config: 'Product Configuration',
 };
 
 export default function FormBuilder() {

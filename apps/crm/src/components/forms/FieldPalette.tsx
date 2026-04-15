@@ -12,6 +12,9 @@ import {
   Heading,
   FileText,
   GripVertical,
+  Package,
+  ListOrdered,
+  Settings2,
 } from 'lucide-react';
 import type { FormFieldType } from '@mpbhealth/crm-core';
 
@@ -19,7 +22,7 @@ interface FieldTypeConfig {
   type: FormFieldType;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  category: 'input' | 'choice' | 'layout';
+  category: 'input' | 'choice' | 'layout' | 'product';
 }
 
 const FIELD_TYPES: FieldTypeConfig[] = [
@@ -35,6 +38,9 @@ const FIELD_TYPES: FieldTypeConfig[] = [
   { type: 'hidden', label: 'Hidden', icon: EyeOff, category: 'input' },
   { type: 'heading', label: 'Heading', icon: Heading, category: 'layout' },
   { type: 'paragraph', label: 'Paragraph', icon: FileText, category: 'layout' },
+  { type: 'product_selector', label: 'Product Selector', icon: Package, category: 'product' },
+  { type: 'product_quantity', label: 'Product Quantity', icon: ListOrdered, category: 'product' },
+  { type: 'product_config', label: 'Product Config', icon: Settings2, category: 'product' },
 ];
 
 interface FieldPaletteProps {
@@ -45,6 +51,7 @@ export function FieldPalette({ onAddField }: FieldPaletteProps) {
   const inputFields = FIELD_TYPES.filter((f) => f.category === 'input');
   const choiceFields = FIELD_TYPES.filter((f) => f.category === 'choice');
   const layoutFields = FIELD_TYPES.filter((f) => f.category === 'layout');
+  const productFields = FIELD_TYPES.filter((f) => f.category === 'product');
 
   const handleDragStart = (e: React.DragEvent, type: FormFieldType) => {
     e.dataTransfer.setData('fieldType', type);
@@ -92,6 +99,13 @@ export function FieldPalette({ onAddField }: FieldPaletteProps) {
         <p className="text-xs font-medium text-th-text-secondary mb-1 px-1">Layout</p>
         <div className="space-y-0.5">
           {layoutFields.map(renderFieldButton)}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium text-th-text-secondary mb-1 px-1">Product (Quote Request)</p>
+        <div className="space-y-0.5">
+          {productFields.map(renderFieldButton)}
         </div>
       </div>
     </div>

@@ -39,6 +39,7 @@ import { useSavedViews } from '../hooks/useSavedViews';
 import type { Lead, LeadFilters } from '@mpbhealth/crm-core';
 import { formatTimeAgo, getPriorityColor, getPriorityLabel, PLAN_TYPE_LABELS } from '@mpbhealth/crm-core';
 import { SkeletonTable, GradientHeader } from '@mpbhealth/ui';
+import { HelpTooltip, HelpBanner } from '../components/help';
 
 export default function LeadsList() {
   const { leadService, pipelineStages } = useCRM();
@@ -399,6 +400,12 @@ export default function LeadsList() {
         }
       />
 
+      <HelpBanner
+        pageKey="leads"
+        title="Welcome to Lead Management"
+        tip="Use the search bar to find leads by name, email, or phone. Filter by stage, priority, or source to narrow results. Click any lead to view their full profile."
+      />
+
       {/* ─── Saved Views ─── */}
       <div className="bg-surface-primary rounded-2xl border border-th-border">
         <SavedViewsBar
@@ -508,12 +515,24 @@ export default function LeadsList() {
                         className="w-4 h-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                       />
                     </th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Lead</th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Contact</th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Plan</th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Stage</th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Priority</th>
-                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Created</th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1">Lead <HelpTooltip text="The lead's full name. Click to view their detail page or workspace." size="sm" /></span>
+                    </th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1">Contact <HelpTooltip text="Email and phone number on file. Click the icons to send an email or make a call." size="sm" /></span>
+                    </th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1">Plan <HelpTooltip text="The insurance plan type the lead is interested in (e.g., Medicare Advantage, Supplement)." size="sm" /></span>
+                    </th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1">Stage <HelpTooltip text="Current pipeline stage. Leads move through stages as they progress toward enrollment." size="sm" /></span>
+                    </th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1">Priority <HelpTooltip text="Lead priority based on scoring rules. Higher priority leads should be contacted first." size="sm" /></span>
+                    </th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1">Created <HelpTooltip text="When this lead was first added to the CRM. Shows relative time (e.g., '2 days ago')." size="sm" /></span>
+                    </th>
                     <th className="w-12 px-2 py-3.5" />
                   </tr>
                 </thead>

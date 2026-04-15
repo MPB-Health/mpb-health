@@ -126,6 +126,16 @@ const FormBuilder = lazyRetry(() => import('./pages/FormBuilder'));
 const FormSubmissions = lazyRetry(() => import('./pages/FormSubmissions'));
 const PublicForm = lazyRetry(() => import('./pages/PublicForm'));
 
+// Team Management & User Profiles
+const TeamManagement = lazyRetry(() => import('./pages/TeamManagement'));
+const UserProfile = lazyRetry(() => import('./pages/UserProfile'));
+
+// Quote Template Editor
+const QuoteTemplateEditor = lazyRetry(() => import('./pages/QuoteTemplateEditor'));
+
+// Learning Center
+const LearningCenter = lazyRetry(() => import('./pages/LearningCenter'));
+
 // Prefetch common routes when the browser is idle
 if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
   window.requestIdleCallback(() => {
@@ -249,6 +259,8 @@ export default function App() {
               <Routes>
                 <Route path="/dashboard" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
                 <Route path="/today" element={<Suspense fallback={<PageLoader />}><Today /></Suspense>} />
+                <Route path="/learning-center" element={<Suspense fallback={<PageLoader />}><LearningCenter /></Suspense>} />
+                <Route path="/learning-center/:articleId" element={<Suspense fallback={<PageLoader />}><LearningCenter /></Suspense>} />
                 <Route
                   path="/leads"
                   element={
@@ -943,6 +955,56 @@ export default function App() {
                     <Guarded permission="campaigns.read">
                       <Suspense fallback={<PageLoader />}>
                         <FormSubmissions />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* Team Management */}
+                <Route
+                  path="/team"
+                  element={
+                    <Guarded permission="team.view">
+                      <Suspense fallback={<PageLoader />}>
+                        <TeamManagement />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/team/:userId"
+                  element={
+                    <Guarded permission="team.view">
+                      <Suspense fallback={<PageLoader />}>
+                        <UserProfile />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <UserProfile />
+                    </Suspense>
+                  }
+                />
+                {/* Quote Template Editor */}
+                <Route
+                  path="/quote-templates/new"
+                  element={
+                    <Guarded permission="quote_templates.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <QuoteTemplateEditor />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/quote-templates/:id"
+                  element={
+                    <Guarded permission="quote_templates.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <QuoteTemplateEditor />
                       </Suspense>
                     </Guarded>
                   }

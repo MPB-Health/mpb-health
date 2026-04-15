@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { supabase } from '@mpbhealth/database';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type {
   Notification,
   CreateNotificationInput,
@@ -13,6 +14,7 @@ import type {
 } from './types';
 
 export class NotificationService {
+  private _notificationChannel: RealtimeChannel | null = null;
   // =========================================================================
   // NOTIFICATIONS
   // =========================================================================
@@ -300,7 +302,11 @@ export class NotificationService {
     userId: string,
     callback: (notification: Notification) => void
   ) {
-    return supabase
+    if (this._notificationChannel) {
+      supabase.removeChannel(this._notificationChannel);
+    }
+
+    const channel = supabase
       .channel(`notifications:${userId}`)
       .on(
         'postgres_changes',
@@ -312,21 +318,24 @@ export class NotificationService {
         },
         (payload) => {
           const notification = payload.new as Notification;
-          // Skip support category — handled exclusively via notification_events
           if (notification.category === 'support') return;
           callback(notification);
         }
       )
       .subscribe();
+
+    this._notificationChannel = channel;
+    return channel;
   }
 
   /**
    * Unsubscribe from real-time notifications
    */
-  unsubscribeFromNotifications(userId: string) {
-    return supabase.removeChannel(
-      supabase.channel(`notifications:${userId}`)
-    );
+  unsubscribeFromNotifications(_userId: string) {
+    if (this._notificationChannel) {
+      supabase.removeChannel(this._notificationChannel);
+      this._notificationChannel = null;
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, RefreshCw, Zap } from 'lucide-react';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
@@ -136,6 +137,8 @@ export default function Forecasting() {
         title="Sales Forecasting"
         subtitle="Track pipeline, forecast revenue, and analyze deal performance"
       />
+
+      <HelpBanner pageKey="forecasting" title="Welcome to Forecasting" tip="Project revenue based on your deal pipeline. View weighted forecasts, best-case scenarios, and track your gap to target. Adjust forecast periods to plan ahead." />
 
       {/* Actions Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">

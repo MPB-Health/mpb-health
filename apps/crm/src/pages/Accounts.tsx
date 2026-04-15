@@ -26,6 +26,7 @@ import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddAccountModal } from '../components/AddAccountModal';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 import { useOrg } from '../contexts/OrgContext';
 import {
   createAccountService,
@@ -341,6 +342,8 @@ export default function Accounts() {
           </div>
         }
       />
+
+      <HelpBanner pageKey="accounts" title="Welcome to Accounts" tip="Manage company and organization records. Link contacts, track deals, and view complete account history. Use filters to find accounts by industry, type, or status." />
 
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">

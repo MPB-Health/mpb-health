@@ -38,6 +38,7 @@ import {
   QuoteExportBuilderModal,
 } from '../components/quotes';
 import toast from 'react-hot-toast';
+import { HelpBanner } from '../components/help';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import { PermissionGate } from '../components/PermissionGate';
@@ -241,6 +242,8 @@ export default function Quotes() {
           </button>
         </PermissionGate>
       </div>
+
+      <HelpBanner pageKey="quotes" title="Welcome to Quotes" tip="Create professional quotes for your clients. Add products, set pricing, and send quotes directly from the CRM. Track quote status from draft to accepted." />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

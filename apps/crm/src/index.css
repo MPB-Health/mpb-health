@@ -173,6 +173,22 @@ h1, h2, h3 {
   animation: fade-in-up 0.3s ease-out both;
 }
 
+/* Landing page animations */
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes shimmer {
+  0%, 100% { background-size: 200% 200%; background-position: left center; }
+  50% { background-size: 200% 200%; background-position: right center; }
+}
+
+@keyframes button-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 /* ============================================================================
    Starship Card System
    ============================================================================ */

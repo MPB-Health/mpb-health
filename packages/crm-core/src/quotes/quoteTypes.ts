@@ -27,6 +27,7 @@ export interface Quote {
   billing_address: Record<string, string>;
   shipping_address: Record<string, string>;
   price_book_id: string | null;
+  template_id: string | null;
   owner_id: string | null;
   created_by: string;
   created_at: string;
@@ -113,6 +114,7 @@ export interface QuoteCreateInput {
   billing_address?: Record<string, string>;
   shipping_address?: Record<string, string>;
   price_book_id?: string;
+  template_id?: string;
   owner_id?: string;
 }
 

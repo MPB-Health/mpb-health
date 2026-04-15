@@ -46,6 +46,7 @@ import { SkeletonTable, GradientHeader } from '@mpbhealth/ui';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSavedViews } from '../hooks/useSavedViews';
 import { SavedViewsBar } from '../components/SavedViewsBar';
+import { HelpTooltip, HelpBanner } from '../components/help';
 import {
   ContactAnalyticsModal,
   ContactEnrichmentModal,
@@ -298,6 +299,12 @@ export default function Contacts() {
         }
       />
 
+      <HelpBanner
+        pageKey="contacts"
+        title="Welcome to Contacts"
+        tip="Manage all your individual contacts here. Link contacts to accounts, track communication history, and use bulk actions to manage contacts efficiently."
+      />
+
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
         {TOOLBAR_ACTIONS.map((a) => (
@@ -498,12 +505,12 @@ export default function Contacts() {
                         className="w-4 h-4 rounded border-th-border"
                       />
                     </th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Name</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Contact</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Account</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Plan</th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider"><span className="inline-flex items-center gap-1">Name <HelpTooltip text="The contact's name and role. Click to view their full profile." /></span></th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider"><span className="inline-flex items-center gap-1">Contact <HelpTooltip text="Contact information on file. Use the icons to reach out directly." /></span></th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider"><span className="inline-flex items-center gap-1">Account <HelpTooltip text="The company or account this contact is associated with." /></span></th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider"><span className="inline-flex items-center gap-1">Plan <HelpTooltip text="The contact type or category (e.g., Primary, Billing, Emergency)." /></span></th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Advisor</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">Created</th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider"><span className="inline-flex items-center gap-1">Created <HelpTooltip text="When this contact was added to the CRM." /></span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-th-border">

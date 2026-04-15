@@ -12,6 +12,7 @@ import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 import type { OutsideAdvisorInput } from '@mpbhealth/crm-core';
 import {
   AdvisorAnalyticsModal,
@@ -126,6 +127,8 @@ export default function OutsideAdvisors() {
           </button>
         }
       />
+
+      <HelpBanner pageKey="outside-advisors" title="Welcome to Outside Advisors" tip="Manage relationships with external advisors and agents. Track their licensing, compliance status, and the leads they bring to your organization." />
 
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">

@@ -11,6 +11,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { HelpBanner } from '../components/help';
 import { PermissionGate } from '../components/PermissionGate';
 import { useCRM } from '../contexts/CRMContext';
 import { Modal } from '../components/Modal';
@@ -475,6 +476,8 @@ export default function Invoices() {
           </PermissionGate>
         </div>
       </div>
+
+      <HelpBanner pageKey="invoices" title="Welcome to Invoices" tip="Track billing and payments. Create invoices from accepted quotes, send them to clients, and monitor payment status. Export invoices for your accounting records." />
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">

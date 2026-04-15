@@ -14,6 +14,7 @@ import {
 } from '../components/social-media';
 import type { WebForm } from '@mpbhealth/crm-core';
 import toast from 'react-hot-toast';
+import { HelpBanner } from '../components/help';
 
 type Tab = 'forms' | 'posts' | 'connections' | 'analytics';
 
@@ -123,6 +124,8 @@ export default function SocialMedia() {
           </PermissionGate>
         </div>
       </div>
+
+      <HelpBanner pageKey="social-media" title="Welcome to Social Media" tip="Schedule posts, track engagement, and manage your social media presence across platforms. Monitor which content drives the most leads." />
 
       <div className="flex flex-wrap gap-2 border-b border-th-border pb-1">
         {(

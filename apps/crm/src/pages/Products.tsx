@@ -41,6 +41,7 @@ import {
   ProductFeedbackModal,
 } from '../components/products';
 import toast from 'react-hot-toast';
+import { HelpBanner } from '../components/help';
 import { supabase } from '../lib/supabase';
 import {
   createPlanService,
@@ -310,6 +311,8 @@ export default function Products() {
           </button>
         </div>
       </div>
+
+      <HelpBanner pageKey="products" title="Welcome to Products" tip="Manage your product catalog with pricing, descriptions, and categories. Products can be added to quotes and deals for accurate revenue tracking." />
 
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { supabase } from '../client';
+import { supabase, safeRemoveChannel } from '../client';
 
 type PostgresChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
 
@@ -112,7 +112,7 @@ export function useRealtimeSubscription<T extends Record<string, any> = Record<s
 
   const unsubscribe = useCallback(() => {
     if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
+      safeRemoveChannel(channelRef.current);
       channelRef.current = null;
       setStatus('disconnected');
     }
@@ -206,7 +206,7 @@ export function useMultiTableSubscription<T extends Record<string, any> = Record
 
     return () => {
       channelsRef.current.forEach((channel) => {
-        supabase.removeChannel(channel);
+        safeRemoveChannel(channel);
       });
       channelsRef.current = [];
       setStatus('disconnected');

@@ -37,7 +37,10 @@ export default function Profile() {
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user }, error }) => {
-      if (error || !user) return;
+      if (error || !user) {
+        setLoading(false);
+        return;
+      }
       setUserId(user.id);
 
       const { data } = await supabase

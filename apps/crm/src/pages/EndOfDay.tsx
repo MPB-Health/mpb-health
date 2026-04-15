@@ -6,6 +6,7 @@ import { GradientHeader } from '@mpbhealth/ui';
 import { Plus, Trash2, Send, CheckCircle2, Loader2, XCircle, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sanitizeSearchInput, type ActivityType } from '@mpbhealth/crm-core';
+import { HelpBanner } from '../components/help';
 
 const EOD_ACTIVITY_TYPES = [
   'call',
@@ -289,6 +290,7 @@ export default function EndOfDay() {
         title="End of day"
         subtitle="Log multiple lead activities at once before you sign off."
       />
+      <HelpBanner pageKey="end-of-day" title="Welcome to End of Day" tip="Complete your daily wrap-up here. Review today's activities, update lead statuses, log final notes, and plan tomorrow's priorities before you sign off." />
 
       {bulkMutation.isPending && (
         <div className="h-1 w-full overflow-hidden rounded-full bg-th-border">

@@ -11,6 +11,7 @@ import { useOrg } from '../../contexts/OrgContext';
 import { DashboardToolbar } from './DashboardToolbar';
 import { WidgetGrid } from './WidgetGrid';
 import { useKeyboardShortcuts } from './KeyboardShortcuts';
+import { HelpBanner } from '../help';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
   classes.filter(Boolean).join(' ');
@@ -112,6 +113,14 @@ function DashboardContent() {
     >
       {/* Toolbar */}
       <DashboardToolbar />
+
+      <div className="px-4 md:px-6 mt-2">
+        <HelpBanner
+          pageKey="dashboard"
+          title="Welcome to Your Dashboard"
+          tip="This is your command center. Customize it by clicking 'Edit Dashboard' in the toolbar. Add, remove, and rearrange widgets to see the metrics that matter most to you."
+        />
+      </div>
 
       {/* Edit mode indicator */}
       {editMode && (

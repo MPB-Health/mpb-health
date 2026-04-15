@@ -27,6 +27,7 @@ import { AddDealModal } from '../components/AddDealModal';
 import { DealCard } from '../components/DealCard';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type { DealWithRelations, DealStage } from '@mpbhealth/crm-core';
+import { HelpTooltip, HelpBanner } from '../components/help';
 import {
   PipelineSummaryModal,
   StageBottleneckModal,
@@ -297,6 +298,12 @@ export default function DealPipeline() {
         }
       />
 
+      <HelpBanner
+        pageKey="deal-pipeline"
+        title="Welcome to the Deal Pipeline"
+        tip="Drag and drop deal cards between stages to track progress. The column totals show the combined value in each stage. Use the toolbar for analytics and batch operations."
+      />
+
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
         {TOOLBAR_ACTIONS.map((a) => (
@@ -352,6 +359,7 @@ export default function DealPipeline() {
                     <div className="flex items-center gap-1 text-sm font-medium text-th-text-primary">
                       <DollarSign className="w-3 h-3" />
                       {formatCurrency(totals.value)}
+                      <HelpTooltip text="Total value of deals in this stage. Drag deals here to update their stage." />
                     </div>
                   </div>
 

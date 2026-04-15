@@ -376,6 +376,9 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
       case 'open-docs':
         window.open('https://docs.mpbhealth.com', '_blank');
         break;
+      case 'open-help-panel':
+        window.dispatchEvent(new CustomEvent('crm:toggle-help-panel'));
+        break;
       default:
         toast.error(`Unknown action: ${actionId}`);
     }

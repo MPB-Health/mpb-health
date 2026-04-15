@@ -27,6 +27,7 @@ import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddDealModal } from '../components/AddDealModal';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpTooltip, HelpBanner } from '../components/help';
 import type { DealWithRelations, DealFilters, AccountWithRelations } from '@mpbhealth/crm-core';
 import {
   DealAnalyticsModal,
@@ -168,6 +169,11 @@ export default function Deals() {
             </button>
           </PermissionGate>
         }
+      />
+      <HelpBanner
+        pageKey="deals"
+        title="Welcome to Deals"
+        tip="Track opportunities from proposal to close. Use the toolbar to access analytics, forecasting, and velocity tracking. Click any deal to see its full details."
       />
 
       {/* Power Toolbar */}
@@ -413,19 +419,19 @@ export default function Deals() {
               <thead>
                 <tr className="bg-surface-secondary border-b border-th-border">
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Deal
+                    <span className="inline-flex items-center gap-1">Deal <HelpTooltip text="The deal name and associated account. Click to view deal details." size="sm" /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                     Account
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Amount
+                    <span className="inline-flex items-center gap-1">Value <HelpTooltip text="The expected monetary value of this deal if it closes successfully." size="sm" /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Stage
+                    <span className="inline-flex items-center gap-1">Stage <HelpTooltip text="Current deal stage. Deals progress through stages from qualification to close." size="sm" /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Close Date
+                    <span className="inline-flex items-center gap-1">Close Date <HelpTooltip text="The expected date this deal will close. Highlighted in red if overdue." size="sm" /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
                     Owner

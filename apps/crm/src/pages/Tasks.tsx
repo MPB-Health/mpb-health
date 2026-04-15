@@ -12,6 +12,7 @@ import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddTaskModal } from '../components/AddTaskModal';
 import type { LeadTask } from '@mpbhealth/crm-core';
+import { HelpTooltip, HelpBanner } from '../components/help';
 import {
   TaskAnalyticsModal,
   TaskProductivityModal,
@@ -146,6 +147,12 @@ export default function Tasks() {
             </button>
           </PermissionGate>
         }
+      />
+
+      <HelpBanner
+        pageKey="tasks"
+        title="Welcome to Tasks"
+        tip="Manage your to-do list and follow-ups. Tasks can be linked to leads, deals, and contacts. Use filters to focus on what's due today or overdue."
       />
 
       {/* Stats */}

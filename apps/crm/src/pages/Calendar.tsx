@@ -37,6 +37,7 @@ import { useCRM } from '../contexts/CRMContext';
 import { AddEventModal } from '../components/AddEventModal';
 import type { CalendarEvent, CalendarEventType } from '@mpbhealth/crm-core';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 
 // ─── Extended type for new columns ────────────────────────────────
 interface ExtendedCalendarEvent extends CalendarEvent {
@@ -1540,6 +1541,12 @@ export default function Calendar() {
           </div>
         }
       />
+
+      <HelpBanner
+          pageKey="calendar"
+          title="Welcome to Calendar"
+          tip="View all your meetings, tasks, and events in one place. Switch between day, week, and month views. Click on any time slot to create a new event."
+        />
 
       {/* ─── Sub-header: title + filters ─────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

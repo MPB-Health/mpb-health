@@ -12,6 +12,7 @@ import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 import type { PartnerType, ReferralPartnerInput } from '@mpbhealth/crm-core';
 import {
   PartnerAnalyticsModal,
@@ -156,6 +157,8 @@ export default function ReferralPartners() {
           </button>
         }
       />
+
+      <HelpBanner pageKey="referral-partners" title="Welcome to Referral Partners" tip="Track and manage your referral network. Log referral activity, monitor partner performance, and maintain relationships with your top referral sources." />
 
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">

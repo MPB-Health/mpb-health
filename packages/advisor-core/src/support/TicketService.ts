@@ -1,73 +1,4 @@
-import { supabase } from '@mpbhealth/database';
-
-/**
- * How many seconds before the JWT's `exp` claim we force a synchronous
- * refresh. 30 s covers typical network RTT to Supabase edge functions on
- * slow connections, so the token never expires while the HTTP request is
- * in-flight.
- *
- * Background: `getSession()` auto-refresh is ASYNCHRONOUS — it fires a
- * background refresh when the token is within 60 s of expiry but returns
- * the CURRENT (soon-to-expire) token immediately. With `noOpLock` bypassing
- * the Web Locks API, concurrent refresh attempts can race and one leg ends
- * up with a stale token. A 30-second synchronous buffer eliminates both
- * problems: we get a guaranteed-fresh token before building the auth header.
- */
-const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
-
-/**
- * Singleton refresh promise — prevents multiple simultaneous calls from each
- * triggering their own `refreshSession()`. With Supabase's `noOpLock`, the
- * refresh token is single-use; a second concurrent refresh races and whichever
- * call is second gets a token that has already been rotated, causing a 401.
- *
- * By sharing one pending Promise, concurrent callers all await the same
- * in-flight refresh and receive the same fresh session.
- */
-let _pendingRefresh: Promise<Awaited<ReturnType<typeof supabase.auth.refreshSession>>> | null = null;
-
-async function refreshOnce() {
-  if (!_pendingRefresh) {
-    _pendingRefresh = supabase.auth.refreshSession().finally(() => {
-      _pendingRefresh = null;
-    });
-  }
-  return _pendingRefresh;
-}
-
-/**
- * Ensure the current session has a non-expired access token before calling
- * an Edge Function. Returns null when there is no session (user is not
- * authenticated).
- *
- * Uses a singleton refresh promise so that concurrent callers (e.g. loadTickets
- * + loadStats + getCategories firing at the same time) share one refresh round-
- * trip instead of each consuming the single-use refresh token and racing.
- */
-async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
-  // getSession() will attempt a background refresh when the token is within
-  // 60 s of expiry, but returns the CURRENT token without awaiting the refresh.
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return null;
-
-  // Force a SYNCHRONOUS refresh if:
-  //  - expires_at is absent (defensive — treat as unknown/stale), OR
-  //  - token has already expired or expires within TOKEN_EXPIRY_BUFFER_SECONDS.
-  const nowSec = Math.floor(Date.now() / 1000);
-  const needsRefresh = !session.expires_at || session.expires_at < nowSec + TOKEN_EXPIRY_BUFFER_SECONDS;
-
-  if (needsRefresh) {
-    const { data: refreshed, error: refreshError } = await refreshOnce();
-    if (refreshError || !refreshed.session?.access_token) {
-      // Refresh failed — session is invalid. Return null to trigger re-auth
-      // in the caller rather than firing a request with a bad token.
-      return null;
-    }
-    return { Authorization: `Bearer ${refreshed.session.access_token}` };
-  }
-
-  return { Authorization: `Bearer ${session.access_token}` };
-}
+import { supabase, getResolvedAuthHeader, refreshSessionOnce } from '@mpbhealth/database';
 
 /**
  * Generate a short random correlation ID for request tracing.
@@ -308,17 +239,16 @@ export class TicketService {
    * Central invocation wrapper for all ticket-proxy calls.
    *
    * Built-in resilience:
-   *  1. Resolves a guaranteed-fresh auth token (30 s expiry buffer).
-   *  2. 20 s timeout per attempt so the UI never hangs.
+   *  1. Resolves a guaranteed-fresh auth token via the shared app-wide
+   *     singleton in @mpbhealth/database (avoids single-use refresh-token races).
+   *  2. Per-attempt timeout covers BOTH auth resolution AND the invoke so
+   *     the UI never hangs — even if refreshSession() stalls.
    *  3. Automatic silent retry (up to 3 attempts) with exponential back-off
    *     for transient failures (timeouts, network errors, 5xx).
    *  4. On auth errors, refreshes the session and retries silently.
    *  5. Only throws after all retries are exhausted.
-   *
-   * The end user should never see a technical error; pages should receive
-   * either data or a clean, recoverable error.
    */
-  private static CALL_TIMEOUT_MS = 20_000;
+  private static CALL_TIMEOUT_MS = 25_000;
   private static MAX_RETRIES = 2; // 3 total attempts
   private static RETRY_BACKOFF = [1_000, 3_000]; // ms between retries
 
@@ -334,86 +264,97 @@ export class TicketService {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      // Back-off before retries (not before the first attempt)
       if (attempt > 0) {
         const delay = TicketService.RETRY_BACKOFF[attempt - 1] ?? 3_000;
         await new Promise((r) => setTimeout(r, delay));
       }
 
-      // Resolve auth — on retry, force a fresh token in case the previous was stale
-      const authHeader = attempt === 0
-        ? await getResolvedAuthHeader()
-        : await (async () => {
-            await refreshOnce();
-            return getResolvedAuthHeader();
-          })();
-
-      if (!authHeader) {
-        if (opts.allowUnauthenticated) return null as unknown as T;
-        // No session at all — redirect will happen at the context level.
-        // Don't retry; auth is genuinely missing.
-        throw new Error('SESSION_EXPIRED');
-      }
-
       try {
-        const invokePromise = supabase.functions.invoke<T>('ticket-proxy', {
-          body: { action, ...body },
-          headers: {
-            ...authHeader,
-            'x-request-id': correlationId,
-          },
-        });
-
-        const result = await Promise.race([
-          invokePromise,
+        // Single timeout covers auth resolution + invoke so a hung
+        // refreshSession() can't leave the UI spinning forever.
+        const attemptResult = await Promise.race([
+          this.executeAttempt<T>(action, body, correlationId, attempt > 0, opts.allowUnauthenticated),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs),
           ),
         ]);
 
-        const { data, error } = result;
+        if (attemptResult === null) {
+          return null as unknown as T;
+        }
 
-        if (error) {
-          const msg = await extractFunctionError(error);
-          const isAuthError = /authorization|unauthorized|auth/i.test(msg);
-
-          if (isAuthError) {
+        return attemptResult;
+      } catch (err) {
+        if (err instanceof Error) {
+          if (err.message === 'TIMEOUT' || err.message === '_RETRYABLE') {
+            lastError = err;
+            continue;
+          }
+          if (err.message === '_AUTH_RETRYABLE') {
             lastError = new Error('SESSION_EXPIRED');
             continue;
           }
-
-          if (/not yet configured|not configured|account not found|not been synced/i.test(msg)) {
-            throw new Error(msg);
+          if (err.message === 'SESSION_EXPIRED') {
+            if (opts.allowUnauthenticated) return null as unknown as T;
+            throw err;
           }
-
-          lastError = new Error(msg);
-          continue;
         }
-
-        if (!data?.success) {
-          const errMsg = (data as Record<string, unknown>)?.error as string | undefined;
-          lastError = new Error(errMsg ?? 'Request failed');
-          // Business-logic errors (validation, not-found) should NOT be retried
-          if (errMsg && !/timeout|network|internal|server|503|502|504/i.test(errMsg)) {
-            throw lastError;
-          }
-          continue;
-        }
-
-        // Success
-        return data;
-      } catch (err) {
-        if (err instanceof Error && err.message === 'TIMEOUT') {
-          lastError = err;
-          continue; // retry on timeout
-        }
-        // Re-throw business logic errors (they broke out of the loop above)
         throw err;
       }
     }
 
-    // All retries exhausted — throw the last error
     throw lastError ?? new Error('Request failed');
+  }
+
+  /** Single attempt: resolve auth → invoke → validate response. */
+  private async executeAttempt<T extends { success: boolean }>(
+    action: string,
+    body: Record<string, unknown>,
+    correlationId: string,
+    forceRefresh: boolean,
+    allowUnauthenticated?: boolean,
+  ): Promise<T | null> {
+    if (forceRefresh) {
+      await refreshSessionOnce();
+    }
+
+    const authHeader = await getResolvedAuthHeader();
+
+    if (!authHeader) {
+      if (allowUnauthenticated) return null;
+      throw new Error('SESSION_EXPIRED');
+    }
+
+    const { data, error } = await supabase.functions.invoke<T>('ticket-proxy', {
+      body: { action, ...body },
+      headers: {
+        ...authHeader,
+        'x-request-id': correlationId,
+      },
+    });
+
+    if (error) {
+      const msg = await extractFunctionError(error);
+
+      if (/authorization|unauthorized|auth/i.test(msg)) {
+        throw new Error('_AUTH_RETRYABLE');
+      }
+      if (/not yet configured|not configured|account not found|not been synced/i.test(msg)) {
+        throw new Error(msg);
+      }
+      throw new Error('_RETRYABLE');
+    }
+
+    if (!data?.success) {
+      const errMsg = (data as Record<string, unknown>)?.error as string | undefined;
+      const err = new Error(errMsg ?? 'Request failed');
+      if (errMsg && !/timeout|network|internal|server|503|502|504/i.test(errMsg)) {
+        throw err;
+      }
+      throw new Error('_RETRYABLE');
+    }
+
+    return data;
   }
 
   // ── Advisor read methods ───────────────────────────────────────────────

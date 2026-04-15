@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
+import { HelpTooltip, HelpBanner } from '../components/help';
 import { useCRM } from '../contexts/CRMContext';
 import { PipelineFilters } from '../components/PipelineFilters';
 import type { Lead } from '@mpbhealth/crm-core';
@@ -179,6 +180,12 @@ export default function Pipeline() {
         }
       />
 
+      <HelpBanner
+        pageKey="pipeline"
+        title="Welcome to the Pipeline Board"
+        tip="Drag and drop lead cards between columns to move them through stages. Use the toolbar above to access analytics, velocity tracking, and batch operations."
+      />
+
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
         {TOOLBAR_ACTIONS.map((a) => (
@@ -214,9 +221,12 @@ export default function Pipeline() {
                     {stage.display_name}
                   </h3>
                 </div>
-                <span className="text-sm text-th-text-tertiary bg-surface-primary px-2 py-0.5 rounded-full">
-                  {stageLeads.length}
-                </span>
+                <div className="flex items-center space-x-1">
+                  <span className="text-sm text-th-text-tertiary bg-surface-primary px-2 py-0.5 rounded-full">
+                    {stageLeads.length}
+                  </span>
+                  <HelpTooltip text="Leads in this stage. Drag a card here to move a lead to this stage." />
+                </div>
               </div>
 
               {/* Lead cards */}

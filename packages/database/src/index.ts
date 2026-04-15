@@ -10,6 +10,7 @@ export {
   isSupabaseConfigured,
   checkSupabaseHealth,
   invalidateHealthCheck,
+  safeRemoveChannel,
 } from './client';
 
 // Types - Supabase Generated (auto-generated via `pnpm db:generate`)

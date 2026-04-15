@@ -1,15 +1,18 @@
-import { supabase } from '@mpbhealth/database';
+import { supabase, getResolvedAuthHeader } from '@mpbhealth/database';
 
 const WARMUP_INTERVAL_MS = 4 * 60 * 1000; // 4 minutes
+
 const WARMUP_FUNCTIONS = ['ticket-proxy', 'chat-service'] as const;
 
 let warmupTimer: ReturnType<typeof setInterval> | null = null;
 
 async function pingFunction(fnName: string) {
   try {
+    const authHeader = await getResolvedAuthHeader();
     await supabase.functions.invoke(fnName, {
       method: 'POST',
       body: { action: 'ping' },
+      headers: authHeader ?? undefined,
     });
   } catch {
     // Warmup pings are best-effort; failures are expected when unauthenticated

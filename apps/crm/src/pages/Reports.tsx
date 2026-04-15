@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { ConversionFunnel } from '../components/ConversionFunnel';
 import { PLAN_TYPE_LABELS } from '@mpbhealth/crm-core';
+import { HelpBanner } from '../components/help';
 import type {
   ReportDateRange,
   ConversionFunnelData,
@@ -127,6 +128,12 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       <GradientHeader title="Reports" subtitle="Analytics and performance metrics" />
+
+      <HelpBanner
+        pageKey="reports"
+        title="Welcome to Reports"
+        tip="Access all your CRM analytics from here. Click on any report card to dive into detailed metrics. Use date filters to compare performance across different time periods."
+      />
 
       {/* Date range + export */}
       <div className="flex flex-wrap items-center justify-between gap-3">

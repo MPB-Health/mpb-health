@@ -44,19 +44,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const loadUser = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
-      // Server-side validation: getSession() can return stale/expired JWTs from
-      // localStorage. Validate with getUser() before making data queries to
-      // avoid 401 errors from expired tokens.
+      // getUser() validates the JWT server-side, unlike getSession() which can
+      // return stale/expired tokens from localStorage.  If the token is invalid
+      // we clear local state so subsequent data queries never send a bad JWT.
       const { data: { user: verified }, error: verifyError } = await supabase.auth.getUser();
       if (verifyError || !verified) {
-        await supabase.auth.signOut({ scope: 'local' });
+        if (verifyError) await supabase.auth.signOut({ scope: 'local' });
         setUser(null);
         setLoading(false);
         return;

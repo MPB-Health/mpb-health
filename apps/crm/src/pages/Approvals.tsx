@@ -9,6 +9,7 @@ import ApprovalCard from '../components/approvals/ApprovalCard';
 import ApprovalBadge from '../components/approvals/ApprovalBadge';
 import ApprovalTimeline from '../components/approvals/ApprovalTimeline';
 import type { ApprovalRequestWithRelations, ApprovalStatus } from '@mpbhealth/crm-core';
+import { HelpBanner } from '../components/help';
 
 type TabId = 'pending' | 'submitted' | 'all';
 
@@ -116,6 +117,7 @@ export default function Approvals() {
         title="Approvals"
         subtitle="Review and manage approval requests across your organization."
       />
+      <HelpBanner pageKey="approvals" title="Welcome to Approvals" tip="Review and approve pending requests from your team. Approval workflows ensure proper oversight for discounts, deals, and other actions that need manager sign-off." />
 
       {/* Tabs */}
       <div className="border-b border-th-border">

@@ -38,6 +38,7 @@ import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, differenceInMinutes, parseISO } from 'date-fns';
+import { HelpBanner } from '../components/help';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -778,6 +779,7 @@ export default function SalesActivityDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+
           {/* Date preset dropdown */}
           <div className="relative">
             <button
@@ -884,6 +886,7 @@ export default function SalesActivityDashboard() {
           </button>
         </div>
       </div>
+      <HelpBanner pageKey="sales-activity" title="Welcome to Sales Activity" tip="Monitor your team's daily activity metrics including calls made, emails sent, meetings held, and tasks completed. Compare performance against targets." />
 
       {/* Close dropdowns on outside click */}
       {(showPresetDropdown || showRepDropdown) && (

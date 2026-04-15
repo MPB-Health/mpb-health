@@ -38,6 +38,7 @@ import {
 import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddCampaignModal } from '../components/AddCampaignModal';
+import { HelpTooltip, HelpBanner } from '../components/help';
 import type { CampaignWithRelations, CampaignFilters, CampaignStatus, CampaignType } from '@mpbhealth/crm-core';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) => classes.filter(Boolean).join(' ');
@@ -188,6 +189,12 @@ export default function Campaigns() {
           </button>
         </PermissionGate>
       </div>
+
+      <HelpBanner
+        pageKey="campaigns"
+        title="Welcome to Campaigns"
+        tip="Create and manage marketing campaigns to generate leads. Track performance metrics, segment your audience, and measure ROI across all your marketing efforts."
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -429,25 +436,25 @@ export default function Campaigns() {
               <thead>
                 <tr className="bg-surface-secondary border-b border-th-border">
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Campaign
+                    <span className="inline-flex items-center gap-1">Campaign <HelpTooltip text="The campaign name and type. Click to view details and analytics." /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Type
+                    <span className="inline-flex items-center gap-1">Type <HelpTooltip text="Campaign type such as Email, Social Media, Event, or Direct Mail." /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Status
+                    <span className="inline-flex items-center gap-1">Status <HelpTooltip text="Current campaign status — Draft, Active, Paused, or Completed." /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Budget
+                    <span className="inline-flex items-center gap-1">Budget <HelpTooltip text="Budget allocated and amount spent on this campaign." /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Actual Cost
+                    <span className="inline-flex items-center gap-1">Actual Cost <HelpTooltip text="Budget allocated and amount spent on this campaign." /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Members
+                    <span className="inline-flex items-center gap-1">Members <HelpTooltip text="Number of leads or contacts generated or targeted by this campaign." /></span>
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
-                    Dates
+                    <span className="inline-flex items-center gap-1">Dates <HelpTooltip text="Campaign schedule dates. Active campaigns run between these dates." /></span>
                   </th>
                 </tr>
               </thead>

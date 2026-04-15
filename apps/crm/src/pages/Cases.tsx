@@ -21,6 +21,7 @@ import {
   type CasePriority,
 } from '@mpbhealth/crm-core';
 import { supabase } from '../lib/supabase';
+import { HelpBanner } from '../components/help';
 
 // Filter options
 const STATUS_OPTIONS = [
@@ -281,6 +282,8 @@ export default function Cases() {
           </PermissionGate>
         </div>
       </div>
+
+      <HelpBanner pageKey="cases" title="Welcome to Cases" tip="Track and resolve customer support cases. Assign cases to team members, set priorities, and monitor resolution times to maintain excellent service." />
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">

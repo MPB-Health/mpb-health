@@ -85,6 +85,8 @@ const CRM_QUICK_ACTIONS: QuickAction[] = [
   // Help
   { id: 'help-shortcuts', name: 'Keyboard Shortcuts', description: 'View all shortcuts', icon: 'keyboard', shortcut: '?', category: 'help', action_type: 'toggle', action_data: { modal: 'shortcuts' } },
   { id: 'help-docs', name: 'Documentation', description: 'Open help docs', icon: 'help-circle', category: 'help', action_type: 'custom', action_data: { action: 'open-docs' } },
+  { id: 'help-learning-center', name: 'Learning Center', description: 'Browse guides and tutorials', icon: 'graduation-cap', category: 'help', action_type: 'navigate', action_data: { url: '/learning-center' } },
+  { id: 'help-panel', name: 'Page Help', description: 'Open help for this page', icon: 'help-circle', shortcut: '/', category: 'help', action_type: 'custom', action_data: { action: 'open-help-panel' } },
 ];
 
 // ============================================================================

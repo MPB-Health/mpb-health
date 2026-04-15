@@ -44,6 +44,7 @@ import {
   Zap,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { HelpBanner } from '../components/help';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 
@@ -2422,6 +2423,8 @@ export default function EmailSequences() {
               </button>
             </div>
           </div>
+
+          <HelpBanner pageKey="email-sequences" title="Welcome to Email Sequences" tip="Build automated email drip campaigns. Set up a series of timed emails that go out automatically when a lead enters a sequence. Track open and reply rates." />
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

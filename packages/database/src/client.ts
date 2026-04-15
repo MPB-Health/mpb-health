@@ -88,6 +88,13 @@ export const supabase: SupabaseClient = createClient(
       storageKey: 'mpb-auth-token',
       lock: noOpLock,
     },
+    realtime: {
+      heartbeatIntervalMs: 15_000,
+      reconnectAfterMs: (tries: number) =>
+        Math.min(1000 * 2 ** tries, 30_000),
+      timeout: 20_000,
+      params: { eventsPerSecond: 10 },
+    },
     global: {
       headers: {
         'X-Client-Info': 'mpb-health-web'
@@ -101,6 +108,19 @@ export const isSupabaseConfigured = hasValidConfig;
 
 export function getSupabase(): SupabaseClient {
   return supabase;
+}
+
+/**
+ * Safely remove a realtime channel without triggering
+ * "WebSocket is closed before the connection is established" errors.
+ */
+export function safeRemoveChannel(channel: import('@supabase/supabase-js').RealtimeChannel | null | undefined): void {
+  if (!channel) return;
+  try {
+    supabase.removeChannel(channel);
+  } catch {
+    // Swallow errors from closing a channel that's still connecting
+  }
 }
 
 // Health check functionality

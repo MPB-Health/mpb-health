@@ -14,10 +14,13 @@ export type FormFieldType =
   | 'date'
   | 'hidden'
   | 'heading'
-  | 'paragraph';
+  | 'paragraph'
+  | 'product_selector'
+  | 'product_quantity'
+  | 'product_config';
 
 export type FormStatus = 'draft' | 'active' | 'archived';
-export type FormEntityType = 'lead' | 'contact';
+export type FormEntityType = 'lead' | 'contact' | 'quote_request';
 export type SubmissionStatus = 'new' | 'converted' | 'duplicate' | 'spam';
 export type DuplicateHandling = 'create_new' | 'update' | 'skip';
 export type FieldWidth = 'full' | 'half';

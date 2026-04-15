@@ -47,6 +47,7 @@ import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import { useAuth } from '../contexts/AuthContext';
+import { HelpBanner } from '../components/help';
 
 // ============================================================================
 // Types
@@ -1647,6 +1648,7 @@ export default function MeetingScheduler() {
           Create Schedule
         </button>
       </div>
+      <HelpBanner pageKey="meetings" title="Welcome to Meeting Scheduler" tip="Schedule and manage meetings with leads and clients. Set availability, send calendar invites, and track meeting outcomes all in one place." />
 
       {/* Search bar */}
       {schedules.length > 0 && (

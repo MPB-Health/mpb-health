@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Zap, Plus, ToggleLeft, ToggleRight, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import { AutomationRuleModal } from '../components/AutomationRuleModal';
@@ -96,6 +97,8 @@ export default function Automation() {
           </button>
         )}
       </GradientHeader>
+
+      <HelpBanner pageKey="automation" title="Welcome to Automation" tip="Build workflow rules that automate repetitive tasks. Set triggers, conditions, and actions to automatically assign leads, send emails, update fields, and more." />
 
       {/* Rules list */}
       <div className="space-y-3">

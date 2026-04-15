@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCRM } from '../contexts/CRMContext';
 import { PrintDocumentLayout, LineItemRow } from '../components/print/PrintDocumentLayout';
-import type { QuoteWithRelations } from '@mpbhealth/crm-core';
+import type { QuoteWithRelations, QuoteTemplate } from '@mpbhealth/crm-core';
 
 export default function QuotePrintView() {
   const { id } = useParams<{ id: string }>();
-  const { quoteService } = useCRM();
+  const { quoteService, quoteTemplateService } = useCRM();
   const [quote, setQuote] = useState<QuoteWithRelations | null>(null);
+  const [template, setTemplate] = useState<QuoteTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,6 +24,11 @@ export default function QuotePrintView() {
         const data = await quoteService.getQuote(id);
         if (data) {
           setQuote(data);
+          const templateId = (data as any).template_id;
+          if (templateId) {
+            const tmpl = await quoteTemplateService.getTemplate(templateId);
+            setTemplate(tmpl);
+          }
         } else {
           setError('Quote not found');
         }
@@ -35,7 +41,7 @@ export default function QuotePrintView() {
     };
 
     loadQuote();
-  }, [id, quoteService]);
+  }, [id, quoteService, quoteTemplateService]);
 
   if (loading) {
     return (
@@ -68,7 +74,25 @@ export default function QuotePrintView() {
     ? `${quote.contact.first_name} ${quote.contact.last_name}`
     : null;
 
+  const branding = template?.branding;
+
   return (
+    <>
+      {branding && (
+        <style>{`
+          .print-document-layout .doc-header {
+            background-color: ${branding.headerBgColor || '#F8FAFC'} !important;
+            font-family: ${branding.fontFamily || 'Inter, sans-serif'} !important;
+          }
+          .print-document-layout .doc-accent {
+            color: ${branding.primaryColor || '#0D9488'} !important;
+          }
+          .print-document-layout .doc-accent-bg {
+            background-color: ${branding.primaryColor || '#0D9488'} !important;
+          }
+          ${branding.footerText ? `.print-document-layout .doc-footer::after { content: "${branding.footerText}"; display: block; text-align: center; font-size: 0.75rem; color: #9CA3AF; margin-top: 1rem; }` : ''}
+        `}</style>
+      )}
     <PrintDocumentLayout
       documentType="Quote"
       documentNumber={quote.quote_number}
@@ -129,5 +153,6 @@ export default function QuotePrintView() {
         </div>
       )}
     </PrintDocumentLayout>
+    </>
   );
 }

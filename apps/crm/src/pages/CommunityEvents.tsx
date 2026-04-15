@@ -12,6 +12,7 @@ import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 import type { CommunityEventInput, CommunityEventType } from '@mpbhealth/crm-core';
 import {
   EventAnalyticsModal,
@@ -162,6 +163,8 @@ export default function CommunityEvents() {
           </button>
         }
       />
+
+      <HelpBanner pageKey="community-events" title="Welcome to Community Events" tip="Plan and track community outreach events. Log attendance, capture leads from events, and measure the ROI of your community engagement efforts." />
 
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">

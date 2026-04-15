@@ -23,6 +23,7 @@ import type { CRMTemplate } from '@mpbhealth/crm-core/templates';
 import { DEFAULT_MONTHLY_TARGETS, QUARTERLY_TEAM_TARGETS } from '@mpbhealth/crm-core/targets';
 import { importContactsFromCSV, type ImportResult } from '../utils/csvImporter';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 
 type SettingsTab =
   | 'general'
@@ -291,6 +292,7 @@ export default function Settings() {
         icon={<Settings2 className="w-5 h-5" />}
         size="sm"
       />
+      <HelpBanner pageKey="settings" title="Welcome to Settings" tip="Configure your CRM organization settings, manage team members, set up integrations, and customize your workspace. Changes here affect all users in your organization." />
 
       {/* Tab navigation */}
       <div className="bg-surface-primary rounded-2xl border border-th-border">

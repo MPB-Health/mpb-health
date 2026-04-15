@@ -19,7 +19,7 @@ export class ReportingService {
       const { data: stages, error: stagesErr } = await this.supabase
         .from('crm_pipeline_stages')
         .select('*')
-        .order('display_order', { ascending: true });
+        .order('sort_order', { ascending: true });
 
       if (stagesErr || !stages?.length) return [];
 

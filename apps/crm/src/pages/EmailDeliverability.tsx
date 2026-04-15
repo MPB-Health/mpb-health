@@ -40,6 +40,7 @@ import {
   Line,
 } from 'recharts';
 import toast from 'react-hot-toast';
+import { HelpBanner } from '../components/help';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import { format, subDays, parseISO } from 'date-fns';
@@ -641,6 +642,8 @@ export default function EmailDeliverability() {
           </button>
         </div>
       </div>
+
+      <HelpBanner pageKey="email-deliverability" title="Welcome to Email Deliverability" tip="Monitor your email sending reputation and deliverability metrics. Check bounce rates, spam complaints, and authentication status to keep your emails landing in inboxes." />
 
       {/* Close dropdown on outside click */}
       {showDateDropdown && (

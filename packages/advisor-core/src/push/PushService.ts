@@ -1,39 +1,4 @@
-import { supabase } from '@mpbhealth/database';
-
-// ============================================================================
-// Auth helper — same pattern as ChatService/TicketService
-// ============================================================================
-
-const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
-let _pendingRefresh: ReturnType<typeof supabase.auth.refreshSession> | null = null;
-
-function refreshOnce() {
-  if (!_pendingRefresh) {
-    _pendingRefresh = supabase.auth.refreshSession().finally(() => {
-      _pendingRefresh = null;
-    });
-  }
-  return _pendingRefresh;
-}
-
-async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) return null;
-
-  const nowSec = Math.floor(Date.now() / 1000);
-  const needsRefresh = !session.expires_at || session.expires_at < nowSec + TOKEN_EXPIRY_BUFFER_SECONDS;
-
-  if (needsRefresh) {
-    const { data: refreshed, error } = await refreshOnce();
-    if (error || !refreshed?.session) return null;
-    return { Authorization: `Bearer ${refreshed.session.access_token}` };
-  }
-
-  return { Authorization: `Bearer ${session.access_token}` };
-}
+import { supabase, getResolvedAuthHeader } from '@mpbhealth/database';
 
 // ============================================================================
 // Types

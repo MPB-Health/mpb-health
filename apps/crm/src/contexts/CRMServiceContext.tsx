@@ -62,6 +62,9 @@ import {
   createTargetsService,
   createMilestoneService,
   createSocialService,
+  createProfileService,
+  createQuoteTemplateService,
+  createProductFormService,
   type LeadService,
   type PipelineService,
   type ActivityService,
@@ -117,6 +120,9 @@ import {
   type TargetsService,
   type MilestoneService,
   type SocialService,
+  type ProfileService,
+  type QuoteTemplateService,
+  type ProductFormService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -181,6 +187,9 @@ export interface CRMServiceContextType {
   targetsService: TargetsService;
   milestoneService: MilestoneService;
   socialService: SocialService;
+  profileService: ProfileService;
+  quoteTemplateService: QuoteTemplateService;
+  productFormService: ProductFormService;
 }
 
 const CRMServiceContext = createContext<CRMServiceContextType | null>(null);
@@ -232,6 +241,9 @@ export function CRMServiceProvider({ children }: { children: ReactNode }) {
     savedViewService: createSavedViewService(supabase),
     approvalService: createApprovalService(supabase),
     formService: createFormService(supabase),
+    profileService: createProfileService(supabase),
+    quoteTemplateService: createQuoteTemplateService(supabase),
+    productFormService: createProductFormService(supabase),
     mailAccountService: createMailAccountService(supabase, supabaseUrl),
     mailSyncService: createMailSyncService(supabase, supabaseUrl),
     mailRulesService: createMailRulesService(supabase),

@@ -23,6 +23,7 @@ import {
   type DocumentCategory,
 } from '@mpbhealth/crm-core';
 import { supabase } from '../lib/supabase';
+import { HelpBanner } from '../components/help';
 
 // Category options
 const CATEGORY_OPTIONS: { value: string; label: string }[] = [
@@ -306,6 +307,8 @@ export default function Documents() {
           </button>
         </div>
       </div>
+
+      <HelpBanner pageKey="documents" title="Welcome to Documents" tip="Store and organize your files. Upload contracts, compliance documents, and client paperwork. Link documents to leads, deals, and accounts for easy access." />
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">

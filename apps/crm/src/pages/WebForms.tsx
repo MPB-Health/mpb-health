@@ -6,6 +6,7 @@ import { PermissionGate } from '../components/PermissionGate';
 import { FormCard } from '../components/forms/FormCard';
 import { EmbedCodeModal } from '../components/forms/EmbedCodeModal';
 import type { WebForm, FormStatus } from '@mpbhealth/crm-core';
+import { HelpBanner } from '../components/help';
 
 export default function WebForms() {
   const { formService } = useCRM();
@@ -86,6 +87,7 @@ export default function WebForms() {
           </button>
         </PermissionGate>
       </div>
+      <HelpBanner pageKey="web-forms" title="Welcome to Web Forms" tip="Build custom lead capture forms to embed on your website. Design form fields, set up thank-you pages, and track submissions. Leads from forms are automatically added to your CRM." />
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">

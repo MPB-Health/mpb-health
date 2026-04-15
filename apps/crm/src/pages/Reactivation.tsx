@@ -11,6 +11,7 @@ import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
+import { HelpBanner } from '../components/help';
 import type { CadenceStep } from '@mpbhealth/crm-core';
 import {
   ReactivationAnalyticsModal,
@@ -196,6 +197,7 @@ export default function Reactivation() {
         title="Reactivation pipeline"
         subtitle="Open leads with no recent contact — enroll into a follow-up cadence to bring them back."
       />
+      <HelpBanner pageKey="reactivation" title="Welcome to Lead Reactivation" tip="Re-engage leads that have gone cold. Filter by last activity date, plan interest, or source to find leads worth reaching out to again during AEP, OEP, or SEP windows." />
 
       {/* Power Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">

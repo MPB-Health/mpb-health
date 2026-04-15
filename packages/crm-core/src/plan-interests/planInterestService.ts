@@ -206,7 +206,7 @@ export class PlanInterestService {
         features
       `)
       .eq('is_active', true)
-      .order('display_order');
+      .order('sort_order');
 
     if (error) {
       console.error('[PlanInterestService] Failed to get available plans:', error);

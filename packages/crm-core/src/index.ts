@@ -788,5 +788,32 @@ export type {
 export { DEFAULT_MILESTONES } from './milestones';
 export * from './milestones';
 
+// Profiles
+export { ProfileService, createProfileService } from './profiles/profileService';
+export type { UserProfile, ProfileUpdateInput } from './profiles/profileService';
+export * from './profiles';
+
+// Quote Templates
+export { QuoteTemplateService, createQuoteTemplateService } from './quote-templates/quoteTemplateService';
+export type {
+  QuoteTemplate,
+  QuoteTemplateCreateInput,
+  QuoteTemplateUpdateInput,
+  QuoteTemplateSection,
+  QuoteTemplateBranding,
+  QuoteTemplateContentBlock,
+} from './quote-templates/quoteTemplateTypes';
+export * from './quote-templates';
+
+// Product Form Fields
+export { ProductFormService, createProductFormService } from './product-forms/productFormService';
+export type {
+  ProductFormField,
+  ProductFormFieldCreateInput,
+  ProductFormFieldUpdateInput,
+  LineItemAnswer,
+} from './product-forms/productFormService';
+export * from './product-forms';
+
 // Utilities
 export { sanitizeSearchInput } from './utils/sanitize';

@@ -129,7 +129,7 @@ export default function Today() {
   const urgentCount = (summary?.tasks_overdue ?? 0) + (summary?.unread_emails ?? 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+    <div className="space-y-6">
       {/* Hero greeting */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

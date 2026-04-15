@@ -22,11 +22,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
   useEffect(() => {
-    // Validate server-side: getSession() can return stale/expired JWTs from
-    // localStorage. Use getUser() to confirm the session is still valid.
-    supabase.auth.getUser().then(({ data: { user }, error }) => {
+    let cancelled = false;
+
+    // getUser() validates the JWT server-side, preventing 401 errors from
+    // stale tokens that getSession() would silently return from localStorage.
+    supabase.auth.getUser().then(async ({ data: { user }, error }) => {
+      if (cancelled) return;
       if (error || !user) {
-        supabase.auth.signOut({ scope: 'local' });
+        if (error) await supabase.auth.signOut({ scope: 'local' });
         setState('unauthenticated');
       } else {
         setState('authenticated');
@@ -34,10 +37,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState(session ? 'authenticated' : 'unauthenticated');
+      if (!cancelled) setState(session ? 'authenticated' : 'unauthenticated');
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (state === 'loading') {
@@ -59,9 +65,15 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(session ? 'authenticated' : 'unauthenticated');
+    let cancelled = false;
+
+    // Use getUser() for consistency — getSession() can falsely report an
+    // active session from a stale JWT, causing a redirect bounce.
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+      if (!cancelled) setState(!error && user ? 'authenticated' : 'unauthenticated');
     });
+
+    return () => { cancelled = true; };
   }, []);
 
   if (state === 'loading') {

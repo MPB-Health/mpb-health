@@ -46,6 +46,7 @@ import {
   Heart,
   Share2,
   LayoutGrid,
+  BookOpen,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -87,6 +88,7 @@ import { CalendarSyncModal } from '../components/CalendarSyncModal';
 import { SLADashboardModal } from '../components/SLADashboardModal';
 import { GoalTrackerModal } from '../components/GoalTrackerModal';
 import { AIEmailWriterModal } from '../components/AIEmailWriterModal';
+import { PageHelpButton, HelpPanel } from '../components/help';
 import toast from 'react-hot-toast';
 
 interface ExtendedNavChild {
@@ -222,10 +224,18 @@ const navigationSections: NavSection[] = [
     id: 'admin',
     label: 'Administration',
     items: [
+      { name: 'Team', href: '/team', icon: ShieldCheck, permission: 'team.view' },
       { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
       { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
       { name: 'Studio', href: '/studio', icon: Settings2, permission: 'settings.manage' },
       { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
+    ],
+  },
+  {
+    id: 'help',
+    label: 'Help',
+    items: [
+      { name: 'Learning Center', href: '/learning-center', icon: BookOpen },
     ],
   },
 ];
@@ -277,6 +287,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [showSLADashboard, setShowSLADashboard] = useState(false);
   const [showGoalTracker, setShowGoalTracker] = useState(false);
   const [showAIEmailWriter, setShowAIEmailWriter] = useState(false);
+  const [showHelpPanel, setShowHelpPanel] = useState(false);
 
   // Extract leadId from URL when on a lead detail page
   const leadIdMatch = location.pathname.match(/^\/leads\/([a-f0-9-]+)$/i);
@@ -348,8 +359,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         case 'ai-email-writer': setShowAIEmailWriter(true); break;
       }
     };
+    const helpHandler = () => setShowHelpPanel((v) => !v);
     window.addEventListener('crm:quick-action', handler);
-    return () => window.removeEventListener('crm:quick-action', handler);
+    window.addEventListener('crm:toggle-help-panel', helpHandler);
+    return () => {
+      window.removeEventListener('crm:quick-action', handler);
+      window.removeEventListener('crm:toggle-help-panel', helpHandler);
+    };
   }, [currentLeadId, navigate]);
 
   // Global keyboard shortcuts for power features
@@ -357,6 +373,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
       const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === '/') {
+        e.preventDefault();
+        setShowHelpPanel((prev) => !prev);
+        return;
+      }
       if (mod && e.shiftKey) {
         switch (e.key.toLowerCase()) {
           case 'a': e.preventDefault(); setShowAICommandPalette(true); break;
@@ -566,6 +587,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </div>
       )}
 
+      {/* Help */}
+      <PageHelpButton onClick={() => setShowHelpPanel(true)} />
+
       {/* Notifications */}
       <NotificationCenter />
     </div>
@@ -767,6 +791,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         onClose={() => setShowAIEmailWriter(false)}
         recipientName={currentLeadId ? 'Client' : undefined}
       />
+
+      {/* Help Panel (Ctrl+/) */}
+      <HelpPanel open={showHelpPanel} onClose={() => setShowHelpPanel(false)} />
     </>
   );
 }

@@ -16,6 +16,7 @@ import { PermissionGate } from '../components/PermissionGate';
 import { useOrg } from '../contexts/OrgContext';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
 import { supabase } from '../lib/supabase';
+import { HelpBanner } from '../components/help';
 
 // Direction filter options
 const DIRECTION_OPTIONS = [
@@ -229,6 +230,8 @@ export default function Calls() {
           </PermissionGate>
         </div>
       </div>
+
+      <HelpBanner pageKey="calls" title="Welcome to Call Log" tip="View and log all phone call activity. Track call duration, outcomes, and notes. Call logs are automatically linked to the associated lead or contact." />
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">

@@ -887,10 +887,12 @@ interface LineItemModalProps {
 }
 
 function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItemModalProps) {
-  const { quoteService, productService } = useCRM();
+  const { quoteService, productService, productFormService } = useCRM();
 
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [configFields, setConfigFields] = useState<any[]>([]);
+  const [configAnswers, setConfigAnswers] = useState<Record<string, unknown>>({});
 
   const [productId, setProductId] = useState('');
   const [name, setName] = useState('');
@@ -915,6 +917,15 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
       setUnitPrice(lineItem.unit_price.toString());
       setDiscountPercent(lineItem.discount_percent?.toString() || '');
       setTaxRate(lineItem.tax_rate?.toString() || '');
+
+      if (lineItem.product_id) {
+        productFormService.getProductFields(lineItem.product_id).then(setConfigFields);
+        productFormService.getLineItemAnswers(lineItem.id).then((answers) => {
+          const map: Record<string, unknown> = {};
+          answers.forEach((a) => { map[a.field_id] = a.value; });
+          setConfigAnswers(map);
+        });
+      }
     } else {
       setProductId('');
       setName('');
@@ -923,8 +934,10 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
       setUnitPrice('');
       setDiscountPercent('');
       setTaxRate('');
+      setConfigFields([]);
+      setConfigAnswers({});
     }
-  }, [open, lineItem, productService]);
+  }, [open, lineItem, productService, productFormService]);
 
   const handleProductChange = (id: string) => {
     setProductId(id);
@@ -934,6 +947,12 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
       setDescription(product.description || '');
       setUnitPrice(product.unit_price?.toString() || '');
     }
+    if (id) {
+      productFormService.getProductFields(id).then(setConfigFields);
+    } else {
+      setConfigFields([]);
+    }
+    setConfigAnswers({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -949,6 +968,14 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
     }
     if (!unitPrice || parseFloat(unitPrice) < 0) {
       toast.error('Unit price is required');
+      return;
+    }
+
+    const missingRequired = configFields.filter(
+      (f) => f.required && !configAnswers[f.id]
+    );
+    if (missingRequired.length > 0) {
+      toast.error(`Please fill in: ${missingRequired.map((f) => f.label).join(', ')}`);
       return;
     }
 
@@ -969,6 +996,18 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
       result = await quoteService.updateLineItem(lineItem.id, input);
     } else {
       result = await quoteService.addLineItem(quoteId, input);
+    }
+
+    if (result.success && result.lineItemId && configFields.length > 0) {
+      const answers = Object.entries(configAnswers)
+        .filter(([, v]) => v !== undefined && v !== '')
+        .map(([field_id, value]) => ({ field_id, value }));
+      if (answers.length > 0) {
+        await productFormService.saveLineItemAnswers(
+          lineItem?.id || result.lineItemId,
+          answers
+        );
+      }
     }
 
     setLoading(false);
@@ -1048,6 +1087,93 @@ function LineItemModal({ open, onClose, quoteId, lineItem, onSuccess }: LineItem
             className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
           />
         </div>
+
+        {/* Product Configuration Fields */}
+        {configFields.length > 0 && (
+          <div className="border border-th-border rounded-lg p-4 space-y-4">
+            <p className="text-sm font-medium text-th-text-primary">Product Configuration</p>
+            {configFields.map((field) => (
+              <div key={field.id}>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                </label>
+                {(field.field_type === 'text' || field.field_type === 'email' || field.field_type === 'phone') && (
+                  <input
+                    type={field.field_type === 'email' ? 'email' : field.field_type === 'phone' ? 'tel' : 'text'}
+                    value={(configAnswers[field.id] as string) || ''}
+                    onChange={(e) => setConfigAnswers((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                    placeholder={field.placeholder || ''}
+                    className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                  />
+                )}
+                {field.field_type === 'number' && (
+                  <input
+                    type="number"
+                    value={(configAnswers[field.id] as string) || ''}
+                    onChange={(e) => setConfigAnswers((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                    placeholder={field.placeholder || ''}
+                    className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                  />
+                )}
+                {field.field_type === 'textarea' && (
+                  <textarea
+                    value={(configAnswers[field.id] as string) || ''}
+                    onChange={(e) => setConfigAnswers((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                    placeholder={field.placeholder || ''}
+                    rows={2}
+                    className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                  />
+                )}
+                {field.field_type === 'select' && (
+                  <select
+                    value={(configAnswers[field.id] as string) || ''}
+                    onChange={(e) => setConfigAnswers((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                    className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                  >
+                    <option value="">Select...</option>
+                    {(field.options || []).map((opt: string) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                )}
+                {field.field_type === 'radio' && (
+                  <div className="space-y-1">
+                    {(field.options || []).map((opt: string) => (
+                      <label key={opt} className="flex items-center gap-2 text-sm text-th-text-secondary">
+                        <input
+                          type="radio"
+                          name={`config_${field.id}`}
+                          value={opt}
+                          checked={configAnswers[field.id] === opt}
+                          onChange={() => setConfigAnswers((prev) => ({ ...prev, [field.id]: opt }))}
+                        />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {field.field_type === 'checkbox' && (
+                  <label className="flex items-center gap-2 text-sm text-th-text-secondary">
+                    <input
+                      type="checkbox"
+                      checked={!!configAnswers[field.id]}
+                      onChange={(e) => setConfigAnswers((prev) => ({ ...prev, [field.id]: e.target.checked }))}
+                    />
+                    {field.placeholder || field.label}
+                  </label>
+                )}
+                {field.field_type === 'date' && (
+                  <input
+                    type="date"
+                    value={(configAnswers[field.id] as string) || ''}
+                    onChange={(e) => setConfigAnswers((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                    className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           {/* Quantity */}

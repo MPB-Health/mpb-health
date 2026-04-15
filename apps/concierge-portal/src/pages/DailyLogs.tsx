@@ -57,6 +57,7 @@ const REASONS = [
   'Provider Search',
   'Plan Education',
   'Preventive/Billing',
+  'Follow Up',
   'Other',
 ];
 

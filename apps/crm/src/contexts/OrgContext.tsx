@@ -117,9 +117,9 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
   // Org role is set from the same batched permission snapshot as permissionSet (see loadPermissions).
 
-  // --- Load permissions when org changes ---
+  // --- Load permissions when org or user changes ---
   const loadPermissions = useCallback(async () => {
-    if (!activeOrgId) {
+    if (!user || !activeOrgId) {
       setPermissionSet(null);
       setOrgRole(null);
       setPermissionsLoading(false);
@@ -169,7 +169,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
         setPermissionsLoading(false);
       }
     }
-  }, [activeOrgId]);
+  }, [activeOrgId, user]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {

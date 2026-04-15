@@ -1,5 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Edit2, Trash2, Eye, EyeOff, HelpCircle } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  MoveUp,
+  MoveDown,
+  X,
+  Save,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   faqAdminService,
@@ -9,11 +21,11 @@ import {
 } from '@mpbhealth/admin-core';
 
 const EMPTY_FORM: FAQCreateInput = {
-  question: '',
-  answer: '',
+  title: '',
+  content_html: '',
   category: null,
   order_index: 0,
-  is_published: true,
+  is_active: true,
 };
 
 export default function FAQAdmin() {
@@ -50,29 +62,34 @@ export default function FAQAdmin() {
     }
   }, [search, categoryFilter]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function openNew() {
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      order_index: items.length + 1,
+    });
     setEditingId(null);
     setShowForm(true);
   }
 
   function openEdit(item: FAQItem) {
     setForm({
-      question: item.question,
-      answer: item.answer,
+      title: item.title,
+      content_html: item.content_html,
       category: item.category,
       order_index: item.order_index,
-      is_published: item.is_published,
+      is_active: item.is_active,
     });
     setEditingId(item.id);
     setShowForm(true);
   }
 
   async function handleSave() {
-    if (!form.question.trim() || !form.answer.trim()) {
-      toast.error('Question and answer are required');
+    if (!form.title.trim() || !form.content_html.trim()) {
+      toast.error('Title and content are required');
       return;
     }
     setSaving(true);
@@ -113,13 +130,46 @@ export default function FAQAdmin() {
     }
   }
 
+  async function handleMoveUp(item: FAQItem) {
+    const sameCategory = items.filter((i) => i.category === item.category);
+    const idx = sameCategory.findIndex((i) => i.id === item.id);
+    if (idx <= 0) return;
+    const prev = sameCategory[idx - 1];
+    try {
+      await faqAdminService.swapOrder(item.id, item.order_index, prev.id, prev.order_index);
+      load();
+    } catch {
+      toast.error('Failed to reorder');
+    }
+  }
+
+  async function handleMoveDown(item: FAQItem) {
+    const sameCategory = items.filter((i) => i.category === item.category);
+    const idx = sameCategory.findIndex((i) => i.id === item.id);
+    if (idx >= sameCategory.length - 1) return;
+    const next = sameCategory[idx + 1];
+    try {
+      await faqAdminService.swapOrder(item.id, item.order_index, next.id, next.order_index);
+      load();
+    } catch {
+      toast.error('Failed to reorder');
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">FAQ Management</h1>
+          <h1 className="text-2xl font-bold text-th-text-primary flex items-center gap-3">
+            <HelpCircle className="w-7 h-7 text-th-accent-600" />
+            FAQ Management
+          </h1>
           <p className="text-sm text-th-text-tertiary mt-1">
-            {stats ? `${stats.published} published · ${stats.total} total` : 'Loading...'}
+            Manage FAQ items and &ldquo;Why Choose HealthSharing&rdquo; content.{' '}
+            {stats
+              ? `${stats.published} published · ${stats.total} total · ${stats.categories} categories`
+              : 'Loading...'}
           </p>
         </div>
         <button
@@ -128,7 +178,7 @@ export default function FAQAdmin() {
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add FAQ
+          Add New FAQ
         </button>
       </div>
 
@@ -138,7 +188,7 @@ export default function FAQAdmin() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
           <input
             type="text"
-            placeholder="Search questions and answers..."
+            placeholder="Search titles and content..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-sm"
@@ -148,63 +198,92 @@ export default function FAQAdmin() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
+            aria-label="Filter by category"
             className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-sm"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {c}
+              </option>
             ))}
           </select>
         )}
       </div>
 
-      {/* Form modal */}
+      {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface-primary rounded-2xl border border-th-border w-full max-w-xl shadow-xl">
-            <div className="px-6 py-4 border-b border-th-border">
+          <div className="bg-surface-primary rounded-2xl border border-th-border w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-th-border flex items-center justify-between">
               <h2 className="text-lg font-semibold text-th-text-primary">
                 {editingId ? 'Edit FAQ' : 'New FAQ'}
               </h2>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                aria-label="Close"
+                className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Question</label>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                  Title / Question
+                </label>
                 <input
                   type="text"
-                  value={form.question}
-                  onChange={(e) => setForm({ ...form, question: e.target.value })}
-                  placeholder="What is...?"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="e.g. How is health sharing different from insurance?"
                   className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">Answer</label>
+                <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                  Content (HTML)
+                </label>
                 <textarea
-                  value={form.answer}
-                  onChange={(e) => setForm({ ...form, answer: e.target.value })}
-                  rows={4}
-                  placeholder="The answer to the question..."
-                  className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-sm resize-none"
+                  value={form.content_html}
+                  onChange={(e) => setForm({ ...form, content_html: e.target.value })}
+                  rows={8}
+                  placeholder="Enter HTML content... Use <p>, <strong>, <ul>, <li> tags"
+                  className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-sm resize-none font-mono"
                 />
+                <p className="mt-1 text-xs text-th-text-tertiary">
+                  Supported tags: p, strong, em, ul, li, a. Plain text is also fine.
+                </p>
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Category</label>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                    Category
+                  </label>
                   <input
                     type="text"
                     value={form.category || ''}
                     onChange={(e) => setForm({ ...form, category: e.target.value || null })}
-                    placeholder="e.g. Billing"
+                    placeholder="e.g. why-choose-healthsharing"
                     className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg text-th-text-primary placeholder:text-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-sm"
                   />
+                  <p className="mt-1 text-xs text-th-text-tertiary">
+                    Suggested: why-choose-healthsharing, general, coverage, pricing, mpb_health,
+                    history
+                  </p>
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-th-text-secondary mb-1">Order</label>
+                  <label className="block text-sm font-medium text-th-text-secondary mb-1">
+                    Order
+                  </label>
                   <input
                     type="number"
                     value={form.order_index}
-                    onChange={(e) => setForm({ ...form, order_index: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setForm({ ...form, order_index: parseInt(e.target.value) || 0 })
+                    }
+                    aria-label="Display order"
                     className="w-full px-3 py-2 bg-surface-secondary border border-th-border rounded-lg text-th-text-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-sm"
                   />
                 </div>
@@ -212,11 +291,13 @@ export default function FAQAdmin() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={form.is_published}
-                  onChange={(e) => setForm({ ...form, is_published: e.target.checked })}
+                  checked={form.is_active}
+                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                   className="rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
                 />
-                <span className="text-sm text-th-text-secondary">Published</span>
+                <span className="text-sm text-th-text-secondary">
+                  Active (visible on the website)
+                </span>
               </label>
             </div>
             <div className="px-6 py-4 border-t border-th-border flex justify-end gap-3">
@@ -231,8 +312,9 @@ export default function FAQAdmin() {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
               >
+                <Save className="w-4 h-4" />
                 {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Create FAQ'}
               </button>
             </div>
@@ -249,33 +331,71 @@ export default function FAQAdmin() {
         ) : items.length > 0 ? (
           <div className="divide-y divide-th-border-subtle">
             {items.map((item) => (
-              <div key={item.id} className="px-5 py-4 flex items-start gap-4 hover:bg-surface-tertiary transition-colors">
+              <div
+                key={item.id}
+                className={`px-5 py-4 flex items-start gap-4 hover:bg-surface-tertiary transition-colors ${
+                  !item.is_active ? 'opacity-60' : ''
+                }`}
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-medium text-th-text-primary text-sm">{item.question}</p>
-                    {!item.is_published && (
-                      <span className="text-xs px-2 py-0.5 bg-neutral-100 text-neutral-500 rounded-full">Draft</span>
+                    <p className="font-medium text-th-text-primary text-sm">{item.title}</p>
+                    {!item.is_active && (
+                      <span className="text-xs px-2 py-0.5 bg-red-50 text-red-600 rounded-full">
+                        Inactive
+                      </span>
                     )}
                     {item.category && (
-                      <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">{item.category}</span>
+                      <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">
+                        {item.category}
+                      </span>
                     )}
                   </div>
-                  <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">{item.answer}</p>
+                  <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
+                    {item.content_html.replace(/<[^>]*>/g, '')}
+                  </p>
+                  <p className="text-xs text-th-text-tertiary mt-1">
+                    Order: {item.order_index}
+                    {item.updated_at &&
+                      ` · Updated: ${new Date(item.updated_at).toLocaleDateString()}`}
+                  </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
+                    onClick={() => handleMoveUp(item)}
+                    className="p-1.5 text-th-text-tertiary hover:text-th-text-primary hover:bg-surface-secondary rounded transition-colors"
+                    title="Move Up"
+                  >
+                    <MoveUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMoveDown(item)}
+                    className="p-1.5 text-th-text-tertiary hover:text-th-text-primary hover:bg-surface-secondary rounded transition-colors"
+                    title="Move Down"
+                  >
+                    <MoveDown className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleToggle(item.id)}
                     className="p-1.5 text-th-text-tertiary hover:text-th-text-primary hover:bg-surface-secondary rounded transition-colors"
-                    aria-label={item.is_published ? 'Unpublish' : 'Publish'}
+                    aria-label={item.is_active ? 'Deactivate' : 'Activate'}
+                    title={item.is_active ? 'Deactivate' : 'Activate'}
                   >
-                    {item.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    {item.is_active ? (
+                      <Eye className="w-4 h-4" />
+                    ) : (
+                      <EyeOff className="w-4 h-4" />
+                    )}
                   </button>
                   <button
                     type="button"
                     onClick={() => openEdit(item)}
                     className="p-1.5 text-th-text-tertiary hover:text-th-text-primary hover:bg-surface-secondary rounded transition-colors"
                     aria-label="Edit"
+                    title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
@@ -284,6 +404,7 @@ export default function FAQAdmin() {
                     onClick={() => handleDelete(item.id)}
                     className="p-1.5 text-th-text-tertiary hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                     aria-label="Delete"
+                    title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

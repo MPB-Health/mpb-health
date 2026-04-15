@@ -306,9 +306,44 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       }
     );
 
+    // Supabase's auto-refresh doesn't fire SIGNED_OUT on 400 — it silently
+    // fails, leaving the app in a zombie state. Listen for failed fetches to
+    // the token endpoint and force a clean logout when the refresh token is
+    // invalid/expired.
+    const origFetch = window.fetch;
+    const patchedFetch: typeof fetch = async (input, init) => {
+      const response = await origFetch(input, init);
+      try {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (
+          response.status === 400 &&
+          url.includes('/auth/v1/token') &&
+          url.includes('grant_type=refresh_token')
+        ) {
+          console.warn('[Auth] Refresh token rejected (400) — redirecting to login');
+          setProfile(null);
+          setSessionUserCreatedAt(undefined);
+          setHasSession(false);
+          try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) { /* ignore */ }
+          try { localStorage.removeItem('mpb-auth-token'); } catch (_) { /* ignore */ }
+          clearNavCache();
+          if (!window.location.pathname.startsWith('/login') &&
+              !window.location.pathname.startsWith('/forgot-password') &&
+              !window.location.pathname.startsWith('/reset-password')) {
+            window.location.href = '/login';
+          }
+        }
+      } catch (_) {
+        // Never break the fetch pipeline
+      }
+      return response;
+    };
+    window.fetch = patchedFetch;
+
     return () => {
       clearTimeout(timeout);
       subscription.unsubscribe();
+      window.fetch = origFetch;
     };
   }, []);
 

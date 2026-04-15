@@ -71,6 +71,8 @@ const FAQAdmin: React.FC = () => {
     }
   };
 
+  const [showModal, setShowModal] = useState(false);
+
   const handleCreate = () => {
     setIsCreating(true);
     setEditingId(null);
@@ -81,6 +83,7 @@ const FAQAdmin: React.FC = () => {
       order_index: faqItems.length + 1,
       is_active: true
     });
+    setShowModal(true);
   };
 
   const handleEdit = (item: FAQItem) => {
@@ -93,6 +96,7 @@ const FAQAdmin: React.FC = () => {
       order_index: item.order_index,
       is_active: item.is_active
     });
+    setShowModal(true);
   };
 
   const handleSave = async () => {
@@ -106,7 +110,7 @@ const FAQAdmin: React.FC = () => {
       } else if (editingId) {
         const { error } = await supabase
           .from('faq_items')
-          .update(formData)
+          .update({ ...formData, updated_at: new Date().toISOString() })
           .eq('id', editingId);
 
         if (error) throw error;
@@ -114,6 +118,7 @@ const FAQAdmin: React.FC = () => {
 
       setIsCreating(false);
       setEditingId(null);
+      setShowModal(false);
       loadFAQItems();
     } catch (error) {
       console.error('Error saving FAQ item:', error);
@@ -207,6 +212,7 @@ const FAQAdmin: React.FC = () => {
   const handleCancel = () => {
     setIsCreating(false);
     setEditingId(null);
+    setShowModal(false);
     setFormData({
       title: '',
       content_html: '',
@@ -264,6 +270,7 @@ const FAQAdmin: React.FC = () => {
               id="category-filter"
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
+              aria-label="Filter by category"
               className="mt-1 block w-full max-w-xs rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All Categories</option>
@@ -273,92 +280,105 @@ const FAQAdmin: React.FC = () => {
             </select>
           </div>
 
-          {(isCreating || editingId) && (
-            <Card className="p-6 mb-6 bg-white border-2 border-blue-500">
-              <h3 className="text-xl font-semibold text-neutral-900 mb-4">
-                {isCreating ? 'Create New FAQ Item' : 'Edit FAQ Item'}
-              </h3>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Enter FAQ title..."
-                    className="mt-1"
-                  />
+          {showModal && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+              <Card className="w-full max-w-2xl bg-white shadow-xl max-h-[90vh] overflow-y-auto rounded-2xl">
+                <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-neutral-900">
+                    {isCreating ? 'Create New FAQ Item' : 'Edit FAQ Item'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    aria-label="Close"
+                    className="p-1 text-neutral-400 hover:text-neutral-600 rounded transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
 
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g., why-choose-healthsharing"
-                    className="mt-1"
-                  />
-                  <p className="mt-1 text-sm text-neutral-500">
-                    Suggested: why-choose-healthsharing, general, coverage, pricing
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="content">Content (HTML)</Label>
-                  <textarea
-                    id="content"
-                    value={formData.content_html}
-                    onChange={(e) => setFormData({ ...formData, content_html: e.target.value })}
-                    placeholder="Enter HTML content... Use <p>, <strong>, <ul>, <li> tags"
-                    rows={10}
-                    className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm"
-                  />
-                  <p className="mt-1 text-sm text-neutral-500">
-                    HTML tags allowed: p, strong, em, ul, li, a
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                <div className="p-6 space-y-4">
                   <div>
-                    <Label htmlFor="order">Display Order</Label>
+                    <Label htmlFor="title">Title / Question</Label>
                     <Input
-                      id="order"
-                      type="number"
-                      value={formData.order_index}
-                      onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
-                      min={1}
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="e.g. How is health sharing different from insurance?"
                       className="mt-1"
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 mt-6">
-                    <input
-                      id="is-active"
-                      type="checkbox"
-                      checked={formData.is_active}
-                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <Input
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      placeholder="e.g., why-choose-healthsharing"
+                      className="mt-1"
                     />
-                    <Label htmlFor="is-active" className="cursor-pointer">
-                      Active (Visible on Site)
-                    </Label>
+                    <p className="mt-1 text-sm text-neutral-500">
+                      Suggested: why-choose-healthsharing, general, coverage, pricing
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="content">Content (HTML)</Label>
+                    <textarea
+                      id="content"
+                      value={formData.content_html}
+                      onChange={(e) => setFormData({ ...formData, content_html: e.target.value })}
+                      placeholder="Enter HTML content... Use <p>, <strong>, <ul>, <li> tags"
+                      rows={10}
+                      className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm"
+                    />
+                    <p className="mt-1 text-sm text-neutral-500">
+                      HTML tags allowed: p, strong, em, ul, li, a
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="order">Display Order</Label>
+                      <Input
+                        id="order"
+                        type="number"
+                        value={formData.order_index}
+                        onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
+                        min={1}
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-6">
+                      <input
+                        id="is-active"
+                        type="checkbox"
+                        checked={formData.is_active}
+                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                        aria-label="Active (Visible on Site)"
+                        className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <Label htmlFor="is-active" className="cursor-pointer">
+                        Active (Visible on Site)
+                      </Label>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                  <Button onClick={handleSave} className="inline-flex items-center gap-2">
-                    <Save className="h-4 w-4" />
-                    Save FAQ Item
-                  </Button>
+                <div className="px-6 py-4 border-t border-neutral-200 flex justify-end gap-3">
                   <Button onClick={handleCancel} variant="outline" className="inline-flex items-center gap-2">
                     <X className="h-4 w-4" />
                     Cancel
                   </Button>
+                  <Button onClick={handleSave} className="inline-flex items-center gap-2">
+                    <Save className="h-4 w-4" />
+                    {isCreating ? 'Create FAQ' : 'Save Changes'}
+                  </Button>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           )}
 
           <div className="space-y-4">

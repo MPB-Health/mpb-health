@@ -16,7 +16,30 @@ import {
   ToggleLeft,
   Eye,
   EyeOff,
+  BarChart3,
+  ArrowLeftRight,
+  Layers,
+  MapPin,
+  Swords,
+  Brain,
+  TrendingUp,
+  PieChart,
+  MessageSquare,
 } from 'lucide-react';
+import {
+  ProductAnalyticsModal,
+  ProductComparisonModal,
+  PricingAnalyticsModal,
+  ProductMixModal,
+  RateCalculatorModal,
+  ProductBundleModal,
+  ProductAvailabilityModal,
+  CompetitorPricingModal,
+  ProductRecommendationModal,
+  ProductTrendModal,
+  ProductMarginModal,
+  ProductFeedbackModal,
+} from '../components/products';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {
@@ -169,6 +192,8 @@ function PricingMatrix({ planId, isIuaPlan }: { planId: string; isIuaPlan: boole
 // ---------------------------------------------------------------------------
 // Products (Plans) List Page
 // ---------------------------------------------------------------------------
+const cn = (...classes: (string | boolean | undefined | null)[]) => classes.filter(Boolean).join(' ');
+
 export default function Products() {
   const navigate = useNavigate();
 
@@ -178,6 +203,34 @@ export default function Products() {
   const [filters, setFilters] = useState<PlanFilters>({});
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [startingPrices, setStartingPrices] = useState<Record<string, number | null>>({});
+
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showPricingAnalytics, setShowPricingAnalytics] = useState(false);
+  const [showMix, setShowMix] = useState(false);
+  const [showRateCalc, setShowRateCalc] = useState(false);
+  const [showBundle, setShowBundle] = useState(false);
+  const [showAvailability, setShowAvailability] = useState(false);
+  const [showCompetitor, setShowCompetitor] = useState(false);
+  const [showRecommendation, setShowRecommendation] = useState(false);
+  const [showTrends, setShowTrends] = useState(false);
+  const [showMargin, setShowMargin] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'compare', label: 'Compare', icon: ArrowLeftRight, color: 'text-green-500', action: () => setShowComparison(true) },
+    { id: 'pricing', label: 'Pricing', icon: DollarSign, color: 'text-violet-500', action: () => setShowPricingAnalytics(true) },
+    { id: 'mix', label: 'Plan Mix', icon: Layers, color: 'text-amber-500', action: () => setShowMix(true) },
+    { id: 'calculator', label: 'Rate Calc', icon: Calculator, color: 'text-pink-500', action: () => setShowRateCalc(true) },
+    { id: 'bundle', label: 'Bundle', icon: Package, color: 'text-cyan-500', action: () => setShowBundle(true) },
+    { id: 'availability', label: 'Availability', icon: MapPin, color: 'text-emerald-500', action: () => setShowAvailability(true) },
+    { id: 'competitor', label: 'Competitor', icon: Swords, color: 'text-red-500', action: () => setShowCompetitor(true) },
+    { id: 'recommend', label: 'AI Recommend', icon: Brain, color: 'text-fuchsia-500', action: () => setShowRecommendation(true) },
+    { id: 'trends', label: 'Trends', icon: TrendingUp, color: 'text-teal-500', action: () => setShowTrends(true) },
+    { id: 'margin', label: 'Margins', icon: PieChart, color: 'text-orange-500', action: () => setShowMargin(true) },
+    { id: 'feedback', label: 'Feedback', icon: MessageSquare, color: 'text-indigo-500', action: () => setShowFeedback(true) },
+  ];
 
   const loadPlans = useCallback(async () => {
     setLoading(true);
@@ -256,6 +309,16 @@ export default function Products() {
             <span>Export</span>
           </button>
         </div>
+      </div>
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Filters */}
@@ -457,6 +520,20 @@ export default function Products() {
           })
         )}
       </div>
+
+      {/* ---- Product Power Modals ---- */}
+      <ProductAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)} planCount={total} />
+      <ProductComparisonModal open={showComparison} onClose={() => setShowComparison(false)} />
+      <PricingAnalyticsModal open={showPricingAnalytics} onClose={() => setShowPricingAnalytics(false)} />
+      <ProductMixModal open={showMix} onClose={() => setShowMix(false)} />
+      <RateCalculatorModal open={showRateCalc} onClose={() => setShowRateCalc(false)} />
+      <ProductBundleModal open={showBundle} onClose={() => setShowBundle(false)} />
+      <ProductAvailabilityModal open={showAvailability} onClose={() => setShowAvailability(false)} />
+      <CompetitorPricingModal open={showCompetitor} onClose={() => setShowCompetitor(false)} />
+      <ProductRecommendationModal open={showRecommendation} onClose={() => setShowRecommendation(false)} />
+      <ProductTrendModal open={showTrends} onClose={() => setShowTrends(false)} />
+      <ProductMarginModal open={showMargin} onClose={() => setShowMargin(false)} />
+      <ProductFeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
     </div>
   );
 }

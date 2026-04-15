@@ -10,7 +10,33 @@ import {
   Building2,
   Calendar,
   Briefcase,
+  BarChart3,
+  Zap,
+  ArrowLeftRight,
+  TrendingUp,
+  CheckSquare,
+  Layout,
+  ShieldCheck,
+  Clock,
+  Brain,
+  Target,
+  History,
+  Download,
 } from 'lucide-react';
+import {
+  QuoteAnalyticsModal,
+  QuoteVelocityModal,
+  QuoteComparisonModal,
+  QuoteForecastModal,
+  BulkQuoteActionModal,
+  QuoteTemplateModal,
+  QuoteApprovalModal,
+  QuoteExpiryTrackerModal,
+  QuotePricingOptimizerModal,
+  QuoteWinProbabilityModal,
+  QuoteRevisionHistoryModal,
+  QuoteExportBuilderModal,
+} from '../components/quotes';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
@@ -24,6 +50,8 @@ import type {
   AccountWithRelations,
   DealWithRelations,
 } from '@mpbhealth/crm-core';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) => classes.filter(Boolean).join(' ');
 
 const QUOTE_STATUSES: { value: QuoteStatus | ''; label: string }[] = [
   { value: '', label: 'All Statuses' },
@@ -69,6 +97,35 @@ export default function Quotes() {
   const [showFilters, setShowFilters] = useState(false);
   const [showAddQuote, setShowAddQuote] = useState(false);
   const pageSize = 20;
+
+  // Power modal state
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showVelocity, setShowVelocity] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showApproval, setShowApproval] = useState(false);
+  const [showExpiryTracker, setShowExpiryTracker] = useState(false);
+  const [showPricingOptimizer, setShowPricingOptimizer] = useState(false);
+  const [showWinProbability, setShowWinProbability] = useState(false);
+  const [showRevisionHistory, setShowRevisionHistory] = useState(false);
+  const [showExportBuilder, setShowExportBuilder] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'velocity', label: 'Velocity', icon: Zap, color: 'text-green-500', action: () => setShowVelocity(true) },
+    { id: 'compare', label: 'Compare', icon: ArrowLeftRight, color: 'text-violet-500', action: () => setShowComparison(true) },
+    { id: 'forecast', label: 'Forecast', icon: TrendingUp, color: 'text-amber-500', action: () => setShowForecast(true) },
+    { id: 'bulk', label: 'Bulk Actions', icon: CheckSquare, color: 'text-pink-500', action: () => setShowBulkActions(true) },
+    { id: 'templates', label: 'Templates', icon: Layout, color: 'text-cyan-500', action: () => setShowTemplates(true) },
+    { id: 'approval', label: 'Approvals', icon: ShieldCheck, color: 'text-emerald-500', action: () => setShowApproval(true) },
+    { id: 'expiry', label: 'Expiry', icon: Clock, color: 'text-red-500', action: () => setShowExpiryTracker(true) },
+    { id: 'pricing', label: 'AI Pricing', icon: Brain, color: 'text-fuchsia-500', action: () => setShowPricingOptimizer(true) },
+    { id: 'winprob', label: 'Win Prob', icon: Target, color: 'text-teal-500', action: () => setShowWinProbability(true) },
+    { id: 'revisions', label: 'Revisions', icon: History, color: 'text-orange-500', action: () => setShowRevisionHistory(true) },
+    { id: 'export', label: 'Export', icon: Download, color: 'text-indigo-500', action: () => setShowExportBuilder(true) },
+  ];
 
   // For filter dropdowns
   const [accounts, setAccounts] = useState<AccountWithRelations[]>([]);
@@ -237,6 +294,16 @@ export default function Quotes() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Filters */}
@@ -542,6 +609,20 @@ export default function Quotes() {
         onClose={() => setShowAddQuote(false)}
         onSuccess={() => loadQuotes()}
       />
+
+      {/* ---- Quote Power Modals ---- */}
+      <QuoteAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)} totalQuotes={stats.totalQuotes} totalValue={stats.totalValue} pendingValue={stats.pendingValue} acceptedValue={stats.acceptedValue} />
+      <QuoteVelocityModal open={showVelocity} onClose={() => setShowVelocity(false)} />
+      <QuoteComparisonModal open={showComparison} onClose={() => setShowComparison(false)} />
+      <QuoteForecastModal open={showForecast} onClose={() => setShowForecast(false)} pendingValue={stats.pendingValue} />
+      <BulkQuoteActionModal open={showBulkActions} onClose={() => setShowBulkActions(false)} />
+      <QuoteTemplateModal open={showTemplates} onClose={() => setShowTemplates(false)} />
+      <QuoteApprovalModal open={showApproval} onClose={() => setShowApproval(false)} />
+      <QuoteExpiryTrackerModal open={showExpiryTracker} onClose={() => setShowExpiryTracker(false)} />
+      <QuotePricingOptimizerModal open={showPricingOptimizer} onClose={() => setShowPricingOptimizer(false)} />
+      <QuoteWinProbabilityModal open={showWinProbability} onClose={() => setShowWinProbability(false)} />
+      <QuoteRevisionHistoryModal open={showRevisionHistory} onClose={() => setShowRevisionHistory(false)} />
+      <QuoteExportBuilderModal open={showExportBuilder} onClose={() => setShowExportBuilder(false)} />
     </div>
   );
 }

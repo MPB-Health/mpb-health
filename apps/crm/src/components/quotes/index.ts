@@ -1,0 +1,12 @@
+export { QuoteAnalyticsModal } from './QuoteAnalyticsModal';
+export { QuoteVelocityModal } from './QuoteVelocityModal';
+export { QuoteComparisonModal } from './QuoteComparisonModal';
+export { QuoteForecastModal } from './QuoteForecastModal';
+export { BulkQuoteActionModal } from './BulkQuoteActionModal';
+export { QuoteTemplateModal } from './QuoteTemplateModal';
+export { QuoteApprovalModal } from './QuoteApprovalModal';
+export { QuoteExpiryTrackerModal } from './QuoteExpiryTrackerModal';
+export { QuotePricingOptimizerModal } from './QuotePricingOptimizerModal';
+export { QuoteWinProbabilityModal } from './QuoteWinProbabilityModal';
+export { QuoteRevisionHistoryModal } from './QuoteRevisionHistoryModal';
+export { QuoteExportBuilderModal } from './QuoteExportBuilderModal';

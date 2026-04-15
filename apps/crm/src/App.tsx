@@ -133,6 +133,9 @@ const UserProfile = lazyRetry(() => import('./pages/UserProfile'));
 // Quote Template Editor
 const QuoteTemplateEditor = lazyRetry(() => import('./pages/QuoteTemplateEditor'));
 
+// Sales Daily Logs
+const SalesDailyLogs = lazyRetry(() => import('./pages/SalesDailyLogs'));
+
 // Learning Center
 const LearningCenter = lazyRetry(() => import('./pages/LearningCenter'));
 
@@ -337,6 +340,16 @@ export default function App() {
                     <Guarded permission="leads.write">
                       <Suspense fallback={<PageLoader />}>
                         <EndOfDay />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/sales-daily-logs"
+                  element={
+                    <Guarded permission="reports.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <SalesDailyLogs />
                       </Suspense>
                     </Guarded>
                   }

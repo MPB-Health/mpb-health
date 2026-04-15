@@ -110,6 +110,13 @@ export type {
   UpdateSubscriptionInput,
   AddPaymentMethodInput,
   UsageMetric,
+  SubscriptionAddon,
+  AddAddonInput,
+  RemoveAddonInput,
+  MeteredBillingMetric,
+  MeteredUsageRecord,
+  ReportMeteredUsageInput,
+  CheckoutSessionInput,
 } from './billing';
 
 // Settings & Admin

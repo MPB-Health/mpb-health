@@ -15,6 +15,11 @@ import type {
   UpdateSubscriptionInput,
   AddPaymentMethodInput,
   BillingCycle,
+  SubscriptionAddon,
+  AddAddonInput,
+  RemoveAddonInput,
+  MeteredUsageRecord,
+  ReportMeteredUsageInput,
 } from './types';
 
 export class BillingService {
@@ -479,10 +484,12 @@ export class BillingService {
    * Get billing summary for an organization
    */
   async getBillingSummary(orgId: string): Promise<BillingSummary> {
-    const [subscription, usageData, paymentMethod] = await Promise.all([
+    const [subscription, usageData, paymentMethod, activeAddons, totalCost] = await Promise.all([
       this.getSubscription(orgId),
       supabase.rpc('get_usage_with_limits', { p_org_id: orgId }),
       this.getDefaultPaymentMethod(orgId),
+      this.getActiveAddons(orgId),
+      this.calculateTotalMonthlyCost(orgId),
     ]);
 
     const usage = usageData.data || [];
@@ -498,12 +505,18 @@ export class BillingService {
       }
     }
 
+    // Include add-on costs in upcoming amount
+    const addonCost = activeAddons.reduce((sum, a) => sum + a.price_monthly, 0);
+    upcomingAmount += addonCost;
+
     return {
       subscription,
       current_usage: usage,
       upcoming_invoice_amount: upcomingAmount,
       next_billing_date: subscription?.current_period_end || null,
       payment_method: paymentMethod,
+      active_addons: activeAddons,
+      total_monthly_cost: totalCost.total,
     };
   }
 
@@ -595,6 +608,231 @@ export class BillingService {
    */
   isPlanFeatureAvailable(plan: SubscriptionPlan, feature: string): boolean {
     return plan.features.some(f => f.toLowerCase().includes(feature.toLowerCase()));
+  }
+
+  // =========================================================================
+  // MODULAR ADD-ONS (SaaS Packaging)
+  // =========================================================================
+
+  /**
+   * Get active add-on modules for an organization
+   */
+  async getActiveAddons(orgId: string): Promise<SubscriptionAddon[]> {
+    const { data, error } = await supabase
+      .from('org_module_licenses')
+      .select(`
+        id,
+        org_id,
+        status,
+        license_source,
+        activated_at,
+        canceled_at,
+        stripe_subscription_item_id,
+        module:product_modules(slug, name, addon_price_monthly, addon_price_yearly)
+      `)
+      .eq('org_id', orgId)
+      .in('status', ['active', 'trialing'])
+      .eq('license_source', 'addon');
+
+    if (error) {
+      console.error('[BillingService] Failed to get active addons:', error);
+      throw error;
+    }
+
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      org_id: item.org_id,
+      module_slug: item.module?.slug || '',
+      module_name: item.module?.name || '',
+      price_monthly: item.module?.addon_price_monthly || 0,
+      price_yearly: item.module?.addon_price_yearly || 0,
+      billing_cycle: 'monthly' as BillingCycle,
+      status: item.status,
+      stripe_subscription_item_id: item.stripe_subscription_item_id,
+      activated_at: item.activated_at,
+      canceled_at: item.canceled_at,
+    }));
+  }
+
+  /**
+   * Add a module as an add-on to the subscription
+   */
+  async addAddon(orgId: string, input: AddAddonInput): Promise<SubscriptionAddon> {
+    const { data: module, error: moduleError } = await supabase
+      .from('product_modules')
+      .select('*')
+      .eq('slug', input.module_slug)
+      .eq('is_active', true)
+      .single();
+
+    if (moduleError || !module) {
+      throw new Error(`Module ${input.module_slug} not found or inactive`);
+    }
+
+    if (module.included_in_core) {
+      throw new Error(`${module.name} is included in the core subscription`);
+    }
+
+    const { data, error } = await supabase
+      .from('org_module_licenses')
+      .upsert({
+        org_id: orgId,
+        module_id: module.id,
+        status: 'active',
+        license_source: 'addon',
+        activated_at: new Date().toISOString(),
+      }, { onConflict: 'org_id,module_id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[BillingService] Failed to add addon:', error);
+      throw error;
+    }
+
+    await this.logBillingEvent(orgId, null, null, 'addon.added', `Added ${module.name} add-on`, {
+      module_slug: input.module_slug,
+      billing_cycle: input.billing_cycle,
+    });
+
+    return {
+      id: data.id,
+      org_id: orgId,
+      module_slug: module.slug,
+      module_name: module.name,
+      price_monthly: module.addon_price_monthly || 0,
+      price_yearly: module.addon_price_yearly || 0,
+      billing_cycle: input.billing_cycle,
+      status: 'active',
+      stripe_subscription_item_id: null,
+      activated_at: data.activated_at,
+      canceled_at: null,
+    };
+  }
+
+  /**
+   * Remove an add-on module
+   */
+  async removeAddon(orgId: string, input: RemoveAddonInput): Promise<void> {
+    const { data: module } = await supabase
+      .from('product_modules')
+      .select('id, name')
+      .eq('slug', input.module_slug)
+      .single();
+
+    if (!module) throw new Error(`Module ${input.module_slug} not found`);
+
+    const updateData: Record<string, unknown> = {
+      canceled_at: new Date().toISOString(),
+    };
+
+    if (input.immediate) {
+      updateData.status = 'canceled';
+    }
+
+    const { error } = await supabase
+      .from('org_module_licenses')
+      .update(updateData)
+      .eq('org_id', orgId)
+      .eq('module_id', module.id);
+
+    if (error) {
+      console.error('[BillingService] Failed to remove addon:', error);
+      throw error;
+    }
+
+    await this.logBillingEvent(orgId, null, null, 'addon.removed', `Removed ${module.name} add-on`, {
+      module_slug: input.module_slug,
+      immediate: input.immediate,
+    });
+  }
+
+  /**
+   * Calculate total monthly cost including base plan and all active add-ons
+   */
+  async calculateTotalMonthlyCost(orgId: string): Promise<{
+    base_plan: number;
+    addons: { slug: string; name: string; price: number }[];
+    total: number;
+  }> {
+    const [subscription, addons] = await Promise.all([
+      this.getSubscription(orgId),
+      this.getActiveAddons(orgId),
+    ]);
+
+    const basePlan = subscription?.plan
+      ? subscription.billing_cycle === 'yearly'
+        ? subscription.plan.price_yearly / 12
+        : subscription.plan.price_monthly
+      : 0;
+
+    const addonDetails = addons.map(a => ({
+      slug: a.module_slug,
+      name: a.module_name,
+      price: a.billing_cycle === 'yearly' ? a.price_yearly / 12 : a.price_monthly,
+    }));
+
+    const addonTotal = addonDetails.reduce((sum, a) => sum + a.price, 0);
+
+    return {
+      base_plan: Math.round(basePlan * 100) / 100,
+      addons: addonDetails,
+      total: Math.round((basePlan + addonTotal) * 100) / 100,
+    };
+  }
+
+  // =========================================================================
+  // METERED BILLING
+  // =========================================================================
+
+  /**
+   * Report metered usage for usage-based billing
+   */
+  async reportMeteredUsage(orgId: string, input: ReportMeteredUsageInput): Promise<void> {
+    const { error } = await supabase
+      .from('metered_usage_records')
+      .insert({
+        org_id: orgId,
+        metric: input.metric,
+        quantity: input.quantity,
+        reported_at: input.timestamp || new Date().toISOString(),
+      });
+
+    if (error) {
+      console.error('[BillingService] Failed to report metered usage:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get metered usage records for an organization
+   */
+  async getMeteredUsage(
+    orgId: string,
+    options: { metric?: string; period_start?: string; period_end?: string } = {}
+  ): Promise<MeteredUsageRecord[]> {
+    let query = supabase
+      .from('metered_usage_records')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('reported_at', { ascending: false });
+
+    if (options.metric) {
+      query = query.eq('metric', options.metric);
+    }
+    if (options.period_start) {
+      query = query.gte('reported_at', options.period_start);
+    }
+    if (options.period_end) {
+      query = query.lte('reported_at', options.period_end);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('[BillingService] Failed to get metered usage:', error);
+      throw error;
+    }
+    return data || [];
   }
 }
 

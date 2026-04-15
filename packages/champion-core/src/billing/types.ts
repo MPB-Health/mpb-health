@@ -249,6 +249,8 @@ export interface BillingSummary {
   upcoming_invoice_amount: number;
   next_billing_date: string | null;
   payment_method: PaymentMethod | null;
+  active_addons: SubscriptionAddon[];
+  total_monthly_cost: number;
 }
 
 export interface UsageSummary {
@@ -257,4 +259,63 @@ export interface UsageSummary {
   metrics: UsageWithLimit[];
   limits_exceeded: string[];
   days_remaining: number;
+}
+
+// ============================================================================
+// Modular Add-on Types (SaaS Packaging)
+// ============================================================================
+
+export interface SubscriptionAddon {
+  id: string;
+  org_id: string;
+  module_slug: string;
+  module_name: string;
+  price_monthly: number;
+  price_yearly: number;
+  billing_cycle: BillingCycle;
+  status: SubscriptionStatus;
+  stripe_subscription_item_id: string | null;
+  activated_at: string;
+  canceled_at: string | null;
+}
+
+export interface AddAddonInput {
+  module_slug: string;
+  billing_cycle: BillingCycle;
+}
+
+export interface RemoveAddonInput {
+  module_slug: string;
+  immediate?: boolean;
+}
+
+export type MeteredBillingMetric = 'members' | 'enrollments' | 'tickets' | 'seats';
+
+export interface MeteredUsageRecord {
+  id: string;
+  org_id: string;
+  metric: MeteredBillingMetric;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  period_start: string;
+  period_end: string;
+  stripe_usage_record_id: string | null;
+  reported_at: string;
+}
+
+export interface ReportMeteredUsageInput {
+  metric: MeteredBillingMetric;
+  quantity: number;
+  timestamp?: string;
+}
+
+export interface CheckoutSessionInput {
+  plan_id: string;
+  billing_cycle: BillingCycle;
+  addon_slugs?: string[];
+  success_url: string;
+  cancel_url: string;
+  trial_days?: number;
+  coupon_code?: string;
 }

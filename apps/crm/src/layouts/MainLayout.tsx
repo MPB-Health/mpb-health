@@ -47,6 +47,7 @@ import {
   Share2,
   LayoutGrid,
   BookOpen,
+  ClipboardList,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -174,6 +175,7 @@ const navigationSections: NavSection[] = [
       { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
       { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
       { name: 'End of Day', href: '/end-of-day', icon: Sunset, permission: 'leads.write' },
+      { name: 'Sales Daily Logs', href: '/sales-daily-logs', icon: ClipboardList, permission: 'reports.read' },
       { name: 'Meetings', href: '/meetings', icon: Video, permission: 'tasks.read' },
     ],
   },

@@ -78,6 +78,7 @@ const ChatModeration = lazyRetry(() => import('./pages/ChatModeration'));
 const PushNotifications = lazyRetry(() => import('./pages/PushNotifications'));
 const Reports = lazyRetry(() => import('./pages/Reports'));
 const AdvisorAccess = lazyRetry(() => import('./pages/AdvisorAccess'));
+const ModuleManagement = lazyRetry(() => import('./pages/ModuleManagement'));
 
 // Eagerly prefetch all route chunks after initial paint
 if (typeof window !== 'undefined') {
@@ -361,6 +362,7 @@ export default function App() {
               <Route path="operations/lead-assignment" element={<LeadAssignment />} />
               <Route path="content/widgets-config" element={<WidgetConfig />} />
               <Route path="settings/notifications" element={<NotificationRules />} />
+              <Route path="settings/modules" element={<RequirePermission permission="settings.manage"><ModuleManagement /></RequirePermission>} />
               <Route path="system/health" element={<SystemHealth />} />
               <Route path="messaging/chat" element={<ChatModeration />} />
               <Route path="messaging/push" element={<PushNotifications />} />

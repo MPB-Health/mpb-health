@@ -89,7 +89,7 @@ export const contactsPageHelp: PageHelp = {
     },
     {
       id: 'con-tip-4',
-      text: 'Add notes after every interaction. Notes are searchable and appear in the contact's activity timeline for anyone on the team.',
+      text: `Add notes after every interaction. Notes are searchable and appear in the contact's activity timeline for anyone on the team.`,
     },
   ],
   fieldHints: [
@@ -116,7 +116,7 @@ export const contactsPageHelp: PageHelp = {
   ],
   faqs: [
     {
-      question: 'How do I record a contact's communication preferences?',
+      question: `How do I record a contact's communication preferences?`,
       answer:
         'Open the contact record and navigate to the "Preferences" section. Toggle the allowed channels (email, phone, text, direct mail) and add any notes about preferred times or languages. These preferences are enforced by the campaign and sequence engines.',
     },

@@ -36,7 +36,7 @@ export const forecastingPageHelp: PageHelp = {
     {
       fieldKey: 'weighted_value',
       label: 'Weighted Pipeline',
-      hint: 'Each deal's value multiplied by its stage probability, summed across all open deals in the selected period.',
+      hint: `Each deal's value multiplied by its stage probability, summed across all open deals in the selected period.`,
     },
     {
       fieldKey: 'best_case',
@@ -58,7 +58,7 @@ export const forecastingPageHelp: PageHelp = {
     {
       question: 'How is the weighted forecast calculated?',
       answer:
-        'Each open deal's value is multiplied by its stage probability (e.g., a $5,000 deal at the Proposal stage with 60% probability contributes $3,000). These weighted values are summed for all deals with an expected close date within the selected period.',
+        `Each open deal's value is multiplied by its stage probability (e.g., a $5,000 deal at the Proposal stage with 60% probability contributes $3,000). These weighted values are summed for all deals with an expected close date within the selected period.`,
     },
     {
       question: 'What does "Commit" mean in forecasting?',

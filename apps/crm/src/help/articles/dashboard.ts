@@ -16,7 +16,7 @@ export const dashboardPageHelp: PageHelp = {
     },
     {
       id: 'dash-tip-3',
-      text: 'Use the date-range picker in the top-right corner to compare this week's numbers against last week or last month.',
+      text: `Use the date-range picker in the top-right corner to compare this week's numbers against last week or last month.`,
     },
     {
       id: 'dash-tip-4',
@@ -56,7 +56,7 @@ export const dashboardPageHelp: PageHelp = {
         'Yes. Click the "Customize" button in the top-right corner of the Dashboard to add, remove, or reorder widgets. Changes are saved per-user, so each team member can tailor their own view.',
     },
     {
-      question: 'Why do my numbers look different from my team lead's dashboard?',
+      question: `Why do my numbers look different from my team lead's dashboard?`,
       answer:
         'Dashboard metrics respect your role and territory permissions. Agents see only their own data, while Team Leads and Managers see aggregated numbers for their teams. Ask your admin to adjust your role if you need broader visibility.',
     },

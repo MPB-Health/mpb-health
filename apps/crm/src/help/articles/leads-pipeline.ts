@@ -35,12 +35,12 @@ export const leadsPageHelp: PageHelp = {
     {
       fieldKey: 'first_name',
       label: 'First Name',
-      hint: 'The lead's legal first name. Used in personalized email templates and mail-merge fields.',
+      hint: `The lead's legal first name. Used in personalized email templates and mail-merge fields.`,
     },
     {
       fieldKey: 'last_name',
       label: 'Last Name',
-      hint: 'The lead's legal last name. Combined with First Name for display throughout the CRM.',
+      hint: `The lead's legal last name. Combined with First Name for display throughout the CRM.`,
     },
     {
       fieldKey: 'email',
@@ -118,11 +118,11 @@ export const pipelinePageHelp: PageHelp = {
     },
     {
       id: 'pipe-tip-3',
-      text: 'Toggle between "My Pipeline" and "Team Pipeline" using the dropdown at the top to see either your personal leads or your entire team's board.',
+      text: `Toggle between "My Pipeline" and "Team Pipeline" using the dropdown at the top to see either your personal leads or your entire team's board.`,
     },
     {
       id: 'pipe-tip-4',
-      text: 'Hover over a card to see a quick-peek summary with the lead's last activity, next task, and contact info—no click required.',
+      text: `Hover over a card to see a quick-peek summary with the lead's last activity, next task, and contact info—no click required.`,
     },
     {
       id: 'pipe-tip-5',
@@ -139,7 +139,7 @@ export const pipelinePageHelp: PageHelp = {
     {
       question: 'What happens when I drag a lead to the "Converted" column?',
       answer:
-        'The lead's status changes to Converted and the CRM prompts you to create a Deal (if one doesn't already exist). Any automation rules tied to the Converted stage—such as a welcome email sequence—will also trigger.',
+        `The lead's status changes to Converted and the CRM prompts you to create a Deal (if one doesn't already exist). Any automation rules tied to the Converted stage—such as a welcome email sequence—will also trigger.`,
     },
     {
       question: 'How do I archive or hide stages I no longer use?',

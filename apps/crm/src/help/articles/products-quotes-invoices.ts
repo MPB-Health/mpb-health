@@ -23,7 +23,7 @@ export const productsPageHelp: PageHelp = {
     {
       fieldKey: 'productName',
       label: 'Product Name',
-      hint: 'The plan marketing name as it appears on the carrier's materials (e.g., "Aetna Medicare Advantage HMO").',
+      hint: `The plan marketing name as it appears on the carrier's materials (e.g., "Aetna Medicare Advantage HMO").`,
     },
     {
       fieldKey: 'carrier',
@@ -48,7 +48,7 @@ export const productsPageHelp: PageHelp = {
   ],
   faqs: [
     {
-      question: 'How do I add a new plan year's products?',
+      question: `How do I add a new plan year's products?`,
       answer:
         'Clone the existing product and update the effective dates, premiums, and benefits for the new plan year. The original product will remain for historical reporting.',
     },
@@ -126,7 +126,7 @@ export const quotesPageHelp: PageHelp = {
     {
       question: 'Can I include multiple beneficiaries on one quote?',
       answer:
-        'Yes. Add additional contacts as dependents or spouse when building the quote. Each person's age and zip code will be used to calculate their individual premiums.',
+        `Yes. Add additional contacts as dependents or spouse when building the quote. Each person's age and zip code will be used to calculate their individual premiums.`,
     },
   ],
   relatedArticles: ['pqi-creating-quotes', 'pqi-product-catalog', 'pqi-invoice-management'],

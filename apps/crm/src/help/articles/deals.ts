@@ -24,7 +24,7 @@ export const dealsPageHelp: PageHelp = {
     },
     {
       id: 'deal-tip-5',
-      text: 'Log every interaction on the deal's activity timeline—carriers and compliance auditors may request proof of agent activity.',
+      text: `Log every interaction on the deal's activity timeline—carriers and compliance auditors may request proof of agent activity.`,
     },
   ],
   fieldHints: [
@@ -73,7 +73,7 @@ export const dealsPageHelp: PageHelp = {
     {
       question: 'What happens to a deal when I mark it "Closed Lost"?',
       answer:
-        'The deal moves out of the active pipeline and into the Closed Lost archive. You will be prompted to enter a loss reason. The deal's data is preserved for reporting and can be reopened later if circumstances change.',
+        `The deal moves out of the active pipeline and into the Closed Lost archive. You will be prompted to enter a loss reason. The deal's data is preserved for reporting and can be reopened later if circumstances change.`,
     },
   ],
   relatedArticles: [
@@ -116,7 +116,7 @@ export const dealPipelinePageHelp: PageHelp = {
     {
       question: 'How does the weighted pipeline value work?',
       answer:
-        'Each deal's value is multiplied by its stage probability. A $10,000 deal at the "Proposal" stage (60% probability) contributes $6,000 to the weighted total. This gives you a more realistic revenue forecast than the raw sum.',
+        `Each deal's value is multiplied by its stage probability. A $10,000 deal at the "Proposal" stage (60% probability) contributes $6,000 to the weighted total. This gives you a more realistic revenue forecast than the raw sum.`,
     },
     {
       question: 'What do the card colors mean?',
@@ -169,7 +169,7 @@ Automation rules can be attached to stage transitions. For example, moving a dea
     module: 'deals',
     title: 'Deal Stages Explained',
     summary:
-      'Understand each default deal stage, its purpose, and how to customize stages for your agency's workflow.',
+      `Understand each default deal stage, its purpose, and how to customize stages for your agency's workflow.`,
     content: `MPB CRM ships with five default deal stages, each designed to mirror the typical Medicare or health insurance sales cycle: Qualification, Needs Analysis, Proposal, Enrollment, and Closed (Won or Lost). Understanding what each stage represents—and when to move a deal forward—is key to maintaining accurate pipeline data and reliable forecasting.
 
 "Qualification" is the entry point. A deal lands here when a lead has expressed clear interest in a specific product and you have confirmed basic eligibility (age, state, current coverage status). At this stage you should have a signed Scope of Appointment if the prospect is a Medicare beneficiary. The default probability for Qualification is 20%, reflecting the early-stage uncertainty. Move the deal to "Needs Analysis" once you have scheduled or completed a fact-finding session to understand the client's health needs, prescription medications, preferred doctors, and budget.

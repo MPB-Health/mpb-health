@@ -60,7 +60,7 @@ export const inboxPageHelp: PageHelp = {
     {
       question: 'Can I send emails on behalf of another agent?',
       answer:
-        'If your administrator has enabled shared mailboxes, you can send from a team alias. Individual agent emails require that agent's connected account.',
+        `If your administrator has enabled shared mailboxes, you can send from a team alias. Individual agent emails require that agent's connected account.`,
     },
   ],
   relatedArticles: ['email-inbox', 'email-sequences', 'email-deliverability'],
@@ -104,7 +104,7 @@ export const emailSequencesPageHelp: PageHelp = {
     {
       fieldKey: 'sendWindow',
       label: 'Send Window',
-      hint: 'Restrict delivery to business hours in the recipient's timezone for better open rates.',
+      hint: `Restrict delivery to business hours in the recipient's timezone for better open rates.`,
     },
   ],
   faqs: [
@@ -133,7 +133,7 @@ export const emailArticles: HelpArticle[] = [
     module: 'email',
     title: 'Using the Email Inbox',
     summary:
-      'Master the CRM's built-in email client to manage all prospect and client communications from one place.',
+      `Master the CRM's built-in email client to manage all prospect and client communications from one place.`,
     content: `The CRM's integrated email inbox eliminates the need to switch between your email client and your CRM throughout the day. Every email you send or receive is automatically matched to the corresponding lead, contact, or deal record, giving you and your team a complete communication timeline for every relationship.
 
 To get started, connect your email account under Settings > Email > Connected Accounts. The CRM supports Google Workspace (Gmail), Microsoft 365 (Outlook), and custom IMAP/SMTP servers. Once connected, your inbox syncs bidirectionally—emails you send from the CRM appear in your regular email client's Sent folder, and replies land in both places. This means you can use the CRM exclusively without worrying about missing messages.

@@ -38,7 +38,7 @@ export const campaignsPageHelp: PageHelp = {
     {
       fieldKey: 'endDate',
       label: 'End Date',
-      hint: 'When the campaign stops. Used to calculate ROI over the campaign's active window.',
+      hint: `When the campaign stops. Used to calculate ROI over the campaign's active window.`,
     },
     {
       fieldKey: 'budget',
@@ -58,7 +58,7 @@ export const campaignsPageHelp: PageHelp = {
         'Leads are linked to campaigns via UTM parameters on web forms, direct list uploads tagged with the campaign name, or manual association on the lead record.',
     },
     {
-      question: 'Can I reuse last year's AEP campaign?',
+      question: `Can I reuse last year's AEP campaign?`,
       answer:
         'Yes. Clone any campaign to create a copy with all settings, templates, and audience segments intact. Update the dates, content, and product references for the new plan year.',
     },
@@ -75,7 +75,7 @@ export const socialMediaPageHelp: PageHelp = {
   pageKey: 'social-media',
   title: 'Social Media',
   description:
-    'Schedule posts, monitor engagement, and manage your agency's social media presence across platforms.',
+    `Schedule posts, monitor engagement, and manage your agency's social media presence across platforms.`,
   quickTips: [
     {
       id: 'social-tip-1',
@@ -99,7 +99,7 @@ export const socialMediaPageHelp: PageHelp = {
     {
       fieldKey: 'scheduledDate',
       label: 'Scheduled Date',
-      hint: 'When the post should be published. The system converts to the platform's timezone automatically.',
+      hint: `When the post should be published. The system converts to the platform's timezone automatically.`,
     },
     {
       fieldKey: 'content',
@@ -116,7 +116,7 @@ export const socialMediaPageHelp: PageHelp = {
     {
       question: 'Can I post to multiple platforms at once?',
       answer:
-        'Yes. When creating a post, select all the platforms you want to publish on. The system will adapt the post format to each platform's requirements.',
+        `Yes. When creating a post, select all the platforms you want to publish on. The system will adapt the post format to each platform's requirements.`,
     },
     {
       question: 'Are there CMS compliance considerations for social media?',

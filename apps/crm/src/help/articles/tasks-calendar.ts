@@ -8,7 +8,7 @@ export const tasksPageHelp: PageHelp = {
   quickTips: [
     {
       id: 'tasks-tip-1',
-      text: 'Use the "End of Day" view to review all tasks due today and plan tomorrow's priorities before logging off.',
+      text: `Use the "End of Day" view to review all tasks due today and plan tomorrow's priorities before logging off.`,
     },
     {
       id: 'tasks-tip-2',
@@ -167,7 +167,7 @@ For repetitive activities—like weekly pipeline reviews, monthly commission aud
     module: 'tasks-calendar',
     title: 'Using the Calendar',
     summary:
-      'Manage appointments, enrollment deadlines, and team schedules with the CRM's integrated calendar.',
+      `Manage appointments, enrollment deadlines, and team schedules with the CRM's integrated calendar.`,
     content: `The CRM calendar unifies all your time-sensitive commitments—client meetings, seminar events, enrollment deadlines, and team activities—into a single view. Instead of juggling a separate calendar app, everything lives inside the CRM where it is connected to your leads, contacts, and deals.
 
 The calendar supports day, week, month, and agenda views. Drag and drop events to reschedule them, resize event blocks to change duration, and click any open time slot to quickly create a new event. Color coding helps you distinguish between event types at a glance: client appointments in blue, internal meetings in gray, seminars and community events in green, and critical deadlines (like AEP start and end dates) in red. You can customize these colors under Settings > Calendar > Categories.

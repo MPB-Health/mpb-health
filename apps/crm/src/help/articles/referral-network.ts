@@ -75,7 +75,7 @@ export const outsideAdvisorsPageHelp: PageHelp = {
   pageKey: 'outside-advisors',
   title: 'Outside Advisors',
   description:
-    'Manage relationships with external advisors—financial planners, estate attorneys, accountants—who influence your clients\' insurance decisions.',
+    `Manage relationships with external advisors—financial planners, estate attorneys, accountants—who influence your clients' insurance decisions.`,
   quickTips: [
     {
       id: 'advisor-tip-1',
@@ -94,7 +94,7 @@ export const outsideAdvisorsPageHelp: PageHelp = {
     {
       fieldKey: 'advisorName',
       label: 'Advisor Name',
-      hint: 'The individual's full name and credentials (e.g., "Sarah Johnson, CFP").',
+      hint: `The individual's full name and credentials (e.g., "Sarah Johnson, CFP").`,
     },
     {
       fieldKey: 'firm',
@@ -104,7 +104,7 @@ export const outsideAdvisorsPageHelp: PageHelp = {
     {
       fieldKey: 'specialty',
       label: 'Specialty',
-      hint: 'The advisor's area of expertise: Financial Planning, Estate Law, Tax/Accounting, or Other.',
+      hint: `The advisor's area of expertise: Financial Planning, Estate Law, Tax/Accounting, or Other.`,
     },
     {
       fieldKey: 'linkedAccounts',
@@ -126,7 +126,7 @@ export const outsideAdvisorsPageHelp: PageHelp = {
     {
       question: 'Can I share client information with outside advisors through the CRM?',
       answer:
-        'The CRM does not share data externally by default. You can generate a summary report or PDF for a specific client to share with an advisor, with the client's consent.',
+        `The CRM does not share data externally by default. You can generate a summary report or PDF for a specific client to share with an advisor, with the client's consent.`,
     },
     {
       question: 'How do I track interactions with advisors?',

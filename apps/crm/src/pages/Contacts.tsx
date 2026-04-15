@@ -15,6 +15,18 @@ import {
   Upload,
   X,
   Shield,
+  BarChart3,
+  Sparkles,
+  Tag,
+  Star,
+  Send,
+  BarChart,
+  Copy,
+  Heart,
+  Edit3,
+  ArrowDown,
+  ShieldCheck,
+  FileText,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
@@ -34,6 +46,23 @@ import { SkeletonTable, GradientHeader } from '@mpbhealth/ui';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSavedViews } from '../hooks/useSavedViews';
 import { SavedViewsBar } from '../components/SavedViewsBar';
+import {
+  ContactAnalyticsModal,
+  ContactEnrichmentModal,
+  ContactSegmentModal,
+  ContactScoreModal,
+  BulkEmailModal,
+  ContactActivityModal,
+  ContactDuplicateModal,
+  ContactRelationshipModal,
+  BulkContactUpdateModal,
+  ContactLifecycleModal,
+  ContactComplianceModal,
+  ContactExportBuilderModal,
+} from '../components/contacts';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(' ');
 
 const contactService = createContactService(supabase);
 const accountService = createAccountService(supabase);
@@ -56,6 +85,35 @@ export default function Contacts() {
 
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const savedViews = useSavedViews('contacts');
+
+  // Modal state
+  const [showContactAnalytics, setShowContactAnalytics] = useState(false);
+  const [showEnrichment, setShowEnrichment] = useState(false);
+  const [showSegments, setShowSegments] = useState(false);
+  const [showScores, setShowScores] = useState(false);
+  const [showBulkEmail, setShowBulkEmail] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const [showRelationships, setShowRelationships] = useState(false);
+  const [showBulkUpdate, setShowBulkUpdate] = useState(false);
+  const [showLifecycle, setShowLifecycle] = useState(false);
+  const [showCompliance, setShowCompliance] = useState(false);
+  const [showExportBuilder, setShowExportBuilder] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowContactAnalytics(true) },
+    { id: 'enrich', label: 'Enrich', icon: Sparkles, color: 'text-violet-500', action: () => setShowEnrichment(true) },
+    { id: 'segments', label: 'Segments', icon: Tag, color: 'text-cyan-500', action: () => setShowSegments(true) },
+    { id: 'scores', label: 'Scores', icon: Star, color: 'text-amber-500', action: () => setShowScores(true) },
+    { id: 'bulk-email', label: 'Bulk Email', icon: Send, color: 'text-green-500', action: () => setShowBulkEmail(true) },
+    { id: 'activity', label: 'Activity', icon: BarChart, color: 'text-indigo-500', action: () => setShowActivity(true) },
+    { id: 'duplicates', label: 'Duplicates', icon: Copy, color: 'text-orange-500', action: () => setShowDuplicates(true) },
+    { id: 'relationships', label: 'Network', icon: Heart, color: 'text-pink-500', action: () => setShowRelationships(true) },
+    { id: 'bulk-update', label: 'Bulk Update', icon: Edit3, color: 'text-teal-500', action: () => setShowBulkUpdate(true) },
+    { id: 'lifecycle', label: 'Lifecycle', icon: ArrowDown, color: 'text-emerald-500', action: () => setShowLifecycle(true) },
+    { id: 'compliance', label: 'Compliance', icon: ShieldCheck, color: 'text-red-500', action: () => setShowCompliance(true) },
+    { id: 'export-builder', label: 'Export+', icon: FileText, color: 'text-rose-500', action: () => setShowExportBuilder(true) },
+  ];
 
   const leadSources = useMemo(() => [
     'Website', 'Referral', 'Cold Call', 'LinkedIn', 'Trade Show', 'Partner', 'Advertisement', 'Other',
@@ -239,6 +297,16 @@ export default function Contacts() {
           </div>
         }
       />
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Saved Views */}
       <div className="bg-surface-primary rounded-2xl border border-th-border">
@@ -590,6 +658,22 @@ export default function Contacts() {
         entityType="contacts"
         onSuccess={() => loadContacts()}
       />
+
+      {/* ---- Contact Power Modals ---- */}
+      <ContactAnalyticsModal open={showContactAnalytics} onClose={() => setShowContactAnalytics(false)} totalContacts={total} />
+      <ContactEnrichmentModal open={showEnrichment} onClose={() => setShowEnrichment(false)} totalContacts={total || 1} />
+      <ContactSegmentModal open={showSegments} onClose={() => setShowSegments(false)} />
+      <ContactScoreModal open={showScores} onClose={() => setShowScores(false)}
+        onNavigateToContact={(id) => { setShowScores(false); navigate(`/contacts/${id}`); }} />
+      <BulkEmailModal open={showBulkEmail} onClose={() => setShowBulkEmail(false)} selectedCount={selectedContacts.size || total} />
+      <ContactActivityModal open={showActivity} onClose={() => setShowActivity(false)} />
+      <ContactDuplicateModal open={showDuplicates} onClose={() => setShowDuplicates(false)} />
+      <ContactRelationshipModal open={showRelationships} onClose={() => setShowRelationships(false)}
+        onNavigateToContact={(id) => { setShowRelationships(false); navigate(`/contacts/${id}`); }} />
+      <BulkContactUpdateModal open={showBulkUpdate} onClose={() => setShowBulkUpdate(false)} selectedCount={selectedContacts.size || total} />
+      <ContactLifecycleModal open={showLifecycle} onClose={() => setShowLifecycle(false)} />
+      <ContactComplianceModal open={showCompliance} onClose={() => setShowCompliance(false)} />
+      <ContactExportBuilderModal open={showExportBuilder} onClose={() => setShowExportBuilder(false)} totalContacts={total} selectedCount={selectedContacts.size} />
     </div>
   );
 }

@@ -9,6 +9,18 @@ import {
   Building2,
   Phone,
   Globe,
+  BarChart3,
+  Layers,
+  GitBranch,
+  Heart,
+  MousePointerClick,
+  Edit3,
+  Merge,
+  Upload,
+  DollarSign,
+  AlertTriangle,
+  Target,
+  MapPin,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
@@ -22,6 +34,23 @@ import {
   type AccountFilters,
 } from '@mpbhealth/crm-core';
 import { supabase } from '../lib/supabase';
+import {
+  AccountAnalyticsModal,
+  AccountSegmentationModal,
+  AccountHierarchyModal,
+  AccountHealthScoreModal,
+  AccountTouchpointModal,
+  BulkAccountUpdateModal,
+  AccountMergeModal,
+  AccountImportModal,
+  AccountRevenueModal,
+  AccountRiskModal,
+  AccountPlanningModal,
+  AccountMapModal,
+} from '../components/accounts';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(' ');
 
 // Account type options
 const ACCOUNT_TYPE_OPTIONS = [
@@ -90,6 +119,35 @@ export default function Accounts() {
 
   // Bulk selection state
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
+
+  // Modal state
+  const [showAccountAnalytics, setShowAccountAnalytics] = useState(false);
+  const [showSegmentation, setShowSegmentation] = useState(false);
+  const [showHierarchy, setShowHierarchy] = useState(false);
+  const [showHealthScore, setShowHealthScore] = useState(false);
+  const [showTouchpoints, setShowTouchpoints] = useState(false);
+  const [showBulkUpdate, setShowBulkUpdate] = useState(false);
+  const [showMerge, setShowMerge] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [showRevenue, setShowRevenue] = useState(false);
+  const [showRisk, setShowRisk] = useState(false);
+  const [showPlanning, setShowPlanning] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAccountAnalytics(true) },
+    { id: 'segments', label: 'Segments', icon: Layers, color: 'text-violet-500', action: () => setShowSegmentation(true) },
+    { id: 'hierarchy', label: 'Hierarchy', icon: GitBranch, color: 'text-cyan-500', action: () => setShowHierarchy(true) },
+    { id: 'health', label: 'Health', icon: Heart, color: 'text-rose-500', action: () => setShowHealthScore(true) },
+    { id: 'touchpoints', label: 'Touchpoints', icon: MousePointerClick, color: 'text-green-500', action: () => setShowTouchpoints(true) },
+    { id: 'bulk-update', label: 'Bulk Update', icon: Edit3, color: 'text-amber-500', action: () => setShowBulkUpdate(true) },
+    { id: 'merge', label: 'Merge', icon: Merge, color: 'text-orange-500', action: () => setShowMerge(true) },
+    { id: 'import', label: 'Import', icon: Upload, color: 'text-teal-500', action: () => setShowImport(true) },
+    { id: 'revenue', label: 'Revenue', icon: DollarSign, color: 'text-emerald-500', action: () => setShowRevenue(true) },
+    { id: 'risk', label: 'Risk', icon: AlertTriangle, color: 'text-red-500', action: () => setShowRisk(true) },
+    { id: 'planning', label: 'Planning', icon: Target, color: 'text-indigo-500', action: () => setShowPlanning(true) },
+    { id: 'map', label: 'Map', icon: MapPin, color: 'text-pink-500', action: () => setShowMap(true) },
+  ];
 
   // Load accounts
   const loadAccounts = useCallback(async () => {
@@ -283,6 +341,17 @@ export default function Accounts() {
           </div>
         }
       />
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Filters */}
       <div className="bg-surface-primary rounded-xl border border-th-border p-4">
@@ -533,6 +602,24 @@ export default function Accounts() {
         onClose={() => setShowAddAccount(false)}
         onSuccess={() => loadAccounts()}
       />
+
+      {/* ---- Account Power Modals ---- */}
+      <AccountAnalyticsModal open={showAccountAnalytics} onClose={() => setShowAccountAnalytics(false)} totalAccounts={total} />
+      <AccountSegmentationModal open={showSegmentation} onClose={() => setShowSegmentation(false)} />
+      <AccountHierarchyModal open={showHierarchy} onClose={() => setShowHierarchy(false)}
+        onNavigateToAccount={(id) => { setShowHierarchy(false); navigate(`/accounts/${id}`); }} />
+      <AccountHealthScoreModal open={showHealthScore} onClose={() => setShowHealthScore(false)}
+        onNavigateToAccount={(id) => { setShowHealthScore(false); navigate(`/accounts/${id}`); }} />
+      <AccountTouchpointModal open={showTouchpoints} onClose={() => setShowTouchpoints(false)} />
+      <BulkAccountUpdateModal open={showBulkUpdate} onClose={() => setShowBulkUpdate(false)} selectedCount={selectedAccounts.size || total} />
+      <AccountMergeModal open={showMerge} onClose={() => setShowMerge(false)} />
+      <AccountImportModal open={showImport} onClose={() => setShowImport(false)} onImportComplete={() => loadAccounts()} />
+      <AccountRevenueModal open={showRevenue} onClose={() => setShowRevenue(false)} />
+      <AccountRiskModal open={showRisk} onClose={() => setShowRisk(false)}
+        onNavigateToAccount={(id) => { setShowRisk(false); navigate(`/accounts/${id}`); }} />
+      <AccountPlanningModal open={showPlanning} onClose={() => setShowPlanning(false)} />
+      <AccountMapModal open={showMap} onClose={() => setShowMap(false)}
+        onNavigateToAccount={(id) => { setShowMap(false); navigate(`/accounts/${id}`); }} />
     </div>
   );
 }

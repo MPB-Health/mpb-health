@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -11,14 +11,43 @@ import {
   Building2,
   Calendar,
   User,
+  BarChart3,
+  Sparkles,
+  Clock,
+  Trophy,
+  Edit3,
+  Star,
+  ArrowLeftRight,
+  AlertTriangle,
+  Package,
+  Users,
+  FileText,
 } from 'lucide-react';
 import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddDealModal } from '../components/AddDealModal';
 import { GradientHeader } from '@mpbhealth/ui';
 import type { DealWithRelations, DealFilters, AccountWithRelations } from '@mpbhealth/crm-core';
+import {
+  DealAnalyticsModal,
+  DealForecastModal,
+  DealVelocityModal,
+  DealWinLossModal,
+  BulkDealUpdateModal,
+  DealScoringModal,
+  DealComparisonModal,
+  DealAgingModal,
+  DealProductMapModal,
+  DealTeamModal,
+  DealQuotaModal,
+  DealExportBuilderModal,
+} from '../components/deals';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(' ');
 
 export default function Deals() {
+  const navigate = useNavigate();
   const { dealService, accountService, dealStages } = useCRM();
   const [deals, setDeals] = useState<DealWithRelations[]>([]);
   const [total, setTotal] = useState(0);
@@ -31,6 +60,35 @@ export default function Deals() {
 
   // For filter dropdowns
   const [accounts, setAccounts] = useState<AccountWithRelations[]>([]);
+
+  // Power modal state
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
+  const [showVelocity, setShowVelocity] = useState(false);
+  const [showWinLoss, setShowWinLoss] = useState(false);
+  const [showBulkUpdate, setShowBulkUpdate] = useState(false);
+  const [showScoring, setShowScoring] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showAging, setShowAging] = useState(false);
+  const [showProducts, setShowProducts] = useState(false);
+  const [showTeam, setShowTeam] = useState(false);
+  const [showQuota, setShowQuota] = useState(false);
+  const [showExportBuilder, setShowExportBuilder] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'forecast', label: 'Forecast', icon: TrendingUp, color: 'text-green-500', action: () => setShowForecast(true) },
+    { id: 'velocity', label: 'Velocity', icon: Clock, color: 'text-cyan-500', action: () => setShowVelocity(true) },
+    { id: 'winloss', label: 'Win/Loss', icon: Trophy, color: 'text-amber-500', action: () => setShowWinLoss(true) },
+    { id: 'bulk', label: 'Bulk Update', icon: Edit3, color: 'text-teal-500', action: () => setShowBulkUpdate(true) },
+    { id: 'scoring', label: 'Scoring', icon: Star, color: 'text-violet-500', action: () => setShowScoring(true) },
+    { id: 'compare', label: 'Compare', icon: ArrowLeftRight, color: 'text-indigo-500', action: () => setShowComparison(true) },
+    { id: 'aging', label: 'Aging', icon: AlertTriangle, color: 'text-red-500', action: () => setShowAging(true) },
+    { id: 'products', label: 'Products', icon: Package, color: 'text-orange-500', action: () => setShowProducts(true) },
+    { id: 'team', label: 'Team', icon: Users, color: 'text-pink-500', action: () => setShowTeam(true) },
+    { id: 'quota', label: 'Quota', icon: Target, color: 'text-emerald-500', action: () => setShowQuota(true) },
+    { id: 'export', label: 'Export+', icon: FileText, color: 'text-rose-500', action: () => setShowExportBuilder(true) },
+  ];
 
   // Pipeline stats
   const [pipelineStats, setPipelineStats] = useState({
@@ -111,6 +169,16 @@ export default function Deals() {
           </PermissionGate>
         }
       />
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Pipeline Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -480,6 +548,24 @@ export default function Deals() {
         onClose={() => setShowAddDeal(false)}
         onSuccess={() => loadDeals()}
       />
+
+      {/* ---- Deal Power Modals ---- */}
+      <DealAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)}
+        totalDeals={pipelineStats.totalDeals} totalValue={pipelineStats.totalValue} weightedValue={pipelineStats.weightedValue} />
+      <DealForecastModal open={showForecast} onClose={() => setShowForecast(false)} />
+      <DealVelocityModal open={showVelocity} onClose={() => setShowVelocity(false)}
+        onNavigateToDeal={(id) => { setShowVelocity(false); navigate(`/deals/${id}`); }} />
+      <DealWinLossModal open={showWinLoss} onClose={() => setShowWinLoss(false)} />
+      <BulkDealUpdateModal open={showBulkUpdate} onClose={() => setShowBulkUpdate(false)} dealCount={total} />
+      <DealScoringModal open={showScoring} onClose={() => setShowScoring(false)}
+        onNavigateToDeal={(id) => { setShowScoring(false); navigate(`/deals/${id}`); }} />
+      <DealComparisonModal open={showComparison} onClose={() => setShowComparison(false)} />
+      <DealAgingModal open={showAging} onClose={() => setShowAging(false)}
+        onNavigateToDeal={(id) => { setShowAging(false); navigate(`/deals/${id}`); }} />
+      <DealProductMapModal open={showProducts} onClose={() => setShowProducts(false)} />
+      <DealTeamModal open={showTeam} onClose={() => setShowTeam(false)} />
+      <DealQuotaModal open={showQuota} onClose={() => setShowQuota(false)} />
+      <DealExportBuilderModal open={showExportBuilder} onClose={() => setShowExportBuilder(false)} dealCount={total} />
     </div>
   );
 }

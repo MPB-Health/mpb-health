@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Plus, DollarSign, Layers } from 'lucide-react';
+import {
+  RefreshCw, Plus, DollarSign, Layers,
+  BarChart3, AlertTriangle, TrendingUp, Clock,
+  ArrowRight, Zap, RotateCcw, Target,
+  ArrowLeftRight, Camera, Sparkles,
+} from 'lucide-react';
 import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
 import {
@@ -22,6 +27,23 @@ import { AddDealModal } from '../components/AddDealModal';
 import { DealCard } from '../components/DealCard';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type { DealWithRelations, DealStage } from '@mpbhealth/crm-core';
+import {
+  PipelineSummaryModal,
+  StageBottleneckModal,
+  PipelineValueModal,
+  PipelineTrendModal,
+  BatchStageMoveModal,
+  StaleDealsModal,
+  StageRulesModal,
+  DealRotationModal,
+  PipelineCoverageModal,
+  StageConversionModal,
+  PipelineSnapshotModal,
+  DealPriorityModal,
+} from '../components/deal-pipeline';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) =>
+  classes.filter(Boolean).join(' ');
 
 interface SortableDealCardProps {
   deal: DealWithRelations;
@@ -56,6 +78,35 @@ export default function DealPipeline() {
   const [activeDeal, setActiveDeal] = useState<DealWithRelations | null>(null);
   const [showAddDeal, setShowAddDeal] = useState(false);
   const [addDealStageId, setAddDealStageId] = useState<string | undefined>();
+
+  // Power modal state
+  const [showSummary, setShowSummary] = useState(false);
+  const [showBottleneck, setShowBottleneck] = useState(false);
+  const [showValue, setShowValue] = useState(false);
+  const [showTrend, setShowTrend] = useState(false);
+  const [showBatchMove, setShowBatchMove] = useState(false);
+  const [showStale, setShowStale] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+  const [showRotation, setShowRotation] = useState(false);
+  const [showCoverage, setShowCoverage] = useState(false);
+  const [showConversion, setShowConversion] = useState(false);
+  const [showSnapshots, setShowSnapshots] = useState(false);
+  const [showPriority, setShowPriority] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'summary', label: 'Summary', icon: BarChart3, color: 'text-blue-500', action: () => setShowSummary(true) },
+    { id: 'bottleneck', label: 'Bottlenecks', icon: AlertTriangle, color: 'text-red-500', action: () => setShowBottleneck(true) },
+    { id: 'value', label: 'Value', icon: DollarSign, color: 'text-green-500', action: () => setShowValue(true) },
+    { id: 'trend', label: 'Trend', icon: TrendingUp, color: 'text-cyan-500', action: () => setShowTrend(true) },
+    { id: 'batch', label: 'Batch Move', icon: ArrowRight, color: 'text-violet-500', action: () => setShowBatchMove(true) },
+    { id: 'stale', label: 'Stale', icon: Clock, color: 'text-amber-500', action: () => setShowStale(true) },
+    { id: 'rules', label: 'Rules', icon: Zap, color: 'text-orange-500', action: () => setShowRules(true) },
+    { id: 'rotation', label: 'Rotation', icon: RotateCcw, color: 'text-pink-500', action: () => setShowRotation(true) },
+    { id: 'coverage', label: 'Coverage', icon: Target, color: 'text-emerald-500', action: () => setShowCoverage(true) },
+    { id: 'conversion', label: 'Conversion', icon: ArrowLeftRight, color: 'text-indigo-500', action: () => setShowConversion(true) },
+    { id: 'snapshots', label: 'Snapshots', icon: Camera, color: 'text-teal-500', action: () => setShowSnapshots(true) },
+    { id: 'priority', label: 'AI Priority', icon: Sparkles, color: 'text-rose-500', action: () => setShowPriority(true) },
+  ];
 
   // Stage totals
   const [stageTotals, setStageTotals] = useState<Record<string, { count: number; value: number }>>({});
@@ -183,6 +234,16 @@ export default function DealPipeline() {
     }
   };
 
+  const activeStageNames = useMemo(() =>
+    dealStages.filter((s) => !s.is_won_stage && !s.is_lost_stage).map((s) => s.name),
+    [dealStages]
+  );
+
+  const totalPipelineValue = useMemo(() =>
+    Object.values(stageTotals).reduce((s, t) => s + t.value, 0),
+    [stageTotals]
+  );
+
   const handleAddDealToStage = (stageId: string) => {
     setAddDealStageId(stageId);
     setShowAddDeal(true);
@@ -235,6 +296,16 @@ export default function DealPipeline() {
           </div>
         }
       />
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Pipeline board */}
       <DndContext
@@ -322,6 +393,22 @@ export default function DealPipeline() {
         onSuccess={() => loadDeals()}
         defaultStageId={addDealStageId}
       />
+
+      {/* ---- Deal Pipeline Power Modals ---- */}
+      <PipelineSummaryModal open={showSummary} onClose={() => setShowSummary(false)} stageTotals={stageTotals} stageNames={activeStageNames} />
+      <StageBottleneckModal open={showBottleneck} onClose={() => setShowBottleneck(false)} />
+      <PipelineValueModal open={showValue} onClose={() => setShowValue(false)} stageTotals={stageTotals} stageNames={activeStageNames} />
+      <PipelineTrendModal open={showTrend} onClose={() => setShowTrend(false)} />
+      <BatchStageMoveModal open={showBatchMove} onClose={() => setShowBatchMove(false)} stageNames={activeStageNames} onBatchMove={async () => { await loadDeals(); }} />
+      <StaleDealsModal open={showStale} onClose={() => setShowStale(false)}
+        onNavigateToDeal={(id) => { setShowStale(false); navigate(`/deals/${id}`); }} />
+      <StageRulesModal open={showRules} onClose={() => setShowRules(false)} stageNames={activeStageNames} />
+      <DealRotationModal open={showRotation} onClose={() => setShowRotation(false)} />
+      <PipelineCoverageModal open={showCoverage} onClose={() => setShowCoverage(false)} totalValue={totalPipelineValue} weightedValue={Math.round(totalPipelineValue * 0.4)} />
+      <StageConversionModal open={showConversion} onClose={() => setShowConversion(false)} />
+      <PipelineSnapshotModal open={showSnapshots} onClose={() => setShowSnapshots(false)} />
+      <DealPriorityModal open={showPriority} onClose={() => setShowPriority(false)}
+        onNavigateToDeal={(id) => { setShowPriority(false); navigate(`/deals/${id}`); }} />
     </div>
   );
 }

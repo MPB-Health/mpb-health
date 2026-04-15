@@ -31,7 +31,7 @@
   .slide-1 .tag .dot{width:8px;height:8px;border-radius:50%;background:#34d399;animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .slide-1 h1{font-size:82px;color:#f1f5f0;line-height:1.05;font-weight:800;max-width:1100px}
-  .slide-1 h1 span{background:linear-gradient(135deg,#34d399,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .slide-1 h1 span{background:linear-gradient(135deg,#34d399,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .slide-1 .subtitle{font-size:24px;color:#8aa8a8;margin-top:28px;max-width:900px;line-height:1.6;font-weight:400}
   .slide-1 .bottom-bar{position:absolute;bottom:0;left:0;right:0;height:80px;display:flex;align-items:center;padding:0 140px;gap:60px;border-top:1px solid rgba(26,92,92,.2)}
   .slide-1 .bottom-bar .stat{display:flex;flex-direction:column;gap:2px}
@@ -152,7 +152,7 @@
   .rev-card .rev-big{font-family:'Fraunces',serif;font-size:64px;font-weight:800;margin-bottom:8px}
   .rev-card.y1 .rev-big{color:#7ac4e8}
   .rev-card.y2 .rev-big{color:#34d399}
-  .rev-card.y3 .rev-big{background:linear-gradient(135deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .rev-card.y3 .rev-big{background:linear-gradient(135deg,#ffd700,#ffaa00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .rev-card .rev-sub{font-size:15px;color:#6a9a9a;margin-bottom:28px}
   .rev-card .rev-details{display:flex;flex-direction:column;gap:12px;width:100%}
   .rev-card .rev-row{display:flex;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,.04);border-radius:10px;font-size:14px;color:rgba(255,255,255,.7)}
@@ -231,8 +231,57 @@
   .slide-16 .rec-item{display:flex;align-items:center;gap:16px;font-size:24px;color:#b8e8d4;line-height:1.5}
   .slide-16 .rec-item .ri-num{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(52,211,153,.2),rgba(34,211,238,.1));border:1px solid rgba(52,211,153,.3);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;color:#34d399;font-size:18px;flex-shrink:0}
   .slide-16 .rec-highlight{font-size:32px;font-family:'Fraunces',serif;font-weight:700;margin-bottom:48px}
-  .slide-16 .rec-highlight span{background:linear-gradient(135deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .slide-16 .rec-highlight span{background:linear-gradient(135deg,#ffd700,#ffaa00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .slide-16 .cta{display:inline-flex;align-items:center;gap:12px;background:linear-gradient(135deg,#34d399,#22d3ee);color:#0f2929;font-size:18px;font-weight:700;padding:18px 48px;border-radius:100px;letter-spacing:.08em;text-transform:uppercase}
+
+  /* ─── ECOSYSTEM NODE POSITIONS ─── */
+  .eco-admin{background:linear-gradient(135deg,#6b5cae,#453a7a);width:260px;top:200px;left:40px}
+  .eco-advisor{background:linear-gradient(135deg,#2d8f6b,#1e6b4f);width:240px;top:490px;left:60px}
+  .eco-champion{background:linear-gradient(135deg,#2d8f6b,#1a6b4f);width:260px;top:130px;right:40px}
+  .eco-itsts{background:linear-gradient(135deg,#c45c3e,#9e3d2a);width:240px;top:370px;right:40px}
+  .eco-orbit{background:linear-gradient(135deg,#6b5cae,#453a7a);width:240px;top:610px;right:40px}
+  .eco-mobile{background:linear-gradient(135deg,#b8860b,#8b6508);width:260px;top:680px;left:400px}
+  .eco-appadmin{background:linear-gradient(135deg,#1a5c5c,#0f3d3f);width:260px;top:680px;right:400px}
+  .e-badge-included{background:rgba(255,255,255,.15);color:#fff}
+  .e-badge-addon-standalone-green{background:rgba(52,211,153,.2);color:#34d399}
+  .e-badge-addon-standalone-orange{background:rgba(244,166,138,.2);color:#f4a68a}
+  .e-badge-addon-standalone-purple{background:rgba(184,168,232,.2);color:#b8a8e8}
+  .e-badge-addon-gold{background:rgba(255,215,0,.2);color:#ffd700}
+  .e-badge-addon-teal{background:rgba(93,184,184,.2);color:#5db8b8}
+
+  /* ─── BLUEPRINT ACCENT ICONS ─── */
+  .icon-crm{background:rgba(42,107,143,.3)}
+  .icon-ems{background:rgba(45,143,107,.3)}
+  .icon-itsts{background:rgba(196,92,62,.3)}
+  .icon-orbit{background:rgba(107,92,174,.3)}
+  .icon-mobile{background:rgba(184,134,11,.3);border-color:rgba(255,215,0,.3)}
+  .icon-appadmin{background:rgba(26,92,92,.3)}
+  .h2-crm{color:#7ac4e8}
+  .h2-ems{color:#7ae8c4}
+  .h2-itsts{color:#f4a68a}
+  .h2-orbit{color:#b8a8e8}
+  .h2-mobile{color:#ffd966}
+  .h2-appadmin{color:#5db8b8}
+  .badge-ems{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.3)}
+  .badge-itsts{background:rgba(244,166,138,.15);color:#f4a68a;border:1px solid rgba(244,166,138,.3)}
+  .badge-orbit{background:rgba(184,168,232,.15);color:#b8a8e8;border:1px solid rgba(184,168,232,.3)}
+  .badge-mobile{background:rgba(255,215,0,.15);color:#ffd700;border:1px solid rgba(255,215,0,.3)}
+  .badge-appadmin{background:rgba(93,184,184,.15);color:#5db8b8;border:1px solid rgba(93,184,184,.3)}
+
+  /* ─── READINESS ICONS ─── */
+  .r-icon-check{font-size:28px}
+  .r-icon-dot{font-size:28px}
+
+  /* ─── PRICING ICONS ─── */
+  .picon-tiered{background:linear-gradient(135deg,#e0f2fe,#bae6fd)}
+  .picon-modular{background:linear-gradient(135deg,#d1fae5,#a7f3d0)}
+  .picon-usage{background:linear-gradient(135deg,#fef3c7,#fde68a)}
+
+  /* ─── INVESTMENT ICONS ─── */
+  .iicon-eng{background:rgba(42,107,143,.15)}
+  .iicon-infra{background:rgba(107,92,174,.15)}
+  .iicon-mkt{background:rgba(196,92,62,.15)}
+  .iicon-total{background:rgba(52,211,153,.15)}
 
   /* ─── NAV ─── */
   .nav{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;gap:8px}
@@ -328,44 +377,44 @@
     </div>
 
     <!-- Included -->
-    <div class="eco-node" style="background:linear-gradient(135deg,#6b5cae,#453a7a);width:260px;top:200px;left:40px">
+    <div class="eco-node eco-admin">
       <h3>Admin Command Center</h3>
       <div class="e-sub">Platform operations hub</div>
-      <div class="e-badge" style="background:rgba(255,255,255,.15);color:#fff">Included</div>
+      <div class="e-badge e-badge-included">Included</div>
     </div>
-    <div class="eco-node" style="background:linear-gradient(135deg,#2d8f6b,#1e6b4f);width:240px;top:490px;left:60px">
+    <div class="eco-node eco-advisor">
       <h3>Advisor Portal</h3>
       <div class="e-sub">Field agent command center</div>
-      <div class="e-badge" style="background:rgba(255,255,255,.15);color:#fff">Included</div>
+      <div class="e-badge e-badge-included">Included</div>
     </div>
 
     <!-- Add-on / Standalone -->
-    <div class="eco-node" style="background:linear-gradient(135deg,#2d8f6b,#1a6b4f);width:260px;top:130px;right:40px">
+    <div class="eco-node eco-champion">
       <h3>Champion EMS</h3>
       <div class="e-sub">Enrollment management</div>
-      <div class="e-badge" style="background:rgba(52,211,153,.2);color:#34d399">Add-on / Standalone</div>
+      <div class="e-badge e-badge-addon-standalone-green">Add-on / Standalone</div>
     </div>
-    <div class="eco-node" style="background:linear-gradient(135deg,#c45c3e,#9e3d2a);width:240px;top:370px;right:40px">
+    <div class="eco-node eco-itsts">
       <h3>ITSTS</h3>
       <div class="e-sub">IT support ticketing</div>
-      <div class="e-badge" style="background:rgba(244,166,138,.2);color:#f4a68a">Add-on / Standalone</div>
+      <div class="e-badge e-badge-addon-standalone-orange">Add-on / Standalone</div>
     </div>
-    <div class="eco-node" style="background:linear-gradient(135deg,#6b5cae,#453a7a);width:240px;top:610px;right:40px">
+    <div class="eco-node eco-orbit">
       <h3>Orbit</h3>
       <div class="e-sub">Project management</div>
-      <div class="e-badge" style="background:rgba(184,168,232,.2);color:#b8a8e8">Add-on / Standalone</div>
+      <div class="e-badge e-badge-addon-standalone-purple">Add-on / Standalone</div>
     </div>
 
     <!-- Add-on only -->
-    <div class="eco-node" style="background:linear-gradient(135deg,#b8860b,#8b6508);width:260px;top:680px;left:400px">
+    <div class="eco-node eco-mobile">
       <h3>White-Label Mobile</h3>
       <div class="e-sub">Branded mobile app</div>
-      <div class="e-badge" style="background:rgba(255,215,0,.2);color:#ffd700">Add-on</div>
+      <div class="e-badge e-badge-addon-gold">Add-on</div>
     </div>
-    <div class="eco-node" style="background:linear-gradient(135deg,#1a5c5c,#0f3d3f);width:260px;top:680px;right:400px">
+    <div class="eco-node eco-appadmin">
       <h3>App Admin Dashboard</h3>
       <div class="e-sub">Mobile app management</div>
-      <div class="e-badge" style="background:rgba(93,184,184,.2);color:#5db8b8">Add-on</div>
+      <div class="e-badge e-badge-addon-teal">Add-on</div>
     </div>
   </div>
 </div>
@@ -374,8 +423,8 @@
 <div class="slide" id="slide-4">
   <div class="blueprint bg-crm">
     <div class="left">
-      <div class="app-icon" style="background:rgba(42,107,143,.3)">📊</div>
-      <h2 style="color:#7ac4e8">Core CRM<br>Platform</h2>
+      <div class="app-icon icon-crm">📊</div>
+      <h2 class="h2-crm">Core CRM<br>Platform</h2>
       <div class="url">crm.mpb.health</div>
       <div class="desc">The full 8-phase CRM that serves as the foundation of the entire SaaS ecosystem. Manages the complete customer lifecycle from lead capture through deal close, with built-in email, pipeline management, reporting, and customizable modules.</div>
     </div>
@@ -399,9 +448,9 @@
 <div class="slide" id="slide-5">
   <div class="blueprint bg-ems">
     <div class="left">
-      <div class="app-icon" style="background:rgba(45,143,107,.3)">🏆</div>
-      <div class="type-badge" style="background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.3)">Standalone + Add-on</div>
-      <h2 style="color:#7ae8c4">Champion<br>EMS</h2>
+      <div class="app-icon icon-ems">🏆</div>
+      <div class="type-badge badge-ems">Standalone + Add-on</div>
+      <h2 class="h2-ems">Champion<br>EMS</h2>
       <div class="url">Enrollment Management System</div>
       <div class="desc">A purpose-built enrollment management system that handles multi-product enrollment workflows, billing, commissions, and payment processing. Operates standalone or as a powerful add-on to the Core CRM.</div>
     </div>
@@ -425,9 +474,9 @@
 <div class="slide" id="slide-6">
   <div class="blueprint bg-itsts">
     <div class="left">
-      <div class="app-icon" style="background:rgba(196,92,62,.3)">🎫</div>
-      <div class="type-badge" style="background:rgba(244,166,138,.15);color:#f4a68a;border:1px solid rgba(244,166,138,.3)">Standalone + Add-on</div>
-      <h2 style="color:#f4a68a">ITSTS</h2>
+      <div class="app-icon icon-itsts">🎫</div>
+      <div class="type-badge badge-itsts">Standalone + Add-on</div>
+      <h2 class="h2-itsts">ITSTS</h2>
       <div class="url">IT Support Ticketing System</div>
       <div class="desc">Full-featured IT service management with SLA enforcement, workflow automation, knowledge base, and AI-powered reply suggestions. Integrates with GoTo for remote support sessions and handles multi-channel intake.</div>
     </div>
@@ -451,9 +500,9 @@
 <div class="slide" id="slide-7">
   <div class="blueprint bg-orbit">
     <div class="left">
-      <div class="app-icon" style="background:rgba(107,92,174,.3)">🪐</div>
-      <div class="type-badge" style="background:rgba(184,168,232,.15);color:#b8a8e8;border:1px solid rgba(184,168,232,.3)">Standalone + Add-on</div>
-      <h2 style="color:#b8a8e8">Orbit</h2>
+      <div class="app-icon icon-orbit">🪐</div>
+      <div class="type-badge badge-orbit">Standalone + Add-on</div>
+      <h2 class="h2-orbit">Orbit</h2>
       <div class="url">Project Management Platform</div>
       <div class="desc">A Monday.com-style project management platform with visual boards, workspaces, automation engine, and an extensive tools catalog. Designed for teams that need flexible project tracking with deep integration capabilities.</div>
     </div>
@@ -477,9 +526,9 @@
 <div class="slide" id="slide-8">
   <div class="blueprint bg-mobile">
     <div class="left">
-      <div class="app-icon" style="background:rgba(184,134,11,.3);border-color:rgba(255,215,0,.3)">📱</div>
-      <div class="type-badge" style="background:rgba(255,215,0,.15);color:#ffd700;border:1px solid rgba(255,215,0,.3)">Add-on</div>
-      <h2 style="color:#ffd966">White-Label<br>Mobile App</h2>
+      <div class="app-icon icon-mobile">📱</div>
+      <div class="type-badge badge-mobile">Add-on</div>
+      <h2 class="h2-mobile">White-Label<br>Mobile App</h2>
       <div class="url">Branded Mobile Experience</div>
       <div class="desc">A fully customizable mobile application that tenants can brand as their own. Supports custom branding, push notifications, member portal access, SSO, and App Store publishing — giving every customer a native mobile presence.</div>
     </div>
@@ -503,9 +552,9 @@
 <div class="slide" id="slide-9">
   <div class="blueprint bg-appadmin">
     <div class="left">
-      <div class="app-icon" style="background:rgba(26,92,92,.3)">⚙️</div>
-      <div class="type-badge" style="background:rgba(93,184,184,.15);color:#5db8b8;border:1px solid rgba(93,184,184,.3)">Add-on</div>
-      <h2 style="color:#5db8b8">App Admin<br>Dashboard</h2>
+      <div class="app-icon icon-appadmin">⚙️</div>
+      <div class="type-badge badge-appadmin">Add-on</div>
+      <h2 class="h2-appadmin">App Admin<br>Dashboard</h2>
       <div class="url">Mobile App Management Console</div>
       <div class="desc">The back-office control panel for managing white-label mobile apps. Administer members, push notifications, content, analytics, and app configuration — all from a centralized dashboard designed for operations teams.</div>
     </div>
@@ -532,7 +581,7 @@
     <div class="sub">Assessing what's built and what needs to be built for SaaS launch</div>
     <div class="cols">
       <div class="col built">
-        <h3><span style="font-size:28px">&#10003;</span> Already Built</h3>
+        <h3><span class="r-icon-check">&#10003;</span> Already Built</h3>
         <div class="r-item"><span class="r-dot"></span>Multi-tenancy architecture</div>
         <div class="r-item"><span class="r-dot"></span>RBAC system (92 permissions)</div>
         <div class="r-item"><span class="r-dot"></span>Billing engine</div>
@@ -543,7 +592,7 @@
         <div class="r-item"><span class="r-dot"></span>86 edge functions deployed</div>
       </div>
       <div class="col needed">
-        <h3><span style="font-size:28px">&#9679;</span> Needs Building</h3>
+        <h3><span class="r-icon-dot">&#9679;</span> Needs Building</h3>
         <div class="r-item"><span class="r-dot"></span>Module licensing system</div>
         <div class="r-item"><span class="r-dot"></span>Feature gating engine</div>
         <div class="r-item"><span class="r-dot"></span>White-label configuration</div>
@@ -563,7 +612,7 @@
     <div class="pricing-row">
       <!-- Card A: Tiered -->
       <div class="pricing-card">
-        <div class="p-icon" style="background:linear-gradient(135deg,#e0f2fe,#bae6fd)">📊</div>
+        <div class="p-icon picon-tiered">📊</div>
         <h3>Tiered Plans</h3>
         <div class="p-desc">Simple, predictable pricing tiers that scale with organization size</div>
         <div class="p-items">
@@ -576,7 +625,7 @@
       <!-- Card B: Modular (Recommended) -->
       <div class="pricing-card recommended">
         <div class="rec-badge">&#9733; Recommended</div>
-        <div class="p-icon" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0)">🧩</div>
+        <div class="p-icon picon-modular">🧩</div>
         <h3>Modular</h3>
         <div class="p-desc">Core platform + pick-and-choose add-on modules for maximum flexibility</div>
         <div class="p-items">
@@ -590,7 +639,7 @@
       </div>
       <!-- Card C: Usage-Based -->
       <div class="pricing-card">
-        <div class="p-icon" style="background:linear-gradient(135deg,#fef3c7,#fde68a)">📈</div>
+        <div class="p-icon picon-usage">📈</div>
         <h3>Usage-Based</h3>
         <div class="p-desc">Pay-as-you-grow pricing based on actual platform consumption</div>
         <div class="p-items">
@@ -733,25 +782,25 @@
     <div class="sub">Estimated costs to reach SaaS launch readiness</div>
     <div class="inv-row">
       <div class="inv-card">
-        <div class="i-icon" style="background:rgba(42,107,143,.15)">👨‍💻</div>
+        <div class="i-icon iicon-eng">👨‍💻</div>
         <h3>Engineering</h3>
         <div class="i-amount">$120K–180K</div>
         <div class="i-desc">2–3 developers &times; 12 weeks<br>Full-stack + DevOps capacity</div>
       </div>
       <div class="inv-card">
-        <div class="i-icon" style="background:rgba(107,92,174,.15)">☁️</div>
+        <div class="i-icon iicon-infra">☁️</div>
         <h3>Infrastructure</h3>
         <div class="i-amount">$3K–5K/yr</div>
         <div class="i-desc">Supabase Pro + Vercel Pro<br>Multi-project hosting & CDN</div>
       </div>
       <div class="inv-card">
-        <div class="i-icon" style="background:rgba(196,92,62,.15)">📣</div>
+        <div class="i-icon iicon-mkt">📣</div>
         <h3>Marketing</h3>
         <div class="i-amount">$20K–40K</div>
         <div class="i-desc">Website + sales materials<br>Demo environment + collateral</div>
       </div>
       <div class="inv-card total">
-        <div class="i-icon" style="background:rgba(52,211,153,.15)">💰</div>
+        <div class="i-icon iicon-total">💰</div>
         <h3>Total Investment</h3>
         <div class="i-amount">$150K–250K</div>
         <div class="i-desc">Break-even at 15–20 customers<br>Achievable within Year 1</div>

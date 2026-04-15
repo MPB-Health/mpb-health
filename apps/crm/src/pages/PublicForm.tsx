@@ -74,6 +74,16 @@ export default function PublicForm() {
         if (field.validation.maxLength && value.length > field.validation.maxLength) {
           errors[field.id] = `Maximum ${field.validation.maxLength} characters`;
         }
+        if (field.validation.pattern && value) {
+          try {
+            const re = new RegExp(field.validation.pattern);
+            if (!re.test(value)) {
+              errors[field.id] = `${field.label} format is invalid`;
+            }
+          } catch {
+            /* ignore invalid pattern in builder */
+          }
+        }
       }
       if (field.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
         errors[field.id] = 'Please enter a valid email address';
@@ -160,6 +170,8 @@ export default function PublicForm() {
   }
 
   if (!form) return null;
+
+  const hasHeadingField = form.fields.some((f) => f.type === 'heading');
 
   const renderField = (field: FormField) => {
     const hasError = Boolean(fieldErrors[field.id]);
@@ -269,6 +281,7 @@ export default function PublicForm() {
               placeholder={field.placeholder}
               value={formData[field.id] || ''}
               onChange={(e) => handleChange(field.id, e.target.value)}
+              maxLength={field.validation?.maxLength}
               className={inputClass}
             />
             {hasError && <p className="text-xs text-red-500 mt-1">{fieldErrors[field.id]}</p>}
@@ -286,10 +299,10 @@ export default function PublicForm() {
         {styling.logoUrl && (
           <img src={styling.logoUrl} alt="Logo" className="h-10 mb-4" />
         )}
-        {styling.headerText && (
+        {styling.headerText && !hasHeadingField && (
           <h1 className="text-xl font-bold text-th-text-primary mb-1">{styling.headerText}</h1>
         )}
-        {styling.descriptionText && (
+        {styling.descriptionText && !form.fields.some((f) => f.type === 'paragraph') && (
           <p className="text-sm text-th-text-secondary mb-6">{styling.descriptionText}</p>
         )}
 

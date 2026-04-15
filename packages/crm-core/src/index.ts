@@ -547,6 +547,20 @@ export type {
 } from './forms/types';
 export * from './forms';
 
+// Social hub (posts + platform connection metadata; see migrations)
+export { SocialService, createSocialService } from './social/socialService';
+export type {
+  SocialPost,
+  SocialPostCreateInput,
+  SocialPostUpdateInput,
+  SocialPlatformConnection,
+  SocialPlatformConnectionUpsertInput,
+  SocialPlatformId,
+  SocialPostStatus,
+  SocialConnectionStatus,
+  SocialConnectionMetadata,
+} from './social/socialTypes';
+
 // Approvals
 export { ApprovalService, createApprovalService } from './approvals/approvalService';
 export type {

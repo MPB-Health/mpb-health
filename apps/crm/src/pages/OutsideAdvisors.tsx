@@ -1,13 +1,34 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X } from 'lucide-react';
+import {
+  Plus, X,
+  BarChart3, Trophy, DollarSign, TrendingUp,
+  CheckSquare, Wallet, ClipboardCheck, MapPin,
+  Brain, Activity, ArrowLeftRight, Download,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
 import type { OutsideAdvisorInput } from '@mpbhealth/crm-core';
+import {
+  AdvisorAnalyticsModal,
+  AdvisorLeaderboardModal,
+  AdvisorProductionModal,
+  AdvisorTrendModal,
+  BulkAdvisorActionModal,
+  AdvisorCompensationModal,
+  AdvisorOnboardingModal,
+  AdvisorTerritoryModal,
+  AdvisorMatchModal,
+  AdvisorPerformanceModal,
+  AdvisorComparisonModal,
+  AdvisorExportBuilderModal,
+} from '../components/outside-advisors';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) => classes.filter(Boolean).join(' ');
 
 const defaultForm: OutsideAdvisorInput = {
   name: '',
@@ -26,6 +47,34 @@ export default function OutsideAdvisors() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<OutsideAdvisorInput>(defaultForm);
+
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showProduction, setShowProduction] = useState(false);
+  const [showTrend, setShowTrend] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showCompensation, setShowCompensation] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTerritory, setShowTerritory] = useState(false);
+  const [showMatch, setShowMatch] = useState(false);
+  const [showPerformance, setShowPerformance] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'leaderboard', label: 'Leaderboard', icon: Trophy, color: 'text-amber-500', action: () => setShowLeaderboard(true) },
+    { id: 'production', label: 'Production', icon: DollarSign, color: 'text-green-500', action: () => setShowProduction(true) },
+    { id: 'trends', label: 'Trends', icon: TrendingUp, color: 'text-violet-500', action: () => setShowTrend(true) },
+    { id: 'bulk', label: 'Bulk Actions', icon: CheckSquare, color: 'text-pink-500', action: () => setShowBulkActions(true) },
+    { id: 'compensation', label: 'Compensation', icon: Wallet, color: 'text-cyan-500', action: () => setShowCompensation(true) },
+    { id: 'onboarding', label: 'Onboarding', icon: ClipboardCheck, color: 'text-emerald-500', action: () => setShowOnboarding(true) },
+    { id: 'territory', label: 'Territory', icon: MapPin, color: 'text-orange-500', action: () => setShowTerritory(true) },
+    { id: 'match', label: 'AI Match', icon: Brain, color: 'text-fuchsia-500', action: () => setShowMatch(true) },
+    { id: 'performance', label: 'Performance', icon: Activity, color: 'text-red-500', action: () => setShowPerformance(true) },
+    { id: 'compare', label: 'Compare', icon: ArrowLeftRight, color: 'text-teal-500', action: () => setShowComparison(true) },
+    { id: 'export', label: 'Export', icon: Download, color: 'text-indigo-500', action: () => setShowExport(true) },
+  ];
 
   const { data: advisors = [], isLoading } = useQuery({
     queryKey: crmQueryKeys.outsideAdvisors(activeOrgId),
@@ -78,6 +127,16 @@ export default function OutsideAdvisors() {
         }
       />
 
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="rounded-xl border border-th-border bg-surface-primary overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center py-16">
@@ -126,6 +185,20 @@ export default function OutsideAdvisors() {
           </div>
         )}
       </div>
+
+      {/* ---- Advisor Power Modals ---- */}
+      <AdvisorAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)} advisorCount={advisors.length} />
+      <AdvisorLeaderboardModal open={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
+      <AdvisorProductionModal open={showProduction} onClose={() => setShowProduction(false)} />
+      <AdvisorTrendModal open={showTrend} onClose={() => setShowTrend(false)} />
+      <BulkAdvisorActionModal open={showBulkActions} onClose={() => setShowBulkActions(false)} />
+      <AdvisorCompensationModal open={showCompensation} onClose={() => setShowCompensation(false)} />
+      <AdvisorOnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <AdvisorTerritoryModal open={showTerritory} onClose={() => setShowTerritory(false)} />
+      <AdvisorMatchModal open={showMatch} onClose={() => setShowMatch(false)} />
+      <AdvisorPerformanceModal open={showPerformance} onClose={() => setShowPerformance(false)} />
+      <AdvisorComparisonModal open={showComparison} onClose={() => setShowComparison(false)} />
+      <AdvisorExportBuilderModal open={showExport} onClose={() => setShowExport(false)} />
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">

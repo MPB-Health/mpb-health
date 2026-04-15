@@ -1,13 +1,34 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X } from 'lucide-react';
+import {
+  Plus, X,
+  BarChart3, Trophy, DollarSign, TrendingUp,
+  CheckSquare, Wallet, ClipboardCheck, Award,
+  Brain, Activity, ArrowLeftRight, Download,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
 import type { PartnerType, ReferralPartnerInput } from '@mpbhealth/crm-core';
+import {
+  PartnerAnalyticsModal,
+  PartnerLeaderboardModal,
+  PartnerRevenueModal,
+  PartnerTrendModal,
+  BulkPartnerActionModal,
+  PartnerCommissionModal,
+  PartnerOnboardingModal,
+  PartnerTierModal,
+  PartnerMatchModal,
+  PartnerEngagementModal,
+  PartnerComparisonModal,
+  PartnerExportBuilderModal,
+} from '../components/referral-partners';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) => classes.filter(Boolean).join(' ');
 
 const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
   financial_advisor: 'Financial advisor',
@@ -47,6 +68,34 @@ export default function ReferralPartners() {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<ReferralPartnerInput>(defaultForm);
+
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showRevenue, setShowRevenue] = useState(false);
+  const [showTrend, setShowTrend] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showCommission, setShowCommission] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTiers, setShowTiers] = useState(false);
+  const [showMatch, setShowMatch] = useState(false);
+  const [showEngagement, setShowEngagement] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'leaderboard', label: 'Leaderboard', icon: Trophy, color: 'text-amber-500', action: () => setShowLeaderboard(true) },
+    { id: 'revenue', label: 'Revenue', icon: DollarSign, color: 'text-green-500', action: () => setShowRevenue(true) },
+    { id: 'trends', label: 'Trends', icon: TrendingUp, color: 'text-violet-500', action: () => setShowTrend(true) },
+    { id: 'bulk', label: 'Bulk Actions', icon: CheckSquare, color: 'text-pink-500', action: () => setShowBulkActions(true) },
+    { id: 'commissions', label: 'Commissions', icon: Wallet, color: 'text-cyan-500', action: () => setShowCommission(true) },
+    { id: 'onboarding', label: 'Onboarding', icon: ClipboardCheck, color: 'text-emerald-500', action: () => setShowOnboarding(true) },
+    { id: 'tiers', label: 'Tiers', icon: Award, color: 'text-orange-500', action: () => setShowTiers(true) },
+    { id: 'match', label: 'AI Match', icon: Brain, color: 'text-fuchsia-500', action: () => setShowMatch(true) },
+    { id: 'engagement', label: 'Engagement', icon: Activity, color: 'text-red-500', action: () => setShowEngagement(true) },
+    { id: 'compare', label: 'Compare', icon: ArrowLeftRight, color: 'text-teal-500', action: () => setShowComparison(true) },
+    { id: 'export', label: 'Export', icon: Download, color: 'text-indigo-500', action: () => setShowExport(true) },
+  ];
 
   const { data: partners = [], isLoading } = useQuery({
     queryKey: crmQueryKeys.referralPartners(activeOrgId),
@@ -107,6 +156,16 @@ export default function ReferralPartners() {
           </button>
         }
       />
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-th-border bg-surface-primary p-4">
         <label className="text-sm text-th-text-secondary flex items-center gap-2">
@@ -188,6 +247,20 @@ export default function ReferralPartners() {
           </div>
         )}
       </div>
+
+      {/* ---- Partner Power Modals ---- */}
+      <PartnerAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)} partnerCount={partners.length} />
+      <PartnerLeaderboardModal open={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
+      <PartnerRevenueModal open={showRevenue} onClose={() => setShowRevenue(false)} />
+      <PartnerTrendModal open={showTrend} onClose={() => setShowTrend(false)} />
+      <BulkPartnerActionModal open={showBulkActions} onClose={() => setShowBulkActions(false)} />
+      <PartnerCommissionModal open={showCommission} onClose={() => setShowCommission(false)} />
+      <PartnerOnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <PartnerTierModal open={showTiers} onClose={() => setShowTiers(false)} />
+      <PartnerMatchModal open={showMatch} onClose={() => setShowMatch(false)} />
+      <PartnerEngagementModal open={showEngagement} onClose={() => setShowEngagement(false)} />
+      <PartnerComparisonModal open={showComparison} onClose={() => setShowComparison(false)} />
+      <PartnerExportBuilderModal open={showExport} onClose={() => setShowExport(false)} />
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">

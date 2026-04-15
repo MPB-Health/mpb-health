@@ -389,6 +389,14 @@ verify_jwt = false
 [functions.advisor-forgot-password]
 verify_jwt = false
 
+# social-linkedin-auth-url: CRM invokes with user JWT; gateway verification is appropriate.
+[functions.social-linkedin-auth-url]
+verify_jwt = true
+
+# LinkedIn redirects the browser here with no Authorization header.
+[functions.social-linkedin-oauth-callback]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

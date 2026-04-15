@@ -1,13 +1,34 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X } from 'lucide-react';
+import {
+  Plus, X,
+  BarChart3, DollarSign, PieChart, TrendingUp,
+  CheckSquare, Calendar, ClipboardCheck, Mail,
+  Brain, Target, ArrowLeftRight, Download,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
 import type { CommunityEventInput, CommunityEventType } from '@mpbhealth/crm-core';
+import {
+  EventAnalyticsModal,
+  EventROIModal,
+  EventTypeBreakdownModal,
+  EventTrendModal,
+  BulkEventActionModal,
+  EventCalendarModal,
+  EventChecklistModal,
+  EventFollowUpModal,
+  EventOptimizationModal,
+  EventLeadTrackerModal,
+  EventComparisonModal,
+  EventExportBuilderModal,
+} from '../components/community-events';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) => classes.filter(Boolean).join(' ');
 
 const EVENT_TYPE_LABELS: Record<CommunityEventType, string> = {
   church_partnership: 'Church partnership',
@@ -49,6 +70,34 @@ export default function CommunityEvents() {
   const [dateTo, setDateTo] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CommunityEventInput>(defaultForm);
+
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showROI, setShowROI] = useState(false);
+  const [showTypeBreakdown, setShowTypeBreakdown] = useState(false);
+  const [showTrend, setShowTrend] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [showFollowUp, setShowFollowUp] = useState(false);
+  const [showOptimization, setShowOptimization] = useState(false);
+  const [showLeadTracker, setShowLeadTracker] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'roi', label: 'ROI', icon: DollarSign, color: 'text-green-500', action: () => setShowROI(true) },
+    { id: 'breakdown', label: 'By Type', icon: PieChart, color: 'text-violet-500', action: () => setShowTypeBreakdown(true) },
+    { id: 'trends', label: 'Trends', icon: TrendingUp, color: 'text-amber-500', action: () => setShowTrend(true) },
+    { id: 'bulk', label: 'Bulk Actions', icon: CheckSquare, color: 'text-pink-500', action: () => setShowBulkActions(true) },
+    { id: 'calendar', label: 'Calendar', icon: Calendar, color: 'text-cyan-500', action: () => setShowCalendar(true) },
+    { id: 'checklist', label: 'Checklist', icon: ClipboardCheck, color: 'text-emerald-500', action: () => setShowChecklist(true) },
+    { id: 'followup', label: 'Follow-Up', icon: Mail, color: 'text-orange-500', action: () => setShowFollowUp(true) },
+    { id: 'optimize', label: 'AI Strategy', icon: Brain, color: 'text-fuchsia-500', action: () => setShowOptimization(true) },
+    { id: 'pipeline', label: 'Lead Tracker', icon: Target, color: 'text-red-500', action: () => setShowLeadTracker(true) },
+    { id: 'compare', label: 'Compare', icon: ArrowLeftRight, color: 'text-teal-500', action: () => setShowComparison(true) },
+    { id: 'export', label: 'Export', icon: Download, color: 'text-indigo-500', action: () => setShowExport(true) },
+  ];
 
   const filters = useMemo(
     () => ({
@@ -113,6 +162,16 @@ export default function CommunityEvents() {
           </button>
         }
       />
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
+      </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-th-border bg-surface-primary p-4">
         <label className="text-sm text-th-text-secondary flex items-center gap-2">
@@ -200,6 +259,20 @@ export default function CommunityEvents() {
           </div>
         )}
       </div>
+
+      {/* ---- Event Power Modals ---- */}
+      <EventAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)} eventCount={events.length} />
+      <EventROIModal open={showROI} onClose={() => setShowROI(false)} />
+      <EventTypeBreakdownModal open={showTypeBreakdown} onClose={() => setShowTypeBreakdown(false)} />
+      <EventTrendModal open={showTrend} onClose={() => setShowTrend(false)} />
+      <BulkEventActionModal open={showBulkActions} onClose={() => setShowBulkActions(false)} />
+      <EventCalendarModal open={showCalendar} onClose={() => setShowCalendar(false)} />
+      <EventChecklistModal open={showChecklist} onClose={() => setShowChecklist(false)} />
+      <EventFollowUpModal open={showFollowUp} onClose={() => setShowFollowUp(false)} />
+      <EventOptimizationModal open={showOptimization} onClose={() => setShowOptimization(false)} />
+      <EventLeadTrackerModal open={showLeadTracker} onClose={() => setShowLeadTracker(false)} />
+      <EventComparisonModal open={showComparison} onClose={() => setShowComparison(false)} />
+      <EventExportBuilderModal open={showExport} onClose={() => setShowExport(false)} />
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">

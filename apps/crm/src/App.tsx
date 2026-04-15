@@ -41,6 +41,8 @@ const Invoices = lazyRetry(() => import('./pages/Invoices'));
 const InvoiceDetail = lazyRetry(() => import('./pages/InvoiceDetail'));
 const Campaigns = lazyRetry(() => import('./pages/Campaigns'));
 const CampaignDetail = lazyRetry(() => import('./pages/CampaignDetail'));
+const SocialMedia = lazyRetry(() => import('./pages/SocialMedia'));
+const SocialMediaAds = lazyRetry(() => import('./pages/SocialMediaAds'));
 // Print views (standalone, without MainLayout)
 const QuotePrintView = lazyRetry(() => import('./pages/QuotePrintView'));
 const InvoicePrintView = lazyRetry(() => import('./pages/InvoicePrintView'));
@@ -785,6 +787,26 @@ export default function App() {
                     <Guarded permission="campaigns.read">
                       <Suspense fallback={<PageLoader />}>
                         <CampaignDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/social-media/ads"
+                  element={
+                    <Guarded permission="campaigns.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <SocialMediaAds />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/social-media"
+                  element={
+                    <Guarded permission="campaigns.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <SocialMedia />
                       </Suspense>
                     </Guarded>
                   }

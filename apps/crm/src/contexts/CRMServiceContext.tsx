@@ -61,6 +61,7 @@ import {
   createCommunityEventService,
   createTargetsService,
   createMilestoneService,
+  createSocialService,
   type LeadService,
   type PipelineService,
   type ActivityService,
@@ -115,6 +116,7 @@ import {
   type CommunityEventService,
   type TargetsService,
   type MilestoneService,
+  type SocialService,
 } from '@mpbhealth/crm-core';
 import { supabase, supabaseUrl } from '../lib/supabase';
 import { useOrg } from './OrgContext';
@@ -178,6 +180,7 @@ export interface CRMServiceContextType {
   communityEventService: CommunityEventService;
   targetsService: TargetsService;
   milestoneService: MilestoneService;
+  socialService: SocialService;
 }
 
 const CRMServiceContext = createContext<CRMServiceContextType | null>(null);
@@ -246,6 +249,7 @@ export function CRMServiceProvider({ children }: { children: ReactNode }) {
       communityEventService: createCommunityEventService(supabase, oid),
       targetsService: createTargetsService(supabase, oid),
       milestoneService: createMilestoneService(supabase, oid),
+      socialService: createSocialService(supabase, oid),
     };
   }, [activeOrgId]);
 

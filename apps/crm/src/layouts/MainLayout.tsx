@@ -44,6 +44,8 @@ import {
   Handshake,
   UserCheck,
   Heart,
+  Share2,
+  LayoutGrid,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -150,6 +152,8 @@ const navigationSections: NavSection[] = [
     label: 'Marketing',
     items: [
       { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
+      { name: 'Social Media', href: '/social-media', icon: Share2, permission: 'campaigns.read' },
+      { name: 'Ad Campaigns', href: '/social-media/ads', icon: LayoutGrid, permission: 'campaigns.read' },
     ],
   },
   {

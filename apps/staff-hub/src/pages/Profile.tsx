@@ -36,21 +36,21 @@ export default function Profile() {
   const { roles } = usePortalAccess(userId ?? undefined);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return;
-      setUserId(session.user.id);
+    supabase.auth.getUser().then(async ({ data: { user }, error }) => {
+      if (error || !user) return;
+      setUserId(user.id);
 
       const { data } = await supabase
         .from('admin_users')
         .select('first_name, last_name, email, phone, department, title, timezone, avatar_url, role')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .maybeSingle();
 
       if (data) {
         setProfile({
           first_name: data.first_name ?? '',
           last_name: data.last_name ?? '',
-          email: data.email ?? session.user.email ?? '',
+          email: data.email ?? user.email ?? '',
           phone: data.phone ?? '',
           department: data.department ?? '',
           title: data.title ?? '',

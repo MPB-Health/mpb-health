@@ -89,18 +89,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }, 8_000);
 
-    supabase.auth.getSession()
-      .then(({ data: { session }, error }) => {
-        if (error) {
-          console.error('Failed to get session:', error);
+    // Validate server-side: getSession() can return stale/expired JWTs from
+    // localStorage. Use getUser() to confirm the session is still valid and
+    // avoid 401 errors on subsequent data queries.
+    supabase.auth.getUser()
+      .then(async ({ data: { user: verified }, error: verifyError }) => {
+        if (verifyError || !verified) {
+          await supabase.auth.signOut({ scope: 'local' });
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          setRolesLoading(false);
+          return;
         }
+        const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(verified);
         setLoading(false);
-        fetchRoles(session?.user?.id);
+        fetchRoles(verified.id);
       })
       .catch((error) => {
-        console.error('Session retrieval failed:', error);
+        console.error('Session validation failed:', error);
         setSession(null);
         setUser(null);
         setLoading(false);

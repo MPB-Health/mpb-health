@@ -22,8 +22,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(session ? 'authenticated' : 'unauthenticated');
+    // Validate server-side: getSession() can return stale/expired JWTs from
+    // localStorage. Use getUser() to confirm the session is still valid.
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+      if (error || !user) {
+        supabase.auth.signOut({ scope: 'local' });
+        setState('unauthenticated');
+      } else {
+        setState('authenticated');
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

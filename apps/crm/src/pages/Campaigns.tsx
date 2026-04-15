@@ -11,11 +11,36 @@ import {
   Target,
   TrendingUp,
   Megaphone,
+  BarChart3,
+  PieChart,
+  GitBranch,
+  CheckSquare,
+  FlaskConical,
+  UserPlus,
+  Brain,
+  Wallet,
+  Download,
 } from 'lucide-react';
+import {
+  CampaignAnalyticsModal,
+  CampaignROIModal,
+  CampaignFunnelModal,
+  CampaignChannelModal,
+  BulkCampaignActionModal,
+  CampaignCalendarModal,
+  CampaignABTestModal,
+  CampaignAudienceModal,
+  CampaignOptimizationModal,
+  CampaignAttributionModal,
+  CampaignBudgetPlannerModal,
+  CampaignExportBuilderModal,
+} from '../components/campaigns';
 import { useCRM } from '../contexts/CRMContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddCampaignModal } from '../components/AddCampaignModal';
 import type { CampaignWithRelations, CampaignFilters, CampaignStatus, CampaignType } from '@mpbhealth/crm-core';
+
+const cn = (...classes: (string | boolean | undefined | null)[]) => classes.filter(Boolean).join(' ');
 
 const statusColors: Record<CampaignStatus, { bg: string; text: string }> = {
   draft: { bg: 'bg-gray-100', text: 'text-gray-700' },
@@ -46,6 +71,35 @@ export default function Campaigns() {
   const [showFilters, setShowFilters] = useState(false);
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const pageSize = 20;
+
+  // Power modal state
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showROI, setShowROI] = useState(false);
+  const [showFunnel, setShowFunnel] = useState(false);
+  const [showChannel, setShowChannel] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showABTest, setShowABTest] = useState(false);
+  const [showAudience, setShowAudience] = useState(false);
+  const [showOptimization, setShowOptimization] = useState(false);
+  const [showAttribution, setShowAttribution] = useState(false);
+  const [showBudgetPlanner, setShowBudgetPlanner] = useState(false);
+  const [showExportBuilder, setShowExportBuilder] = useState(false);
+
+  const TOOLBAR_ACTIONS = [
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-blue-500', action: () => setShowAnalytics(true) },
+    { id: 'roi', label: 'ROI', icon: TrendingUp, color: 'text-green-500', action: () => setShowROI(true) },
+    { id: 'funnel', label: 'Funnel', icon: Target, color: 'text-violet-500', action: () => setShowFunnel(true) },
+    { id: 'channels', label: 'Channels', icon: PieChart, color: 'text-amber-500', action: () => setShowChannel(true) },
+    { id: 'bulk', label: 'Bulk Actions', icon: CheckSquare, color: 'text-pink-500', action: () => setShowBulkActions(true) },
+    { id: 'calendar', label: 'Calendar', icon: Calendar, color: 'text-cyan-500', action: () => setShowCalendar(true) },
+    { id: 'abtest', label: 'A/B Tests', icon: FlaskConical, color: 'text-emerald-500', action: () => setShowABTest(true) },
+    { id: 'audience', label: 'Audience', icon: UserPlus, color: 'text-red-500', action: () => setShowAudience(true) },
+    { id: 'optimize', label: 'AI Optimize', icon: Brain, color: 'text-fuchsia-500', action: () => setShowOptimization(true) },
+    { id: 'attribution', label: 'Attribution', icon: GitBranch, color: 'text-teal-500', action: () => setShowAttribution(true) },
+    { id: 'budget', label: 'Budget Plan', icon: Wallet, color: 'text-orange-500', action: () => setShowBudgetPlanner(true) },
+    { id: 'export', label: 'Export', icon: Download, color: 'text-indigo-500', action: () => setShowExportBuilder(true) },
+  ];
 
   // Stats
   const [stats, setStats] = useState({
@@ -183,6 +237,16 @@ export default function Campaigns() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Power Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-th-border bg-surface-primary p-2">
+        {TOOLBAR_ACTIONS.map((a) => (
+          <button key={a.id} onClick={a.action} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-th-text-secondary hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors">
+            <a.icon className={cn('w-3.5 h-3.5', a.color)} />
+            <span className="hidden sm:inline">{a.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Filters */}
@@ -495,6 +559,20 @@ export default function Campaigns() {
         onClose={() => setShowAddCampaign(false)}
         onSuccess={() => loadCampaigns()}
       />
+
+      {/* ---- Campaign Power Modals ---- */}
+      <CampaignAnalyticsModal open={showAnalytics} onClose={() => setShowAnalytics(false)} totalCampaigns={stats.totalCampaigns} activeCampaigns={stats.activeCampaigns} totalBudget={stats.totalBudget} />
+      <CampaignROIModal open={showROI} onClose={() => setShowROI(false)} />
+      <CampaignFunnelModal open={showFunnel} onClose={() => setShowFunnel(false)} />
+      <CampaignChannelModal open={showChannel} onClose={() => setShowChannel(false)} />
+      <BulkCampaignActionModal open={showBulkActions} onClose={() => setShowBulkActions(false)} />
+      <CampaignCalendarModal open={showCalendar} onClose={() => setShowCalendar(false)} />
+      <CampaignABTestModal open={showABTest} onClose={() => setShowABTest(false)} />
+      <CampaignAudienceModal open={showAudience} onClose={() => setShowAudience(false)} />
+      <CampaignOptimizationModal open={showOptimization} onClose={() => setShowOptimization(false)} />
+      <CampaignAttributionModal open={showAttribution} onClose={() => setShowAttribution(false)} />
+      <CampaignBudgetPlannerModal open={showBudgetPlanner} onClose={() => setShowBudgetPlanner(false)} totalBudget={stats.totalBudget} />
+      <CampaignExportBuilderModal open={showExportBuilder} onClose={() => setShowExportBuilder(false)} />
     </div>
   );
 }

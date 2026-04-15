@@ -10,7 +10,8 @@ import { licensingService } from '@mpbhealth/licensing';
 type TabId = 'modules' | 'features' | 'tenants';
 
 export default function ModuleManagement() {
-  const { orgId } = useAdmin();
+  const { user } = useAdmin();
+  const orgId = user?.org_id;
   const [activeTab, setActiveTab] = useState<TabId>('modules');
   const [modules, setModules] = useState<ProductModule[]>([]);
   const [licenses, setLicenses] = useState<OrgModuleLicenseWithModule[]>([]);
@@ -209,7 +210,7 @@ export default function ModuleManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {summary.features.map(f => (
+              {summary.features.map((f: { slug: string; name: string; category: string; source: string }) => (
                 <tr key={f.slug}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">

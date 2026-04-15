@@ -164,6 +164,9 @@ importers:
       '@mpbhealth/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@mpbhealth/licensing':
+        specifier: workspace:*
+        version: link:../../packages/licensing
       '@mpbhealth/plans-core':
         specifier: workspace:*
         version: link:../../packages/plans-core

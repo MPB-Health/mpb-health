@@ -125,18 +125,18 @@ export default function MessageThread({
                   >
                     {/* Avatar */}
                     {showSender ? (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-th-accent-100 dark:bg-th-accent-800 flex items-center justify-center">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-th-accent-100 dark:bg-th-accent-800 flex items-center justify-center overflow-hidden">
                         {msg.sender_avatar ? (
                           <img
                             src={msg.sender_avatar}
                             alt=""
                             className="w-8 h-8 rounded-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                           />
-                        ) : (
-                          <span className="text-xs font-medium text-th-accent-700 dark:text-th-accent-200">
-                            {(msg.sender_name || '?')[0].toUpperCase()}
-                          </span>
-                        )}
+                        ) : null}
+                        <span className={`text-xs font-medium text-th-accent-700 dark:text-th-accent-200 ${msg.sender_avatar ? 'hidden' : ''}`}>
+                          {(msg.sender_name || '?')[0].toUpperCase()}
+                        </span>
                       </div>
                     ) : (
                       <div className="w-8 flex-shrink-0" />

@@ -141,12 +141,12 @@ export default function Profile() {
                 aria-hidden="true"
                 role="presentation"
                 className="w-24 h-24 rounded-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
               />
-            ) : (
-              <div className="w-24 h-24 bg-surface-tertiary rounded-full flex items-center justify-center">
-                <User className="w-12 h-12 text-th-text-tertiary" />
-              </div>
-            )}
+            ) : null}
+            <div className={`w-24 h-24 bg-surface-tertiary rounded-full flex items-center justify-center ${profile.avatar_url ? 'hidden' : ''}`}>
+              <User className="w-12 h-12 text-th-text-tertiary" />
+            </div>
             <label className="absolute bottom-0 right-0 w-8 h-8 bg-th-accent-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-th-accent-700 transition-colors">
               <Camera className="w-4 h-4 text-white" aria-hidden="true" />
               <input
@@ -290,12 +290,12 @@ export default function Profile() {
                     src={cert.badge_url}
                     alt={`${cert.name} certification badge`}
                     className="w-12 h-12 rounded-lg"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
                   />
-                ) : (
-                  <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-                    <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                  </div>
-                )}
+                ) : null}
+                <div className={`w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center ${cert.badge_url ? 'hidden' : ''}`}>
+                  <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
                 <div className="flex-1">
                   <p className="font-semibold text-th-text-primary">{cert.name}</p>
                   {cert.description && (

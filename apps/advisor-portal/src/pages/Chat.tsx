@@ -294,18 +294,18 @@ export default function Chat() {
                           key={m.user_id}
                           className="flex items-center gap-2 px-2 py-1.5 rounded"
                         >
-                          <div className="w-6 h-6 rounded-full bg-th-accent-100 dark:bg-th-accent-800 flex items-center justify-center flex-shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-th-accent-100 dark:bg-th-accent-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {m.avatar_url ? (
                               <img
                                 src={m.avatar_url}
                                 alt=""
                                 className="w-6 h-6 rounded-full object-cover"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                               />
-                            ) : (
-                              <span className="text-[10px] font-medium text-th-accent-700">
-                                {(m.display_name || '?')[0].toUpperCase()}
-                              </span>
-                            )}
+                            ) : null}
+                            <span className={`text-[10px] font-medium text-th-accent-700 ${m.avatar_url ? 'hidden' : ''}`}>
+                              {(m.display_name || '?')[0].toUpperCase()}
+                            </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-xs text-th-text-primary truncate block">
@@ -382,18 +382,18 @@ export default function Chat() {
                       disabled={dmCreating === user.id}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-th-bg-secondary transition-colors text-left disabled:opacity-60"
                     >
-                      <div className="w-9 h-9 rounded-full bg-th-accent-100 dark:bg-th-accent-800 flex items-center justify-center flex-shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-th-accent-100 dark:bg-th-accent-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {user.avatar_url ? (
                           <img
                             src={user.avatar_url}
                             alt=""
                             className="w-9 h-9 rounded-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                           />
-                        ) : (
-                          <span className="text-sm font-medium text-th-accent-700 dark:text-th-accent-200">
-                            {(user.first_name || '?')[0].toUpperCase()}
-                          </span>
-                        )}
+                        ) : null}
+                        <span className={`text-sm font-medium text-th-accent-700 dark:text-th-accent-200 ${user.avatar_url ? 'hidden' : ''}`}>
+                          {(user.first_name || '?')[0].toUpperCase()}
+                        </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium text-th-text-primary block truncate">

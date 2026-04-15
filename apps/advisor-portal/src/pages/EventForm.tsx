@@ -522,6 +522,7 @@ function EventGallerySection({
                 src={url}
                 alt={`Gallery ${i + 1}`}
                 className="w-full h-full object-cover rounded-lg border border-th-border"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <button
                 type="button"

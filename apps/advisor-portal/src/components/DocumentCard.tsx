@@ -31,15 +31,17 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
     >{/* No whitespace between elements */}{hasImage ? (
         <div
           className="document-card__thumbnail bg-surface-tertiary"
-          style={{
-            backgroundImage: `url("${doc.image_url}")`,
-            backgroundSize: 'cover',
-            backgroundPosition: (doc.metadata?.image_position as string) || 'center top',
-            backgroundRepeat: 'no-repeat',
-          }}
           role="img"
           aria-label={doc.title}
-        />
+        >
+          <img
+            src={doc.image_url!}
+            alt={doc.title}
+            className="w-full h-full object-cover"
+            style={{ objectPosition: (doc.metadata?.image_position as string) || 'center top' }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
       ) : (
         <div className="document-card__content p-5 pb-0">
           <div className="flex items-start justify-between">

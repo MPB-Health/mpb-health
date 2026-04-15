@@ -196,17 +196,18 @@ export default function SubmitGroup() {
               >
                 {hasThumbnail ? (
                   <div
-                    className="document-card__thumbnail bg-surface-tertiary cursor-pointer"
-                    style={{
-                      backgroundImage: `url(${thumbnailUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center top',
-                      backgroundRepeat: 'no-repeat',
-                    }}
+                    className="document-card__thumbnail bg-surface-tertiary cursor-pointer overflow-hidden"
                     role="img"
                     aria-label={form.label}
                     onClick={() => setSelectedForm(form)}
-                  />
+                  >
+                    <img
+                      src={thumbnailUrl!}
+                      alt={form.label}
+                      className="w-full h-full object-cover object-top"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
                 ) : (
                   <div className="document-card__content p-5 pb-0">
                     <div className="flex items-start justify-between">

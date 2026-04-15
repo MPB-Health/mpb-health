@@ -159,12 +159,11 @@ export default function EventsManager() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {event.featured_image_url ? (
-                        <img src={event.featured_image_url} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 bg-neutral-200 rounded flex items-center justify-center flex-shrink-0">
-                          <Calendar className="h-5 w-5 text-neutral-400" />
-                        </div>
-                      )}
+                        <img src={event.featured_image_url} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }} />
+                      ) : null}
+                      <div className={`w-10 h-10 bg-neutral-200 rounded flex items-center justify-center flex-shrink-0 ${event.featured_image_url ? 'hidden' : ''}`}>
+                        <Calendar className="h-5 w-5 text-neutral-400" />
+                      </div>
                       <div className="min-w-0">
                         <p className="font-medium text-neutral-900 truncate">{event.title}</p>
                         <p className="text-xs text-neutral-500 truncate">{event.excerpt || 'No excerpt'}</p>

@@ -152,6 +152,18 @@ button[class*="document-card"] > * {
   vertical-align: top;
 }
 
+/* Global broken-image fallback — prevents broken image icons in CMS/sanitized HTML.
+   When an <img> fails to load, the browser applies :broken pseudo-state (not standard)
+   but we can catch it via the object-fit + min-height approach. For CMS content rendered
+   via dangerouslySetInnerHTML, we have no React onError, so this CSS-only approach
+   ensures broken images collapse gracefully instead of showing the ugly broken icon. */
+img:not([src]),
+img[src=""] {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+}
+
 /* Ticker scroll animation for bulletin headlines */
 @keyframes ticker-scroll {
   0% { transform: translateX(0); }

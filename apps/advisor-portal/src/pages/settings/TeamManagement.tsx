@@ -251,12 +251,12 @@ export default function TeamManagement() {
                       aria-hidden="true"
                       role="presentation"
                       className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
                     />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-th-accent-100 flex items-center justify-center text-th-accent-600 font-medium">
-                      {getInitials(member.first_name, member.last_name)}
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`w-10 h-10 rounded-full bg-th-accent-100 flex items-center justify-center text-th-accent-600 font-medium ${member.avatar_url ? 'hidden' : ''}`}>
+                    {getInitials(member.first_name, member.last_name)}
+                  </div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">

@@ -13,6 +13,7 @@ import {
   Bell,
 } from 'lucide-react';
 import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
+import SafeImage from '../components/SafeImage';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
@@ -161,10 +162,11 @@ export default function BulletinDetail() {
       {/* Featured Image */}
       {bulletin.featured_image_url && (
         <div className="rounded-2xl overflow-hidden mb-8 max-h-[400px]">
-          <img
+          <SafeImage
             src={bulletin.featured_image_url}
             alt={bulletin.title}
             className="w-full h-full object-cover"
+            hideOnError
           />
         </div>
       )}

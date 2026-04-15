@@ -18,6 +18,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, GradientHeader } from '@mpbhealth/ui';
 import { videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
 import { supabase } from '@mpbhealth/database';
+import SafeImage from '../components/SafeImage';
 
 type VideoCategory = 'all' | 'training' | 'marketing';
 
@@ -223,10 +224,11 @@ export default function VideoLibrary() {
                 className="relative w-full block aspect-video"
                 aria-label={`Play ${video.title}`}
               >
-                <img
+                <SafeImage
                   src={getThumbnail(video)}
                   alt={video.title}
                   className="absolute inset-0 w-full h-full object-cover"
+                  fallbackClassName="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0E2D41] to-[#0A4E8E] text-white/30"
                 />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -310,7 +312,7 @@ export default function VideoLibrary() {
                 className="relative w-48 flex-shrink-0 rounded-lg overflow-hidden aspect-video"
                 aria-label={`Play ${video.title}`}
               >
-                <img src={getThumbnail(video)} alt={video.title} className="w-full h-full object-cover" />
+                <SafeImage src={getThumbnail(video)} alt={video.title} className="w-full h-full object-cover" fallbackClassName="w-full h-full flex items-center justify-center bg-surface-tertiary text-th-text-tertiary" />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-md">

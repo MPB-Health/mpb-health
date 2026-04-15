@@ -445,7 +445,13 @@ export default function OrganizationSettings() {
                         src={settings.logo_url}
                         alt="Organization logo"
                         className="h-16 mx-auto object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.querySelector('.logo-fallback')?.classList.remove('hidden'); }}
                       />
+                      <div className="hidden logo-fallback space-y-2">
+                        <div className="w-16 h-16 bg-surface-tertiary rounded-lg mx-auto flex items-center justify-center">
+                          <Building2 className="w-8 h-8 text-th-text-muted" />
+                        </div>
+                      </div>
                       <button type="button" className="text-sm text-th-accent-600 hover:text-th-accent-700">
                         Change logo
                       </button>

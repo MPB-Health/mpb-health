@@ -122,6 +122,7 @@ export default function DocumentPreviewModal({
                 src={viewerUrl}
                 alt={title}
                 className="max-w-full max-h-full object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
           ) : (

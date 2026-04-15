@@ -41,6 +41,7 @@ import { meetingService, enrollmentService, portalSettingsService, announcementS
 import { supabase, supabaseUrl } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
+import SafeImage from '../components/SafeImage';
 
 const JOIN_MPB_BASE = 'https://join.mpb.health';
 
@@ -48,6 +49,7 @@ interface FallbackQuickLink {
   label: string;
   url: string;
   image: string;
+  localImage?: string;
   description: string;
   popup?: boolean;
 }
@@ -67,6 +69,7 @@ const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
     label: 'RX, Labs & Imaging Quote',
     url: 'https://www.cognitoforms.com/MPoweringBenefits1/RXLabsImagingCustomQuoteRequest2026',
     image: `${STORAGE_BASE}/quick-link-rx-labs-imaging.png`,
+    localImage: '/images/quick-links/quick-link-rx-labs-imaging.jpg',
     description: 'Request a custom quote for prescriptions, lab work, and imaging services.',
     popup: true,
   },
@@ -74,42 +77,49 @@ const fallbackDashboardQuickLinks: FallbackQuickLink[] = [
     label: 'Laboratory Assist',
     url: 'https://laboratoryassist.com/',
     image: `${STORAGE_BASE}/quick-link-lab-assist.png`,
+    localImage: '/images/quick-links/quick-link-lab-assist.jpg',
     description: 'Nationwide access to affordable diagnostic lab tests.',
   },
   {
     label: 'Find a Provider',
     url: 'https://providersearch.multiplan.com/',
     image: `${STORAGE_BASE}/quick-link-provider-search.png`,
+    localImage: '/images/quick-links/quick-link-provider-search.jpg',
     description: 'Search the MultiPlan network for in-network healthcare providers.',
   },
   {
     label: 'Book a Doctor',
     url: 'https://www.zocdoc.com/?dd_referrer=',
     image: `${STORAGE_BASE}/quick-link-zocdoc.png`,
+    localImage: '/images/quick-links/quick-link-zocdoc.jpg',
     description: 'Find and book doctor appointments online through ZocDoc.',
   },
   {
     label: 'Prescription Savings',
     url: 'https://www.goodrx.com/',
     image: `${STORAGE_BASE}/quick-link-goodrx.png`,
+    localImage: '/images/quick-links/quick-link-goodrx.jpg',
     description: 'Compare prescription drug prices and find discounts with GoodRx.',
   },
   {
     label: 'HealthyCare Podcast',
     url: 'https://www.youtube.com/@HealthyCarePodcast',
     image: `${STORAGE_BASE}/quick-link-healthy-care-podcast.png`,
+    localImage: '/images/quick-links/quick-link-healthy-care-podcast.jpg',
     description: 'Watch the HealthyCare Podcast for health education and tips.',
   },
   {
     label: 'MPB Health Channel',
     url: 'https://www.youtube.com/@MPBHealth_official',
     image: `${STORAGE_BASE}/quick-link-mpb-health-youtube.png`,
+    localImage: '/images/quick-links/quick-link-mpb-health-youtube.jpg',
     description: 'Visit the official MPB Health YouTube channel for updates and content.',
   },
   {
     label: 'Preventive Care',
     url: 'https://www.healthcare.gov/coverage/preventive-care-benefits/',
     image: `${STORAGE_BASE}/quick-link-preventive-care.png`,
+    localImage: '/images/quick-links/quick-link-preventive-care.jpg',
     description: 'Learn about preventive health services covered at no cost, including screenings and immunizations.',
   },
 ];
@@ -1001,10 +1011,11 @@ export default function Dashboard() {
                   className="absolute inset-0 w-full h-full group cursor-pointer"
                   aria-label="Play video"
                 >
-                  <img
+                  <SafeImage
                     src={ADVISOR_VIDEOS[activeVideoIndex].thumbnail}
                     alt={ADVISOR_VIDEOS[activeVideoIndex].title}
                     className="absolute inset-0 w-full h-full object-cover"
+                    fallbackClassName="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0E2D41] to-[#0A4E8E] text-white/30"
                   />
                   <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -1075,10 +1086,11 @@ export default function Dashboard() {
                     }`}
                   >
                     <div className="relative w-full aspect-video">
-                      <img
+                      <SafeImage
                         src={video.thumbnail}
                         alt={video.title}
                         className="w-full h-full object-cover"
+                        fallbackClassName="w-full h-full flex items-center justify-center bg-surface-tertiary text-th-text-tertiary"
                       />
                       {isActive && (
                         <div className="absolute inset-0 border-2 border-th-accent-500 rounded-xl" />
@@ -1229,10 +1241,12 @@ export default function Dashboard() {
                   className="group flex items-center gap-4 rounded-xl border border-th-border p-4 transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5 text-left bg-surface-primary"
                 >
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                    <img
+                    <SafeImage
                       src={link.image}
                       alt={link.label}
+                      fallbackSrc={link.localImage}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      fallbackClassName="w-16 h-16 rounded-lg flex items-center justify-center bg-surface-tertiary text-th-text-tertiary"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -1256,10 +1270,12 @@ export default function Dashboard() {
                   className="group flex items-center gap-4 rounded-xl border border-th-border p-4 transition-all duration-200 hover:shadow-md hover:border-th-accent-300 hover:-translate-y-0.5 bg-surface-primary"
                 >
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                    <img
+                    <SafeImage
                       src={link.image}
                       alt={link.label}
+                      fallbackSrc={link.localImage}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      fallbackClassName="w-16 h-16 rounded-lg flex items-center justify-center bg-surface-tertiary text-th-text-tertiary"
                     />
                   </div>
                   <div className="flex-1 min-w-0">

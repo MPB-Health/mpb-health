@@ -25,7 +25,7 @@
     <meta name="apple-mobile-web-app-title" content="Advisor Portal" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
 
-    <!-- iOS Splash Screens -->
+    <!-- iOS Splash Screens — commented out until assets are generated
     <link rel="apple-touch-startup-image" href="/splash/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
     <link rel="apple-touch-startup-image" href="/splash/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
     <link rel="apple-touch-startup-image" href="/splash/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
@@ -34,6 +34,7 @@
     <link rel="apple-touch-startup-image" href="/splash/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" />
     <link rel="apple-touch-startup-image" href="/splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
     <link rel="apple-touch-startup-image" href="/splash/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" />
+    -->
 
     <!-- Microsoft Tiles -->
     <meta name="msapplication-TileColor" content="#0A4E8E" />
@@ -54,10 +55,36 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').then(function(registration) {
-            console.log('[PWA] Service Worker registered:', registration.scope);
+          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            console.log('[PWA] Service Worker registered:', reg.scope);
+
+            reg.addEventListener('updatefound', function() {
+              var newWorker = reg.installing;
+              if (!newWorker) return;
+              newWorker.addEventListener('statechange', function() {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            });
           }).catch(function(error) {
             console.log('[PWA] Service Worker registration failed:', error);
+          });
+
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            if (!window.__swReloading) {
+              window.__swReloading = true;
+              window.location.reload();
+            }
+          });
+
+          navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'RELOAD_PAGE') {
+              if (!window.__swReloading) {
+                window.__swReloading = true;
+                window.location.reload();
+              }
+            }
           });
         });
       }

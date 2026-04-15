@@ -46,6 +46,7 @@ export function ImageUploader({ value, onChange, slug }: ImageUploaderProps) {
             src={value}
             alt="Featured"
             className="w-full h-48 object-cover rounded-lg border border-neutral-200"
+            onError={(e) => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).className = 'w-full h-48 rounded-lg border border-neutral-200 bg-neutral-100 flex items-center justify-center'; }}
           />
           <button
             type="button"

@@ -439,12 +439,12 @@ export default function MainLayout() {
             aria-hidden="true"
             role="presentation"
             className="w-8 h-8 rounded-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
           />
-        ) : (
-          <div className="w-8 h-8 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-[rgb(var(--sidebar-text))]" />
-          </div>
-        )}
+        ) : null}
+        <div className={`w-8 h-8 bg-[rgb(var(--sidebar-text)_/_0.12)] rounded-full flex items-center justify-center ${profile?.avatar_url ? 'hidden' : ''}`}>
+          <User className="w-4 h-4 text-[rgb(var(--sidebar-text))]" />
+        </div>
         <div className="flex-1 min-w-0">
           <p className="truncate text-[rgb(var(--sidebar-text-active))]">
             {profile?.first_name} {profile?.last_name}

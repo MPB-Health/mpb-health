@@ -18,6 +18,7 @@ import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
 import { Button, GradientHeader } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { supabase } from '@mpbhealth/database';
+import SafeImage from '../components/SafeImage';
 
 export default function Bulletins() {
   const { profile, unreadBulletinCount } = useAdvisor();
@@ -122,12 +123,13 @@ export default function Bulletins() {
           <div className="relative h-[220px] md:h-[260px]">
             {latestBulletin.featured_image_url ? (
               <>
-                <img
+                <SafeImage
                   src={latestBulletin.featured_image_url}
                   alt=""
                   loading="eager"
                   decoding="async"
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                  fallbackClassName="absolute inset-0 w-full h-full bg-[#071525]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#060e1a] via-[#060e1a]/70 to-[#060e1a]/10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#060e1a]/60 via-transparent to-transparent" />
@@ -230,12 +232,13 @@ export default function Bulletins() {
               >
                 {bulletin.featured_image_url ? (
                   <div className="relative h-44 overflow-hidden">
-                    <img
+                    <SafeImage
                       src={bulletin.featured_image_url}
                       alt={`Featured image for ${bulletin.title}`}
                       loading="lazy"
                       decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fallbackClassName="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0A4E8E]/5 to-[#0C71C3]/10"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     {isUnread && (

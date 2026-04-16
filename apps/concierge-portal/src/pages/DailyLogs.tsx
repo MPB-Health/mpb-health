@@ -5,6 +5,7 @@ import {
   Trash2,
   Download,
   Send,
+  Search,
   BarChart3,
   Users,
   TrendingUp,
@@ -148,7 +149,7 @@ function ShareModal({
         const phone = ml.filter((l) => l.channel === 'Phone').length;
         const email = ml.filter((l) => l.channel === 'Email').length;
         const salesiq = ml.filter((l) => l.channel === 'SalesIQ').length;
-        const followups = ml.filter((l) => l.followUp).length;
+        const followups = ml.filter((l) => l.reason === 'Follow Up').length;
         const rx = ml.filter((l) => l.reason === 'Rx Request').length;
         const labs = ml.filter((l) => l.reason === 'Labs Request').length;
         const imaging = ml.filter((l) => l.reason === 'Imaging Request').length;
@@ -367,12 +368,22 @@ function DailyLogTab({
     toast.success('Log entry added');
   };
 
+  const [search, setSearch] = useState('');
+
   const handleDelete = (id: string) => {
     setLogs((prev) => prev.filter((l) => l.id !== id));
     toast.success('Entry removed');
   };
 
-  const recentLogs = logs.slice(0, 50);
+  const query = search.toLowerCase().trim();
+  const filteredLogs = useMemo(() => {
+    if (!query) return logs.slice(0, 50);
+    return logs.filter(
+      (l) =>
+        l.memberName.toLowerCase().includes(query) ||
+        l.teamMember.toLowerCase().includes(query),
+    );
+  }, [logs, query]);
 
   return (
     <div className="space-y-6">
@@ -499,14 +510,35 @@ function DailyLogTab({
 
       {/* Recent Entries */}
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
-        <div className="p-4 border-b border-[#A8B8AC]/20">
+        <div className="p-4 border-b border-[#A8B8AC]/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h3 className="text-base font-bold text-[#2F3E2F]">
-            Recent Entries <span className="text-sm font-normal text-slate-500">({logs.length} total)</span>
+            {query ? 'Search Results' : 'Recent Entries'}{' '}
+            <span className="text-sm font-normal text-slate-500">
+              ({query ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}` : `${logs.length} total`})
+            </span>
           </h3>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by member or rep name..."
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[#A8B8AC]/20 rounded text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
-        {recentLogs.length === 0 ? (
+        {filteredLogs.length === 0 ? (
           <div className="p-8 text-center text-slate-500 text-sm">
-            No entries yet. Add your first log entry above.
+            {query ? `No entries found for "${search}"` : 'No entries yet. Add your first log entry above.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -526,7 +558,7 @@ function DailyLogTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#A8B8AC]/15">
-                {recentLogs.map((log) => {
+                {filteredLogs.map((log) => {
                   const d = new Date(log.date);
                   const wk = isNaN(d.getTime()) ? '–' : getISOWeek(d);
                   return (
@@ -590,7 +622,7 @@ function WeeklyReportTab({
         phone: ml.filter((l) => l.channel === 'Phone').length,
         email: ml.filter((l) => l.channel === 'Email').length,
         salesiq: ml.filter((l) => l.channel === 'SalesIQ').length,
-        followups: ml.filter((l) => l.followUp).length,
+        followups: ml.filter((l) => l.reason === 'Follow Up').length,
         rx: ml.filter((l) => l.reason === 'Rx Request').length,
         labs: ml.filter((l) => l.reason === 'Labs Request').length,
         imaging: ml.filter((l) => l.reason === 'Imaging Request').length,

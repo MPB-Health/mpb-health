@@ -168,6 +168,15 @@ export class TicketService {
   private async uploadAttachments(ticketId: string, attachments: File[]): Promise<TicketAttachmentUploadResult[]> {
     if (!attachments.length) return [];
 
+    // Proactively refresh the session so storage RLS sees a valid JWT.
+    // The preceding edge-function call may have consumed the refresh token;
+    // refreshSessionOnce() deduplicates concurrent callers.
+    const { data: { session } } = await supabase.auth.getSession();
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (!session || !session.expires_at || session.expires_at < nowSec + 60) {
+      await refreshSessionOnce();
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.id) throw new Error('Authentication required to upload attachments. Please sign in again.');
 
@@ -431,10 +440,9 @@ export class TicketService {
 
         await Promise.race([uploadPromise, timeout]);
       } catch (attachErr) {
-        // Ticket was created — don't throw, just report the attachment failure
-        result.attachmentError = attachErr instanceof Error
-          ? attachErr.message
-          : 'Failed to upload attachments';
+        const msg = attachErr instanceof Error ? attachErr.message : 'Failed to upload attachments';
+        console.error('[TicketService] Attachment upload failed:', msg, attachErr);
+        result.attachmentError = msg;
       }
     }
 

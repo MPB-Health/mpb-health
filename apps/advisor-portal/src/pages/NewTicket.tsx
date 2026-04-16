@@ -175,7 +175,11 @@ export default function NewTicket() {
       });
       if (!mountedRef.current) return;
       if (result.attachmentError) {
-        toast.success(`Ticket #${result.ticket_number} submitted, but attachments failed to upload. You can re-attach them from the ticket detail page.`, { duration: 6000 });
+        toast.error(
+          `Ticket #${result.ticket_number} submitted, but attachments failed to upload: ${result.attachmentError}. You can add them by replying to the ticket.`,
+          { duration: 8000 },
+        );
+        setError(`Ticket created, but attachments failed: ${result.attachmentError}. Your ticket has been submitted without attachments.`);
       } else {
         toast.success(`Ticket #${result.ticket_number} submitted! Our team will be in touch shortly.`);
       }

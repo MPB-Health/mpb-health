@@ -236,7 +236,7 @@ export default function Tickets() {
     try {
       await executeWithAuth(async () => {
         if (richTicketEditor) {
-          let html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+          let html = richReplyRef.current?.getHtml() ?? '';
           if (replyAttachments.length > 0) {
             const uploads = await ticketService.uploadFilesForTicketReply(
               selectedTicket.ticket.id,

@@ -21,7 +21,7 @@ export default function PublicForm() {
       setLoading(true);
       const { data, error } = await supabase
         .from('crm_web_forms')
-        .select('*')
+        .select('id, org_id, name, description, slug, entity_type, status, fields, settings, styling, submit_count, last_submission_at, created_by, created_at, updated_at')
         .eq('slug', slug)
         .eq('status', 'active')
         .single();
@@ -29,10 +29,10 @@ export default function PublicForm() {
       if (error || !data) {
         setError('Form not found or is no longer active.');
       } else {
-        setForm(data as WebForm);
+        setForm(data as unknown as WebForm);
         // Initialize default values for hidden fields
         const defaults: Record<string, string> = {};
-        for (const field of (data.fields || []) as FormField[]) {
+        for (const field of (data.fields || []) as unknown as FormField[]) {
           if (field.type === 'hidden' && field.defaultValue) {
             defaults[field.id] = field.defaultValue;
           }

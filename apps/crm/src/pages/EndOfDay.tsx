@@ -115,7 +115,7 @@ function LeadSearchDropdown({
         .limit(15);
 
       if (error) throw error;
-      return (data ?? []) as LeadSearchRow[];
+      return (data ?? []) as unknown as LeadSearchRow[];
     },
     enabled: !!activeOrgId && open && safe.length >= 2,
   });

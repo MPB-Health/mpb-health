@@ -448,7 +448,7 @@ const CRMTemplates: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('crm_templates')
-        .select('*')
+        .select('id, name, description, template_type, category, subject, body, variables, usage_count, last_used_at, is_ai_generated, ai_performance_score, is_active, is_default, created_at')
         .eq('is_active', true)
         .order('usage_count', { ascending: false });
 

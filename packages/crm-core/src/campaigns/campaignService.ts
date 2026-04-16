@@ -32,7 +32,7 @@ export class CampaignService {
       let query = this.supabase
         .from('crm_campaigns')
         .select(`
-          *,
+        id, org_id, name, description, campaign_type, status, start_date, end_date, budget, actual_cost, expected_revenue, actual_revenue, expected_response, num_sent, num_responses, num_converted, parent_campaign_id, owner_id, tags, metadata, created_by, created_at, updated_at,
           parent_campaign:crm_campaigns!crm_campaigns_parent_campaign_id_fkey(id, name)
         `, { count: 'exact' });
 
@@ -107,7 +107,7 @@ export class CampaignService {
       const { data, error } = await this.supabase
         .from('crm_campaigns')
         .select(`
-          *,
+        id, org_id, name, description, campaign_type, status, start_date, end_date, budget, actual_cost, expected_revenue, actual_revenue, expected_response, num_sent, num_responses, num_converted, parent_campaign_id, owner_id, tags, metadata, created_by, created_at, updated_at,
           parent_campaign:crm_campaigns!crm_campaigns_parent_campaign_id_fkey(id, name)
         `)
         .eq('id', id)
@@ -121,18 +121,18 @@ export class CampaignService {
       // Get member counts
       const { count: membersCount } = await this.supabase
         .from('crm_campaign_members')
-        .select('*', { count: 'exact', head: true })
+        .select('id, org_id, name, description, campaign_type, status, start_date, end_date, budget, actual_spend, target_audience, channels, metrics, created_by, created_at, updated_at', { count: 'exact', head: true })
         .eq('campaign_id', id);
 
       const { count: leadsCount } = await this.supabase
         .from('crm_campaign_members')
-        .select('*', { count: 'exact', head: true })
+        .select('id, campaign_id, lead_id, contact_id, status, sent_at, opened_at, clicked_at, responded_at, converted_at, unsubscribed_at, notes, created_at, updated_at', { count: 'exact', head: true })
         .eq('campaign_id', id)
         .not('lead_id', 'is', null);
 
       const { count: contactsCount } = await this.supabase
         .from('crm_campaign_members')
-        .select('*', { count: 'exact', head: true })
+        .select('id, campaign_id, lead_id, contact_id, status, sent_at, opened_at, clicked_at, responded_at, converted_at, unsubscribed_at, notes, created_at, updated_at', { count: 'exact', head: true })
         .eq('campaign_id', id)
         .not('contact_id', 'is', null);
 
@@ -248,7 +248,7 @@ export class CampaignService {
       const { data, error, count } = await this.supabase
         .from('crm_campaign_members')
         .select(`
-          *,
+        id, org_id, name, description, campaign_type, status, start_date, end_date, budget, actual_cost, expected_revenue, actual_revenue, expected_response, num_sent, num_responses, num_converted, parent_campaign_id, owner_id, tags, metadata, created_by, created_at, updated_at,
           lead:crm_leads(id, first_name, last_name, email, company),
           contact:crm_contacts(id, first_name, last_name, email, account_id)
         `, { count: 'exact' })
@@ -261,7 +261,7 @@ export class CampaignService {
         return { members: [], total: 0 };
       }
 
-      return { members: data as CampaignMember[], total: count || 0 };
+      return { members: data as unknown as CampaignMember[], total: count || 0 };
     } catch (error) {
       console.error('Get campaign members error:', error);
       return { members: [], total: 0 };
@@ -566,7 +566,7 @@ export class CampaignService {
     try {
       const { data, error } = await this.supabase
         .from('crm_campaigns')
-        .select('*')
+        .select('id, org_id, name, description, campaign_type, status, start_date, end_date, budget, actual_spend, target_audience, channels, metrics, created_by, created_at, updated_at')
         .eq('status', 'active')
         .order('start_date', { ascending: false });
 

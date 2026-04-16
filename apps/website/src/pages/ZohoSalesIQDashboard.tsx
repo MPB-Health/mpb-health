@@ -44,12 +44,12 @@ export default function ZohoSalesIQDashboard() {
       const [errorsResult, healthResult] = await Promise.all([
         supabase
           .from('zoho_salesiq_errors')
-          .select('*')
+          .select('id, error_type, error_message, widget_code, user_agent, url, network_details, created_at')
           .order('created_at', { ascending: false })
           .limit(50),
         supabase
           .from('zoho_salesiq_health_checks')
-          .select('*')
+          .select('id, status, is_loaded, is_ready, response_time_ms, checked_at')
           .order('checked_at', { ascending: false })
           .limit(20),
       ]);

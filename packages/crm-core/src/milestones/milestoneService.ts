@@ -18,7 +18,7 @@ export class MilestoneService {
   async getMilestones(year: number): Promise<QuarterlyMilestone[]> {
     const { data, error } = await this.supabase
       .from('crm_quarterly_milestones')
-      .select('*')
+      .select('id, org_id, year, quarter, phase_name, lead_target, sales_target, revenue_target, linkedin_follower_target, referral_partner_target, community_event_target, actuals, created_by, created_at, updated_at')
       .eq('org_id', this.orgId)
       .eq('year', year)
       .order('quarter');
@@ -27,18 +27,18 @@ export class MilestoneService {
       console.error('Failed to get milestones:', error);
       return [];
     }
-    return data as QuarterlyMilestone[];
+    return data as unknown as QuarterlyMilestone[];
   }
 
   async getMilestone(id: string): Promise<QuarterlyMilestone | null> {
     const { data, error } = await this.supabase
       .from('crm_quarterly_milestones')
-      .select('*')
+      .select('id, org_id, year, quarter, phase_name, lead_target, sales_target, revenue_target, linkedin_follower_target, referral_partner_target, community_event_target, actuals, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data as QuarterlyMilestone;
+    return data as unknown as QuarterlyMilestone;
   }
 
   async upsertMilestone(input: MilestoneInput): Promise<QuarterlyMilestone | null> {
@@ -57,14 +57,14 @@ export class MilestoneService {
         .from('crm_quarterly_milestones')
         .update(input)
         .eq('id', existing.id)
-        .select()
+        .select('id, org_id, year, quarter, phase_name, lead_target, sales_target, revenue_target, linkedin_follower_target, referral_partner_target, community_event_target, actuals, created_by, created_at, updated_at')
         .single();
 
       if (error) {
         console.error('Failed to update milestone:', error);
         return null;
       }
-      return data as QuarterlyMilestone;
+      return data as unknown as QuarterlyMilestone;
     }
 
     const { data, error } = await this.supabase
@@ -74,14 +74,14 @@ export class MilestoneService {
         ...input,
         created_by: user?.id,
       })
-      .select()
+      .select('id, org_id, year, quarter, phase_name, lead_target, sales_target, revenue_target, linkedin_follower_target, referral_partner_target, community_event_target, actuals, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to create milestone:', error);
       return null;
     }
-    return data as QuarterlyMilestone;
+    return data as unknown as QuarterlyMilestone;
   }
 
   async seedDefaultMilestones(year: number): Promise<void> {
@@ -107,14 +107,14 @@ export class MilestoneService {
       .from('crm_quarterly_milestones')
       .update({ actuals })
       .eq('id', id)
-      .select()
+      .select('id, org_id, year, quarter, phase_name, lead_target, sales_target, revenue_target, linkedin_follower_target, referral_partner_target, community_event_target, actuals, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to update actuals:', error);
       return null;
     }
-    return data as QuarterlyMilestone;
+    return data as unknown as QuarterlyMilestone;
   }
 
   async getMilestoneProgress(year: number): Promise<MilestoneProgress[]> {

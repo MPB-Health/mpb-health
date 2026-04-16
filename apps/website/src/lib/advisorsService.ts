@@ -18,7 +18,7 @@ export interface Advisor {
 export async function getAllAdvisors(): Promise<Advisor[]> {
   const { data, error } = await supabase
     .from('advisors')
-    .select('*')
+    .select('id, advisor_id, display_name, city, state, landing_url, phone, email, is_active, order_index, created_at, updated_at')
     .eq('is_active', true)
     .order('order_index');
 
@@ -33,7 +33,7 @@ export async function getAllAdvisors(): Promise<Advisor[]> {
 export async function getAdvisorsByState(state: string): Promise<Advisor[]> {
   const { data, error } = await supabase
     .from('advisors')
-    .select('*')
+    .select('id, advisor_id, display_name, city, state, landing_url, phone, email, is_active, order_index, created_at, updated_at')
     .eq('is_active', true)
     .eq('state', state.toUpperCase())
     .order('order_index');
@@ -49,7 +49,7 @@ export async function getAdvisorsByState(state: string): Promise<Advisor[]> {
 export async function getAdvisorById(advisorId: string): Promise<Advisor | null> {
   const { data, error } = await supabase
     .from('advisors')
-    .select('*')
+    .select('id, advisor_id, display_name, city, state, landing_url, phone, email, is_active, order_index, created_at, updated_at')
     .eq('advisor_id', advisorId)
     .eq('is_active', true)
     .maybeSingle();

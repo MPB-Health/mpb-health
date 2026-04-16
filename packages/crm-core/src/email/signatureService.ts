@@ -23,7 +23,7 @@ export class SignatureService {
 
     const { data, error } = await this.supabase
       .from('crm_email_signatures')
-      .select('*')
+      .select('id, org_id, user_id, name, html_content, is_default, created_at, updated_at')
       .eq('user_id', user.id)
       .eq('org_id', orgId)
       .order('is_default', { ascending: false })
@@ -34,7 +34,7 @@ export class SignatureService {
       throw new Error(`Failed to get signatures: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as unknown as EmailSignature[];
   }
 
   // ============================================================================
@@ -47,7 +47,7 @@ export class SignatureService {
 
     const { data, error } = await this.supabase
       .from('crm_email_signatures')
-      .select('*')
+      .select('id, org_id, user_id, name, html_content, is_default, created_at, updated_at')
       .eq('user_id', user.id)
       .eq('org_id', orgId)
       .eq('is_default', true)
@@ -59,7 +59,7 @@ export class SignatureService {
       return null;
     }
 
-    return data;
+    return data as unknown as EmailSignature;
   }
 
   // ============================================================================
@@ -69,7 +69,7 @@ export class SignatureService {
   async getSignature(id: string): Promise<EmailSignature | null> {
     const { data, error } = await this.supabase
       .from('crm_email_signatures')
-      .select('*')
+      .select('id, org_id, user_id, name, html_content, is_default, created_at, updated_at')
       .eq('id', id)
       .single();
 
@@ -79,7 +79,7 @@ export class SignatureService {
       throw new Error(`Failed to get signature: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as EmailSignature;
   }
 
   // ============================================================================
@@ -116,7 +116,7 @@ export class SignatureService {
         font_family: input.font_family || 'Arial, sans-serif',
         primary_color: input.primary_color || '#6366F1',
       })
-      .select()
+      .select('id, user_id, org_id, name, is_default, content, variables, logo_url, logo_storage_path, banner_url, banner_storage_path, social_links, font_family, primary_color, created_at, updated_at')
       .single();
 
     if (error) {
@@ -124,7 +124,7 @@ export class SignatureService {
       throw new Error(`Failed to create signature: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as EmailSignature;
   }
 
   // ============================================================================
@@ -135,7 +135,7 @@ export class SignatureService {
     const { data: { user } } = await this.supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    // If setting as default, unset other defaults
+    // If setting as unknown as default, unset other defaults
     if (input.is_default) {
       const existing = await this.getSignature(id);
       if (existing) {
@@ -156,7 +156,7 @@ export class SignatureService {
       })
       .eq('id', id)
       .eq('user_id', user.id)
-      .select()
+      .select('id, user_id, org_id, name, is_default, content, variables, logo_url, logo_storage_path, banner_url, banner_storage_path, social_links, font_family, primary_color, created_at, updated_at')
       .single();
 
     if (error) {
@@ -164,7 +164,7 @@ export class SignatureService {
       throw new Error(`Failed to update signature: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as EmailSignature;
   }
 
   // ============================================================================

@@ -64,7 +64,7 @@ export class AnalyticsService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -77,7 +77,7 @@ export class AnalyticsService {
   ): Promise<MetricSnapshot | null> {
     let query = supabase
       .from('metric_snapshots')
-      .select('*')
+      .select('id, org_id, user_id, metric_type, granularity, period_start, period_end, value, previous_value, change_percent, dimensions, created_at')
       .eq('org_id', orgId)
       .eq('metric_type', metricType)
       .order('period_start', { ascending: false })
@@ -94,7 +94,7 @@ export class AnalyticsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -197,7 +197,7 @@ export class AnalyticsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================
@@ -210,7 +210,7 @@ export class AnalyticsService {
   async getGoals(orgId: string, userId?: string): Promise<PerformanceGoal[]> {
     let query = supabase
       .from('performance_goals')
-      .select('*')
+      .select('id, org_id, user_id, name, description, metric_type, target_value, target_period, current_value, progress_percent, last_calculated_at, start_date, end_date, is_active, achieved_at, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('is_active', true)
       .order('created_at', { ascending: false });
@@ -226,7 +226,7 @@ export class AnalyticsService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -235,7 +235,7 @@ export class AnalyticsService {
   async getGoal(goalId: string): Promise<PerformanceGoal | null> {
     const { data, error } = await supabase
       .from('performance_goals')
-      .select('*')
+      .select('id, org_id, user_id, name, description, metric_type, target_value, target_period, current_value, progress_percent, last_calculated_at, start_date, end_date, is_active, achieved_at, created_by, created_at, updated_at')
       .eq('id', goalId)
       .single();
 
@@ -244,7 +244,7 @@ export class AnalyticsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -269,7 +269,7 @@ export class AnalyticsService {
         end_date: input.end_date,
         created_by: createdBy,
       })
-      .select()
+      .select('id, org_id, user_id, name, description, metric_type, target_value, target_period, current_value, progress_percent, last_calculated_at, start_date, end_date, is_active, achieved_at, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -277,7 +277,7 @@ export class AnalyticsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -347,7 +347,7 @@ export class AnalyticsService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -378,7 +378,7 @@ export class AnalyticsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================

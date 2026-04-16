@@ -97,7 +97,7 @@ export const advisorAuthService = {
     // Use limit(1) instead of maybeSingle() to avoid HTTP 406 when no row exists
     const { data, error } = await supabase
       .from('advisor_profiles')
-      .select('*')
+      .select('id, first_name, last_name, email, phone, specialization, status, onboarding_completed, onboarding_completed_at, created_at, updated_at, metadata')
       .eq('id', userId)
       .limit(1);
 
@@ -121,7 +121,7 @@ export const advisorAuthService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async updateAdvisorProfile(userId: string, updates: Partial<AdvisorProfile>): Promise<AdvisorProfile | null> {
@@ -137,7 +137,7 @@ export const advisorAuthService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async completeOnboarding(userId: string): Promise<boolean> {
@@ -160,7 +160,7 @@ export const advisorAuthService = {
   async getTrainingModules(category?: string): Promise<TrainingModule[]> {
     let query = supabase
       .from('training_modules')
-      .select('*')
+      .select('id, title, description, category, content_type, content_url, duration_minutes, order_index, is_required, prerequisites, is_active, created_at, updated_at')
       .eq('is_active', true)
       .order('order_index', { ascending: true });
 
@@ -175,13 +175,13 @@ export const advisorAuthService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getTrainingProgress(advisorId: string, moduleId?: string): Promise<TrainingProgress[]> {
     let query = supabase
       .from('training_progress')
-      .select('*')
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, attempts, notes, created_at, updated_at')
       .eq('advisor_id', advisorId);
 
     if (moduleId) {
@@ -195,7 +195,7 @@ export const advisorAuthService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async startModule(advisorId: string, moduleId: string): Promise<TrainingProgress | null> {
@@ -218,7 +218,7 @@ export const advisorAuthService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async completeModule(
@@ -245,7 +245,7 @@ export const advisorAuthService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async updateModuleProgress(
@@ -266,13 +266,13 @@ export const advisorAuthService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getSOPDocuments(category?: string): Promise<SOPDocument[]> {
     let query = supabase
       .from('sop_documents')
-      .select('*')
+      .select('id, title, description, category, tags, content, file_url, version, is_active, created_by, created_at, updated_at')
       .eq('is_active', true)
       .order('title', { ascending: true });
 
@@ -287,13 +287,13 @@ export const advisorAuthService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async searchSOPs(searchTerm: string): Promise<SOPDocument[]> {
     const { data, error } = await supabase
       .from('sop_documents')
-      .select('*')
+      .select('id, title, description, category, tags, content, file_url, version, is_active, created_by, created_at, updated_at')
       .eq('is_active', true)
       .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
       .order('title', { ascending: true });
@@ -303,13 +303,13 @@ export const advisorAuthService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getCertifications(advisorId: string): Promise<Certification[]> {
     const { data, error } = await supabase
       .from('certifications')
-      .select('*')
+      .select('id, advisor_id, certification_type, earned_at, expires_at, badge_url, created_at')
       .eq('advisor_id', advisorId)
       .order('earned_at', { ascending: false });
 
@@ -318,7 +318,7 @@ export const advisorAuthService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async awardCertification(
@@ -343,13 +343,13 @@ export const advisorAuthService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getOnboardingSteps(): Promise<OnboardingStep[]> {
     const { data, error } = await supabase
       .from('onboarding_steps')
-      .select('*')
+      .select('id, title, description, order_index, required_modules, required_forms, is_active, created_at')
       .eq('is_active', true)
       .order('order_index', { ascending: true });
 
@@ -358,13 +358,13 @@ export const advisorAuthService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getOnboardingProgress(advisorId: string): Promise<OnboardingProgress[]> {
     const { data, error } = await supabase
       .from('onboarding_progress')
-      .select('*')
+      .select('id, advisor_id, step_id, status, completed_at, created_at, updated_at')
       .eq('advisor_id', advisorId);
 
     if (error) {
@@ -372,7 +372,7 @@ export const advisorAuthService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async updateOnboardingProgress(
@@ -402,7 +402,7 @@ export const advisorAuthService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getTrainingStats(advisorId: string): Promise<{

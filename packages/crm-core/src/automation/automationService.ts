@@ -19,14 +19,14 @@ export class AutomationService {
     try {
       const { data, error } = await this.supabase
         .from('ai_automation_rules')
-        .select('*')
+        .select('id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, execution_count, last_executed_at, created_by, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Failed to list automation rules:', error);
         return [];
       }
-      return data as AutomationRule[];
+      return data as unknown as AutomationRule[];
     } catch (err) {
       console.error('List automation rules error:', err);
       return [];
@@ -37,7 +37,7 @@ export class AutomationService {
     try {
       const { data, error } = await this.supabase
         .from('ai_automation_rules')
-        .select('*')
+        .select('id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, execution_count, last_executed_at, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -45,7 +45,7 @@ export class AutomationService {
         console.error('Failed to get automation rule:', error);
         return null;
       }
-      return data as AutomationRule;
+      return data as unknown as AutomationRule;
     } catch (err) {
       console.error('Get automation rule error:', err);
       return null;
@@ -68,11 +68,11 @@ export class AutomationService {
           action_config: input.action_config ?? {},
           delay_minutes: input.delay_minutes ?? 0,
         })
-        .select()
+        .select('id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, execution_count, last_executed_at, created_by, created_at, updated_at')
         .single();
 
       if (error) return { success: false, error: error.message };
-      return { success: true, data: data as AutomationRule };
+      return { success: true, data: data as unknown as AutomationRule };
     } catch (err) {
       console.error('Create automation rule error:', err);
       return { success: false, error: 'Failed to create rule' };
@@ -88,11 +88,11 @@ export class AutomationService {
         .from('ai_automation_rules')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id)
-        .select()
+        .select('id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, execution_count, last_executed_at, created_by, created_at, updated_at')
         .single();
 
       if (error) return { success: false, error: error.message };
-      return { success: true, data: data as AutomationRule };
+      return { success: true, data: data as unknown as AutomationRule };
     } catch (err) {
       console.error('Update automation rule error:', err);
       return { success: false, error: 'Failed to update rule' };
@@ -130,7 +130,7 @@ export class AutomationService {
     try {
       let query = this.supabase
         .from('automation_execution_log')
-        .select('*')
+        .select('id, rule_id, rule_name, trigger_type, action_type, lead_id, status, result_message, executed_at')
         .order('executed_at', { ascending: false })
         .limit(limit);
 
@@ -144,7 +144,7 @@ export class AutomationService {
         console.error('Failed to get execution history:', error);
         return [];
       }
-      return data as AutomationExecutionLog[];
+      return data as unknown as AutomationExecutionLog[];
     } catch (err) {
       console.error('Get execution history error:', err);
       return [];
@@ -157,13 +157,13 @@ export class AutomationService {
     try {
       const { data: rules, error } = await this.supabase
         .from('ai_automation_rules')
-        .select('*')
+        .select('id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, execution_count, last_executed_at, created_by, created_at, updated_at')
         .eq('is_active', true)
         .eq('trigger_type', event.type);
 
       if (error || !rules?.length) return;
 
-      for (const rule of rules as AutomationRule[]) {
+      for (const rule of rules as unknown as AutomationRule[]) {
         const matches = this.matchesConditions(rule.trigger_conditions, event);
         if (!matches) {
           await this.logExecution(rule, event.leadId, 'skipped', 'Conditions not met');

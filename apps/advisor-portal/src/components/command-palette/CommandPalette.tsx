@@ -289,7 +289,7 @@ export default function CommandPalette() {
 
       // Quick action
       if ('action_type' in item) {
-        const action = item as QuickAction;
+        const action = item as unknown as QuickAction;
         switch (action.action_type) {
           case 'navigate':
             if (action.action_data.url) {

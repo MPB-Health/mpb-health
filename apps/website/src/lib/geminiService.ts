@@ -92,7 +92,7 @@ export async function getGeminiPrompts(category?: string): Promise<GeminiPrompt[
   try {
     let query = supabase
       .from('gemini_prompts')
-      .select('*')
+      .select('id, name, template, variables, category, is_active, usage_count, created_at, updated_at')
       .eq('is_active', true)
       .order('name');
 
@@ -103,7 +103,7 @@ export async function getGeminiPrompts(category?: string): Promise<GeminiPrompt[
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   } catch (error) {
     console.error('Get prompts error:', error);
     return [];
@@ -117,12 +117,12 @@ export async function getGeminiPrompt(promptId: string): Promise<GeminiPrompt | 
   try {
     const { data, error } = await supabase
       .from('gemini_prompts')
-      .select('*')
+      .select('id, name, template, variables, category, is_active, usage_count, created_at, updated_at')
       .eq('id', promptId)
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   } catch (error) {
     console.error('Get prompt error:', error);
     return null;
@@ -142,11 +142,11 @@ export async function createGeminiPrompt(
         ...prompt,
         usage_count: 0,
       })
-      .select()
+      .select('id, name, template, variables, category, is_active, usage_count, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   } catch (error) {
     console.error('Create prompt error:', error);
     return null;
@@ -187,7 +187,7 @@ export async function getBlogGenerationLogs(
   try {
     let query = supabase
       .from('blog_generation_logs')
-      .select('*')
+      .select('id, prompt_id, prompt_used, tokens_used, content_generated, success, error_message, generation_time_ms, metadata, created_by, created_at')
       .order('created_at', { ascending: false });
 
     if (filters?.success !== undefined) {
@@ -205,7 +205,7 @@ export async function getBlogGenerationLogs(
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   } catch (error) {
     console.error('Get generation logs error:', error);
     return [];

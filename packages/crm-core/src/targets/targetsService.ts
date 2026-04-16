@@ -18,7 +18,7 @@ export class TargetsService {
   ): Promise<ActivityTarget[]> {
     let query = this.supabase
       .from('crm_activity_targets')
-      .select('*')
+      .select('id, org_id, target_type, rep_id, period_start, period_end, targets, created_by, created_at, updated_at')
       .eq('org_id', this.orgId);
 
     if (filters.type) query = query.eq('target_type', filters.type);
@@ -30,18 +30,18 @@ export class TargetsService {
       console.error('Failed to get targets:', error);
       return [];
     }
-    return data as ActivityTarget[];
+    return data as unknown as ActivityTarget[];
   }
 
   async getTarget(id: string): Promise<ActivityTarget | null> {
     const { data, error } = await this.supabase
       .from('crm_activity_targets')
-      .select('*')
+      .select('id, org_id, target_type, rep_id, period_start, period_end, targets, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data as ActivityTarget;
+    return data as unknown as ActivityTarget;
   }
 
   async createTarget(input: ActivityTargetInput): Promise<ActivityTarget | null> {
@@ -54,14 +54,14 @@ export class TargetsService {
         ...input,
         created_by: user?.id,
       })
-      .select()
+      .select('id, org_id, target_type, rep_id, period_start, period_end, targets, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to create target:', error);
       return null;
     }
-    return data as ActivityTarget;
+    return data as unknown as ActivityTarget;
   }
 
   async updateTarget(
@@ -72,14 +72,14 @@ export class TargetsService {
       .from('crm_activity_targets')
       .update(input)
       .eq('id', id)
-      .select()
+      .select('id, org_id, target_type, rep_id, period_start, period_end, targets, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to update target:', error);
       return null;
     }
-    return data as ActivityTarget;
+    return data as unknown as ActivityTarget;
   }
 
   async deleteTarget(id: string): Promise<boolean> {

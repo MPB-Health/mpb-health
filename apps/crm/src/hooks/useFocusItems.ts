@@ -26,13 +26,13 @@ export function useFocusItems() {
     try {
       const { data } = await supabase
         .from('crm_focus_items')
-        .select('*')
+        .select('id, org_id, user_id, entity_type, entity_id, priority, notes, pinned_at, completed_at, created_at')
         .eq('org_id', activeOrgId)
         .is('completed_at', null)
         .order('priority', { ascending: false })
         .order('pinned_at', { ascending: false })
         .limit(20);
-      setItems((data as FocusItem[]) || []);
+      setItems((data as unknown as FocusItem[]) || []);
     } catch {
       // non-critical
     } finally {
@@ -55,11 +55,11 @@ export function useFocusItems() {
       const { data, error } = await supabase
         .from('crm_focus_items')
         .insert({ org_id: activeOrgId, entity_type: entityType, entity_id: entityId, notes })
-        .select()
+        .select('id, org_id, user_id, entity_type, entity_id, priority, notes, pinned_at, completed_at, created_at')
         .single();
 
       if (!error && data) {
-        setItems((prev) => [data as FocusItem, ...prev]);
+        setItems((prev) => [data as unknown as FocusItem, ...prev]);
       }
       return !error;
     },

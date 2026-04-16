@@ -39,20 +39,20 @@ export class NotificationRuleService {
   async getAllRules(): Promise<NotificationRule[]> {
     const { data, error } = await supabase
       .from('notification_preferences')
-      .select('*')
+      .select('id, user_id, email_enabled, email_new_leads, email_hot_leads, email_task_reminders, email_daily_digest, email_weekly_summary, push_enabled, push_new_leads, push_hot_leads, created_at, updated_at')
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return (data || []) as NotificationRule[];
+    return (data || []) as unknown as NotificationRule[];
   }
 
   async getRuleByUserId(userId: string): Promise<NotificationRule | null> {
     const { data, error } = await supabase
       .from('notification_preferences')
-      .select('*')
+      .select('id, user_id, email_enabled, email_new_leads, email_hot_leads, email_task_reminders, email_daily_digest, email_weekly_summary, push_enabled, push_new_leads, push_hot_leads, created_at, updated_at')
       .eq('user_id', userId)
       .single();
     if (error) return null;
-    return data as NotificationRule;
+    return data as unknown as NotificationRule;
   }
 
   async updateRule(id: string, input: NotificationRuleUpdateInput): Promise<NotificationRule> {
@@ -60,10 +60,10 @@ export class NotificationRuleService {
       .from('notification_preferences')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, user_id, email_enabled, email_new_leads, email_hot_leads, email_task_reminders, email_daily_digest, email_weekly_summary, push_enabled, push_new_leads, push_hot_leads, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as NotificationRule;
+    return data as unknown as NotificationRule;
   }
 
   async getRecentEvents(limit = 50): Promise<NotificationEventLog[]> {
@@ -73,7 +73,7 @@ export class NotificationRuleService {
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error) throw error;
-    return (data || []) as NotificationEventLog[];
+    return (data || []) as unknown as NotificationEventLog[];
   }
 
   async getEventTypes(): Promise<string[]> {

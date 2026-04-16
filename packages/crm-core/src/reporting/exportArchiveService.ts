@@ -24,7 +24,7 @@ export class ExportArchiveService {
     try {
       let query = this.supabase
         .from('report_exports')
-        .select('*')
+        .select('id, org_id, saved_report_id, report_name, report_type, export_format, file_path, file_size_bytes, row_count, filters_used, status, error_message, exported_by, exported_at, expires_at')
         .order('exported_at', { ascending: false });
 
       if (filters?.report_type) {
@@ -50,7 +50,7 @@ export class ExportArchiveService {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      return (data || []) as any;
     } catch (err) {
       console.error('ExportArchiveService.list error:', err);
       return [];
@@ -64,12 +64,12 @@ export class ExportArchiveService {
     try {
       const { data, error } = await this.supabase
         .from('report_exports')
-        .select('*')
+        .select('id, org_id, saved_report_id, report_name, report_type, export_format, file_path, file_size_bytes, row_count, filters_used, status, error_message, exported_by, exported_at, expires_at')
         .eq('id', id)
         .single();
 
       if (error) throw error;
-      return data;
+      return data as any;
     } catch (err) {
       console.error('ExportArchiveService.get error:', err);
       return null;
@@ -96,7 +96,7 @@ export class ExportArchiveService {
           status: 'pending',
           exported_by: user.id,
         })
-        .select()
+        .select('id, org_id, saved_report_id, report_name, report_type, export_format, file_path, file_size_bytes, row_count, filters_used, status, error_message, exported_by, exported_at, expires_at')
         .single();
 
       if (error) throw error;
@@ -104,7 +104,7 @@ export class ExportArchiveService {
       // Log to audit
       await this.logAudit('export.create', 'report_export', data.id, null, data);
 
-      return data;
+      return data as any;
     } catch (err) {
       console.error('ExportArchiveService.create error:', err);
       return null;
@@ -135,14 +135,14 @@ export class ExportArchiveService {
         .from('report_exports')
         .update(updateData)
         .eq('id', id)
-        .select()
+        .select('id, org_id, saved_report_id, report_name, report_type, export_format, file_path, file_size_bytes, row_count, filters_used, status, error_message, exported_by, exported_at, expires_at')
         .single();
 
       if (error) throw error;
 
       await this.logAudit('export.status_change', 'report_export', id, null, { status, ...metadata });
 
-      return data;
+      return data as any;
     } catch (err) {
       console.error('ExportArchiveService.updateStatus error:', err);
       return null;
@@ -254,9 +254,9 @@ export class ExportArchiveService {
         if (exp.exported_at >= monthStart) {
           stats.exports_this_month++;
         }
-        const format = exp.export_format as ExportFormat;
+        const format = exp.export_format as unknown as ExportFormat;
         stats.by_format[format] = (stats.by_format[format] || 0) + 1;
-        const type = exp.report_type as ReportType;
+        const type = exp.report_type as unknown as ReportType;
         stats.by_type[type] = (stats.by_type[type] || 0) + 1;
       }
 

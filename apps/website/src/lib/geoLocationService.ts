@@ -60,7 +60,7 @@ export async function getAllStateSettingsWithStatus(): Promise<GeoStateSettingsR
   try {
     const { data, error } = await supabase
       .from('geo_state_settings')
-      .select('*')
+      .select('state_code, state_name, is_supported, is_restricted, restriction_message, not_supported_message, notes, updated_by, created_at, updated_at')
       .order('state_name', { ascending: true });
 
     // Handle missing table gracefully
@@ -72,7 +72,7 @@ export async function getAllStateSettingsWithStatus(): Promise<GeoStateSettingsR
 
     if (error) throw error;
 
-    stateSettingsCache = data as GeoStateSetting[];
+    stateSettingsCache = data as unknown as GeoStateSetting[];
     cacheTimestamp = Date.now();
     lastTableExistsStatus = true;
 
@@ -101,7 +101,7 @@ export async function getStateSetting(stateCode: string): Promise<GeoStateSettin
   try {
     const { data, error } = await supabase
       .from('geo_state_settings')
-      .select('*')
+      .select('state_code, state_name, is_supported, is_restricted, restriction_message, not_supported_message, notes, updated_by, created_at, updated_at')
       .eq('state_code', normalizedCode)
       .maybeSingle();
 
@@ -112,7 +112,7 @@ export async function getStateSetting(stateCode: string): Promise<GeoStateSettin
       throw error;
     }
 
-    return data as GeoStateSetting;
+    return data as unknown as GeoStateSetting;
   } catch (error) {
     console.error('Error fetching state setting:', error);
     return null;
@@ -173,12 +173,12 @@ export async function getSupportedStates(): Promise<GeoStateSetting[]> {
   try {
     const { data, error } = await supabase
       .from('geo_state_settings')
-      .select('*')
+      .select('state_code, state_name, is_supported, is_restricted, restriction_message, not_supported_message, notes, updated_by, created_at, updated_at')
       .eq('is_supported', true)
       .order('state_name', { ascending: true });
 
     if (error) throw error;
-    return data as GeoStateSetting[];
+    return data as unknown as GeoStateSetting[];
   } catch (error) {
     console.error('Error fetching supported states:', error);
     return [];
@@ -192,12 +192,12 @@ export async function getRestrictedStates(): Promise<GeoStateSetting[]> {
   try {
     const { data, error } = await supabase
       .from('geo_state_settings')
-      .select('*')
+      .select('state_code, state_name, is_supported, is_restricted, restriction_message, not_supported_message, notes, updated_by, created_at, updated_at')
       .eq('is_restricted', true)
       .order('state_name', { ascending: true });
 
     if (error) throw error;
-    return data as GeoStateSetting[];
+    return data as unknown as GeoStateSetting[];
   } catch (error) {
     console.error('Error fetching restricted states:', error);
     return [];
@@ -221,7 +221,7 @@ export async function updateStateSetting(
         updated_at: new Date().toISOString()
       })
       .eq('state_code', stateCode.toUpperCase())
-      .select()
+      .select('state_code, state_name, is_supported, is_restricted, restriction_message, not_supported_message, notes, updated_by, created_at, updated_at')
       .single();
 
     // Handle missing table gracefully
@@ -237,7 +237,7 @@ export async function updateStateSetting(
     stateSettingsCache = null;
     lastTableExistsStatus = true;
 
-    return data as GeoStateSetting;
+    return data as unknown as GeoStateSetting;
   } catch (error) {
     console.error('Error updating state setting:', error);
     return null;

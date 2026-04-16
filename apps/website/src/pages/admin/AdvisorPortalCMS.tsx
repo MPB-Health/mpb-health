@@ -246,7 +246,7 @@ export default function AdvisorPortalCMS() {
           // Load all SOP documents for admin
           const { data: sopData, error: sopError } = await supabase
             .from('sop_documents')
-            .select('*')
+            .select('id, title, description, category, tags, content, file_url, image_url, version, is_active, is_published, order_index, view_count, slug, content_type, metadata, created_at, updated_at')
             .order('title', { ascending: true });
           if (!sopError && sopData) {
             setSops(sopData);

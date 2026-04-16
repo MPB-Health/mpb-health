@@ -44,7 +44,7 @@ const FALLBACK_ENROLL_URLS: Record<string, string> = {
 export async function getActivePlans(): Promise<PlanWithFeatures[]> {
   const { data: plans, error: plansError } = await supabase
     .from('plans')
-    .select('*')
+    .select('id, slug, name, tagline, target_audience, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, sort_order, is_active, enroll_url, enrollment_fee, annual_membership_fee, tobacco_surcharge_pct')
     .eq('is_active', true)
     .order('sort_order');
 
@@ -61,13 +61,13 @@ export async function getActivePlans(): Promise<PlanWithFeatures[]> {
     plans.map(async (plan) => {
       const { data: features } = await supabase
         .from('plan_features')
-        .select('*')
+        .select('id, plan_id, feature_name, category, feature_value, notes, sort_order')
         .eq('plan_id', plan.id)
         .order('sort_order');
 
       const { data: pricing } = await supabase
         .from('plan_pricing')
-        .select('*')
+        .select('id, plan_id, member_type, monthly_contribution, sort_order')
         .eq('plan_id', plan.id)
         .eq('member_type', 'individual')
         .order('monthly_contribution')
@@ -94,7 +94,7 @@ export async function getActivePlans(): Promise<PlanWithFeatures[]> {
 export async function getPlanBySlug(slug: string): Promise<PlanWithFeatures | null> {
   const { data: plan, error: planError } = await supabase
     .from('plans')
-    .select('*')
+    .select('id, slug, name, tagline, target_audience, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, sort_order, is_active, enroll_url, enrollment_fee, annual_membership_fee, tobacco_surcharge_pct')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle();
@@ -106,13 +106,13 @@ export async function getPlanBySlug(slug: string): Promise<PlanWithFeatures | nu
 
   const { data: features } = await supabase
     .from('plan_features')
-    .select('*')
+    .select('id, plan_id, feature_name, category, feature_value, notes, sort_order')
     .eq('plan_id', plan.id)
     .order('sort_order');
 
   const { data: pricing } = await supabase
     .from('plan_pricing')
-    .select('*')
+    .select('id, plan_id, member_type, monthly_contribution, sort_order')
     .eq('plan_id', plan.id)
     .eq('member_type', 'individual')
     .order('monthly_contribution')

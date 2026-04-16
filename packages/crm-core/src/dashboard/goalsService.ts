@@ -28,7 +28,7 @@ export class UserGoalsService {
 
       let query = this.supabase
         .from('crm_user_goals')
-        .select('*')
+        .select('id, user_id, org_id, name, description, target_value, current_value, metric_type, period, start_date, end_date, is_personal, assigned_by, status, completed_at, icon, color, created_at, updated_at')
         .eq('org_id', orgId)
         .or(`user_id.eq.${user.id},assigned_by.eq.${user.id}`)
         .order('end_date', { ascending: true });
@@ -47,7 +47,7 @@ export class UserGoalsService {
         return [];
       }
 
-      return (data || []) as UserGoal[];
+      return (data || []) as unknown as UserGoal[];
     } catch (error) {
       console.error('Get goals error:', error);
       return [];
@@ -75,7 +75,7 @@ export class UserGoalsService {
     try {
       const { data, error } = await this.supabase
         .from('crm_user_goals')
-        .select('*')
+        .select('id, user_id, org_id, name, description, target_value, current_value, metric_type, period, start_date, end_date, is_personal, assigned_by, status, completed_at, icon, color, created_at, updated_at')
         .eq('id', goalId)
         .single();
 
@@ -84,7 +84,7 @@ export class UserGoalsService {
         return null;
       }
 
-      return data as UserGoal;
+      return data as unknown as UserGoal;
     } catch (error) {
       console.error('Get goal error:', error);
       return null;
@@ -127,14 +127,14 @@ export class UserGoalsService {
           icon: input.icon || 'target',
           color: input.color || 'violet',
         })
-        .select()
+        .select('id, user_id, org_id, name, description, target_value, current_value, metric_type, period, start_date, end_date, is_personal, assigned_by, status, completed_at, icon, color, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data: data as UserGoal };
+      return { success: true, data: data as unknown as UserGoal };
     } catch (error) {
       console.error('Create goal error:', error);
       return { success: false, error: 'Failed to create goal' };
@@ -170,14 +170,14 @@ export class UserGoalsService {
         .from('crm_user_goals')
         .update(updateData)
         .eq('id', goalId)
-        .select()
+        .select('id, user_id, org_id, name, description, target_value, current_value, metric_type, period, start_date, end_date, is_personal, assigned_by, status, completed_at, icon, color, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data: data as UserGoal };
+      return { success: true, data: data as unknown as UserGoal };
     } catch (error) {
       console.error('Update goal error:', error);
       return { success: false, error: 'Failed to update goal' };
@@ -209,7 +209,7 @@ export class UserGoalsService {
   }
 
   /**
-   * Mark a goal as completed
+   * Mark a goal as unknown as completed
    */
   async completeGoal(goalId: string): Promise<ServiceResult<UserGoal>> {
     return this.updateGoal(goalId, { status: 'completed' });
@@ -235,14 +235,14 @@ export class UserGoalsService {
           updated_at: new Date().toISOString(),
         })
         .eq('id', goalId)
-        .select()
+        .select('id, user_id, org_id, name, description, target_value, current_value, metric_type, period, start_date, end_date, is_personal, assigned_by, status, completed_at, icon, color, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data: data as UserGoal };
+      return { success: true, data: data as unknown as UserGoal };
     } catch (error) {
       console.error('Reactivate goal error:', error);
       return { success: false, error: 'Failed to reactivate goal' };
@@ -280,7 +280,7 @@ export class UserGoalsService {
 
       const { data, error } = await this.supabase
         .from('crm_user_goals')
-        .select('*')
+        .select('id, user_id, org_id, name, description, target_value, current_value, metric_type, period, start_date, end_date, is_personal, assigned_by, status, completed_at, icon, color, created_at, updated_at')
         .eq('org_id', orgId)
         .eq('assigned_by', user.id)
         .eq('is_personal', false)
@@ -291,7 +291,7 @@ export class UserGoalsService {
         return [];
       }
 
-      return (data || []) as UserGoal[];
+      return (data || []) as unknown as UserGoal[];
     } catch (error) {
       console.error('Get assigned goals error:', error);
       return [];

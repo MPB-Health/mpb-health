@@ -24,33 +24,33 @@ export class HandbookAdminService {
   async getAll(): Promise<AdminHandbook[]> {
     const { data, error } = await supabase
       .from('handbooks')
-      .select('*')
+      .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .order('sort_order', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as AdminHandbook[];
+    return (data || []) as unknown as AdminHandbook[];
   }
 
   async getById(id: string): Promise<AdminHandbook | null> {
     const { data, error } = await supabase
       .from('handbooks')
-      .select('*')
+      .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as AdminHandbook | null;
+    return data as unknown as AdminHandbook | null;
   }
 
   async create(input: HandbookCreateInput): Promise<AdminHandbook> {
     const { data, error } = await supabase
       .from('handbooks')
       .insert(input)
-      .select()
+      .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data as AdminHandbook;
+    return data as unknown as AdminHandbook;
   }
 
   async update(id: string, input: HandbookUpdateInput): Promise<AdminHandbook> {
@@ -58,11 +58,11 @@ export class HandbookAdminService {
       .from('handbooks')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data as AdminHandbook;
+    return data as unknown as AdminHandbook;
   }
 
   async delete(id: string): Promise<void> {

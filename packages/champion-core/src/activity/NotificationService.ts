@@ -33,7 +33,7 @@ export class NotificationService {
   ): Promise<Notification[]> {
     let query = supabase
       .from('notifications')
-      .select('*')
+      .select('id, org_id, user_id, activity_id, title, body, icon, action_url, action_label, priority, category, channels, delivered_via, is_read, read_at, is_dismissed, dismissed_at, scheduled_for, expires_at, metadata, created_at')
       .eq('user_id', userId)
       .eq('is_dismissed', false)
       .order('created_at', { ascending: false });
@@ -66,7 +66,7 @@ export class NotificationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -131,7 +131,7 @@ export class NotificationService {
         expires_at: input.expires_at,
         metadata: input.metadata || {},
       })
-      .select()
+      .select('id, org_id, user_id, activity_id, title, body, icon, action_url, action_label, priority, category, channels, delivered_via, is_read, read_at, is_dismissed, dismissed_at, scheduled_for, expires_at, metadata, created_at')
       .single();
 
     if (error) {
@@ -139,7 +139,7 @@ export class NotificationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -248,7 +248,7 @@ export class NotificationService {
   ): Promise<NotificationPreferencesOverride[]> {
     const { data, error } = await supabase
       .from('notification_preferences_overrides')
-      .select('*')
+      .select('id, user_id, org_id, category, in_app_enabled, email_enabled, sms_enabled, push_enabled, min_priority, created_at, updated_at')
       .eq('user_id', userId)
       .eq('org_id', orgId);
 
@@ -257,7 +257,7 @@ export class NotificationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -280,7 +280,7 @@ export class NotificationService {
         push_enabled: input.push_enabled,
         min_priority: input.min_priority,
       })
-      .select()
+      .select('id, user_id, org_id, category, in_app_enabled, email_enabled, sms_enabled, push_enabled, min_priority, created_at, updated_at')
       .single();
 
     if (error) {
@@ -288,7 +288,7 @@ export class NotificationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================

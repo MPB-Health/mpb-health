@@ -58,7 +58,7 @@ export class NotificationEventsService {
 
     let query = supabase
       .from('notification_events')
-      .select('*')
+      .select('id, user_id, org_id, event_type, title, body, action_url, source_type, source_id, actor_id, actor_name, is_read, read_at, metadata, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -78,7 +78,7 @@ export class NotificationEventsService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   async getUnreadCount(userId: string): Promise<number> {

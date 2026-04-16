@@ -70,24 +70,24 @@ export class SmsAccountService {
   async list(orgId: string): Promise<SmsAccount[]> {
     const { data, error } = await supabase
       .from('sms_accounts')
-      .select('*')
+      .select('id, org_id, name, provider, is_active, is_default, config, phone_numbers, monthly_limit, current_month_sent, webhook_url, last_message_at, total_sent, total_received, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('is_default', { ascending: false })
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async get(id: string): Promise<SmsAccount | null> {
     const { data, error } = await supabase
       .from('sms_accounts')
-      .select('*')
+      .select('id, org_id, name, provider, is_active, is_default, config, phone_numbers, monthly_limit, current_month_sent, webhook_url, last_message_at, total_sent, total_received, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async create(input: SmsAccountCreateInput, orgId: string, userId: string): Promise<SmsAccount> {
@@ -103,14 +103,14 @@ export class SmsAccountService {
         webhook_url: input.webhook_url,
         created_by: userId,
       })
-      .select()
+      .select('id, org_id, name, provider, is_active, is_default, config, phone_numbers, monthly_limit, current_month_sent, webhook_url, last_message_at, total_sent, total_received, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'sms_account.create', 'sms_account', data.id, null, data);
 
-    return data;
+    return data as any;
   }
 
   async update(id: string, input: SmsAccountUpdateInput, userId: string): Promise<SmsAccount> {
@@ -130,14 +130,14 @@ export class SmsAccountService {
       .from('sms_accounts')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, org_id, name, provider, is_active, is_default, config, phone_numbers, monthly_limit, current_month_sent, webhook_url, last_message_at, total_sent, total_received, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'sms_account.update', 'sms_account', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async delete(id: string, userId: string): Promise<void> {
@@ -198,7 +198,7 @@ export class SmsAccountService {
   ): Promise<{ data: SmsLogEntry[]; total: number }> {
     let query = supabase
       .from('sms_log')
-      .select('*', { count: 'exact' })
+      .select('id, org_id, sms_account_id, template_id, direction, from_number, to_number, body, status, provider_message_id, error_message, segments, cost, sent_by, sent_at, delivered_at', { count: 'exact' })
       .eq('org_id', orgId)
       .order('sent_at', { ascending: false });
 
@@ -263,7 +263,7 @@ export class SmsAccountService {
         segments,
         sent_by: userId,
       })
-      .select()
+      .select('id, org_id, sms_account_id, template_id, direction, from_number, to_number, body, status, provider_message_id, error_message, segments, cost, sent_by, sent_at, delivered_at')
       .single();
 
     if (logError) throw logError;

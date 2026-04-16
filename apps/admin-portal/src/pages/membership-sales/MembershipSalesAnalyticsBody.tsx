@@ -249,7 +249,7 @@ export function MembershipSalesAnalyticsBody() {
           while (hasMore) {
             const { data, error } = await supabase
               .from('sales_analytics_view')
-              .select('*')
+              .select('member_id, created_date, active_date, inactive_date, inactive_reason, is_active, is_primary, agent_id, first_name, last_name, dob, product_id, product_label, product_benefit')
               .range(from, from + PAGE_SIZE - 1);
 
             if (error) {
@@ -380,7 +380,7 @@ export function MembershipSalesAnalyticsBody() {
       while (hasMore) {
         const { data, error } = await supabase
           .from('sales_analytics_view')
-          .select('*')
+          .select('is_active, active_date, created_date, inactive_date')
           .eq('agent_id', agentId)
           .range(from, from + PAGE_SIZE - 1);
 
@@ -1160,7 +1160,7 @@ export function MembershipSalesAnalyticsBody() {
         while (hasMore) {
           const query = supabase
             .from(tableName)
-            .select('*')
+            .select('member_id, first_name, last_name, email, phone, product_id, product_label, active_date, inactive_date, is_active')
             .eq('agent_id', agentId)
             .eq('is_primary', true)
             .range(from, from + batchSize - 1);

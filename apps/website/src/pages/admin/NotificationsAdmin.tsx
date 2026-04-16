@@ -69,7 +69,7 @@ const NotificationsAdmin: React.FC = () => {
     try {
       let query = supabase
         .from('system_notifications')
-        .select('*')
+        .select('id, title, message, type, channel, audience, specific_recipients, status, scheduled_at, sent_at, sent_count, read_count, created_by, created_at')
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {

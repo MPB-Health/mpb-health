@@ -607,7 +607,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const { data, error: fetchError } = await supabase
         .from('navigation_items')
-        .select('*')
+        .select('id, label, href, description, icon, parent_id, order_position, is_active, requires_auth, allowed_roles, external, badge')
         .eq('is_active', true)
         .order('order_position', { ascending: true });
 

@@ -162,7 +162,7 @@ const SystemSettings: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('system_settings')
-        .select('*')
+        .select('id, key, value, category, description, is_sensitive, updated_at')
         .order('category', { ascending: true });
 
       // Handle missing table gracefully

@@ -84,7 +84,7 @@ export default function Today() {
           calendarService.getUpcomingEvents(5),
         ]);
 
-      if (summaryResult.data) setSummary(summaryResult.data as TodaySummary);
+      if (summaryResult.data) setSummary(summaryResult.data as unknown as TodaySummary);
       setTodayTasks(todayResult.slice(0, 5));
       setOverdueTasks(overdueResult.slice(0, 5));
       setRecentLeads(leadsResult.leads.slice(0, 6));

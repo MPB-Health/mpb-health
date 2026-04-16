@@ -135,7 +135,7 @@ export class ChatService {
       throw new Error(`[${correlationId}] ${errMsg}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================

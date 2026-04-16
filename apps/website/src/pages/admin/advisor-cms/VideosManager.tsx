@@ -71,7 +71,7 @@ export default function VideosManager() {
     try {
       const { data, error } = await supabase
         .from('advisor_videos')
-        .select('*')
+        .select('id, title, vimeo_id, vimeo_hash, thumbnail_url, description, order_index, is_active, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) throw error;

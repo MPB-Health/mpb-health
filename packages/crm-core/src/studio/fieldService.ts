@@ -15,7 +15,7 @@ export class FieldService {
     try {
       const { data, error } = await this.supabase
         .from('crm_studio_fields')
-        .select('*')
+        .select('id, org_id, module_id, label, api_name, field_type, is_required, is_unique, is_searchable, is_filterable, default_value, help_text, placeholder, config, sort_order, is_system, is_name_field, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .order('sort_order', { ascending: true });
 
@@ -24,7 +24,7 @@ export class FieldService {
         return [];
       }
 
-      return data as StudioField[];
+      return data as unknown as StudioField[];
     } catch (error) {
       console.error('Get fields error:', error);
       return [];
@@ -38,7 +38,7 @@ export class FieldService {
     try {
       const { data, error } = await this.supabase
         .from('crm_studio_fields')
-        .select('*')
+        .select('id, org_id, module_id, label, api_name, field_type, is_required, is_unique, is_searchable, is_filterable, default_value, help_text, placeholder, config, sort_order, is_system, is_name_field, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -47,7 +47,7 @@ export class FieldService {
         return null;
       }
 
-      return data as StudioField;
+      return data as unknown as StudioField;
     } catch (error) {
       console.error('Get field error:', error);
       return null;

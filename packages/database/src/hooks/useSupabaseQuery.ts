@@ -70,7 +70,7 @@ export function useSupabaseQuery<T = any>(
       }
 
       if (single) {
-        setData(result as T | null);
+        setData(result as unknown as T | null);
       } else {
         const resultArray = (result || []) as any[];
         const transformedData = transform ? transform(resultArray) : (resultArray as T[]);
@@ -155,7 +155,7 @@ export function usePaginatedQuery<T = any>(
         throw new Error(queryError.message);
       }
 
-      const transformedData = transform ? transform(result || []) : (result as T[]);
+      const transformedData = transform ? transform(result || []) : (result as unknown as T[]);
       setData(transformedData);
       setTotalCount(count);
     } catch (err) {

@@ -55,7 +55,7 @@ export const bulletinNotificationService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   /**
@@ -84,7 +84,7 @@ export const bulletinNotificationService = {
   async getNotificationHistory(bulletinId: string): Promise<BulletinNotification[]> {
     const { data, error } = await supabase
       .from('bulletin_email_notifications')
-      .select('*')
+      .select('id, bulletin_id, sent_at, sent_by, total_recipients, successful_sends, failed_sends, status, error_message, resend_batch_id, metadata, created_at, updated_at')
       .eq('bulletin_id', bulletinId)
       .order('created_at', { ascending: false });
 
@@ -93,7 +93,7 @@ export const bulletinNotificationService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   /**
@@ -102,7 +102,7 @@ export const bulletinNotificationService = {
   async getLatestNotification(bulletinId: string): Promise<BulletinNotification | null> {
     const { data, error } = await supabase
       .from('bulletin_email_notifications')
-      .select('*')
+      .select('id, bulletin_id, sent_at, sent_by, total_recipients, successful_sends, failed_sends, status, error_message, resend_batch_id, metadata, created_at, updated_at')
       .eq('bulletin_id', bulletinId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -113,7 +113,7 @@ export const bulletinNotificationService = {
       throw error;
     }
 
-    return data;
+    return data as any;
   },
 
   /**
@@ -132,7 +132,7 @@ export const bulletinNotificationService = {
       throw error;
     }
 
-    return data;
+    return data as any;
   },
 
   /**
@@ -278,7 +278,7 @@ export const bulletinNotificationService = {
   async getNotificationRecipients(notificationId: string): Promise<BulletinRecipient[]> {
     const { data, error } = await supabase
       .from('bulletin_email_recipients')
-      .select('*')
+      .select('id, notification_id, advisor_id, email, status, resend_message_id, sent_at, error_message, created_at')
       .eq('notification_id', notificationId)
       .order('created_at', { ascending: false });
 
@@ -287,6 +287,6 @@ export const bulletinNotificationService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 };

@@ -114,7 +114,7 @@ export function MeetingManagement({ onMeetingStart, onMeetingEnd }: MeetingManag
   const loadTemplates = async (): Promise<MeetingTemplate[]> => {
     try {
       const data = await advisorMeetingService.getMeetingTemplates();
-      return data;
+      return data as any;
     } catch {
       // Templates might not exist yet
       return [];
@@ -133,7 +133,7 @@ export function MeetingManagement({ onMeetingStart, onMeetingEnd }: MeetingManag
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   };
 
   // Meeting Actions

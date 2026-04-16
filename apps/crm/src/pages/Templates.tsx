@@ -1336,7 +1336,7 @@ export default function Templates() {
       }
 
       const data = await templateService.listTemplates(filters);
-      setTemplates(data as ExtendedTemplate[]);
+      setTemplates(data as unknown as ExtendedTemplate[]);
     } catch (err) {
       console.error('Failed to load templates:', err);
       toast.error('Failed to load templates');
@@ -1350,7 +1350,7 @@ export default function Templates() {
     try {
       const { data } = await supabase
         .from('crm_template_folders')
-        .select('*')
+        .select('id, org_id, name, description, parent_folder_id, color, created_by, created_at, updated_at')
         .eq('org_id', activeOrgId)
         .order('name');
       if (data) setFolders(data);

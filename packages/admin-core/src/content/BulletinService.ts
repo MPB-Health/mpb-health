@@ -65,7 +65,7 @@ export class BulletinService {
     let query = supabase
       .from('advisor_content')
       .select(`
-        *,
+        id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, notification_sent_at, notification_count, metadata, created_at, updated_at,
         category:advisor_content_categories(id, name, slug, description, display_order)
       `)
       .eq('content_type', 'bulletin')
@@ -89,7 +89,7 @@ export class BulletinService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as AdminBulletin[];
+    return (data || []) as unknown as AdminBulletin[];
   }
 
   // Get a single bulletin
@@ -97,7 +97,7 @@ export class BulletinService {
     const { data, error } = await supabase
       .from('advisor_content')
       .select(`
-        *,
+        id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, notification_sent_at, notification_count, metadata, created_at, updated_at,
         category:advisor_content_categories(id, name, slug, description, display_order)
       `)
       .eq('id', id)
@@ -105,7 +105,7 @@ export class BulletinService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as AdminBulletin | null;
+    return data as unknown as AdminBulletin | null;
   }
 
   // Create a bulletin
@@ -128,13 +128,13 @@ export class BulletinService {
         metadata: input.metadata || {},
       })
       .select(`
-        *,
+        id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, notification_sent_at, notification_count, metadata, created_at, updated_at,
         category:advisor_content_categories(id, name, slug, description, display_order)
       `)
       .single();
 
     if (error) throw error;
-    return data as AdminBulletin;
+    return data as unknown as AdminBulletin;
   }
 
   // Update a bulletin
@@ -159,13 +159,13 @@ export class BulletinService {
       .update(updateData)
       .eq('id', id)
       .select(`
-        *,
+        id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, notification_sent_at, notification_count, metadata, created_at, updated_at,
         category:advisor_content_categories(id, name, slug, description, display_order)
       `)
       .single();
 
     if (error) throw error;
-    return data as AdminBulletin;
+    return data as unknown as AdminBulletin;
   }
 
   // Delete a bulletin
@@ -203,11 +203,11 @@ export class BulletinService {
   async getCategories(): Promise<BulletinCategory[]> {
     const { data, error } = await supabase
       .from('advisor_content_categories')
-      .select('*')
+      .select('id, name, slug, description, display_order')
       .order('display_order', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Upload featured image to Supabase Storage

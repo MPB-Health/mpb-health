@@ -181,17 +181,17 @@ export class MemberNotificationService {
         changes: input.changes || {},
         should_notify_member: input.should_notify_member ?? true,
       })
-      .select()
+      .select('id, member_id, actor_user_id, actor_department, event_type, entity_type, entity_id, payload_summary, changes, member_notification_id, should_notify_member, notification_generated, created_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async getAccountEvents(filters?: AccountEventFilters): Promise<{ events: MemberAccountEvent[]; total: number }> {
     let query = supabase
       .from('member_account_events')
-      .select('*', { count: 'exact' })
+      .select('id, member_id, actor_user_id, actor_department, event_type, entity_type, entity_id, payload_summary, changes, member_notification_id, should_notify_member, notification_generated, created_at', { count: 'exact' })
       .order('created_at', { ascending: false });
 
     if (filters?.member_id) query = query.eq('member_id', filters.member_id);
@@ -213,7 +213,7 @@ export class MemberNotificationService {
   async getMemberNotifications(filters?: NotificationFilters): Promise<{ notifications: MemberNotificationAdmin[]; total: number }> {
     let query = supabase
       .from('member_notifications')
-      .select('*', { count: 'exact' })
+      .select('id, member_id, notification_type, title, message, priority, is_read, read_at, action_url, actor_department, category, related_entity_type, related_entity_id, source_event_id, metadata, created_at', { count: 'exact' })
       .order('created_at', { ascending: false });
 
     if (filters?.member_id) query = query.eq('member_id', filters.member_id);
@@ -267,11 +267,11 @@ export class MemberNotificationService {
   async getRules(): Promise<NotificationRule[]> {
     const { data, error } = await supabase
       .from('member_notification_rules')
-      .select('*')
+      .select('id, event_type, department, is_enabled, notification_type, title_template, message_template, priority, category, created_at, updated_at')
       .order('event_type');
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async updateRule(ruleId: string, updates: Partial<Pick<NotificationRule, 'is_enabled' | 'title_template' | 'message_template' | 'priority'>>): Promise<NotificationRule> {
@@ -279,22 +279,22 @@ export class MemberNotificationService {
       .from('member_notification_rules')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', ruleId)
-      .select()
+      .select('id, event_type, department, is_enabled, notification_type, title_template, message_template, priority, category, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async createRule(rule: Omit<NotificationRule, 'id' | 'created_at' | 'updated_at'>): Promise<NotificationRule> {
     const { data, error } = await supabase
       .from('member_notification_rules')
       .insert(rule)
-      .select()
+      .select('id, event_type, department, is_enabled, notification_type, title_template, message_template, priority, category, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteRule(ruleId: string): Promise<void> {

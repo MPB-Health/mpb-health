@@ -20,31 +20,31 @@ export class VideoService {
   async getVideos(): Promise<AdvisorVideo[]> {
     const { data, error } = await supabase
       .from('advisor_videos')
-      .select('*')
+      .select('id, title, vimeo_id, vimeo_hash, thumbnail_url, description, order_index, is_active, category, tags, duration, created_at, updated_at')
       .eq('is_active', true)
       .order('order_index', { ascending: true });
     if (error) throw error;
-    return (data || []) as AdvisorVideo[];
+    return (data || []) as unknown as AdvisorVideo[];
   }
 
   async getVideo(videoId: string): Promise<AdvisorVideo | null> {
     const { data, error } = await supabase
       .from('advisor_videos')
-      .select('*')
+      .select('id, title, vimeo_id, vimeo_hash, thumbnail_url, description, order_index, is_active, category, tags, duration, created_at, updated_at')
       .eq('id', videoId)
       .single();
     if (error) throw error;
-    return data as AdvisorVideo;
+    return data as unknown as AdvisorVideo;
   }
 
   async createVideo(video: Omit<AdvisorVideo, 'id' | 'created_at' | 'updated_at'>): Promise<AdvisorVideo> {
     const { data, error } = await supabase
       .from('advisor_videos')
       .insert(video)
-      .select()
+      .select('id, title, vimeo_id, vimeo_hash, thumbnail_url, description, order_index, is_active, category, tags, duration, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as AdvisorVideo;
+    return data as unknown as AdvisorVideo;
   }
 
   async updateVideo(videoId: string, updates: Partial<AdvisorVideo>): Promise<AdvisorVideo> {
@@ -52,10 +52,10 @@ export class VideoService {
       .from('advisor_videos')
       .update(updates)
       .eq('id', videoId)
-      .select()
+      .select('id, title, vimeo_id, vimeo_hash, thumbnail_url, description, order_index, is_active, category, tags, duration, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as AdvisorVideo;
+    return data as unknown as AdvisorVideo;
   }
 
   async deleteVideo(videoId: string): Promise<void> {

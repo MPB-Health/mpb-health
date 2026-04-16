@@ -31,7 +31,7 @@ export class TrainingAdminService {
   async getModules(filters?: { category?: string; is_active?: boolean }): Promise<AdminTrainingModule[]> {
     let query = supabase
       .from('training_modules')
-      .select('*')
+      .select('id, title, description, category, content_type, content_url, content, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .order('order_index', { ascending: true })
       .order('title', { ascending: true });
 
@@ -40,29 +40,29 @@ export class TrainingAdminService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getModule(id: string): Promise<AdminTrainingModule | null> {
     const { data, error } = await supabase
       .from('training_modules')
-      .select('*')
+      .select('id, title, description, category, content_type, content_url, content, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createModule(input: TrainingModuleCreateInput): Promise<AdminTrainingModule> {
     const { data, error } = await supabase
       .from('training_modules')
       .insert(input)
-      .select()
+      .select('id, title, description, category, content_type, content_url, content, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async updateModule(id: string, input: TrainingModuleUpdateInput): Promise<AdminTrainingModule> {
@@ -70,11 +70,11 @@ export class TrainingAdminService {
       .from('training_modules')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, title, description, category, content_type, content_url, content, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteModule(id: string): Promise<void> {

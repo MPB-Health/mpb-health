@@ -30,7 +30,7 @@ export class AuditService {
     try {
       let query = this.supabase
         .from('crm_audit_log')
-        .select('*', { count: 'exact' });
+        .select('id, org_id, user_id, action, entity_type, entity_id, changes, metadata, ip_address, user_agent, created_at', { count: 'exact' });
 
       if (filters.entity_type) query = query.eq('entity_type', filters.entity_type);
       if (filters.entity_id) query = query.eq('entity_id', filters.entity_id);
@@ -48,7 +48,7 @@ export class AuditService {
         return { entries: [], total: 0 };
       }
 
-      return { entries: (data || []) as AuditEntry[], total: count || 0 };
+      return { entries: (data || []) as unknown as AuditEntry[], total: count || 0 };
     } catch (err) {
       console.error('Get audit log error:', err);
       return { entries: [], total: 0 };

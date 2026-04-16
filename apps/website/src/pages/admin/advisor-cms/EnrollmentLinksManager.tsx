@@ -66,7 +66,7 @@ export default function EnrollmentLinksManager() {
     try {
       const { data, error } = await supabase
         .from('advisor_enrollment_links')
-        .select('*')
+        .select('id, label, url, description, order_index, is_active, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) throw error;

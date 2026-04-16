@@ -46,11 +46,11 @@ export const advisorContentService = {
   async getCategories(): Promise<AdvisorContentCategory[]> {
     const { data, error } = await supabase
       .from('advisor_content_categories')
-      .select('*')
+      .select('id, name, slug, description, display_order, created_at, updated_at')
       .order('display_order');
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   },
 
   async getContent(filters?: ContentFilters): Promise<AdvisorContent[]> {
@@ -86,7 +86,7 @@ export const advisorContentService = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   },
 
   async getContentBySlug(slug: string): Promise<AdvisorContent | null> {
@@ -101,7 +101,7 @@ export const advisorContentService = {
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return data as any;
   },
 
   async incrementViewCount(contentId: string, advisorId: string): Promise<void> {
@@ -197,7 +197,7 @@ export const advisorContentService = {
       .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   },
 
   async createContent(content: Partial<AdvisorContent>): Promise<AdvisorContent> {
@@ -208,7 +208,7 @@ export const advisorContentService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   },
 
   async updateContent(id: string, updates: Partial<AdvisorContent>): Promise<AdvisorContent> {
@@ -220,7 +220,7 @@ export const advisorContentService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   },
 
   async deleteContent(id: string): Promise<void> {

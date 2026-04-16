@@ -23,7 +23,7 @@ export class SocialService {
     if (!this.orgReady()) return { posts: [] };
     const { data, error } = await this.supabase
       .from('crm_social_posts')
-      .select('*')
+      .select('id, org_id, platform, content, scheduled_at, published_at, status, metrics, created_by, created_at, updated_at')
       .eq('org_id', this.orgId)
       .order('post_date', { ascending: false })
       .order('created_at', { ascending: false })
@@ -33,7 +33,7 @@ export class SocialService {
       console.error('[SocialService] getPosts', error);
       return { posts: [], error: error.message };
     }
-    return { posts: (data ?? []) as SocialPost[] };
+    return { posts: (data ?? []) as unknown as SocialPost[] };
   }
 
   async createPost(input: SocialPostCreateInput): Promise<{ success: boolean; post?: SocialPost; error?: string }> {
@@ -51,13 +51,13 @@ export class SocialService {
       created_by: user.user?.id ?? null,
     };
 
-    const { data, error } = await this.supabase.from('crm_social_posts').insert(row).select('*').single();
+    const { data, error } = await this.supabase.from('crm_social_posts').insert(row).select('id, org_id, platform, content, scheduled_at, published_at, status, metrics, created_by, created_at, updated_at').single();
 
     if (error) {
       console.error('[SocialService] createPost', error);
       return { success: false, error: error.message };
     }
-    return { success: true, post: data as SocialPost };
+    return { success: true, post: data as unknown as SocialPost };
   }
 
   async updatePost(
@@ -106,7 +106,7 @@ export class SocialService {
       console.error('[SocialService] getConnections', error);
       return { connections: [], error: error.message };
     }
-    return { connections: (data ?? []) as SocialPlatformConnection[] };
+    return { connections: (data ?? []) as unknown as SocialPlatformConnection[] };
   }
 
   async upsertConnection(

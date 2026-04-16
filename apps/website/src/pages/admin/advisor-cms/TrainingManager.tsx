@@ -115,11 +115,11 @@ export default function TrainingManager() {
       const [pathsResult, modulesResult, categoriesResult] = await Promise.all([
         supabase
           .from('advisor_learning_paths')
-          .select('*')
+          .select('id, title, description, category_slug, icon, gradient, estimated_hours, is_required, unlock_requirements, order_index, is_active, created_at, updated_at')
           .order('order_index', { ascending: true }),
         supabase
           .from('training_modules')
-          .select('*')
+          .select('id, title, description, category, type, duration_minutes, thumbnail_url, content_url, order_index, is_published, created_at, updated_at')
           .order('order_index', { ascending: true }),
         supabase
           .from('advisor_categories')

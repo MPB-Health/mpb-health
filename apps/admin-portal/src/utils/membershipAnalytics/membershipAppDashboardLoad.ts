@@ -266,7 +266,7 @@ export async function loadMembershipAppDashboardData(
   const cancelledEffectiveFilter = () =>
     client
       .from('users')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('is_active', false)
       .or(`inactive_date.is.null,inactive_date.lte.${todayStr}`);
 
@@ -295,10 +295,10 @@ export async function loadMembershipAppDashboardData(
       client,
       'member_id, is_active, is_primary, inactive_date, active_date, created_date, inactive_reason, dob',
     ),
-    client.from('users').select('*', { count: 'exact', head: true }),
-    client.from('users').select('*', { count: 'exact', head: true }).eq('is_primary', true),
-    client.from('users').select('*', { count: 'exact', head: true }).eq('is_primary', false),
-    client.from('users').select('*', { count: 'exact', head: true }).eq('is_active', false),
+    client.from('users').select('id', { count: 'exact', head: true }),
+    client.from('users').select('id', { count: 'exact', head: true }).eq('is_primary', true),
+    client.from('users').select('id', { count: 'exact', head: true }).eq('is_primary', false),
+    client.from('users').select('id', { count: 'exact', head: true }).eq('is_active', false),
     cancelledEffectiveFilter(),
     cancelledEffectiveFilter().eq('is_primary', true),
     cancelledEffectiveFilter().eq('is_primary', false),

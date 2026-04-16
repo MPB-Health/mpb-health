@@ -201,7 +201,7 @@ export function useCRMSearch(options: {
           throw searchError;
         }
 
-        setResults((data as CRMSearchResult[]) || []);
+        setResults((data as unknown as CRMSearchResult[]) || []);
         setDurationMs(Math.round(performance.now() - startTime));
       } catch (err) {
         console.error('[useCRMSearch] Search failed:', err);

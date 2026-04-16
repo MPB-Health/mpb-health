@@ -104,7 +104,7 @@ export const getRecentPageViews = async (minutes: number = 5): Promise<PageView[
 
   const { data, error } = await supabase
     .from('page_views')
-    .select('*')
+    .select('id, path, title, session_id, user_id, user_agent, referrer, country, device_type, created_at')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(100);

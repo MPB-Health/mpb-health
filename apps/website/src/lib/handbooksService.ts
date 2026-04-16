@@ -282,7 +282,7 @@ export async function getAllHandbooks(): Promise<HandbookRecord[]> {
   try {
     const { data, error } = await supabase
       .from('handbooks')
-      .select('*')
+      .select('id, slug, name, description, pdf_path, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .order('sort_order', { ascending: true });
 
     if (error) {
@@ -332,7 +332,7 @@ export async function getHandbookById(id: string): Promise<HandbookRecord | null
   try {
     const { data, error } = await supabase
       .from('handbooks')
-      .select('*')
+      .select('id, slug, name, description, pdf_path, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .eq('id', id)
       .single();
 
@@ -384,7 +384,7 @@ export async function createHandbook(input: CreateHandbookInput): Promise<Servic
         is_active: input.is_active ?? true,
         sort_order: input.sort_order ?? 999,
       })
-      .select()
+      .select('id, slug, name, description, pdf_path, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .single();
 
     if (error) {
@@ -419,7 +419,7 @@ export async function updateHandbook(id: string, input: UpdateHandbookInput): Pr
       .from('handbooks')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, slug, name, description, pdf_path, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .single();
 
     if (error) {

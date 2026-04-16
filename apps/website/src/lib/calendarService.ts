@@ -399,7 +399,7 @@ class CalendarService {
       // Get events in the next 24 hours that haven't had reminders sent
       const { data, error } = await supabase
         .from('calendar_events')
-        .select('*')
+        .select('id, title, description, event_type, start_time, end_time, all_day, timezone, location, meeting_link, lead_id, assigned_to, status, reminder_sent, reminder_minutes, external_calendar_id, external_event_id, last_synced_at, notes, outcome, created_by, created_at, updated_at')
         .eq('reminder_sent', false)
         .in('status', ['scheduled', 'confirmed'])
         .gte('start_time', now.toISOString())
@@ -545,7 +545,7 @@ class CalendarService {
       // Get upcoming count
       const { count } = await supabase
         .from('calendar_events')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('assigned_to', user.id)
         .gte('start_time', now.toISOString())
         .in('status', ['scheduled', 'confirmed']);

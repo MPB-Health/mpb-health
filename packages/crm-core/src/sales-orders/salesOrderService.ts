@@ -22,7 +22,7 @@ export class SalesOrderService {
       let query = this.supabase
         .from('crm_sales_orders')
         .select(`
-          *,
+        id, org_id, so_number, name, description, account_id, contact_id, deal_id, quote_id, status, approval_status, approved_by, approved_at, rejection_reason, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, currency, order_date, requested_date, promised_date, shipped_date, delivered_date, billing_address, shipping_address, shipping_method, tracking_number, carrier, payment_terms, terms_and_conditions, notes, owner_id, created_by, created_at, updated_at,
           account:crm_accounts(id, name),
           contact:crm_contacts(id, first_name, last_name, email),
           deal:crm_deals(id, name),
@@ -55,7 +55,7 @@ export class SalesOrderService {
         return { salesOrders: [], total: 0 };
       }
 
-      return { salesOrders: data as SalesOrderWithRelations[], total: count || 0 };
+      return { salesOrders: data as unknown as SalesOrderWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get sales orders error:', error);
       return { salesOrders: [], total: 0 };
@@ -67,7 +67,7 @@ export class SalesOrderService {
       const { data, error } = await this.supabase
         .from('crm_sales_orders')
         .select(`
-          *,
+        id, org_id, so_number, name, description, account_id, contact_id, deal_id, quote_id, status, approval_status, approved_by, approved_at, rejection_reason, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, currency, order_date, requested_date, promised_date, shipped_date, delivered_date, billing_address, shipping_address, shipping_method, tracking_number, carrier, payment_terms, terms_and_conditions, notes, owner_id, created_by, created_at, updated_at,
           account:crm_accounts(id, name),
           contact:crm_contacts(id, first_name, last_name, email),
           deal:crm_deals(id, name),
@@ -86,10 +86,10 @@ export class SalesOrderService {
       }
 
       if (data.line_items) {
-        data.line_items.sort((a: SOLineItem, b: SOLineItem) => a.sort_order - b.sort_order);
+        (data.line_items as any[]).sort((a: any, b: any) => a.sort_order - b.sort_order);
       }
 
-      return data as SalesOrderWithRelations;
+      return data as unknown as SalesOrderWithRelations;
     } catch (error) {
       console.error('Get sales order error:', error);
       return null;
@@ -140,7 +140,8 @@ export class SalesOrderService {
 
       const { data: quote, error: quoteError } = await this.supabase
         .from('crm_quotes')
-        .select(`*, line_items:crm_quote_line_items(*)`)
+        .select(`
+        id, org_id, quote_number, name, description, deal_id, account_id, contact_id, status, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, currency, valid_until, sent_at, accepted_at, rejected_at, rejection_reason, terms_and_conditions, notes, billing_address, shipping_address, price_book_id, template_id, owner_id, created_by, created_at, updated_at, line_items:crm_quote_line_items(id, quote_id, product_id, name, description, quantity, unit_price, discount_percent, discount_amount, tax_rate, subtotal, total, sort_order, created_at, updated_at)`)
         .eq('id', quoteId)
         .single();
 

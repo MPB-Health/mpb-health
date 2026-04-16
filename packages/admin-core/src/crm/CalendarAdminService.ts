@@ -45,7 +45,7 @@ export class CalendarAdminService {
   }): Promise<CalendarEvent[]> {
     let query = supabase
       .from('calendar_events')
-      .select('*')
+      .select('id, org_id, title, description, start_time, end_time, all_day, location, event_type, color, attendees, reminders, recurrence_rule, created_by, created_at, updated_at')
       .order('start_time', { ascending: true });
 
     if (filters?.month) {
@@ -68,27 +68,27 @@ export class CalendarAdminService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as CalendarEvent[];
+    return (data || []) as unknown as CalendarEvent[];
   }
 
   async getById(id: string): Promise<CalendarEvent | null> {
     const { data, error } = await supabase
       .from('calendar_events')
-      .select('*')
+      .select('id, org_id, title, description, start_time, end_time, all_day, location, event_type, color, attendees, reminders, recurrence_rule, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
     if (error) return null;
-    return data as CalendarEvent;
+    return data as unknown as CalendarEvent;
   }
 
   async create(input: CalendarEventCreateInput): Promise<CalendarEvent> {
     const { data, error } = await supabase
       .from('calendar_events')
       .insert({ ...input, all_day: input.all_day ?? false })
-      .select()
+      .select('id, org_id, title, description, start_time, end_time, all_day, location, event_type, color, attendees, reminders, recurrence_rule, created_by, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as CalendarEvent;
+    return data as unknown as CalendarEvent;
   }
 
   async update(
@@ -99,10 +99,10 @@ export class CalendarAdminService {
       .from('calendar_events')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, org_id, title, description, start_time, end_time, all_day, location, event_type, color, attendees, reminders, recurrence_rule, created_by, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as CalendarEvent;
+    return data as unknown as CalendarEvent;
   }
 
   async delete(id: string): Promise<void> {
@@ -116,12 +116,12 @@ export class CalendarAdminService {
   async getUpcoming(limit = 10): Promise<CalendarEvent[]> {
     const { data, error } = await supabase
       .from('calendar_events')
-      .select('*')
+      .select('id, org_id, title, description, start_time, end_time, all_day, location, event_type, color, attendees, reminders, recurrence_rule, created_by, created_at, updated_at')
       .gte('start_time', new Date().toISOString())
       .order('start_time', { ascending: true })
       .limit(limit);
     if (error) throw error;
-    return (data || []) as CalendarEvent[];
+    return (data || []) as unknown as CalendarEvent[];
   }
 }
 

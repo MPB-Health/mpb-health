@@ -88,7 +88,7 @@ class RateLimitService {
     try {
       const { data, error } = await supabase
         .from('auth_rate_limits')
-        .select('*')
+        .select('id, identifier, identifier_type, blocked_until, block_type, reason, attempt_count')
         .eq('identifier', identifier)
         .eq('identifier_type', type)
         .maybeSingle();
@@ -124,7 +124,7 @@ class RateLimitService {
 
       const { count, error } = await supabase
         .from('auth_login_attempts')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('email', email)
         .eq('success', false)
         .gte('timestamp', fifteenMinutesAgo);
@@ -204,7 +204,7 @@ class RateLimitService {
     try {
       const { data, error } = await supabase
         .from('auth_login_attempts')
-        .select('*')
+        .select('id, email, ip_address, user_agent, success, failure_reason, timestamp')
         .gte('timestamp', startDate.toISOString())
         .lte('timestamp', endDate.toISOString());
 

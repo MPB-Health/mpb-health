@@ -154,7 +154,7 @@ export class GamificationService {
 
       const { data, error } = await this.supabase
         .from('crm_user_xp')
-        .select('*')
+        .select('id, user_id, org_id, total_xp, level, level_name, streak_days, streak_start, last_active_date, daily_xp, weekly_xp, monthly_xp, calls_today, emails_today, tasks_completed_today, deals_closed_today, daily_target_calls, daily_target_emails, daily_target_tasks')
         .eq('user_id', userId)
         .eq('org_id', orgId)
         .maybeSingle();
@@ -164,7 +164,7 @@ export class GamificationService {
         return null;
       }
 
-      return data as UserXP | null;
+      return data as unknown as UserXP | null;
     } catch (err) {
       console.error('Get user XP error:', err);
       return null;
@@ -329,7 +329,7 @@ export class GamificationService {
         return [];
       }
 
-      return (data || []) as LeaderboardEntry[];
+      return (data || []) as unknown as LeaderboardEntry[];
     } catch (err) {
       console.error('Get leaderboard error:', err);
       return [];
@@ -340,7 +340,7 @@ export class GamificationService {
     try {
       const { data, error } = await this.supabase
         .from('crm_achievements')
-        .select('*')
+        .select('id, name, description, icon, category, xp_reward, criteria_type, criteria_threshold, rarity, sort_order, is_active')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
@@ -349,7 +349,7 @@ export class GamificationService {
         return [];
       }
 
-      return (data || []) as Achievement[];
+      return (data || []) as unknown as Achievement[];
     } catch (err) {
       console.error('Get achievements error:', err);
       return [];
@@ -363,7 +363,7 @@ export class GamificationService {
 
       const { data, error } = await this.supabase
         .from('crm_user_achievements')
-        .select('*, achievement:crm_achievements(*)')
+        .select('id, user_id, achievement_id, earned_at, progress, notified, achievement:crm_achievements(id, name, description, icon, category, xp_reward, criteria_type, criteria_threshold, rarity, sort_order, is_active)')
         .eq('user_id', userId)
         .order('earned_at', { ascending: false });
 
@@ -372,7 +372,7 @@ export class GamificationService {
         return [];
       }
 
-      return (data || []) as UserAchievement[];
+      return (data || []) as unknown as UserAchievement[];
     } catch (err) {
       console.error('Get user achievements error:', err);
       return [];
@@ -388,13 +388,13 @@ export class GamificationService {
         await Promise.all([
           this.supabase
             .from('crm_user_xp')
-            .select('*')
+            .select('id, user_id, org_id, total_xp, level, level_name, streak_days, streak_start, last_active_date, daily_xp, weekly_xp, monthly_xp, calls_today, emails_today, tasks_completed_today, deals_closed_today, daily_target_calls, daily_target_emails, daily_target_tasks')
             .eq('user_id', userId)
             .eq('org_id', orgId)
             .maybeSingle(),
           this.supabase
             .from('crm_achievements')
-            .select('*')
+            .select('id, name, description, icon, category, xp_reward, criteria_type, criteria_threshold, rarity, sort_order, is_active')
             .eq('is_active', true),
           this.supabase
             .from('crm_user_achievements')
@@ -411,7 +411,7 @@ export class GamificationService {
         return [];
       }
 
-      const stats = xpRecord.data as UserXP | null;
+      const stats = xpRecord.data as unknown as UserXP | null;
       if (!stats) return [];
 
       const earnedIds = new Set(
@@ -424,7 +424,7 @@ export class GamificationService {
         actionCounts[a] = (actionCounts[a] || 0) + 1;
       }
 
-      const achievements = (allAchievements.data || []) as Achievement[];
+      const achievements = (allAchievements.data || []) as unknown as Achievement[];
       const newlyEarned: UserAchievement[] = [];
 
       for (const ach of achievements) {
@@ -475,7 +475,7 @@ export class GamificationService {
               progress: currentValue,
               notified: false,
             })
-            .select('*, achievement:crm_achievements(*)')
+            .select('id, user_id, achievement_id, earned_at, progress, notified, achievement:crm_achievements(id, name, description, icon, category, xp_reward, criteria_type, criteria_threshold, rarity, sort_order, is_active)')
             .single();
 
           if (insertError) {
@@ -484,7 +484,7 @@ export class GamificationService {
           }
 
           if (inserted) {
-            newlyEarned.push(inserted as UserAchievement);
+            newlyEarned.push(inserted as unknown as UserAchievement);
           }
         }
       }
@@ -503,7 +503,7 @@ export class GamificationService {
 
       const { data, error } = await this.supabase
         .from('crm_xp_events')
-        .select('*')
+        .select('id, user_id, action, xp_amount, entity_type, entity_id, description, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -513,7 +513,7 @@ export class GamificationService {
         return [];
       }
 
-      return (data || []) as XPEvent[];
+      return (data || []) as unknown as XPEvent[];
     } catch (err) {
       console.error('Get XP history error:', err);
       return [];
@@ -524,7 +524,7 @@ export class GamificationService {
     try {
       const { data, error } = await this.supabase
         .from('crm_win_feed')
-        .select('*, user:profiles!crm_win_feed_user_id_fkey(full_name, email, avatar_url)')
+        .select('id, org_id, user_id, win_type, title, description, value, entity_type, entity_id, reactions, created_at, user:profiles!crm_win_feed_user_id_fkey(full_name, email, avatar_url)')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -534,7 +534,7 @@ export class GamificationService {
         return [];
       }
 
-      return (data || []) as WinFeedItem[];
+      return (data || []) as unknown as WinFeedItem[];
     } catch (err) {
       console.error('Get win feed error:', err);
       return [];
@@ -567,7 +567,7 @@ export class GamificationService {
           entity_id: entityId ?? null,
           reactions: {},
         })
-        .select('*, user:profiles!crm_win_feed_user_id_fkey(full_name, email, avatar_url)')
+        .select('id, org_id, user_id, win_type, title, description, value, entity_type, entity_id, reactions, created_at, user:profiles!crm_win_feed_user_id_fkey(full_name, email, avatar_url)')
         .single();
 
       if (error) {
@@ -575,7 +575,7 @@ export class GamificationService {
         return null;
       }
 
-      return data as WinFeedItem;
+      return data as unknown as WinFeedItem;
     } catch (err) {
       console.error('Post win error:', err);
       return null;
@@ -628,7 +628,7 @@ export class GamificationService {
 
       const { data, error } = await this.supabase
         .from('crm_challenges')
-        .select('*')
+        .select('id, title, description, challenge_type, metric, target, xp_reward, period, starts_at, ends_at, is_active')
         .eq('is_active', true)
         .lte('starts_at', now)
         .gte('ends_at', now)
@@ -639,7 +639,7 @@ export class GamificationService {
         return [];
       }
 
-      const challenges = (data || []) as Challenge[];
+      const challenges = (data || []) as unknown as Challenge[];
 
       if (!userId || challenges.length === 0) return challenges;
 

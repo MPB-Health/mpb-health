@@ -89,7 +89,7 @@ export default function QuickActionsManager() {
     try {
       const { data, error } = await supabase
         .from('advisor_quick_links')
-        .select('*')
+        .select('id, label, url, icon, description, category, order_index, is_external, is_active, requires_auth, image_url, is_popup, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) throw error;

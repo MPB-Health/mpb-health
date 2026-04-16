@@ -36,10 +36,10 @@ export class WidgetAdminService {
   async getAll(): Promise<DashboardWidget[]> {
     const { data, error } = await supabase
       .from('advisor_dashboard_widgets')
-      .select('*')
+      .select('id, widget_key, label, description, order_index, is_visible, grid_column, config, created_at, updated_at')
       .order('order_index', { ascending: true });
     if (error) throw error;
-    return (data || []) as DashboardWidget[];
+    return (data || []) as unknown as DashboardWidget[];
   }
 
   async update(id: string, input: WidgetUpdateInput): Promise<DashboardWidget> {
@@ -47,10 +47,10 @@ export class WidgetAdminService {
       .from('advisor_dashboard_widgets')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select('*')
+      .select('id, widget_key, label, description, order_index, is_visible, grid_column, config, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as DashboardWidget;
+    return data as unknown as DashboardWidget;
   }
 
   async create(input: WidgetCreateInput): Promise<DashboardWidget> {
@@ -65,10 +65,10 @@ export class WidgetAdminService {
         grid_column: input.grid_column || 'full',
         config: input.config || null,
       })
-      .select('*')
+      .select('id, widget_key, label, description, order_index, is_visible, grid_column, config, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as DashboardWidget;
+    return data as unknown as DashboardWidget;
   }
 
   async delete(id: string): Promise<void> {

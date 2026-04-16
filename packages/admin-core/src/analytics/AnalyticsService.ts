@@ -34,11 +34,11 @@ export class AnalyticsService {
   private async getUserStats(): Promise<{ total: number; active: number }> {
     const { count: total } = await supabase
       .from('admin_users')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
 
     const { count: active } = await supabase
       .from('admin_users')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('status', 'active');
 
     return { total: total || 0, active: active || 0 };
@@ -48,11 +48,11 @@ export class AnalyticsService {
   private async getAdvisorStats(): Promise<{ total: number; active: number }> {
     const { count: total } = await supabase
       .from('advisor_profiles')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
 
     const { count: active } = await supabase
       .from('advisor_profiles')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('status', 'active');
 
     return { total: total || 0, active: active || 0 };
@@ -63,7 +63,7 @@ export class AnalyticsService {
     try {
       const { count: pending, error } = await supabase
         .from('enrollments')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('status', 'pending');
 
       if (error) return { pending: 0 };
@@ -90,26 +90,26 @@ export class AnalyticsService {
     const [total, today, thisWeek, thisMonth, converted] = await Promise.all([
       supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .then((r) => r.count || 0),
       supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .gte('created_at', startOfDay.toISOString())
         .then((r) => r.count || 0),
       supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .gte('created_at', startOfWeek.toISOString())
         .then((r) => r.count || 0),
       supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .gte('created_at', startOfMonth.toISOString())
         .then((r) => r.count || 0),
       supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('pipeline_stage', 'closed_won')
         .then((r) => r.count || 0),
     ]);
@@ -263,9 +263,15 @@ export class AnalyticsService {
       enrollments: 'enrollments',
     }[type];
 
+    const columnMap: Record<string, string> = {
+      leads: 'id, first_name, last_name, email, phone, source_page, utm_source, utm_medium, utm_campaign, form_data, pipeline_stage, assigned_to, created_at',
+      users: 'id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at',
+      enrollments: 'id, applicant_name, applicant_email, applicant_phone, application_type, status, submitted_at, reviewed_at, reviewed_by, documents, notes, metadata, created_at, updated_at',
+    };
+
     const { data, error } = await supabase
       .from(table)
-      .select('*')
+      .select(columnMap[type])
       .gte('created_at', fromDate)
       .lte('created_at', toDate);
 

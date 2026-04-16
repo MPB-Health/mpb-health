@@ -19,6 +19,15 @@ module.exports = {
     'react/prop-types': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: "CallExpression[callee.property.name='select'][arguments.0.value='*']",
+        message:
+          "Do not use .select('*'). Always specify explicit column names to prevent over-fetching, " +
+          'reduce payload size, and avoid timeouts. Example: .select(\'id, name, created_at\')',
+      },
+    ],
   },
   settings: {
     react: {

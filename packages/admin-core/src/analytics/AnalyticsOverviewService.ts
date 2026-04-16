@@ -34,7 +34,7 @@ export class AnalyticsOverviewService {
 
     const rows: TrafficDay[] =
       summaryResult.status === 'fulfilled' && !summaryResult.value.error
-        ? ((summaryResult.value.data || []) as TrafficDay[])
+        ? ((summaryResult.value.data || []) as unknown as TrafficDay[])
         : [];
 
     const leadsData =

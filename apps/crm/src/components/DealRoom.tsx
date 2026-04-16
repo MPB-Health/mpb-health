@@ -757,7 +757,7 @@ export function DealRoom({ dealId, dealName }: DealRoomProps) {
       try {
         const { data, error } = await supabase
           .from('crm_deal_rooms')
-          .select('*')
+          .select('id, deal_id, deal_name, status, created_at')
           .eq('deal_id', dealId)
           .eq('org_id', activeOrgId)
           .maybeSingle();
@@ -861,7 +861,7 @@ export function DealRoom({ dealId, dealName }: DealRoomProps) {
       const offset = initial ? 0 : messages.length;
       const { data, error } = await supabase
         .from('crm_deal_room_messages')
-        .select('*')
+        .select('id, room_id, user_id, user_name, user_avatar_url, message_type, content, file_url, file_name, action_label, action_entity_id, reactions, mentions, created_at')
         .eq('room_id', room.id)
         .order('created_at', { ascending: true })
         .range(offset > 0 ? 0 : 0, offset > 0 ? offset + MESSAGES_PAGE_SIZE - 1 : MESSAGES_PAGE_SIZE - 1);
@@ -894,7 +894,7 @@ export function DealRoom({ dealId, dealName }: DealRoomProps) {
 
       const { data, error } = await supabase
         .from('crm_deal_room_messages')
-        .select('*')
+        .select('id, room_id, user_id, user_name, user_avatar_url, message_type, content, file_url, file_name, action_label, action_entity_id, reactions, mentions, created_at')
         .eq('room_id', room.id)
         .lt('created_at', oldestMsg.created_at)
         .order('created_at', { ascending: false })
@@ -917,7 +917,7 @@ export function DealRoom({ dealId, dealName }: DealRoomProps) {
     try {
       const { data, error } = await supabase
         .from('crm_deal_room_participants')
-        .select('*')
+        .select('id, room_id, user_id, user_name, user_email, user_avatar_url, role, is_online, last_seen_at')
         .eq('room_id', room.id)
         .order('role', { ascending: true });
 
@@ -933,7 +933,7 @@ export function DealRoom({ dealId, dealName }: DealRoomProps) {
     try {
       const { data, error } = await supabase
         .from('crm_deal_room_pinned_items')
-        .select('*')
+        .select('id, room_id, item_type, title, entity_id, url, pinned_by, pinned_at')
         .eq('room_id', room.id)
         .order('pinned_at', { ascending: false });
 

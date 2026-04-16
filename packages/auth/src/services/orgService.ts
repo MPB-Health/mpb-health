@@ -218,7 +218,7 @@ export async function getOrg(orgId: string): Promise<Org | null> {
 
   const { data, error } = await supabase
     .from('organizations')
-    .select('*')
+    .select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at')
     .eq('id', orgId)
     .single();
 
@@ -242,7 +242,7 @@ export async function getUserOrgRole(orgId: string): Promise<OrgRole | null> {
 export async function getOrgMembers(orgId: string): Promise<OrgMembership[]> {
   const { data, error } = await supabase
     .from('org_memberships')
-    .select('*')
+    .select('id, user_id, org_id, role, status, permissions_override, joined_at, suspended_at, suspended_reason, created_at, updated_at')
     .eq('org_id', orgId)
     .eq('status', 'active')
     .order('role', { ascending: true });

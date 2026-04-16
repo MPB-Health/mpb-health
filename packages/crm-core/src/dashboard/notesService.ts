@@ -29,7 +29,7 @@ export class DashboardNotesService {
 
       let query = this.supabase
         .from('crm_dashboard_notes')
-        .select('*')
+        .select('id, user_id, org_id, title, content, is_pinned, color, linked_entity_type, linked_entity_id, tags, created_at, updated_at')
         .eq('user_id', user.id)
         .eq('org_id', orgId)
         .order('is_pinned', { ascending: false })
@@ -56,7 +56,7 @@ export class DashboardNotesService {
         return [];
       }
 
-      return (data || []) as DashboardNote[];
+      return (data || []) as unknown as DashboardNote[];
     } catch (error) {
       console.error('Get notes error:', error);
       return [];
@@ -84,7 +84,7 @@ export class DashboardNotesService {
     try {
       const { data, error } = await this.supabase
         .from('crm_dashboard_notes')
-        .select('*')
+        .select('id, user_id, org_id, title, content, is_pinned, color, linked_entity_type, linked_entity_id, tags, created_at, updated_at')
         .eq('id', noteId)
         .single();
 
@@ -93,7 +93,7 @@ export class DashboardNotesService {
         return null;
       }
 
-      return data as DashboardNote;
+      return data as unknown as DashboardNote;
     } catch (error) {
       console.error('Get note error:', error);
       return null;
@@ -126,14 +126,14 @@ export class DashboardNotesService {
           linked_entity_id: input.linked_entity_id,
           tags: input.tags || [],
         })
-        .select()
+        .select('id, user_id, org_id, title, content, is_pinned, color, linked_entity_type, linked_entity_id, tags, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data: data as DashboardNote };
+      return { success: true, data: data as unknown as DashboardNote };
     } catch (error) {
       console.error('Create note error:', error);
       return { success: false, error: 'Failed to create note' };
@@ -164,14 +164,14 @@ export class DashboardNotesService {
         .from('crm_dashboard_notes')
         .update(updateData)
         .eq('id', noteId)
-        .select()
+        .select('id, user_id, org_id, title, content, is_pinned, color, linked_entity_type, linked_entity_id, tags, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data: data as DashboardNote };
+      return { success: true, data: data as unknown as DashboardNote };
     } catch (error) {
       console.error('Update note error:', error);
       return { success: false, error: 'Failed to update note' };
@@ -232,7 +232,7 @@ export class DashboardNotesService {
 
       const { data, error } = await this.supabase
         .from('crm_dashboard_notes')
-        .select('*')
+        .select('id, user_id, org_id, title, content, is_pinned, color, linked_entity_type, linked_entity_id, tags, created_at, updated_at')
         .eq('user_id', user.id)
         .eq('org_id', orgId)
         .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
@@ -244,7 +244,7 @@ export class DashboardNotesService {
         return [];
       }
 
-      return (data || []) as DashboardNote[];
+      return (data || []) as unknown as DashboardNote[];
     } catch (error) {
       console.error('Search notes error:', error);
       return [];
@@ -261,7 +261,7 @@ export class DashboardNotesService {
     try {
       const { data, error } = await this.supabase
         .from('crm_dashboard_notes')
-        .select('*')
+        .select('id, user_id, org_id, title, content, is_pinned, color, linked_entity_type, linked_entity_id, tags, created_at, updated_at')
         .eq('linked_entity_type', entityType)
         .eq('linked_entity_id', entityId)
         .order('created_at', { ascending: false });
@@ -271,7 +271,7 @@ export class DashboardNotesService {
         return [];
       }
 
-      return (data || []) as DashboardNote[];
+      return (data || []) as unknown as DashboardNote[];
     } catch (error) {
       console.error('Get linked notes error:', error);
       return [];

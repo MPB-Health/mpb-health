@@ -72,7 +72,7 @@ export const QuoteSubmissionsPanel: React.FC = () => {
     try {
       let query = supabase
         .from('lead_submissions')
-        .select('*')
+        .select('id, first_name, last_name, email, phone, household_size, zip_code, source_cta, created_at, current_insurance, monthly_premium, coverage_preference, primary_concern, contact_preference, source_page, utm_source, utm_medium, utm_campaign, form_data, pipeline_stage')
         .order('created_at', { ascending: false })
         .limit(50);
 

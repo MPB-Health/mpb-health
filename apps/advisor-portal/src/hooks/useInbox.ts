@@ -182,7 +182,7 @@ export function useSequences(status?: 'draft' | 'active' | 'paused' | 'archived'
     try {
       setLoading(true);
       const data = await sequenceService.getSequences(profile!.org_id, { status });
-      setSequences(data as Sequence[]);
+      setSequences(data as unknown as Sequence[]);
     } catch (err) {
       console.error('Failed to load sequences:', err);
     } finally {

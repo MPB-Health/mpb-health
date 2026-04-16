@@ -96,7 +96,7 @@ export class ReportService {
   async getReports(orgId: string, userId?: string): Promise<SavedReport[]> {
     let query = supabase
       .from('saved_reports')
-      .select('*')
+      .select('id, org_id, created_by, name, description, report_type, config, is_public, shared_with, last_run_at, run_count, created_at, updated_at')
       .eq('org_id', orgId)
       .order('updated_at', { ascending: false });
 
@@ -112,7 +112,7 @@ export class ReportService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -121,7 +121,7 @@ export class ReportService {
   async getReport(reportId: string): Promise<SavedReport | null> {
     const { data, error } = await supabase
       .from('saved_reports')
-      .select('*')
+      .select('id, org_id, created_by, name, description, report_type, config, is_public, shared_with, last_run_at, run_count, created_at, updated_at')
       .eq('id', reportId)
       .single();
 
@@ -130,7 +130,7 @@ export class ReportService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -153,7 +153,7 @@ export class ReportService {
         is_public: input.is_public ?? false,
         shared_with: input.shared_with ?? [],
       })
-      .select()
+      .select('id, org_id, created_by, name, description, report_type, config, is_public, shared_with, last_run_at, run_count, created_at, updated_at')
       .single();
 
     if (error) {
@@ -161,7 +161,7 @@ export class ReportService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -175,7 +175,7 @@ export class ReportService {
       .from('saved_reports')
       .update(input)
       .eq('id', reportId)
-      .select()
+      .select('id, org_id, created_by, name, description, report_type, config, is_public, shared_with, last_run_at, run_count, created_at, updated_at')
       .single();
 
     if (error) {
@@ -183,7 +183,7 @@ export class ReportService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -218,7 +218,7 @@ export class ReportService {
   async getSchedules(reportId: string): Promise<ReportSchedule[]> {
     const { data, error } = await supabase
       .from('report_schedules')
-      .select('*')
+      .select('id, org_id, report_id, frequency, day_of_week, day_of_month, time_of_day, timezone, delivery_method, recipients, is_active, last_sent_at, next_send_at, last_error, created_by, created_at, updated_at')
       .eq('report_id', reportId)
       .order('created_at', { ascending: false });
 
@@ -227,7 +227,7 @@ export class ReportService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -252,7 +252,7 @@ export class ReportService {
         recipients: input.recipients,
         created_by: createdBy,
       })
-      .select()
+      .select('id, org_id, report_id, frequency, day_of_week, day_of_month, time_of_day, timezone, delivery_method, recipients, is_active, last_sent_at, next_send_at, last_error, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -260,7 +260,7 @@ export class ReportService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -274,7 +274,7 @@ export class ReportService {
       .from('report_schedules')
       .update(input)
       .eq('id', scheduleId)
-      .select()
+      .select('id, org_id, report_id, frequency, day_of_week, day_of_month, time_of_day, timezone, delivery_method, recipients, is_active, last_sent_at, next_send_at, last_error, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -282,7 +282,7 @@ export class ReportService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -314,7 +314,7 @@ export class ReportService {
   ): Promise<ReportRun[]> {
     let query = supabase
       .from('report_runs')
-      .select('*')
+      .select('id, org_id, report_id, schedule_id, status, started_at, completed_at, parameters, date_range_start, date_range_end, result_data, row_count, export_format, export_url, export_expires_at, error_message, triggered_by, created_at')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -330,7 +330,7 @@ export class ReportService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -361,7 +361,7 @@ export class ReportService {
         export_format: exportFormat,
         triggered_by: triggeredBy,
       })
-      .select()
+      .select('id, org_id, report_id, schedule_id, status, started_at, completed_at, parameters, date_range_start, date_range_end, result_data, row_count, export_format, export_url, export_expires_at, error_message, triggered_by, created_at')
       .single();
 
     if (error) {
@@ -382,7 +382,7 @@ export class ReportService {
     // For now, we'll mark it as ready immediately
     await this.completeReportRun(data.id, {}, 0);
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -423,7 +423,7 @@ export class ReportService {
   async getWidgets(orgId: string, userId?: string): Promise<DashboardWidget[]> {
     let query = supabase
       .from('dashboard_widgets')
-      .select('*')
+      .select('id, org_id, user_id, name, widget_type, config, position_x, position_y, width, height, is_visible, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('is_visible', true)
       .order('position_y')
@@ -442,7 +442,7 @@ export class ReportService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -466,7 +466,7 @@ export class ReportService {
         width: input.width ?? 1,
         height: input.height ?? 1,
       })
-      .select()
+      .select('id, org_id, user_id, name, widget_type, config, position_x, position_y, width, height, is_visible, created_at, updated_at')
       .single();
 
     if (error) {
@@ -474,7 +474,7 @@ export class ReportService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -485,7 +485,7 @@ export class ReportService {
       .from('dashboard_widgets')
       .update(input)
       .eq('id', widgetId)
-      .select()
+      .select('id, org_id, user_id, name, widget_type, config, position_x, position_y, width, height, is_visible, created_at, updated_at')
       .single();
 
     if (error) {
@@ -493,7 +493,7 @@ export class ReportService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**

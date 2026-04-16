@@ -23,7 +23,7 @@ export class HealthQuoteService {
   async getLeadHealthQuotes(leadId: string): Promise<LeadHealthQuote[]> {
     const { data, error } = await this.supabase
       .from('crm_lead_health_quotes')
-      .select('*')
+      .select('id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by')
       .eq('lead_id', leadId)
       .order('created_at', { ascending: false });
 
@@ -32,7 +32,7 @@ export class HealthQuoteService {
       throw new Error(`Failed to get health quotes: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   // ============================================================================
@@ -43,7 +43,7 @@ export class HealthQuoteService {
     const { data, error } = await this.supabase
       .from('crm_lead_health_quotes')
       .select(`
-        *,
+        id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by,
         lead:lead_submissions(id, first_name, last_name, email, phone)
       `)
       .eq('id', id)
@@ -55,7 +55,7 @@ export class HealthQuoteService {
       throw new Error(`Failed to get health quote: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -66,7 +66,7 @@ export class HealthQuoteService {
     const { data, error } = await this.supabase
       .from('crm_lead_health_quotes')
       .select(`
-        *,
+        id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by,
         lead:lead_submissions(id, first_name, last_name, email, phone)
       `)
       .eq('quote_number', quoteNumber)
@@ -78,7 +78,7 @@ export class HealthQuoteService {
       throw new Error(`Failed to get health quote: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -124,7 +124,7 @@ export class HealthQuoteService {
         notes: input.notes,
         created_by: user?.id,
       })
-      .select()
+      .select('id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by')
       .single();
 
     if (error) {
@@ -132,7 +132,7 @@ export class HealthQuoteService {
       throw new Error(`Failed to create health quote: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   private calculateMemberCount(input: HealthQuoteCreateInput): number {
@@ -166,7 +166,7 @@ export class HealthQuoteService {
       .from('crm_lead_health_quotes')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by')
       .single();
 
     if (error) {
@@ -174,11 +174,11 @@ export class HealthQuoteService {
       throw new Error(`Failed to update health quote: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
-  // Mark Quote as Sent
+  // Mark Quote as unknown as Sent
   // ============================================================================
 
   async markQuoteSent(id: string): Promise<LeadHealthQuote> {
@@ -189,19 +189,19 @@ export class HealthQuoteService {
         sent_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select()
+      .select('id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by')
       .single();
 
     if (error) {
-      console.error('[HealthQuoteService] Failed to mark quote as sent:', error);
-      throw new Error(`Failed to mark quote as sent: ${error.message}`);
+      console.error('[HealthQuoteService] Failed to mark quote as unknown as sent:', error);
+      throw new Error(`Failed to mark quote as unknown as sent: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
-  // Mark Quote as Viewed
+  // Mark Quote as unknown as Viewed
   // ============================================================================
 
   async markQuoteViewed(id: string): Promise<LeadHealthQuote> {
@@ -213,15 +213,15 @@ export class HealthQuoteService {
       })
       .eq('id', id)
       .eq('status', 'sent') // Only update if currently sent
-      .select()
+      .select('id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by')
       .single();
 
     if (error) {
-      console.error('[HealthQuoteService] Failed to mark quote as viewed:', error);
-      throw new Error(`Failed to mark quote as viewed: ${error.message}`);
+      console.error('[HealthQuoteService] Failed to mark quote as unknown as viewed:', error);
+      throw new Error(`Failed to mark quote as unknown as viewed: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -236,7 +236,7 @@ export class HealthQuoteService {
         accepted_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select()
+      .select('id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by')
       .single();
 
     if (error) {
@@ -244,7 +244,7 @@ export class HealthQuoteService {
       throw new Error(`Failed to accept quote: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   async declineQuote(id: string, reason?: string): Promise<LeadHealthQuote> {
@@ -256,7 +256,7 @@ export class HealthQuoteService {
         decline_reason: reason,
       })
       .eq('id', id)
-      .select()
+      .select('id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by')
       .single();
 
     if (error) {
@@ -264,7 +264,7 @@ export class HealthQuoteService {
       throw new Error(`Failed to decline quote: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -294,7 +294,7 @@ export class HealthQuoteService {
     let query = this.supabase
       .from('crm_lead_health_quotes')
       .select(`
-        *,
+        id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by,
         lead:lead_submissions(id, first_name, last_name, email, phone)
       `, { count: 'exact' });
 
@@ -401,7 +401,7 @@ export class HealthQuoteService {
       .update({ status: 'expired' })
       .lt('valid_until', today)
       .in('status', ['draft', 'sent', 'viewed'])
-      .select();
+      .select('id, lead_id, org_id, quote_number, status, household_type, member_count, primary_age, spouse_age, dependent_ages, state, zip_code, tobacco_user, quote_lines, total_monthly, total_annual, valid_from, valid_until, source, website_submission_id, sent_at, viewed_at, accepted_at, declined_at, decline_reason, notes, created_at, updated_at, created_by');
 
     if (error) {
       console.error('[HealthQuoteService] Failed to expire old quotes:', error);

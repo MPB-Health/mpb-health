@@ -8,7 +8,7 @@ export class SettingsService {
   async getSettings(category?: string): Promise<SystemSetting[]> {
     let query = supabase
       .from('system_settings')
-      .select('*')
+      .select('id, key, value, category, description, is_sensitive, updated_by, updated_at')
       .order('category', { ascending: true });
 
     if (category) {
@@ -17,19 +17,19 @@ export class SettingsService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single setting by key
   async getSetting(key: string): Promise<SystemSetting | null> {
     const { data, error } = await supabase
       .from('system_settings')
-      .select('*')
+      .select('id, key, value, category, description, is_sensitive, updated_by, updated_at')
       .eq('key', key)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Get setting value
@@ -51,11 +51,11 @@ export class SettingsService {
         updated_at: new Date().toISOString(),
       })
       .eq('key', key)
-      .select()
+      .select('id, key, value, category, description, is_sensitive, updated_by, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Create or update setting
@@ -77,11 +77,11 @@ export class SettingsService {
         is_sensitive: isSensitive,
         updated_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, key, value, category, description, is_sensitive, updated_by, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Get settings by category
@@ -105,35 +105,35 @@ export class SettingsService {
   async getIntegrations(): Promise<Integration[]> {
     const { data, error } = await supabase
       .from('integrations')
-      .select('*')
+      .select('id, name, type, status, config, last_sync_at, error_message, created_at, updated_at')
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single integration
   async getIntegration(integrationId: string): Promise<Integration | null> {
     const { data, error } = await supabase
       .from('integrations')
-      .select('*')
+      .select('id, name, type, status, config, last_sync_at, error_message, created_at, updated_at')
       .eq('id', integrationId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Get integration by type
   async getIntegrationByType(type: Integration['type']): Promise<Integration | null> {
     const { data, error } = await supabase
       .from('integrations')
-      .select('*')
+      .select('id, name, type, status, config, last_sync_at, error_message, created_at, updated_at')
       .eq('type', type)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Create integration
@@ -143,11 +143,11 @@ export class SettingsService {
     const { data, error } = await supabase
       .from('integrations')
       .insert(integration)
-      .select()
+      .select('id, name, type, status, config, last_sync_at, error_message, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Update integration
@@ -159,11 +159,11 @@ export class SettingsService {
       .from('integrations')
       .update(updates)
       .eq('id', integrationId)
-      .select()
+      .select('id, name, type, status, config, last_sync_at, error_message, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Enable integration

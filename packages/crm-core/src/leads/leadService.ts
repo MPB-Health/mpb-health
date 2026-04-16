@@ -23,7 +23,7 @@ export class LeadService {
       let query = this.supabase
         .from('lead_submissions')
         .select(`
-          *,
+        id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_page, source_cta, created_at,
           carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
         `, { count: 'exact' });
 
@@ -76,7 +76,7 @@ export class LeadService {
         return { leads: [], total: 0 };
       }
 
-      return { leads: data as Lead[], total: count || 0 };
+      return { leads: data as unknown as Lead[], total: count || 0 };
     } catch (error) {
       console.error('Get leads error:', error);
       return { leads: [], total: 0 };
@@ -108,7 +108,7 @@ export class LeadService {
         if (!grouped[stage]) {
           grouped[stage] = [];
         }
-        grouped[stage].push(lead as Lead);
+        grouped[stage].push(lead as unknown as Lead);
       }
 
       return { grouped, total: count || 0 };
@@ -126,7 +126,7 @@ export class LeadService {
       const { data, error } = await this.supabase
         .from('lead_submissions')
         .select(`
-          *,
+        id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_page, source_cta, created_at,
           carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
         `)
         .eq('id', id)
@@ -137,7 +137,7 @@ export class LeadService {
         return null;
       }
 
-      return data as Lead;
+      return data as unknown as Lead;
     } catch (error) {
       console.error('Get lead error:', error);
       return null;
@@ -369,7 +369,7 @@ export class LeadService {
     filters?: LeadFilters
   ): Promise<Lead[]> {
     try {
-      let query = this.supabase.from('lead_submissions').select('*');
+      let query = this.supabase.from('lead_submissions').select('id, org_id, first_name, last_name, email, phone, source, status, stage, priority, assigned_to, score, tags, metadata, notes, next_followup_at, created_by, created_at, updated_at');
 
       if (leadIds && leadIds.length > 0) {
         query = query.in('id', leadIds);
@@ -398,7 +398,7 @@ export class LeadService {
         return [];
       }
 
-      return data as Lead[];
+      return data as unknown as Lead[];
     } catch (error) {
       console.error('Get leads for export error:', error);
       return [];
@@ -431,7 +431,7 @@ export class LeadService {
 
     const rows = leads.map((lead) =>
       selectedColumns.map((col) => {
-        const value = lead[col as keyof Lead];
+        const value = lead[col as unknown as keyof Lead];
         if (Array.isArray(value)) {
           return `"${value.join(', ')}"`;
         }

@@ -40,7 +40,7 @@ export class ContentService {
   }): Promise<SOPDocument[]> {
     let query = supabase
       .from('sop_documents')
-      .select('*')
+      .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .eq('is_published', true)
       .order('title', { ascending: true });
 
@@ -58,26 +58,26 @@ export class ContentService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single SOP document
   async getSOPDocument(documentId: string): Promise<SOPDocument | null> {
     const { data, error } = await supabase
       .from('sop_documents')
-      .select('*')
+      .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .eq('id', documentId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Get SOP categories
   async getSOPCategories(): Promise<SOPCategory[]> {
     const { data: categories, error: categoryError } = await supabase
       .from('sop_categories')
-      .select('*')
+      .select('id, slug, name, description, icon, order_index')
       .order('order_index', { ascending: true });
 
     if (categoryError) throw categoryError;
@@ -125,26 +125,26 @@ export class ContentService {
   async getPopularSOPs(limit = 5): Promise<SOPDocument[]> {
     const { data, error } = await supabase
       .from('sop_documents')
-      .select('*')
+      .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .eq('is_published', true)
       .order('view_count', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get recently updated SOPs
   async getRecentSOPs(limit = 5): Promise<SOPDocument[]> {
     const { data, error } = await supabase
       .from('sop_documents')
-      .select('*')
+      .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .eq('is_published', true)
       .order('updated_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // ========== Handbooks ==========
@@ -153,24 +153,24 @@ export class ContentService {
   async getHandbooks(): Promise<Handbook[]> {
     const { data, error } = await supabase
       .from('handbooks')
-      .select('*')
+      .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single handbook
   async getHandbook(handbookId: string): Promise<Handbook | null> {
     const { data, error } = await supabase
       .from('handbooks')
-      .select('*')
+      .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .eq('id', handbookId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // ========== Bulletins (from advisor_content table - CMS managed) ==========
@@ -179,11 +179,11 @@ export class ContentService {
   async getBulletinCategories(): Promise<BulletinCategory[]> {
     const { data, error } = await supabase
       .from('advisor_content_categories')
-      .select('*')
+      .select('id, name, slug, description, display_order')
       .order('display_order', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get all bulletins from advisor_content table
@@ -229,7 +229,7 @@ export class ContentService {
     const result = await query;
     if (result.error) throw result.error;
 
-    const data = ((result.data || []) as unknown) as Array<Partial<Bulletin> & {
+    const data = ((result.data || []) as unknown) as unknown as Array<Partial<Bulletin> & {
       id: string;
       category?: BulletinCategory;
     }>;
@@ -268,7 +268,7 @@ export class ContentService {
     const { data, error } = await supabase
       .from('advisor_content')
       .select(`
-        *,
+        id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, metadata, created_at, updated_at,
         category:advisor_content_categories(id, name, slug, description, display_order)
       `)
       .eq('id', bulletinId)
@@ -276,7 +276,7 @@ export class ContentService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Get bulletin by slug
@@ -284,7 +284,7 @@ export class ContentService {
     const { data, error } = await supabase
       .from('advisor_content')
       .select(`
-        *,
+        id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, metadata, created_at, updated_at,
         category:advisor_content_categories(id, name, slug, description, display_order)
       `)
       .eq('slug', slug)
@@ -292,7 +292,7 @@ export class ContentService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Mark bulletin as read (using advisor_content_views table)
@@ -374,7 +374,7 @@ export class ContentService {
       .from('advisor_content_bookmarks')
       .select(`
         content:advisor_content(
-          *,
+          id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, metadata, created_at, updated_at,
           category:advisor_content_categories(id, name, slug, description, display_order)
         )
       `)
@@ -400,9 +400,9 @@ export class ContentService {
       this.getSOPDocuments({ search: query }),
       supabase
         .from('handbooks')
-        .select('*')
-        .eq('is_active', true)
-        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+      .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
+      .eq('is_active', true)
+      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
         .order('sort_order', { ascending: true })
         .then(r => r.data || []),
       this.getBulletins({ search: query }),

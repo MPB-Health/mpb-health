@@ -422,7 +422,7 @@ export class ImportService {
   // =========================================================================
 
   /**
-   * Get website quote submissions that can be imported as leads
+   * Get website quote submissions that can be imported as unknown as leads
    */
   async getQuoteSubmissions(
     filters: QuoteSubmissionFilters = {},
@@ -432,7 +432,7 @@ export class ImportService {
     try {
       let query = this.supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact' });
+        .select('id, org_id, first_name, last_name, email, phone, source, status, stage, priority, assigned_to, score, tags, metadata, notes, next_followup_at, created_by, created_at, updated_at, form_data, source_cta, source_page, zip_code, household_size, contact_preference, primary_concern, utm_source, utm_medium, utm_campaign', { count: 'exact' });
 
       // Get submissions from all website forms
       query = query.or('source_page.ilike.%quote%,source_cta.ilike.%quote%,source_cta.ilike.%estimate%,source_cta.eq.hero-calculator,source_cta.eq.quick-start-plan-finder,source_cta.eq.lead-form,source_cta.eq.multi-step-quote-form,source_cta.ilike.benefit-interest-%');
@@ -465,7 +465,7 @@ export class ImportService {
       }
 
       return {
-        submissions: (data || []) as QuoteSubmission[],
+        submissions: (data || []) as unknown as QuoteSubmission[],
         total: count || 0,
       };
     } catch (error) {
@@ -475,7 +475,7 @@ export class ImportService {
   }
 
   /**
-   * Import quote submissions as CRM leads with "Quick Rate Estimate Leads" label
+   * Import quote submissions as unknown as CRM leads with "Quick Rate Estimate Leads" label
    */
   async importQuoteSubmissionsAsLeads(
     submissionIds: string[]
@@ -491,7 +491,7 @@ export class ImportService {
     // Get the submissions
     const { data: submissions, error: fetchError } = await this.supabase
       .from('lead_submissions')
-      .select('*')
+      .select('id, org_id, first_name, last_name, email, phone, source, status, stage, priority, assigned_to, score, tags, metadata, notes, next_followup_at, created_by, created_at, updated_at, form_data, source_cta, source_page, zip_code, household_size, contact_preference, primary_concern, utm_source, utm_medium, utm_campaign')
       .in('id', submissionIds);
 
     if (fetchError || !submissions) {
@@ -499,7 +499,7 @@ export class ImportService {
     }
 
     for (const sub of submissions) {
-      // Update the submission to mark it as a "Quick Rate Estimate Lead"
+      // Update the submission to mark it as unknown as a "Quick Rate Estimate Lead"
       const formData = (sub.form_data as Record<string, unknown>) || {};
 
       const { error: updateError } = await this.supabase
@@ -541,7 +541,7 @@ export class ImportService {
     try {
       let query = this.supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact' })
+        .select('id, org_id, first_name, last_name, email, phone, source, status, stage, priority, assigned_to, score, tags, metadata, notes, next_followup_at, created_by, created_at, updated_at, form_data, source_cta, source_page, zip_code, household_size, contact_preference, primary_concern, utm_source, utm_medium, utm_campaign', { count: 'exact' })
         .or('source_cta.eq.Quick Rate Estimate,source_cta.ilike.%hero-calculator%,form_data->>lead_type.eq.Quick Rate Estimate Leads,source_cta.eq.quick-start-plan-finder,source_cta.eq.lead-form,source_cta.eq.multi-step-quote-form,source_cta.ilike.benefit-interest-%');
 
       // Apply optional filters
@@ -573,7 +573,7 @@ export class ImportService {
       }
 
       return {
-        leads: (data || []) as QuoteSubmission[],
+        leads: (data || []) as unknown as QuoteSubmission[],
         total: count || 0,
       };
     } catch (error) {
@@ -681,7 +681,7 @@ export class ImportService {
 
     const { data: leads, error: fetchErr } = await this.supabase
       .from('lead_submissions')
-      .select('*')
+      .select('id, org_id, first_name, last_name, email, phone, source, status, stage, priority, assigned_to, score, tags, metadata, notes, next_followup_at, created_by, created_at, updated_at, form_data, source_cta, source_page, zip_code, household_size, contact_preference, primary_concern, utm_source, utm_medium, utm_campaign')
       .in('id', ids);
 
     if (fetchErr || !leads) return { success: false, convertedCount: 0, errors: [fetchErr?.message || 'Fetch failed'] };

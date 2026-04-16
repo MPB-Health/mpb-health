@@ -12,7 +12,7 @@ export class EventsService {
   async getEvents(filters?: EventFilters): Promise<CmsEvent[]> {
     let query = supabase
       .from('events')
-      .select('*')
+      .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .order('event_date', { ascending: false });
 
     if (filters?.search) {
@@ -29,19 +29,19 @@ export class EventsService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   /** Get single event by ID */
   async getEvent(eventId: string): Promise<CmsEvent | null> {
     const { data, error } = await supabase
       .from('events')
-      .select('*')
+      .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .eq('id', eventId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   /** Create event */
@@ -51,11 +51,11 @@ export class EventsService {
     const { data, error } = await supabase
       .from('events')
       .insert([event])
-      .select()
+      .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   /** Update event */
@@ -67,11 +67,11 @@ export class EventsService {
       .from('events')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', eventId)
-      .select()
+      .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   /** Delete event */

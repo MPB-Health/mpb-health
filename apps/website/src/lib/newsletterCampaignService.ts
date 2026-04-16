@@ -64,11 +64,11 @@ export async function createNewsletterCampaign(
         ...campaign,
         created_by: user?.id,
       })
-      .select()
+      .select('id, blog_post_id, subject_line, preview_text, send_at, status, target_segment, sent_count, delivered_count, opened_count, clicked_count, bounced_count, unsubscribed_count, open_rate, click_rate, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   } catch (error) {
     console.error('Create campaign error:', error);
     return null;
@@ -82,12 +82,12 @@ export async function getNewsletterCampaign(campaignId: string): Promise<Newslet
   try {
     const { data, error } = await supabase
       .from('newsletter_campaigns')
-      .select('*')
+      .select('id, blog_post_id, subject_line, preview_text, send_at, status, target_segment, sent_count, delivered_count, opened_count, clicked_count, bounced_count, unsubscribed_count, open_rate, click_rate, created_by, created_at, updated_at')
       .eq('id', campaignId)
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   } catch (error) {
     console.error('Get campaign error:', error);
     return null;
@@ -105,7 +105,7 @@ export async function getNewsletterCampaigns(filters?: {
   try {
     let query = supabase
       .from('newsletter_campaigns')
-      .select('*')
+      .select('id, blog_post_id, subject_line, preview_text, send_at, status, target_segment, sent_count, delivered_count, opened_count, clicked_count, bounced_count, unsubscribed_count, open_rate, click_rate, created_by, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (filters?.status) {
@@ -123,7 +123,7 @@ export async function getNewsletterCampaigns(filters?: {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   } catch (error) {
     console.error('Get campaigns error:', error);
     return [];
@@ -236,12 +236,12 @@ export async function getCampaignQueue(campaignId: string): Promise<NewsletterQu
   try {
     const { data, error } = await supabase
       .from('newsletter_queue')
-      .select('*')
+      .select('id, campaign_id, subscriber_id, status, sent_at, opened_at, clicked_at, bounce_reason, error_message, tracking_token, metadata, created_at')
       .eq('campaign_id', campaignId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   } catch (error) {
     console.error('Get campaign queue error:', error);
     return [];

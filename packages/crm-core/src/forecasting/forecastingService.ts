@@ -25,7 +25,7 @@ export class ForecastingService {
     try {
       let query = this.supabase
         .from('crm_forecasts')
-        .select('*')
+        .select('id, org_id, name, period_start, period_end, forecast_type, status, created_by, created_at, updated_at')
         .eq('org_id', orgId);
 
       if (filters.status) {
@@ -48,7 +48,7 @@ export class ForecastingService {
         return [];
       }
 
-      return data as Forecast[];
+      return data as unknown as Forecast[];
     } catch (error) {
       console.error('Get forecasts error:', error);
       return [];
@@ -66,13 +66,13 @@ export class ForecastingService {
       const [forecastRes, entriesRes] = await Promise.all([
         this.supabase
           .from('crm_forecasts')
-          .select('*')
+          .select('id, org_id, name, period_start, period_end, forecast_type, status, created_by, created_at, updated_at')
           .eq('id', id)
           .single(),
         this.supabase
           .from('crm_forecast_entries')
           .select(`
-            *,
+            id, forecast_id, deal_id, user_id, amount, probability, weighted_amount, forecast_category, stage, close_date, notes, created_at, updated_at,
             deal:crm_deals!crm_forecast_entries_deal_id_fkey(
               id, name, account_id, owner_id,
               account:crm_accounts!crm_deals_account_id_fkey(id, name)
@@ -89,8 +89,8 @@ export class ForecastingService {
       }
 
       return {
-        forecast: forecastRes.data as Forecast,
-        entries: (entriesRes.data || []) as ForecastEntryWithDeal[],
+        forecast: forecastRes.data as unknown as Forecast,
+        entries: (entriesRes.data || []) as unknown as ForecastEntryWithDeal[],
       };
     } catch (error) {
       console.error('Get forecast error:', error);
@@ -120,7 +120,7 @@ export class ForecastingService {
           status: input.status || 'draft',
           created_by: user.id,
         })
-        .select()
+        .select('id, org_id, name, period_start, period_end, forecast_type, status, created_by, created_at, updated_at')
         .single();
 
       if (error) {
@@ -128,7 +128,7 @@ export class ForecastingService {
         return null;
       }
 
-      return data as Forecast;
+      return data as unknown as Forecast;
     } catch (error) {
       console.error('Create forecast error:', error);
       return null;
@@ -153,7 +153,7 @@ export class ForecastingService {
         .from('crm_forecast_entries')
         .update(updateData)
         .eq('id', entryId)
-        .select()
+        .select('id, forecast_id, deal_id, user_id, amount, probability, weighted_amount, forecast_category, stage, close_date, notes, created_at, updated_at')
         .single();
 
       if (error) {
@@ -161,7 +161,7 @@ export class ForecastingService {
         return null;
       }
 
-      return data as ForecastEntry;
+      return data as unknown as ForecastEntry;
     } catch (error) {
       console.error('Update forecast entry error:', error);
       return null;
@@ -176,7 +176,7 @@ export class ForecastingService {
       // Get forecast period
       const { data: forecast, error: fError } = await this.supabase
         .from('crm_forecasts')
-        .select('*')
+        .select('id, org_id, name, period_start, period_end, forecast_type, status, created_by, created_at, updated_at')
         .eq('id', forecastId)
         .single();
 
@@ -344,7 +344,7 @@ export class ForecastingService {
     try {
       const { data, error } = await this.supabase
         .from('crm_deal_stage_metrics')
-        .select('*')
+        .select('stage_id, stage_name, stage_display_name, sort_order, is_won_stage, is_lost_stage, total_deals, won_deals, lost_deals, win_rate, avg_deal_size, avg_days_in_stage')
         .eq('org_id', orgId)
         .order('sort_order', { ascending: true });
 
@@ -353,7 +353,7 @@ export class ForecastingService {
         return [];
       }
 
-      return (data || []) as DealStageMetrics[];
+      return (data || []) as unknown as DealStageMetrics[];
     } catch (error) {
       console.error('Get deal stage metrics error:', error);
       return [];

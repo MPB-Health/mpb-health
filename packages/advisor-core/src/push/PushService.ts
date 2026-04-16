@@ -51,7 +51,7 @@ export class PushService {
       throw new Error((data as Record<string, unknown>).error as string || 'Request failed');
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================

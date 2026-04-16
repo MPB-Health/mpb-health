@@ -24,7 +24,7 @@ const Events: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('events')
-          .select('*')
+          .select('id, title, slug, excerpt, featured_image_url, event_date, location, location_type')
           .eq('is_published', true)
           .order('event_date', { ascending: false });
 

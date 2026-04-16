@@ -15,7 +15,7 @@ export async function getAllFAQItems(): Promise<FAQItem[]> {
   try {
     const { data, error } = await supabase
       .from('faq_items')
-      .select('*')
+      .select('id, title, content_html, category, order_index, is_active, created_at, updated_at')
       .eq('is_active', true)
       .order('order_index');
 
@@ -28,7 +28,7 @@ export async function getAllFAQItems(): Promise<FAQItem[]> {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   } catch (err) {
     console.error('[FAQ Service] Unexpected error fetching FAQ items:', err);
     return [];
@@ -39,7 +39,7 @@ export async function getFAQItemsByCategory(category: string): Promise<FAQItem[]
   try {
     const { data, error } = await supabase
       .from('faq_items')
-      .select('*')
+      .select('id, title, content_html, category, order_index, is_active, created_at, updated_at')
       .eq('is_active', true)
       .eq('category', category)
       .order('order_index');
@@ -53,7 +53,7 @@ export async function getFAQItemsByCategory(category: string): Promise<FAQItem[]
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   } catch (err) {
     console.error('[FAQ Service] Unexpected error fetching FAQ items by category:', err);
     return [];

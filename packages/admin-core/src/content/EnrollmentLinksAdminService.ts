@@ -19,20 +19,20 @@ export class EnrollmentLinksAdminService {
   async getAll(): Promise<EnrollmentLink[]> {
     const { data, error } = await supabase
       .from('advisor_enrollment_links')
-      .select('*')
+      .select('id, label, url, description, order_index, is_active, created_at, updated_at')
       .order('order_index', { ascending: true });
     if (error) throw error;
-    return (data || []) as EnrollmentLink[];
+    return (data || []) as unknown as EnrollmentLink[];
   }
 
   async create(input: EnrollmentLinkCreateInput): Promise<EnrollmentLink> {
     const { data, error } = await supabase
       .from('advisor_enrollment_links')
       .insert(input)
-      .select()
+      .select('id, label, url, description, order_index, is_active, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as EnrollmentLink;
+    return data as unknown as EnrollmentLink;
   }
 
   async update(id: string, input: EnrollmentLinkUpdateInput): Promise<EnrollmentLink> {
@@ -40,10 +40,10 @@ export class EnrollmentLinksAdminService {
       .from('advisor_enrollment_links')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, label, url, description, order_index, is_active, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as EnrollmentLink;
+    return data as unknown as EnrollmentLink;
   }
 
   async delete(id: string): Promise<void> {

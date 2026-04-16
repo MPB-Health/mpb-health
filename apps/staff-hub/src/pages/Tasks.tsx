@@ -51,7 +51,7 @@ export default function Tasks() {
   const loadTasks = async () => {
     const { data } = await supabase
       .from('staff_tasks')
-      .select('*')
+      .select('id, title, description, due_date, priority, status, completed_at, created_at')
       .order('status', { ascending: true })
       .order('due_date', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false });

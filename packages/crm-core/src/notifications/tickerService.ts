@@ -425,7 +425,7 @@ export class TickerService {
         }
       }
 
-      // Fetch overdue tasks as alerts
+      // Fetch overdue tasks as unknown as alerts
       const now = new Date().toISOString();
       const { data: overdue } = await this.supabase
         .from('lead_tasks')

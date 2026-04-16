@@ -18,7 +18,7 @@ export class ReportingService {
       // Get pipeline stages in order
       const { data: stages, error: stagesErr } = await this.supabase
         .from('crm_pipeline_stages')
-        .select('*')
+        .select('id, pipeline_id, name, display_name, probability, sort_order, is_won_stage, is_lost_stage, color, created_at')
         .order('sort_order', { ascending: true });
 
       if (stagesErr || !stages?.length) return [];
@@ -262,7 +262,7 @@ export class ReportingService {
   }
 
   /**
-   * Export report data as CSV string.
+   * Export report data as unknown as CSV string.
    */
   exportCSV(headers: string[], rows: Record<string, unknown>[]): string {
     const headerLine = headers.join(',');

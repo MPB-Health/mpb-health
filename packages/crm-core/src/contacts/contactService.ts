@@ -24,7 +24,7 @@ export class ContactService {
       let query = this.supabase
         .from('crm_contacts')
         .select(`
-          *,
+        id, org_id, account_id, salutation, first_name, last_name, email, phone, mobile, fax, title, department, reports_to, mailing_address, other_address, lead_source, converted_from_lead_id, converted_at, do_not_call, do_not_email, email_opt_out, owner_id, tags, description, linkedin_url, twitter_handle, date_of_birth, created_by, created_at, updated_at, plan_type, carrier_id, original_effective_date, premium_amount, subsidy_amount, member_responsibility, tobacco_status, state, city,
           account:crm_accounts!crm_contacts_account_id_fkey(id, name),
           carrier:insurance_carriers!crm_contacts_carrier_id_fkey(id, name, carrier_type)
         `, { count: 'exact' });
@@ -81,7 +81,7 @@ export class ContactService {
         return { contacts: [], total: 0 };
       }
 
-      return { contacts: data as ContactWithRelations[], total: count || 0 };
+      return { contacts: data as unknown as ContactWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get contacts error:', error);
       return { contacts: [], total: 0 };
@@ -96,7 +96,7 @@ export class ContactService {
       const { data, error } = await this.supabase
         .from('crm_contacts')
         .select(`
-          *,
+        id, org_id, account_id, salutation, first_name, last_name, email, phone, mobile, fax, title, department, reports_to, mailing_address, other_address, lead_source, converted_from_lead_id, converted_at, do_not_call, do_not_email, email_opt_out, owner_id, tags, description, linkedin_url, twitter_handle, date_of_birth, created_by, created_at, updated_at, plan_type, carrier_id, original_effective_date, premium_amount, subsidy_amount, member_responsibility, tobacco_status, state, city,
           account:crm_accounts!crm_contacts_account_id_fkey(id, name),
           reports_to_contact:crm_contacts!crm_contacts_reports_to_fkey(id, first_name, last_name),
           carrier:insurance_carriers!crm_contacts_carrier_id_fkey(id, name, carrier_type)
@@ -109,7 +109,7 @@ export class ContactService {
         return null;
       }
 
-      return data as ContactWithRelations;
+      return data as unknown as ContactWithRelations;
     } catch (error) {
       console.error('Get contact error:', error);
       return null;
@@ -125,7 +125,7 @@ export class ContactService {
       const { data: directDeals } = await this.supabase
         .from('crm_deals')
         .select(`
-          *,
+        id, org_id, name, description, account_id, contact_id, amount, currency, stage_id, probability, expected_close_date, actual_close_date, deal_type, lead_source, next_step, owner_id, won_at, lost_at, lost_reason, tags, campaign_id, converted_from_lead_id, created_by, created_at, updated_at,
           stage:crm_deal_stages(id, name, display_name, color)
         `)
         .eq('contact_id', contactId);
@@ -143,12 +143,11 @@ export class ContactService {
         `)
         .eq('contact_id', contactId);
 
-      const allDeals = [
+      const allDeals: any[] = [
         ...(directDeals || []),
-        ...(junctionDeals?.map(j => ({ ...j.deal, contact_role: j.role, is_primary: j.is_primary })) || [])
+        ...(junctionDeals?.map(j => ({ ...(j.deal as any), contact_role: j.role, is_primary: j.is_primary })) || [])
       ];
 
-      // Deduplicate by id
       const uniqueDeals = Array.from(
         new Map(allDeals.map(d => [d.id, d])).values()
       );
@@ -258,7 +257,7 @@ export class ContactService {
       // Get the lead
       const { data: lead, error: leadError } = await this.supabase
         .from('lead_submissions')
-        .select('*')
+        .select('id, org_id, first_name, last_name, email, phone, source, status, stage, priority, assigned_to, score, tags, metadata, notes, next_followup_at, created_by, created_at, updated_at, source_cta, utm_source, zip_code, plan_type, carrier_id, original_effective_date, premium_amount, subsidy_amount, member_responsibility, tobacco_status, state, city')
         .eq('id', input.leadId)
         .single();
 
@@ -317,7 +316,7 @@ export class ContactService {
         return { success: false, error: `Failed to create contact: ${contactError.message}` };
       }
 
-      // Update lead as converted
+      // Update lead as unknown as converted
       await this.supabase
         .from('lead_submissions')
         .update({
@@ -345,7 +344,7 @@ export class ContactService {
     filters?: ContactFilters
   ): Promise<Contact[]> {
     try {
-      let query = this.supabase.from('crm_contacts').select('*');
+      let query = this.supabase.from('crm_contacts').select('id, org_id, account_id, first_name, last_name, email, phone, mobile, title, department, address, city, state, zip, country, date_of_birth, gender, source, owner_id, is_active, created_by, created_at, updated_at');
 
       if (contactIds && contactIds.length > 0) {
         query = query.in('id', contactIds);
@@ -365,7 +364,7 @@ export class ContactService {
         return [];
       }
 
-      return data as Contact[];
+      return data as unknown as Contact[];
     } catch (error) {
       console.error('Get contacts for export error:', error);
       return [];

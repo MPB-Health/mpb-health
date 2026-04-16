@@ -96,7 +96,7 @@ export class MailSyncService {
 
     let query = this.supabase
       .from('mail_messages')
-      .select('*', { count: 'exact' });
+      .select('id, account_id, folder_id, provider_message_id, provider_thread_id, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, snippet, body_html, body_text, importance, is_read, is_flagged, is_draft, has_attachments, categories, sent_at, received_at, body_fetched, created_at, updated_at', { count: 'exact' });
 
     // Apply filters
     if (filters.account_id) {
@@ -172,22 +172,22 @@ export class MailSyncService {
   async getMessage(id: string): Promise<MailMessage | null> {
     const { data, error } = await this.supabase
       .from('mail_messages')
-      .select('*')
+      .select('id, account_id, folder_id, provider_message_id, provider_thread_id, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, snippet, body_html, body_text, importance, is_read, is_flagged, is_draft, has_attachments, categories, sent_at, received_at, body_fetched, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data;
+    return data as any;
   }
 
   async getMessageAttachments(messageId: string): Promise<MailMessageAttachment[]> {
     const { data, error } = await this.supabase
       .from('mail_message_attachments')
-      .select('*')
+      .select('id, message_id, provider_attachment_id, file_name, file_size, content_type, is_inline')
       .eq('message_id', messageId);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // ========================================================================
@@ -197,7 +197,7 @@ export class MailSyncService {
   async getThread(accountId: string, threadId: string): Promise<MailThread | null> {
     const { data: messages, error } = await this.supabase
       .from('mail_messages')
-      .select('*')
+      .select('id, account_id, folder_id, provider_message_id, provider_thread_id, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, snippet, body_html, body_text, importance, is_read, is_flagged, is_draft, has_attachments, categories, sent_at, received_at, body_fetched, created_at, updated_at')
       .eq('account_id', accountId)
       .eq('provider_thread_id', threadId)
       .order('received_at', { ascending: true });

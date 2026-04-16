@@ -48,7 +48,7 @@ export async function checkRepeatLead(
     
     const { count: emailCount, error: emailError } = await supabase
       .from('lead_submissions')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .ilike('email', email)
       .lt('created_at', fiveMinutesAgo);
 
@@ -60,7 +60,7 @@ export async function checkRepeatLead(
     if (phone && phone.trim() !== '') {
       const { count, error: phoneError } = await supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('phone', phone)
         .lt('created_at', fiveMinutesAgo);
 

@@ -22,36 +22,36 @@ export class FormsAdminService {
   async getForms(category?: string): Promise<AdminForm[]> {
     let query = supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, label, slug, category, cognito_embed, is_active, show_in_menu, sort_order, menu_section, menu_order, created_at, updated_at')
       .order('sort_order', { ascending: true });
 
     if (category) query = query.eq('category', category);
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getForm(id: string): Promise<AdminForm | null> {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, label, slug, category, cognito_embed, is_active, show_in_menu, sort_order, menu_section, menu_order, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createForm(input: FormCreateInput): Promise<AdminForm> {
     const { data, error } = await supabase
       .from('cognito_forms')
       .insert(input)
-      .select()
+      .select('id, label, slug, category, cognito_embed, is_active, show_in_menu, sort_order, menu_section, menu_order, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async updateForm(id: string, input: FormUpdateInput): Promise<AdminForm> {
@@ -59,11 +59,11 @@ export class FormsAdminService {
       .from('cognito_forms')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, label, slug, category, cognito_embed, is_active, show_in_menu, sort_order, menu_section, menu_order, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteForm(id: string): Promise<void> {

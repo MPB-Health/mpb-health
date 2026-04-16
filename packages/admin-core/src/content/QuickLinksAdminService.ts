@@ -19,36 +19,36 @@ export class QuickLinksAdminService {
   async getLinks(category?: QuickLinkCategory): Promise<QuickLink[]> {
     let query = supabase
       .from('advisor_quick_links')
-      .select('*')
+      .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
       .order('order_index', { ascending: true });
 
     if (category) query = query.eq('category', category);
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getLink(id: string): Promise<QuickLink | null> {
     const { data, error } = await supabase
       .from('advisor_quick_links')
-      .select('*')
+      .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createLink(input: QuickLinkCreateInput): Promise<QuickLink> {
     const { data, error } = await supabase
       .from('advisor_quick_links')
       .insert(input)
-      .select()
+      .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async updateLink(id: string, input: QuickLinkUpdateInput): Promise<QuickLink> {
@@ -56,11 +56,11 @@ export class QuickLinksAdminService {
       .from('advisor_quick_links')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteLink(id: string): Promise<void> {

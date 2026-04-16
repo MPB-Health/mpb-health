@@ -19,7 +19,7 @@ export class DocumentService {
       let query = this.supabase
         .from('crm_documents')
         .select(`
-          *,
+        id, org_id, name, description, file_name, file_path, file_size, mime_type, category, entity_type, entity_id, folder, is_public, uploaded_by, tags, metadata, created_at, updated_at,
           uploader:uploaded_by(id, full_name, email)
         `, { count: 'exact' });
 
@@ -59,7 +59,7 @@ export class DocumentService {
         return { documents: [], total: 0 };
       }
 
-      return { documents: data as DocumentWithRelations[], total: count || 0 };
+      return { documents: data as unknown as DocumentWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get documents error:', error);
       return { documents: [], total: 0 };
@@ -71,7 +71,7 @@ export class DocumentService {
       const { data, error } = await this.supabase
         .from('crm_documents')
         .select(`
-          *,
+        id, org_id, name, description, file_name, file_path, file_size, mime_type, category, entity_type, entity_id, folder, is_public, uploaded_by, tags, metadata, created_at, updated_at,
           uploader:uploaded_by(id, full_name, email)
         `)
         .eq('id', id)
@@ -82,7 +82,7 @@ export class DocumentService {
         return null;
       }
 
-      return data as DocumentWithRelations;
+      return data as unknown as DocumentWithRelations;
     } catch (error) {
       console.error('Get document error:', error);
       return null;
@@ -108,14 +108,14 @@ export class DocumentService {
           metadata: {},
           uploaded_by: user.user.id,
         })
-        .select('*')
+        .select('id, org_id, name, description, file_name, file_path, file_size, mime_type, category, entity_type, entity_id, folder, is_public, uploaded_by, tags, metadata, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, document: data as Document };
+      return { success: true, document: data as unknown as Document };
     } catch (error) {
       console.error('Create document error:', error);
       return { success: false, error: 'Failed to create document' };
@@ -182,7 +182,7 @@ export class DocumentService {
     try {
       const { data, error } = await this.supabase
         .from('crm_documents')
-        .select('*')
+        .select('id, org_id, name, description, file_name, file_path, file_size, mime_type, category, entity_type, entity_id, folder, is_public, uploaded_by, tags, metadata, created_at, updated_at')
         .eq('entity_type', entityType)
         .eq('entity_id', entityId)
         .order('created_at', { ascending: false });
@@ -192,7 +192,7 @@ export class DocumentService {
         return [];
       }
 
-      return data as Document[];
+      return data as unknown as Document[];
     } catch (error) {
       console.error('Get documents by entity error:', error);
       return [];

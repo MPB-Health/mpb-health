@@ -68,7 +68,7 @@ const ProviderDirectory: React.FC = () => {
     try {
       let query = supabase
         .from('providers')
-        .select('*')
+        .select('id, name, specialty, facility_name, facility_type, address, city, state, zip_code, phone, email, website, accepting_new_patients, is_preferred, is_active, rating, review_count, languages, insurance_accepted, created_at, updated_at')
         .order('name', { ascending: true });
 
       if (statusFilter === 'active') {

@@ -132,7 +132,7 @@ export default function Reactivation() {
       const now = Date.now();
       const minMs = minDaysInactive * 86_400_000;
 
-      return (data as StaleLeadRow[]).filter((row) => {
+      return (data as unknown as StaleLeadRow[]).filter((row) => {
         if (!row.last_contacted_at) return true;
         return now - new Date(row.last_contacted_at).getTime() >= minMs;
       });

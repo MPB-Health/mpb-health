@@ -11,7 +11,7 @@ export function createPlanPricingService(supabase: SupabaseClient) {
   ): Promise<PlanPricing[]> {
     let query = supabase
       .from('plan_pricing')
-      .select('*')
+      .select('id, plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date, created_at')
       .eq('plan_id', planId)
       .order('effective_date', { ascending: false })
       .order('iua_amount')
@@ -27,7 +27,7 @@ export function createPlanPricingService(supabase: SupabaseClient) {
       console.error('Error fetching plan pricing:', error);
       return [];
     }
-    return (data || []) as PlanPricing[];
+    return (data || []) as unknown as PlanPricing[];
   }
 
   // -----------------------------------------------------------------------
@@ -38,7 +38,7 @@ export function createPlanPricingService(supabase: SupabaseClient) {
 
     const { data, error } = await supabase
       .from('plan_pricing')
-      .select('*')
+      .select('id, plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date, created_at')
       .eq('plan_id', planId)
       .lte('effective_date', today)
       .order('effective_date', { ascending: false })

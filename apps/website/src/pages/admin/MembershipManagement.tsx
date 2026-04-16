@@ -495,7 +495,7 @@ const MembershipManagement: React.FC = () => {
           plan={editingPlan}
           onSave={async (data, id) => {
             if (editingPlan && id) {
-              const result = await updatePlan(id, data as PlanUpdateInput);
+              const result = await updatePlan(id, data as unknown as PlanUpdateInput);
               if (result.success) {
                 showMessage('success', `Plan "${editingPlan.name}" updated`);
                 setEditingPlan(null);
@@ -504,9 +504,9 @@ const MembershipManagement: React.FC = () => {
               }
               return result;
             } else {
-              const result = await createPlan(data as PlanCreateInput);
+              const result = await createPlan(data as unknown as PlanCreateInput);
               if (result.success) {
-                showMessage('success', `Plan "${(data as PlanCreateInput).name}" created`);
+                showMessage('success', `Plan "${(data as unknown as PlanCreateInput).name}" created`);
               } else {
                 showMessage('error', result.error ?? 'Failed to create plan');
               }

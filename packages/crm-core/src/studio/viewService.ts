@@ -15,7 +15,7 @@ export class ViewService {
     try {
       let query = this.supabase
         .from('crm_studio_views')
-        .select('*')
+        .select('id, org_id, module_id, name, columns, filters, sort_field_id, sort_direction, visibility, owner_id, is_default, is_active, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .eq('is_active', true);
 
@@ -31,7 +31,7 @@ export class ViewService {
         return [];
       }
 
-      return data as StudioView[];
+      return data as unknown as StudioView[];
     } catch (error) {
       console.error('Get views error:', error);
       return [];
@@ -45,7 +45,7 @@ export class ViewService {
     try {
       const { data, error } = await this.supabase
         .from('crm_studio_views')
-        .select('*')
+        .select('id, org_id, module_id, name, columns, filters, sort_field_id, sort_direction, visibility, owner_id, is_default, is_active, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -54,7 +54,7 @@ export class ViewService {
         return null;
       }
 
-      return data as StudioView;
+      return data as unknown as StudioView;
     } catch (error) {
       console.error('Get view error:', error);
       return null;
@@ -69,7 +69,7 @@ export class ViewService {
       // First try user's default
       const { data: userDefault } = await this.supabase
         .from('crm_studio_views')
-        .select('*')
+        .select('id, org_id, module_id, name, columns, filters, sort_field_id, sort_direction, visibility, owner_id, is_default, is_active, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .eq('owner_id', userId)
         .eq('is_default', true)
@@ -77,13 +77,13 @@ export class ViewService {
         .single();
 
       if (userDefault) {
-        return userDefault as StudioView;
+        return userDefault as unknown as StudioView;
       }
 
       // Then try org default
       const { data: orgDefault } = await this.supabase
         .from('crm_studio_views')
-        .select('*')
+        .select('id, org_id, module_id, name, columns, filters, sort_field_id, sort_direction, visibility, owner_id, is_default, is_active, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .eq('visibility', 'org')
         .eq('is_default', true)
@@ -91,19 +91,19 @@ export class ViewService {
         .single();
 
       if (orgDefault) {
-        return orgDefault as StudioView;
+        return orgDefault as unknown as StudioView;
       }
 
       // Fallback to any active view
       const { data: anyView } = await this.supabase
         .from('crm_studio_views')
-        .select('*')
+        .select('id, org_id, module_id, name, columns, filters, sort_field_id, sort_direction, visibility, owner_id, is_default, is_active, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .eq('is_active', true)
         .limit(1)
         .single();
 
-      return anyView as StudioView | null;
+      return anyView as unknown as StudioView | null;
     } catch (error) {
       console.error('Get default view error:', error);
       return null;
@@ -196,7 +196,7 @@ export class ViewService {
         return { success: false, error: 'You can only edit your own private views' };
       }
 
-      // If setting as default, unset user's other defaults
+      // If setting as unknown as default, unset user's other defaults
       if (updates.is_default) {
         await this.supabase
           .from('crm_studio_views')
@@ -259,7 +259,7 @@ export class ViewService {
   }
 
   /**
-   * Set a view as the user's default
+   * Set a view as unknown as the user's default
    */
   async setDefaultView(viewId: string, userId: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -275,7 +275,7 @@ export class ViewService {
         .eq('module_id', view.module_id)
         .eq('owner_id', userId);
 
-      // Set this as default
+      // Set this as unknown as default
       const { error } = await this.supabase
         .from('crm_studio_views')
         .update({ is_default: true })

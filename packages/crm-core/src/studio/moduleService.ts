@@ -18,7 +18,7 @@ export class ModuleService {
     try {
       let query = this.supabase
         .from('crm_studio_modules')
-        .select('*')
+        .select('id, org_id, name, api_name, plural_name, singular_name, description, icon, color, is_active, is_system, allow_activities, allow_notes, allow_attachments, created_by, created_at, updated_at')
         .order('name', { ascending: true });
 
       if (filters.is_active !== undefined) {
@@ -40,7 +40,7 @@ export class ModuleService {
         return [];
       }
 
-      return data as StudioModule[];
+      return data as unknown as StudioModule[];
     } catch (error) {
       console.error('Get modules error:', error);
       return [];
@@ -55,11 +55,11 @@ export class ModuleService {
       const { data, error } = await this.supabase
         .from('crm_studio_modules')
         .select(`
-          *,
-          fields:crm_studio_fields(*),
-          layouts:crm_studio_layouts(*),
-          views:crm_studio_views(*),
-          validation_rules:crm_studio_validation_rules(*)
+        id, org_id, name, api_name, plural_name, singular_name, description, icon, color, is_active, is_system, allow_activities, allow_notes, allow_attachments, created_by, created_at, updated_at,
+          fields:crm_studio_fields(id, org_id, module_id, label, api_name, field_type, is_required, is_unique, is_searchable, is_filterable, default_value, help_text, placeholder, config, sort_order, is_system, is_name_field, created_by, created_at, updated_at),
+          layouts:crm_studio_layouts(id, org_id, module_id, name, api_name, layout_type, sections, is_default, is_active, created_by, created_at, updated_at),
+          views:crm_studio_views(id, org_id, module_id, name, columns, filters, sort_field_id, sort_direction, visibility, owner_id, is_default, is_active, created_by, created_at, updated_at),
+          validation_rules:crm_studio_validation_rules(id, org_id, module_id, name, description, conditions, condition_logic, error_message, error_field_id, run_on_create, run_on_update, is_active, created_by, created_at, updated_at)
         `)
         .eq('id', id)
         .single();
@@ -69,7 +69,7 @@ export class ModuleService {
         return null;
       }
 
-      return data as StudioModuleWithRelations;
+      return data as unknown as StudioModuleWithRelations;
     } catch (error) {
       console.error('Get module error:', error);
       return null;
@@ -84,8 +84,8 @@ export class ModuleService {
       const { data, error } = await this.supabase
         .from('crm_studio_modules')
         .select(`
-          *,
-          fields:crm_studio_fields(*)
+        id, org_id, name, api_name, plural_name, singular_name, description, icon, color, is_active, is_system, allow_activities, allow_notes, allow_attachments, created_by, created_at, updated_at,
+          fields:crm_studio_fields(id, org_id, module_id, label, api_name, field_type, is_required, is_unique, is_searchable, is_filterable, default_value, help_text, placeholder, config, sort_order, is_system, is_name_field, created_by, created_at, updated_at)
         `)
         .eq('api_name', apiName)
         .single();
@@ -95,7 +95,7 @@ export class ModuleService {
         return null;
       }
 
-      return data as StudioModuleWithRelations;
+      return data as unknown as StudioModuleWithRelations;
     } catch (error) {
       console.error('Get module by api name error:', error);
       return null;
@@ -278,7 +278,7 @@ export class ModuleService {
         return null;
       }
 
-      return data;
+      return data as any;
     } catch (error) {
       console.error('Get table name error:', error);
       return null;

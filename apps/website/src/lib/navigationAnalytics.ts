@@ -245,7 +245,7 @@ export const getNavigationAnalytics = async (
   try {
     const { data, error } = await supabase
       .from('navigation_analytics')
-      .select('*')
+      .select('id, navigation_item_id, label, href, action, user_id, session_id, user_agent, referrer, created_at')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString())
       .order('created_at', { ascending: false });
@@ -255,7 +255,7 @@ export const getNavigationAnalytics = async (
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   } catch (err) {
     console.error('Error fetching navigation analytics:', err);
     return [];
@@ -301,7 +301,7 @@ export const getSearchAnalytics = async (
   try {
     const { data, error } = await supabase
       .from('navigation_search_analytics')
-      .select('*')
+      .select('id, query, results_count, selected_result, user_id, session_id, created_at')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString())
       .order('created_at', { ascending: false });
@@ -311,7 +311,7 @@ export const getSearchAnalytics = async (
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   } catch (err) {
     console.error('Error fetching search analytics:', err);
     return [];

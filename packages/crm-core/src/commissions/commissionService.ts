@@ -21,7 +21,7 @@ export class CommissionService {
     try {
       let query = this.supabase
         .from('commission_schedules')
-        .select('*')
+        .select('id, org_id, name, plan_id, carrier_id, advisor_tier, rate_type, rate_value, effective_from, effective_to, is_active, notes, created_at, updated_at')
         .order('effective_from', { ascending: false });
 
       if (activeOnly) {
@@ -33,7 +33,7 @@ export class CommissionService {
         console.error('Failed to get commission schedules:', error);
         return [];
       }
-      return data as CommissionSchedule[];
+      return data as unknown as CommissionSchedule[];
     } catch (error) {
       console.error('Get schedules error:', error);
       return [];
@@ -57,13 +57,13 @@ export class CommissionService {
           effective_to: input.effective_to || null,
           notes: input.notes || null,
         })
-        .select('*')
+        .select('id, org_id, name, plan_id, carrier_id, advisor_tier, rate_type, rate_value, effective_from, effective_to, is_active, notes, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
-      return { success: true, schedule: data as CommissionSchedule };
+      return { success: true, schedule: data as unknown as CommissionSchedule };
     } catch (error) {
       console.error('Create schedule error:', error);
       return { success: false, error: 'Failed to create schedule' };
@@ -100,7 +100,7 @@ export class CommissionService {
     try {
       let query = this.supabase
         .from('commission_records')
-        .select('*', { count: 'exact' });
+        .select('id, org_id, advisor_id, schedule_id, lead_id, contact_id, carrier_id, plan_type, premium_amount, subsidy_amount, member_responsibility, commission_rate, commission_amount, status, period_start, period_end, paid_at, notes, created_at, updated_at', { count: 'exact' });
 
       if (filters.advisor_id) query = query.eq('advisor_id', filters.advisor_id);
       if (filters.status) query = query.eq('status', filters.status);
@@ -117,7 +117,7 @@ export class CommissionService {
         console.error('Failed to get commission records:', error);
         return { records: [], total: 0 };
       }
-      return { records: data as CommissionRecord[], total: count || 0 };
+      return { records: data as unknown as CommissionRecord[], total: count || 0 };
     } catch (error) {
       console.error('Get records error:', error);
       return { records: [], total: 0 };
@@ -146,13 +146,13 @@ export class CommissionService {
           period_end: input.period_end || null,
           notes: input.notes || null,
         })
-        .select('*')
+        .select('id, org_id, advisor_id, schedule_id, lead_id, contact_id, carrier_id, plan_type, premium_amount, subsidy_amount, member_responsibility, commission_rate, commission_amount, status, period_start, period_end, paid_at, notes, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
-      return { success: true, record: data as CommissionRecord };
+      return { success: true, record: data as unknown as CommissionRecord };
     } catch (error) {
       console.error('Create record error:', error);
       return { success: false, error: 'Failed to create commission record' };
@@ -249,7 +249,7 @@ export class CommissionService {
     try {
       let query = this.supabase
         .from('commission_payouts')
-        .select('*', { count: 'exact' });
+        .select('id, org_id, advisor_id, total_amount, record_count, payout_date, payment_method, reference_number, notes, created_at', { count: 'exact' });
 
       if (advisorId) query = query.eq('advisor_id', advisorId);
 
@@ -261,7 +261,7 @@ export class CommissionService {
         console.error('Failed to get payouts:', error);
         return { payouts: [], total: 0 };
       }
-      return { payouts: data as CommissionPayout[], total: count || 0 };
+      return { payouts: data as unknown as CommissionPayout[], total: count || 0 };
     } catch (error) {
       console.error('Get payouts error:', error);
       return { payouts: [], total: 0 };
@@ -283,13 +283,13 @@ export class CommissionService {
           reference_number: input.reference_number || null,
           notes: input.notes || null,
         })
-        .select('*')
+        .select('id, org_id, advisor_id, total_amount, record_count, payout_date, payment_method, reference_number, notes, created_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
-      return { success: true, payout: data as CommissionPayout };
+      return { success: true, payout: data as unknown as CommissionPayout };
     } catch (error) {
       console.error('Create payout error:', error);
       return { success: false, error: 'Failed to create payout' };

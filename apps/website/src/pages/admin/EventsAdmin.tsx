@@ -156,7 +156,7 @@ const EventsAdmin: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_at')
         .order('event_date', { ascending: false });
       if (error) throw error;
       setEvents(data || []);

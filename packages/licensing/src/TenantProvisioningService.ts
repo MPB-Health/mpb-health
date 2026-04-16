@@ -62,7 +62,7 @@ export class TenantProvisioningService {
         name: input.company_name,
         slug: input.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       })
-      .select()
+      .select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at')
       .single();
 
     if (orgError) {
@@ -120,7 +120,7 @@ export class TenantProvisioningService {
         trial_end: trialEnd,
         discount_percent: input.discount_percent || 0,
       })
-      .select()
+      .select('id, org_id, plan_id, billing_cycle, status, current_period_start, current_period_end, trial_start, trial_end, discount_percent, stripe_customer_id, canceled_at, created_at, updated_at')
       .single();
 
     if (subError) {
@@ -187,8 +187,8 @@ export class TenantProvisioningService {
    */
   async getOnboardingSteps(orgId: string): Promise<OnboardingStep[]> {
     const [orgResult, subResult, modulesResult, membersResult] = await Promise.all([
-      supabase.from('organizations').select('*').eq('id', orgId).single(),
-      supabase.from('organization_subscriptions').select('*').eq('org_id', orgId).single(),
+      supabase.from('organizations').select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at').eq('id', orgId).single(),
+      supabase.from('organization_subscriptions').select('id, org_id, plan_id, billing_cycle, status, current_period_start, current_period_end, trial_start, trial_end, discount_percent, stripe_customer_id, canceled_at, created_at, updated_at').eq('org_id', orgId).single(),
       supabase.rpc('get_org_modules', { p_org_id: orgId }),
       supabase.from('org_memberships').select('id').eq('org_id', orgId),
     ]);

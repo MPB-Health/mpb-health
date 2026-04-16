@@ -21,7 +21,7 @@ export class ProductService {
     try {
       let query = this.supabase
         .from('crm_products')
-        .select('*', { count: 'exact' });
+        .select('id, org_id, name, description, category, carrier_id, plan_type, premium_range_min, premium_range_max, is_active, metadata, created_at, updated_at', { count: 'exact' });
 
       // Apply filters
       if (filters.category) {
@@ -57,7 +57,7 @@ export class ProductService {
         return { products: [], total: 0 };
       }
 
-      return { products: data as Product[], total: count || 0 };
+      return { products: data as unknown as Product[], total: count || 0 };
     } catch (error) {
       console.error('Get products error:', error);
       return { products: [], total: 0 };
@@ -72,7 +72,7 @@ export class ProductService {
       const { data, error } = await this.supabase
         .from('crm_products')
         .select(`
-          *,
+        id, org_id, name, code, description, category, unit_price, cost, currency, unit_of_measure, is_active, is_taxable, tax_rate, sku, external_id, metadata, created_by, created_at, updated_at,
           price_book_items:crm_price_book_items(
             id,
             price_book_id,
@@ -90,7 +90,7 @@ export class ProductService {
         return null;
       }
 
-      return data as ProductWithRelations;
+      return data as unknown as ProductWithRelations;
     } catch (error) {
       console.error('Get product error:', error);
       return null;
@@ -240,7 +240,7 @@ export class ProductService {
     try {
       const { data, error } = await this.supabase
         .from('crm_products')
-        .select('*')
+        .select('id, org_id, name, description, category, carrier_id, plan_type, premium_range_min, premium_range_max, is_active, metadata, created_at, updated_at')
         .eq('is_active', true)
         .order('name', { ascending: true });
 
@@ -249,7 +249,7 @@ export class ProductService {
         return [];
       }
 
-      return data as Product[];
+      return data as unknown as Product[];
     } catch (error) {
       console.error('Get active products error:', error);
       return [];

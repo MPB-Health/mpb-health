@@ -94,7 +94,7 @@ serve(async (req) => {
             created_by: authUser.userId,
             next_check_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // Check in 5 min
           })
-          .select()
+          .select('id, org_id, domain, dkim_selector, spf_record, dkim_record, dmarc_record, verification_token, spf_status, dkim_status, dmarc_status, mx_status, spf_verified_at, dkim_verified_at, dmarc_verified_at, mx_verified_at, last_check_at, next_check_at, created_by, created_at, updated_at')
           .single();
 
         if (error) {
@@ -158,7 +158,7 @@ serve(async (req) => {
 
         const { data: domainRecord } = await supabase
           .from('mail_domains')
-          .select('*')
+          .select('id, org_id, domain, dkim_selector, spf_record, dkim_record, dmarc_record, verification_token, spf_status, dkim_status, dmarc_status, mx_status, spf_verified_at, dkim_verified_at, dmarc_verified_at, mx_verified_at, last_check_at, next_check_at, created_by, created_at, updated_at')
           .eq('id', domain_id)
           .single();
 
@@ -245,7 +245,7 @@ serve(async (req) => {
 
         const { data: domainRecord } = await supabase
           .from('mail_domains')
-          .select('*')
+          .select('id, org_id, domain, dkim_selector, spf_record, dkim_record, dmarc_record, verification_token, spf_status, dkim_status, dmarc_status, mx_status, spf_verified_at, dkim_verified_at, dmarc_verified_at, mx_verified_at, last_check_at, next_check_at, created_by, created_at, updated_at')
           .eq('id', domain_id)
           .single();
 

@@ -16,7 +16,7 @@ export class RoundRobinService {
   async getConfig(): Promise<RoundRobinConfig | null> {
     const { data, error } = await this.supabase
       .from('crm_round_robin_config')
-      .select('*')
+      .select('id, org_id, is_active, pool_members, current_position, tie_breaking_rule, skip_unavailable, updated_by, created_at, updated_at')
       .eq('org_id', this.orgId)
       .maybeSingle();
 
@@ -24,7 +24,7 @@ export class RoundRobinService {
       console.error('Failed to get round-robin config:', error);
       return null;
     }
-    return data as RoundRobinConfig | null;
+    return data as unknown as RoundRobinConfig | null;
   }
 
   async upsertConfig(input: RoundRobinConfigInput): Promise<RoundRobinConfig | null> {
@@ -41,14 +41,14 @@ export class RoundRobinService {
         .from('crm_round_robin_config')
         .update({ ...input, updated_by: user?.id })
         .eq('id', existing.id)
-        .select()
+        .select('id, org_id, is_active, pool_members, current_position, tie_breaking_rule, skip_unavailable, updated_by, created_at, updated_at')
         .single();
 
       if (error) {
         console.error('Failed to update round-robin config:', error);
         return null;
       }
-      return data as RoundRobinConfig;
+      return data as unknown as RoundRobinConfig;
     }
 
     const { data, error } = await this.supabase
@@ -58,14 +58,14 @@ export class RoundRobinService {
         ...input,
         updated_by: user?.id,
       })
-      .select()
+      .select('id, org_id, is_active, pool_members, current_position, tie_breaking_rule, skip_unavailable, updated_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to create round-robin config:', error);
       return null;
     }
-    return data as RoundRobinConfig;
+    return data as unknown as RoundRobinConfig;
   }
 
   async assignNext(leadId: string): Promise<AssignmentResult | null> {
@@ -184,7 +184,7 @@ export class RoundRobinService {
   ): Promise<{ entries: RoundRobinAuditEntry[]; total: number }> {
     const { data, error, count } = await this.supabase
       .from('crm_round_robin_audit')
-      .select('*', { count: 'exact' })
+      .select('id, org_id, lead_id, assigned_to, position_at_assignment, was_skip, skip_reason, override_by, created_at', { count: 'exact' })
       .eq('org_id', this.orgId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -194,7 +194,7 @@ export class RoundRobinService {
       return { entries: [], total: 0 };
     }
 
-    return { entries: data as RoundRobinAuditEntry[], total: count || 0 };
+    return { entries: data as unknown as RoundRobinAuditEntry[], total: count || 0 };
   }
 
   private async getLeadCountsForMembers(

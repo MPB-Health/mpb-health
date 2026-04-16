@@ -51,7 +51,7 @@ export const useResources = (filters: ResourceFilters): UseResourcesResult => {
     try {
       const { data, error: topicsError } = await supabase
         .from('resource_topics')
-        .select('*')
+        .select('id, name, slug, description, icon, created_at')
         .order('name');
 
       if (topicsError) {
@@ -83,7 +83,7 @@ export const useResources = (filters: ResourceFilters): UseResourcesResult => {
 
       let query = supabase
         .from('resource_library')
-        .select('*', { count: 'exact' })
+        .select('id, title, slug, description, content, resource_type, target_audience, topics, featured_image_url, file_url, is_featured, published_date, view_count, download_count, metadata, is_published, created_at, updated_at', { count: 'exact' })
         .eq('is_published', true);
 
       if (filters.search) {
@@ -181,7 +181,7 @@ export const useResourceDetail = (slug: string) => {
 
         const { data, error: fetchError } = await supabase
           .from('resource_library')
-          .select('*')
+          .select('id, title, slug, description, content, resource_type, target_audience, topics, featured_image_url, file_url, is_featured, published_date, view_count, download_count, metadata, is_published, created_at, updated_at')
           .eq('slug', slug)
           .eq('is_published', true)
           .maybeSingle();

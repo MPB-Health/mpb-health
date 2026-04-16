@@ -47,7 +47,7 @@ export async function getAdvisors(filters?: AdvisorFilters): Promise<Advisor[]> 
 
     let query = supabase
       .from('advisors')
-      .select('*')
+      .select('id, agent_id, parent_id, parent_label, agent_label, first_name, last_name, company, address_1, address_2, city, state, zipcode, county, phone_1, phone_2, email, email_2, website_link, domain_name, agent_type, agent_type_2, agent_type_3, status, license_states, active_date, is_active, created_at, updated_at')
       .eq('is_active', true)
       .order('state', { ascending: true })
       .order('active_date', { ascending: true, nullsFirst: false })
@@ -86,7 +86,7 @@ export async function getAdvisors(filters?: AdvisorFilters): Promise<Advisor[]> 
     }
 
     log.info('[advisorDirectoryService] Fetched advisors:', data?.length || 0);
-    return data || [];
+    return (data || []) as any;
   } catch (error) {
     console.error('[advisorDirectoryService] Error in getAdvisors:', error);
     return [];
@@ -211,7 +211,7 @@ export async function getAllAdvisors(filters?: AdminAdvisorFilters): Promise<Adv
   try {
     let query = supabase
       .from('advisors')
-      .select('*')
+      .select('id, agent_id, parent_id, parent_label, agent_label, first_name, last_name, company, address_1, address_2, city, state, zipcode, county, phone_1, phone_2, email, email_2, website_link, domain_name, agent_type, agent_type_2, agent_type_3, status, license_states, active_date, is_active, created_at, updated_at')
       .order('state', { ascending: true })
       .order('active_date', { ascending: true, nullsFirst: false })
       .order('last_name', { ascending: true });
@@ -244,7 +244,7 @@ export async function getAllAdvisors(filters?: AdminAdvisorFilters): Promise<Adv
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   } catch (error) {
     console.error('[advisorDirectoryService] Error in getAllAdvisors:', error);
     throw error;

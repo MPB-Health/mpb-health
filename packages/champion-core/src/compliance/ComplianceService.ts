@@ -28,7 +28,7 @@ export class ComplianceService {
   ): Promise<ComplianceDocument[]> {
     let query = supabase
       .from('compliance_documents')
-      .select('*')
+      .select('id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('category')
       .order('title');
@@ -48,7 +48,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -57,7 +57,7 @@ export class ComplianceService {
   async getDocument(documentId: string): Promise<ComplianceDocument | null> {
     const { data, error } = await supabase
       .from('compliance_documents')
-      .select('*')
+      .select('id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed, created_by, created_at, updated_at')
       .eq('id', documentId)
       .single();
 
@@ -66,7 +66,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -90,7 +90,7 @@ export class ComplianceService {
         quiz_questions: input.quiz_questions || [],
         passing_score: input.passing_score || 80,
       })
-      .select()
+      .select('id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -98,7 +98,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -115,7 +115,7 @@ export class ComplianceService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', documentId)
-      .select()
+      .select('id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -123,7 +123,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -185,7 +185,7 @@ export class ComplianceService {
   async getAcknowledgment(acknowledgmentId: string): Promise<ComplianceAcknowledgmentWithDocument | null> {
     const { data, error } = await supabase
       .from('compliance_acknowledgments')
-      .select('*, document:compliance_documents(*)')
+      .select('id, org_id, document_id, user_id, status, completed_at, ip_address, user_agent, signature_data, signed_name, quiz_score, quiz_answers, quiz_attempts, due_date, expires_at, created_at, updated_at, document:compliance_documents(id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed)')
       .eq('id', acknowledgmentId)
       .single();
 
@@ -194,7 +194,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return data as ComplianceAcknowledgmentWithDocument | null;
+    return data as unknown as ComplianceAcknowledgmentWithDocument | null;
   }
 
   /**
@@ -214,7 +214,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -291,7 +291,7 @@ export class ComplianceService {
   ): Promise<ComplianceViolation[]> {
     let query = supabase
       .from('compliance_violations')
-      .select('*')
+      .select('id, org_id, user_id, lead_id, conversation_id, message_id, violation_type, severity, description, evidence, detected_by, detection_rule, status, resolution_notes, resolved_by, resolved_at, created_at, updated_at')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
@@ -318,7 +318,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -340,7 +340,7 @@ export class ComplianceService {
         detected_by: input.detected_by || 'manual',
         detection_rule: input.detection_rule,
       })
-      .select()
+      .select('id, org_id, user_id, lead_id, conversation_id, message_id, violation_type, severity, description, evidence, detected_by, detection_rule, status, resolution_notes, resolved_by, resolved_at, created_at, updated_at')
       .single();
 
     if (error) {
@@ -348,7 +348,7 @@ export class ComplianceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -404,7 +404,7 @@ export class ComplianceService {
   ): Promise<{ logs: Record<string, unknown>[]; total: number }> {
     let query = supabase
       .from('audit_logs_detailed')
-      .select('*', { count: 'exact' })
+      .select('id, org_id, user_id, action, resource_type, resource_id, details, ip_address, user_agent, created_at, user_name, user_email', { count: 'exact' })
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 

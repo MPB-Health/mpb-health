@@ -467,7 +467,7 @@ async function handleSync(req: Request): Promise<Response> {
   // Load the integration record
   const { data: integration, error: loadError } = await supabase
     .from('crm_calendar_integrations')
-    .select('*')
+    .select('id, user_id, org_id, provider, access_token_encrypted, refresh_token_encrypted, token_expires_at, last_sync_at, sync_status')
     .eq('user_id', user_id)
     .eq('provider', provider)
     .single();
@@ -549,7 +549,7 @@ async function handleSync(req: Request): Promise<Response> {
     // ---- PUSH: CRM → External ----
     const { data: crmEvents, error: crmError } = await supabase
       .from('calendar_events')
-      .select('*')
+      .select('id, org_id, user_id, title, description, location, start_time, end_time, external_calendar_id, external_event_id, provider, external_link')
       .eq('org_id', org_id)
       .eq('user_id', user_id)
       .is('external_event_id', null);

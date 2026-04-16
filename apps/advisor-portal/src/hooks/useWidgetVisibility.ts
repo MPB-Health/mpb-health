@@ -31,7 +31,7 @@ export function useWidgetVisibility() {
           .select('widget_key, is_visible, order_index, grid_column')
           .order('order_index', { ascending: true });
         if (!cancelled && data) {
-          cachedWidgets = data as WidgetConfig[];
+          cachedWidgets = data as unknown as WidgetConfig[];
           cacheTimestamp = Date.now();
           setWidgets(cachedWidgets);
         }

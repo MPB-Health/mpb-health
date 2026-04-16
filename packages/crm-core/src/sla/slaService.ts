@@ -10,7 +10,7 @@ export class SLAService {
   async getConfig(): Promise<SLAConfig | null> {
     const { data, error } = await this.supabase
       .from('crm_sla_config')
-      .select('*')
+      .select('id, org_id, sla_hours, business_hours_start, business_hours_end, business_days, timezone, escalation_to, escalation_email, is_active, created_at, updated_at')
       .eq('org_id', this.orgId)
       .maybeSingle();
 
@@ -18,7 +18,7 @@ export class SLAService {
       console.error('Failed to get SLA config:', error);
       return null;
     }
-    return data as SLAConfig | null;
+    return data as unknown as SLAConfig | null;
   }
 
   async upsertConfig(input: SLAConfigInput): Promise<SLAConfig | null> {
@@ -33,27 +33,27 @@ export class SLAService {
         .from('crm_sla_config')
         .update(input)
         .eq('id', existing.id)
-        .select()
+        .select('id, org_id, sla_hours, business_hours_start, business_hours_end, business_days, timezone, escalation_to, escalation_email, is_active, created_at, updated_at')
         .single();
 
       if (error) {
         console.error('Failed to update SLA config:', error);
         return null;
       }
-      return data as SLAConfig;
+      return data as unknown as SLAConfig;
     }
 
     const { data, error } = await this.supabase
       .from('crm_sla_config')
       .insert({ org_id: this.orgId, ...input })
-      .select()
+      .select('id, org_id, sla_hours, business_hours_start, business_hours_end, business_days, timezone, escalation_to, escalation_email, is_active, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to create SLA config:', error);
       return null;
     }
-    return data as SLAConfig;
+    return data as unknown as SLAConfig;
   }
 
   async createInitialContactTask(leadId: string): Promise<string | null> {

@@ -57,7 +57,7 @@ export function usePlans() {
       try {
         const { data, error: fetchError } = await supabase
           .from('plans')
-          .select('*')
+          .select('id, slug, name, tagline, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, target_audience, sort_order, is_active')
           .eq('is_active', true)
           .order('sort_order');
 
@@ -91,7 +91,7 @@ export function usePlanDetails(planSlug: string) {
       try {
         const { data: planData, error: planError } = await supabase
           .from('plans')
-          .select('*')
+          .select('id, slug, name, tagline, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, target_audience, sort_order, is_active')
           .eq('slug', planSlug)
           .eq('is_active', true)
           .maybeSingle();
@@ -105,7 +105,7 @@ export function usePlanDetails(planSlug: string) {
 
         const { data: featuresData, error: featuresError } = await supabase
           .from('plan_features')
-          .select('*')
+          .select('id, plan_id, category, feature_name, feature_value, cost, notes, sort_order')
           .eq('plan_id', planData.id)
           .order('sort_order');
 
@@ -113,7 +113,7 @@ export function usePlanDetails(planSlug: string) {
 
         const { data: sharingData, error: sharingError } = await supabase
           .from('plan_sharing_details')
-          .select('*')
+          .select('id, plan_id, has_lifetime_cap, has_annual_cap, preexisting_lookback_months, maternity_waiting_months, has_international_coverage, iua_options')
           .eq('plan_id', planData.id)
           .maybeSingle();
 
@@ -152,7 +152,7 @@ export function usePlanComparison(planSlugs: string[]) {
       try {
         const { data: plansData, error: plansError } = await supabase
           .from('plans')
-          .select('*')
+          .select('id, slug, name, tagline, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, target_audience, sort_order, is_active')
           .in('slug', planSlugs)
           .eq('is_active', true)
           .order('sort_order');
@@ -168,7 +168,7 @@ export function usePlanComparison(planSlugs: string[]) {
 
         const { data: featuresData, error: featuresError } = await supabase
           .from('plan_features')
-          .select('*')
+          .select('id, plan_id, category, feature_name, feature_value, cost, notes, sort_order')
           .in('plan_id', planIds)
           .order('sort_order');
 
@@ -176,7 +176,7 @@ export function usePlanComparison(planSlugs: string[]) {
 
         const { data: sharingData, error: sharingError } = await supabase
           .from('plan_sharing_details')
-          .select('*')
+          .select('id, plan_id, has_lifetime_cap, has_annual_cap, preexisting_lookback_months, maternity_waiting_months, has_international_coverage, iua_options')
           .in('plan_id', planIds);
 
         if (sharingError) throw sharingError;

@@ -25,7 +25,7 @@ export class AIService {
   ): Promise<AISuggestion[]> {
     let query = supabase
       .from('ai_suggestions')
-      .select('*')
+      .select('id, org_id, user_id, lead_id, conversation_id, suggestion_type, context_type, title, content, reasoning, confidence, original_message, suggested_message, tone, suggested_score_delta, suggested_lane_id, status, user_feedback, modified_content, shown_at, acted_at, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -52,7 +52,7 @@ export class AIService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -64,7 +64,7 @@ export class AIService {
   ): Promise<AISuggestion[]> {
     let query = supabase
       .from('ai_suggestions')
-      .select('*')
+      .select('id, org_id, user_id, lead_id, conversation_id, suggestion_type, context_type, title, content, reasoning, confidence, original_message, suggested_message, tone, suggested_score_delta, suggested_lane_id, status, user_feedback, modified_content, shown_at, acted_at, created_at')
       .eq('user_id', userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
@@ -85,7 +85,7 @@ export class AIService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -152,7 +152,7 @@ export class AIService {
         suggested_lane_id: suggestion.suggestedLaneId,
         shown_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, org_id, user_id, lead_id, conversation_id, suggestion_type, context_type, title, content, reasoning, confidence, original_message, suggested_message, tone, suggested_score_delta, suggested_lane_id, status, user_feedback, modified_content, shown_at, acted_at, created_at')
       .single();
 
     if (error) {
@@ -160,7 +160,7 @@ export class AIService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================
@@ -312,7 +312,7 @@ export class AIService {
   async getLeadScoringFactors(leadId: string): Promise<AIScoringFactor[]> {
     const { data, error } = await supabase
       .from('ai_scoring_factors')
-      .select('*')
+      .select('id, org_id, lead_id, priority_item_id, factor_type, factor_name, score_impact, analysis_data, reasoning, valid_from, valid_until, is_active, created_at')
       .eq('lead_id', leadId)
       .eq('is_active', true)
       .order('created_at', { ascending: false });
@@ -322,7 +322,7 @@ export class AIService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -374,7 +374,7 @@ export class AIService {
         reasoning: factor.reasoning,
         valid_until: validUntil,
       })
-      .select()
+      .select('id, org_id, lead_id, priority_item_id, factor_type, factor_name, score_impact, analysis_data, reasoning, valid_from, valid_until, is_active, created_at')
       .single();
 
     if (error) {
@@ -382,7 +382,7 @@ export class AIService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**

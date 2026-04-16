@@ -14,7 +14,7 @@ export class OutsideAdvisorService {
   async getAdvisors(activeOnly = false): Promise<OutsideAdvisor[]> {
     let query = this.supabase
       .from('crm_outside_advisors')
-      .select('*')
+      .select('id, org_id, name, email, phone, company, license_number, states_licensed, specialties, notes, is_active, created_by, created_at, updated_at')
       .eq('org_id', this.orgId)
       .order('name');
 
@@ -25,18 +25,18 @@ export class OutsideAdvisorService {
       console.error('Failed to get outside advisors:', error);
       return [];
     }
-    return data as OutsideAdvisor[];
+    return data as unknown as OutsideAdvisor[];
   }
 
   async getAdvisor(id: string): Promise<OutsideAdvisor | null> {
     const { data, error } = await this.supabase
       .from('crm_outside_advisors')
-      .select('*')
+      .select('id, org_id, name, email, phone, company, license_number, states_licensed, specialties, notes, is_active, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data as OutsideAdvisor;
+    return data as unknown as OutsideAdvisor;
   }
 
   async createAdvisor(input: OutsideAdvisorInput): Promise<OutsideAdvisor | null> {
@@ -49,14 +49,14 @@ export class OutsideAdvisorService {
         ...input,
         created_by: user?.id,
       })
-      .select()
+      .select('id, org_id, name, email, phone, company, is_active, notes, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to create outside advisor:', error);
       return null;
     }
-    return data as OutsideAdvisor;
+    return data as unknown as OutsideAdvisor;
   }
 
   async updateAdvisor(
@@ -67,14 +67,14 @@ export class OutsideAdvisorService {
       .from('crm_outside_advisors')
       .update(input)
       .eq('id', id)
-      .select()
+      .select('id, org_id, name, email, phone, company, is_active, notes, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to update outside advisor:', error);
       return null;
     }
-    return data as OutsideAdvisor;
+    return data as unknown as OutsideAdvisor;
   }
 
   async deleteAdvisor(id: string): Promise<boolean> {

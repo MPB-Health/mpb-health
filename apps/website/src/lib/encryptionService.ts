@@ -23,7 +23,7 @@ class EncryptionService {
 
     const { data: existingKey, error: fetchError } = await supabase
       .from('encryption_keys')
-      .select('*')
+      .select('id, key_name, encrypted_key, version, active')
       .eq('key_name', keyName)
       .eq('active', true)
       .maybeSingle();

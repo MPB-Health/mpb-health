@@ -30,7 +30,7 @@ export class EmailService {
       // Load template
       const { data: template, error: tErr } = await this.supabase
         .from('crm_templates')
-        .select('*')
+        .select('id, name, description, template_type, category, subject, body, variables, usage_count, last_used_at, is_ai_generated, ai_performance_score, is_active, is_default, created_by, created_at, updated_at')
         .eq('id', templateId)
         .single();
 
@@ -94,7 +94,7 @@ export class EmailService {
     try {
       let query = this.supabase
         .from('crm_email_log')
-        .select('*')
+        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at')
         .order('sent_at', { ascending: false })
         .limit(50);
 
@@ -107,7 +107,7 @@ export class EmailService {
         console.error('Error fetching email log:', error);
         return [];
       }
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Error fetching email log:', error);
       return [];

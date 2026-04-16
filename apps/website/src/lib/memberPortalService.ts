@@ -27,7 +27,7 @@ export const memberPortalService = {
   async getMemberProfile(userId: string): Promise<MemberProfile | null> {
     const { data, error } = await supabase
       .from('member_profiles')
-      .select('*')
+      .select('id, first_name, last_name, date_of_birth, gender, phone, address_line1, address_line2, city, state, zip_code, country, profile_photo_url, membership_number, membership_status, membership_start_date, membership_end_date, plan_id, assigned_advisor_id, preferred_language, communication_preferences, medical_conditions, allergies, medications, emergency_contact_consent, hipaa_consent, consent_date, metadata, created_at, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -36,7 +36,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async updateMemberProfile(userId: string, updates: Partial<MemberProfile>): Promise<MemberProfile | null> {
@@ -44,7 +44,7 @@ export const memberPortalService = {
       .from('member_profiles')
       .update(updates)
       .eq('id', userId)
-      .select()
+      .select('id, first_name, last_name, date_of_birth, gender, phone, address_line1, address_line2, city, state, zip_code, country, profile_photo_url, membership_number, membership_status, membership_start_date, membership_end_date, plan_id, assigned_advisor_id, preferred_language, communication_preferences, medical_conditions, allergies, medications, emergency_contact_consent, hipaa_consent, consent_date, metadata, created_at, updated_at')
       .single();
 
     if (error) {
@@ -52,14 +52,14 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async createMemberProfile(profile: Omit<MemberProfile, 'created_at' | 'updated_at'>): Promise<MemberProfile | null> {
     const { data, error } = await supabase
       .from('member_profiles')
       .insert([profile])
-      .select()
+      .select('id, first_name, last_name, date_of_birth, gender, phone, address_line1, address_line2, city, state, zip_code, country, profile_photo_url, membership_number, membership_status, membership_start_date, membership_end_date, plan_id, assigned_advisor_id, preferred_language, communication_preferences, medical_conditions, allergies, medications, emergency_contact_consent, hipaa_consent, consent_date, metadata, created_at, updated_at')
       .single();
 
     if (error) {
@@ -67,13 +67,13 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getDependents(memberId: string): Promise<MemberDependent[]> {
     const { data, error } = await supabase
       .from('member_dependents')
-      .select('*')
+      .select('id, member_id, first_name, last_name, relationship, date_of_birth, gender, ssn_last_four, is_covered, coverage_start_date, coverage_end_date, medical_conditions, allergies, metadata, created_at, updated_at')
       .eq('member_id', memberId)
       .order('date_of_birth', { ascending: true });
 
@@ -82,14 +82,14 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async addDependent(dependent: Omit<MemberDependent, 'id' | 'created_at' | 'updated_at'>): Promise<MemberDependent | null> {
     const { data, error } = await supabase
       .from('member_dependents')
       .insert([dependent])
-      .select()
+      .select('id, member_id, first_name, last_name, relationship, date_of_birth, gender, ssn_last_four, is_covered, coverage_start_date, coverage_end_date, medical_conditions, allergies, metadata, created_at, updated_at')
       .single();
 
     if (error) {
@@ -97,7 +97,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async updateDependent(dependentId: string, updates: Partial<MemberDependent>): Promise<MemberDependent | null> {
@@ -105,7 +105,7 @@ export const memberPortalService = {
       .from('member_dependents')
       .update(updates)
       .eq('id', dependentId)
-      .select()
+      .select('id, member_id, first_name, last_name, relationship, date_of_birth, gender, ssn_last_four, is_covered, coverage_start_date, coverage_end_date, medical_conditions, allergies, metadata, created_at, updated_at')
       .single();
 
     if (error) {
@@ -113,7 +113,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async deleteDependent(dependentId: string): Promise<boolean> {
@@ -133,7 +133,7 @@ export const memberPortalService = {
   async getEmergencyContacts(memberId: string): Promise<EmergencyContact[]> {
     const { data, error } = await supabase
       .from('emergency_contacts')
-      .select('*')
+      .select('id, member_id, name, relationship, phone, alternate_phone, email, address, is_primary, created_at, updated_at')
       .eq('member_id', memberId)
       .order('is_primary', { ascending: false });
 
@@ -142,14 +142,14 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async addEmergencyContact(contact: Omit<EmergencyContact, 'id' | 'created_at' | 'updated_at'>): Promise<EmergencyContact | null> {
     const { data, error } = await supabase
       .from('emergency_contacts')
       .insert([contact])
-      .select()
+      .select('id, member_id, name, relationship, phone, alternate_phone, email, address, is_primary, created_at, updated_at')
       .single();
 
     if (error) {
@@ -157,7 +157,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async updateEmergencyContact(contactId: string, updates: Partial<EmergencyContact>): Promise<EmergencyContact | null> {
@@ -165,7 +165,7 @@ export const memberPortalService = {
       .from('emergency_contacts')
       .update(updates)
       .eq('id', contactId)
-      .select()
+      .select('id, member_id, name, relationship, phone, alternate_phone, email, address, is_primary, created_at, updated_at')
       .single();
 
     if (error) {
@@ -173,7 +173,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async deleteEmergencyContact(contactId: string): Promise<boolean> {
@@ -193,7 +193,7 @@ export const memberPortalService = {
   async getClaims(memberId: string, options?: { status?: string; limit?: number }): Promise<Claim[]> {
     let query = supabase
       .from('claims')
-      .select('*')
+      .select('id, member_id, claim_number, claim_type, status, provider_name, provider_id, patient_name, patient_type, dependent_id, service_date, diagnosis_codes, total_amount, eligible_amount, approved_amount, paid_amount, denial_reason, processing_notes, submitted_date, reviewed_date, approved_date, paid_date, reviewed_by, metadata, created_at, updated_at')
       .eq('member_id', memberId)
       .order('created_at', { ascending: false });
 
@@ -219,13 +219,13 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getClaim(claimId: string): Promise<Claim | null> {
     const { data, error } = await supabase
       .from('claims')
-      .select('*')
+      .select('id, member_id, claim_number, claim_type, status, provider_name, provider_id, patient_name, patient_type, dependent_id, service_date, diagnosis_codes, total_amount, eligible_amount, approved_amount, paid_amount, denial_reason, processing_notes, submitted_date, reviewed_date, approved_date, paid_date, reviewed_by, metadata, created_at, updated_at')
       .eq('id', claimId)
       .maybeSingle();
 
@@ -241,7 +241,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async createClaim(claim: Omit<Claim, 'id' | 'created_at' | 'updated_at' | 'claim_number'>): Promise<Claim | null> {
@@ -250,7 +250,7 @@ export const memberPortalService = {
     const { data, error } = await supabase
       .from('claims')
       .insert([{ ...claim, claim_number: claimNumber }])
-      .select()
+      .select('id, member_id, claim_number, claim_type, status, provider_name, provider_id, patient_name, patient_type, dependent_id, service_date, diagnosis_codes, total_amount, eligible_amount, approved_amount, paid_amount, denial_reason, processing_notes, submitted_date, reviewed_date, approved_date, paid_date, reviewed_by, metadata, created_at, updated_at')
       .single();
 
     if (error) {
@@ -258,7 +258,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async updateClaim(claimId: string, updates: Partial<Claim>): Promise<Claim | null> {
@@ -266,7 +266,7 @@ export const memberPortalService = {
       .from('claims')
       .update(updates)
       .eq('id', claimId)
-      .select()
+      .select('id, member_id, claim_number, claim_type, status, provider_name, provider_id, patient_name, patient_type, dependent_id, service_date, diagnosis_codes, total_amount, eligible_amount, approved_amount, paid_amount, denial_reason, processing_notes, submitted_date, reviewed_date, approved_date, paid_date, reviewed_by, metadata, created_at, updated_at')
       .single();
 
     if (error) {
@@ -274,13 +274,13 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getClaimItems(claimId: string): Promise<ClaimItem[]> {
     const { data, error } = await supabase
       .from('claim_items')
-      .select('*')
+      .select('id, claim_id, description, procedure_code, quantity, unit_price, total_amount, eligible_amount, approved_amount, notes, created_at')
       .eq('claim_id', claimId)
       .order('created_at', { ascending: true });
 
@@ -289,14 +289,14 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async addClaimItem(item: Omit<ClaimItem, 'id' | 'created_at'>): Promise<ClaimItem | null> {
     const { data, error } = await supabase
       .from('claim_items')
       .insert([item])
-      .select()
+      .select('id, claim_id, description, procedure_code, quantity, unit_price, total_amount, eligible_amount, approved_amount, notes, created_at')
       .single();
 
     if (error) {
@@ -304,7 +304,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getClaimSummary(memberId: string): Promise<ClaimSummary> {
@@ -375,7 +375,7 @@ export const memberPortalService = {
   async getMemberDocuments(memberId: string, category?: string): Promise<MemberDocument[]> {
     let query = supabase
       .from('member_documents')
-      .select('*')
+      .select('id, member_id, document_category, title, description, file_name, file_url, file_size, mime_type, version, is_current, tags, expires_at, uploaded_by, created_at, updated_at')
       .eq('member_id', memberId)
       .eq('is_current', true)
       .order('created_at', { ascending: false });
@@ -391,14 +391,14 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async uploadDocument(document: Omit<MemberDocument, 'id' | 'created_at' | 'updated_at'>): Promise<MemberDocument | null> {
     const { data, error } = await supabase
       .from('member_documents')
       .insert([document])
-      .select()
+      .select('id, member_id, document_category, title, description, file_name, file_url, file_size, mime_type, version, is_current, tags, expires_at, uploaded_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -406,13 +406,13 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getPaymentMethods(memberId: string): Promise<PaymentMethod[]> {
     const { data, error } = await supabase
       .from('payment_methods')
-      .select('*')
+      .select('id, member_id, payment_type, is_default, card_last_four, card_brand, card_exp_month, card_exp_year, bank_name, account_last_four, billing_name, billing_address, billing_zip, payment_token, is_active, created_at, updated_at')
       .eq('member_id', memberId)
       .eq('is_active', true)
       .order('is_default', { ascending: false });
@@ -422,14 +422,14 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async addPaymentMethod(method: Omit<PaymentMethod, 'id' | 'created_at' | 'updated_at'>): Promise<PaymentMethod | null> {
     const { data, error } = await supabase
       .from('payment_methods')
       .insert([method])
-      .select()
+      .select('id, member_id, payment_type, is_default, card_last_four, card_brand, card_exp_month, card_exp_year, bank_name, account_last_four, billing_name, billing_address, billing_zip, payment_token, is_active, created_at, updated_at')
       .single();
 
     if (error) {
@@ -437,13 +437,13 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getTransactions(memberId: string, limit = 50): Promise<Transaction[]> {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('id, member_id, transaction_type, amount, status, payment_method_id, payment_gateway_id, description, invoice_id, claim_id, processed_date, receipt_url, metadata, created_at, updated_at')
       .eq('member_id', memberId)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -453,13 +453,13 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getInvoices(memberId: string): Promise<Invoice[]> {
     const { data, error } = await supabase
       .from('invoices')
-      .select('*')
+      .select('id, member_id, invoice_number, billing_period_start, billing_period_end, total_amount, amount_paid, amount_due, due_date, status, invoice_url, created_at, updated_at')
       .eq('member_id', memberId)
       .order('created_at', { ascending: false });
 
@@ -468,13 +468,13 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getMemberCoverage(memberId: string): Promise<MemberCoverage | null> {
     const { data, error } = await supabase
       .from('member_coverage')
-      .select('*')
+      .select('id, member_id, plan_name, plan_type, coverage_start_date, coverage_end_date, monthly_share_amount, annual_unshared_amount, remaining_unshared, lifetime_maximum, lifetime_used, is_active, benefits, network_info, created_at, updated_at')
       .eq('member_id', memberId)
       .eq('is_active', true)
       .maybeSingle();
@@ -484,7 +484,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async searchProviders(searchParams: {
@@ -498,7 +498,7 @@ export const memberPortalService = {
   }): Promise<Provider[]> {
     let query = supabase
       .from('providers')
-      .select('*')
+      .select('id, npi, first_name, last_name, practice_name, provider_type, specialties, phone, email, website, accepts_new_patients, is_network, rating, review_count, metadata, created_at, updated_at')
       .order('rating', { ascending: false, nullsFirst: false });
 
     if (searchParams.query) {
@@ -524,13 +524,13 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getProviderLocations(providerId: string): Promise<ProviderLocation[]> {
     const { data, error } = await supabase
       .from('provider_locations')
-      .select('*')
+      .select('id, provider_id, location_name, address_line1, address_line2, city, state, zip_code, phone, fax, hours_of_operation, is_primary, latitude, longitude, created_at')
       .eq('provider_id', providerId)
       .order('is_primary', { ascending: false });
 
@@ -539,13 +539,13 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getPrescriptions(memberId: string, activeOnly = false): Promise<Prescription[]> {
     let query = supabase
       .from('prescriptions')
-      .select('*')
+      .select('id, member_id, medication_name, dosage, quantity, refills_remaining, prescribing_provider, provider_id, pharmacy_id, prescription_number, prescribed_date, filled_date, expiration_date, instructions, status, is_controlled, created_at, updated_at')
       .eq('member_id', memberId)
       .order('prescribed_date', { ascending: false });
 
@@ -560,14 +560,14 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async addPrescription(prescription: Omit<Prescription, 'id' | 'created_at' | 'updated_at'>): Promise<Prescription | null> {
     const { data, error } = await supabase
       .from('prescriptions')
       .insert([prescription])
-      .select()
+      .select('id, member_id, medication_name, dosage, quantity, refills_remaining, prescribing_provider, provider_id, pharmacy_id, prescription_number, prescribed_date, filled_date, expiration_date, instructions, status, is_controlled, created_at, updated_at')
       .single();
 
     if (error) {
@@ -575,13 +575,13 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getHealthHistory(memberId: string, activeOnly = false): Promise<HealthHistory[]> {
     let query = supabase
       .from('health_history')
-      .select('*')
+      .select('id, member_id, condition_name, condition_type, diagnosed_date, resolved_date, severity, notes, is_active, created_at, updated_at')
       .eq('member_id', memberId)
       .order('diagnosed_date', { ascending: false, nullsFirst: false });
 
@@ -596,14 +596,14 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async addHealthHistory(history: Omit<HealthHistory, 'id' | 'created_at' | 'updated_at'>): Promise<HealthHistory | null> {
     const { data, error } = await supabase
       .from('health_history')
       .insert([history])
-      .select()
+      .select('id, member_id, condition_name, condition_type, diagnosed_date, resolved_date, severity, notes, is_active, created_at, updated_at')
       .single();
 
     if (error) {
@@ -611,13 +611,13 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getLabResults(memberId: string, limit = 50): Promise<LabResult[]> {
     const { data, error } = await supabase
       .from('lab_results')
-      .select('*')
+      .select('id, member_id, test_name, test_category, test_date, result_value, result_unit, reference_range, is_abnormal, ordering_provider, lab_facility, notes, document_url, created_at')
       .eq('member_id', memberId)
       .order('test_date', { ascending: false })
       .limit(limit);
@@ -627,13 +627,13 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getImmunizations(memberId: string): Promise<Immunization[]> {
     const { data, error } = await supabase
       .from('immunizations')
-      .select('*')
+      .select('id, member_id, vaccine_name, vaccine_code, administration_date, administering_provider, lot_number, site, route, dose_number, next_dose_due, notes, created_at')
       .eq('member_id', memberId)
       .order('administration_date', { ascending: false });
 
@@ -642,13 +642,13 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getVisitSummaries(memberId: string, limit = 50): Promise<VisitSummary[]> {
     const { data, error } = await supabase
       .from('visit_summaries')
-      .select('*')
+      .select('id, member_id, visit_date, visit_type, provider_name, provider_id, chief_complaint, diagnosis, treatment_plan, medications_prescribed, follow_up_instructions, next_appointment_date, document_url, created_at, updated_at')
       .eq('member_id', memberId)
       .order('visit_date', { ascending: false })
       .limit(limit);
@@ -658,13 +658,13 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async getNotifications(memberId: string, unreadOnly = false): Promise<MemberNotification[]> {
     let query = supabase
       .from('member_notifications')
-      .select('*')
+      .select('id, member_id, notification_type, title, message, priority, is_read, read_at, action_url, actor_department, category, related_entity_type, related_entity_id, source_event_id, expires_at, metadata, created_at')
       .eq('member_id', memberId)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -680,7 +680,7 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async markNotificationRead(notificationId: string): Promise<boolean> {
@@ -701,7 +701,7 @@ export const memberPortalService = {
     const { data, error } = await supabase
       .from('member_notifications')
       .insert([notification])
-      .select()
+      .select('id, member_id, notification_type, title, message, priority, is_read, read_at, action_url, actor_department, category, related_entity_type, related_entity_id, source_event_id, expires_at, metadata, created_at')
       .single();
 
     if (error) {
@@ -709,7 +709,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async markAllNotificationsRead(memberId: string): Promise<boolean> {
@@ -745,7 +745,7 @@ export const memberPortalService = {
   async getSupportTickets(memberId: string): Promise<SupportTicket[]> {
     const { data, error } = await supabase
       .from('support_tickets')
-      .select('*')
+      .select('id, member_id, ticket_number, subject, description, category, priority, status, assigned_to, resolved_at, resolution_notes, created_at, updated_at')
       .eq('member_id', memberId)
       .order('created_at', { ascending: false });
 
@@ -754,7 +754,7 @@ export const memberPortalService = {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   },
 
   async createSupportTicket(ticket: Omit<SupportTicket, 'id' | 'created_at' | 'updated_at' | 'ticket_number'>): Promise<SupportTicket | null> {
@@ -763,7 +763,7 @@ export const memberPortalService = {
     const { data, error } = await supabase
       .from('support_tickets')
       .insert([{ ...ticket, ticket_number: ticketNumber }])
-      .select()
+      .select('id, member_id, ticket_number, subject, description, category, priority, status, assigned_to, resolved_at, resolution_notes, created_at, updated_at')
       .single();
 
     if (error) {
@@ -771,7 +771,7 @@ export const memberPortalService = {
       return null;
     }
 
-    return data;
+    return data as any;
   },
 
   async getDashboardData(userId: string): Promise<MemberDashboardData | null> {

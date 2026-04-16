@@ -76,7 +76,7 @@ export class ConversationService {
       throw error;
     }
 
-    return (data || []) as ConversationWithLead[];
+    return (data || []) as unknown as ConversationWithLead[];
   }
 
   /**
@@ -97,7 +97,7 @@ export class ConversationService {
       throw error;
     }
 
-    return data as ConversationWithLead | null;
+    return data as unknown as ConversationWithLead | null;
   }
 
   /**
@@ -119,7 +119,7 @@ export class ConversationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -131,7 +131,7 @@ export class ConversationService {
   ): Promise<Message[]> {
     let query = supabase
       .from('messages')
-      .select('*')
+      .select('id, org_id, conversation_id, channel, direction, subject, body_text, body_html, content, from_address, to_address, status, status_updated_at, error_message, external_id, external_provider, metadata, read_at, read_by, sent_by, sent_at, sequence_enrollment_id, sequence_step_id, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: false });
 
@@ -153,7 +153,7 @@ export class ConversationService {
     }
 
     // Return in chronological order
-    return (data || []).reverse() as Message[];
+    return (data || []).reverse() as unknown as Message[];
   }
 
   /**
@@ -175,7 +175,7 @@ export class ConversationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**

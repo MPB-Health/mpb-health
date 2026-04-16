@@ -209,7 +209,7 @@ export class CRMBridgeService {
   async getLeads(filters?: CRMLeadFilters): Promise<{ data: CRMLead[]; count: number }> {
     let query = supabase
       .from('lead_submissions')
-      .select('*', { count: 'exact' })
+      .select('id, first_name, last_name, email, phone, company, source, status, pipeline_stage_id, plan_type, assigned_to, created_at, updated_at', { count: 'exact' })
       .order('created_at', { ascending: false });
 
     if (filters?.status) {
@@ -236,13 +236,13 @@ export class CRMBridgeService {
 
     const { data, error, count } = await query;
     if (error) throw error;
-    return { data: (data || []) as CRMLead[], count: count || 0 };
+    return { data: (data || []) as unknown as CRMLead[], count: count || 0 };
   }
 
   async getLead(leadId: string): Promise<CRMLeadDetail | null> {
     const { data, error } = await supabase
       .from('lead_submissions')
-      .select('*')
+      .select('id, first_name, last_name, email, phone, company, source, status, pipeline_stage_id, plan_type, assigned_to, notes, metadata, created_at, updated_at')
       .eq('id', leadId)
       .single();
 
@@ -265,11 +265,11 @@ export class CRMBridgeService {
     ]);
 
     return {
-      ...(data as CRMLead),
+      ...(data as unknown as CRMLead),
       notes: data.notes || null,
       metadata: data.metadata || null,
-      activities: (activities.data || []) as CRMActivity[],
-      tasks: (tasks.data || []) as CRMTask[],
+      activities: (activities.data || []) as unknown as CRMActivity[],
+      tasks: (tasks.data || []) as unknown as CRMTask[],
     };
   }
 
@@ -280,7 +280,7 @@ export class CRMBridgeService {
       .order('sort_order', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async updateLeadStage(leadId: string, stageId: string): Promise<void> {
@@ -314,7 +314,7 @@ export class CRMBridgeService {
     // 1. Get the lead
     const { data: lead, error: leadError } = await supabase
       .from('lead_submissions')
-      .select('*')
+      .select('id, first_name, last_name, email, phone, company, source, status, pipeline_stage_id, plan_type, assigned_to, notes, metadata, utm_source, created_at, updated_at')
       .eq('id', leadId)
       .single();
 
@@ -354,7 +354,7 @@ export class CRMBridgeService {
         owner_id: lead.assigned_to || authUser.id,
         created_by: authUser.id,
       })
-      .select()
+      .select('id, org_id, account_id, salutation, first_name, last_name, email, phone, mobile, title, department, lead_source, converted_from_lead_id, converted_at, tags, description, owner_id, created_by, created_at, updated_at')
       .single();
 
     if (insertError) throw insertError;

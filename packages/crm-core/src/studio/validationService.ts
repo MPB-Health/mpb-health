@@ -20,7 +20,7 @@ export class ValidationService {
     try {
       const { data, error } = await this.supabase
         .from('crm_studio_validation_rules')
-        .select('*')
+        .select('id, org_id, module_id, name, description, conditions, condition_logic, error_message, error_field_id, run_on_create, run_on_update, is_active, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .order('name', { ascending: true });
 
@@ -29,7 +29,7 @@ export class ValidationService {
         return [];
       }
 
-      return data as ValidationRule[];
+      return data as unknown as ValidationRule[];
     } catch (error) {
       console.error('Get validation rules error:', error);
       return [];
@@ -43,7 +43,7 @@ export class ValidationService {
     try {
       let query = this.supabase
         .from('crm_studio_validation_rules')
-        .select('*')
+        .select('id, org_id, module_id, name, description, conditions, condition_logic, error_message, error_field_id, run_on_create, run_on_update, is_active, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .eq('is_active', true);
 
@@ -60,7 +60,7 @@ export class ValidationService {
         return [];
       }
 
-      return data as ValidationRule[];
+      return data as unknown as ValidationRule[];
     } catch (error) {
       console.error('Get active validation rules error:', error);
       return [];
@@ -74,7 +74,7 @@ export class ValidationService {
     try {
       const { data, error } = await this.supabase
         .from('crm_studio_validation_rules')
-        .select('*')
+        .select('id, org_id, module_id, name, description, conditions, condition_logic, error_message, error_field_id, run_on_create, run_on_update, is_active, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -83,7 +83,7 @@ export class ValidationService {
         return null;
       }
 
-      return data as ValidationRule;
+      return data as unknown as ValidationRule;
     } catch (error) {
       console.error('Get validation rule error:', error);
       return null;

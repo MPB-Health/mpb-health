@@ -110,7 +110,7 @@ export default function GlobalSearch() {
           p_limit: 15,
         });
         if (!cancelled && !error && data) {
-          setResults(data as SearchResult[]);
+          setResults(data as unknown as SearchResult[]);
           setOpen(true);
           setActiveIndex(-1);
         }

@@ -30,7 +30,7 @@ export class DynamicRecordService {
       return null;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -56,8 +56,12 @@ export class DynamicRecordService {
         fieldMap.set(field.id, field);
       }
 
-      // Start query
-      let query = this.supabase.from(tableName).select('*', { count: 'exact' });
+      // Build explicit column list from module fields to avoid select('*')
+      const columnNames = ['id', 'name', 'owner_id', 'created_by', 'created_at', 'updated_at',
+        ...fields.map((f) => f.api_name)];
+      const uniqueColumns = [...new Set(columnNames)].join(', ');
+
+      let query = this.supabase.from(tableName).select(uniqueColumns, { count: 'exact' });
 
       // Apply search filter
       if (filters.search) {
@@ -153,7 +157,7 @@ export class DynamicRecordService {
       }
 
       return {
-        records: (data || []) as DynamicRecord[],
+        records: (data || []) as unknown as DynamicRecord[],
         total: count || 0,
       };
     } catch (error) {
@@ -175,9 +179,14 @@ export class DynamicRecordService {
         return null;
       }
 
+      const fields = module.fields || [];
+      const columnNames = ['id', 'name', 'owner_id', 'created_by', 'created_at', 'updated_at',
+        ...fields.map((f) => f.api_name)];
+      const uniqueColumns = [...new Set(columnNames)].join(', ');
+
       const { data, error } = await this.supabase
         .from(tableName)
-        .select('*')
+        .select(uniqueColumns)
         .eq('id', recordId)
         .single();
 
@@ -186,7 +195,7 @@ export class DynamicRecordService {
         return null;
       }
 
-      return data as DynamicRecord;
+      return data as unknown as DynamicRecord;
     } catch (error) {
       console.error('Get record error:', error);
       return null;
@@ -454,7 +463,7 @@ export class DynamicRecordService {
 
       const { count, error } = await this.supabase
         .from(tableName)
-        .select('*', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
 
       if (error) {
         console.error('Failed to get record count:', error);

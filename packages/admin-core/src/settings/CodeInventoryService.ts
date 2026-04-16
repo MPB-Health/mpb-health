@@ -69,7 +69,7 @@ export class CodeInventoryService {
   ): Promise<{ data: InventoryCode[]; total: number }> {
     let query = supabase
       .from('code_inventory')
-      .select('*', { count: 'exact' })
+      .select('id, org_id, code_type, code, batch_id, status, value, assigned_to_user, assigned_to_member, assigned_at, used_at, expires_at, metadata, created_by, created_at', { count: 'exact' })
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
@@ -97,25 +97,25 @@ export class CodeInventoryService {
   async getCode(id: string): Promise<InventoryCode | null> {
     const { data, error } = await supabase
       .from('code_inventory')
-      .select('*')
+      .select('id, org_id, code_type, code, batch_id, status, value, assigned_to_user, assigned_to_member, assigned_at, used_at, expires_at, metadata, created_by, created_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async getCodeByValue(code: string, codeType: CodeType, orgId: string): Promise<InventoryCode | null> {
     const { data, error } = await supabase
       .from('code_inventory')
-      .select('*')
+      .select('id, org_id, code_type, code, batch_id, status, value, assigned_to_user, assigned_to_member, assigned_at, used_at, expires_at, metadata, created_by, created_at')
       .eq('org_id', orgId)
       .eq('code_type', codeType)
       .eq('code', code)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createCode(input: CodeCreateInput, orgId: string, userId: string): Promise<InventoryCode> {
@@ -130,14 +130,14 @@ export class CodeInventoryService {
         metadata: input.metadata || {},
         created_by: userId,
       })
-      .select()
+      .select('id, org_id, code_type, code, batch_id, status, value, assigned_to_user, assigned_to_member, assigned_at, used_at, expires_at, metadata, created_by, created_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'code.create', 'code_inventory', data.id, null, data);
 
-    return data;
+    return data as any;
   }
 
   async assignCode(
@@ -157,14 +157,14 @@ export class CodeInventoryService {
       })
       .eq('id', id)
       .eq('status', 'available')
-      .select()
+      .select('id, org_id, code_type, code, batch_id, status, value, assigned_to_user, assigned_to_member, assigned_at, used_at, expires_at, metadata, created_by, created_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'code.assign', 'code_inventory', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async markCodeUsed(id: string, userId: string): Promise<InventoryCode> {
@@ -178,7 +178,7 @@ export class CodeInventoryService {
       })
       .eq('id', id)
       .in('status', ['available', 'assigned'])
-      .select()
+      .select('id, org_id, code_type, code, batch_id, status, value, assigned_to_user, assigned_to_member, assigned_at, used_at, expires_at, metadata, created_by, created_at')
       .single();
 
     if (error) throw error;
@@ -190,7 +190,7 @@ export class CodeInventoryService {
 
     await this.logAudit(userId, 'code.use', 'code_inventory', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async revokeCode(id: string, userId: string): Promise<InventoryCode> {
@@ -200,14 +200,14 @@ export class CodeInventoryService {
       .from('code_inventory')
       .update({ status: 'revoked' })
       .eq('id', id)
-      .select()
+      .select('id, org_id, code_type, code, batch_id, status, value, assigned_to_user, assigned_to_member, assigned_at, used_at, expires_at, metadata, created_by, created_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'code.revoke', 'code_inventory', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async deleteCode(id: string, userId: string): Promise<void> {
@@ -228,23 +228,23 @@ export class CodeInventoryService {
   async listBatches(orgId: string): Promise<CodeBatch[]> {
     const { data, error } = await supabase
       .from('code_batches')
-      .select('*')
+      .select('id, org_id, name, code_type, prefix, total_codes, codes_used, value_per_code, expires_at, created_by, created_at')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getBatch(id: string): Promise<CodeBatch | null> {
     const { data, error } = await supabase
       .from('code_batches')
-      .select('*')
+      .select('id, org_id, name, code_type, prefix, total_codes, codes_used, value_per_code, expires_at, created_by, created_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createBatch(input: BatchCreateInput, orgId: string, userId: string): Promise<{
@@ -264,7 +264,7 @@ export class CodeInventoryService {
         expires_at: input.expires_at,
         created_by: userId,
       })
-      .select()
+      .select('id, org_id, name, code_type, prefix, total_codes, codes_used, value_per_code, expires_at, created_by, created_at')
       .single();
 
     if (batchError) throw batchError;
@@ -288,7 +288,7 @@ export class CodeInventoryService {
     const { data: createdCodes, error: codesError } = await supabase
       .from('code_inventory')
       .insert(codes)
-      .select();
+      .select('id, org_id, code_type, code, batch_id, status, value, assigned_to_user, assigned_to_member, assigned_at, used_at, expires_at, metadata, created_by, created_at');
 
     if (codesError) {
       // Rollback batch

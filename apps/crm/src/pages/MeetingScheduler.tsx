@@ -1402,12 +1402,12 @@ export default function MeetingScheduler() {
     try {
       const { data, error } = await supabase
         .from('crm_meeting_schedules')
-        .select('*')
+        .select('id, org_id, user_id, name, description, duration_minutes, buffer_minutes, slug, available_hours, booking_window_days, confirmation_template_id, reminder_template_id, is_active, location_type, location_config, created_at, updated_at')
         .eq('org_id', activeOrgId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const scheduleList = (data || []) as MeetingSchedule[];
+      const scheduleList = (data || []) as unknown as MeetingSchedule[];
       setSchedules(scheduleList);
 
       // Load stats for all schedules
@@ -1458,12 +1458,12 @@ export default function MeetingScheduler() {
       try {
         const { data, error } = await supabase
           .from('crm_meeting_bookings')
-          .select('*')
+          .select('id, schedule_id, lead_id, contact_id, booker_name, booker_email, booker_phone, start_time, end_time, status, calendar_event_id, notes, cancellation_reason, created_at')
           .eq('schedule_id', scheduleId)
           .order('start_time', { ascending: false });
 
         if (error) throw error;
-        setBookings((data || []) as MeetingBooking[]);
+        setBookings((data || []) as unknown as MeetingBooking[]);
       } catch (err) {
         console.error('Failed to load bookings:', err);
         toast.error('Failed to load bookings');

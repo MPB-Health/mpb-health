@@ -21,7 +21,7 @@ export async function getRateForPlanAndAge(
 ): Promise<number | null> {
   const { data, error } = await supabase
     .from('rate_configuration')
-    .select('*')
+    .select('id, plan_name, age_band, age_min, age_max, monthly_rate, tobacco_user, effective_date, end_date, is_active, created_at')
     .eq('plan_name', planName)
     .eq('tobacco_user', tobaccoUser)
     .eq('is_active', true)
@@ -43,7 +43,7 @@ export async function getRateForPlanAndAge(
 export async function getRatesForPlan(planName: string): Promise<RateConfiguration[]> {
   const { data, error } = await supabase
     .from('rate_configuration')
-    .select('*')
+    .select('id, plan_name, age_band, age_min, age_max, monthly_rate, tobacco_user, effective_date, end_date, is_active, created_at')
     .eq('plan_name', planName)
     .eq('is_active', true)
     .lte('effective_date', new Date().toISOString().split('T')[0])
@@ -75,7 +75,7 @@ export async function getAllActivePlans(): Promise<string[]> {
 export async function getRatesByAgeBand(ageBand: string): Promise<RateConfiguration[]> {
   const { data, error } = await supabase
     .from('rate_configuration')
-    .select('*')
+    .select('id, plan_name, age_band, age_min, age_max, monthly_rate, tobacco_user, effective_date, end_date, is_active, created_at')
     .eq('age_band', ageBand)
     .eq('is_active', true)
     .lte('effective_date', new Date().toISOString().split('T')[0])
@@ -92,7 +92,7 @@ export async function getRatesByAgeBand(ageBand: string): Promise<RateConfigurat
 export async function getAllRateConfigurations(): Promise<RateConfiguration[]> {
   const { data, error } = await supabase
     .from('rate_configuration')
-    .select('*')
+    .select('id, plan_name, age_band, age_min, age_max, monthly_rate, tobacco_user, effective_date, end_date, is_active, created_at')
     .eq('is_active', true)
     .lte('effective_date', new Date().toISOString().split('T')[0])
     .order('plan_name, age_min');

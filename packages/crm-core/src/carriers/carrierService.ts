@@ -14,7 +14,7 @@ export class CarrierService {
     try {
       let query = this.supabase
         .from('insurance_carriers')
-        .select('*')
+        .select('id, org_id, name, slug, carrier_type, is_active, logo_url, website_url, phone, notes, sort_order, created_at, updated_at')
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
 
@@ -36,7 +36,7 @@ export class CarrierService {
         return [];
       }
 
-      return data as InsuranceCarrier[];
+      return data as unknown as InsuranceCarrier[];
     } catch (error) {
       console.error('Get carriers error:', error);
       return [];
@@ -51,12 +51,12 @@ export class CarrierService {
     try {
       const { data, error } = await this.supabase
         .from('insurance_carriers')
-        .select('*')
+        .select('id, org_id, name, slug, carrier_type, is_active, logo_url, website_url, phone, notes, sort_order, created_at, updated_at')
         .eq('id', id)
         .single();
 
       if (error) return null;
-      return data as InsuranceCarrier;
+      return data as unknown as InsuranceCarrier;
     } catch {
       return null;
     }
@@ -80,14 +80,14 @@ export class CarrierService {
           notes: input.notes || null,
           sort_order: input.sort_order ?? 0,
         })
-        .select('*')
+        .select('id, org_id, name, slug, carrier_type, is_active, logo_url, website_url, phone, notes, sort_order, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, carrier: data as InsuranceCarrier };
+      return { success: true, carrier: data as unknown as InsuranceCarrier };
     } catch (error) {
       console.error('Create carrier error:', error);
       return { success: false, error: 'Failed to create carrier' };

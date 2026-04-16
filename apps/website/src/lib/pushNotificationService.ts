@@ -387,7 +387,7 @@ class PushNotificationService {
       };
     }
 
-    return data;
+    return data as any;
   }
 
   /**

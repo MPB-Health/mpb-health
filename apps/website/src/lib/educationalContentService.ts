@@ -23,7 +23,7 @@ export interface EducationalContent {
 export async function getEducationalContentBySlug(slug: string): Promise<EducationalContent | null> {
   const { data, error } = await supabase
     .from('educational_content')
-    .select('*')
+    .select('id, slug, title, subtitle, content_type, content_data, is_active, created_at, updated_at')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle();
@@ -41,7 +41,7 @@ export async function getEducationalContentByType(
 ): Promise<EducationalContent[]> {
   const { data, error } = await supabase
     .from('educational_content')
-    .select('*')
+    .select('id, slug, title, subtitle, content_type, content_data, is_active, created_at, updated_at')
     .eq('content_type', contentType)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
@@ -61,7 +61,7 @@ export async function getHowItWorksContent(): Promise<EducationalContent | null>
 export async function getAllEducationalContent(): Promise<EducationalContent[]> {
   const { data, error } = await supabase
     .from('educational_content')
-    .select('*')
+    .select('id, slug, title, subtitle, content_type, content_data, is_active, created_at, updated_at')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 

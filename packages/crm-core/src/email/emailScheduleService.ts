@@ -22,7 +22,7 @@ export class EmailScheduleService {
       let query = this.supabase
         .from('email_schedules')
         .select(`
-          *,
+        id, org_id, name, description, template_id, recipient_type, recipient_filter, recipient_list, schedule_type, schedule_config, next_run_at, last_run_at, status, total_sent, total_opened, total_clicked, created_by, created_at, updated_at,
           template:template_id (name)
         `)
         .order('created_at', { ascending: false });
@@ -42,7 +42,7 @@ export class EmailScheduleService {
 
       return (data || []).map((s) => ({
         ...s,
-        template_name: s.template?.name,
+        template_name: (s.template as unknown as { name: string } | null)?.name,
         recipient_filter: s.recipient_filter || {},
         recipient_list: s.recipient_list || [],
       }));
@@ -60,7 +60,7 @@ export class EmailScheduleService {
       const { data, error } = await this.supabase
         .from('email_schedules')
         .select(`
-          *,
+        id, org_id, name, description, template_id, recipient_type, recipient_filter, recipient_list, schedule_type, schedule_config, next_run_at, last_run_at, status, total_sent, total_opened, total_clicked, created_by, created_at, updated_at,
           template:template_id (name)
         `)
         .eq('id', id)
@@ -70,7 +70,7 @@ export class EmailScheduleService {
 
       return {
         ...data,
-        template_name: data.template?.name,
+        template_name: (data.template as unknown as { name: string } | null)?.name,
         recipient_filter: data.recipient_filter || {},
         recipient_list: data.recipient_list || [],
       };
@@ -106,14 +106,14 @@ export class EmailScheduleService {
           status: 'active',
           created_by: user.id,
         })
-        .select()
+        .select('id, org_id, name, description, template_id, recipient_type, recipient_filter, recipient_list, schedule_type, schedule_config, next_run_at, last_run_at, status, total_sent, total_opened, total_clicked, created_by, created_at, updated_at')
         .single();
 
       if (error) throw error;
 
       await this.logAudit('schedule.create', 'email_schedule', data.id, null, data);
 
-      return data;
+      return data as any;
     } catch (err) {
       console.error('EmailScheduleService.create error:', err);
       return null;
@@ -152,14 +152,14 @@ export class EmailScheduleService {
         .from('email_schedules')
         .update(updateData)
         .eq('id', id)
-        .select()
+        .select('id, org_id, name, description, template_id, recipient_type, recipient_filter, recipient_list, schedule_type, schedule_config, next_run_at, last_run_at, status, total_sent, total_opened, total_clicked, created_by, created_at, updated_at')
         .single();
 
       if (error) throw error;
 
       await this.logAudit('schedule.update', 'email_schedule', id, before, data);
 
-      return data;
+      return data as any;
     } catch (err) {
       console.error('EmailScheduleService.update error:', err);
       return null;
@@ -235,14 +235,14 @@ export class EmailScheduleService {
       const { data, error } = await this.supabase
         .from('email_schedules')
         .select(`
-          *,
+        id, org_id, name, description, template_id, recipient_type, recipient_filter, recipient_list, schedule_type, schedule_config, next_run_at, last_run_at, status, total_sent, total_opened, total_clicked, created_by, created_at, updated_at,
           template:template_id (name, subject, body)
         `)
         .eq('status', 'active')
         .lte('next_run_at', now);
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as any;
     } catch (err) {
       console.error('EmailScheduleService.getDueSchedules error:', err);
       return [];
@@ -250,7 +250,7 @@ export class EmailScheduleService {
   }
 
   /**
-   * Mark schedule as run and calculate next run time
+   * Mark schedule as unknown as run and calculate next run time
    */
   async markAsRun(id: string, sentCount: number): Promise<void> {
     try {

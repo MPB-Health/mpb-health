@@ -82,7 +82,7 @@ export default function FormsManager() {
     try {
       const { data, error } = await supabase
         .from('cognito_forms')
-        .select('*')
+        .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
         .order('sort_order', { ascending: true });
 
       if (error) throw error;

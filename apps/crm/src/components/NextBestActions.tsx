@@ -287,7 +287,7 @@ async function fetchLeadActions(
 
   const now = new Date();
 
-  return (data as LeadRow[]).map((lead) => {
+  return (data as unknown as LeadRow[]).map((lead) => {
     const daysStage = daysBetween(lead.stage_changed_at, now);
     const daysContact = daysBetween(lead.last_contacted_at, now);
     const premium = lead.premium_amount ?? 0;

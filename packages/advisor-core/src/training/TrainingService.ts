@@ -11,7 +11,7 @@ export class TrainingService {
   async getModules(category?: string): Promise<TrainingModule[]> {
     let query = supabase
       .from('training_modules')
-      .select('*')
+      .select('id, title, description, category, content_type, content_url, thumbnail_url, duration_minutes, order_index, is_required, prerequisites, created_at, updated_at')
       .order('order_index', { ascending: true });
 
     if (category) {
@@ -20,41 +20,41 @@ export class TrainingService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single module by ID
   async getModule(moduleId: string): Promise<TrainingModule | null> {
     const { data, error } = await supabase
       .from('training_modules')
-      .select('*')
+      .select('id, title, description, category, content_type, content_url, thumbnail_url, duration_minutes, order_index, is_required, prerequisites, created_at, updated_at')
       .eq('id', moduleId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Get training categories
   async getCategories(): Promise<TrainingCategory[]> {
     const { data, error } = await supabase
       .from('training_categories')
-      .select('*, module_count:training_modules(count)')
+      .select('id, name, description, icon, order_index, module_count:training_modules(count)')
       .order('order_index', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get advisor's progress for all modules
   async getAdvisorProgress(advisorId: string): Promise<TrainingProgress[]> {
     const { data, error } = await supabase
       .from('training_progress')
-      .select('*')
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
       .eq('advisor_id', advisorId);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get progress for a specific module
@@ -64,13 +64,13 @@ export class TrainingService {
   ): Promise<TrainingProgress | null> {
     const { data, error } = await supabase
       .from('training_progress')
-      .select('*')
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
       .eq('advisor_id', advisorId)
       .eq('module_id', moduleId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Start a training module
@@ -88,11 +88,11 @@ export class TrainingService {
             started_at: new Date().toISOString(),
           })
           .eq('id', existing.id)
-          .select()
+          .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
           .single();
 
         if (error) throw error;
-        return data;
+        return data as any;
       }
       return existing;
     }
@@ -108,11 +108,11 @@ export class TrainingService {
         time_spent_minutes: 0,
         quiz_attempts: 0,
       })
-      .select()
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Update progress (time spent, position)
@@ -124,11 +124,11 @@ export class TrainingService {
       .from('training_progress')
       .update(updates)
       .eq('id', progressId)
-      .select()
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Complete a module
@@ -154,11 +154,11 @@ export class TrainingService {
           : progress.quiz_attempts,
       })
       .eq('id', progress.id)
-      .select()
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Get overall training stats for an advisor
@@ -203,12 +203,12 @@ export class TrainingService {
   async getCertifications(advisorId: string): Promise<Certification[]> {
     const { data, error } = await supabase
       .from('certifications')
-      .select('*')
+      .select('id, advisor_id, name, description, issued_at, expires_at, certificate_url, badge_url, issuer, credential_id')
       .eq('advisor_id', advisorId)
       .order('issued_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Save quiz certification when advisor passes the Healthcare Advisor quiz
@@ -231,14 +231,14 @@ export class TrainingService {
         issued_at: new Date().toISOString(),
         issuer: 'MPB Health',
       })
-      .select()
+      .select('id, advisor_id, name, description, issued_at, expires_at, certificate_url, badge_url, issuer, credential_id')
       .single();
 
     if (error) {
       console.error('Failed to save quiz certification:', error);
       return null;
     }
-    return data;
+    return data as any;
   }
 
   // Check and issue certifications based on completed training
@@ -267,7 +267,7 @@ export class TrainingService {
             issued_at: new Date().toISOString(),
             issuer: 'MPB Health',
           })
-          .select()
+          .select('id, advisor_id, name, description, issued_at, expires_at, certificate_url, badge_url, issuer, credential_id')
           .single();
 
         if (!error && data) {

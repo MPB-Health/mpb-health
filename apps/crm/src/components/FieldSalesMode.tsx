@@ -220,7 +220,7 @@ async function fetchFieldActions(orgId: string, userId: string): Promise<FieldAc
       };
     });
 
-  const leadActions: FieldAction[] = ((leadResult.data ?? []) as LeadRow[]).map((lead) => {
+  const leadActions: FieldAction[] = ((leadResult.data ?? []) as unknown as LeadRow[]).map((lead) => {
     const daysStage = daysBetween(lead.stage_changed_at, now);
     const daysContact = daysBetween(lead.last_contacted_at, now);
     const premium = lead.premium_amount ?? 0;

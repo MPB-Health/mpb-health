@@ -20,7 +20,7 @@ export class AttachmentService {
     try {
       let query = this.supabase
         .from('crm_attachments')
-        .select('*')
+        .select('id, org_id, entity_type, entity_id, file_name, file_size, file_type, storage_path, uploaded_by, created_at')
         .eq('entity_type', entityType)
         .eq('entity_id', entityId);
 
@@ -35,7 +35,7 @@ export class AttachmentService {
         return [];
       }
 
-      return (data || []) as AttachmentWithUploader[];
+      return (data || []) as unknown as AttachmentWithUploader[];
     } catch (err) {
       console.error('Get attachments error:', err);
       return [];
@@ -75,7 +75,7 @@ export class AttachmentService {
           uploaded_by: user.user.id,
           metadata: input.metadata || {},
         })
-        .select('*')
+        .select('id, org_id, entity_type, entity_id, file_name, file_size, file_type, storage_path, uploaded_by, created_at')
         .single();
 
       if (insertError) {
@@ -83,7 +83,7 @@ export class AttachmentService {
         return { success: false, error: insertError.message };
       }
 
-      return { success: true, attachment: data as Attachment };
+      return { success: true, attachment: data as unknown as Attachment };
     } catch (err) {
       console.error('Upload attachment error:', err);
       return { success: false, error: 'Upload failed' };

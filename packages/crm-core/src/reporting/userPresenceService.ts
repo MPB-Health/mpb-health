@@ -17,7 +17,7 @@ export class UserPresenceService {
       const { data, error } = await this.supabase
         .from('user_presence')
         .select(`
-          *,
+        id, user_id, org_id, status, current_page, last_activity_at, session_started_at, ip_address, user_agent,
           profiles:user_id (email, full_name)
         `)
         .eq('org_id', orgId)
@@ -29,8 +29,8 @@ export class UserPresenceService {
 
       return (data || []).map((p) => ({
         ...p,
-        user_email: p.profiles?.email,
-        user_name: p.profiles?.full_name,
+        user_email: (p.profiles as any)?.email,
+        user_name: (p.profiles as any)?.full_name,
       }));
     } catch (err) {
       console.error('UserPresenceService.getOnlineUsers error:', err);
@@ -46,7 +46,7 @@ export class UserPresenceService {
       const { data, error } = await this.supabase
         .from('user_presence')
         .select(`
-          *,
+        id, user_id, org_id, status, current_page, last_activity_at, session_started_at, ip_address, user_agent,
           profiles:user_id (email, full_name)
         `)
         .eq('user_id', userId)
@@ -58,8 +58,8 @@ export class UserPresenceService {
 
       return {
         ...data,
-        user_email: data.profiles?.email,
-        user_name: data.profiles?.full_name,
+        user_email: (data.profiles as any)?.email,
+        user_name: (data.profiles as any)?.full_name,
       };
     } catch (err) {
       console.error('UserPresenceService.getUserPresence error:', err);
@@ -90,11 +90,11 @@ export class UserPresenceService {
           },
           { onConflict: 'user_id' }
         )
-        .select()
+        .select('id, user_id, org_id, status, current_page, last_activity_at, session_started_at, ip_address, user_agent')
         .single();
 
       if (error) throw error;
-      return data;
+      return data as any;
     } catch (err) {
       console.error('UserPresenceService.updatePresence error:', err);
       return null;
@@ -102,28 +102,28 @@ export class UserPresenceService {
   }
 
   /**
-   * Set user as online
+   * Set user as unknown as online
    */
   async setOnline(orgId: string, currentPage?: string): Promise<UserPresence | null> {
     return this.updatePresence(orgId, { status: 'online', current_page: currentPage });
   }
 
   /**
-   * Set user as away
+   * Set user as unknown as away
    */
   async setAway(orgId: string): Promise<UserPresence | null> {
     return this.updatePresence(orgId, { status: 'away' });
   }
 
   /**
-   * Set user as busy
+   * Set user as unknown as busy
    */
   async setBusy(orgId: string): Promise<UserPresence | null> {
     return this.updatePresence(orgId, { status: 'busy' });
   }
 
   /**
-   * Set user as offline
+   * Set user as unknown as offline
    */
   async setOffline(): Promise<boolean> {
     try {

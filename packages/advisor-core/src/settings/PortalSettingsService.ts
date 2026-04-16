@@ -19,10 +19,10 @@ export class PortalSettingsService {
   async getAllSettings(): Promise<PortalSetting[]> {
     const { data, error } = await supabase
       .from('advisor_portal_settings')
-      .select('*')
+      .select('id, key, value, label, description, category, updated_at, updated_by')
       .order('category', { ascending: true });
     if (error) throw error;
-    const settings = (data || []) as PortalSetting[];
+    const settings = (data || []) as unknown as PortalSetting[];
     // Update cache
     this.cache.clear();
     settings.forEach(s => this.cache.set(s.key, s.value));
@@ -50,11 +50,11 @@ export class PortalSettingsService {
   async getSettingsByCategory(category: string): Promise<PortalSetting[]> {
     const { data, error } = await supabase
       .from('advisor_portal_settings')
-      .select('*')
+      .select('id, key, value, label, description, category, updated_at, updated_by')
       .eq('category', category)
       .order('key', { ascending: true });
     if (error) throw error;
-    return (data || []) as PortalSetting[];
+    return (data || []) as unknown as PortalSetting[];
   }
 
   async updateSetting(key: string, value: string): Promise<void> {

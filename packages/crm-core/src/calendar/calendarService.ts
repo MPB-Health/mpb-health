@@ -13,7 +13,7 @@ export class CalendarService {
     try {
       let query = this.supabase
         .from('calendar_events')
-        .select('*')
+        .select('id, org_id, lead_id, title, description, event_type, status, start_time, end_time, all_day, location, meeting_link, reminder_minutes, created_by, created_at, updated_at')
         .order('start_time', { ascending: true });
 
       if (filters?.event_type) {
@@ -37,7 +37,7 @@ export class CalendarService {
         console.error('Error fetching calendar events:', error);
         return [];
       }
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Error fetching calendar events:', error);
       return [];
@@ -48,7 +48,7 @@ export class CalendarService {
     try {
       const { data, error } = await this.supabase
         .from('calendar_events')
-        .select('*')
+        .select('id, org_id, lead_id, title, description, event_type, status, start_time, end_time, all_day, location, meeting_link, reminder_minutes, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -56,7 +56,7 @@ export class CalendarService {
         console.error('Error fetching calendar event:', error);
         return null;
       }
-      return data;
+      return data as any;
     } catch (error) {
       console.error('Error fetching calendar event:', error);
       return null;

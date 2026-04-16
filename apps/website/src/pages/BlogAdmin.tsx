@@ -61,7 +61,7 @@ export const BlogAdmin: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('blog_articles')
-        .select('*')
+        .select('id, title, slug, excerpt, content, featured_image_url, category, author, is_published, published_date, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       // Silently handle missing table - it will be created when migrations run

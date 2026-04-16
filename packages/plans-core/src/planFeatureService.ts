@@ -14,7 +14,7 @@ export function createPlanFeatureService(supabase: SupabaseClient) {
   async function getFeatures(planId: string): Promise<PlanFeature[]> {
     const { data, error } = await supabase
       .from('plan_features')
-      .select('*')
+      .select('id, plan_id, category, feature_name, feature_value, cost, notes, sort_order, created_at')
       .eq('plan_id', planId)
       .order('category')
       .order('sort_order');
@@ -23,7 +23,7 @@ export function createPlanFeatureService(supabase: SupabaseClient) {
       console.error('Error fetching plan features:', error);
       return [];
     }
-    return (data || []) as PlanFeature[];
+    return (data || []) as unknown as PlanFeature[];
   }
 
   // -----------------------------------------------------------------------
@@ -135,12 +135,12 @@ export function createPlanFeatureService(supabase: SupabaseClient) {
   ): Promise<PlanSharingDetails | null> {
     const { data, error } = await supabase
       .from('plan_sharing_details')
-      .select('*')
+      .select('id, plan_id, has_lifetime_cap, has_annual_cap, preexisting_lookback_months, maternity_waiting_months, has_international_coverage, iua_options, created_at, updated_at')
       .eq('plan_id', planId)
       .maybeSingle();
 
     if (error) return null;
-    return data as PlanSharingDetails | null;
+    return data as unknown as PlanSharingDetails | null;
   }
 
   // -----------------------------------------------------------------------

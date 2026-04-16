@@ -23,7 +23,7 @@ export class FormService {
     try {
       let query = this.supabase
         .from('crm_web_forms')
-        .select('*', { count: 'exact' });
+        .select('id, org_id, name, description, slug, entity_type, status, fields, settings, styling, submit_count, last_submission_at, created_by, created_at, updated_at', { count: 'exact' });
 
       if (filters.status) {
         query = query.eq('status', filters.status);
@@ -43,7 +43,7 @@ export class FormService {
         return { forms: [], total: 0 };
       }
 
-      return { forms: data as WebForm[], total: count || 0 };
+      return { forms: data as unknown as WebForm[], total: count || 0 };
     } catch (error) {
       console.error('Get forms error:', error);
       return { forms: [], total: 0 };
@@ -57,7 +57,7 @@ export class FormService {
     try {
       const { data, error } = await this.supabase
         .from('crm_web_forms')
-        .select('*')
+        .select('id, org_id, name, description, slug, entity_type, status, fields, settings, styling, submit_count, last_submission_at, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -66,7 +66,7 @@ export class FormService {
         return null;
       }
 
-      return data as WebForm;
+      return data as unknown as WebForm;
     } catch (error) {
       console.error('Get form error:', error);
       return null;
@@ -80,7 +80,7 @@ export class FormService {
     try {
       const { data, error } = await this.supabase
         .from('crm_web_forms')
-        .select('*')
+        .select('id, org_id, name, description, slug, entity_type, status, fields, settings, styling, submit_count, last_submission_at, created_by, created_at, updated_at')
         .eq('slug', slug)
         .eq('status', 'active')
         .single();
@@ -90,7 +90,7 @@ export class FormService {
         return null;
       }
 
-      return data as WebForm;
+      return data as unknown as WebForm;
     } catch (error) {
       console.error('Get form by slug error:', error);
       return null;
@@ -221,7 +221,7 @@ export class FormService {
     try {
       let query = this.supabase
         .from('crm_web_form_submissions')
-        .select('*', { count: 'exact' })
+        .select('id, form_id, data, source_url, ip_address, user_agent, lead_id, status, created_at', { count: 'exact' })
         .eq('form_id', formId);
 
       if (filters.status) {
@@ -243,7 +243,7 @@ export class FormService {
         return { submissions: [], total: 0 };
       }
 
-      return { submissions: data as WebFormSubmission[], total: count || 0 };
+      return { submissions: data as unknown as WebFormSubmission[], total: count || 0 };
     } catch (error) {
       console.error('Get submissions error:', error);
       return { submissions: [], total: 0 };
@@ -257,7 +257,7 @@ export class FormService {
     try {
       const { data, error } = await this.supabase
         .from('crm_web_form_submissions')
-        .select('*')
+        .select('id, form_id, data, source_url, ip_address, user_agent, lead_id, status, created_at')
         .eq('id', id)
         .single();
 
@@ -266,7 +266,7 @@ export class FormService {
         return null;
       }
 
-      return data as WebFormSubmission;
+      return data as unknown as WebFormSubmission;
     } catch (error) {
       console.error('Get submission error:', error);
       return null;
@@ -361,21 +361,21 @@ export class FormService {
       const [totalResult, weekResult, monthResult, convertedResult] = await Promise.all([
         this.supabase
           .from('crm_web_form_submissions')
-          .select('*', { count: 'exact', head: true })
+          .select('id, form_id, data, source_url, ip_address, user_agent, lead_id, status, created_at', { count: 'exact', head: true })
           .eq('form_id', formId),
         this.supabase
           .from('crm_web_form_submissions')
-          .select('*', { count: 'exact', head: true })
+          .select('id, form_id, data, source_url, ip_address, user_agent, lead_id, status, created_at', { count: 'exact', head: true })
           .eq('form_id', formId)
           .gte('created_at', weekAgo),
         this.supabase
           .from('crm_web_form_submissions')
-          .select('*', { count: 'exact', head: true })
+          .select('id, form_id, data, source_url, ip_address, user_agent, lead_id, status, created_at', { count: 'exact', head: true })
           .eq('form_id', formId)
           .gte('created_at', monthAgo),
         this.supabase
           .from('crm_web_form_submissions')
-          .select('*', { count: 'exact', head: true })
+          .select('id, form_id, data, source_url, ip_address, user_agent, lead_id, status, created_at', { count: 'exact', head: true })
           .eq('form_id', formId)
           .eq('status', 'converted'),
       ]);

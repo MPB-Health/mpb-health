@@ -80,7 +80,7 @@ class CRMService {
     try {
       const { data, error } = await supabase
         .from('crm_pipeline_stages')
-        .select('*')
+        .select('id, name, display_name, color, icon, sort_order, is_active, is_won_stage, is_lost_stage')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
@@ -120,7 +120,7 @@ class CRMService {
     try {
       let query = supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact' });
+        .select('id, first_name, last_name, email, phone, household_size, zip_code, current_insurance, monthly_premium, coverage_preference, primary_concern, contact_preference, pipeline_stage, priority, assigned_to, lead_score, tags, source_cta, source_page, utm_source, utm_medium, utm_campaign, created_at, updated_at, stage_changed_at, last_contacted_at, next_followup_at, converted_at, lost_reason, form_data, plan_type, carrier_id, tobacco_status, group_type, original_effective_date, premium_amount, subsidy_amount, member_responsibility, state, city', { count: 'exact' });
 
       // Apply filters
       if (filters.stage) {
@@ -156,7 +156,7 @@ class CRMService {
         return { leads: [], total: 0 };
       }
 
-      return { leads: data as Lead[], total: count || 0 };
+      return { leads: data as unknown as Lead[], total: count || 0 };
     } catch (error) {
       console.error('Get leads error:', error);
       return { leads: [], total: 0 };
@@ -167,7 +167,7 @@ class CRMService {
     try {
       const { data, error } = await supabase
         .from('lead_submissions')
-        .select('*')
+        .select('id, first_name, last_name, email, phone, household_size, zip_code, current_insurance, monthly_premium, coverage_preference, primary_concern, contact_preference, pipeline_stage, priority, assigned_to, lead_score, tags, source_cta, source_page, utm_source, utm_medium, utm_campaign, created_at, updated_at, stage_changed_at, last_contacted_at, next_followup_at, converted_at, lost_reason, form_data, plan_type, carrier_id, tobacco_status, group_type, original_effective_date, premium_amount, subsidy_amount, member_responsibility, state, city')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -195,7 +195,7 @@ class CRMService {
     try {
       const { data, error } = await supabase
         .from('lead_submissions')
-        .select('*')
+        .select('id, first_name, last_name, email, phone, household_size, zip_code, current_insurance, monthly_premium, coverage_preference, primary_concern, contact_preference, pipeline_stage, priority, assigned_to, lead_score, tags, source_cta, source_page, utm_source, utm_medium, utm_campaign, created_at, updated_at, stage_changed_at, last_contacted_at, next_followup_at, converted_at, lost_reason, form_data, plan_type, carrier_id, tobacco_status, group_type, original_effective_date, premium_amount, subsidy_amount, member_responsibility, state, city')
         .eq('id', id)
         .single();
 
@@ -204,7 +204,7 @@ class CRMService {
         return null;
       }
 
-      return data as Lead;
+      return data as unknown as Lead;
     } catch (error) {
       console.error('Get lead error:', error);
       return null;
@@ -351,7 +351,7 @@ class CRMService {
     try {
       const { data, error } = await supabase
         .from('lead_activities')
-        .select('*')
+        .select('id, lead_id, activity_type, title, description, metadata, created_by, created_at')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -361,7 +361,7 @@ class CRMService {
         return [];
       }
 
-      return data as LeadActivity[];
+      return data as unknown as LeadActivity[];
     } catch (error) {
       console.error('Get activities error:', error);
       return [];
@@ -453,7 +453,7 @@ class CRMService {
     try {
       let query = supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .order('due_date', { ascending: true });
 
       if (leadId) {
@@ -471,7 +471,7 @@ class CRMService {
         return [];
       }
 
-      return data as LeadTask[];
+      return data as unknown as LeadTask[];
     } catch (error) {
       console.error('Get tasks error:', error);
       return [];
@@ -482,7 +482,7 @@ class CRMService {
     try {
       const { data, error } = await supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .eq('completed', false)
         .lt('due_date', new Date().toISOString())
         .order('due_date', { ascending: true });
@@ -492,7 +492,7 @@ class CRMService {
         return [];
       }
 
-      return data as LeadTask[];
+      return data as unknown as LeadTask[];
     } catch (error) {
       console.error('Get overdue tasks error:', error);
       return [];
@@ -507,7 +507,7 @@ class CRMService {
 
       const { data, error } = await supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .eq('completed', false)
         .gte('due_date', startOfDay)
         .lt('due_date', endOfDay)
@@ -518,7 +518,7 @@ class CRMService {
         return [];
       }
 
-      return data as LeadTask[];
+      return data as unknown as LeadTask[];
     } catch (error) {
       console.error('Get tasks due today error:', error);
       return [];
@@ -574,7 +574,7 @@ class CRMService {
 
       const { data: task, error: fetchError } = await supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .eq('id', taskId)
         .single();
 
@@ -636,7 +636,7 @@ class CRMService {
     try {
       const { data, error } = await supabase
         .from('lead_activities')
-        .select('*')
+        .select('id, lead_id, activity_type, title, description, metadata, created_by, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -645,7 +645,7 @@ class CRMService {
         return [];
       }
 
-      return data as LeadActivity[];
+      return data as unknown as LeadActivity[];
     } catch (error) {
       console.error('Get recent activities error:', error);
       return [];
@@ -661,7 +661,7 @@ class CRMService {
     filters?: LeadFilters
   ): Promise<Lead[]> {
     try {
-      let query = supabase.from('lead_submissions').select('*');
+      let query = supabase.from('lead_submissions').select('id, first_name, last_name, email, phone, household_size, zip_code, current_insurance, monthly_premium, coverage_preference, primary_concern, contact_preference, pipeline_stage, priority, assigned_to, lead_score, tags, source_cta, source_page, utm_source, utm_medium, utm_campaign, created_at, updated_at, stage_changed_at, last_contacted_at, next_followup_at, converted_at, lost_reason, form_data, plan_type, carrier_id, tobacco_status, group_type, original_effective_date, premium_amount, subsidy_amount, member_responsibility, state, city');
 
       if (leadIds && leadIds.length > 0) {
         query = query.in('id', leadIds);
@@ -690,7 +690,7 @@ class CRMService {
         return [];
       }
 
-      return data as Lead[];
+      return data as unknown as Lead[];
     } catch (error) {
       console.error('Get leads for export error:', error);
       return [];

@@ -32,7 +32,7 @@ class MFAService {
     try {
       const { data, error } = await supabase
         .from('user_mfa_settings')
-        .select('*')
+        .select('user_id, mfa_enabled, mfa_method, phone_number, enrolled_at, last_verified_at, backup_codes, trusted_devices')
         .eq('user_id', userId)
         .maybeSingle();
 

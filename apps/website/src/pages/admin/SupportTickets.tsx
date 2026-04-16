@@ -59,7 +59,7 @@ const SupportTickets: React.FC = () => {
     try {
       let query = supabase
         .from('support_tickets')
-        .select('*')
+        .select('id, ticket_number, member_id, member_name, member_email, subject, description, category, priority, status, assigned_to, created_at, updated_at, resolved_at')
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {

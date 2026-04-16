@@ -48,7 +48,7 @@ const FAQAdmin: React.FC = () => {
       setLoading(true);
       let query = supabase
         .from('faq_items')
-        .select('*')
+        .select('id, title, content_html, category, order_index, is_active, created_at, updated_at')
         .order('category')
         .order('order_index');
 

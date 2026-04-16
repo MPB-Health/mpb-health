@@ -46,7 +46,7 @@ export class EmailTemplateAdminService {
   }): Promise<EmailTemplate[]> {
     let query = supabase
       .from('crm_templates')
-      .select('*')
+      .select('id, name, description, template_type, category, subject, body, variables, is_ai_generated, is_active, performance_score, total_sent, open_rate, click_rate, created_by, created_at, updated_at')
       .order('updated_at', { ascending: false });
 
     if (filters?.category) {
@@ -63,17 +63,17 @@ export class EmailTemplateAdminService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as EmailTemplate[];
+    return (data || []) as unknown as EmailTemplate[];
   }
 
   async getById(id: string): Promise<EmailTemplate | null> {
     const { data, error } = await supabase
       .from('crm_templates')
-      .select('*')
+      .select('id, name, description, template_type, category, subject, body, variables, is_ai_generated, is_active, performance_score, total_sent, open_rate, click_rate, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
     if (error) return null;
-    return data as EmailTemplate;
+    return data as unknown as EmailTemplate;
   }
 
   async create(input: EmailTemplateCreateInput): Promise<EmailTemplate> {
@@ -84,10 +84,10 @@ export class EmailTemplateAdminService {
         template_type: input.template_type || 'email',
         is_active: input.is_active ?? true,
       })
-      .select()
+      .select('id, name, description, template_type, category, subject, body, variables, is_ai_generated, is_active, performance_score, total_sent, open_rate, click_rate, created_by, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as EmailTemplate;
+    return data as unknown as EmailTemplate;
   }
 
   async update(
@@ -98,10 +98,10 @@ export class EmailTemplateAdminService {
       .from('crm_templates')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, name, description, template_type, category, subject, body, variables, is_ai_generated, is_active, performance_score, total_sent, open_rate, click_rate, created_by, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as EmailTemplate;
+    return data as unknown as EmailTemplate;
   }
 
   async delete(id: string): Promise<void> {

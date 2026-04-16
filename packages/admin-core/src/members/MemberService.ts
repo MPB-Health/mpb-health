@@ -79,7 +79,7 @@ export class MemberService {
   async getMembers(filters?: MemberFilters): Promise<{ data: MemberProfile[]; count: number }> {
     let query = supabase
       .from('member_profiles')
-      .select('*', { count: 'exact' })
+      .select('id, first_name, last_name, date_of_birth, gender, phone, email, address_line1, city, state, zip_code, membership_number, membership_status, membership_start_date, membership_end_date, plan_id, assigned_advisor_id, preferred_language, created_at, updated_at', { count: 'exact' })
       .order('created_at', { ascending: false });
 
     if (filters?.status) {
@@ -106,12 +106,12 @@ export class MemberService {
   async getMember(memberId: string): Promise<MemberProfile | null> {
     const { data, error } = await supabase
       .from('member_profiles')
-      .select('*')
+      .select('id, first_name, last_name, date_of_birth, gender, phone, email, address_line1, city, state, zip_code, membership_number, membership_status, membership_start_date, membership_end_date, plan_id, assigned_advisor_id, preferred_language, created_at, updated_at')
       .eq('id', memberId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async updateMember(
@@ -127,7 +127,7 @@ export class MemberService {
       .from('member_profiles')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', memberId)
-      .select()
+      .select('id, first_name, last_name, date_of_birth, gender, phone, email, address_line1, city, state, zip_code, membership_number, membership_status, membership_start_date, membership_end_date, plan_id, assigned_advisor_id, preferred_language, created_at, updated_at')
       .single();
 
     if (error) throw error;
@@ -155,7 +155,7 @@ export class MemberService {
       }
     }
 
-    return data;
+    return data as any;
   }
 
   async getDependents(memberId: string): Promise<MemberDependent[]> {
@@ -166,7 +166,7 @@ export class MemberService {
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getClaims(memberId: string): Promise<MemberClaim[]> {
@@ -178,7 +178,7 @@ export class MemberService {
       .limit(50);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getStats(): Promise<MemberStats> {

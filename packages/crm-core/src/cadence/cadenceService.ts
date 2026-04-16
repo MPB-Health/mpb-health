@@ -16,7 +16,7 @@ export class CadenceService {
   async getCadences(): Promise<FollowUpCadence[]> {
     const { data, error } = await this.supabase
       .from('crm_follow_up_cadences')
-      .select('*')
+      .select('id, org_id, pipeline_stage_id, name, steps, is_default, is_active, created_by, created_at, updated_at')
       .eq('org_id', this.orgId)
       .order('is_default', { ascending: false })
       .order('name');
@@ -25,18 +25,18 @@ export class CadenceService {
       console.error('Failed to get cadences:', error);
       return [];
     }
-    return data as FollowUpCadence[];
+    return data as unknown as FollowUpCadence[];
   }
 
   async getCadence(id: string): Promise<FollowUpCadence | null> {
     const { data, error } = await this.supabase
       .from('crm_follow_up_cadences')
-      .select('*')
+      .select('id, org_id, pipeline_stage_id, name, steps, is_default, is_active, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data as FollowUpCadence;
+    return data as unknown as FollowUpCadence;
   }
 
   async createCadence(input: CadenceCreateInput): Promise<FollowUpCadence | null> {
@@ -57,14 +57,14 @@ export class CadenceService {
         ...input,
         created_by: user?.id,
       })
-      .select()
+      .select('id, org_id, pipeline_stage_id, name, steps, is_default, is_active, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to create cadence:', error);
       return null;
     }
-    return data as FollowUpCadence;
+    return data as unknown as FollowUpCadence;
   }
 
   async updateCadence(
@@ -84,14 +84,14 @@ export class CadenceService {
       .from('crm_follow_up_cadences')
       .update(input)
       .eq('id', id)
-      .select()
+      .select('id, org_id, pipeline_stage_id, name, steps, is_default, is_active, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to update cadence:', error);
       return null;
     }
-    return data as FollowUpCadence;
+    return data as unknown as FollowUpCadence;
   }
 
   async deleteCadence(id: string): Promise<boolean> {
@@ -127,7 +127,7 @@ export class CadenceService {
     const cadence = await this.getCadence(targetCadenceId);
     if (!cadence || !cadence.steps.length) return null;
 
-    const steps = cadence.steps as CadenceStep[];
+    const steps = cadence.steps as unknown as CadenceStep[];
     const firstStep = steps[0];
     const nextActionAt = new Date(
       Date.now() + firstStep.delay_hours * 60 * 60 * 1000
@@ -148,14 +148,14 @@ export class CadenceService {
         },
         { onConflict: 'lead_id,cadence_id' }
       )
-      .select()
+      .select('id, lead_id, cadence_id, org_id, current_step, next_action_at, paused, paused_reason, completed_at, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to enroll lead in cadence:', error);
       return null;
     }
-    return data as LeadCadenceState;
+    return data as unknown as LeadCadenceState;
   }
 
   async advanceStep(leadId: string): Promise<LeadCadenceState | null> {
@@ -165,7 +165,7 @@ export class CadenceService {
     const cadence = await this.getCadence(state.cadence_id);
     if (!cadence) return state;
 
-    const steps = cadence.steps as CadenceStep[];
+    const steps = cadence.steps as unknown as CadenceStep[];
     const nextStepIdx = state.current_step + 1;
 
     if (nextStepIdx >= steps.length) {
@@ -177,10 +177,10 @@ export class CadenceService {
           next_action_at: null,
         })
         .eq('id', state.id)
-        .select()
+        .select('id, lead_id, cadence_id, org_id, current_step, next_action_at, paused, paused_reason, completed_at, created_at, updated_at')
         .single();
 
-      return data as LeadCadenceState | null;
+      return data as unknown as LeadCadenceState | null;
     }
 
     const nextStep = steps[nextStepIdx];
@@ -195,10 +195,10 @@ export class CadenceService {
         next_action_at: nextActionAt.toISOString(),
       })
       .eq('id', state.id)
-      .select()
+      .select('id, lead_id, cadence_id, org_id, current_step, next_action_at, paused, paused_reason, completed_at, created_at, updated_at')
       .single();
 
-    return data as LeadCadenceState | null;
+    return data as unknown as LeadCadenceState | null;
   }
 
   async pauseCadence(
@@ -212,10 +212,10 @@ export class CadenceService {
       .from('crm_lead_cadence_state')
       .update({ paused: true, paused_reason: reason })
       .eq('id', state.id)
-      .select()
+      .select('id, lead_id, cadence_id, org_id, current_step, next_action_at, paused, paused_reason, completed_at, created_at, updated_at')
       .single();
 
-    return data as LeadCadenceState | null;
+    return data as unknown as LeadCadenceState | null;
   }
 
   async resumeCadence(leadId: string): Promise<LeadCadenceState | null> {
@@ -225,7 +225,7 @@ export class CadenceService {
     const cadence = await this.getCadence(state.cadence_id);
     if (!cadence) return state;
 
-    const steps = cadence.steps as CadenceStep[];
+    const steps = cadence.steps as unknown as CadenceStep[];
     const currentStep = steps[state.current_step];
     const nextActionAt = currentStep
       ? new Date(Date.now() + currentStep.delay_hours * 60 * 60 * 1000)
@@ -239,35 +239,35 @@ export class CadenceService {
         next_action_at: nextActionAt?.toISOString() || null,
       })
       .eq('id', state.id)
-      .select()
+      .select('id, lead_id, cadence_id, org_id, current_step, next_action_at, paused, paused_reason, completed_at, created_at, updated_at')
       .single();
 
-    return data as LeadCadenceState | null;
+    return data as unknown as LeadCadenceState | null;
   }
 
   async getLeadCadenceState(leadId: string): Promise<LeadCadenceState | null> {
     const { data } = await this.supabase
       .from('crm_lead_cadence_state')
-      .select('*')
+      .select('id, lead_id, cadence_id, org_id, current_step, next_action_at, paused, paused_reason, completed_at, created_at, updated_at')
       .eq('lead_id', leadId)
       .eq('org_id', this.orgId)
       .is('completed_at', null)
       .maybeSingle();
 
-    return data as LeadCadenceState | null;
+    return data as unknown as LeadCadenceState | null;
   }
 
   async getOverdueLeads(): Promise<LeadCadenceState[]> {
     const { data, error } = await this.supabase
       .from('crm_lead_cadence_state')
-      .select('*')
+      .select('id, lead_id, cadence_id, org_id, current_step, next_action_at, paused, paused_reason, completed_at, created_at, updated_at')
       .eq('org_id', this.orgId)
       .eq('paused', false)
       .is('completed_at', null)
       .lt('next_action_at', new Date().toISOString());
 
     if (error) return [];
-    return data as LeadCadenceState[];
+    return data as unknown as LeadCadenceState[];
   }
 }
 

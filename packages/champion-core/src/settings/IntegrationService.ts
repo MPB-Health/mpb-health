@@ -115,7 +115,7 @@ export class IntegrationService {
   async getIntegrations(orgId: string): Promise<IntegrationConfig[]> {
     const { data, error } = await supabase
       .from('integration_configs')
-      .select('*')
+      .select('id, org_id, integration_type, provider, name, description, is_enabled, is_connected, last_sync_at, last_error, config, webhook_url, webhook_secret, sync_enabled, sync_frequency_minutes, sync_direction, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('integration_type')
       .order('name');
@@ -125,7 +125,7 @@ export class IntegrationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -134,7 +134,7 @@ export class IntegrationService {
   async getIntegrationsByType(orgId: string, type: IntegrationType): Promise<IntegrationConfig[]> {
     const { data, error } = await supabase
       .from('integration_configs')
-      .select('*')
+      .select('id, org_id, integration_type, provider, name, description, is_enabled, is_connected, last_sync_at, last_error, config, webhook_url, webhook_secret, sync_enabled, sync_frequency_minutes, sync_direction, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('integration_type', type);
 
@@ -143,7 +143,7 @@ export class IntegrationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -152,7 +152,7 @@ export class IntegrationService {
   async getIntegration(integrationId: string): Promise<IntegrationConfig | null> {
     const { data, error } = await supabase
       .from('integration_configs')
-      .select('*')
+      .select('id, org_id, integration_type, provider, name, description, is_enabled, is_connected, last_sync_at, last_error, config, webhook_url, webhook_secret, sync_enabled, sync_frequency_minutes, sync_direction, created_by, created_at, updated_at')
       .eq('id', integrationId)
       .single();
 
@@ -161,7 +161,7 @@ export class IntegrationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -170,7 +170,7 @@ export class IntegrationService {
   async getIntegrationByProvider(orgId: string, provider: string): Promise<IntegrationConfig | null> {
     const { data, error } = await supabase
       .from('integration_configs')
-      .select('*')
+      .select('id, org_id, integration_type, provider, name, description, is_enabled, is_connected, last_sync_at, last_error, config, webhook_url, webhook_secret, sync_enabled, sync_frequency_minutes, sync_direction, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('provider', provider)
       .single();
@@ -180,7 +180,7 @@ export class IntegrationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -208,7 +208,7 @@ export class IntegrationService {
         is_enabled: true,
         is_connected: false,
       })
-      .select()
+      .select('id, org_id, integration_type, provider, name, description, is_enabled, is_connected, last_sync_at, last_error, config, webhook_url, webhook_secret, sync_enabled, sync_frequency_minutes, sync_direction, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -216,7 +216,7 @@ export class IntegrationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -230,7 +230,7 @@ export class IntegrationService {
       .from('integration_configs')
       .update(input)
       .eq('id', integrationId)
-      .select()
+      .select('id, org_id, integration_type, provider, name, description, is_enabled, is_connected, last_sync_at, last_error, config, webhook_url, webhook_secret, sync_enabled, sync_frequency_minutes, sync_direction, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -238,7 +238,7 @@ export class IntegrationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**

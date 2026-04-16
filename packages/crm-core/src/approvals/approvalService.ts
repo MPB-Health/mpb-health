@@ -21,7 +21,7 @@ export class ApprovalService {
     try {
       const { data, error } = await this.supabase
         .from('crm_approval_processes')
-        .select('*')
+        .select('id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false });
 
@@ -29,7 +29,7 @@ export class ApprovalService {
         console.error('Failed to list approval processes:', error);
         return [];
       }
-      return data as ApprovalProcess[];
+      return data as unknown as ApprovalProcess[];
     } catch (err) {
       console.error('List approval processes error:', err);
       return [];
@@ -41,8 +41,8 @@ export class ApprovalService {
       const { data, error } = await this.supabase
         .from('crm_approval_processes')
         .select(`
-          *,
-          steps:crm_approval_steps(*)
+          id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at,
+          steps:crm_approval_steps(id, process_id, step_order, approver_type, approver_id, role_name, action_on_reject, auto_approve_after_hours, created_at)
         `)
         .eq('id', id)
         .single();
@@ -52,7 +52,7 @@ export class ApprovalService {
         return null;
       }
 
-      const process = data as ApprovalProcessWithSteps;
+      const process = data as unknown as ApprovalProcessWithSteps;
       // Sort steps by order
       process.steps = (process.steps || []).sort((a, b) => a.step_order - b.step_order);
       return process;
@@ -77,7 +77,7 @@ export class ApprovalService {
           trigger_conditions: input.trigger_conditions,
           is_active: input.is_active ?? true,
         })
-        .select()
+        .select('id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at')
         .single();
 
       if (processError) return { success: false, error: processError.message };
@@ -104,7 +104,7 @@ export class ApprovalService {
         }
       }
 
-      return { success: true, data: process as ApprovalProcess };
+      return { success: true, data: process as unknown as ApprovalProcess };
     } catch (err) {
       console.error('Create approval process error:', err);
       return { success: false, error: 'Failed to create process' };
@@ -120,11 +120,11 @@ export class ApprovalService {
         .from('crm_approval_processes')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id)
-        .select()
+        .select('id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at')
         .single();
 
       if (error) return { success: false, error: error.message };
-      return { success: true, data: data as ApprovalProcess };
+      return { success: true, data: data as unknown as ApprovalProcess };
     } catch (err) {
       console.error('Update approval process error:', err);
       return { success: false, error: 'Failed to update process' };
@@ -205,7 +205,7 @@ export class ApprovalService {
       // Find matching active process
       const { data: processes, error: pErr } = await this.supabase
         .from('crm_approval_processes')
-        .select('*')
+        .select('id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at')
         .eq('org_id', orgId)
         .eq('entity_type', entityType)
         .eq('is_active', true)
@@ -230,11 +230,11 @@ export class ApprovalService {
           current_step: 1,
           notes: notes ?? null,
         })
-        .select()
+        .select('id, process_id, org_id, entity_type, entity_id, requested_by, status, current_step, notes, submitted_at, completed_at')
         .single();
 
       if (error) return { success: false, error: error.message };
-      return { success: true, data: data as ApprovalRequest };
+      return { success: true, data: data as unknown as ApprovalRequest };
     } catch (err) {
       console.error('Submit for approval error:', err);
       return { success: false, error: 'Failed to submit for approval' };
@@ -249,11 +249,11 @@ export class ApprovalService {
       const { data: requests, error } = await this.supabase
         .from('crm_approval_requests')
         .select(`
-          *,
-          process:crm_approval_processes(*),
-          actions:crm_approval_actions(*),
+          id, process_id, org_id, entity_type, entity_id, requested_by, status, current_step, notes, submitted_at, completed_at,
+          process:crm_approval_processes(id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at),
+          actions:crm_approval_actions(id, request_id, step_id, approver_id, action, comments, acted_at),
           steps:crm_approval_processes!inner(
-            steps:crm_approval_steps(*)
+            steps:crm_approval_steps(id, process_id, step_order, approver_type, approver_id, role_name, action_on_reject, auto_approve_after_hours, created_at)
           )
         `)
         .eq('org_id', orgId)
@@ -268,20 +268,23 @@ export class ApprovalService {
       // Filter to only requests where the current step's approver matches the user
       const result: ApprovalRequestWithRelations[] = [];
       for (const req of (requests || [])) {
-        const allSteps: ApprovalStep[] = req.steps?.steps || [];
+        const stepsJoin = req.steps as unknown as { steps: ApprovalStep[] } | { steps: ApprovalStep[] }[];
+        const allSteps: ApprovalStep[] = Array.isArray(stepsJoin)
+          ? (stepsJoin[0]?.steps || [])
+          : (stepsJoin?.steps || []);
         const currentStep = allSteps.find((s: ApprovalStep) => s.step_order === req.current_step);
         if (!currentStep) continue;
 
         const isMyApproval =
           (currentStep.approver_type === 'user' && currentStep.approver_id === userId) ||
-          currentStep.approver_type === 'manager' || // simplified: all managers can approve
-          currentStep.approver_type === 'role'; // simplified: anyone with the role can approve
+          currentStep.approver_type === 'manager' ||
+          currentStep.approver_type === 'role';
 
         if (isMyApproval) {
           result.push({
             ...req,
-            process: req.process,
-            actions: req.actions || [],
+            process: req.process as unknown as ApprovalProcess,
+            actions: (req.actions || []) as unknown as ApprovalAction[],
             steps: allSteps.sort((a: ApprovalStep, b: ApprovalStep) => a.step_order - b.step_order),
           });
         }
@@ -301,9 +304,9 @@ export class ApprovalService {
       const { data, error } = await this.supabase
         .from('crm_approval_requests')
         .select(`
-          *,
-          process:crm_approval_processes(*),
-          actions:crm_approval_actions(*)
+          id, process_id, org_id, entity_type, entity_id, requested_by, status, current_step, notes, submitted_at, completed_at,
+          process:crm_approval_processes(id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at),
+          actions:crm_approval_actions(id, request_id, step_id, approver_id, action, comments, acted_at)
         `)
         .eq('org_id', orgId)
         .eq('requested_by', userId)
@@ -318,14 +321,14 @@ export class ApprovalService {
       const processIds = [...new Set((data || []).map((r: ApprovalRequest) => r.process_id))];
       const { data: allSteps } = await this.supabase
         .from('crm_approval_steps')
-        .select('*')
+        .select('id, process_id, step_order, approver_type, approver_id, role_name, action_on_reject, auto_approve_after_hours, created_at')
         .in('process_id', processIds)
         .order('step_order', { ascending: true });
 
       const stepsByProcess = new Map<string, ApprovalStep[]>();
       for (const step of (allSteps || [])) {
         const arr = stepsByProcess.get(step.process_id) || [];
-        arr.push(step as ApprovalStep);
+        arr.push(step as unknown as ApprovalStep);
         stepsByProcess.set(step.process_id, arr);
       }
 
@@ -346,9 +349,9 @@ export class ApprovalService {
       const { data, error } = await this.supabase
         .from('crm_approval_requests')
         .select(`
-          *,
-          process:crm_approval_processes(*),
-          actions:crm_approval_actions(*)
+          id, process_id, org_id, entity_type, entity_id, requested_by, status, current_step, notes, submitted_at, completed_at,
+          process:crm_approval_processes(id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at),
+          actions:crm_approval_actions(id, request_id, step_id, approver_id, action, comments, acted_at)
         `)
         .eq('org_id', orgId)
         .order('submitted_at', { ascending: false });
@@ -361,14 +364,14 @@ export class ApprovalService {
       const processIds = [...new Set((data || []).map((r: ApprovalRequest) => r.process_id))];
       const { data: allSteps } = await this.supabase
         .from('crm_approval_steps')
-        .select('*')
+        .select('id, process_id, step_order, approver_type, approver_id, role_name, action_on_reject, auto_approve_after_hours, created_at')
         .in('process_id', processIds)
         .order('step_order', { ascending: true });
 
       const stepsByProcess = new Map<string, ApprovalStep[]>();
       for (const step of (allSteps || [])) {
         const arr = stepsByProcess.get(step.process_id) || [];
-        arr.push(step as ApprovalStep);
+        arr.push(step as unknown as ApprovalStep);
         stepsByProcess.set(step.process_id, arr);
       }
 
@@ -393,7 +396,7 @@ export class ApprovalService {
       // Get request with steps
       const { data: request, error: reqErr } = await this.supabase
         .from('crm_approval_requests')
-        .select('*')
+        .select('id, process_id, org_id, entity_type, entity_id, requested_by, status, current_step, notes, submitted_at, completed_at')
         .eq('id', requestId)
         .single();
 
@@ -403,7 +406,7 @@ export class ApprovalService {
       // Get current step
       const { data: steps } = await this.supabase
         .from('crm_approval_steps')
-        .select('*')
+        .select('id, process_id, step_order, approver_type, approver_id, role_name, action_on_reject, auto_approve_after_hours, created_at')
         .eq('process_id', request.process_id)
         .order('step_order', { ascending: true });
 
@@ -426,7 +429,7 @@ export class ApprovalService {
       // Check if there's a next step
       const maxStep = Math.max(...(steps || []).map((s: ApprovalStep) => s.step_order));
       if (request.current_step >= maxStep) {
-        // All steps approved — mark as approved
+        // All steps approved — mark as unknown as approved
         await this.supabase
           .from('crm_approval_requests')
           .update({ status: 'approved', completed_at: new Date().toISOString() })
@@ -454,7 +457,7 @@ export class ApprovalService {
     try {
       const { data: request, error: reqErr } = await this.supabase
         .from('crm_approval_requests')
-        .select('*')
+        .select('id, process_id, org_id, entity_type, entity_id, requested_by, status, current_step, notes, submitted_at, completed_at')
         .eq('id', requestId)
         .single();
 
@@ -464,7 +467,7 @@ export class ApprovalService {
       // Get current step
       const { data: steps } = await this.supabase
         .from('crm_approval_steps')
-        .select('*')
+        .select('id, process_id, step_order, approver_type, approver_id, role_name, action_on_reject, auto_approve_after_hours, created_at')
         .eq('process_id', request.process_id)
         .order('step_order', { ascending: true });
 
@@ -512,7 +515,7 @@ export class ApprovalService {
     try {
       const { data: request, error: reqErr } = await this.supabase
         .from('crm_approval_requests')
-        .select('*')
+        .select('id, process_id, org_id, entity_type, entity_id, requested_by, status, current_step, notes, submitted_at, completed_at')
         .eq('id', requestId)
         .single();
 
@@ -543,9 +546,9 @@ export class ApprovalService {
       const { data, error } = await this.supabase
         .from('crm_approval_requests')
         .select(`
-          *,
-          process:crm_approval_processes(*),
-          actions:crm_approval_actions(*)
+          id, process_id, org_id, entity_type, entity_id, requested_by, status, current_step, notes, submitted_at, completed_at,
+          process:crm_approval_processes(id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at),
+          actions:crm_approval_actions(id, request_id, step_id, approver_id, action, comments, acted_at)
         `)
         .eq('entity_type', entityType)
         .eq('entity_id', entityId)
@@ -561,10 +564,10 @@ export class ApprovalService {
       if (processIds.length > 0) {
         const { data: stepsData } = await this.supabase
           .from('crm_approval_steps')
-          .select('*')
+          .select('id, process_id, step_order, approver_type, approver_id, role_name, action_on_reject, auto_approve_after_hours, created_at')
           .in('process_id', processIds)
           .order('step_order', { ascending: true });
-        allSteps = (stepsData || []) as ApprovalStep[];
+        allSteps = (stepsData || []) as unknown as ApprovalStep[];
       }
 
       const stepsByProcess = new Map<string, ApprovalStep[]>();
@@ -592,7 +595,7 @@ export class ApprovalService {
     try {
       const { data: processes, error } = await this.supabase
         .from('crm_approval_processes')
-        .select('*')
+        .select('id, org_id, name, description, entity_type, trigger_conditions, is_active, created_by, created_at, updated_at')
         .eq('org_id', orgId)
         .eq('entity_type', entityType)
         .eq('is_active', true);
@@ -601,7 +604,7 @@ export class ApprovalService {
         return { needsApproval: false };
       }
 
-      for (const process of processes as ApprovalProcess[]) {
+      for (const process of processes as unknown as ApprovalProcess[]) {
         const conditions = process.trigger_conditions || [];
         if (conditions.length === 0) continue;
 

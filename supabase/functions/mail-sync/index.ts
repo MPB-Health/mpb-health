@@ -117,7 +117,7 @@ serve(async (req) => {
     // Get account and decrypt access token
     const { data: account } = await supabase
       .from('mail_accounts')
-      .select('*')
+      .select('id, org_id, user_id, provider, email_address, display_name, access_token_encrypted, refresh_token_encrypted, token_expires_at, scopes, sync_status, sync_error, is_active, provider_account_id, avatar_url, delta_token, provider_metadata, last_sync_at, created_at, updated_at')
       .eq('id', account_id)
       .eq('user_id', authUser.userId)
       .single();
@@ -241,7 +241,7 @@ serve(async (req) => {
         // Get the message record
         const { data: msg } = await supabase
           .from('mail_messages')
-          .select('*')
+          .select('id, account_id, folder_id, provider_message_id, provider_thread_id, internet_message_id, in_reply_to, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, reply_to_address, subject, snippet, body_html, body_text, body_fetched, is_read, is_flagged, is_draft, has_attachments, importance, categories, sent_at, received_at')
           .eq('id', message_id)
           .eq('account_id', account_id)
           .single();

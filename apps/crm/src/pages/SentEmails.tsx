@@ -50,7 +50,7 @@ export default function SentEmails() {
 
       let query = supabase
         .from('crm_email_log')
-        .select('*', { count: 'exact' })
+        .select('id, org_id, to_email, subject, body_preview, status, template_id, open_count, click_count, first_opened_at, sent_at', { count: 'exact' })
         .eq('org_id', orgId)
         .order('sent_at', { ascending: false });
 

@@ -51,7 +51,7 @@ export class SequenceService {
   async getSequence(sequenceId: string): Promise<SequenceWithSteps | null> {
     const { data, error } = await supabase
       .from('sequences')
-      .select('*, steps:sequence_steps(*)')
+      .select('id, org_id, name, description, trigger_type, trigger_conditions, send_window_start, send_window_end, send_days, timezone, exit_on_reply, exit_on_meeting_scheduled, exit_on_unsubscribe, total_enrolled, total_completed, total_replied, status, created_by, created_at, updated_at, steps:sequence_steps(id, sequence_id, step_number, delay_days, delay_hours, delay_minutes, action_type, channel, template_id, subject, body_text, body_html, action_config, condition_type, times_executed, times_skipped, is_active, created_at, updated_at)')
       .eq('id', sequenceId)
       .single();
 
@@ -67,7 +67,7 @@ export class SequenceService {
       );
     }
 
-    return data as SequenceWithSteps | null;
+    return data as unknown as SequenceWithSteps | null;
   }
 
   /**
@@ -91,7 +91,7 @@ export class SequenceService {
         exit_on_unsubscribe: input.exit_on_unsubscribe ?? true,
         status: 'draft',
       })
-      .select()
+      .select('id, org_id, name, description, trigger_type, trigger_conditions, send_window_start, send_window_end, send_days, timezone, exit_on_reply, exit_on_meeting_scheduled, exit_on_unsubscribe, total_enrolled, total_completed, total_replied, status, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -99,7 +99,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -116,7 +116,7 @@ export class SequenceService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', sequenceId)
-      .select()
+      .select('id, org_id, name, description, trigger_type, trigger_conditions, send_window_start, send_window_end, send_days, timezone, exit_on_reply, exit_on_meeting_scheduled, exit_on_unsubscribe, total_enrolled, total_completed, total_replied, status, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -124,7 +124,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -225,7 +225,7 @@ export class SequenceService {
         action_config: input.action_config || {},
         condition_type: input.condition_type || 'always',
       })
-      .select()
+      .select('id, sequence_id, step_number, delay_days, delay_hours, delay_minutes, action_type, channel, template_id, subject, body_text, body_html, action_config, condition_type, times_executed, times_skipped, is_active, created_at, updated_at')
       .single();
 
     if (error) {
@@ -233,7 +233,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -247,7 +247,7 @@ export class SequenceService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', stepId)
-      .select()
+      .select('id, sequence_id, step_number, delay_days, delay_hours, delay_minutes, action_type, channel, template_id, subject, body_text, body_html, action_config, condition_type, times_executed, times_skipped, is_active, created_at, updated_at')
       .single();
 
     if (error) {
@@ -255,7 +255,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -310,7 +310,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -322,7 +322,7 @@ export class SequenceService {
   ): Promise<SequenceEnrollment[]> {
     let query = supabase
       .from('sequence_enrollments')
-      .select('*')
+      .select('id, org_id, sequence_id, lead_id, contact_id, current_step, status, exit_reason, next_step_at, messages_sent, messages_opened, messages_clicked, enrolled_by, enrolled_at, completed_at, created_at, updated_at')
       .eq('sequence_id', sequenceId)
       .order('enrolled_at', { ascending: false });
 
@@ -341,7 +341,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -353,7 +353,7 @@ export class SequenceService {
   ): Promise<SequenceEnrollment | null> {
     const { data, error } = await supabase
       .from('sequence_enrollments')
-      .select('*')
+      .select('id, org_id, sequence_id, lead_id, contact_id, current_step, status, exit_reason, next_step_at, messages_sent, messages_opened, messages_clicked, enrolled_by, enrolled_at, completed_at, created_at, updated_at')
       .eq('sequence_id', sequenceId)
       .eq('lead_id', leadId)
       .single();
@@ -363,7 +363,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -421,7 +421,7 @@ export class SequenceService {
   async getLeadActiveEnrollments(leadId: string): Promise<SequenceEnrollment[]> {
     const { data, error } = await supabase
       .from('sequence_enrollments')
-      .select('*, sequence:sequences(name, status)')
+      .select('id, org_id, sequence_id, lead_id, contact_id, current_step, status, exit_reason, next_step_at, messages_sent, messages_opened, messages_clicked, enrolled_by, enrolled_at, completed_at, created_at, updated_at, sequence:sequences(name, status)')
       .eq('lead_id', leadId)
       .eq('status', 'active');
 
@@ -430,7 +430,7 @@ export class SequenceService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 }
 

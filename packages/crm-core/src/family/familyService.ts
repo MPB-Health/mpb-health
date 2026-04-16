@@ -18,7 +18,7 @@ export class FamilyService {
       const column = parentType === 'lead' ? 'lead_id' : 'contact_id';
       const { data, error } = await this.supabase
         .from('crm_family_members')
-        .select('*')
+        .select('id, org_id, lead_id, contact_id, first_name, last_name, relationship, date_of_birth, gender, email, is_covered, coverage_start_date, coverage_end_date, ssn_last_four, tobacco_user, notes, sort_order, created_at, updated_at')
         .eq(column, parentId)
         .order('sort_order', { ascending: true })
         .order('relationship', { ascending: true });
@@ -28,19 +28,19 @@ export class FamilyService {
         return [];
       }
 
-      const members = data as FamilyMember[];
+      const members = data as unknown as FamilyMember[];
 
       if (members.length > 0) {
         const memberIds = members.map((m) => m.id);
         const { data: phones } = await this.supabase
           .from('crm_phone_numbers')
-          .select('*')
+          .select('id, org_id, owner_type, owner_id, phone_number, phone_type, is_primary, label, do_not_call, created_at')
           .eq('owner_type', 'family_member')
           .in('owner_id', memberIds);
 
         if (phones) {
           const phoneMap = new Map<string, PhoneNumber[]>();
-          for (const p of phones as PhoneNumber[]) {
+          for (const p of phones as unknown as PhoneNumber[]) {
             const existing = phoneMap.get(p.owner_id) || [];
             existing.push(p);
             phoneMap.set(p.owner_id, existing);
@@ -81,14 +81,14 @@ export class FamilyService {
           notes: input.notes || null,
           sort_order: input.sort_order ?? 0,
         })
-        .select('*')
+        .select('id, org_id, lead_id, contact_id, first_name, last_name, relationship, date_of_birth, gender, email, is_covered, coverage_start_date, coverage_end_date, ssn_last_four, tobacco_user, notes, sort_order, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, member: data as FamilyMember };
+      return { success: true, member: data as unknown as FamilyMember };
     } catch (error) {
       console.error('Create family member error:', error);
       return { success: false, error: 'Failed to create family member' };
@@ -144,7 +144,7 @@ export class FamilyService {
     try {
       const { data, error } = await this.supabase
         .from('crm_phone_numbers')
-        .select('*')
+        .select('id, org_id, owner_type, owner_id, phone_number, phone_type, is_primary, label, do_not_call, created_at')
         .eq('owner_type', ownerType)
         .eq('owner_id', ownerId)
         .order('is_primary', { ascending: false })
@@ -155,7 +155,7 @@ export class FamilyService {
         return [];
       }
 
-      return data as PhoneNumber[];
+      return data as unknown as PhoneNumber[];
     } catch (error) {
       console.error('Get phone numbers error:', error);
       return [];
@@ -186,14 +186,14 @@ export class FamilyService {
           label: input.label || null,
           do_not_call: input.do_not_call ?? false,
         })
-        .select('*')
+        .select('id, org_id, owner_type, owner_id, phone_number, phone_type, is_primary, label, do_not_call, created_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, phone: data as PhoneNumber };
+      return { success: true, phone: data as unknown as PhoneNumber };
     } catch (error) {
       console.error('Add phone number error:', error);
       return { success: false, error: 'Failed to add phone number' };

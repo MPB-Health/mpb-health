@@ -16,7 +16,7 @@ export class AuditService {
   }): Promise<{ logs: AuditLog[]; total: number }> {
     let query = supabase
       .from('audit_logs')
-      .select('*', { count: 'exact' })
+      .select('id, user_id, user_email, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent, created_at', { count: 'exact' })
       .order('created_at', { ascending: false });
 
     if (filters?.userId) {
@@ -99,11 +99,11 @@ export class AuditService {
         ip_address: details.ipAddress || null,
         user_agent: details.userAgent || null,
       })
-      .select()
+      .select('id, user_id, user_email, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent, created_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Log user action

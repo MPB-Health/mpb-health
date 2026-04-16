@@ -88,8 +88,8 @@ export default function Reports() {
         supabase.rpc('crm_plan_type_stats', { p_org_id: activeOrgId }),
         supabase.rpc('crm_advisor_performance', { p_org_id: activeOrgId }),
       ]);
-      if (planRes.data) setPlanTypeStats(planRes.data as PlanTypeStat[]);
-      if (advisorRes.data) setAdvisorStats(advisorRes.data as AdvisorStat[]);
+      if (planRes.data) setPlanTypeStats(planRes.data as unknown as PlanTypeStat[]);
+      if (advisorRes.data) setAdvisorStats(advisorRes.data as unknown as AdvisorStat[]);
     }
     setLoading(false);
   }, [reportingService, dateRange, activeOrgId]);

@@ -23,7 +23,7 @@ const ClaimsProcessing: React.FC = () => {
 
     let query = supabase
       .from('claims')
-      .select('*')
+      .select('id, member_id, claim_number, claim_type, status, provider_name, provider_id, patient_name, patient_type, dependent_id, service_date, diagnosis_codes, total_amount, eligible_amount, approved_amount, paid_amount, denial_reason, processing_notes, submitted_date, reviewed_date, approved_date, paid_date, reviewed_by, metadata, created_at')
       .order('submitted_date', { ascending: false });
 
     if (statusFilter === 'pending_review') {

@@ -84,7 +84,7 @@ export const adminAnalyticsService = {
   async getSiteAnalytics(startDate?: string, endDate?: string) {
     let query = supabase
       .from('site_analytics')
-      .select('*')
+      .select('id, date, page_views, unique_visitors, bounce_rate, avg_session_duration, conversion_rate, created_at')
       .order('date', { ascending: false });
 
     if (startDate) {
@@ -96,13 +96,13 @@ export const adminAnalyticsService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as SiteAnalytics[];
+    return data as unknown as SiteAnalytics[];
   },
 
   async getMarketingCampaigns(status?: string) {
     let query = supabase
       .from('marketing_campaigns')
-      .select('*')
+      .select('id, name, channel, budget, spent, impressions, clicks, conversions, revenue, start_date, end_date, status, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (status) {
@@ -111,7 +111,7 @@ export const adminAnalyticsService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as MarketingCampaign[];
+    return data as unknown as MarketingCampaign[];
   },
 
   async createMarketingCampaign(campaign: Partial<MarketingCampaign>) {
@@ -122,7 +122,7 @@ export const adminAnalyticsService = {
       .single();
 
     if (error) throw error;
-    return data as MarketingCampaign;
+    return data as unknown as MarketingCampaign;
   },
 
   async updateMarketingCampaign(id: string, updates: Partial<MarketingCampaign>) {
@@ -134,13 +134,13 @@ export const adminAnalyticsService = {
       .single();
 
     if (error) throw error;
-    return data as MarketingCampaign;
+    return data as unknown as MarketingCampaign;
   },
 
   async getContentAnalytics(contentId?: string, contentType?: string) {
     let query = supabase
       .from('content_analytics')
-      .select('*')
+      .select('id, content_id, content_type, views, unique_views, avg_time_on_page, shares, leads_generated, date, created_at')
       .order('date', { ascending: false });
 
     if (contentId) {
@@ -152,18 +152,18 @@ export const adminAnalyticsService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as ContentAnalytics[];
+    return data as unknown as ContentAnalytics[];
   },
 
   async getTopPerformingContent(limit = 10) {
     const { data, error } = await supabase
       .from('content_analytics')
-      .select('*')
+      .select('id, content_id, content_type, views, unique_views, avg_time_on_page, shares, leads_generated, date, created_at')
       .order('views', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    return data as ContentAnalytics[];
+    return data as unknown as ContentAnalytics[];
   },
 
   async logAdminAction(action: Partial<AdminActionLog>) {
@@ -174,13 +174,13 @@ export const adminAnalyticsService = {
       .single();
 
     if (error) throw error;
-    return data as AdminActionLog;
+    return data as unknown as AdminActionLog;
   },
 
   async getAdminActionLogs(filters?: { adminUserId?: string; targetType?: string; limit?: number }) {
     let query = supabase
       .from('admin_actions_log')
-      .select('*')
+      .select('id, admin_user_id, action_type, target_type, target_id, changes, ip_address, user_agent, created_at')
       .order('created_at', { ascending: false });
 
     if (filters?.adminUserId) {
@@ -195,13 +195,13 @@ export const adminAnalyticsService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as AdminActionLog[];
+    return data as unknown as AdminActionLog[];
   },
 
   async getSiteSettings(category?: string) {
     let query = supabase
       .from('site_settings')
-      .select('*')
+      .select('id, category, key, value, description, updated_by, created_at, updated_at')
       .order('category', { ascending: true });
 
     if (category) {
@@ -210,7 +210,7 @@ export const adminAnalyticsService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as SiteSetting[];
+    return data as unknown as SiteSetting[];
   },
 
   async updateSiteSetting(key: string, value: any, updatedBy: string) {
@@ -226,13 +226,13 @@ export const adminAnalyticsService = {
       .single();
 
     if (error) throw error;
-    return data as SiteSetting;
+    return data as unknown as SiteSetting;
   },
 
   async getSEOMetadata(pagePath?: string) {
     let query = supabase
       .from('seo_metadata')
-      .select('*')
+      .select('id, page_path, meta_title, meta_description, meta_keywords, og_title, og_description, og_image, canonical_url, robots, updated_by, created_at, updated_at')
       .order('page_path', { ascending: true });
 
     if (pagePath) {
@@ -241,7 +241,7 @@ export const adminAnalyticsService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return pagePath ? (data?.[0] as SEOMetadata) : (data as SEOMetadata[]);
+    return pagePath ? (data?.[0] as SEOMetadata) : (data as unknown as SEOMetadata[]);
   },
 
   async upsertSEOMetadata(metadata: Partial<SEOMetadata>) {
@@ -254,7 +254,7 @@ export const adminAnalyticsService = {
       .single();
 
     if (error) throw error;
-    return data as SEOMetadata;
+    return data as unknown as SEOMetadata;
   },
 
   async getMarketingROI() {

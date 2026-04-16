@@ -8,7 +8,7 @@ export class QuoteTemplateService {
     try {
       const { data, error } = await this.supabase
         .from('crm_quote_templates')
-        .select('*')
+        .select('id, org_id, name, description, content, variables, is_default, is_active, created_by, created_at, updated_at')
         .eq('is_active', true)
         .order('is_default', { ascending: false })
         .order('name');
@@ -17,7 +17,7 @@ export class QuoteTemplateService {
         console.error('Failed to get quote templates:', error);
         return [];
       }
-      return (data || []) as QuoteTemplate[];
+      return (data || []) as unknown as QuoteTemplate[];
     } catch (error) {
       console.error('Get quote templates error:', error);
       return [];
@@ -28,7 +28,7 @@ export class QuoteTemplateService {
     try {
       const { data, error } = await this.supabase
         .from('crm_quote_templates')
-        .select('*')
+        .select('id, org_id, name, description, content, variables, is_default, is_active, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -36,7 +36,7 @@ export class QuoteTemplateService {
         console.error('Failed to get quote template:', error);
         return null;
       }
-      return data as QuoteTemplate;
+      return data as unknown as QuoteTemplate;
     } catch (error) {
       console.error('Get quote template error:', error);
       return null;

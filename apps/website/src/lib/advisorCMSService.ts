@@ -131,7 +131,7 @@ class AdvisorCMSService {
     try {
       let query = supabase
         .from('advisor_categories')
-        .select('*')
+        .select('id, name, slug, description, color, icon, type, order_index, is_active, created_at, updated_at')
         .eq('is_active', true)
         .order('order_index', { ascending: true });
 
@@ -146,7 +146,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorCategory[];
+      return data as unknown as AdvisorCategory[];
     } catch (error) {
       console.error('Get categories error:', error);
       return [];
@@ -157,7 +157,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_categories')
-        .select('*')
+        .select('id, name, slug, description, color, icon, type, order_index, is_active, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) {
@@ -165,7 +165,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorCategory[];
+      return data as unknown as AdvisorCategory[];
     } catch (error) {
       console.error('Get all categories error:', error);
       return [];
@@ -235,7 +235,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_quick_links')
-        .select('*')
+        .select('id, label, url, icon, description, category, order_index, is_external, is_active, requires_auth, created_by, created_at, updated_at')
         .eq('is_active', true)
         .order('order_index', { ascending: true });
 
@@ -244,7 +244,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorQuickLink[];
+      return data as unknown as AdvisorQuickLink[];
     } catch (error) {
       console.error('Get quick links error:', error);
       return [];
@@ -255,7 +255,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_quick_links')
-        .select('*')
+        .select('id, label, url, icon, description, category, order_index, is_external, is_active, requires_auth, created_by, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) {
@@ -263,7 +263,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorQuickLink[];
+      return data as unknown as AdvisorQuickLink[];
     } catch (error) {
       console.error('Get all quick links error:', error);
       return [];
@@ -388,7 +388,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_learning_paths')
-        .select('*')
+        .select('id, title, description, category_slug, icon, gradient, estimated_hours, is_required, unlock_requirements, order_index, is_active, created_by, created_at, updated_at')
         .eq('is_active', true)
         .order('order_index', { ascending: true });
 
@@ -397,7 +397,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorLearningPath[];
+      return data as unknown as AdvisorLearningPath[];
     } catch (error) {
       console.error('Get learning paths error:', error);
       return [];
@@ -408,7 +408,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_learning_paths')
-        .select('*')
+        .select('id, title, description, category_slug, icon, gradient, estimated_hours, is_required, unlock_requirements, order_index, is_active, created_by, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) {
@@ -416,7 +416,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorLearningPath[];
+      return data as unknown as AdvisorLearningPath[];
     } catch (error) {
       console.error('Get all learning paths error:', error);
       return [];
@@ -513,7 +513,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_dashboard_widgets')
-        .select('*')
+        .select('id, widget_key, label, description, order_index, is_visible, grid_column, config, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) {
@@ -521,7 +521,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorDashboardWidget[];
+      return data as unknown as AdvisorDashboardWidget[];
     } catch (error) {
       console.error('Get dashboard widgets error:', error);
       return [];
@@ -532,7 +532,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_dashboard_widgets')
-        .select('*')
+        .select('id, widget_key, label, description, order_index, is_visible, grid_column, config, created_at, updated_at')
         .eq('is_visible', true)
         .order('order_index', { ascending: true });
 
@@ -541,7 +541,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorDashboardWidget[];
+      return data as unknown as AdvisorDashboardWidget[];
     } catch (error) {
       console.error('Get visible dashboard widgets error:', error);
       return [];
@@ -599,7 +599,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_nav_menu')
-        .select('*')
+        .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_by, created_at, updated_at')
         .eq('is_active', true)
         .order('order_index', { ascending: true });
 
@@ -609,7 +609,7 @@ class AdvisorCMSService {
       }
 
       // Build hierarchy
-      const items = data as AdvisorNavMenuItem[];
+      const items = data as unknown as AdvisorNavMenuItem[];
       const rootItems = items.filter(item => !item.parent_id);
       
       rootItems.forEach(item => {
@@ -627,7 +627,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_nav_menu')
-        .select('*')
+        .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_by, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) {
@@ -635,7 +635,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorNavMenuItem[];
+      return data as unknown as AdvisorNavMenuItem[];
     } catch (error) {
       console.error('Get all nav menu items error:', error);
       return [];
@@ -734,7 +734,7 @@ class AdvisorCMSService {
 
       const { data, error } = await supabase
         .from('advisor_announcements')
-        .select('*')
+        .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
         .eq('is_active', true)
         .lte('start_date', now)
         .or(`end_date.is.null,end_date.gte.${now}`)
@@ -745,7 +745,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorAnnouncement[];
+      return data as unknown as AdvisorAnnouncement[];
     } catch (error) {
       console.error('Get active announcements error:', error);
       return [];
@@ -756,7 +756,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('advisor_announcements')
-        .select('*')
+        .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
         .order('start_date', { ascending: false });
 
       if (error) {
@@ -764,7 +764,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as AdvisorAnnouncement[];
+      return data as unknown as AdvisorAnnouncement[];
     } catch (error) {
       console.error('Get all announcements error:', error);
       return [];
@@ -836,7 +836,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('training_modules')
-        .select('*')
+        .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, prerequisites, is_active, created_at, updated_at')
         .eq('is_active', true)
         .order('order_index', { ascending: true });
 
@@ -845,7 +845,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as TrainingModule[];
+      return data as unknown as TrainingModule[];
     } catch (error) {
       console.error('Get training modules error:', error);
       return [];
@@ -856,7 +856,7 @@ class AdvisorCMSService {
     try {
       const { data, error } = await supabase
         .from('training_modules')
-        .select('*')
+        .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, prerequisites, is_active, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) {
@@ -864,7 +864,7 @@ class AdvisorCMSService {
         return [];
       }
 
-      return data as TrainingModule[];
+      return data as unknown as TrainingModule[];
     } catch (error) {
       console.error('Get all training modules error:', error);
       return [];

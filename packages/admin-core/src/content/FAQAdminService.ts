@@ -28,7 +28,7 @@ export class FAQAdminService {
   }): Promise<FAQItem[]> {
     let query = supabase
       .from('faq_items')
-      .select('*')
+      .select('id, title, content_html, category, order_index, is_active, created_at, updated_at')
       .order('category', { ascending: true })
       .order('order_index', { ascending: true });
 
@@ -46,17 +46,17 @@ export class FAQAdminService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as FAQItem[];
+    return (data || []) as unknown as FAQItem[];
   }
 
   async getById(id: string): Promise<FAQItem | null> {
     const { data, error } = await supabase
       .from('faq_items')
-      .select('*')
+      .select('id, title, content_html, category, order_index, is_active, created_at, updated_at')
       .eq('id', id)
       .maybeSingle();
     if (error) throw error;
-    return data as FAQItem | null;
+    return data as unknown as FAQItem | null;
   }
 
   async create(input: FAQCreateInput): Promise<FAQItem> {
@@ -69,10 +69,10 @@ export class FAQAdminService {
         order_index: input.order_index,
         is_active: input.is_active,
       })
-      .select()
+      .select('id, title, content_html, category, order_index, is_active, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as FAQItem;
+    return data as unknown as FAQItem;
   }
 
   async update(id: string, input: FAQUpdateInput): Promise<FAQItem> {
@@ -89,10 +89,10 @@ export class FAQAdminService {
       .from('faq_items')
       .update(payload)
       .eq('id', id)
-      .select()
+      .select('id, title, content_html, category, order_index, is_active, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as FAQItem;
+    return data as unknown as FAQItem;
   }
 
   async delete(id: string): Promise<void> {

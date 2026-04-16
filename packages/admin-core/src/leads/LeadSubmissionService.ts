@@ -33,7 +33,7 @@ export class LeadSubmissionService {
   async getSubmissions(filters?: LeadSubmissionFilters): Promise<LeadSubmission[]> {
     let query = supabase
       .from('lead_submissions')
-      .select('*')
+      .select('id, first_name, last_name, email, phone, source_page, utm_source, utm_medium, utm_campaign, form_data, created_at')
       .order('created_at', { ascending: false })
       .limit(500);
 
@@ -61,7 +61,7 @@ export class LeadSubmissionService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as LeadSubmission[];
+    return (data || []) as unknown as LeadSubmission[];
   }
 
   async getStats(): Promise<LeadSubmissionStats> {

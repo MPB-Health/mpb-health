@@ -25,7 +25,7 @@ export class DealService {
       let query = this.supabase
         .from('crm_deals')
         .select(`
-          *,
+        id, org_id, name, description, account_id, contact_id, amount, currency, stage_id, probability, expected_close_date, actual_close_date, deal_type, lead_source, next_step, owner_id, won_at, lost_at, lost_reason, tags, campaign_id, converted_from_lead_id, created_by, created_at, updated_at,
           account:crm_accounts!crm_deals_account_id_fkey(id, name),
           contact:crm_contacts!crm_deals_contact_id_fkey(id, first_name, last_name, email),
           stage:crm_deal_stages!crm_deals_stage_id_fkey(id, name, display_name, color, probability, is_won_stage, is_lost_stage)
@@ -92,7 +92,7 @@ export class DealService {
         return { deals: [], total: 0 };
       }
 
-      return { deals: data as DealWithRelations[], total: count || 0 };
+      return { deals: data as unknown as DealWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get deals error:', error);
       return { deals: [], total: 0 };
@@ -107,7 +107,7 @@ export class DealService {
       const { data, error } = await this.supabase
         .from('crm_deals')
         .select(`
-          *,
+        id, org_id, name, description, account_id, contact_id, amount, currency, stage_id, probability, expected_close_date, actual_close_date, deal_type, lead_source, next_step, owner_id, won_at, lost_at, lost_reason, tags, campaign_id, converted_from_lead_id, created_by, created_at, updated_at,
           account:crm_accounts!crm_deals_account_id_fkey(id, name),
           contact:crm_contacts!crm_deals_contact_id_fkey(id, first_name, last_name, email),
           stage:crm_deal_stages!crm_deals_stage_id_fkey(id, name, display_name, color, probability, is_won_stage, is_lost_stage)
@@ -123,11 +123,11 @@ export class DealService {
 
       const grouped: Record<string, DealWithRelations[]> = {};
       for (const deal of data || []) {
-        const stageName = deal.stage?.name || 'unknown';
+        const stageName = (deal.stage as any)?.name || 'unknown';
         if (!grouped[stageName]) {
           grouped[stageName] = [];
         }
-        grouped[stageName].push(deal as DealWithRelations);
+        grouped[stageName].push(deal as unknown as DealWithRelations);
       }
 
       return grouped;
@@ -145,7 +145,7 @@ export class DealService {
       const { data, error } = await this.supabase
         .from('crm_deals')
         .select(`
-          *,
+        id, org_id, name, description, account_id, contact_id, amount, currency, stage_id, probability, expected_close_date, actual_close_date, deal_type, lead_source, next_step, owner_id, won_at, lost_at, lost_reason, tags, campaign_id, converted_from_lead_id, created_by, created_at, updated_at,
           account:crm_accounts!crm_deals_account_id_fkey(id, name),
           contact:crm_contacts!crm_deals_contact_id_fkey(id, first_name, last_name, email),
           stage:crm_deal_stages!crm_deals_stage_id_fkey(id, name, display_name, color, probability, is_won_stage, is_lost_stage)
@@ -158,7 +158,7 @@ export class DealService {
         return null;
       }
 
-      return data as DealWithRelations;
+      return data as unknown as DealWithRelations;
     } catch (error) {
       console.error('Get deal error:', error);
       return null;
@@ -173,7 +173,7 @@ export class DealService {
       const { data, error } = await this.supabase
         .from('crm_deal_stage_history')
         .select(`
-          *,
+        id, deal_id, from_stage_id, to_stage_id, changed_by, notes, changed_at,
           from_stage:crm_deal_stages!crm_deal_stage_history_from_stage_id_fkey(name, display_name, color),
           to_stage:crm_deal_stages!crm_deal_stage_history_to_stage_id_fkey(name, display_name, color)
         `)
@@ -185,7 +185,7 @@ export class DealService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Get stage history error:', error);
       return [];
@@ -200,7 +200,7 @@ export class DealService {
       const { data, error } = await this.supabase
         .from('crm_deal_contacts')
         .select(`
-          *,
+        id, deal_id, contact_id, role, is_primary, created_at,
           contact:crm_contacts(id, first_name, last_name, email, title, phone)
         `)
         .eq('deal_id', dealId);
@@ -210,7 +210,7 @@ export class DealService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Get deal contacts error:', error);
       return [];
@@ -225,7 +225,7 @@ export class DealService {
       const { data, error } = await this.supabase
         .from('crm_deal_products')
         .select(`
-          *,
+        id, deal_id, contact_id, role, is_primary, created_at,
           product:crm_products(id, name, code, unit_price)
         `)
         .eq('deal_id', dealId);
@@ -235,7 +235,7 @@ export class DealService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Get deal products error:', error);
       return [];
@@ -317,7 +317,7 @@ export class DealService {
   }
 
   /**
-   * Mark deal as won
+   * Mark deal as unknown as won
    */
   async markDealWon(id: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -335,12 +335,12 @@ export class DealService {
       return this.updateDeal(id, { stage_id: wonStage.id });
     } catch (error) {
       console.error('Mark deal won error:', error);
-      return { success: false, error: 'Failed to mark deal as won' };
+      return { success: false, error: 'Failed to mark deal as unknown as won' };
     }
   }
 
   /**
-   * Mark deal as lost
+   * Mark deal as unknown as lost
    */
   async markDealLost(
     id: string,
@@ -361,7 +361,7 @@ export class DealService {
       return this.updateDeal(id, { stage_id: lostStage.id, lost_reason: lostReason });
     } catch (error) {
       console.error('Mark deal lost error:', error);
-      return { success: false, error: 'Failed to mark deal as lost' };
+      return { success: false, error: 'Failed to mark deal as unknown as lost' };
     }
   }
 
@@ -454,7 +454,7 @@ export class DealService {
     try {
       const { data, error } = await this.supabase
         .from('crm_deal_stages')
-        .select('*')
+        .select('id, org_id, name, display_name, color, icon, probability, sort_order, is_won_stage, is_lost_stage, is_active, created_at, updated_at')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
@@ -463,7 +463,7 @@ export class DealService {
         return [];
       }
 
-      return data as DealStage[];
+      return data as unknown as DealStage[];
     } catch (error) {
       console.error('Get stages error:', error);
       return [];
@@ -539,7 +539,7 @@ export class DealService {
     try {
       const { data, error } = await this.supabase
         .from('crm_activities')
-        .select('*')
+        .select('id, org_id, lead_id, contact_id, activity_type, title, description, metadata, created_by, created_at')
         .eq('deal_id', dealId)
         .order('activity_date', { ascending: false })
         .limit(limit);
@@ -549,7 +549,7 @@ export class DealService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Get deal activities error:', error);
       return [];

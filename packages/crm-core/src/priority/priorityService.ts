@@ -17,7 +17,7 @@ export class PriorityService {
 
       const { count: emailCount, error: emailError } = await this.supabase
         .from('lead_submissions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .ilike('email', email)
         .lt('created_at', fiveMinutesAgo);
 
@@ -29,7 +29,7 @@ export class PriorityService {
       if (phone && phone.trim() !== '') {
         const { count, error: phoneError } = await this.supabase
           .from('lead_submissions')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('phone', phone)
           .lt('created_at', fiveMinutesAgo);
 
@@ -69,7 +69,7 @@ export class PriorityService {
     // Check household size
     if (lead.household_size && lead.household_size >= 3) {
       reasons.push(`Family size: ${lead.household_size} members`);
-      if ((priority as NotificationPriority) !== 'critical') {
+      if ((priority as unknown as NotificationPriority) !== 'critical') {
         priority = 'high';
       }
     }
@@ -89,7 +89,7 @@ export class PriorityService {
     // Check for urgency in source CTA
     if (this.containsUrgencyKeywords(lead.source_cta)) {
       reasons.push('Source CTA indicates urgency');
-      if ((priority as NotificationPriority) !== 'critical') {
+      if ((priority as unknown as NotificationPriority) !== 'critical') {
         priority = 'high';
       }
     }

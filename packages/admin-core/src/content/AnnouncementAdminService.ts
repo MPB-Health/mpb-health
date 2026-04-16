@@ -38,20 +38,20 @@ export class AnnouncementAdminService {
   async getAll(): Promise<AdminAnnouncement[]> {
     const { data, error } = await supabase
       .from('advisor_announcements')
-      .select('*')
+      .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return (data || []) as AdminAnnouncement[];
+    return (data || []) as unknown as AdminAnnouncement[];
   }
 
   async getById(id: string): Promise<AdminAnnouncement | null> {
     const { data, error } = await supabase
       .from('advisor_announcements')
-      .select('*')
+      .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
     if (error && error.code !== 'PGRST116') throw error;
-    return data as AdminAnnouncement | null;
+    return data as unknown as AdminAnnouncement | null;
   }
 
   async create(input: AnnouncementCreateInput): Promise<AdminAnnouncement> {
@@ -72,10 +72,10 @@ export class AnnouncementAdminService {
         link_text: input.link_text || null,
         created_by: user?.id || null,
       })
-      .select('*')
+      .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as AdminAnnouncement;
+    return data as unknown as AdminAnnouncement;
   }
 
   async update(id: string, input: AnnouncementUpdateInput): Promise<AdminAnnouncement> {
@@ -83,10 +83,10 @@ export class AnnouncementAdminService {
       .from('advisor_announcements')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select('*')
+      .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as AdminAnnouncement;
+    return data as unknown as AdminAnnouncement;
   }
 
   async delete(id: string): Promise<void> {

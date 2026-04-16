@@ -83,7 +83,7 @@ export const getSEOSummary = async (
   // Try daily summary first
   const { data: summaryData } = await supabase
     .from('seo_daily_summary')
-    .select('*')
+    .select('site_url, date, total_clicks, total_impressions, avg_ctr, avg_position, total_keywords, keywords_in_top_3, keywords_in_top_10, keywords_in_top_20, keywords_improved, keywords_declined, updated_at')
     .eq('site_url', siteUrl)
     .gte('date', dateRange.startDate)
     .lte('date', dateRange.endDate);
@@ -132,7 +132,7 @@ export const getSEOSummary = async (
   // Fallback to raw keyword data
   const { data: keywordData } = await supabase
     .from('seo_keywords')
-    .select('*')
+    .select('site_url, keyword, page_url, date, clicks, impressions, ctr, position')
     .eq('site_url', siteUrl)
     .gte('date', dateRange.startDate)
     .lte('date', dateRange.endDate);
@@ -288,7 +288,7 @@ export const getTrendingKeywords = async (
 ): Promise<KeywordWithTrend[]> => {
   const { data } = await supabase
     .from('seo_keyword_rankings')
-    .select('*')
+    .select('site_url, keyword, date, position, clicks, impressions, previous_position, position_change, trend')
     .eq('site_url', siteUrl)
     .eq('trend', direction)
     .order('position_change', { ascending: direction === 'up' })
@@ -385,7 +385,7 @@ export const getTopPagesWithMetrics = async (
 ): Promise<PageWithMetrics[]> => {
   const { data } = await supabase
     .from('seo_pages')
-    .select('*')
+    .select('site_url, page_url, date, clicks, impressions, ctr, avg_position, keyword_count')
     .eq('site_url', siteUrl)
     .gte('date', dateRange.startDate)
     .lte('date', dateRange.endDate);
@@ -643,7 +643,7 @@ export const updateDailySummary = async (
   // Get keyword data for the day
   const { data: keywordData } = await supabase
     .from('seo_keywords')
-    .select('*')
+    .select('site_url, keyword, page_url, date, clicks, impressions, ctr, position')
     .eq('site_url', siteUrl)
     .eq('date', date);
 

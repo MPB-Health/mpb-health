@@ -25,7 +25,7 @@ export class LicensingService {
   async getAvailableModules(options: { includePrivate?: boolean } = {}): Promise<ProductModule[]> {
     let query = supabase
       .from('product_modules')
-      .select('*')
+      .select('id, slug, name, description, category, is_standalone, included_in_core, addon_price_monthly, addon_price_yearly, setup_fee, stripe_product_id, stripe_price_id_monthly, stripe_price_id_yearly, icon, color, sort_order, is_active, is_public, requires_modules, created_at, updated_at')
       .eq('is_active', true)
       .order('sort_order');
 
@@ -38,13 +38,13 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get modules:', error);
       throw error;
     }
-    return data || [];
+    return (data || []) as any;
   }
 
   async getModule(slugOrId: string): Promise<ProductModule | null> {
     const { data, error } = await supabase
       .from('product_modules')
-      .select('*')
+      .select('id, slug, name, description, category, is_standalone, included_in_core, addon_price_monthly, addon_price_yearly, setup_fee, stripe_product_id, stripe_price_id_monthly, stripe_price_id_yearly, icon, color, sort_order, is_active, is_public, requires_modules, created_at, updated_at')
       .or(`id.eq.${slugOrId},slug.eq.${slugOrId}`)
       .single();
 
@@ -52,13 +52,13 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get module:', error);
       throw error;
     }
-    return data;
+    return data as any;
   }
 
   async getAddonModules(): Promise<ProductModule[]> {
     const { data, error } = await supabase
       .from('product_modules')
-      .select('*')
+      .select('id, slug, name, description, category, is_standalone, included_in_core, addon_price_monthly, addon_price_yearly, setup_fee, stripe_product_id, stripe_price_id_monthly, stripe_price_id_yearly, icon, color, sort_order, is_active, is_public, requires_modules, created_at, updated_at')
       .eq('is_active', true)
       .eq('is_public', true)
       .in('category', ['addon', 'standalone'])
@@ -68,7 +68,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get addon modules:', error);
       throw error;
     }
-    return data || [];
+    return (data || []) as any;
   }
 
   // =========================================================================
@@ -78,7 +78,7 @@ export class LicensingService {
   async getOrgLicenses(orgId: string): Promise<OrgModuleLicenseWithModule[]> {
     const { data, error } = await supabase
       .from('org_module_licenses')
-      .select('*, module:product_modules(*)')
+      .select('id, org_id, module_id, status, license_source, trial_start, trial_end, stripe_subscription_item_id, activated_at, expires_at, canceled_at, custom_limits, notes, granted_by, created_at, updated_at, module:product_modules(id, slug, name, description, category, is_standalone, included_in_core, addon_price_monthly, addon_price_yearly, setup_fee, stripe_product_id, stripe_price_id_monthly, stripe_price_id_yearly, icon, color, sort_order, is_active, is_public, requires_modules, created_at, updated_at)')
       .eq('org_id', orgId)
       .in('status', ['active', 'trialing']);
 
@@ -86,7 +86,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get org licenses:', error);
       throw error;
     }
-    return data || [];
+    return (data || []) as any;
   }
 
   async orgHasModule(orgId: string, moduleSlug: ModuleSlug): Promise<boolean> {
@@ -114,7 +114,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to activate module:', error);
       throw error;
     }
-    return data;
+    return data as any;
   }
 
   async deactivateModule(orgId: string, moduleSlug: ModuleSlug): Promise<void> {
@@ -158,7 +158,7 @@ export class LicensingService {
   // =========================================================================
 
   async getFeatureFlags(moduleSlug?: string): Promise<FeatureFlag[]> {
-    let query = supabase.from('feature_flags').select('*').order('slug');
+    let query = supabase.from('feature_flags').select('id, slug, name, description, module_id, enabled_by_default, min_plan_tier, category, is_beta, created_at, updated_at').order('slug');
 
     if (moduleSlug) {
       const module = await this.getModule(moduleSlug);
@@ -172,7 +172,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get feature flags:', error);
       throw error;
     }
-    return data || [];
+    return (data || []) as any;
   }
 
   async orgHasFeature(orgId: string, featureSlug: string): Promise<boolean> {
@@ -260,7 +260,7 @@ export class LicensingService {
   async getWhiteLabelConfig(orgId: string): Promise<WhiteLabelConfig | null> {
     const { data, error } = await supabase
       .from('white_label_configs')
-      .select('*')
+      .select('id, org_id, company_name, logo_url, logo_dark_url, favicon_url, app_icon_url, splash_screen_url, primary_color, secondary_color, accent_color, background_color, text_color, header_color, sidebar_color, font_family, heading_font_family, custom_domain, domain_verified, domain_verified_at, ssl_certificate_status, mobile_app_name, mobile_bundle_id_ios, mobile_bundle_id_android, app_store_url, play_store_url, mobile_build_status, last_build_at, show_powered_by, custom_login_page, custom_email_templates, custom_sms_sender_id, meta_title, meta_description, og_image_url, support_email, support_phone, support_url, terms_url, privacy_url, is_active, created_at, updated_at')
       .eq('org_id', orgId)
       .single();
 
@@ -268,7 +268,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get white-label config:', error);
       throw error;
     }
-    return data;
+    return data as any;
   }
 
   async upsertWhiteLabelConfig(orgId: string, input: UpdateWhiteLabelInput): Promise<WhiteLabelConfig> {
@@ -284,14 +284,14 @@ export class LicensingService {
         company_name: input.company_name || 'My App',
         ...input,
       }, { onConflict: 'org_id' })
-      .select()
+      .select('id, org_id, company_name, logo_url, logo_dark_url, favicon_url, app_icon_url, splash_screen_url, primary_color, secondary_color, accent_color, background_color, text_color, header_color, sidebar_color, font_family, heading_font_family, custom_domain, domain_verified, domain_verified_at, ssl_certificate_status, mobile_app_name, mobile_bundle_id_ios, mobile_bundle_id_android, app_store_url, play_store_url, mobile_build_status, last_build_at, show_powered_by, custom_login_page, custom_email_templates, custom_sms_sender_id, meta_title, meta_description, og_image_url, support_email, support_phone, support_url, terms_url, privacy_url, is_active, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('[LicensingService] Failed to upsert white-label config:', error);
       throw error;
     }
-    return data;
+    return data as any;
   }
 
   async requestMobileBuild(orgId: string): Promise<void> {

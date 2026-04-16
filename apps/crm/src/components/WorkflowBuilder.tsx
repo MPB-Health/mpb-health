@@ -1008,7 +1008,7 @@ export function WorkflowBuilder({ ruleId, onSave, onCancel }: WorkflowBuilderPro
       try {
         const { data, error } = await supabase
           .from('ai_automation_rules')
-          .select('*')
+          .select('id, name, description, is_active, workflow_steps')
           .eq('id', ruleId)
           .eq('org_id', activeOrgId)
           .single();
@@ -1029,7 +1029,7 @@ export function WorkflowBuilder({ ruleId, onSave, onCancel }: WorkflowBuilderPro
             type: 'trigger',
             label: 'Trigger',
             config: {
-              trigger_type: (data.trigger_type || 'stage_change') as TriggerType,
+              trigger_type: (data.trigger_type || 'stage_change') as unknown as TriggerType,
               ...(data.trigger_conditions as Record<string, unknown> || {}),
             } as TriggerConfig,
             children: [],
@@ -1041,7 +1041,7 @@ export function WorkflowBuilder({ ruleId, onSave, onCancel }: WorkflowBuilderPro
             type: 'action',
             label: 'Action',
             config: {
-              action_type: (data.action_type || 'create_task') as ActionType,
+              action_type: (data.action_type || 'create_task') as unknown as ActionType,
               ...actionConfig,
             } as ActionConfig,
             children: [],

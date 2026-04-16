@@ -1640,7 +1640,7 @@ function SequenceBuilderModal({
     (async () => {
       const { data } = await sb
         .from('crm_email_sequence_enrollments')
-        .select('*')
+        .select('id, sequence_id, lead_id, contact_id, status, current_step, next_action_at, enrolled_by, enrolled_at, completed_at, last_activity_at, metadata')
         .eq('sequence_id', sequence.id)
         .order('enrolled_at', { ascending: false });
       if (data && data.length > 0) {
@@ -1849,7 +1849,7 @@ function SequenceBuilderModal({
       // Refresh enrollments
       const { data } = await sb
         .from('crm_email_sequence_enrollments')
-        .select('*')
+        .select('id, sequence_id, lead_id, contact_id, status, current_step, next_action_at, enrolled_by, enrolled_at, completed_at, last_activity_at, metadata')
         .eq('sequence_id', sequence.id)
         .order('enrolled_at', { ascending: false });
       if (data) {
@@ -2117,7 +2117,7 @@ export default function EmailSequences() {
     try {
       let query = sb
         .from('crm_email_sequences')
-        .select('*')
+        .select('id, org_id, name, description, status, trigger_type, trigger_config, exit_conditions, settings, total_enrolled, total_completed, total_replied, total_bounced, created_by, created_at, updated_at')
         .eq('org_id', activeOrgId)
         .order('updated_at', { ascending: false });
 
@@ -2130,7 +2130,7 @@ export default function EmailSequences() {
 
       const { data, error } = await query;
       if (error) throw error;
-      setSequences((data || []) as EmailSequence[]);
+      setSequences((data || []) as unknown as EmailSequence[]);
 
       // Load step counts
       if (data && data.length > 0) {
@@ -2168,7 +2168,7 @@ export default function EmailSequences() {
           .select('id, name, subject, body')
           .eq('org_id', activeOrgId)
           .order('name');
-        setTemplates((data || []) as EmailTemplate[]);
+        setTemplates((data || []) as unknown as EmailTemplate[]);
       } catch {
         // Templates are optional, don't block
       }
@@ -2195,11 +2195,11 @@ export default function EmailSequences() {
   const handleEdit = async (seq: EmailSequence) => {
     const { data } = await sb
       .from('crm_email_sequence_steps')
-      .select('*')
+      .select('id, sequence_id, step_number, step_type, template_id, subject_override, body_override, delay_days, delay_hours, condition_config, task_config, is_active, total_sent, total_opened, total_clicked, total_replied, created_at')
       .eq('sequence_id', seq.id)
       .order('step_number');
     setBuilderSequence(seq);
-    setBuilderSteps((data || []) as SequenceStep[]);
+    setBuilderSteps((data || []) as unknown as SequenceStep[]);
     setShowBuilder(true);
   };
 
@@ -2229,7 +2229,7 @@ export default function EmailSequences() {
       // Copy steps
       const { data: existingSteps } = await sb
         .from('crm_email_sequence_steps')
-        .select('*')
+        .select('step_number, step_type, template_id, subject_override, body_override, delay_days, delay_hours, condition_config, task_config, is_active')
         .eq('sequence_id', seq.id)
         .order('step_number');
       if (existingSteps && existingSteps.length > 0) {
@@ -2314,8 +2314,8 @@ export default function EmailSequences() {
 
   const handleViewAnalytics = async (seq: EmailSequence) => {
     const [stepsRes, enrollRes] = await Promise.all([
-      sb.from('crm_email_sequence_steps').select('*').eq('sequence_id', seq.id).order('step_number'),
-      sb.from('crm_email_sequence_enrollments').select('*').eq('sequence_id', seq.id).order('enrolled_at', { ascending: false }),
+      sb.from('crm_email_sequence_steps').select('id, sequence_id, step_number, step_type, template_id, subject_override, body_override, delay_days, delay_hours, condition_config, task_config, is_active, total_sent, total_opened, total_clicked, total_replied, created_at').eq('sequence_id', seq.id).order('step_number'),
+      sb.from('crm_email_sequence_enrollments').select('id, sequence_id, lead_id, contact_id, status, current_step, next_action_at, enrolled_by, enrolled_at, completed_at, last_activity_at, metadata').eq('sequence_id', seq.id).order('enrolled_at', { ascending: false }),
     ]);
 
     // Resolve lead names for enrollments
@@ -2339,7 +2339,7 @@ export default function EmailSequences() {
     }
 
     setAnalyticsSequence(seq);
-    setAnalyticsSteps((stepsRes.data || []) as SequenceStep[]);
+    setAnalyticsSteps((stepsRes.data || []) as unknown as SequenceStep[]);
     setAnalyticsEnrollments(enrollData);
     setViewMode('analytics');
   };

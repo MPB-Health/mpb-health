@@ -88,7 +88,7 @@ serve(async (req: Request) => {
         error_message: errorMessage,
         created_at: new Date().toISOString()
       })
-      .select()
+      .select('id')
       .single();
 
     if (logError) {
@@ -187,7 +187,7 @@ async function getApprovedLinksHandler(
 
     let query = supabase
       .from('approved_links')
-      .select('*')
+      .select('id, title, url, description, category, is_active, display_order')
       .eq('is_active', true)
       .order('display_order');
 
@@ -249,7 +249,7 @@ async function getMyStatsHandler(
   try {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, first_name, last_name, role')
       .eq('id', context.user_id)
       .single();
 
@@ -304,7 +304,7 @@ async function lookupMemberHandler(
 
     const { data: member, error } = await supabase
       .from('member_profiles')
-      .select('*')
+      .select('id, first_name, last_name, email, phone, membership_status, plan_type, enrollment_date')
       .eq('email', email)
       .single();
 
@@ -347,7 +347,7 @@ async function listToolsHandler(
   try {
     const { data: tools, error } = await supabase
       .from('terminal_tool_permissions')
-      .select('*')
+      .select('id, display_name, description, rate_limit_calls, rate_limit_period, allowed_roles, is_active')
       .eq('is_active', true)
       .order('display_name');
 

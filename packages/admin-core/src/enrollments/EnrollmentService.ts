@@ -35,7 +35,7 @@ export class EnrollmentService {
 
     let query = supabase
       .from('enrollments')
-      .select('*')
+      .select('id, applicant_name, applicant_email, applicant_phone, application_type, status, submitted_at, reviewed_at, reviewed_by, documents, notes, metadata, created_at, updated_at')
       .order('submitted_at', { ascending: false });
 
     if (filters?.status) {
@@ -65,7 +65,7 @@ export class EnrollmentService {
       console.warn('Enrollments table query failed:', error.message);
       return [];
     }
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get pending enrollments
@@ -81,7 +81,7 @@ export class EnrollmentService {
 
     const { data, error } = await supabase
       .from('enrollments')
-      .select('*')
+      .select('id, applicant_name, applicant_email, applicant_phone, application_type, status, submitted_at, reviewed_at, reviewed_by, documents, notes, metadata, created_at, updated_at')
       .eq('id', enrollmentId)
       .single();
 
@@ -94,7 +94,7 @@ export class EnrollmentService {
       console.warn('Enrollment lookup failed:', error.message);
       return null;
     }
-    return data;
+    return data as any;
   }
 
   // Update enrollment status
@@ -118,11 +118,11 @@ export class EnrollmentService {
       .from('enrollments')
       .update(updates)
       .eq('id', enrollmentId)
-      .select()
+      .select('id, applicant_name, applicant_email, applicant_phone, application_type, status, submitted_at, reviewed_at, reviewed_by, documents, notes, metadata, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Approve enrollment
@@ -196,11 +196,11 @@ export class EnrollmentService {
       .from('enrollments')
       .update({ documents })
       .eq('id', enrollmentId)
-      .select()
+      .select('id, applicant_name, applicant_email, applicant_phone, application_type, status, submitted_at, reviewed_at, reviewed_by, documents, notes, metadata, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Add note to enrollment
@@ -216,11 +216,11 @@ export class EnrollmentService {
       .from('enrollments')
       .update({ notes: newNotes })
       .eq('id', enrollmentId)
-      .select()
+      .select('id, applicant_name, applicant_email, applicant_phone, application_type, status, submitted_at, reviewed_at, reviewed_by, documents, notes, metadata, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Get enrollment stats

@@ -59,7 +59,7 @@ serve(async (req) => {
     // Get account
     const { data: account } = await supabase
       .from('mail_accounts')
-      .select('*')
+      .select('id, org_id, user_id, provider, email_address, display_name, access_token_encrypted, refresh_token_encrypted, token_expires_at, scopes, sync_status, sync_error, is_active, provider_account_id, avatar_url, delta_token, provider_metadata, last_sync_at, created_at, updated_at')
       .eq('id', account_id)
       .eq('user_id', authUser.userId)
       .single();

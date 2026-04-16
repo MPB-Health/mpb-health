@@ -129,7 +129,7 @@ Deno.serve(async (req: Request) => {
 
         let query = supabaseAdmin
           .from("notification_events")
-          .select("*")
+          .select("id, user_id, event_type, title, message, data, is_read, read_at, created_at")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
           .range(offset, offset + Math.min(limit, 100) - 1);

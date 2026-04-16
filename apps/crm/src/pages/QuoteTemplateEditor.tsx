@@ -624,7 +624,7 @@ export default function QuoteTemplateEditor() {
       try {
         const { data, error } = await supabase
           .from('crm_quote_templates')
-          .select('*')
+          .select('id, name, description, is_default, sections, branding')
           .eq('id', id)
           .single();
 

@@ -22,7 +22,7 @@ export default function PipelineBreakdownWidget({ size }: BaseWidgetProps) {
     queryKey: ['widget', 'pipelineBreakdown', activeOrgId],
     queryFn: async () => {
       const { data } = await supabase.rpc('crm_pipeline_breakdown', { p_org_id: activeOrgId });
-      return (data || []) as PipelineRow[];
+      return (data || []) as unknown as PipelineRow[];
     },
     enabled: !!activeOrgId,
     staleTime: 60_000,

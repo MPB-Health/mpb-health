@@ -100,7 +100,7 @@ export async function getAllForms(): Promise<CognitoFormRecord[]> {
   try {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .order('sort_order', { ascending: true });
 
     if (error) {
@@ -167,7 +167,7 @@ export async function getMenuForms(): Promise<CognitoFormRecord[]> {
   try {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .eq('is_active', true);
 
     if (error) {
@@ -232,7 +232,7 @@ export async function getFormById(id: string): Promise<CognitoFormRecord | null>
   try {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .eq('id', id)
       .single();
 
@@ -240,7 +240,7 @@ export async function getFormById(id: string): Promise<CognitoFormRecord | null>
       return null;
     }
 
-    return data;
+    return data as any;
   } catch (error) {
     console.error('Error fetching form by ID:', error);
     return null;
@@ -296,7 +296,7 @@ export async function createForm(input: CreateFormInput): Promise<ServiceResult<
     const { data, error } = await supabase
       .from('cognito_forms')
       .insert(insertData)
-      .select()
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .single();
 
     if (error) {
@@ -345,7 +345,7 @@ export async function updateForm(id: string, input: UpdateFormInput): Promise<Se
       .from('cognito_forms')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .single();
 
     if (error) {

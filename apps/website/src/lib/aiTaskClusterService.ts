@@ -118,7 +118,7 @@ class AITaskClusterService {
     try {
       const { data, error } = await supabase
         .from('ai_lead_insights')
-        .select('*')
+        .select('id, lead_id, ai_score, score_factors, conversion_probability, engagement_level, response_likelihood, recommended_action, recommended_channel, recommended_timing, follow_up_urgency, conversation_summary, key_points, objections, interests, next_actions, draft_email_subject, draft_email_body, draft_sms, last_analyzed_at, created_at, updated_at')
         .eq('lead_id', leadId)
         .single();
 
@@ -132,7 +132,7 @@ class AITaskClusterService {
         return null;
       }
 
-      return data as AILeadInsights;
+      return data as unknown as AILeadInsights;
     } catch (error) {
       console.error('Get lead insights error:', error);
       return null;
@@ -684,7 +684,7 @@ MPB Health Advisor`,
     try {
       const { data: rules, error } = await supabase
         .from('ai_automation_rules')
-        .select('*')
+        .select('id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, execution_count, last_executed_at')
         .eq('is_active', true)
         .eq('trigger_type', triggerType);
 
@@ -913,7 +913,7 @@ MPB Health Advisor`,
     try {
       let query = supabase
         .from('crm_templates')
-        .select('*')
+        .select('id, name, template_type, category, subject, body, variables, usage_count, is_active, last_used_at, created_at, updated_at')
         .eq('is_active', true)
         .order('usage_count', { ascending: false });
 
@@ -928,7 +928,7 @@ MPB Health Advisor`,
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Get templates error:', error);
       return [];

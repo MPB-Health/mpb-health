@@ -24,7 +24,7 @@ export class PlanInterestService {
     const { data, error } = await this.supabase
       .from('crm_lead_plan_interests')
       .select(`
-        *,
+        id, lead_id, plan_id, plan_name, plan_code, family_size, interest_level, quoted_monthly_rate, quoted_at, quote_valid_until, primary_age, spouse_age, dependent_ages, source, source_quote_id, notes, created_at, updated_at, created_by,
         plan:plans(id, name, slug, tier, features)
       `)
       .eq('lead_id', leadId)
@@ -35,7 +35,7 @@ export class PlanInterestService {
       throw new Error(`Failed to get plan interests: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   // ============================================================================
@@ -46,7 +46,7 @@ export class PlanInterestService {
     const { data, error } = await this.supabase
       .from('crm_lead_plan_interests')
       .select(`
-        *,
+        id, lead_id, plan_id, plan_name, plan_code, family_size, interest_level, quoted_monthly_rate, quoted_at, quote_valid_until, primary_age, spouse_age, dependent_ages, source, source_quote_id, notes, created_at, updated_at, created_by,
         plan:plans(id, name, slug, tier, features)
       `)
       .eq('id', id)
@@ -58,7 +58,7 @@ export class PlanInterestService {
       throw new Error(`Failed to get plan interest: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -88,7 +88,7 @@ export class PlanInterestService {
         notes: input.notes,
         created_by: user?.id,
       })
-      .select()
+      .select('id, lead_id, plan_id, plan_name, plan_code, family_size, interest_level, quoted_monthly_rate, quoted_at, quote_valid_until, primary_age, spouse_age, dependent_ages, source, source_quote_id, notes, created_at, updated_at, created_by')
       .single();
 
     if (error) {
@@ -96,7 +96,7 @@ export class PlanInterestService {
       throw new Error(`Failed to create plan interest: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -120,7 +120,7 @@ export class PlanInterestService {
         notes: input.notes,
       })
       .eq('id', id)
-      .select()
+      .select('id, lead_id, plan_id, plan_name, plan_code, family_size, interest_level, quoted_monthly_rate, quoted_at, quote_valid_until, primary_age, spouse_age, dependent_ages, source, source_quote_id, notes, created_at, updated_at, created_by')
       .single();
 
     if (error) {
@@ -128,7 +128,7 @@ export class PlanInterestService {
       throw new Error(`Failed to update plan interest: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -192,7 +192,7 @@ export class PlanInterestService {
       return this.getAvailableHealthPlansDirect();
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   private async getAvailableHealthPlansDirect(): Promise<AvailableHealthPlan[]> {
@@ -248,7 +248,7 @@ export class PlanInterestService {
     // Get total count
     const { count: total } = await this.supabase
       .from('crm_lead_plan_interests')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
 
     // Get by interest level
     const { data: levelData } = await this.supabase
@@ -292,7 +292,7 @@ export class PlanInterestService {
     let query = this.supabase
       .from('crm_lead_plan_interests')
       .select(`
-        *,
+        id, lead_id, plan_id, plan_name, plan_code, family_size, interest_level, quoted_monthly_rate, quoted_at, quote_valid_until, primary_age, spouse_age, dependent_ages, source, source_quote_id, notes, created_at, updated_at, created_by,
         plan:plans(id, name, slug, tier, features)
       `, { count: 'exact' });
 
@@ -378,14 +378,14 @@ export class PlanInterestService {
           created_by: user?.id,
         }))
       )
-      .select();
+      .select('id, lead_id, plan_id, plan_name, plan_code, family_size, interest_level, quoted_monthly_rate, quoted_at, quote_valid_until, primary_age, spouse_age, dependent_ages, source, source_quote_id, notes, created_at, updated_at, created_by');
 
     if (error) {
       console.error('[PlanInterestService] Failed to bulk add plan interests:', error);
       throw new Error(`Failed to bulk add plan interests: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 }
 

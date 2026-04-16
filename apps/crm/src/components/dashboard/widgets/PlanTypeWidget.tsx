@@ -38,7 +38,7 @@ export default function PlanTypeWidget({ size }: BaseWidgetProps) {
     queryKey: ['widget', 'planTypeStats', activeOrgId],
     queryFn: async () => {
       const { data } = await supabase.rpc('crm_plan_type_stats', { p_org_id: activeOrgId });
-      return (data || []) as PlanTypeStat[];
+      return (data || []) as unknown as PlanTypeStat[];
     },
     enabled: !!activeOrgId,
     staleTime: 60_000,

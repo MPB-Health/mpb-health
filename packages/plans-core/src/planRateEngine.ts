@@ -33,7 +33,7 @@ export function createPlanRateEngine(supabase: SupabaseClient) {
     // Fetch all active plans
     const { data: plans } = await supabase
       .from('plans')
-      .select('*')
+      .select('id, slug, name, tagline, description, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, target_audience, sort_order, is_active, code, enrollment_fee, annual_membership_fee, tobacco_surcharge_pct, currency, enroll_url, cost_basis, external_product_id, created_at, updated_at')
       .eq('is_active', true)
       .order('sort_order');
 
@@ -46,7 +46,7 @@ export function createPlanRateEngine(supabase: SupabaseClient) {
     const planIds = plans.map((p: Plan) => p.id);
     const { data: allPricing } = await supabase
       .from('plan_pricing')
-      .select('*')
+      .select('id, plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date, created_at')
       .in('plan_id', planIds)
       .lte('effective_date', today)
       .order('effective_date', { ascending: false });

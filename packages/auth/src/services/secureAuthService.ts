@@ -274,7 +274,7 @@ class SecureAuthService {
     try {
       const { data, error } = await supabase
         .from('user_sessions')
-        .select('*')
+        .select('id, user_id, session_token, device_fingerprint, ip_address, user_agent, last_activity, expires_at, revoked, created_at')
         .eq('user_id', userId)
         .eq('revoked', false)
         .gt('expires_at', new Date().toISOString())
@@ -285,7 +285,7 @@ class SecureAuthService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Failed to get user sessions:', error);
       return [];

@@ -13,7 +13,7 @@ export class TemplateService {
     try {
       let query = this.supabase
         .from('crm_templates')
-        .select('*')
+        .select('id, name, description, template_type, category, subject, body, variables, usage_count, last_used_at, is_ai_generated, ai_performance_score, is_active, is_default, created_by, created_at, updated_at')
         .order('updated_at', { ascending: false });
 
       if (filters?.template_type) {
@@ -34,7 +34,7 @@ export class TemplateService {
         console.error('Error listing templates:', error);
         return [];
       }
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Error listing templates:', error);
       return [];
@@ -45,7 +45,7 @@ export class TemplateService {
     try {
       const { data, error } = await this.supabase
         .from('crm_templates')
-        .select('*')
+        .select('id, name, description, template_type, category, subject, body, variables, usage_count, last_used_at, is_ai_generated, ai_performance_score, is_active, is_default, created_by, created_at, updated_at')
         .eq('id', id)
         .maybeSingle();
 
@@ -53,7 +53,7 @@ export class TemplateService {
         console.error('Error fetching template:', error);
         return null;
       }
-      return data;
+      return data as any;
     } catch (error) {
       console.error('Error fetching template:', error);
       return null;
@@ -77,7 +77,7 @@ export class TemplateService {
           is_ai_generated: input.is_ai_generated || false,
           is_active: input.is_active !== undefined ? input.is_active : true,
         })
-        .select()
+        .select('id, name, description, template_type, category, subject, body, variables, usage_count, last_used_at, is_ai_generated, ai_performance_score, is_active, is_default, created_by, created_at, updated_at')
         .single();
 
       if (error) {

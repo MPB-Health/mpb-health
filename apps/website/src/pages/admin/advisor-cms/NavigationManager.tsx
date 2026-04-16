@@ -76,7 +76,7 @@ export default function NavigationManager() {
     try {
       const { data, error } = await supabase
         .from('advisor_nav_menu')
-        .select('*')
+        .select('id, label, url, icon, order_index, is_active, is_external, badge_text, badge_color, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) throw error;

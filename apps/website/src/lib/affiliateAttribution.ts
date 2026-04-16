@@ -101,7 +101,7 @@ export const getAffiliateStats = async (
   try {
     const { count: clickCount, error: clicksError } = await supabase
       .from('affiliate_clicks')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('affiliate_id', affiliateId)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());

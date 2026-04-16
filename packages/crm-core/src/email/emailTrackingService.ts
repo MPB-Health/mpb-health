@@ -101,12 +101,12 @@ export class EmailTrackingService {
     try {
       const { data, error } = await this.supabase
         .from('email_tracking')
-        .select('*')
+        .select('id, email_log_id, tracking_type, link_url, ip_address, user_agent, device_type, location_country, location_city, tracked_at')
         .eq('email_log_id', emailLogId)
         .order('tracked_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as any;
     } catch (err) {
       console.error('EmailTrackingService.getEmailTracking error:', err);
       return [];
@@ -123,7 +123,7 @@ export class EmailTrackingService {
     try {
       let query = this.supabase
         .from('crm_email_log')
-        .select('*', { count: 'exact' })
+        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact' })
         .order('sent_at', { ascending: false });
 
       if (filters?.status) {
@@ -256,7 +256,7 @@ export class EmailTrackingService {
           for (const t of trackingData) {
             // Device stats
             if (t.tracking_type === 'open' && t.device_type) {
-              const device = t.device_type as DeviceType;
+              const device = t.device_type as unknown as DeviceType;
               stats.opens_by_device[device] = (stats.opens_by_device[device] || 0) + 1;
             }
 

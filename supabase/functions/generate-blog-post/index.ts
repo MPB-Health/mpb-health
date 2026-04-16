@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
     if (promptId) {
       const { data: promptData, error: promptError } = await supabase
         .from("gemini_prompts")
-        .select("*")
+        .select("id, template, is_active")
         .eq("id", promptId)
         .eq("is_active", true)
         .single();

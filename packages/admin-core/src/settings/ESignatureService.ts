@@ -85,24 +85,24 @@ export class ESignatureService {
   async listProviders(orgId: string): Promise<ESignatureProviderConfig[]> {
     const { data, error } = await supabase
       .from('esignature_providers')
-      .select('*')
+      .select('id, org_id, name, provider, is_active, is_default, config, webhook_url, templates_synced, last_sync_at, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('is_default', { ascending: false })
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getProvider(id: string): Promise<ESignatureProviderConfig | null> {
     const { data, error } = await supabase
       .from('esignature_providers')
-      .select('*')
+      .select('id, org_id, name, provider, is_active, is_default, config, webhook_url, templates_synced, last_sync_at, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createProvider(input: ProviderCreateInput, orgId: string, userId: string): Promise<ESignatureProviderConfig> {
@@ -116,14 +116,14 @@ export class ESignatureService {
         webhook_url: input.webhook_url,
         created_by: userId,
       })
-      .select()
+      .select('id, org_id, name, provider, is_active, is_default, config, webhook_url, templates_synced, last_sync_at, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'esignature_provider.create', 'esignature_provider', data.id, null, data);
 
-    return data;
+    return data as any;
   }
 
   async updateProvider(id: string, input: ProviderUpdateInput, userId: string): Promise<ESignatureProviderConfig> {
@@ -141,14 +141,14 @@ export class ESignatureService {
       .from('esignature_providers')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, org_id, name, provider, is_active, is_default, config, webhook_url, templates_synced, last_sync_at, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'esignature_provider.update', 'esignature_provider', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async deleteProvider(id: string, userId: string): Promise<void> {
@@ -214,7 +214,7 @@ export class ESignatureService {
   ): Promise<{ data: ESignatureDocument[]; total: number }> {
     let query = supabase
       .from('esignature_documents')
-      .select('*', { count: 'exact' })
+      .select('id, org_id, provider_id, external_document_id, name, status, signers, document_type, related_entity_type, related_entity_id, sent_at, completed_at, expires_at, signed_document_url, created_by, created_at, updated_at', { count: 'exact' })
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
@@ -244,12 +244,12 @@ export class ESignatureService {
   async getDocument(id: string): Promise<ESignatureDocument | null> {
     const { data, error } = await supabase
       .from('esignature_documents')
-      .select('*')
+      .select('id, org_id, provider_id, external_document_id, name, status, signers, document_type, related_entity_type, related_entity_id, sent_at, completed_at, expires_at, signed_document_url, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createDocument(input: DocumentCreateInput, orgId: string, userId: string): Promise<ESignatureDocument> {
@@ -272,14 +272,14 @@ export class ESignatureService {
         expires_at: input.expires_at,
         created_by: userId,
       })
-      .select()
+      .select('id, org_id, provider_id, external_document_id, name, status, signers, document_type, related_entity_type, related_entity_id, sent_at, completed_at, expires_at, signed_document_url, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'esignature_document.create', 'esignature_document', data.id, null, data);
 
-    return data;
+    return data as any;
   }
 
   async sendDocument(id: string, userId: string): Promise<ESignatureDocument> {
@@ -298,14 +298,14 @@ export class ESignatureService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select()
+      .select('id, org_id, provider_id, external_document_id, name, status, signers, document_type, related_entity_type, related_entity_id, sent_at, completed_at, expires_at, signed_document_url, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'esignature_document.send', 'esignature_document', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async voidDocument(id: string, userId: string): Promise<ESignatureDocument> {
@@ -318,14 +318,14 @@ export class ESignatureService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select()
+      .select('id, org_id, provider_id, external_document_id, name, status, signers, document_type, related_entity_type, related_entity_id, sent_at, completed_at, expires_at, signed_document_url, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'esignature_document.void', 'esignature_document', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async updateDocumentStatus(
@@ -362,12 +362,12 @@ export class ESignatureService {
       .from('esignature_documents')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, org_id, provider_id, external_document_id, name, status, signers, document_type, related_entity_type, related_entity_id, sent_at, completed_at, expires_at, signed_document_url, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
-    return data;
+    return data as any;
   }
 
   async deleteDocument(id: string, userId: string): Promise<void> {

@@ -75,7 +75,7 @@ export default function ConnectedInbox() {
     if (!activeOrgId) return;
     const data = await mailAccountService.getAccounts(activeOrgId);
     setAccounts(data);
-    return data;
+    return data as any;
   }, [mailAccountService, activeOrgId]);
 
   const loadFolders = useCallback(async (accountIds: string[]) => {

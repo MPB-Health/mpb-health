@@ -68,7 +68,7 @@ export class NavigationService {
   async getNavMenuItems(): Promise<NavMenuItem[]> {
     const { data, error } = await supabase
       .from('advisor_nav_menu')
-      .select('*')
+      .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .eq('is_active', true)
       .order('order_index', { ascending: true });
 
@@ -80,13 +80,13 @@ export class NavigationService {
   async getNavMenuItemsFlat(): Promise<NavMenuItem[]> {
     const { data, error } = await supabase
       .from('advisor_nav_menu')
-      .select('*')
+      .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .eq('is_active', true)
       .is('parent_id', null) // Only top-level items
       .order('order_index', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Build a tree structure from flat list
@@ -145,7 +145,7 @@ export class NavigationService {
   async getQuickLinks(category?: string): Promise<QuickLink[]> {
     let query = supabase
       .from('advisor_quick_links')
-      .select('*')
+      .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
       .eq('is_active', true)
       .order('order_index', { ascending: true });
 
@@ -155,7 +155,7 @@ export class NavigationService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   selectDashboardQuickLinks(links: QuickLink[], limit = 8): QuickLink[] {

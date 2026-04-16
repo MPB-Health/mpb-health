@@ -54,7 +54,7 @@ function useAnnualReportData(year: number, orgKey: string | null, supabase: Retu
         p_year: year,
       });
       if (error) throw error;
-      return (data ?? []) as LeadTrendRow[];
+      return (data ?? []) as unknown as LeadTrendRow[];
     },
   });
 
@@ -68,7 +68,7 @@ function useAnnualReportData(year: number, orgKey: string | null, supabase: Retu
         p_year: year,
       });
       if (error) throw error;
-      return (data ?? []) as RevenueRow[];
+      return (data ?? []) as unknown as RevenueRow[];
     },
   });
 
@@ -82,7 +82,7 @@ function useAnnualReportData(year: number, orgKey: string | null, supabase: Retu
         p_year: year,
       });
       if (error) throw error;
-      return (data ?? []) as SourceRow[];
+      return (data ?? []) as unknown as SourceRow[];
     },
   });
 
@@ -96,7 +96,7 @@ function useAnnualReportData(year: number, orgKey: string | null, supabase: Retu
         p_year: year,
       });
       if (error) throw error;
-      return (data ?? []) as ConversionRow[];
+      return (data ?? []) as unknown as ConversionRow[];
     },
   });
 

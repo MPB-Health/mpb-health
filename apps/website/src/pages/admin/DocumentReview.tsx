@@ -59,7 +59,7 @@ const DocumentReview: React.FC = () => {
     try {
       let query = supabase
         .from('member_documents')
-        .select('*')
+        .select('id, member_id, member_name, document_type, file_name, file_url, file_size, mime_type, status, rejection_reason, uploaded_at, reviewed_at, reviewed_by')
         .order('uploaded_at', { ascending: false });
 
       if (statusFilter !== 'all') {

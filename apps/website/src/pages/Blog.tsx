@@ -20,7 +20,7 @@ const Blog: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('blog_articles')
-          .select('*')
+          .select('id, title, slug, excerpt, featured_image_url, category, published_date, read_time')
           .eq('is_published', true)
           .neq('category', 'Event')
           .order('published_date', { ascending: false });

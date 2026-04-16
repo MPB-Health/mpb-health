@@ -54,7 +54,7 @@ export class ProductFormService {
     try {
       const { data, error } = await this.supabase
         .from('crm_product_form_fields')
-        .select('*')
+        .select('id, form_id, field_name, field_type, label, placeholder, options, is_required, sort_order, config, created_at, updated_at')
         .eq('product_id', productId)
         .eq('is_active', true)
         .order('sort_order');
@@ -63,7 +63,7 @@ export class ProductFormService {
         console.error('Failed to get product fields:', error);
         return [];
       }
-      return (data || []) as ProductFormField[];
+      return (data || []) as unknown as ProductFormField[];
     } catch (error) {
       console.error('Get product fields error:', error);
       return [];
@@ -141,14 +141,14 @@ export class ProductFormService {
     try {
       const { data, error } = await this.supabase
         .from('crm_quote_line_item_answers')
-        .select('*')
+        .select('id, quote_id, field_id, value, created_at, updated_at')
         .eq('line_item_id', lineItemId);
 
       if (error) {
         console.error('Failed to get line item answers:', error);
         return [];
       }
-      return (data || []) as LineItemAnswer[];
+      return (data || []) as unknown as LineItemAnswer[];
     } catch (error) {
       console.error('Get line item answers error:', error);
       return [];

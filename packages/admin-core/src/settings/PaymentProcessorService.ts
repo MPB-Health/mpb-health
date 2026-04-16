@@ -44,24 +44,24 @@ export class PaymentProcessorService {
   async list(orgId: string): Promise<PaymentProcessor[]> {
     const { data, error } = await supabase
       .from('payment_processors')
-      .select('*')
+      .select('id, org_id, name, provider, is_active, is_default, config, supported_methods, fee_structure, webhook_url, webhook_secret, last_transaction_at, total_processed, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('is_default', { ascending: false })
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async get(id: string): Promise<PaymentProcessor | null> {
     const { data, error } = await supabase
       .from('payment_processors')
-      .select('*')
+      .select('id, org_id, name, provider, is_active, is_default, config, supported_methods, fee_structure, webhook_url, webhook_secret, last_transaction_at, total_processed, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async create(input: PaymentProcessorCreateInput, orgId: string, userId: string): Promise<PaymentProcessor> {
@@ -77,14 +77,14 @@ export class PaymentProcessorService {
         webhook_url: input.webhook_url,
         created_by: userId,
       })
-      .select()
+      .select('id, org_id, name, provider, is_active, is_default, config, supported_methods, fee_structure, webhook_url, webhook_secret, last_transaction_at, total_processed, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'payment_processor.create', 'payment_processor', data.id, null, data);
 
-    return data;
+    return data as any;
   }
 
   async update(id: string, input: PaymentProcessorUpdateInput, userId: string): Promise<PaymentProcessor> {
@@ -104,14 +104,14 @@ export class PaymentProcessorService {
       .from('payment_processors')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, org_id, name, provider, is_active, is_default, config, supported_methods, fee_structure, webhook_url, webhook_secret, last_transaction_at, total_processed, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'payment_processor.update', 'payment_processor', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async delete(id: string, userId: string): Promise<void> {

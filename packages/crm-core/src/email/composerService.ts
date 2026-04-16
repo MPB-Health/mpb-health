@@ -216,9 +216,9 @@ export class ComposerService {
     const { data, error } = await this.supabase
       .from('crm_email_log')
       .select(`
-        *,
-        attachments:crm_email_attachments(*),
-        thread:crm_email_threads(*),
+        id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at,
+        attachments:crm_email_attachments(id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at),
+        thread:crm_email_threads(id, org_id, subject, lead_id, contact_id, account_id, deal_id, participants, message_count, last_message_at, last_message_preview, has_unread, labels, is_starred, is_archived, created_at, updated_at),
         lead:lead_submissions(id, first_name, last_name, email)
       `)
       .eq('id', id)
@@ -230,7 +230,7 @@ export class ComposerService {
       return null;
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -244,8 +244,8 @@ export class ComposerService {
     let query = this.supabase
       .from('crm_email_log')
       .select(`
-        *,
-        attachments:crm_email_attachments(*),
+        id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at,
+        attachments:crm_email_attachments(id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at),
         lead:lead_submissions(id, first_name, last_name, email)
       `, { count: 'exact' });
 
@@ -301,7 +301,7 @@ export class ComposerService {
     }
 
     return {
-      data: data || [],
+      data: (data || []) as unknown as EnhancedEmailLog[],
       total: count || 0,
     };
   }
@@ -317,7 +317,7 @@ export class ComposerService {
     let query = this.supabase
       .from('crm_email_threads')
       .select(`
-        *,
+        id, org_id, subject, lead_id, contact_id, account_id, deal_id, participants, message_count, last_message_at, last_message_preview, has_unread, labels, is_starred, is_archived, created_at, updated_at,
         lead:lead_submissions(id, first_name, last_name, email)
       `, { count: 'exact' });
 
@@ -364,7 +364,7 @@ export class ComposerService {
     }
 
     return {
-      data: data || [],
+      data: (data || []) as unknown as EmailThread[],
       total: count || 0,
     };
   }
@@ -377,8 +377,8 @@ export class ComposerService {
     const { data, error } = await this.supabase
       .from('crm_email_log')
       .select(`
-        *,
-        attachments:crm_email_attachments(*)
+        id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at,
+        attachments:crm_email_attachments(id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at)
       `)
       .eq('thread_id', threadId)
       .order('sent_at', { ascending: true });
@@ -388,13 +388,13 @@ export class ComposerService {
       return [];
     }
 
-    // Mark thread as read
+    // Mark thread as unknown as read
     await this.supabase
       .from('crm_email_threads')
       .update({ has_unread: false })
       .eq('id', threadId);
 
-    return data || [];
+    return (data || []) as any;
   }
 
   // ============================================================================
@@ -492,31 +492,31 @@ export class ComposerService {
     const [inbox, sent, drafts, starred, archived, unread] = await Promise.all([
       this.supabase
         .from('crm_email_log')
-        .select('*', { count: 'exact', head: true })
+        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
         .eq('direction', 'inbound')
         .eq('is_archived', false),
       this.supabase
         .from('crm_email_log')
-        .select('*', { count: 'exact', head: true })
+        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
         .eq('direction', 'outbound')
         .eq('sent_by', user.id),
       this.supabase
         .from('crm_email_drafts')
-        .select('*', { count: 'exact', head: true })
+        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('org_id', orgId),
       this.supabase
         .from('crm_email_log')
-        .select('*', { count: 'exact', head: true })
+        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
         .eq('is_starred', true)
         .eq('is_archived', false),
       this.supabase
         .from('crm_email_log')
-        .select('*', { count: 'exact', head: true })
+        .select('id, org_id, user_id, account_id, to_addresses, cc_addresses, bcc_addresses, subject, body_html, body_text, reply_to_message_id, attachments, scheduled_at, created_at, updated_at', { count: 'exact', head: true })
         .eq('is_archived', true),
       this.supabase
         .from('crm_email_threads')
-        .select('*', { count: 'exact', head: true })
+        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
         .eq('has_unread', true),
     ]);
 
@@ -539,7 +539,7 @@ export class ComposerService {
   ): Promise<Array<{ filename: string; content: string }>> {
     const { data: attachments } = await this.supabase
       .from('crm_email_attachments')
-      .select('*')
+      .select('id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at')
       .in('id', attachmentIds);
 
     if (!attachments) return [];

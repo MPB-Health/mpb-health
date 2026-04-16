@@ -33,7 +33,7 @@ export class BillingService {
   async getPlans(options: { includePrivate?: boolean } = {}): Promise<SubscriptionPlan[]> {
     let query = supabase
       .from('subscription_plans')
-      .select('*')
+      .select('id, name, slug, description, tier, price_monthly, price_yearly, currency, max_users, max_leads, max_messages_per_month, max_sequences, max_ai_assists_per_month, storage_gb, features, is_active, is_public, sort_order, stripe_price_id_monthly, stripe_price_id_yearly, stripe_product_id, created_at, updated_at')
       .eq('is_active', true)
       .order('sort_order');
 
@@ -48,7 +48,7 @@ export class BillingService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -57,7 +57,7 @@ export class BillingService {
   async getPlan(idOrSlug: string): Promise<SubscriptionPlan | null> {
     const { data, error } = await supabase
       .from('subscription_plans')
-      .select('*')
+      .select('id, name, slug, description, tier, price_monthly, price_yearly, currency, max_users, max_leads, max_messages_per_month, max_sequences, max_ai_assists_per_month, storage_gb, features, is_active, is_public, sort_order, stripe_price_id_monthly, stripe_price_id_yearly, stripe_product_id, created_at, updated_at')
       .or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`)
       .single();
 
@@ -66,7 +66,7 @@ export class BillingService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================
@@ -79,7 +79,15 @@ export class BillingService {
   async getSubscription(orgId: string): Promise<SubscriptionWithPlan | null> {
     const { data, error } = await supabase
       .from('organization_subscriptions')
-      .select('*, plan:subscription_plans(*)')
+      .select(`
+        id, org_id, plan_id, status, billing_cycle, current_period_start, current_period_end,
+        trial_start, trial_end, canceled_at, cancel_at_period_end, stripe_subscription_id,
+        stripe_customer_id, custom_limits, discount_percent, created_at, updated_at,
+        plan:subscription_plans(id, name, slug, description, tier, price_monthly, price_yearly,
+          currency, max_users, max_leads, max_messages_per_month, max_sequences,
+          max_ai_assists_per_month, storage_gb, features, is_active, is_public, sort_order,
+          stripe_price_id_monthly, stripe_price_id_yearly, stripe_product_id, created_at, updated_at)
+      `)
       .eq('org_id', orgId)
       .single();
 
@@ -88,7 +96,7 @@ export class BillingService {
       throw error;
     }
 
-    return data as SubscriptionWithPlan | null;
+    return data as unknown as SubscriptionWithPlan | null;
   }
 
   /**
@@ -130,7 +138,7 @@ export class BillingService {
         trial_end: trialEnd,
         discount_percent: input.discount_percent || 0,
       })
-      .select()
+      .select('id, org_id, plan_id, status, billing_cycle, current_period_start, current_period_end, trial_start, trial_end, canceled_at, cancel_at_period_end, stripe_subscription_id, stripe_customer_id, custom_limits, discount_percent, created_at, updated_at')
       .single();
 
     if (error) {
@@ -144,7 +152,7 @@ export class BillingService {
       billing_cycle: input.billing_cycle,
     });
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -182,7 +190,7 @@ export class BillingService {
       .from('organization_subscriptions')
       .update(updateData)
       .eq('org_id', orgId)
-      .select()
+      .select('id, org_id, plan_id, status, billing_cycle, current_period_start, current_period_end, trial_start, trial_end, canceled_at, cancel_at_period_end, stripe_subscription_id, stripe_customer_id, custom_limits, discount_percent, created_at, updated_at')
       .single();
 
     if (error) {
@@ -193,7 +201,7 @@ export class BillingService {
     // Log event
     await this.logBillingEvent(orgId, data.id, null, 'subscription.updated', 'Subscription updated', updateData);
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -242,7 +250,7 @@ export class BillingService {
         cancel_at_period_end: false,
       })
       .eq('org_id', orgId)
-      .select()
+      .select('id, org_id, plan_id, status, billing_cycle, current_period_start, current_period_end, trial_start, trial_end, canceled_at, cancel_at_period_end, stripe_subscription_id, stripe_customer_id, custom_limits, discount_percent, created_at, updated_at')
       .single();
 
     if (error) {
@@ -252,7 +260,7 @@ export class BillingService {
 
     await this.logBillingEvent(orgId, data.id, null, 'subscription.reactivated', 'Subscription reactivated', {});
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================
@@ -268,7 +276,7 @@ export class BillingService {
   ): Promise<{ invoices: Invoice[]; total: number }> {
     let query = supabase
       .from('invoices')
-      .select('*', { count: 'exact' })
+      .select('id, org_id, subscription_id, invoice_number, status, subtotal, discount_amount, tax_amount, total, amount_paid, amount_due, currency, period_start, period_end, invoice_date, due_date, paid_at, line_items, stripe_invoice_id, stripe_payment_intent_id, hosted_invoice_url, invoice_pdf_url, notes, created_at, updated_at', { count: 'exact' })
       .eq('org_id', orgId)
       .order('invoice_date', { ascending: false });
 
@@ -300,7 +308,7 @@ export class BillingService {
   async getInvoice(invoiceId: string): Promise<Invoice | null> {
     const { data, error } = await supabase
       .from('invoices')
-      .select('*')
+      .select('id, org_id, subscription_id, invoice_number, status, subtotal, discount_amount, tax_amount, total, amount_paid, amount_due, currency, period_start, period_end, invoice_date, due_date, paid_at, line_items, stripe_invoice_id, stripe_payment_intent_id, hosted_invoice_url, invoice_pdf_url, notes, created_at, updated_at')
       .eq('id', invoiceId)
       .single();
 
@@ -309,7 +317,7 @@ export class BillingService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -372,7 +380,7 @@ export class BillingService {
   async getPaymentMethods(orgId: string): Promise<PaymentMethod[]> {
     const { data, error } = await supabase
       .from('payment_methods')
-      .select('*')
+      .select('id, org_id, type, card_brand, card_last4, card_exp_month, card_exp_year, bank_name, account_last4, is_default, is_verified, stripe_payment_method_id, billing_name, billing_email, billing_address, created_at, updated_at')
       .eq('org_id', orgId)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
@@ -382,7 +390,7 @@ export class BillingService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -391,7 +399,7 @@ export class BillingService {
   async getDefaultPaymentMethod(orgId: string): Promise<PaymentMethod | null> {
     const { data, error } = await supabase
       .from('payment_methods')
-      .select('*')
+      .select('id, org_id, type, card_brand, card_last4, card_exp_month, card_exp_year, bank_name, account_last4, is_default, is_verified, stripe_payment_method_id, billing_name, billing_email, billing_address, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('is_default', true)
       .single();
@@ -401,7 +409,7 @@ export class BillingService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -434,7 +442,7 @@ export class BillingService {
         is_default: input.set_as_default ?? false,
         is_verified: true,
       })
-      .select()
+      .select('id, org_id, type, card_brand, card_last4, card_exp_month, card_exp_year, bank_name, account_last4, is_default, is_verified, stripe_payment_method_id, billing_name, billing_email, billing_address, created_at, updated_at')
       .single();
 
     if (error) {
@@ -442,7 +450,7 @@ export class BillingService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -533,7 +541,7 @@ export class BillingService {
   ): Promise<BillingEvent[]> {
     let query = supabase
       .from('billing_events')
-      .select('*')
+      .select('id, org_id, subscription_id, invoice_id, event_type, description, data, stripe_event_id, created_at')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
@@ -548,7 +556,7 @@ export class BillingService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -660,7 +668,7 @@ export class BillingService {
   async addAddon(orgId: string, input: AddAddonInput): Promise<SubscriptionAddon> {
     const { data: module, error: moduleError } = await supabase
       .from('product_modules')
-      .select('*')
+      .select('id, slug, name, addon_price_monthly, addon_price_yearly, is_active, included_in_core')
       .eq('slug', input.module_slug)
       .eq('is_active', true)
       .single();
@@ -682,7 +690,7 @@ export class BillingService {
         license_source: 'addon',
         activated_at: new Date().toISOString(),
       }, { onConflict: 'org_id,module_id' })
-      .select()
+      .select('id, org_id, module_id, status, license_source, activated_at, canceled_at, stripe_subscription_item_id')
       .single();
 
     if (error) {
@@ -813,7 +821,7 @@ export class BillingService {
   ): Promise<MeteredUsageRecord[]> {
     let query = supabase
       .from('metered_usage_records')
-      .select('*')
+      .select('id, org_id, metric, quantity, unit_price, total, period_start, period_end, stripe_usage_record_id, reported_at')
       .eq('org_id', orgId)
       .order('reported_at', { ascending: false });
 
@@ -832,7 +840,7 @@ export class BillingService {
       console.error('[BillingService] Failed to get metered usage:', error);
       throw error;
     }
-    return data || [];
+    return (data || []) as any;
   }
 }
 

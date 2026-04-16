@@ -202,7 +202,7 @@ export class NotificationCenterService {
           .eq('id', dbId);
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('Error marking notification as unknown as read:', error);
     }
   }
 
@@ -217,7 +217,7 @@ export class NotificationCenterService {
         })
         .is('acknowledged_at', null);
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error('Error marking all as unknown as read:', error);
     }
   }
 }

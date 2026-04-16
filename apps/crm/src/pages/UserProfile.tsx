@@ -222,7 +222,7 @@ export default function UserProfile() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, first_name, last_name, display_name, email, bio, job_title, department, avatar_url, phone, mobile_phone, linkedin_url, twitter_url, facebook_url, instagram_url, github_url, website_url, address_line1, address_line2, city, state, postal_code, country, timezone, locale, created_at, updated_at')
         .eq('id', targetUserId)
         .single();
 

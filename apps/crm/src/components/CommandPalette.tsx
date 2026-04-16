@@ -322,7 +322,7 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
         return;
       }
 
-      const action = item as QuickAction;
+      const action = item as unknown as QuickAction;
       switch (action.action_type) {
         case 'navigate':
           if (action.action_data.url) navigate(action.action_data.url);

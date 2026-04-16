@@ -27,7 +27,7 @@ export class InvoiceService {
       let query = this.supabase
         .from('crm_invoices')
         .select(`
-          *,
+        id, org_id, invoice_number, name, description, quote_id, deal_id, account_id, contact_id, status, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, amount_paid, amount_due, currency, issue_date, due_date, paid_at, terms_and_conditions, notes, billing_address, shipping_address, owner_id, sent_at, created_by, created_at, updated_at,
           quote:crm_quotes!crm_invoices_quote_id_fkey(id, name, quote_number),
           deal:crm_deals!crm_invoices_deal_id_fkey(id, name),
           account:crm_accounts!crm_invoices_account_id_fkey(id, name),
@@ -92,7 +92,7 @@ export class InvoiceService {
         return { invoices: [], total: 0 };
       }
 
-      return { invoices: data as InvoiceWithRelations[], total: count || 0 };
+      return { invoices: data as unknown as InvoiceWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get invoices error:', error);
       return { invoices: [], total: 0 };
@@ -107,7 +107,7 @@ export class InvoiceService {
       const { data, error } = await this.supabase
         .from('crm_invoices')
         .select(`
-          *,
+        id, org_id, invoice_number, name, description, quote_id, deal_id, account_id, contact_id, status, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, amount_paid, amount_due, currency, issue_date, due_date, paid_at, terms_and_conditions, notes, billing_address, shipping_address, owner_id, sent_at, created_by, created_at, updated_at,
           quote:crm_quotes!crm_invoices_quote_id_fkey(id, name, quote_number),
           deal:crm_deals!crm_invoices_deal_id_fkey(id, name),
           account:crm_accounts!crm_invoices_account_id_fkey(id, name),
@@ -150,17 +150,17 @@ export class InvoiceService {
 
       // Sort line items by sort_order
       if (data.line_items) {
-        data.line_items.sort((a: InvoiceLineItem, b: InvoiceLineItem) => a.sort_order - b.sort_order);
+        (data.line_items as any[]).sort((a: any, b: any) => a.sort_order - b.sort_order);
       }
 
       // Sort payments by date
       if (data.payments) {
-        data.payments.sort((a: InvoicePayment, b: InvoicePayment) =>
+        (data.payments as any[]).sort((a: any, b: any) =>
           new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
         );
       }
 
-      return data as InvoiceWithRelations;
+      return data as unknown as InvoiceWithRelations;
     } catch (error) {
       console.error('Get invoice error:', error);
       return null;
@@ -221,8 +221,8 @@ export class InvoiceService {
       const { data: quote, error: quoteError } = await this.supabase
         .from('crm_quotes')
         .select(`
-          *,
-          line_items:crm_quote_line_items(*)
+        id, org_id, quote_number, name, description, deal_id, account_id, contact_id, status, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, currency, valid_until, sent_at, accepted_at, rejected_at, rejection_reason, terms_and_conditions, notes, billing_address, shipping_address, price_book_id, template_id, owner_id, created_by, created_at, updated_at,
+          line_items:crm_quote_line_items(id, quote_id, product_id, name, description, quantity, unit_price, discount_percent, discount_amount, tax_rate, subtotal, total, sort_order, created_at, updated_at)
         `)
         .eq('id', quoteId)
         .single();
@@ -544,7 +544,7 @@ export class InvoiceService {
   }
 
   /**
-   * Mark as paid (full payment)
+   * Mark as unknown as paid (full payment)
    */
   async markPaid(invoiceId: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -568,7 +568,7 @@ export class InvoiceService {
       return { success: true };
     } catch (error) {
       console.error('Mark paid error:', error);
-      return { success: false, error: 'Failed to mark invoice as paid' };
+      return { success: false, error: 'Failed to mark invoice as unknown as paid' };
     }
   }
 

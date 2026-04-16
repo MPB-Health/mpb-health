@@ -63,7 +63,7 @@ serve(async (req) => {
     // Fetch the form
     const { data: form, error: formError } = await supabase
       .from('crm_web_forms')
-      .select('*')
+      .select('id, org_id, name, entity_type, fields, status, settings, styling, submit_count, last_submission_at')
       .eq('id', form_id)
       .single();
 

@@ -180,7 +180,7 @@ function InsightsPanel({ leadId, compact }: { leadId: string; compact: boolean }
     try {
       const { data: existing, error: existingErr } = await supabase
         .from('ai_lead_insights')
-        .select('*')
+        .select('id, recommended_action, recommended_channel, score_factors, summary, generated_at')
         .eq('lead_id', leadId)
         .order('generated_at', { ascending: false })
         .limit(1)

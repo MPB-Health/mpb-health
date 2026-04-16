@@ -23,7 +23,7 @@ export class ContactDirectoryService {
   async getContacts(includeInactive = false): Promise<ContactEntry[]> {
     let query = supabase
       .from('advisor_contact_directory')
-      .select('*')
+      .select('id, name, title, department, email, phone, extension, avatar_url, bio, is_active, display_order, created_at, updated_at')
       .order('display_order', { ascending: true })
       .order('name', { ascending: true });
 
@@ -31,29 +31,29 @@ export class ContactDirectoryService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getContact(id: string): Promise<ContactEntry | null> {
     const { data, error } = await supabase
       .from('advisor_contact_directory')
-      .select('*')
+      .select('id, name, title, department, email, phone, extension, avatar_url, bio, is_active, display_order, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createContact(input: ContactCreateInput): Promise<ContactEntry> {
     const { data, error } = await supabase
       .from('advisor_contact_directory')
       .insert(input)
-      .select()
+      .select('id, name, title, department, email, phone, extension, avatar_url, bio, is_active, display_order, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async updateContact(id: string, input: ContactUpdateInput): Promise<ContactEntry> {
@@ -61,11 +61,11 @@ export class ContactDirectoryService {
       .from('advisor_contact_directory')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, name, title, department, email, phone, extension, avatar_url, bio, is_active, display_order, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteContact(id: string): Promise<void> {

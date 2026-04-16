@@ -3,7 +3,7 @@ import { supabase, HealthcarePlanCategory, HealthcarePlanCategoryWithDetails } f
 export async function getPlanCategories(): Promise<HealthcarePlanCategory[]> {
   const { data, error } = await supabase
     .from('healthcare_plan_categories')
-    .select('*')
+    .select('id, slug, title, subtitle, description, icon, gradient, icon_bg, image_url, image_alt, recommendations, best_for, order_index, is_active, created_at, updated_at')
     .eq('is_active', true)
     .order('order_index', { ascending: true });
 
@@ -18,7 +18,7 @@ export async function getPlanCategories(): Promise<HealthcarePlanCategory[]> {
 export async function getPlanCategoryBySlug(slug: string): Promise<HealthcarePlanCategoryWithDetails | null> {
   const { data: category, error: categoryError } = await supabase
     .from('healthcare_plan_categories')
-    .select('*')
+    .select('id, slug, title, subtitle, description, icon, gradient, icon_bg, image_url, image_alt, recommendations, best_for, order_index, is_active, created_at, updated_at')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle();
@@ -34,7 +34,7 @@ export async function getPlanCategoryBySlug(slug: string): Promise<HealthcarePla
 
   const { data: profiles, error: profilesError } = await supabase
     .from('plan_category_profiles')
-    .select('*')
+    .select('id, category_id, profile_text, order_index, created_at')
     .eq('category_id', category.id)
     .order('order_index', { ascending: true });
 
@@ -44,7 +44,7 @@ export async function getPlanCategoryBySlug(slug: string): Promise<HealthcarePla
 
   const { data: features, error: featuresError } = await supabase
     .from('plan_category_features')
-    .select('*')
+    .select('id, category_id, feature_text, feature_type, order_index, created_at')
     .eq('category_id', category.id)
     .order('order_index', { ascending: true });
 

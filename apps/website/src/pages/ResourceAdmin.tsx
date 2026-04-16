@@ -52,7 +52,7 @@ export const ResourceAdmin: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('resource_library')
-        .select('*')
+        .select('id, title, slug, description, content, resource_type, target_audience, topics, featured_image_url, file_url, is_featured, is_published, view_count, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -69,7 +69,7 @@ export const ResourceAdmin: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('resource_topics')
-        .select('*')
+        .select('id, name, slug, description, icon')
         .order('name');
 
       if (error) throw error;

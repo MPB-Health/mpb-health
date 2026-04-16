@@ -28,7 +28,7 @@ export function createPlanService(supabase: SupabaseClient) {
     limit = 50,
     offset = 0
   ): Promise<{ plans: Plan[]; total: number }> {
-    let query = supabase.from('plans').select('*', { count: 'exact' });
+    let query = supabase.from('plans').select('id, slug, name, tagline, description, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, target_audience, sort_order, is_active, code, enrollment_fee, annual_membership_fee, tobacco_surcharge_pct, currency, enroll_url, cost_basis, external_product_id, created_at, updated_at', { count: 'exact' });
 
     if (filters.search) {
       const safe = sanitizeFilterValue(filters.search);
@@ -54,7 +54,7 @@ export function createPlanService(supabase: SupabaseClient) {
       console.error('Error fetching plans:', error);
       return { plans: [], total: 0 };
     }
-    return { plans: (data || []) as Plan[], total: count || 0 };
+    return { plans: (data || []) as unknown as Plan[], total: count || 0 };
   }
 
   // -----------------------------------------------------------------------
@@ -63,7 +63,7 @@ export function createPlanService(supabase: SupabaseClient) {
   async function getActivePlans(): Promise<PlanWithFeatures[]> {
     const { data: plans, error } = await supabase
       .from('plans')
-      .select('*')
+      .select('id, slug, name, tagline, description, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, target_audience, sort_order, is_active, code, enrollment_fee, annual_membership_fee, tobacco_surcharge_pct, currency, enroll_url, cost_basis, external_product_id, created_at, updated_at')
       .eq('is_active', true)
       .order('sort_order');
 
@@ -76,7 +76,7 @@ export function createPlanService(supabase: SupabaseClient) {
       plans.map(async (plan: Plan) => {
         const { data: features } = await supabase
           .from('plan_features')
-          .select('*')
+          .select('id, plan_id, category, feature_name, feature_value, cost, notes, sort_order, created_at')
           .eq('plan_id', plan.id)
           .order('sort_order');
 
@@ -111,7 +111,7 @@ export function createPlanService(supabase: SupabaseClient) {
   async function getPlan(id: string): Promise<PlanWithDetails | null> {
     const { data: plan, error } = await supabase
       .from('plans')
-      .select('*')
+      .select('id, slug, name, tagline, description, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, target_audience, sort_order, is_active, code, enrollment_fee, annual_membership_fee, tobacco_surcharge_pct, currency, enroll_url, cost_basis, external_product_id, created_at, updated_at')
       .eq('id', id)
       .maybeSingle();
 
@@ -120,17 +120,17 @@ export function createPlanService(supabase: SupabaseClient) {
     const [featuresRes, pricingRes, sharingRes] = await Promise.all([
       supabase
         .from('plan_features')
-        .select('*')
+        .select('id, plan_id, category, feature_name, feature_value, cost, notes, sort_order, created_at')
         .eq('plan_id', id)
         .order('sort_order'),
       supabase
         .from('plan_pricing')
-        .select('*')
+        .select('id, plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date, created_at')
         .eq('plan_id', id)
         .order('effective_date', { ascending: false }),
       supabase
         .from('plan_sharing_details')
-        .select('*')
+        .select('id, plan_id, has_lifetime_cap, has_annual_cap, preexisting_lookback_months, maternity_waiting_months, has_international_coverage, iua_options, created_at, updated_at')
         .eq('plan_id', id)
         .maybeSingle(),
     ]);
@@ -149,7 +149,7 @@ export function createPlanService(supabase: SupabaseClient) {
   async function getPlanBySlug(slug: string): Promise<PlanWithDetails | null> {
     const { data: plan, error } = await supabase
       .from('plans')
-      .select('*')
+      .select('id, slug, name, tagline, description, plan_type, is_medical_cost_sharing, is_mec_compliant, is_hsa_compatible, target_audience, sort_order, is_active, code, enrollment_fee, annual_membership_fee, tobacco_surcharge_pct, currency, enroll_url, cost_basis, external_product_id, created_at, updated_at')
       .eq('slug', slug)
       .maybeSingle();
 
@@ -158,17 +158,17 @@ export function createPlanService(supabase: SupabaseClient) {
     const [featuresRes, pricingRes, sharingRes] = await Promise.all([
       supabase
         .from('plan_features')
-        .select('*')
+        .select('id, plan_id, category, feature_name, feature_value, cost, notes, sort_order, created_at')
         .eq('plan_id', plan.id)
         .order('sort_order'),
       supabase
         .from('plan_pricing')
-        .select('*')
+        .select('id, plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date, created_at')
         .eq('plan_id', plan.id)
         .order('effective_date', { ascending: false }),
       supabase
         .from('plan_sharing_details')
-        .select('*')
+        .select('id, plan_id, has_lifetime_cap, has_annual_cap, preexisting_lookback_months, maternity_waiting_months, has_international_coverage, iua_options, created_at, updated_at')
         .eq('plan_id', plan.id)
         .maybeSingle(),
     ]);

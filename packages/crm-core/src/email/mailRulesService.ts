@@ -70,24 +70,24 @@ export class MailRulesService {
   async getRules(accountId: string): Promise<MailRule[]> {
     const { data, error } = await this.supabase
       .from('mail_rules')
-      .select('*')
+      .select('id, account_id, name, is_active, priority, stop_processing, conditions, actions, times_applied, last_applied_at, created_at, updated_at')
       .eq('account_id', accountId)
       .order('priority', { ascending: true })
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getRule(id: string): Promise<MailRule | null> {
     const { data, error } = await this.supabase
       .from('mail_rules')
-      .select('*')
+      .select('id, account_id, name, is_active, priority, stop_processing, conditions, actions, times_applied, last_applied_at, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data;
+    return data as any;
   }
 
   async createRule(input: MailRuleCreateInput): Promise<MailRule> {
@@ -101,11 +101,11 @@ export class MailRulesService {
         priority: input.priority || 0,
         stop_processing: input.stop_processing || false,
       })
-      .select()
+      .select('id, account_id, name, is_active, priority, stop_processing, conditions, actions, times_applied, last_applied_at, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async updateRule(id: string, input: MailRuleUpdateInput): Promise<MailRule> {
@@ -113,11 +113,11 @@ export class MailRulesService {
       .from('mail_rules')
       .update(input)
       .eq('id', id)
-      .select()
+      .select('id, account_id, name, is_active, priority, stop_processing, conditions, actions, times_applied, last_applied_at, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteRule(id: string): Promise<void> {

@@ -351,6 +351,9 @@ export class TicketService {
       if (/not yet configured|not configured|account not found|not been synced/i.test(msg)) {
         throw new Error(msg);
       }
+      if (/temporarily unavailable/i.test(msg)) {
+        throw new Error(msg);
+      }
       throw new Error('_RETRYABLE');
     }
 
@@ -363,7 +366,7 @@ export class TicketService {
       throw new Error('_RETRYABLE');
     }
 
-    return data;
+    return data as any;
   }
 
   // ── Advisor read methods ───────────────────────────────────────────────

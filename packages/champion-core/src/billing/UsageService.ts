@@ -28,7 +28,7 @@ export class UsageService {
   async getCurrentUsage(orgId: string): Promise<UsageRecord | null> {
     const { data, error } = await supabase
       .from('usage_records')
-      .select('*')
+      .select('id, org_id, subscription_id, period_start, period_end, users_count, leads_count, messages_sent, sequences_active, ai_assists_used, storage_used_mb, messages_sms, messages_email, ai_message_assists, ai_score_adjustments, is_current, finalized_at, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('is_current', true)
       .single();
@@ -38,7 +38,7 @@ export class UsageService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -54,7 +54,7 @@ export class UsageService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -217,7 +217,7 @@ export class UsageService {
       return false;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -264,7 +264,7 @@ export class UsageService {
 
     const { data, error } = await supabase
       .from('usage_records')
-      .select('*')
+      .select('id, org_id, subscription_id, period_start, period_end, users_count, leads_count, messages_sent, sequences_active, ai_assists_used, storage_used_mb, messages_sms, messages_email, ai_message_assists, ai_score_adjustments, is_current, finalized_at, created_at, updated_at')
       .eq('org_id', orgId)
       .gte('period_start', since.toISOString())
       .order('period_start', { ascending: false });
@@ -274,7 +274,7 @@ export class UsageService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**

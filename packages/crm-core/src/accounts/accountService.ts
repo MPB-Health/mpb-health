@@ -31,7 +31,7 @@ export class AccountService {
     try {
       let query = this.supabase
         .from('crm_accounts')
-        .select('*', { count: 'exact' });
+        .select('id, org_id, name, industry, website, phone, email, address, city, state, zip, country, employee_count, annual_revenue, owner_id, description, is_active, created_by, created_at, updated_at', { count: 'exact' });
 
       // Apply filters
       if (filters.account_type) {
@@ -72,7 +72,7 @@ export class AccountService {
       }
 
       // Fetch owner profiles separately (auth.users is not exposed via PostgREST)
-      const accounts = (data || []) as AccountWithRelations[];
+      const accounts = (data || []) as unknown as AccountWithRelations[];
       const ownerIds = [...new Set(accounts.map(a => a.owner_id).filter(Boolean))] as string[];
 
       if (ownerIds.length > 0) {
@@ -109,7 +109,7 @@ export class AccountService {
       const { data, error } = await this.supabase
         .from('crm_accounts')
         .select(`
-          *,
+        id, org_id, name, industry, website, phone, fax, address, billing_address, shipping_address, annual_revenue, employee_count, account_type, rating, owner_id, parent_account_id, tags, description, linkedin_url, twitter_handle, created_by, created_at, updated_at,
           parent_account:crm_accounts!crm_accounts_parent_account_id_fkey(id, name)
         `)
         .eq('id', id)
@@ -120,7 +120,7 @@ export class AccountService {
         return null;
       }
 
-      return data as AccountWithRelations;
+      return data as unknown as AccountWithRelations;
     } catch (error) {
       console.error('Get account error:', error);
       return null;
@@ -134,7 +134,7 @@ export class AccountService {
     try {
       const { data, error } = await this.supabase
         .from('crm_contacts')
-        .select('*')
+        .select('id, org_id, account_id, first_name, last_name, email, phone, mobile, title, department, address, city, state, zip, country, date_of_birth, gender, source, owner_id, is_active, created_by, created_at, updated_at')
         .eq('account_id', accountId)
         .order('created_at', { ascending: false });
 
@@ -143,7 +143,7 @@ export class AccountService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Get account contacts error:', error);
       return [];
@@ -158,7 +158,7 @@ export class AccountService {
       const { data, error } = await this.supabase
         .from('crm_deals')
         .select(`
-          *,
+        id, org_id, account_id, salutation, first_name, last_name, email, phone, mobile, fax, title, department, reports_to, mailing_address, other_address, lead_source, converted_from_lead_id, converted_at, do_not_call, do_not_email, email_opt_out, owner_id, tags, description, linkedin_url, twitter_handle, date_of_birth, created_by, created_at, updated_at, plan_type, carrier_id, original_effective_date, premium_amount, subsidy_amount, member_responsibility, tobacco_status, state, city,
           stage:crm_deal_stages(id, name, display_name, color)
         `)
         .eq('account_id', accountId)
@@ -169,7 +169,7 @@ export class AccountService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Get account deals error:', error);
       return [];
@@ -289,7 +289,7 @@ export class AccountService {
     filters?: AccountFilters
   ): Promise<Account[]> {
     try {
-      let query = this.supabase.from('crm_accounts').select('*');
+      let query = this.supabase.from('crm_accounts').select('id, org_id, name, industry, website, phone, email, address, city, state, zip, country, employee_count, annual_revenue, owner_id, description, is_active, created_by, created_at, updated_at');
 
       if (accountIds && accountIds.length > 0) {
         query = query.in('id', accountIds);
@@ -312,7 +312,7 @@ export class AccountService {
         return [];
       }
 
-      return data as Account[];
+      return data as unknown as Account[];
     } catch (error) {
       console.error('Get accounts for export error:', error);
       return [];

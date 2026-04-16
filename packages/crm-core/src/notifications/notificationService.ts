@@ -164,7 +164,7 @@ export class NotificationService {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -221,7 +221,7 @@ export class NotificationService {
 
     const { count, error } = await this.supabase
       .from('lead_submissions')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', cutoffTime);
 
     if (error) {

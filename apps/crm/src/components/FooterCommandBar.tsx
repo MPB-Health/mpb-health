@@ -85,7 +85,7 @@ export function FooterCommandBar({ onAction, selectionCount = 0, recordCount }: 
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === '/') {
         e.preventDefault();
-        const firstBtn = document.querySelector('[data-footer-action]') as HTMLButtonElement;
+        const firstBtn = document.querySelector('[data-footer-action]') as unknown as HTMLButtonElement;
         firstBtn?.focus();
       }
     };

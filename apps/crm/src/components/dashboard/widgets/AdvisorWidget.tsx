@@ -25,7 +25,7 @@ export default function AdvisorWidget({ config, size }: BaseWidgetProps) {
     queryKey: ['widget', 'advisorPerformance', activeOrgId],
     queryFn: async () => {
       const { data } = await supabase.rpc('crm_advisor_performance', { p_org_id: activeOrgId });
-      return (data || []) as AdvisorStat[];
+      return (data || []) as unknown as AdvisorStat[];
     },
     enabled: !!activeOrgId,
     staleTime: 60_000,

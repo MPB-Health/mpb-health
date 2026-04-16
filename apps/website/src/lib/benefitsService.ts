@@ -46,7 +46,7 @@ export interface MaternityMembershipWithStages extends MaternityMembership {
 export async function getAllBenefits(): Promise<Benefit[]> {
   const { data, error } = await supabase
     .from('benefits')
-    .select('*')
+    .select('id, benefit_key, icon, title, description, angle, order_index, is_active, created_at')
     .eq('is_active', true)
     .order('order_index');
 
@@ -61,7 +61,7 @@ export async function getAllBenefits(): Promise<Benefit[]> {
 export async function getBenefitByKey(key: string): Promise<Benefit | null> {
   const { data, error } = await supabase
     .from('benefits')
-    .select('*')
+    .select('id, benefit_key, icon, title, description, angle, order_index, is_active, created_at')
     .eq('benefit_key', key)
     .eq('is_active', true)
     .maybeSingle();
@@ -77,7 +77,7 @@ export async function getBenefitByKey(key: string): Promise<Benefit | null> {
 export async function getMaternityMembership(): Promise<MaternityMembershipWithStages | null> {
   const { data: membershipData, error: membershipError } = await supabase
     .from('maternity_coverage')
-    .select('*')
+    .select('id, headline, description, waiting_period, eligible_plans, highlights, prenatal_care, delivery_hospital, postnatal_care, additional_benefits, created_at, updated_at')
     .limit(1)
     .maybeSingle();
 
@@ -88,7 +88,7 @@ export async function getMaternityMembership(): Promise<MaternityMembershipWithS
 
   const { data: stagesData, error: stagesError } = await supabase
     .from('maternity_coverage_stages')
-    .select('*')
+    .select('id, maternity_membership_id, stage_key, icon, title, description, details, order_index, created_at')
     .eq('maternity_coverage_id', membershipData.id)
     .order('order_index');
 

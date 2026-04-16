@@ -79,24 +79,24 @@ export class DomainService {
   async getDomains(orgId: string): Promise<MailDomain[]> {
     const { data, error } = await this.supabase
       .from('mail_domains')
-      .select('*')
+      .select('id, org_id, domain, spf_status, spf_record, spf_verified_at, dkim_status, dkim_selector, dkim_record, dkim_verified_at, dmarc_status, dmarc_record, dmarc_verified_at, mx_status, mx_verified_at, is_verified, verification_token, is_default, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('is_active', true)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getDomain(id: string): Promise<MailDomain | null> {
     const { data, error } = await this.supabase
       .from('mail_domains')
-      .select('*')
+      .select('id, org_id, domain, spf_status, spf_record, spf_verified_at, dkim_status, dkim_selector, dkim_record, dkim_verified_at, dmarc_status, dmarc_record, dmarc_verified_at, mx_status, mx_verified_at, is_verified, verification_token, is_default, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data;
+    return data as any;
   }
 
   async addDomain(
@@ -198,13 +198,13 @@ export class DomainService {
   async getSenderIdentities(orgId: string): Promise<SenderIdentity[]> {
     const { data, error } = await this.supabase
       .from('mail_sender_identities')
-      .select('*')
+      .select('id, org_id, domain, spf_status, spf_record, spf_verified_at, dkim_status, dkim_selector, dkim_record, dkim_verified_at, dmarc_status, dmarc_record, dmarc_verified_at, mx_status, mx_verified_at, is_verified, verification_token, is_default, created_at, updated_at')
       .eq('org_id', orgId)
       .order('is_default', { ascending: false })
       .order('email_address');
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async createSenderIdentity(input: {
@@ -223,11 +223,11 @@ export class DomainService {
         ...input,
         created_by: user?.id,
       })
-      .select()
+      .select('id, org_id, domain_id, email_address, display_name, is_default, is_verified, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteSenderIdentity(id: string): Promise<void> {

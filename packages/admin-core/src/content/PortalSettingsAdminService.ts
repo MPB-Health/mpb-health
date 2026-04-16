@@ -11,10 +11,10 @@ export class PortalSettingsAdminService {
   async getAll(): Promise<PortalSetting[]> {
     const { data, error } = await supabase
       .from('advisor_portal_settings')
-      .select('*')
+      .select('key, value, updated_at, description')
       .order('key', { ascending: true });
     if (error) throw error;
-    return (data || []) as PortalSetting[];
+    return (data || []) as unknown as PortalSetting[];
   }
 
   async get(key: string): Promise<string | null> {

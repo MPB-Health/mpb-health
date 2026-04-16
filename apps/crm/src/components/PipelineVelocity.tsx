@@ -101,7 +101,7 @@ export function PipelineVelocityBar() {
         }
         throw error;
       }
-      setStages((data as StageVelocity[]) ?? []);
+      setStages((data as unknown as StageVelocity[]) ?? []);
     } catch (err) {
       console.error('[PipelineVelocityBar] fetch failed:', err);
     } finally {
@@ -233,7 +233,7 @@ export function StuckLeadsAlert({ onNavigateToLead }: StuckLeadsAlertProps) {
         }
         throw error;
       }
-      setLeads((data as StuckLead[]) ?? []);
+      setLeads((data as unknown as StuckLead[]) ?? []);
     } catch (err) {
       console.error('[StuckLeadsAlert] fetch failed:', err);
     } finally {

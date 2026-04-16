@@ -20,7 +20,7 @@ export class SavedReportsService {
     try {
       let query = this.supabase
         .from('saved_reports')
-        .select('*')
+        .select('id, org_id, name, description, report_type, filters, columns, sort_config, chart_config, is_default, is_shared, schedule_config, created_by, created_at, updated_at')
         .order('updated_at', { ascending: false });
 
       if (filters?.report_type) {
@@ -35,7 +35,7 @@ export class SavedReportsService {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      return (data || []) as any;
     } catch (err) {
       console.error('SavedReportsService.list error:', err);
       return [];
@@ -49,12 +49,12 @@ export class SavedReportsService {
     try {
       const { data, error } = await this.supabase
         .from('saved_reports')
-        .select('*')
+        .select('id, org_id, name, description, report_type, filters, columns, sort_config, chart_config, is_default, is_shared, schedule_config, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
       if (error) throw error;
-      return data;
+      return data as any;
     } catch (err) {
       console.error('SavedReportsService.get error:', err);
       return null;
@@ -85,7 +85,7 @@ export class SavedReportsService {
           schedule_config: input.schedule_config,
           created_by: user.id,
         })
-        .select()
+        .select('id, org_id, name, description, report_type, filters, columns, sort_config, chart_config, is_default, is_shared, schedule_config, created_by, created_at, updated_at')
         .single();
 
       if (error) throw error;
@@ -93,7 +93,7 @@ export class SavedReportsService {
       // Log to audit
       await this.logAudit('report.create', 'saved_report', data.id, null, data);
 
-      return data;
+      return data as any;
     } catch (err) {
       console.error('SavedReportsService.create error:', err);
       return null;
@@ -124,7 +124,7 @@ export class SavedReportsService {
         .from('saved_reports')
         .update(updateData)
         .eq('id', id)
-        .select()
+        .select('id, org_id, name, description, report_type, filters, columns, sort_config, chart_config, is_default, is_shared, schedule_config, created_by, created_at, updated_at')
         .single();
 
       if (error) throw error;
@@ -132,7 +132,7 @@ export class SavedReportsService {
       // Log to audit
       await this.logAudit('report.update', 'saved_report', id, before, data);
 
-      return data;
+      return data as any;
     } catch (err) {
       console.error('SavedReportsService.update error:', err);
       return null;
@@ -187,18 +187,18 @@ export class SavedReportsService {
           sort_config: original.sort_config,
           chart_config: original.chart_config,
           is_default: false, // Never copy default status
-          is_shared: false, // Start as private
+          is_shared: false, // Start as unknown as private
           schedule_config: null, // Don't copy schedule
           created_by: user.id,
         })
-        .select()
+        .select('id, org_id, name, description, report_type, filters, columns, sort_config, chart_config, is_default, is_shared, schedule_config, created_by, created_at, updated_at')
         .single();
 
       if (error) throw error;
 
       await this.logAudit('report.duplicate', 'saved_report', data.id, { original_id: id }, data);
 
-      return data;
+      return data as any;
     } catch (err) {
       console.error('SavedReportsService.duplicate error:', err);
       return null;
@@ -206,7 +206,7 @@ export class SavedReportsService {
   }
 
   /**
-   * Set a report as the default for its type
+   * Set a report as unknown as the default for its type
    */
   async setDefault(id: string, orgId: string): Promise<boolean> {
     try {
@@ -245,14 +245,14 @@ export class SavedReportsService {
     try {
       const { data, error } = await this.supabase
         .from('saved_reports')
-        .select('*')
+        .select('id, org_id, name, description, report_type, filters, columns, sort_config, chart_config, is_default, is_shared, schedule_config, created_by, created_at, updated_at')
         .eq('org_id', orgId)
         .eq('report_type', reportType)
         .eq('is_default', true)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      return data;
+      return data as any;
     } catch (err) {
       console.error('SavedReportsService.getDefault error:', err);
       return null;

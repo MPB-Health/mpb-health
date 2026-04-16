@@ -12,7 +12,7 @@ export class PipelineService {
     try {
       const { data, error } = await this.supabase
         .from('crm_pipeline_stages')
-        .select('*')
+        .select('id, pipeline_id, name, display_name, probability, sort_order, is_won_stage, is_lost_stage, is_active, color, created_at')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 

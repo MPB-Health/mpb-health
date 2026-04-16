@@ -11,7 +11,7 @@ export class ActivityService {
     try {
       const { data, error } = await this.supabase
         .from('lead_activities')
-        .select('*')
+        .select('id, lead_id, activity_type, title, description, metadata, created_by, created_at')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -21,7 +21,7 @@ export class ActivityService {
         return [];
       }
 
-      return data as LeadActivity[];
+      return data as unknown as LeadActivity[];
     } catch (error) {
       console.error('Get activities error:', error);
       return [];
@@ -35,7 +35,7 @@ export class ActivityService {
     try {
       const { data, error } = await this.supabase
         .from('lead_activities')
-        .select('*')
+        .select('id, lead_id, activity_type, title, description, metadata, created_by, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -44,7 +44,7 @@ export class ActivityService {
         return [];
       }
 
-      return data as LeadActivity[];
+      return data as unknown as LeadActivity[];
     } catch (error) {
       console.error('Get recent activities error:', error);
       return [];

@@ -36,7 +36,7 @@ export class DashboardLayoutService {
         return this.getLayoutDirect(user.id, orgId);
       }
 
-      return data as DashboardLayout;
+      return data as unknown as DashboardLayout;
     } catch (error) {
       console.error('Get layout error:', error);
       return null;
@@ -50,7 +50,7 @@ export class DashboardLayoutService {
     try {
       const { data, error } = await this.supabase
         .from('crm_dashboard_layouts')
-        .select('*')
+        .select('id, user_id, org_id, name, description, is_default, widgets, grid_columns, row_height, theme, created_at, updated_at')
         .eq('user_id', userId)
         .eq('org_id', orgId)
         .eq('is_default', true)
@@ -62,7 +62,7 @@ export class DashboardLayoutService {
       }
 
       if (data) {
-        return data as DashboardLayout;
+        return data as unknown as DashboardLayout;
       }
 
       // Create default layout
@@ -84,7 +84,7 @@ export class DashboardLayoutService {
 
       const { data, error } = await this.supabase
         .from('crm_dashboard_layouts')
-        .select('*')
+        .select('id, user_id, org_id, name, description, is_default, widgets, grid_columns, row_height, theme, created_at, updated_at')
         .eq('user_id', user.id)
         .eq('org_id', orgId)
         .order('created_at', { ascending: false });
@@ -94,7 +94,7 @@ export class DashboardLayoutService {
         return [];
       }
 
-      return (data || []) as DashboardLayout[];
+      return (data || []) as unknown as DashboardLayout[];
     } catch (error) {
       console.error('Get all layouts error:', error);
       return [];
@@ -125,7 +125,7 @@ export class DashboardLayoutService {
           theme: input.theme || {},
           is_default: input.name === 'Default' || !input.name,
         })
-        .select()
+        .select('id, user_id, org_id, name, description, is_default, widgets, grid_columns, row_height, theme, created_at, updated_at')
         .single();
 
       if (error) {
@@ -133,7 +133,7 @@ export class DashboardLayoutService {
         return null;
       }
 
-      return data as DashboardLayout;
+      return data as unknown as DashboardLayout;
     } catch (error) {
       console.error('Create layout error:', error);
       return null;
@@ -168,7 +168,7 @@ export class DashboardLayoutService {
         return this.saveLayoutDirect(user.id, orgId, widgets, name);
       }
 
-      return { success: true, data: data as DashboardLayout };
+      return { success: true, data: data as unknown as DashboardLayout };
     } catch (error) {
       console.error('Save layout error:', error);
       return { success: false, error: 'Failed to save layout' };
@@ -198,14 +198,14 @@ export class DashboardLayoutService {
           },
           { onConflict: 'user_id,org_id,name' }
         )
-        .select()
+        .select('id, user_id, org_id, name, description, is_default, widgets, grid_columns, row_height, theme, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data: data as DashboardLayout };
+      return { success: true, data: data as unknown as DashboardLayout };
     } catch (error) {
       console.error('Save layout direct error:', error);
       return { success: false, error: 'Failed to save layout' };
@@ -264,7 +264,7 @@ export class DashboardLayoutService {
     try {
       let query = this.supabase
         .from('crm_default_layout_templates')
-        .select('*')
+        .select('id, org_id, name, description, widgets, grid_columns, row_height, is_active, created_by, created_at, updated_at')
         .eq('is_active', true);
 
       if (orgId) {
@@ -274,7 +274,7 @@ export class DashboardLayoutService {
       const { data, error } = await query.order('created_at', { ascending: false }).limit(1);
 
       if (!error && data && data.length > 0 && data[0].widgets) {
-        return data[0].widgets as WidgetInstance[];
+        return data[0].widgets as unknown as WidgetInstance[];
       }
     } catch (err) {
       console.error('Failed to load default widgets from DB:', err);
@@ -284,7 +284,7 @@ export class DashboardLayoutService {
   }
 
   /**
-   * Hardcoded default widgets as ultimate fallback
+   * Hardcoded default widgets as unknown as ultimate fallback
    */
   private getHardcodedDefaultWidgets(): WidgetInstance[] {
     return [
@@ -307,7 +307,7 @@ export class DashboardLayoutService {
     try {
       let query = this.supabase
         .from('crm_default_layout_templates')
-        .select('*')
+        .select('id, org_id, name, description, widgets, grid_columns, row_height, is_active, created_by, created_at, updated_at')
         .eq('is_active', true);
 
       if (orgId) {
@@ -321,7 +321,7 @@ export class DashboardLayoutService {
         return [];
       }
 
-      return (data || []) as DefaultLayoutTemplate[];
+      return (data || []) as unknown as DefaultLayoutTemplate[];
     } catch (error) {
       console.error('Get default templates error:', error);
       return [];

@@ -212,7 +212,7 @@ export const TOURS: Record<TourId, TourDefinition> = {
         target: '[data-tour="export-button"]',
         title: 'Export Reports',
         content:
-          'Download your data as CSV or PDF. You can also schedule regular reports to be emailed to you.',
+          'Download your data as unknown as CSV or PDF. You can also schedule regular reports to be emailed to you.',
         placement: 'bottom',
       },
     ],

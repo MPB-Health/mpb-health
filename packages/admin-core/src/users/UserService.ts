@@ -35,7 +35,7 @@ export class UserService {
   }): Promise<AdminUser[]> {
     let query = supabase
       .from('admin_users')
-      .select('*')
+      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (filters?.role) {
@@ -52,19 +52,19 @@ export class UserService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single user by ID
   async getUser(userId: string): Promise<AdminUser | null> {
     const { data, error } = await supabase
       .from('admin_users')
-      .select('*')
+      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Create a new user
@@ -74,11 +74,11 @@ export class UserService {
     const { data, error } = await supabase
       .from('admin_users')
       .insert(user)
-      .select()
+      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Update a user
@@ -90,11 +90,11 @@ export class UserService {
       .from('admin_users')
       .update(updates)
       .eq('id', userId)
-      .select()
+      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Delete a user (soft delete by setting status to inactive)
@@ -134,22 +134,22 @@ export class UserService {
   async getRoles(): Promise<Role[]> {
     const { data, error } = await supabase
       .from('roles')
-      .select('*')
+      .select('id, name, description, permissions, is_system, created_at')
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get all permissions
   async getPermissions(): Promise<Permission[]> {
     const { data, error } = await supabase
       .from('permissions')
-      .select('*')
+      .select('id, key, module, description')
       .order('module', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get permissions grouped by module
@@ -230,7 +230,7 @@ export class UserService {
     const { data, error } = await supabase.rpc(rpcName, rpcArgs);
     if (error) throw error;
 
-    let users = (data || []) as CrossPortalUser[];
+    let users = (data || []) as unknown as CrossPortalUser[];
 
     // Filter by role client-side (array contains)
     if (filters?.role) {
@@ -249,7 +249,7 @@ export class UserService {
       .order('role', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   /** Advisor profile for a given auth user ID */
@@ -299,7 +299,7 @@ export class UserService {
     });
     if (error) throw error;
 
-    const users = (data || []) as CrossPortalUser[];
+    const users = (data || []) as unknown as CrossPortalUser[];
     return users[0] ?? null;
   }
 
@@ -362,7 +362,7 @@ export class UserService {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   /** List advisor profiles with optional search (by name, email, or agent_id) */
@@ -380,7 +380,7 @@ export class UserService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   /** Resend welcome/invite email to a single advisor via send-advisor-invites edge function */
@@ -389,7 +389,7 @@ export class UserService {
       body: { advisor_ids: [advisorId], password },
     });
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   /** Bulk status update on admin_users */
@@ -425,7 +425,7 @@ export class UserService {
       throw new Error(data.error || 'Impersonation failed');
     }
 
-    return data;
+    return data as any;
   }
 
   // ── ITSTS / Support Portal sync ──────────────────────────────────────────────

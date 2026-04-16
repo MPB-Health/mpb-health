@@ -92,7 +92,7 @@ export class ActivityService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -117,7 +117,7 @@ export class ActivityService {
         task_id: input.task_id,
         metadata: input.metadata || {},
       })
-      .select()
+      .select('id, org_id, actor_id, actor_type, activity_type, title, description, lead_id, contact_id, conversation_id, task_id, metadata, is_public, visible_to, created_at')
       .single();
 
     if (error) {
@@ -125,7 +125,7 @@ export class ActivityService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================
@@ -153,7 +153,7 @@ export class ActivityService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -214,7 +214,7 @@ export class ActivityService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -244,7 +244,7 @@ export class ActivityService {
   async getSubscriptions(userId: string): Promise<ActivitySubscription[]> {
     const { data, error } = await supabase
       .from('activity_subscriptions')
-      .select('*')
+      .select('id, user_id, org_id, entity_type, entity_id, notify_on_activity, notify_channels, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -253,7 +253,7 @@ export class ActivityService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**

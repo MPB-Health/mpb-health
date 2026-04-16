@@ -25,8 +25,8 @@ export class DraftService {
     const { data, error } = await this.supabase
       .from('crm_email_drafts')
       .select(`
-        *,
-        attachments:crm_email_attachments(*)
+        id, user_id, org_id, to_addresses, cc_addresses, bcc_addresses, lead_id, contact_id, account_id, subject, body_html, body_plain, template_id, signature_id, include_signature, reply_to_email_id, forward_from_email_id, thread_id, scheduled_send_at, last_edited_at, auto_saved, created_at, updated_at,
+        attachments:crm_email_attachments(id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at)
       `)
       .eq('user_id', user.id)
       .eq('org_id', orgId)
@@ -37,7 +37,7 @@ export class DraftService {
       throw new Error(`Failed to get drafts: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   // ============================================================================
@@ -48,9 +48,9 @@ export class DraftService {
     const { data, error } = await this.supabase
       .from('crm_email_drafts')
       .select(`
-        *,
-        attachments:crm_email_attachments(*),
-        signature:crm_email_signatures(*)
+        id, user_id, org_id, to_addresses, cc_addresses, bcc_addresses, lead_id, contact_id, account_id, subject, body_html, body_plain, template_id, signature_id, include_signature, reply_to_email_id, forward_from_email_id, thread_id, scheduled_send_at, last_edited_at, auto_saved, created_at, updated_at,
+        attachments:crm_email_attachments(id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at),
+        signature:crm_email_signatures(id, user_id, org_id, name, is_default, content, variables, logo_url, logo_storage_path, banner_url, banner_storage_path, social_links, font_family, primary_color, created_at, updated_at)
       `)
       .eq('id', id)
       .single();
@@ -61,7 +61,7 @@ export class DraftService {
       throw new Error(`Failed to get draft: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as EmailDraft;
   }
 
   // ============================================================================
@@ -75,8 +75,8 @@ export class DraftService {
     const { data, error } = await this.supabase
       .from('crm_email_drafts')
       .select(`
-        *,
-        attachments:crm_email_attachments(*)
+        id, user_id, org_id, to_addresses, cc_addresses, bcc_addresses, lead_id, contact_id, account_id, subject, body_html, body_plain, template_id, signature_id, include_signature, reply_to_email_id, forward_from_email_id, thread_id, scheduled_send_at, last_edited_at, auto_saved, created_at, updated_at,
+        attachments:crm_email_attachments(id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at)
       `)
       .eq('user_id', user.id)
       .eq('org_id', orgId)
@@ -88,7 +88,7 @@ export class DraftService {
       throw new Error(`Failed to get scheduled drafts: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   // ============================================================================
@@ -121,7 +121,7 @@ export class DraftService {
         thread_id: input.thread_id,
         scheduled_send_at: input.scheduled_send_at,
       })
-      .select()
+      .select('id, user_id, org_id, to_addresses, cc_addresses, bcc_addresses, lead_id, contact_id, account_id, subject, body_html, body_plain, template_id, signature_id, include_signature, reply_to_email_id, forward_from_email_id, thread_id, scheduled_send_at, last_edited_at, auto_saved, created_at, updated_at')
       .single();
 
     if (error) {
@@ -129,7 +129,7 @@ export class DraftService {
       throw new Error(`Failed to create draft: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -155,7 +155,7 @@ export class DraftService {
       .update(updateData)
       .eq('id', id)
       .eq('user_id', user.id)
-      .select()
+      .select('id, user_id, org_id, to_addresses, cc_addresses, bcc_addresses, lead_id, contact_id, account_id, subject, body_html, body_plain, template_id, signature_id, include_signature, reply_to_email_id, forward_from_email_id, thread_id, scheduled_send_at, last_edited_at, auto_saved, created_at, updated_at')
       .single();
 
     if (error) {
@@ -163,7 +163,7 @@ export class DraftService {
       throw new Error(`Failed to update draft: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -264,7 +264,7 @@ export class DraftService {
         public_url: signedUrl,
         uploaded_by: user.id,
       })
-      .select()
+      .select('id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at')
       .single();
 
     if (error) {
@@ -274,7 +274,7 @@ export class DraftService {
       throw new Error(`Failed to create attachment record: ${error.message}`);
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -288,7 +288,7 @@ export class DraftService {
     // Get attachment
     const { data: attachment } = await this.supabase
       .from('crm_email_attachments')
-      .select('*')
+      .select('id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at')
       .eq('id', attachmentId)
       .single();
 
@@ -322,7 +322,7 @@ export class DraftService {
   async getDraftAttachments(draftId: string): Promise<EmailAttachment[]> {
     const { data, error } = await this.supabase
       .from('crm_email_attachments')
-      .select('*')
+      .select('id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at')
       .eq('draft_id', draftId)
       .order('uploaded_at', { ascending: true });
 
@@ -331,7 +331,7 @@ export class DraftService {
       throw new Error(`Failed to get attachments: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   // ============================================================================
@@ -349,7 +349,7 @@ export class DraftService {
     // Get original email
     const { data: original } = await this.supabase
       .from('crm_email_log')
-      .select('*')
+      .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at')
       .eq('id', originalEmailId)
       .single();
 
@@ -410,7 +410,7 @@ export class DraftService {
     // Get original email with attachments
     const { data: original } = await this.supabase
       .from('crm_email_log')
-      .select('*, attachments:crm_email_attachments(*)')
+      .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at, attachments:crm_email_attachments(id, email_id, draft_id, file_name, file_type, file_size, storage_bucket, storage_path, public_url, checksum, uploaded_by, uploaded_at)')
       .eq('id', originalEmailId)
       .single();
 
@@ -458,7 +458,7 @@ export class DraftService {
       }
     }
 
-    return this.getDraft(draft.id) as Promise<EmailDraft>;
+    return this.getDraft(draft.id) as unknown as Promise<EmailDraft>;
   }
 
   // ============================================================================

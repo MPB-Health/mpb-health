@@ -50,10 +50,10 @@ export default function VideoLibraryList() {
       // Admin needs all videos (including inactive), so query directly
       const { data, error } = await supabase
         .from('advisor_videos')
-        .select('*')
+        .select('id, title, vimeo_id, vimeo_hash, thumbnail_url, description, order_index, is_active, category, tags, duration')
         .order('order_index', { ascending: true });
       if (error) throw error;
-      setVideos((data || []) as AdvisorVideo[]);
+      setVideos((data || []) as unknown as AdvisorVideo[]);
     } catch (error) {
       console.error('Error loading videos:', error);
       toast.error('Failed to load videos');

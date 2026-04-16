@@ -22,7 +22,7 @@ export class InteractionLogsService {
       let query = this.supabase
         .from('interaction_logs')
         .select(`
-          *,
+        id, org_id, member_id, agent_id, interaction_type, direction, subject, summary, duration_seconds, outcome, sentiment, tags, metadata, created_at,
           agent:agent_id (email, raw_user_meta_data)
         `, { count: 'exact' })
         .eq('org_id', orgId)
@@ -64,8 +64,8 @@ export class InteractionLogsService {
 
       const interactions = (data || []).map((i) => ({
         ...i,
-        agent_email: i.agent?.email,
-        agent_name: i.agent?.raw_user_meta_data?.full_name,
+        agent_email: (i.agent as unknown as { email: string; raw_user_meta_data: { full_name?: string } } | null)?.email,
+        agent_name: (i.agent as unknown as { email: string; raw_user_meta_data: { full_name?: string } } | null)?.raw_user_meta_data?.full_name,
         tags: i.tags || [],
         metadata: i.metadata || {},
       }));
@@ -85,7 +85,7 @@ export class InteractionLogsService {
       const { data, error } = await this.supabase
         .from('interaction_logs')
         .select(`
-          *,
+        id, org_id, member_id, agent_id, interaction_type, direction, subject, summary, duration_seconds, outcome, sentiment, tags, metadata, created_at,
           agent:agent_id (email, raw_user_meta_data)
         `)
         .eq('id', id)
@@ -95,8 +95,8 @@ export class InteractionLogsService {
 
       return {
         ...data,
-        agent_email: data.agent?.email,
-        agent_name: data.agent?.raw_user_meta_data?.full_name,
+        agent_email: (data.agent as unknown as { email: string; raw_user_meta_data: { full_name?: string } } | null)?.email,
+        agent_name: (data.agent as unknown as { email: string; raw_user_meta_data: { full_name?: string } } | null)?.raw_user_meta_data?.full_name,
         tags: data.tags || [],
         metadata: data.metadata || {},
       };
@@ -130,7 +130,7 @@ export class InteractionLogsService {
           tags: input.tags || [],
           metadata: input.metadata || {},
         })
-        .select()
+        .select('id, org_id, member_id, agent_id, interaction_type, direction, subject, summary, duration_seconds, outcome, sentiment, tags, metadata, created_at')
         .single();
 
       if (error) throw error;
@@ -138,7 +138,7 @@ export class InteractionLogsService {
       // Log to audit
       await this.logAudit('interaction.create', 'interaction_log', data.id, null, data);
 
-      return data;
+      return data as any;
     } catch (err) {
       console.error('InteractionLogsService.create error:', err);
       return null;
@@ -179,7 +179,7 @@ export class InteractionLogsService {
 
       for (const i of data) {
         // By type
-        const type = i.interaction_type as InteractionType;
+        const type = i.interaction_type as unknown as InteractionType;
         stats.by_type[type] = (stats.by_type[type] || 0) + 1;
 
         // By outcome
@@ -285,7 +285,7 @@ export class InteractionLogsService {
         let positiveCount = 0;
 
         for (const i of interactions) {
-          const type = i.interaction_type as InteractionType;
+          const type = i.interaction_type as unknown as InteractionType;
           by_type[type] = (by_type[type] || 0) + 1;
 
           if (i.duration_seconds) {
@@ -321,7 +321,7 @@ export class InteractionLogsService {
       const { data, error } = await this.supabase
         .from('interaction_logs')
         .select(`
-          *,
+        id, org_id, member_id, agent_id, interaction_type, direction, subject, summary, duration_seconds, outcome, sentiment, tags, metadata, created_at,
           agent:agent_id (email, raw_user_meta_data)
         `)
         .eq('member_id', memberId)
@@ -332,8 +332,8 @@ export class InteractionLogsService {
 
       return (data || []).map((i) => ({
         ...i,
-        agent_email: i.agent?.email,
-        agent_name: i.agent?.raw_user_meta_data?.full_name,
+        agent_email: (i.agent as unknown as { email: string; raw_user_meta_data: { full_name?: string } } | null)?.email,
+        agent_name: (i.agent as unknown as { email: string; raw_user_meta_data: { full_name?: string } } | null)?.raw_user_meta_data?.full_name,
         tags: i.tags || [],
         metadata: i.metadata || {},
       }));

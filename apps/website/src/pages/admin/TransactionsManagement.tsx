@@ -56,7 +56,7 @@ const TransactionsManagement: React.FC = () => {
     try {
       let query = supabase
         .from('transactions')
-        .select('*')
+        .select('id, member_id, member_name, transaction_type, amount, status, payment_method, reference_number, description, created_at, processed_at')
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {

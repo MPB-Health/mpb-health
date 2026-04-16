@@ -170,7 +170,7 @@ async function getTicketDetail(
 ) {
   const { data: ticket, error } = await itstsAdmin
     .from("tickets")
-    .select("*")
+    .select("id, subject, description, status, priority, category, requester_id, assigned_agent_id, created_at, updated_at, resolved_at")
     .eq("id", ticketId)
     .eq("requester_id", userId)
     .single();
@@ -224,7 +224,7 @@ async function getTicketStats(
     statuses.map((status) =>
       itstsAdmin
         .from("tickets")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("requester_id", userId)
         .eq("status", status)
     ),
@@ -311,7 +311,7 @@ async function getTicketDetailAdmin(
 ) {
   const { data: ticket, error } = await itstsAdmin
     .from("tickets")
-    .select("*")
+    .select("id, subject, description, status, priority, category, requester_id, assigned_agent_id, created_at, updated_at, resolved_at")
     .eq("id", ticketId)
     .single();
 
@@ -382,7 +382,7 @@ async function getAllTicketStats(
     statuses.map((status) =>
       itstsAdmin
         .from("tickets")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("status", status)
     ),
   );
@@ -780,7 +780,27 @@ Deno.serve(async (req: Request) => {
     // Non-admin actions need the user's ITSTS profile (except category lookup)
     let itstsUserId: string | null = null;
     if (!ADMIN_ACTIONS.includes(action) && !NO_USER_LOOKUP_ACTIONS.includes(action)) {
-      itstsUserId = await getItstsUserId(itstsAdmin, user.email);
+      try {
+        itstsUserId = await getItstsUserId(itstsAdmin, user.email);
+      } catch (lookupErr) {
+        log.error("ITSTS user lookup failed", { correlationId, error: String(lookupErr) });
+        // ITSTS is reachable but the query failed — return stubs for reads
+        const READ_ACTIONS_FALLBACK = ["list", "stats"];
+        if (READ_ACTIONS_FALLBACK.includes(action as string)) {
+          const stubs: Record<string, unknown> = {
+            list:  { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
+            stats: { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
+          };
+          return new Response(
+            JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId, _warning: "Support system temporarily unavailable" }),
+            { status: 200, headers },
+          );
+        }
+        return new Response(
+          JSON.stringify({ success: false, error: "Support system is temporarily unavailable. Please try again in a few minutes.", correlationId }),
+          { status: 503, headers },
+        );
+      }
       if (!itstsUserId) {
         // For read-only actions, return empty results instead of blocking
         if (action === "list") {
@@ -806,13 +826,18 @@ Deno.serve(async (req: Request) => {
     let result;
     switch (action) {
       case "list":
-        result = await listTickets(itstsAdmin, itstsUserId!, {
-          status: body.status,
-          priority: body.priority,
-          search: body.search,
-          page: body.page || 1,
-          perPage: body.per_page || 20,
-        });
+        try {
+          result = await listTickets(itstsAdmin, itstsUserId!, {
+            status: body.status,
+            priority: body.priority,
+            search: body.search,
+            page: body.page || 1,
+            perPage: body.per_page || 20,
+          });
+        } catch (listErr) {
+          log.error("listTickets failed", { correlationId, error: String(listErr) });
+          result = { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 };
+        }
         break;
       case "detail":
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
@@ -824,18 +849,28 @@ Deno.serve(async (req: Request) => {
         result = await getTicketDetail(itstsAdmin, itstsUserId!, body.ticket_id);
         break;
       case "stats":
-        result = await getTicketStats(itstsAdmin, itstsUserId!);
+        try {
+          result = await getTicketStats(itstsAdmin, itstsUserId!);
+        } catch (statsErr) {
+          log.error("getTicketStats failed", { correlationId, error: String(statsErr) });
+          result = { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 };
+        }
         break;
 
       // ── Admin actions ──
       case "list_all":
-        result = await listAllTickets(itstsAdmin, {
-          status: body.status,
-          priority: body.priority,
-          search: body.search,
-          page: body.page || 1,
-          perPage: body.per_page || 20,
-        });
+        try {
+          result = await listAllTickets(itstsAdmin, {
+            status: body.status,
+            priority: body.priority,
+            search: body.search,
+            page: body.page || 1,
+            perPage: body.per_page || 20,
+          });
+        } catch (listAllErr) {
+          log.error("listAllTickets failed", { correlationId, error: String(listAllErr) });
+          result = { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 };
+        }
         break;
       case "detail_admin":
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
@@ -847,7 +882,12 @@ Deno.serve(async (req: Request) => {
         result = await getTicketDetailAdmin(itstsAdmin, body.ticket_id);
         break;
       case "stats_all":
-        result = await getAllTicketStats(itstsAdmin);
+        try {
+          result = await getAllTicketStats(itstsAdmin);
+        } catch (statsAllErr) {
+          log.error("getAllTicketStats failed", { correlationId, error: String(statsAllErr) });
+          result = { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 };
+        }
         break;
       case "add_comment": {
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
@@ -963,7 +1003,12 @@ Deno.serve(async (req: Request) => {
         break;
       }
       case "get_categories":
-        result = await getCategories(itstsAdmin);
+        try {
+          result = await getCategories(itstsAdmin);
+        } catch (catErr) {
+          log.error("getCategories failed", { correlationId, error: String(catErr) });
+          result = { categories: [] };
+        }
         break;
 
       // ── Admin write actions ──
@@ -1162,13 +1207,19 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     log.error(`Ticket proxy error [${correlationId}]: ${errMsg}`);
+
+    const isItstsError = /ITSTS|connection|timeout|ECONNREFUSED|fetch failed|network/i.test(errMsg);
+    const clientMessage = isItstsError
+      ? "Support system is temporarily unavailable. Please try again in a few minutes."
+      : errMsg || "Internal server error";
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: "Internal server error",
+        error: clientMessage,
         correlationId,
       }),
-      { status: 500, headers },
+      { status: isItstsError ? 503 : 500, headers },
     );
   }
 });

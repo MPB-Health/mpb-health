@@ -221,7 +221,7 @@ export function DealWinProbability({ dealId, dealName, compact = false }: DealWi
       );
 
       if (!rpcErr && rpcData) {
-        const result = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as WinProbabilityResult;
+        const result = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as unknown as WinProbabilityResult;
         setData(result);
         setError(null);
         return;
@@ -229,7 +229,7 @@ export function DealWinProbability({ dealId, dealName, compact = false }: DealWi
 
       const { data: fallback, error: fallbackErr } = await supabase
         .from('crm_deal_predictions')
-        .select('*')
+        .select('deal_id, win_probability, health_score, confidence, risk_signals, recommended_actions, contributing_factors, predicted_close_date, close_date_confidence_days, calculated_at')
         .eq('deal_id', dealId)
         .order('calculated_at', { ascending: false })
         .limit(1)
@@ -611,7 +611,7 @@ export function DealWinProbabilityWidget() {
         .limit(10);
 
       if (error) throw error;
-      setDeals((data as DealPredictionRow[]) ?? []);
+      setDeals((data as unknown as DealPredictionRow[]) ?? []);
     } catch (err) {
       console.error('[DealWinProbabilityWidget] fetch failed:', err);
     } finally {

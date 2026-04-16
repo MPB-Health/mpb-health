@@ -234,7 +234,7 @@ export default function UnifiedAnalytics() {
                 icon={<Smartphone className="w-5 h-5" />}
                 tooltip={
                   isMembershipAnalyticsConfigured
-                    ? 'Registered on app (users table, net of effective cancellations) from the membership analytics Supabase project. Same data as the Mobile App tab below.'
+                    ? 'Registered on app (users table, net of effective cancellations) from the membership analytics Supabase project. Same data as unknown as the Mobile App tab below.'
                     : 'Registered users in the Mobile App via analytics hub proxy (Supabase Auth). Trend shows new signups in the last 30 days.'
                 }
                 trend={

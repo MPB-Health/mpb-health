@@ -834,14 +834,14 @@ function PermissionsTab({
         permissionService.getAllPermissions(),
         supabase
           .from('role_permissions')
-          .select('*, permission:permissions(key)')
+          .select('id, org_id, role, permission_id, permission:permissions(key)')
           .eq('org_id', orgId),
       ]);
 
       if (rpResult.error) throw rpResult.error;
 
       setPermissions(allPerms);
-      setRolePerms((rpResult.data ?? []) as RolePermission[]);
+      setRolePerms((rpResult.data ?? []) as unknown as RolePermission[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load permissions');
     } finally {
@@ -889,10 +889,10 @@ function PermissionsTab({
         const { data, error: insErr } = await supabase
           .from('role_permissions')
           .insert({ org_id: orgId, role, permission_id: permission.id })
-          .select('*, permission:permissions(key)')
+          .select('id, org_id, role, permission_id, permission:permissions(key)')
           .single();
         if (insErr) throw insErr;
-        setRolePerms((prev) => [...prev, data as RolePermission]);
+        setRolePerms((prev) => [...prev, data as unknown as RolePermission]);
       }
     } catch (err) {
       toast.error('Failed to update permission');
@@ -1077,7 +1077,7 @@ export default function TeamManagement() {
         .order('role');
 
       if (error) throw error;
-      setMembers((data ?? []) as MemberWithProfile[]);
+      setMembers((data ?? []) as unknown as MemberWithProfile[]);
     } catch (err) {
       setMembersError(err instanceof Error ? err.message : 'Failed to load members');
     } finally {
@@ -1092,13 +1092,13 @@ export default function TeamManagement() {
     try {
       const { data, error } = await supabase
         .from('org_invites')
-        .select('*')
+        .select('id, org_id, email, role, status, invited_by, token, created_at, expires_at')
         .eq('org_id', activeOrgId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInvites((data ?? []) as Invite[]);
+      setInvites((data ?? []) as unknown as Invite[]);
     } catch (err) {
       setInvitesError(err instanceof Error ? err.message : 'Failed to load invitations');
     } finally {

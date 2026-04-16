@@ -306,7 +306,7 @@ export async function queryAuditEvents(
 ): Promise<{ events: AuditEvent[]; total: number }> {
   let query = supabase
     .from('audit_logs')
-    .select('*', { count: 'exact' })
+    .select('id, org_id, actor_user_id, actor_email, actor_role, action, action_category, object_type, object_id, object_name, old_values, new_values, changes_summary, ip_address, user_agent, request_id, metadata, created_at', { count: 'exact' })
     .eq('org_id', options.orgId)
     .order('created_at', { ascending: false });
 
@@ -343,7 +343,7 @@ export async function queryAuditEvents(
     return { events: [], total: 0 };
   }
 
-  return { events: (data || []) as AuditEvent[], total: count || 0 };
+  return { events: (data || []) as unknown as AuditEvent[], total: count || 0 };
 }
 
 /** Get audit trail for a specific entity */

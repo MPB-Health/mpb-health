@@ -20,7 +20,7 @@ export class TemplateService {
   ): Promise<MessageTemplate[]> {
     let query = supabase
       .from('message_templates')
-      .select('*')
+      .select('id, org_id, name, description, channel, category, subject, body_text, body_html, variables, times_used, last_used_at, is_active, created_by, is_shared, created_at, updated_at')
       .eq('org_id', orgId)
       .order('times_used', { ascending: false });
 
@@ -49,7 +49,7 @@ export class TemplateService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -58,7 +58,7 @@ export class TemplateService {
   async getTemplate(templateId: string): Promise<MessageTemplate | null> {
     const { data, error } = await supabase
       .from('message_templates')
-      .select('*')
+      .select('id, org_id, name, description, channel, category, subject, body_text, body_html, variables, times_used, last_used_at, is_active, created_by, is_shared, created_at, updated_at')
       .eq('id', templateId)
       .single();
 
@@ -67,7 +67,7 @@ export class TemplateService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -88,7 +88,7 @@ export class TemplateService {
         variables: input.variables || [],
         is_shared: input.is_shared ?? true,
       })
-      .select()
+      .select('id, org_id, name, description, channel, category, subject, body_text, body_html, variables, times_used, last_used_at, is_active, created_by, is_shared, created_at, updated_at')
       .single();
 
     if (error) {
@@ -96,7 +96,7 @@ export class TemplateService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -113,7 +113,7 @@ export class TemplateService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', templateId)
-      .select()
+      .select('id, org_id, name, description, channel, category, subject, body_text, body_html, variables, times_used, last_used_at, is_active, created_by, is_shared, created_at, updated_at')
       .single();
 
     if (error) {
@@ -121,7 +121,7 @@ export class TemplateService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**

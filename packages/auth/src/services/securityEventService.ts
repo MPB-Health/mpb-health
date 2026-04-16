@@ -59,7 +59,7 @@ class SecurityEventService {
           user_agent: event.user_agent,
           event_data: event.event_data || {},
         })
-        .select()
+        .select('id, user_id, event_type, event_severity, ip_address, user_agent, event_data, timestamp')
         .single();
 
       if (error) {
@@ -169,7 +169,7 @@ class SecurityEventService {
     try {
       const { data, error } = await supabase
         .from('auth_security_events')
-        .select('*')
+        .select('id, user_id, event_type, event_severity, ip_address, user_agent, event_data, timestamp')
         .eq('user_id', userId)
         .order('timestamp', { ascending: false })
         .limit(limit);
@@ -179,7 +179,7 @@ class SecurityEventService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Failed to fetch user security events:', error);
       return [];
@@ -193,7 +193,7 @@ class SecurityEventService {
     try {
       let query = supabase
         .from('auth_security_events')
-        .select('*')
+        .select('id, user_id, event_type, event_severity, ip_address, user_agent, event_data, timestamp')
         .order('timestamp', { ascending: false })
         .limit(limit);
 
@@ -208,7 +208,7 @@ class SecurityEventService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Failed to fetch security events:', error);
       return [];
@@ -280,7 +280,7 @@ class SecurityEventService {
     try {
       const { data, error } = await supabase
         .from('auth_security_events')
-        .select('*')
+        .select('id, user_id, event_type, event_severity, ip_address, user_agent, event_data, timestamp')
         .gte('timestamp', startDate.toISOString())
         .lte('timestamp', endDate.toISOString());
 
@@ -403,7 +403,7 @@ class SecurityEventService {
     try {
       const { data, error } = await supabase
         .from('security_alert_webhooks')
-        .select('*')
+        .select('id, name, url, channel_type, min_severity, enabled, event_types, headers, created_at')
         .eq('enabled', true);
 
       if (error) {
@@ -411,7 +411,7 @@ class SecurityEventService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Failed to fetch webhooks:', error);
       return [];
@@ -426,7 +426,7 @@ class SecurityEventService {
       const { data, error } = await supabase
         .from('security_alert_webhooks')
         .insert(webhook)
-        .select()
+        .select('id, name, url, channel_type, min_severity, enabled, event_types, headers, created_at')
         .single();
 
       if (error) {
@@ -434,7 +434,7 @@ class SecurityEventService {
         return null;
       }
 
-      return data;
+      return data as any;
     } catch (error) {
       console.error('Failed to add webhook:', error);
       return null;
@@ -559,7 +559,7 @@ class SecurityEventService {
 
       const { count, error } = await supabase
         .from('security_alert_log')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('webhook_id', webhookId)
         .gte('sent_at', oneMinuteAgo);
 
@@ -754,7 +754,7 @@ class SecurityEventService {
 
     let query = supabase
       .from('auth_security_events')
-      .select('*')
+      .select('id, user_id, event_type, event_severity, ip_address, user_agent, event_data, timestamp')
       .eq('event_type', 'mfa_failed')
       .gte('timestamp', oneHourAgo);
 
@@ -782,7 +782,7 @@ class SecurityEventService {
 
     const { data, error } = await supabase
       .from('auth_security_events')
-      .select('*')
+      .select('id, user_id, event_type, event_severity, ip_address, user_agent, event_data, timestamp')
       .eq('event_type', 'account_locked')
       .gte('timestamp', oneHourAgo);
 
@@ -806,7 +806,7 @@ class SecurityEventService {
 
     const { data, error } = await supabase
       .from('auth_security_events')
-      .select('*')
+      .select('id, user_id, event_type, event_severity, ip_address, user_agent, event_data, timestamp')
       .eq('user_id', userId)
       .eq('event_type', 'phi_accessed')
       .gte('timestamp', oneHourAgo);
@@ -829,7 +829,7 @@ class SecurityEventService {
 
     const { data, error } = await supabase
       .from('auth_security_events')
-      .select('*')
+      .select('id, user_id, event_type, event_severity, ip_address, user_agent, event_data, timestamp')
       .eq('event_type', 'login_failure')
       .gte('timestamp', fifteenMinutesAgo);
 

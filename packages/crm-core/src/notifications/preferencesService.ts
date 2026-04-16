@@ -30,7 +30,7 @@ export class PreferencesService {
 
       const { data, error } = await this.supabase
         .from('notification_preferences')
-        .select('*')
+        .select('id, user_id, org_id, channel, event_type, enabled, email_notifications, desktop_notifications, quiet_hours_enabled, quiet_hours_start, quiet_hours_end, timezone, created_at, updated_at')
         .eq('user_id', userData.user.id)
         .maybeSingle();
 

@@ -136,7 +136,7 @@ export const refreshAccessToken = async (
  * Get stored credentials for a site
  */
 export const getCredentials = async (siteUrl?: string): Promise<GoogleCredentials | null> => {
-  let query = supabase.from('seo_google_credentials').select('*');
+  let query = supabase.from('seo_google_credentials').select('id, site_url, site_name, access_token, refresh_token, expires_at, is_connected, last_sync_at, sync_status, sync_error');
 
   if (siteUrl) {
     query = query.eq('site_url', siteUrl);
@@ -148,7 +148,7 @@ export const getCredentials = async (siteUrl?: string): Promise<GoogleCredential
     return null;
   }
 
-  return data as GoogleCredentials;
+  return data as unknown as GoogleCredentials;
 };
 
 /**
@@ -157,7 +157,7 @@ export const getCredentials = async (siteUrl?: string): Promise<GoogleCredential
 export const getConnectedSites = async (): Promise<GoogleCredentials[]> => {
   const { data, error } = await supabase
     .from('seo_google_credentials')
-    .select('*')
+    .select('id, site_url, site_name, access_token, refresh_token, expires_at, is_connected, last_sync_at, sync_status, sync_error')
     .eq('is_connected', true)
     .order('created_at', { ascending: false });
 
@@ -166,7 +166,7 @@ export const getConnectedSites = async (): Promise<GoogleCredentials[]> => {
     return [];
   }
 
-  return data as GoogleCredentials[];
+  return data as unknown as GoogleCredentials[];
 };
 
 /**
@@ -196,14 +196,14 @@ export const saveCredentials = async (
       },
       { onConflict: 'site_url' }
     )
-    .select()
+    .select('id, site_url, site_name, access_token, refresh_token, expires_at, is_connected, last_sync_at, sync_status, sync_error')
     .single();
 
   if (error) {
     throw new Error('Failed to save credentials');
   }
 
-  return data as GoogleCredentials;
+  return data as unknown as GoogleCredentials;
 };
 
 /**

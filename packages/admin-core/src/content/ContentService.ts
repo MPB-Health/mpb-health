@@ -12,7 +12,7 @@ export class ContentService {
   }): Promise<BlogPost[]> {
     let query = supabase
       .from('blog_posts')
-      .select('*')
+      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (filters?.status) {
@@ -29,7 +29,7 @@ export class ContentService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get published posts
@@ -41,24 +41,24 @@ export class ContentService {
   async getBlogPost(postId: string): Promise<BlogPost | null> {
     const { data, error } = await supabase
       .from('blog_posts')
-      .select('*')
+      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
       .eq('id', postId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Get post by slug
   async getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
     const { data, error } = await supabase
       .from('blog_posts')
-      .select('*')
+      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
       .eq('slug', slug)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Create a blog post
@@ -71,11 +71,11 @@ export class ContentService {
     const { data, error } = await supabase
       .from('blog_posts')
       .insert({ ...post, slug, view_count: 0 })
-      .select()
+      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Update a blog post
@@ -87,11 +87,11 @@ export class ContentService {
       .from('blog_posts')
       .update(updates)
       .eq('id', postId)
-      .select()
+      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Publish a post
@@ -147,7 +147,7 @@ export class ContentService {
   }): Promise<Resource[]> {
     let query = supabase
       .from('resources')
-      .select('*')
+      .select('id, title, description, category, file_url, file_type, file_size, is_public, download_count, uploaded_by, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (filters?.category) {
@@ -164,19 +164,19 @@ export class ContentService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single resource
   async getResource(resourceId: string): Promise<Resource | null> {
     const { data, error } = await supabase
       .from('resources')
-      .select('*')
+      .select('id, title, description, category, file_url, file_type, file_size, is_public, download_count, uploaded_by, created_at, updated_at')
       .eq('id', resourceId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Upload a resource
@@ -220,11 +220,11 @@ export class ContentService {
         download_count: 0,
         uploaded_by: metadata.uploadedBy,
       })
-      .select()
+      .select('id, title, description, category, file_url, file_type, file_size, is_public, download_count, uploaded_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Update a resource
@@ -236,11 +236,11 @@ export class ContentService {
       .from('resources')
       .update(updates)
       .eq('id', resourceId)
-      .select()
+      .select('id, title, description, category, file_url, file_type, file_size, is_public, download_count, uploaded_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Delete a resource

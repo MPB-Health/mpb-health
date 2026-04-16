@@ -17,7 +17,7 @@ export class MeetingService {
   }): Promise<AdvisorMeeting[]> {
     let query = supabase
       .from('advisor_meetings')
-      .select('*')
+      .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, status, meeting_type, max_participants, recording_url, resources, created_at, updated_at')
       .order('scheduled_at', { ascending: true });
 
     if (filters?.status) {
@@ -35,7 +35,7 @@ export class MeetingService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get upcoming meetings for an advisor
@@ -57,7 +57,7 @@ export class MeetingService {
 
     const { data, error } = await supabase
       .from('advisor_meetings')
-      .select('*')
+      .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, status, meeting_type, max_participants, recording_url, resources, created_at, updated_at')
       .in('id', meetingIds)
       .gte('scheduled_at', now)
       .in('status', ['scheduled', 'live'])
@@ -65,31 +65,31 @@ export class MeetingService {
       .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single meeting by ID
   async getMeeting(meetingId: string): Promise<AdvisorMeeting | null> {
     const { data, error } = await supabase
       .from('advisor_meetings')
-      .select('*')
+      .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, status, meeting_type, max_participants, recording_url, resources, created_at, updated_at')
       .eq('id', meetingId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Get live meetings
   async getLiveMeetings(): Promise<AdvisorMeeting[]> {
     const { data, error } = await supabase
       .from('advisor_meetings')
-      .select('*')
+      .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, status, meeting_type, max_participants, recording_url, resources, created_at, updated_at')
       .eq('status', 'live')
       .order('scheduled_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Create a new meeting
@@ -104,11 +104,11 @@ export class MeetingService {
         ...meeting,
         room_name: roomName,
       })
-      .select()
+      .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, status, meeting_type, max_participants, recording_url, resources, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Update a meeting
@@ -120,11 +120,11 @@ export class MeetingService {
       .from('advisor_meetings')
       .update(updates)
       .eq('id', meetingId)
-      .select()
+      .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, status, meeting_type, max_participants, recording_url, resources, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Start a meeting (set to live)
@@ -149,23 +149,23 @@ export class MeetingService {
   async getInvitations(advisorId: string): Promise<MeetingInvitation[]> {
     const { data, error } = await supabase
       .from('meeting_invitations')
-      .select('*, meeting:advisor_meetings(*)')
+      .select('id, meeting_id, advisor_id, status, responded_at, reminder_sent, created_at, meeting:advisor_meetings(id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, status, meeting_type, max_participants, recording_url, resources, created_at, updated_at)')
       .eq('advisor_id', advisorId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get invitations for a meeting
   async getMeetingInvitations(meetingId: string): Promise<MeetingInvitation[]> {
     const { data, error } = await supabase
       .from('meeting_invitations')
-      .select('*, advisor:advisor_profiles(*)')
+      .select('id, meeting_id, advisor_id, status, responded_at, reminder_sent, created_at, advisor:advisor_profiles(id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at)')
       .eq('meeting_id', meetingId);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Send invitations to multiple advisors
@@ -183,10 +183,10 @@ export class MeetingService {
     const { data, error } = await supabase
       .from('meeting_invitations')
       .insert(invitations)
-      .select();
+      .select('id, meeting_id, advisor_id, status, responded_at, reminder_sent, created_at');
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Respond to an invitation
@@ -201,11 +201,11 @@ export class MeetingService {
         responded_at: new Date().toISOString(),
       })
       .eq('id', invitationId)
-      .select()
+      .select('id, meeting_id, advisor_id, status, responded_at, reminder_sent, created_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Record attendance
@@ -216,7 +216,7 @@ export class MeetingService {
     // Check if already recorded
     const { data: existing } = await supabase
       .from('meeting_attendees')
-      .select('*')
+      .select('id, meeting_id, advisor_id, joined_at, left_at, duration_minutes')
       .eq('meeting_id', meetingId)
       .eq('advisor_id', advisorId)
       .single();
@@ -232,11 +232,11 @@ export class MeetingService {
         advisor_id: advisorId,
         joined_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, meeting_id, advisor_id, joined_at, left_at, duration_minutes')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Record leaving a meeting
@@ -246,7 +246,7 @@ export class MeetingService {
   ): Promise<MeetingAttendee | null> {
     const { data: attendee } = await supabase
       .from('meeting_attendees')
-      .select('*')
+      .select('id, meeting_id, advisor_id, joined_at, left_at, duration_minutes')
       .eq('meeting_id', meetingId)
       .eq('advisor_id', advisorId)
       .single();
@@ -266,33 +266,33 @@ export class MeetingService {
         duration_minutes: durationMinutes,
       })
       .eq('id', attendee.id)
-      .select()
+      .select('id, meeting_id, advisor_id, joined_at, left_at, duration_minutes')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Get attendees for a meeting
   async getAttendees(meetingId: string): Promise<MeetingAttendee[]> {
     const { data, error } = await supabase
       .from('meeting_attendees')
-      .select('*, advisor:advisor_profiles(*)')
+      .select('id, meeting_id, advisor_id, joined_at, left_at, duration_minutes, advisor:advisor_profiles(id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at)')
       .eq('meeting_id', meetingId);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get meeting templates
   async getTemplates(): Promise<MeetingTemplate[]> {
     const { data, error } = await supabase
       .from('meeting_templates')
-      .select('*')
+      .select('id, name, description, default_duration, default_type, agenda_template, resources')
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Create meeting from template
@@ -302,7 +302,7 @@ export class MeetingService {
   ): Promise<AdvisorMeeting> {
     const { data: template, error: tError } = await supabase
       .from('meeting_templates')
-      .select('*')
+      .select('id, name, description, default_duration, default_type, agenda_template, resources')
       .eq('id', templateId)
       .single();
 

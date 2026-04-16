@@ -20,7 +20,7 @@ export class AchievementService {
   async getUserAchievements(userId: string): Promise<UserAchievementWithDetails[]> {
     const { data, error } = await supabase
       .from('user_achievements')
-      .select('*')
+      .select('id, user_id, achievement_id, earned_at, progress, metadata')
       .eq('user_id', userId)
       .order('earned_at', { ascending: false });
 
@@ -67,7 +67,7 @@ export class AchievementService {
         progress: achievement.requirement.target,
         metadata,
       })
-      .select()
+      .select('id, user_id, achievement_id, earned_at, progress, metadata')
       .single();
 
     if (error) {
@@ -75,7 +75,7 @@ export class AchievementService {
       return null;
     }
 
-    return data;
+    return data as any;
   }
 
   // ============================================================================
@@ -148,21 +148,21 @@ export class AchievementService {
       // Get lead conversion count
       const { count: leadsCount } = await supabase
         .from('leads')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('assigned_advisor_id', userId)
         .eq('status', 'converted');
 
       // Get messages sent count
       const { count: messagesCount } = await supabase
         .from('messages')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('sender_id', userId)
         .eq('direction', 'outbound');
 
       // Get tasks completed count
       const { count: tasksCount } = await supabase
         .from('tasks')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('assigned_to', userId)
         .eq('status', 'completed');
 

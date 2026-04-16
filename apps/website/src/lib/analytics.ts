@@ -280,7 +280,7 @@ export const loadDatabaseSnippets = async () => {
   try {
     const { data: snippets, error } = await supabase
       .from('tracking_snippets')
-      .select('*')
+      .select('id, snippet_name, snippet_type, tracking_id, snippet_code, injection_point, is_enabled, is_test_mode, load_priority, created_at, updated_at')
       .eq('is_enabled', true)
       .order('load_priority', { ascending: false });
 

@@ -225,9 +225,9 @@ export default function EmailDeliverability() {
         trackingQuery,
       ]);
 
-      setEmailLogs((emailRes.data as EmailLogRow[]) ?? []);
-      setPrevPeriodLogs((prevEmailRes.data as EmailLogRow[]) ?? []);
-      setTrackingData((trackingRes.data as TrackingRow[]) ?? []);
+      setEmailLogs((emailRes.data as unknown as EmailLogRow[]) ?? []);
+      setPrevPeriodLogs((prevEmailRes.data as unknown as EmailLogRow[]) ?? []);
+      setTrackingData((trackingRes.data as unknown as TrackingRow[]) ?? []);
     } catch (err) {
       console.error('Failed to load deliverability data:', err);
       toast.error('Failed to load deliverability data');

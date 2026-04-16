@@ -18,7 +18,7 @@ export class CommunityEventService {
   ): Promise<{ events: CommunityEvent[]; total: number }> {
     let query = this.supabase
       .from('crm_community_events')
-      .select('*', { count: 'exact' })
+      .select('id, org_id, name, description, event_type, event_date, location, max_attendees, current_attendees, cost, status, created_by, created_at, updated_at', { count: 'exact' })
       .eq('org_id', this.orgId);
 
     if (filters.dateFrom) query = query.gte('event_date', filters.dateFrom);
@@ -34,18 +34,18 @@ export class CommunityEventService {
       console.error('Failed to get community events:', error);
       return { events: [], total: 0 };
     }
-    return { events: data as CommunityEvent[], total: count || 0 };
+    return { events: data as unknown as CommunityEvent[], total: count || 0 };
   }
 
   async getEvent(id: string): Promise<CommunityEvent | null> {
     const { data, error } = await this.supabase
       .from('crm_community_events')
-      .select('*')
+      .select('id, org_id, name, description, event_type, event_date, location, max_attendees, current_attendees, cost, status, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data as CommunityEvent;
+    return data as unknown as CommunityEvent;
   }
 
   async createEvent(input: CommunityEventInput): Promise<CommunityEvent | null> {
@@ -58,14 +58,14 @@ export class CommunityEventService {
         ...input,
         created_by: user?.id,
       })
-      .select()
+      .select('id, org_id, name, event_type, event_date, location, contacts_captured, leads_generated, rep_id, notes, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to create community event:', error);
       return null;
     }
-    return data as CommunityEvent;
+    return data as unknown as CommunityEvent;
   }
 
   async updateEvent(
@@ -76,14 +76,14 @@ export class CommunityEventService {
       .from('crm_community_events')
       .update(input)
       .eq('id', id)
-      .select()
+      .select('id, org_id, name, event_type, event_date, location, contacts_captured, leads_generated, rep_id, notes, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to update community event:', error);
       return null;
     }
-    return data as CommunityEvent;
+    return data as unknown as CommunityEvent;
   }
 
   async deleteEvent(id: string): Promise<boolean> {

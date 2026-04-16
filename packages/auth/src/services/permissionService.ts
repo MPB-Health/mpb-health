@@ -124,7 +124,7 @@ async function loadUserPermissionsFromSnapshotRpc(orgId: string): Promise<UserPe
     return null;
   }
 
-  const snap = data as OrgPermissionsSnapshotRpc | null;
+  const snap = data as unknown as OrgPermissionsSnapshotRpc | null;
   if (!snap) return null;
 
   if (snap.error === 'not_authenticated' || snap.error === 'no_membership') {
@@ -196,7 +196,7 @@ export async function hasAllPermissions(orgId: string, permissionKeys: string[])
 export async function getAllPermissions(): Promise<Permission[]> {
   const { data, error } = await supabase
     .from('permissions')
-    .select('*')
+    .select('id, key, module, description')
     .order('module', { ascending: true });
 
   if (error) {

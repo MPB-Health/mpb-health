@@ -24,7 +24,7 @@ export class PriceBookService {
       let query = this.supabase
         .from('crm_price_books')
         .select(`
-          *,
+        id, org_id, name, description, is_default, is_active, effective_from, effective_to, currency, created_by, created_at, updated_at,
           items:crm_price_book_items(count)
         `, { count: 'exact' });
 
@@ -63,7 +63,7 @@ export class PriceBookService {
         items: undefined,
       }));
 
-      return { priceBooks: priceBooks as PriceBookWithRelations[], total: count || 0 };
+      return { priceBooks: priceBooks as unknown as PriceBookWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get price books error:', error);
       return { priceBooks: [], total: 0 };
@@ -78,7 +78,7 @@ export class PriceBookService {
       const { data, error } = await this.supabase
         .from('crm_price_books')
         .select(`
-          *,
+        id, org_id, name, description, is_default, is_active, effective_from, effective_to, currency, created_by, created_at, updated_at,
           items:crm_price_book_items(
             id,
             product_id,
@@ -101,7 +101,7 @@ export class PriceBookService {
         return null;
       }
 
-      return data as PriceBookWithRelations;
+      return data as unknown as PriceBookWithRelations;
     } catch (error) {
       console.error('Get price book error:', error);
       return null;
@@ -116,7 +116,7 @@ export class PriceBookService {
       const { data, error } = await this.supabase
         .from('crm_price_books')
         .select(`
-          *,
+        id, org_id, name, description, is_default, is_active, effective_from, effective_to, currency, created_by, created_at, updated_at,
           items:crm_price_book_items(
             id,
             product_id,
@@ -138,7 +138,7 @@ export class PriceBookService {
         return null;
       }
 
-      return data as PriceBookWithRelations;
+      return data as unknown as PriceBookWithRelations;
     } catch (error) {
       console.error('Get default price book error:', error);
       return null;
@@ -157,7 +157,7 @@ export class PriceBookService {
         return { success: false, error: 'Not authenticated' };
       }
 
-      // If this is set as default, unset other defaults first
+      // If this is set as unknown as default, unset other defaults first
       if (input.is_default) {
         await this.supabase
           .from('crm_price_books')
@@ -196,7 +196,7 @@ export class PriceBookService {
     updates: PriceBookUpdateInput
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // If setting as default, unset other defaults first
+      // If setting as unknown as default, unset other defaults first
       if (updates.is_default) {
         await this.supabase
           .from('crm_price_books')

@@ -30,7 +30,7 @@ export class AnnouncementService {
 
     const { data, error } = await supabase
       .from('advisor_announcements')
-      .select('*')
+      .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
       .eq('is_active', true)
       .lte('start_date', now)
       .or(`end_date.is.null,end_date.gte.${now}`)
@@ -41,7 +41,7 @@ export class AnnouncementService {
       return [];
     }
 
-    return (data as Announcement[]) || [];
+    return (data as unknown as Announcement[]) || [];
   }
 
   /**

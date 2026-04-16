@@ -17,7 +17,7 @@ export class ProfileService {
   async getProfile(advisorId: string): Promise<AdvisorProfile | null> {
     const { data, error } = await supabase
       .from('advisor_profiles')
-      .select('*')
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .eq('id', advisorId)
       .limit(1);
 
@@ -30,7 +30,7 @@ export class ProfileService {
   async getProfileByEmail(email: string): Promise<AdvisorProfile | null> {
     const { data, error } = await supabase
       .from('advisor_profiles')
-      .select('*')
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .eq('email', email)
       .limit(1);
 
@@ -47,7 +47,7 @@ export class ProfileService {
       .from('advisor_profiles')
       .update(updates)
       .eq('id', advisorId)
-      .select()
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .single();
 
     if (error) throw error;
@@ -103,7 +103,7 @@ export class ProfileService {
   }): Promise<AdvisorProfile[]> {
     let query = supabase
       .from('advisor_profiles')
-      .select('*')
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .order('last_name', { ascending: true });
 
     if (filters?.status) {
@@ -160,7 +160,7 @@ export class ProfileService {
         },
         { onConflict: 'id' }
       )
-      .select()
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .single();
 
     if (error) {
@@ -193,22 +193,22 @@ export class ProfileService {
   async getOnboardingSteps(): Promise<OnboardingStep[]> {
     const { data, error } = await supabase
       .from('onboarding_steps')
-      .select('*')
+      .select('id, title, description, step_type, order_index, is_required, action_url, action_label, estimated_minutes')
       .order('order_index', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get advisor's onboarding progress
   async getOnboardingProgress(advisorId: string): Promise<OnboardingProgress[]> {
     const { data, error } = await supabase
       .from('onboarding_progress')
-      .select('*')
+      .select('id, advisor_id, step_id, status, started_at, completed_at, notes')
       .eq('advisor_id', advisorId);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get complete onboarding status
@@ -256,7 +256,7 @@ export class ProfileService {
     // Check if progress exists
     const { data: existing } = await supabase
       .from('onboarding_progress')
-      .select('*')
+      .select('id, advisor_id, step_id, status, started_at, completed_at, notes')
       .eq('advisor_id', advisorId)
       .eq('step_id', stepId)
       .single();
@@ -270,11 +270,11 @@ export class ProfileService {
             started_at: new Date().toISOString(),
           })
           .eq('id', existing.id)
-          .select()
+          .select('id, advisor_id, step_id, status, started_at, completed_at, notes')
           .single();
 
         if (error) throw error;
-        return data;
+        return data as any;
       }
       return existing;
     }
@@ -288,11 +288,11 @@ export class ProfileService {
         status: 'in_progress',
         started_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, advisor_id, step_id, status, started_at, completed_at, notes')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Complete an onboarding step
@@ -311,7 +311,7 @@ export class ProfileService {
         notes,
       })
       .eq('id', progress.id)
-      .select()
+      .select('id, advisor_id, step_id, status, started_at, completed_at, notes')
       .single();
 
     if (error) throw error;
@@ -325,7 +325,7 @@ export class ProfileService {
       });
     }
 
-    return data;
+    return data as any;
   }
 
   // Skip an optional onboarding step
@@ -353,11 +353,11 @@ export class ProfileService {
         completed_at: new Date().toISOString(),
       })
       .eq('id', progress.id)
-      .select()
+      .select('id, advisor_id, step_id, status, started_at, completed_at, notes')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Get advisor stats
@@ -387,17 +387,17 @@ export class ProfileService {
       this.getOnboardingStatus(advisorId),
       supabase
         .from('meeting_attendees')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('advisor_id', advisorId)
         .then(r => r.count || 0),
       supabase
         .from('form_submissions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('advisor_id', advisorId)
         .then(r => r.count || 0),
       supabase
         .from('certifications')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('advisor_id', advisorId)
         .then(r => r.count || 0),
     ]);

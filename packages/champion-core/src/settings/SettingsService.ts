@@ -35,7 +35,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -46,7 +46,7 @@ export class SettingsService {
       .from('organization_settings')
       .update(input)
       .eq('org_id', orgId)
-      .select()
+      .select('id, org_id, logo_url, favicon_url, primary_color, secondary_color, business_name, business_phone, business_email, business_address, website_url, default_timezone, default_language, date_format, time_format, currency, business_hours, features_enabled, default_sms_sender_id, default_email_from_name, default_email_from_address, email_signature, require_message_approval, message_disclaimer, hipaa_mode, created_at, updated_at')
       .single();
 
     if (error) {
@@ -54,7 +54,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================
@@ -75,7 +75,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -91,7 +91,7 @@ export class SettingsService {
       .update(input)
       .eq('user_id', userId)
       .eq('org_id', orgId)
-      .select()
+      .select('id, user_id, org_id, theme, sidebar_collapsed, compact_mode, timezone, language, dashboard_layout, pinned_items, default_lane_id, power_list_view, auto_advance_after_complete, inbox_preview_lines, inbox_group_by, inbox_sort_order, keyboard_shortcuts_enabled, created_at, updated_at')
       .single();
 
     if (error) {
@@ -99,7 +99,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================
@@ -120,7 +120,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -136,7 +136,7 @@ export class SettingsService {
       .update(input)
       .eq('user_id', userId)
       .eq('org_id', orgId)
-      .select()
+      .select('id, user_id, org_id, email_enabled, email_new_lead, email_new_message, email_task_reminder, email_compliance_alert, email_weekly_digest, email_marketing, sms_enabled, sms_phone_number, sms_urgent_only, push_enabled, push_new_lead, push_new_message, push_task_reminder, push_chat_messages, push_chat_mentions, push_ticket_updates, push_bulletins, in_app_enabled, in_app_sound, in_app_desktop, digest_frequency, digest_time, digest_day, quiet_hours_enabled, quiet_hours_start, quiet_hours_end, quiet_hours_timezone, created_at, updated_at')
       .single();
 
     if (error) {
@@ -144,7 +144,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================
@@ -164,7 +164,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -209,7 +209,7 @@ export class SettingsService {
   async getInvitations(orgId: string, status?: string): Promise<OrganizationInvitation[]> {
     let query = supabase
       .from('organization_invitations')
-      .select('*')
+      .select('id, org_id, email, role, message, token, token_expires_at, status, accepted_at, accepted_by, invited_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
@@ -224,7 +224,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -248,7 +248,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -273,7 +273,7 @@ export class SettingsService {
     // Get current invitation
     const { data: current, error: fetchError } = await supabase
       .from('organization_invitations')
-      .select('*')
+      .select('id, org_id, email, role, message, token, token_expires_at, status, accepted_at, accepted_by, invited_by, created_at, updated_at')
       .eq('id', invitationId)
       .single();
 
@@ -297,7 +297,7 @@ export class SettingsService {
   async getApiKeys(orgId: string): Promise<ApiKey[]> {
     const { data, error } = await supabase
       .from('api_keys')
-      .select('*')
+      .select('id, org_id, name, description, key_prefix, scopes, is_active, last_used_at, use_count, rate_limit_per_minute, rate_limit_per_day, expires_at, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
@@ -306,7 +306,7 @@ export class SettingsService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -334,7 +334,7 @@ export class SettingsService {
     // Fetch the created key
     const { data: key, error: fetchError } = await supabase
       .from('api_keys')
-      .select('*')
+      .select('id, org_id, name, description, key_prefix, scopes, is_active, last_used_at, use_count, rate_limit_per_minute, rate_limit_per_day, expires_at, created_by, created_at, updated_at')
       .eq('id', data[0].key_id)
       .single();
 

@@ -159,7 +159,7 @@ export async function getMeetings(options?: {
 }): Promise<AdvisorMeeting[]> {
   let query = supabase
     .from('advisor_meetings')
-    .select('*')
+    .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, host_name, is_recurring, recurrence_pattern, recurrence_day, recurrence_time, status, started_at, ended_at, recording_url, attendee_count, max_attendees, meeting_notes, agenda, resources, metadata, created_at, updated_at')
     .order('scheduled_at', { ascending: true });
 
   if (options?.status) {
@@ -192,7 +192,7 @@ export async function getMeetings(options?: {
 export async function getMeetingById(id: string): Promise<AdvisorMeeting | null> {
   const { data, error } = await supabase
     .from('advisor_meetings')
-    .select('*')
+    .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, host_name, is_recurring, recurrence_pattern, recurrence_day, recurrence_time, status, started_at, ended_at, recording_url, attendee_count, max_attendees, meeting_notes, agenda, resources, metadata, created_at, updated_at')
     .eq('id', id)
     .single();
 
@@ -211,7 +211,7 @@ export async function getMeetingById(id: string): Promise<AdvisorMeeting | null>
 export async function getMeetingByRoom(roomName: string): Promise<AdvisorMeeting | null> {
   const { data, error } = await supabase
     .from('advisor_meetings')
-    .select('*')
+    .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, host_name, is_recurring, recurrence_pattern, recurrence_day, recurrence_time, status, started_at, ended_at, recording_url, attendee_count, max_attendees, meeting_notes, agenda, resources, metadata, created_at, updated_at')
     .eq('room_name', roomName)
     .single();
 
@@ -230,7 +230,7 @@ export async function getMeetingByRoom(roomName: string): Promise<AdvisorMeeting
 export async function getActiveMeeting(): Promise<AdvisorMeeting | null> {
   const { data, error } = await supabase
     .from('advisor_meetings')
-    .select('*')
+    .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, host_name, is_recurring, recurrence_pattern, recurrence_day, recurrence_time, status, started_at, ended_at, recording_url, attendee_count, max_attendees, meeting_notes, agenda, resources, metadata, created_at, updated_at')
     .eq('status', 'live')
     .order('started_at', { ascending: false })
     .limit(1)
@@ -250,7 +250,7 @@ export async function getActiveMeeting(): Promise<AdvisorMeeting | null> {
 export async function getUpcomingMeetings(limit: number = 5): Promise<AdvisorMeeting[]> {
   const { data, error } = await supabase
     .from('advisor_meetings')
-    .select('*')
+    .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, host_name, is_recurring, recurrence_pattern, recurrence_day, recurrence_time, status, started_at, ended_at, recording_url, attendee_count, max_attendees, meeting_notes, agenda, resources, metadata, created_at, updated_at')
     .eq('status', 'scheduled')
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true })
@@ -270,7 +270,7 @@ export async function getUpcomingMeetings(limit: number = 5): Promise<AdvisorMee
 export async function getPastMeetings(limit: number = 10): Promise<AdvisorMeeting[]> {
   const { data, error } = await supabase
     .from('advisor_meetings')
-    .select('*')
+    .select('id, title, description, scheduled_at, duration_minutes, room_name, room_password, host_id, host_name, is_recurring, recurrence_pattern, recurrence_day, recurrence_time, status, started_at, ended_at, recording_url, attendee_count, max_attendees, meeting_notes, agenda, resources, metadata, created_at, updated_at')
     .eq('status', 'completed')
     .order('ended_at', { ascending: false })
     .limit(limit);
@@ -383,7 +383,7 @@ export async function endMeeting(id: string): Promise<AdvisorMeeting> {
   // Get attendee count
   const { count } = await supabase
     .from('advisor_meeting_attendees')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('meeting_id', id);
 
   // Update meeting status
@@ -500,7 +500,7 @@ export async function leaveMeeting(attendeeId: string): Promise<MeetingAttendee>
 export async function getMeetingAttendees(meetingId: string): Promise<MeetingAttendee[]> {
   const { data, error } = await supabase
     .from('advisor_meeting_attendees')
-    .select('*')
+    .select('id, meeting_id, advisor_id, user_id, email, name, joined_at, left_at, duration_seconds, created_at')
     .eq('meeting_id', meetingId)
     .order('joined_at', { ascending: true });
 
@@ -606,7 +606,7 @@ export function getJitsiMeetingUrl(roomName: string, password?: string): string 
 export async function getMeetingTemplates(): Promise<MeetingTemplate[]> {
   const { data, error } = await supabase
     .from('meeting_templates')
-    .select('*')
+    .select('id, name, description, meeting_type, default_duration, default_visibility, default_agenda, require_registration, allow_guests, auto_record, is_active, created_by, created_at, updated_at')
     .eq('is_active', true)
     .order('name');
 
@@ -624,7 +624,7 @@ export async function getMeetingTemplates(): Promise<MeetingTemplate[]> {
 export async function getMeetingTemplate(id: string): Promise<MeetingTemplate | null> {
   const { data, error } = await supabase
     .from('meeting_templates')
-    .select('*')
+    .select('id, name, description, meeting_type, default_duration, default_visibility, default_agenda, require_registration, allow_guests, auto_record, is_active, created_by, created_at, updated_at')
     .eq('id', id)
     .single();
 
@@ -896,7 +896,7 @@ export async function respondToInvitation(
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   return rpcData;

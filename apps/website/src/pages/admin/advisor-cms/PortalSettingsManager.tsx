@@ -80,11 +80,11 @@ export default function PortalSettingsManager() {
     try {
       const { data, error } = await supabase
         .from('advisor_portal_settings')
-        .select('*')
+        .select('id, key, value, label, description, category, updated_at, updated_by')
         .order('category', { ascending: true });
 
       if (error) throw error;
-      setSettings((data || []) as PortalSetting[]);
+      setSettings((data || []) as unknown as PortalSetting[]);
       setEditedValues({});
     } catch (error) {
       console.error('Error loading settings:', error);

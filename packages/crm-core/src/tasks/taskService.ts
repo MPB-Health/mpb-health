@@ -11,7 +11,7 @@ export class TaskService {
     try {
       let query = this.supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .order('due_date', { ascending: true });
 
       if (leadId) {
@@ -29,7 +29,7 @@ export class TaskService {
         return [];
       }
 
-      return data as LeadTask[];
+      return data as unknown as LeadTask[];
     } catch (error) {
       console.error('Get tasks error:', error);
       return [];
@@ -43,7 +43,7 @@ export class TaskService {
     try {
       const { data, error } = await this.supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .eq('completed', false)
         .lt('due_date', new Date().toISOString())
         .order('due_date', { ascending: true });
@@ -53,7 +53,7 @@ export class TaskService {
         return [];
       }
 
-      return data as LeadTask[];
+      return data as unknown as LeadTask[];
     } catch (error) {
       console.error('Get overdue tasks error:', error);
       return [];
@@ -79,7 +79,7 @@ export class TaskService {
 
       const { data, error } = await this.supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .eq('completed', false)
         .gte('due_date', startOfDay)
         .lt('due_date', endOfDay)
@@ -90,7 +90,7 @@ export class TaskService {
         return [];
       }
 
-      return data as LeadTask[];
+      return data as unknown as LeadTask[];
     } catch (error) {
       console.error('Get tasks due today error:', error);
       return [];
@@ -104,7 +104,7 @@ export class TaskService {
     try {
       const { data, error } = await this.supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -113,7 +113,7 @@ export class TaskService {
         return null;
       }
 
-      return data as LeadTask;
+      return data as unknown as LeadTask;
     } catch (error) {
       console.error('Get task error:', error);
       return null;
@@ -206,7 +206,7 @@ export class TaskService {
 
       const { data: task, error: fetchError } = await this.supabase
         .from('lead_tasks')
-        .select('*')
+        .select('id, lead_id, title, description, task_type, due_date, due_time, priority, completed, completed_at, completed_by, assigned_to, created_by, created_at, updated_at')
         .eq('id', taskId)
         .single();
 

@@ -241,7 +241,7 @@ export default function LeadDetail() {
     if (!lead) return;
     if (action === 'audit') {
       setAuditLoading(true);
-      supabase.from('crm_audit_log').select('*').eq('entity_type', 'lead').eq('entity_id', lead.id)
+      supabase.from('crm_audit_log').select('id, user_id, action, changes, created_at').eq('entity_type', 'lead').eq('entity_id', lead.id)
         .order('created_at', { ascending: false }).limit(50)
         .then(({ data }) => {
           const entries = (data || []).flatMap((row: Record<string, unknown>) => {

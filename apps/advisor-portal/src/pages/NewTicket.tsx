@@ -192,7 +192,11 @@ export default function NewTicket() {
         navigate('/login', { replace: true });
         return;
       }
-      setError(msg || 'Failed to submit ticket. Please try again.');
+      if (/temporarily unavailable|not yet configured/i.test(msg)) {
+        setError('The support system is temporarily unavailable. Please try again in a few minutes or contact support directly.');
+      } else {
+        setError(msg || 'Failed to submit ticket. Please try again.');
+      }
     } finally {
       submitGuardRef.current = false;
       if (mountedRef.current) setSubmitting(false);

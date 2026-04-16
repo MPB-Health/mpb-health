@@ -184,7 +184,7 @@ export const EventArticle: React.FC = () => {
       try {
         const { data, error: fetchError } = await supabase
           .from('events')
-          .select('*')
+          .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, is_published, video_url, gallery_images')
           .eq('slug', slug)
           .eq('is_published', true)
           .maybeSingle();
@@ -199,7 +199,7 @@ export const EventArticle: React.FC = () => {
 
           const { data: related } = await supabase
             .from('events')
-            .select('*')
+            .select('id, title, slug, excerpt, featured_image_url, event_date')
             .eq('is_published', true)
             .neq('id', data.id)
             .order('event_date', { ascending: false })

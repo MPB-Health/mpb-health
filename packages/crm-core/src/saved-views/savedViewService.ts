@@ -8,7 +8,7 @@ export class SavedViewService {
     try {
       const { data, error } = await this.supabase
         .from('crm_saved_views')
-        .select('*')
+        .select('id, org_id, user_id, entity_type, name, filters, columns, sort_config, is_default, is_shared, created_at, updated_at')
         .eq('module', module)
         .order('is_default', { ascending: false })
         .order('name', { ascending: true });
@@ -18,7 +18,7 @@ export class SavedViewService {
         return [];
       }
 
-      return data as SavedView[];
+      return data as unknown as SavedView[];
     } catch (error) {
       console.error('Get saved views error:', error);
       return [];
@@ -34,7 +34,7 @@ export class SavedViewService {
         return { success: false, error: 'Not authenticated' };
       }
 
-      // If setting as default, clear other defaults for same module/user first
+      // If setting as unknown as default, clear other defaults for same module/user first
       if (input.is_default) {
         await this.supabase
           .from('crm_saved_views')
@@ -57,14 +57,14 @@ export class SavedViewService {
           is_shared: input.is_shared ?? false,
           owner_id: user.user.id,
         })
-        .select('*')
+        .select('id, org_id, user_id, entity_type, name, filters, columns, sort_config, is_default, is_shared, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, view: data as SavedView };
+      return { success: true, view: data as unknown as SavedView };
     } catch (error) {
       console.error('Create saved view error:', error);
       return { success: false, error: 'Failed to create saved view' };
@@ -76,7 +76,7 @@ export class SavedViewService {
     updates: SavedViewUpdateInput
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // If setting as default, clear other defaults first
+      // If setting as unknown as default, clear other defaults first
       if (updates.is_default) {
         const { data: view } = await this.supabase
           .from('crm_saved_views')
@@ -146,7 +146,7 @@ export class SavedViewService {
         .eq('owner_id', user.user.id)
         .eq('is_default', true);
 
-      // Set this one as default
+      // Set this one as unknown as default
       const { error } = await this.supabase
         .from('crm_saved_views')
         .update({ is_default: true })

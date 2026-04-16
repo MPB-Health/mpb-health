@@ -118,7 +118,7 @@ export class AnalyticsHubService {
         console.warn(`[AnalyticsHub] ${action} failed:`, error.message);
         return null;
       }
-      return data as T;
+      return data as unknown as T;
     } catch (err) {
       console.warn(`[AnalyticsHub] ${action} error:`, err);
       return null;

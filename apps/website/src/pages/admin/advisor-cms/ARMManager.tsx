@@ -95,7 +95,7 @@ export default function ARMManager() {
     try {
       const { data, error } = await supabase
         .from('sop_documents')
-        .select('*')
+        .select('id, title, description, category, tags, content, file_url, image_url, version, is_active, is_published, order_index, view_count, slug, content_type, metadata, created_at, updated_at')
         .order('order_index', { ascending: true });
 
       if (error) throw error;

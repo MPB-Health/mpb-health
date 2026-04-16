@@ -602,7 +602,7 @@ export class AutomationService {
   async getRules(orgId: string, params: GetRulesParams = {}): Promise<AutomationRule[]> {
     let query = supabase
       .from('ai_automation_rules')
-      .select('*')
+      .select('id, org_id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, priority, run_once, execution_count, last_executed_at, created_by, created_at, updated_at')
       .or(`org_id.eq.${orgId},org_id.is.null`)
       .order('priority', { ascending: false })
       .order('created_at', { ascending: false });
@@ -630,7 +630,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -639,7 +639,7 @@ export class AutomationService {
   async getRule(ruleId: string): Promise<AutomationRule | null> {
     const { data, error } = await supabase
       .from('ai_automation_rules')
-      .select('*')
+      .select('id, org_id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, priority, run_once, execution_count, last_executed_at, created_by, created_at, updated_at')
       .eq('id', ruleId)
       .single();
 
@@ -649,7 +649,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -693,7 +693,7 @@ export class AutomationService {
         run_once: input.run_once || false,
         is_active: input.is_active ?? true,
       })
-      .select()
+      .select('id, org_id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, priority, run_once, execution_count, last_executed_at, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -701,7 +701,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -715,7 +715,7 @@ export class AutomationService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', ruleId)
-      .select()
+      .select('id, org_id, name, description, is_active, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, priority, run_once, execution_count, last_executed_at, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -723,7 +723,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -781,7 +781,7 @@ export class AutomationService {
   async getConditions(ruleId: string): Promise<AutomationCondition[]> {
     const { data, error } = await supabase
       .from('automation_conditions')
-      .select('*')
+      .select('id, rule_id, condition_group, field_path, operator, value, group_operator, created_at')
       .eq('rule_id', ruleId)
       .order('condition_group')
       .order('id');
@@ -791,7 +791,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -808,7 +808,7 @@ export class AutomationService {
         value: input.value,
         group_operator: input.group_operator || 'AND',
       })
-      .select()
+      .select('id, rule_id, condition_group, field_path, operator, value, group_operator, created_at')
       .single();
 
     if (error) {
@@ -816,7 +816,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -844,7 +844,7 @@ export class AutomationService {
   async getActions(ruleId: string): Promise<AutomationAction[]> {
     const { data, error } = await supabase
       .from('automation_actions')
-      .select('*')
+      .select('id, rule_id, action_order, action_type, action_config, delay_minutes, condition, stop_on_failure, created_at')
       .eq('rule_id', ruleId)
       .order('action_order');
 
@@ -853,7 +853,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -871,7 +871,7 @@ export class AutomationService {
         condition: input.condition,
         stop_on_failure: input.stop_on_failure || false,
       })
-      .select()
+      .select('id, rule_id, action_order, action_type, action_config, delay_minutes, condition, stop_on_failure, created_at')
       .single();
 
     if (error) {
@@ -879,7 +879,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -929,7 +929,7 @@ export class AutomationService {
   async getTemplates(params: GetTemplatesParams = {}): Promise<AutomationTemplate[]> {
     let query = supabase
       .from('automation_templates')
-      .select('*')
+      .select('id, name, description, category, icon, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, is_popular, use_count, is_system, created_by, created_at, updated_at')
       .order('is_popular', { ascending: false })
       .order('use_count', { ascending: false });
 
@@ -952,7 +952,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -984,7 +984,7 @@ export class AutomationService {
     // Get template
     const { data: template, error: templateError } = await supabase
       .from('automation_templates')
-      .select('*')
+      .select('id, name, description, category, icon, trigger_type, trigger_conditions, action_type, action_config, delay_minutes, is_popular, use_count, is_system, created_by, created_at, updated_at')
       .eq('id', templateId)
       .single();
 
@@ -1036,7 +1036,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -1076,7 +1076,7 @@ export class AutomationService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   // =========================================================================

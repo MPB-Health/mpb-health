@@ -46,7 +46,7 @@ export default function Notes() {
   const loadNotes = async () => {
     const { data } = await supabase
       .from('staff_notes')
-      .select('*')
+      .select('id, title, content, color, pinned, created_at, updated_at')
       .order('pinned', { ascending: false })
       .order('updated_at', { ascending: false });
     setNotes(data ?? []);

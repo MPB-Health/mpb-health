@@ -49,7 +49,7 @@ export const getAbandonedQuotes = async (
 
     const { data, error } = await supabase
       .from('abandoned_quotes')
-      .select('*')
+      .select('id, session_id, form_data, last_step, total_steps, email, phone, created_at, recovered_at')
       .gte('created_at', cutoffTime)
       .is('recovered_at', null)
       .lt('last_step', 'total_steps');
@@ -59,7 +59,7 @@ export const getAbandonedQuotes = async (
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   } catch (err) {
     console.error('Error fetching abandoned quotes:', err);
     return [];

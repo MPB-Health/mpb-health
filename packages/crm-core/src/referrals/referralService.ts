@@ -19,7 +19,7 @@ export class ReferralService {
   async getPartners(activeOnly = false): Promise<ReferralPartner[]> {
     let query = this.supabase
       .from('crm_referral_partners')
-      .select('*')
+      .select('id, org_id, name, partner_type, company, email, phone, notes, is_active, created_by, created_at, updated_at')
       .eq('org_id', this.orgId)
       .order('name');
 
@@ -30,18 +30,18 @@ export class ReferralService {
       console.error('Failed to get referral partners:', error);
       return [];
     }
-    return data as ReferralPartner[];
+    return data as unknown as ReferralPartner[];
   }
 
   async getPartner(id: string): Promise<ReferralPartner | null> {
     const { data, error } = await this.supabase
       .from('crm_referral_partners')
-      .select('*')
+      .select('id, org_id, name, partner_type, company, email, phone, notes, is_active, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data as ReferralPartner;
+    return data as unknown as ReferralPartner;
   }
 
   async createPartner(input: ReferralPartnerInput): Promise<ReferralPartner | null> {
@@ -54,14 +54,14 @@ export class ReferralService {
         ...input,
         created_by: user?.id,
       })
-      .select()
+      .select('id, org_id, name, partner_type, company, email, phone, notes, is_active, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to create referral partner:', error);
       return null;
     }
-    return data as ReferralPartner;
+    return data as unknown as ReferralPartner;
   }
 
   async updatePartner(
@@ -72,14 +72,14 @@ export class ReferralService {
       .from('crm_referral_partners')
       .update(input)
       .eq('id', id)
-      .select()
+      .select('id, org_id, name, partner_type, company, email, phone, notes, is_active, created_by, created_at, updated_at')
       .single();
 
     if (error) {
       console.error('Failed to update referral partner:', error);
       return null;
     }
-    return data as ReferralPartner;
+    return data as unknown as ReferralPartner;
   }
 
   async deletePartner(id: string): Promise<boolean> {
@@ -100,7 +100,7 @@ export class ReferralService {
   ): Promise<{ referrals: Referral[]; total: number }> {
     let query = this.supabase
       .from('crm_referrals')
-      .select('*, partner:crm_referral_partners(*)', { count: 'exact' })
+      .select('id, org_id, partner_id, lead_id, contact_id, referred_by, direction, status, notes, created_at, updated_at, partner:crm_referral_partners(id, org_id, name, partner_type, company, email, phone, notes, is_active, created_by, created_at, updated_at)', { count: 'exact' })
       .eq('org_id', this.orgId);
 
     if (filters.partner_id) query = query.eq('partner_id', filters.partner_id);
@@ -115,7 +115,7 @@ export class ReferralService {
       console.error('Failed to get referrals:', error);
       return { referrals: [], total: 0 };
     }
-    return { referrals: data as Referral[], total: count || 0 };
+    return { referrals: data as unknown as Referral[], total: count || 0 };
   }
 
   async createReferral(input: ReferralInput): Promise<Referral | null> {
@@ -128,14 +128,14 @@ export class ReferralService {
         ...input,
         referred_by: user?.id,
       })
-      .select('*, partner:crm_referral_partners(*)')
+      .select('id, org_id, partner_id, lead_id, contact_id, referred_by, direction, status, notes, created_at, updated_at, partner:crm_referral_partners(id, org_id, name, partner_type, company, email, phone, notes, is_active, created_by, created_at, updated_at)')
       .single();
 
     if (error) {
       console.error('Failed to create referral:', error);
       return null;
     }
-    return data as Referral;
+    return data as unknown as Referral;
   }
 
   async updateReferral(
@@ -146,14 +146,14 @@ export class ReferralService {
       .from('crm_referrals')
       .update(input)
       .eq('id', id)
-      .select('*, partner:crm_referral_partners(*)')
+      .select('id, org_id, partner_id, lead_id, contact_id, referred_by, direction, status, notes, created_at, updated_at, partner:crm_referral_partners(id, org_id, name, partner_type, company, email, phone, notes, is_active, created_by, created_at, updated_at)')
       .single();
 
     if (error) {
       console.error('Failed to update referral:', error);
       return null;
     }
-    return data as Referral;
+    return data as unknown as Referral;
   }
 
   async deleteReferral(id: string): Promise<boolean> {

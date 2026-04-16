@@ -57,7 +57,7 @@ class SearchService {
     const duration = Math.round(performance.now() - startTime);
 
     return {
-      results: (data || []) as SearchResult[],
+      results: (data || []) as unknown as SearchResult[],
       query: params.query,
       total: data?.length || 0,
       duration_ms: duration,
@@ -99,7 +99,7 @@ class SearchService {
       throw error;
     }
 
-    return (data || []) as RecentSearch[];
+    return (data || []) as unknown as RecentSearch[];
   }
 
   /**
@@ -125,7 +125,7 @@ class SearchService {
       throw error;
     }
 
-    return data as string;
+    return data as unknown as string;
   }
 
   /**
@@ -168,7 +168,7 @@ class SearchService {
   async getSavedSearches(userId: string): Promise<SavedSearch[]> {
     const { data, error } = await supabase
       .from('saved_searches')
-      .select('*')
+      .select('id, user_id, org_id, name, query, entity_types, filters, is_pinned, created_at, last_used_at, use_count')
       .eq('user_id', userId)
       .order('is_pinned', { ascending: false })
       .order('use_count', { ascending: false });
@@ -178,7 +178,7 @@ class SearchService {
       throw error;
     }
 
-    return (data || []) as SavedSearch[];
+    return (data || []) as unknown as SavedSearch[];
   }
 
   /**
@@ -200,7 +200,7 @@ class SearchService {
         filters: input.filters || {},
         is_pinned: input.is_pinned || false,
       })
-      .select()
+      .select('id, user_id, org_id, name, query, entity_types, filters, is_pinned, created_at, last_used_at, use_count')
       .single();
 
     if (error) {
@@ -208,7 +208,7 @@ class SearchService {
       throw error;
     }
 
-    return data as SavedSearch;
+    return data as unknown as SavedSearch;
   }
 
   /**
@@ -226,7 +226,7 @@ class SearchService {
         ...(updates.filters && { filters: updates.filters }),
       })
       .eq('id', searchId)
-      .select()
+      .select('id, user_id, org_id, name, query, entity_types, filters, is_pinned, created_at, last_used_at, use_count')
       .single();
 
     if (error) {
@@ -234,7 +234,7 @@ class SearchService {
       throw error;
     }
 
-    return data as SavedSearch;
+    return data as unknown as SavedSearch;
   }
 
   /**
@@ -303,7 +303,7 @@ class SearchService {
   async getQuickActions(orgId?: string): Promise<QuickAction[]> {
     let query = supabase
       .from('quick_actions')
-      .select('*')
+      .select('id, org_id, name, description, icon, action_type, action_data, shortcut, category, is_enabled, display_order')
       .eq('is_enabled', true)
       .order('category')
       .order('display_order');
@@ -321,7 +321,7 @@ class SearchService {
       throw error;
     }
 
-    return (data || []) as QuickAction[];
+    return (data || []) as unknown as QuickAction[];
   }
 
   /**

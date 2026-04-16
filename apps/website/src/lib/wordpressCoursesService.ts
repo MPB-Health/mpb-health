@@ -38,7 +38,7 @@ export const wordpressCoursesService = {
     try {
       let query = supabase
         .from('wordpress_courses')
-        .select('*')
+        .select('id, wp_course_id, slug, title, description, summary_bullets, category, level, status, language, is_password_protected, password, password_hint, thumbnail_url, duration_minutes, completions_count, start_timestamp, created_at, updated_at, is_active')
         .eq('is_active', true)
         .eq('status', 'publish')
         .order('completions_count', { ascending: false });
@@ -68,7 +68,7 @@ export const wordpressCoursesService = {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('[WordPressCoursesService] Error in getCourses:', error);
       return [];
@@ -82,7 +82,7 @@ export const wordpressCoursesService = {
     try {
       const { data, error } = await supabase
         .from('wordpress_courses')
-        .select('*')
+        .select('id, wp_course_id, slug, title, description, summary_bullets, category, level, status, language, is_password_protected, password, password_hint, thumbnail_url, duration_minutes, completions_count, start_timestamp, created_at, updated_at, is_active')
         .eq('slug', slug)
         .eq('is_active', true)
         .maybeSingle();
@@ -92,7 +92,7 @@ export const wordpressCoursesService = {
         return null;
       }
 
-      return data;
+      return data as any;
     } catch (error) {
       console.error('[WordPressCoursesService] Error in getCourseBySlug:', error);
       return null;

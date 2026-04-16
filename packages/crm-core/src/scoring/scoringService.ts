@@ -8,14 +8,14 @@ export class ScoringService {
     try {
       const { data, error } = await this.supabase
         .from('lead_scoring_config')
-        .select('*')
+        .select('id, factor_key, factor_label, weight, is_enabled, description, created_at, updated_at')
         .order('factor_key', { ascending: true });
 
       if (error) {
         console.error('Failed to get scoring weights:', error);
         return [];
       }
-      return data as ScoringWeightConfig[];
+      return data as unknown as ScoringWeightConfig[];
     } catch (err) {
       console.error('Get scoring weights error:', err);
       return [];
@@ -55,7 +55,7 @@ export class ScoringService {
 
       if (error || !data) return null;
 
-      const rawFactors = (data.score_factors || []) as Array<{
+      const rawFactors = (data.score_factors || []) as unknown as Array<{
         factor?: string;
         label?: string;
         points?: number;

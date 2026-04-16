@@ -331,10 +331,10 @@ export default function SalesActivityDashboard() {
         dealQuery,
       ]);
 
-      setEmailLogs((emailRes.data as EmailLogRow[]) ?? []);
-      setActivities((activityRes.data as ActivityRow[]) ?? []);
-      setCalendarEvents((calendarRes.data as CalendarEventRow[]) ?? []);
-      setDeals((dealRes.data as DealRow[]) ?? []);
+      setEmailLogs((emailRes.data as unknown as EmailLogRow[]) ?? []);
+      setActivities((activityRes.data as unknown as ActivityRow[]) ?? []);
+      setCalendarEvents((calendarRes.data as unknown as CalendarEventRow[]) ?? []);
+      setDeals((dealRes.data as unknown as DealRow[]) ?? []);
     } catch (err) {
       console.error('Failed to load sales activity data:', err);
       toast.error('Failed to load dashboard data');

@@ -64,7 +64,7 @@ export class ProfileService {
     try {
       const { data, error } = await this.supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, full_name, avatar_url, phone, role, org_id, is_active, created_at, updated_at')
         .eq('id', userId)
         .single();
 
@@ -72,7 +72,7 @@ export class ProfileService {
         console.error('Failed to get profile:', error);
         return null;
       }
-      return data as UserProfile;
+      return data as unknown as UserProfile;
     } catch (error) {
       console.error('Get profile error:', error);
       return null;
@@ -121,7 +121,7 @@ export class ProfileService {
     try {
       const { data, error } = await this.supabase
         .from('org_memberships')
-        .select('role, status, profile:profiles(*)')
+        .select('role, status, profile:profiles(id, role, first_name, last_name, display_name, email, phone, mobile_phone, avatar_url, bio, job_title, department, timezone, locale, social_linkedin, social_twitter, social_facebook, social_instagram, social_github, social_website, address_line1, address_line2, city, state, postal_code, country, created_at, updated_at)')
         .eq('org_id', orgId)
         .in('status', ['active', 'suspended']);
 

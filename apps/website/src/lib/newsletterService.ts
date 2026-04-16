@@ -179,7 +179,7 @@ export async function getSubscriptionStatus(email: string): Promise<NewsletterSu
   try {
     const { data, error } = await supabase
       .from('newsletter_subscribers')
-      .select('*')
+      .select('id, email, status, source, confirmed_at, unsubscribed_at, created_at, ip_address, user_agent, metadata')
       .eq('email', email)
       .maybeSingle();
 
@@ -188,7 +188,7 @@ export async function getSubscriptionStatus(email: string): Promise<NewsletterSu
       return null;
     }
 
-    return data;
+    return data as any;
   } catch (error) {
     console.error('Newsletter status check error:', error);
     return null;
@@ -199,7 +199,7 @@ export async function getAllSubscribers(): Promise<NewsletterSubscription[]> {
   try {
     const { data, error } = await supabase
       .from('newsletter_subscribers')
-      .select('*')
+      .select('id, email, status, source, confirmed_at, unsubscribed_at, created_at, ip_address, user_agent, metadata')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -207,7 +207,7 @@ export async function getAllSubscribers(): Promise<NewsletterSubscription[]> {
       return [];
     }
 
-    return data || [];
+    return (data || []) as any;
   } catch (error) {
     console.error('Newsletter fetch error:', error);
     return [];
@@ -218,7 +218,7 @@ export async function getActiveSubscribersCount(): Promise<number> {
   try {
     const { count, error } = await supabase
       .from('newsletter_subscribers')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('status', 'active');
 
     if (error) {

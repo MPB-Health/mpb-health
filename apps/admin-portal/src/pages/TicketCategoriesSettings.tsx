@@ -43,7 +43,7 @@ export default function TicketCategoriesSettings() {
     try {
       const { data, error: err } = await supabase
         .from('ticket_categories')
-        .select('*')
+        .select('id, name, slug, description, is_active, display_order')
         .order('display_order', { ascending: true })
         .order('name', { ascending: true });
       if (err) throw err;

@@ -247,7 +247,7 @@ export const getLeadCount = async (hoursBack: number = 24): Promise<number> => {
   
   const { count, error } = await supabase
     .from('lead_submissions')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .gte('created_at', cutoffTime);
 
   if (error) {
@@ -311,7 +311,7 @@ export const getUnreadLeadCount = async (): Promise<number> => {
 
   const { count, error } = await supabase
     .from('lead_submissions')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .gt('created_at', lastViewed);
 
   if (error) {
@@ -333,7 +333,7 @@ export const checkIfRepeatLead = async (
 
   const { count: emailCount, error: emailError } = await supabase
     .from('lead_submissions')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .ilike('email', email)
     .lt('created_at', fiveMinutesAgo);
 
@@ -346,7 +346,7 @@ export const checkIfRepeatLead = async (
   if (phone && phone.trim() !== '') {
     const { count, error: phoneError } = await supabase
       .from('lead_submissions')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('phone', phone)
       .lt('created_at', fiveMinutesAgo);
 

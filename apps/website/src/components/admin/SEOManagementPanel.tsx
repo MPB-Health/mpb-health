@@ -29,7 +29,7 @@ export const SEOManagementPanel: React.FC = () => {
   const loadMetadata = async () => {
     try {
       const data = await adminAnalyticsService.getSEOMetadata();
-      setMetadataList(data as SEOMetadata[]);
+      setMetadataList(data as unknown as SEOMetadata[]);
     } catch (error) {
       console.error('Error loading SEO metadata:', error);
     } finally {

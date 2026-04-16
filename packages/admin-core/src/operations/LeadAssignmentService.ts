@@ -41,7 +41,7 @@ export class LeadAssignmentService {
     if (filters?.search) query = query.or(`email.ilike.%${filters.search}%,first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%`);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map((d: any) => ({ ...d, assigned_advisor_name: null })) as AssignableLead[];
+    return (data || []).map((d: any) => ({ ...d, assigned_advisor_name: null })) as unknown as AssignableLead[];
   }
 
   async getAdvisors(): Promise<AdvisorOption[]> {
@@ -51,7 +51,7 @@ export class LeadAssignmentService {
       .eq('status', 'active')
       .order('last_name', { ascending: true });
     if (error) throw error;
-    return (data || []) as AdvisorOption[];
+    return (data || []) as unknown as AdvisorOption[];
   }
 
   async assignLead(leadId: string, advisorId: string): Promise<void> {

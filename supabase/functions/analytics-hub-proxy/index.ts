@@ -69,7 +69,7 @@ async function safeCount(
   filter?: { column: string; value: string },
 ): Promise<number> {
   try {
-    let query = client.from(table).select("*", { count: "exact", head: true });
+    let query = client.from(table).select("id", { count: "exact", head: true });
     if (filter) query = query.eq(filter.column, filter.value);
     const { count, error } = await query;
     if (error) return 0;
@@ -88,7 +88,7 @@ async function safeCountSince(
   try {
     const { count, error } = await client
       .from(table)
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .gte(dateColumn, since);
     if (error) return 0;
     return count ?? 0;
@@ -106,7 +106,7 @@ async function safeCountBool(
   try {
     const { count, error } = await client
       .from(table)
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq(column, value);
     if (error) return 0;
     return count ?? 0;
@@ -271,7 +271,7 @@ async function discoverSchema(
   projectUrl: string,
 ): Promise<{ project: string; tables: { name: string; row_count: number }[] }> {
   try {
-    const { data, error } = await client.rpc("get_table_info").select("*");
+    const { data, error } = await client.rpc("get_table_info").select("table_name, row_count");
     if (!error && data) {
       return {
         project: projectUrl,
@@ -301,7 +301,7 @@ async function discoverSchema(
     const count = await safeCount(client, table);
     if (count > 0 || count === 0) {
       // Verify the table actually exists by trying a real query
-      const { error } = await client.from(table).select("*", { count: "exact", head: true });
+      const { error } = await client.from(table).select("id", { count: "exact", head: true });
       if (!error) {
         tables.push({ name: table, row_count: count });
       }

@@ -11,33 +11,33 @@ export class NavigationAdminService {
   async getAllItems(): Promise<NavMenuItem[]> {
     const { data, error } = await supabase
       .from('advisor_nav_menu')
-      .select('*')
+      .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .order('order_index', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getItem(id: string): Promise<NavMenuItem | null> {
     const { data, error } = await supabase
       .from('advisor_nav_menu')
-      .select('*')
+      .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createItem(input: NavItemCreateInput): Promise<NavMenuItem> {
     const { data, error } = await supabase
       .from('advisor_nav_menu')
       .insert(input)
-      .select()
+      .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async updateItem(id: string, input: NavItemUpdateInput): Promise<NavMenuItem> {
@@ -45,11 +45,11 @@ export class NavigationAdminService {
       .from('advisor_nav_menu')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteItem(id: string): Promise<void> {

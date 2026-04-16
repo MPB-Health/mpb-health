@@ -15,21 +15,21 @@ export class EnrollmentService {
   async getLinks(): Promise<EnrollmentLink[]> {
     const { data, error } = await supabase
       .from('advisor_enrollment_links')
-      .select('*')
+      .select('id, label, url, description, order_index, is_active, created_at, updated_at')
       .eq('is_active', true)
       .order('order_index', { ascending: true });
     if (error) throw error;
-    return (data || []) as EnrollmentLink[];
+    return (data || []) as unknown as EnrollmentLink[];
   }
 
   async createLink(link: Omit<EnrollmentLink, 'id' | 'created_at' | 'updated_at'>): Promise<EnrollmentLink> {
     const { data, error } = await supabase
       .from('advisor_enrollment_links')
       .insert(link)
-      .select()
+      .select('id, label, url, description, order_index, is_active, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as EnrollmentLink;
+    return data as unknown as EnrollmentLink;
   }
 
   async updateLink(linkId: string, updates: Partial<EnrollmentLink>): Promise<EnrollmentLink> {
@@ -37,10 +37,10 @@ export class EnrollmentService {
       .from('advisor_enrollment_links')
       .update(updates)
       .eq('id', linkId)
-      .select()
+      .select('id, label, url, description, order_index, is_active, created_at, updated_at')
       .single();
     if (error) throw error;
-    return data as EnrollmentLink;
+    return data as unknown as EnrollmentLink;
   }
 
   async deleteLink(linkId: string): Promise<void> {

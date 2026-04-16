@@ -68,7 +68,7 @@ export class PromoCodeService {
   async list(orgId: string, filters?: PromoCodeFilters): Promise<PromoCode[]> {
     let query = supabase
       .from('promo_codes')
-      .select('*')
+      .select('id, org_id, code, name, description, discount_type, discount_value, applies_to, min_purchase_amount, max_discount_amount, usage_limit, usage_count, per_user_limit, valid_from, valid_until, is_active, requires_approval, stackable, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
@@ -90,30 +90,30 @@ export class PromoCodeService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async get(id: string): Promise<PromoCode | null> {
     const { data, error } = await supabase
       .from('promo_codes')
-      .select('*')
+      .select('id, org_id, code, name, description, discount_type, discount_value, applies_to, min_purchase_amount, max_discount_amount, usage_limit, usage_count, per_user_limit, valid_from, valid_until, is_active, requires_approval, stackable, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async getByCode(code: string, orgId: string): Promise<PromoCode | null> {
     const { data, error } = await supabase
       .from('promo_codes')
-      .select('*')
+      .select('id, org_id, code, name, description, discount_type, discount_value, applies_to, min_purchase_amount, max_discount_amount, usage_limit, usage_count, per_user_limit, valid_from, valid_until, is_active, requires_approval, stackable, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('code', code.toUpperCase())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async create(input: PromoCodeCreateInput, orgId: string, userId: string): Promise<PromoCode> {
@@ -137,14 +137,14 @@ export class PromoCodeService {
         stackable: input.stackable || false,
         created_by: userId,
       })
-      .select()
+      .select('id, org_id, code, name, description, discount_type, discount_value, applies_to, min_purchase_amount, max_discount_amount, usage_limit, usage_count, per_user_limit, valid_from, valid_until, is_active, requires_approval, stackable, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'promo_code.create', 'promo_code', data.id, null, data);
 
-    return data;
+    return data as any;
   }
 
   async update(id: string, input: PromoCodeUpdateInput, userId: string): Promise<PromoCode> {
@@ -170,14 +170,14 @@ export class PromoCodeService {
       .from('promo_codes')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, org_id, code, name, description, discount_type, discount_value, applies_to, min_purchase_amount, max_discount_amount, usage_limit, usage_count, per_user_limit, valid_from, valid_until, is_active, requires_approval, stackable, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'promo_code.update', 'promo_code', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async delete(id: string, userId: string): Promise<void> {
@@ -231,7 +231,7 @@ export class PromoCodeService {
     if (userId && promoCode.per_user_limit > 0) {
       const { count } = await supabase
         .from('promo_code_usage')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('promo_code_id', promoCode.id)
         .eq('user_id', userId);
 
@@ -286,12 +286,12 @@ export class PromoCodeService {
         order_id: orderId,
         discount_applied: discountApplied,
       })
-      .select()
+      .select('id, promo_code_id, user_id, member_id, order_id, discount_applied, used_at')
       .single();
 
     if (error) throw error;
 
-    return data;
+    return data as any;
   }
 
   async getUsageHistory(
@@ -300,7 +300,7 @@ export class PromoCodeService {
   ): Promise<{ data: PromoCodeUsage[]; total: number }> {
     let query = supabase
       .from('promo_code_usage')
-      .select('*', { count: 'exact' })
+      .select('id, promo_code_id, user_id, member_id, order_id, discount_applied, used_at', { count: 'exact' })
       .eq('promo_code_id', promoCodeId)
       .order('used_at', { ascending: false });
 

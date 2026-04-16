@@ -55,7 +55,7 @@ export class ResourcesService {
   async list(orgId: string, filters?: ResourceFilters): Promise<AdminResource[]> {
     let query = supabase
       .from('admin_resources')
-      .select('*')
+      .select('id, org_id, category, name, description, file_path, file_type, file_size_bytes, external_url, is_public, is_active, access_roles, download_count, last_downloaded_at, tags, metadata, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('name', { ascending: true });
 
@@ -74,18 +74,18 @@ export class ResourcesService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async get(id: string): Promise<AdminResource | null> {
     const { data, error } = await supabase
       .from('admin_resources')
-      .select('*')
+      .select('id, org_id, category, name, description, file_path, file_type, file_size_bytes, external_url, is_public, is_active, access_roles, download_count, last_downloaded_at, tags, metadata, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async create(input: ResourceCreateInput, orgId: string, userId: string): Promise<AdminResource> {
@@ -106,14 +106,14 @@ export class ResourcesService {
         metadata: input.metadata || {},
         created_by: userId,
       })
-      .select()
+      .select('id, org_id, category, name, description, file_path, file_type, file_size_bytes, external_url, is_public, is_active, access_roles, download_count, last_downloaded_at, tags, metadata, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'resource.create', 'admin_resource', data.id, null, data);
 
-    return data;
+    return data as any;
   }
 
   async update(id: string, input: ResourceUpdateInput, userId: string): Promise<AdminResource> {
@@ -137,14 +137,14 @@ export class ResourcesService {
       .from('admin_resources')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('id, org_id, category, name, description, file_path, file_type, file_size_bytes, external_url, is_public, is_active, access_roles, download_count, last_downloaded_at, tags, metadata, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
 
     await this.logAudit(userId, 'resource.update', 'admin_resource', id, before, data);
 
-    return data;
+    return data as any;
   }
 
   async delete(id: string, userId: string): Promise<void> {

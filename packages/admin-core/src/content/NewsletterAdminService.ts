@@ -26,7 +26,7 @@ export class NewsletterAdminService {
   }): Promise<NewsletterSubscriber[]> {
     let query = supabase
       .from('newsletter_subscriptions')
-      .select('*')
+      .select('id, email, status, source, created_at, unsubscribed_at')
       .order('created_at', { ascending: false });
 
     if (filters?.status && filters.status !== 'all') {
@@ -39,7 +39,7 @@ export class NewsletterAdminService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as NewsletterSubscriber[];
+    return (data || []) as unknown as NewsletterSubscriber[];
   }
 
   async getStats(): Promise<NewsletterStats> {

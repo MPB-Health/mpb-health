@@ -82,7 +82,7 @@ export function LeadRowActionsMenu({ lead, allKnownTags, onRefresh }: Props) {
     try {
       const { data } = await supabase
         .from('crm_audit_log')
-        .select('*')
+        .select('id, user_id, action, changes, created_at')
         .eq('entity_type', 'lead')
         .eq('entity_id', lead.id)
         .order('created_at', { ascending: false })

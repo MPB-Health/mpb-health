@@ -55,7 +55,7 @@ export class EventsAdminService {
   async getEvents(filters?: EventFilters): Promise<AdminEvent[]> {
     let query = supabase
       .from('events')
-      .select('*')
+      .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .order('event_date', { ascending: false });
 
     if (filters?.is_published !== undefined) {
@@ -72,18 +72,18 @@ export class EventsAdminService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getEvent(eventId: string): Promise<AdminEvent | null> {
     const { data, error } = await supabase
       .from('events')
-      .select('*')
+      .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .eq('id', eventId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createEvent(event: EventCreateInput): Promise<AdminEvent> {
@@ -91,11 +91,11 @@ export class EventsAdminService {
     const { data, error } = await supabase
       .from('events')
       .insert({ ...event, slug })
-      .select()
+      .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async updateEvent(eventId: string, updates: EventUpdateInput): Promise<AdminEvent> {
@@ -103,11 +103,11 @@ export class EventsAdminService {
       .from('events')
       .update(updates)
       .eq('id', eventId)
-      .select()
+      .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async publishEvent(eventId: string): Promise<AdminEvent> {

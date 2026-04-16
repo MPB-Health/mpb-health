@@ -22,7 +22,7 @@ export class CaseService {
       let query = this.supabase
         .from('crm_cases')
         .select(`
-          *,
+        id, org_id, case_number, subject, description, status, priority, origin, category, subcategory, account_id, contact_id, owner_id, assigned_to, resolution, resolved_at, closed_at, first_response_at, escalated_at, escalated_to, due_date, tags, metadata, created_by, created_at, updated_at,
           account:crm_accounts(id, name),
           contact:crm_contacts(id, first_name, last_name, email)
         `, { count: 'exact' });
@@ -70,7 +70,7 @@ export class CaseService {
         return { cases: [], total: 0 };
       }
 
-      return { cases: data as CaseWithRelations[], total: count || 0 };
+      return { cases: data as unknown as CaseWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get cases error:', error);
       return { cases: [], total: 0 };
@@ -82,7 +82,7 @@ export class CaseService {
       const { data, error } = await this.supabase
         .from('crm_cases')
         .select(`
-          *,
+        id, org_id, case_number, subject, description, status, priority, origin, category, subcategory, account_id, contact_id, owner_id, assigned_to, resolution, resolved_at, closed_at, first_response_at, escalated_at, escalated_to, due_date, tags, metadata, created_by, created_at, updated_at,
           account:crm_accounts(id, name),
           contact:crm_contacts(id, first_name, last_name, email),
           owner:profiles!crm_cases_owner_id_fkey(id, full_name, email),
@@ -96,7 +96,7 @@ export class CaseService {
         return null;
       }
 
-      return data as CaseWithRelations;
+      return data as unknown as CaseWithRelations;
     } catch (error) {
       console.error('Get case error:', error);
       return null;
@@ -125,14 +125,14 @@ export class CaseService {
           created_by: user.user.id,
           owner_id: user.user.id,
         })
-        .select()
+        .select('id, org_id, case_number, subject, description, status, priority, origin, category, subcategory, account_id, contact_id, owner_id, assigned_to, resolution, resolved_at, closed_at, first_response_at, escalated_at, escalated_to, due_date, tags, metadata, created_by, created_at, updated_at')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      return { success: true, case: data as Case };
+      return { success: true, case: data as unknown as Case };
     } catch (error) {
       console.error('Create case error:', error);
       return { success: false, error: 'Failed to create case' };
@@ -302,7 +302,7 @@ export class CaseService {
       const { data, error } = await this.supabase
         .from('crm_case_comments')
         .select(`
-          *,
+        id, org_id, case_number, subject, description, status, priority, origin, category, subcategory, account_id, contact_id, owner_id, assigned_to, resolution, resolved_at, closed_at, first_response_at, escalated_at, escalated_to, due_date, tags, metadata, created_by, created_at, updated_at,
           author:profiles(id, full_name, email)
         `)
         .eq('case_id', caseId)
@@ -313,7 +313,7 @@ export class CaseService {
         return [];
       }
 
-      return data as CaseComment[];
+      return data as unknown as CaseComment[];
     } catch (error) {
       console.error('Get case comments error:', error);
       return [];
@@ -339,7 +339,7 @@ export class CaseService {
           author_id: user.user.id,
         })
         .select(`
-          *,
+        id, case_id, body, is_internal, author_id, created_at, updated_at,
           author:profiles(id, full_name, email)
         `)
         .single();
@@ -362,7 +362,7 @@ export class CaseService {
           .eq('id', caseId);
       }
 
-      return { success: true, comment: data as CaseComment };
+      return { success: true, comment: data as unknown as CaseComment };
     } catch (error) {
       console.error('Add comment error:', error);
       return { success: false, error: 'Failed to add comment' };

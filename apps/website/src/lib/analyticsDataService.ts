@@ -469,7 +469,7 @@ export const analyticsDataService = {
   async getRecentSessions(limit: number = 50): Promise<SessionData[]> {
     const { data, error } = await supabase
       .from('analytics_sessions')
-      .select('*')
+      .select('id, session_id, visitor_id, user_id, started_at, ended_at, duration_seconds, page_count, is_bounce, entry_page, exit_page, device_type, country, referrer_source, is_new_visitor')
       .order('started_at', { ascending: false })
       .limit(limit);
 

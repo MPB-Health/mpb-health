@@ -11,7 +11,7 @@ export class InsightsService {
     try {
       const { data, error } = await this.supabase
         .from('ai_lead_insights')
-        .select('*')
+        .select('id, lead_id, ai_score, conversion_probability, score_factors, recommended_action, recommended_channel, urgency, conversation_summary, next_best_actions, created_at, updated_at')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -21,7 +21,7 @@ export class InsightsService {
         console.error('Error fetching insights:', error);
         return null;
       }
-      return data;
+      return data as any;
     } catch (error) {
       console.error('Error fetching insights:', error);
       return null;
@@ -58,7 +58,7 @@ export class InsightsService {
       // The edge function should return the draft in its response
       return {
         success: true,
-        draft: result.data as AIGeneratedDraft,
+        draft: result.data as unknown as AIGeneratedDraft,
       };
     } catch (error) {
       console.error('Error generating draft:', error);

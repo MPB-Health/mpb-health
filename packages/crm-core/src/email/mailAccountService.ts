@@ -112,25 +112,25 @@ export class MailAccountService {
   async getAccounts(orgId: string): Promise<MailAccount[]> {
     const { data, error } = await this.supabase
       .from('mail_accounts')
-      .select('*')
+      .select('id, org_id, user_id, provider, email_address, display_name, sync_status, sync_error, last_sync_at, is_default, is_active, auto_sync, sync_interval_minutes, provider_account_id, avatar_url, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('is_active', true)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getAccount(id: string): Promise<MailAccount | null> {
     const { data, error } = await this.supabase
       .from('mail_accounts')
-      .select('*')
+      .select('id, org_id, user_id, provider, email_address, display_name, sync_status, sync_error, last_sync_at, is_default, is_active, auto_sync, sync_interval_minutes, provider_account_id, avatar_url, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error) return null;
-    return data;
+    return data as any;
   }
 
   async setDefaultAccount(id: string, orgId: string): Promise<void> {
@@ -155,11 +155,11 @@ export class MailAccountService {
       .from('mail_accounts')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select('id, org_id, user_id, provider, email_address, display_name, sync_status, sync_error, last_sync_at, is_default, is_active, auto_sync, sync_interval_minutes, provider_account_id, avatar_url, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // ========================================================================
@@ -243,14 +243,14 @@ export class MailAccountService {
   async getFolders(accountId: string): Promise<MailFolder[]> {
     const { data, error } = await this.supabase
       .from('mail_folders')
-      .select('*')
+      .select('id, account_id, provider_folder_id, name, display_name, parent_folder_id, folder_type, unread_count, total_count, is_hidden, sort_order, label_color')
       .eq('account_id', accountId)
       .eq('is_hidden', false)
       .order('sort_order')
       .order('name');
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async syncFolders(accountId: string): Promise<void> {
@@ -277,12 +277,12 @@ export class MailAccountService {
   async getSharedAccess(accountId: string): Promise<MailSharedAccess[]> {
     const { data, error } = await this.supabase
       .from('mail_shared_access')
-      .select('*')
+      .select('id, account_id, grantee_user_id, permission, granted_by, is_active, created_at')
       .eq('account_id', accountId)
       .eq('is_active', true);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async grantAccess(
@@ -303,11 +303,11 @@ export class MailAccountService {
       }, {
         onConflict: 'account_id,grantee_user_id',
       })
-      .select()
+      .select('id, account_id, grantee_user_id, permission, granted_by, is_active, created_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async revokeAccess(accessId: string): Promise<void> {

@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
 
         const { data: conversations, error: convErr } = await supabaseAdmin
           .from("chat_conversations")
-          .select("*")
+          .select("id, title, type, created_by, last_message_at, last_message_preview, is_archived, created_at, updated_at")
           .in("id", convIds)
           .eq("is_archived", false)
           .order("last_message_at", { ascending: false, nullsFirst: false });
@@ -203,7 +203,7 @@ Deno.serve(async (req: Request) => {
 
         let query = supabaseAdmin
           .from("chat_messages")
-          .select("*")
+          .select("id, conversation_id, sender_id, content, message_type, metadata, created_at, updated_at")
           .eq("conversation_id", conversation_id)
           .order("created_at", { ascending: false })
           .limit(Math.min(limit, 100));

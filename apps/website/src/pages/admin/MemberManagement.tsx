@@ -25,7 +25,7 @@ const MemberManagement: React.FC = () => {
 
     let query = supabase
       .from('member_profiles')
-      .select('*')
+      .select('id, first_name, last_name, date_of_birth, gender, phone, address_line1, address_line2, city, state, zip_code, country, profile_photo_url, membership_number, membership_status, membership_start_date, membership_end_date, plan_id, assigned_advisor_id, preferred_language, communication_preferences, medical_conditions, allergies, medications, emergency_contact_consent, hipaa_consent, consent_date, metadata, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (statusFilter !== 'all') {

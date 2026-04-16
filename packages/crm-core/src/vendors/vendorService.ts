@@ -19,7 +19,7 @@ export class VendorService {
       let query = this.supabase
         .from('crm_vendors')
         .select(`
-          *,
+        id, org_id, name, code, description, email, phone, website, address, vendor_type, payment_terms, tax_id, is_active, rating, primary_contact_id, owner_id, tags, metadata, created_by, created_at, updated_at,
           primary_contact:crm_contacts(id, first_name, last_name, email)
         `, { count: 'exact' });
 
@@ -56,7 +56,7 @@ export class VendorService {
         return { vendors: [], total: 0 };
       }
 
-      return { vendors: data as VendorWithRelations[], total: count || 0 };
+      return { vendors: data as unknown as VendorWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get vendors error:', error);
       return { vendors: [], total: 0 };
@@ -68,7 +68,7 @@ export class VendorService {
       const { data, error } = await this.supabase
         .from('crm_vendors')
         .select(`
-          *,
+        id, org_id, name, code, description, email, phone, website, address, vendor_type, payment_terms, tax_id, is_active, rating, primary_contact_id, owner_id, tags, metadata, created_by, created_at, updated_at,
           primary_contact:crm_contacts(id, first_name, last_name, email)
         `)
         .eq('id', id)
@@ -79,7 +79,7 @@ export class VendorService {
         return null;
       }
 
-      return data as VendorWithRelations;
+      return data as unknown as VendorWithRelations;
     } catch (error) {
       console.error('Get vendor error:', error);
       return null;
@@ -191,7 +191,7 @@ export class VendorService {
     try {
       const { data, error } = await this.supabase
         .from('crm_vendors')
-        .select('*')
+        .select('id, org_id, name, contact_name, email, phone, website, address, category, status, notes, is_active, created_by, created_at, updated_at')
         .eq('is_active', true)
         .order('name', { ascending: true });
 
@@ -200,7 +200,7 @@ export class VendorService {
         return [];
       }
 
-      return data as Vendor[];
+      return data as unknown as Vendor[];
     } catch (error) {
       console.error('Get active vendors error:', error);
       return [];
@@ -211,7 +211,7 @@ export class VendorService {
     try {
       const { data, error } = await this.supabase
         .from('crm_purchase_orders')
-        .select('*')
+        .select('id, org_id, vendor_id, order_number, status, total_amount, notes, ordered_by, ordered_at, received_at, created_at, updated_at')
         .eq('vendor_id', vendorId)
         .order('created_at', { ascending: false });
 
@@ -220,7 +220,7 @@ export class VendorService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as any;
     } catch (error) {
       console.error('Get vendor purchase orders error:', error);
       return [];

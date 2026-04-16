@@ -27,7 +27,7 @@ export class PriorityService {
   async getLanes(orgId: string, includeInactive = false): Promise<PriorityLane[]> {
     let query = supabase
       .from('priority_lanes')
-      .select('*')
+      .select('id, org_id, name, description, color, icon, order_index, is_default, is_active, auto_rules, max_items, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('order_index', { ascending: true });
 
@@ -42,7 +42,7 @@ export class PriorityService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -51,7 +51,7 @@ export class PriorityService {
   async getLane(laneId: string): Promise<PriorityLane | null> {
     const { data, error } = await supabase
       .from('priority_lanes')
-      .select('*')
+      .select('id, org_id, name, description, color, icon, order_index, is_default, is_active, auto_rules, max_items, created_by, created_at, updated_at')
       .eq('id', laneId)
       .single();
 
@@ -60,7 +60,7 @@ export class PriorityService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -80,7 +80,7 @@ export class PriorityService {
         auto_rules: input.auto_rules || [],
         max_items: input.max_items,
       })
-      .select()
+      .select('id, org_id, name, description, color, icon, order_index, is_default, is_active, auto_rules, max_items, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -88,7 +88,7 @@ export class PriorityService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -102,7 +102,7 @@ export class PriorityService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', laneId)
-      .select()
+      .select('id, org_id, name, description, color, icon, order_index, is_default, is_active, auto_rules, max_items, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -110,7 +110,7 @@ export class PriorityService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -170,7 +170,7 @@ export class PriorityService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -206,7 +206,7 @@ export class PriorityService {
       throw error;
     }
 
-    return (data || []) as PriorityItemWithDetails[];
+    return (data || []) as unknown as PriorityItemWithDetails[];
   }
 
   /**
@@ -243,7 +243,7 @@ export class PriorityService {
       throw error;
     }
 
-    return (data || []) as PriorityItemWithDetails[];
+    return (data || []) as unknown as PriorityItemWithDetails[];
   }
 
   /**
@@ -264,7 +264,7 @@ export class PriorityService {
         throw error;
       }
 
-      return data;
+      return data as any;
     }
 
     // Direct insert for contacts or when RPC not available
@@ -424,7 +424,7 @@ export class PriorityService {
   async getScoringRules(orgId: string, activeOnly = true): Promise<ScoringRule[]> {
     let query = supabase
       .from('scoring_rules')
-      .select('*')
+      .select('id, org_id, name, description, trigger_type, conditions, score_delta, lane_assignment, priority_boost, notify_owner, notification_message, is_active, execution_order, times_triggered, last_triggered_at, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('execution_order', { ascending: true });
 
@@ -439,7 +439,7 @@ export class PriorityService {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as any;
   }
 
   /**
@@ -462,7 +462,7 @@ export class PriorityService {
         execution_order: input.execution_order ?? 0,
         is_active: true,
       })
-      .select()
+      .select('id, org_id, name, description, trigger_type, conditions, score_delta, lane_assignment, priority_boost, notify_owner, notification_message, is_active, execution_order, times_triggered, last_triggered_at, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -470,7 +470,7 @@ export class PriorityService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -484,7 +484,7 @@ export class PriorityService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', ruleId)
-      .select()
+      .select('id, org_id, name, description, trigger_type, conditions, score_delta, lane_assignment, priority_boost, notify_owner, notification_message, is_active, execution_order, times_triggered, last_triggered_at, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -492,7 +492,7 @@ export class PriorityService {
       throw error;
     }
 
-    return data;
+    return data as any;
   }
 
   /**
@@ -564,7 +564,7 @@ export class PriorityService {
     // Get snoozed count
     const { count: snoozedCount } = await supabase
       .from('priority_items')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('org_id', orgId)
       .is('completed_at', null)
       .not('snoozed_until', 'is', null)
@@ -576,7 +576,7 @@ export class PriorityService {
 
     const { count: completedToday } = await supabase
       .from('priority_items')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('org_id', orgId)
       .gte('completed_at', todayStart.toISOString());
 

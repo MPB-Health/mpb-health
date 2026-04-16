@@ -25,7 +25,7 @@ export class QuoteService {
       let query = this.supabase
         .from('crm_quotes')
         .select(`
-          *,
+        id, org_id, quote_number, name, description, deal_id, account_id, contact_id, status, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, currency, valid_until, sent_at, accepted_at, rejected_at, rejection_reason, terms_and_conditions, notes, billing_address, shipping_address, price_book_id, template_id, owner_id, created_by, created_at, updated_at,
           deal:crm_deals!crm_quotes_deal_id_fkey(id, name),
           account:crm_accounts!crm_quotes_account_id_fkey(id, name),
           contact:crm_contacts!crm_quotes_contact_id_fkey(id, first_name, last_name, email)
@@ -80,7 +80,7 @@ export class QuoteService {
         return { quotes: [], total: 0 };
       }
 
-      return { quotes: data as QuoteWithRelations[], total: count || 0 };
+      return { quotes: data as unknown as QuoteWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get quotes error:', error);
       return { quotes: [], total: 0 };
@@ -95,7 +95,7 @@ export class QuoteService {
       const { data, error } = await this.supabase
         .from('crm_quotes')
         .select(`
-          *,
+        id, org_id, quote_number, name, description, deal_id, account_id, contact_id, status, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, currency, valid_until, sent_at, accepted_at, rejected_at, rejection_reason, terms_and_conditions, notes, billing_address, shipping_address, price_book_id, template_id, owner_id, created_by, created_at, updated_at,
           deal:crm_deals!crm_quotes_deal_id_fkey(id, name),
           account:crm_accounts!crm_quotes_account_id_fkey(id, name),
           contact:crm_contacts!crm_quotes_contact_id_fkey(id, first_name, last_name, email),
@@ -127,10 +127,10 @@ export class QuoteService {
 
       // Sort line items by sort_order
       if (data.line_items) {
-        data.line_items.sort((a: QuoteLineItem, b: QuoteLineItem) => a.sort_order - b.sort_order);
+        (data.line_items as any[]).sort((a: any, b: any) => a.sort_order - b.sort_order);
       }
 
-      return data as QuoteWithRelations;
+      return data as unknown as QuoteWithRelations;
     } catch (error) {
       console.error('Get quote error:', error);
       return null;
@@ -145,7 +145,7 @@ export class QuoteService {
       const { data, error } = await this.supabase
         .from('crm_quote_line_items')
         .select(`
-          *,
+        id, quote_id, product_id, name, description, quantity, unit_price, discount_percent, discount_amount, tax_rate, subtotal, total, sort_order, created_at, updated_at,
           product:crm_products(id, name, code)
         `)
         .eq('quote_id', quoteId)
@@ -156,7 +156,7 @@ export class QuoteService {
         return [];
       }
 
-      return data as QuoteLineItem[];
+      return data as unknown as QuoteLineItem[];
     } catch (error) {
       console.error('Get quote line items error:', error);
       return [];
@@ -417,7 +417,7 @@ export class QuoteService {
   }
 
   /**
-   * Mark quote as accepted
+   * Mark quote as unknown as accepted
    */
   async markAccepted(id: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -436,12 +436,12 @@ export class QuoteService {
       return { success: true };
     } catch (error) {
       console.error('Mark quote accepted error:', error);
-      return { success: false, error: 'Failed to mark quote as accepted' };
+      return { success: false, error: 'Failed to mark quote as unknown as accepted' };
     }
   }
 
   /**
-   * Mark quote as rejected
+   * Mark quote as unknown as rejected
    */
   async markRejected(id: string, reason?: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -461,7 +461,7 @@ export class QuoteService {
       return { success: true };
     } catch (error) {
       console.error('Mark quote rejected error:', error);
-      return { success: false, error: 'Failed to mark quote as rejected' };
+      return { success: false, error: 'Failed to mark quote as unknown as rejected' };
     }
   }
 

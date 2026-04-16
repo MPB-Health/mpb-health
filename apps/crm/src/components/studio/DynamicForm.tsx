@@ -44,7 +44,7 @@ export function DynamicForm({
       }
     }
 
-    return data;
+    return data as any;
   }, [fields, record]);
 
   const [formData, setFormData] = useState<Record<string, unknown>>(initialData);

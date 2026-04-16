@@ -88,7 +88,7 @@ export interface LessonWithProgress extends ExternalLMSLesson {
 export async function getCourses(): Promise<ExternalLMSCourse[]> {
   const { data, error } = await supabase
     .from('external_lms_courses')
-    .select('*')
+    .select('id, lms_provider, external_id, title, description, category, thumbnail_url, course_url, is_required, order_index, estimated_hours, is_active, created_at, updated_at')
     .eq('is_active', true)
     .order('order_index', { ascending: true });
 
@@ -99,7 +99,7 @@ export async function getCourses(): Promise<ExternalLMSCourse[]> {
 export async function getCourseById(courseId: string): Promise<ExternalLMSCourse | null> {
   const { data, error } = await supabase
     .from('external_lms_courses')
-    .select('*')
+    .select('id, lms_provider, external_id, title, description, category, thumbnail_url, course_url, is_required, order_index, estimated_hours, is_active, created_at, updated_at')
     .eq('id', courseId)
     .single();
 
@@ -113,7 +113,7 @@ export async function getCourseById(courseId: string): Promise<ExternalLMSCourse
 export async function getCourseLessons(courseId: string): Promise<ExternalLMSLesson[]> {
   const { data, error } = await supabase
     .from('external_lms_lessons')
-    .select('*')
+    .select('id, course_id, external_id, title, description, lesson_url, order_index, duration_minutes, has_video, has_quiz, is_required, created_at, updated_at')
     .eq('course_id', courseId)
     .order('order_index', { ascending: true });
 
@@ -128,7 +128,7 @@ export async function getCourseLessons(courseId: string): Promise<ExternalLMSLes
 export async function getAdvisorEnrollments(advisorId: string): Promise<AdvisorLMSEnrollment[]> {
   const { data, error } = await supabase
     .from('advisor_lms_enrollments')
-    .select('*')
+    .select('id, advisor_id, course_id, status, enrolled_at, started_at, completed_at, progress_percent, lessons_completed, total_lessons, certificate_earned, certificate_url, created_at, updated_at')
     .eq('advisor_id', advisorId)
     .order('enrolled_at', { ascending: false });
 
@@ -142,7 +142,7 @@ export async function getEnrollmentForCourse(
 ): Promise<AdvisorLMSEnrollment | null> {
   const { data, error } = await supabase
     .from('advisor_lms_enrollments')
-    .select('*')
+    .select('id, advisor_id, course_id, status, enrolled_at, started_at, completed_at, progress_percent, lessons_completed, total_lessons, certificate_earned, certificate_url, created_at, updated_at')
     .eq('advisor_id', advisorId)
     .eq('course_id', courseId)
     .single();
@@ -177,7 +177,7 @@ export async function getLessonCompletions(
 ): Promise<AdvisorLessonCompletion[]> {
   const { data, error } = await supabase
     .from('advisor_lesson_completions')
-    .select('*')
+    .select('id, advisor_id, enrollment_id, lesson_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_passed, created_at, updated_at')
     .eq('advisor_id', advisorId)
     .eq('enrollment_id', enrollmentId);
 
@@ -242,7 +242,7 @@ export async function completeLesson(
 ): Promise<AdvisorLessonCompletion> {
   const { data: existing } = await supabase
     .from('advisor_lesson_completions')
-    .select('*')
+    .select('id, advisor_id, enrollment_id, lesson_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_passed, created_at, updated_at')
     .eq('advisor_id', advisorId)
     .eq('lesson_id', lessonId)
     .single();

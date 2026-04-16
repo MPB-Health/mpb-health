@@ -17,7 +17,7 @@ export class FormsService {
     if (!isSupabaseConfigured) return [];
     let query = supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
@@ -34,7 +34,7 @@ export class FormsService {
   async getForm(formId: string): Promise<AdvisorForm | null> {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .eq('id', formId)
       .single();
 
@@ -46,7 +46,7 @@ export class FormsService {
   async getFormBySlug(slug: string): Promise<AdvisorForm | null> {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .eq('slug', slug)
       .single();
 
@@ -85,7 +85,7 @@ export class FormsService {
   async getMenuForms(): Promise<AdvisorForm[]> {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .eq('is_active', true)
       .eq('show_in_menu', true)
       .order('menu_order', { ascending: true });
@@ -101,7 +101,7 @@ export class FormsService {
   ): Promise<FormSubmission[]> {
     let query = supabase
       .from('form_submissions')
-      .select('*')
+      .select('id, form_id, advisor_id, cognito_entry_id, data, status, submitted_at, processed_at')
       .eq('advisor_id', advisorId)
       .order('submitted_at', { ascending: false });
 
@@ -111,19 +111,19 @@ export class FormsService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   // Get a single submission
   async getSubmission(submissionId: string): Promise<FormSubmission | null> {
     const { data, error } = await supabase
       .from('form_submissions')
-      .select('*')
+      .select('id, form_id, advisor_id, cognito_entry_id, data, status, submitted_at, processed_at')
       .eq('id', submissionId)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   // Record a form submission (called by Cognito webhook)
@@ -143,7 +143,7 @@ export class FormsService {
         status: 'submitted',
         submitted_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, form_id, advisor_id, cognito_entry_id, data, status, submitted_at, processed_at')
       .single();
 
     if (error) throw error;
@@ -168,18 +168,18 @@ export class FormsService {
       .from('form_submissions')
       .update(updates)
       .eq('id', submissionId)
-      .select()
+      .select('id, form_id, advisor_id, cognito_entry_id, data, status, submitted_at, processed_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   // Get pending submissions count
   async getPendingSubmissionsCount(advisorId: string): Promise<number> {
     const { count, error } = await supabase
       .from('form_submissions')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('advisor_id', advisorId)
       .in('status', ['submitted', 'processing']);
 
@@ -191,7 +191,7 @@ export class FormsService {
   async getRequiredForms(): Promise<AdvisorForm[]> {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('*')
+      .select('id, slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order, show_in_menu, menu_section, menu_order, created_at, updated_at')
       .eq('is_active', true)
       .eq('menu_section', 'onboarding')
       .order('sort_order', { ascending: true });

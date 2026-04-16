@@ -39,7 +39,7 @@ export class SOPAdminService {
   async getDocuments(filters?: { category?: string; search?: string; is_published?: boolean }): Promise<AdminSOPDocument[]> {
     let query = supabase
       .from('sop_documents')
-      .select('*')
+      .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .order('title', { ascending: true });
 
     if (filters?.category) query = query.eq('category', filters.category);
@@ -50,29 +50,29 @@ export class SOPAdminService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getDocument(id: string): Promise<AdminSOPDocument | null> {
     const { data, error } = await supabase
       .from('sop_documents')
-      .select('*')
+      .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .eq('id', id)
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   }
 
   async createDocument(input: SOPCreateInput): Promise<AdminSOPDocument> {
     const { data, error } = await supabase
       .from('sop_documents')
       .insert({ ...input, view_count: 0 })
-      .select()
+      .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async updateDocument(id: string, input: SOPUpdateInput): Promise<AdminSOPDocument> {
@@ -80,11 +80,11 @@ export class SOPAdminService {
       .from('sop_documents')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
+      .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as any;
   }
 
   async deleteDocument(id: string): Promise<void> {
@@ -105,11 +105,11 @@ export class SOPAdminService {
   async getCategories(): Promise<SOPCategory[]> {
     const { data, error } = await supabase
       .from('sop_categories')
-      .select('*')
+      .select('id, name, slug, description, order_index')
       .order('order_index', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as any;
   }
 
   async getStats(): Promise<SOPAdminStats> {

@@ -22,7 +22,7 @@ export class PurchaseOrderService {
       let query = this.supabase
         .from('crm_purchase_orders')
         .select(`
-          *,
+        id, org_id, po_number, name, description, vendor_id, status, approval_status, approved_by, approved_at, rejection_reason, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, currency, order_date, expected_date, received_date, ship_to_address, shipping_method, tracking_number, payment_terms, terms_and_conditions, notes, owner_id, sent_at, created_by, created_at, updated_at,
           vendor:crm_vendors(id, name, email)
         `, { count: 'exact' });
 
@@ -74,7 +74,7 @@ export class PurchaseOrderService {
         return { purchaseOrders: [], total: 0 };
       }
 
-      return { purchaseOrders: data as PurchaseOrderWithRelations[], total: count || 0 };
+      return { purchaseOrders: data as unknown as PurchaseOrderWithRelations[], total: count || 0 };
     } catch (error) {
       console.error('Get purchase orders error:', error);
       return { purchaseOrders: [], total: 0 };
@@ -86,7 +86,7 @@ export class PurchaseOrderService {
       const { data, error } = await this.supabase
         .from('crm_purchase_orders')
         .select(`
-          *,
+        id, org_id, po_number, name, description, vendor_id, status, approval_status, approved_by, approved_at, rejection_reason, subtotal, discount_percent, discount_amount, tax_amount, shipping_amount, total, currency, order_date, expected_date, received_date, ship_to_address, shipping_method, tracking_number, payment_terms, terms_and_conditions, notes, owner_id, sent_at, created_by, created_at, updated_at,
           vendor:crm_vendors(id, name, email),
           line_items:crm_purchase_order_line_items(
             *,
@@ -102,10 +102,10 @@ export class PurchaseOrderService {
       }
 
       if (data.line_items) {
-        data.line_items.sort((a: POLineItem, b: POLineItem) => a.sort_order - b.sort_order);
+        (data.line_items as any[]).sort((a: any, b: any) => a.sort_order - b.sort_order);
       }
 
-      return data as PurchaseOrderWithRelations;
+      return data as unknown as PurchaseOrderWithRelations;
     } catch (error) {
       console.error('Get purchase order error:', error);
       return null;

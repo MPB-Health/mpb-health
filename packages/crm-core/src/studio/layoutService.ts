@@ -16,7 +16,7 @@ export class LayoutService {
     try {
       const { data, error } = await this.supabase
         .from('crm_studio_layouts')
-        .select('*')
+        .select('id, org_id, module_id, name, api_name, layout_type, sections, is_default, is_active, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .order('layout_type', { ascending: true })
         .order('name', { ascending: true });
@@ -26,7 +26,7 @@ export class LayoutService {
         return [];
       }
 
-      return data as StudioLayout[];
+      return data as unknown as StudioLayout[];
     } catch (error) {
       console.error('Get layouts error:', error);
       return [];
@@ -40,7 +40,7 @@ export class LayoutService {
     try {
       const { data, error } = await this.supabase
         .from('crm_studio_layouts')
-        .select('*')
+        .select('id, org_id, module_id, name, api_name, layout_type, sections, is_default, is_active, created_by, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -49,7 +49,7 @@ export class LayoutService {
         return null;
       }
 
-      return data as StudioLayout;
+      return data as unknown as StudioLayout;
     } catch (error) {
       console.error('Get layout error:', error);
       return null;
@@ -66,7 +66,7 @@ export class LayoutService {
     try {
       const { data, error } = await this.supabase
         .from('crm_studio_layouts')
-        .select('*')
+        .select('id, org_id, module_id, name, api_name, layout_type, sections, is_default, is_active, created_by, created_at, updated_at')
         .eq('module_id', moduleId)
         .eq('layout_type', layoutType)
         .eq('is_default', true)
@@ -78,20 +78,20 @@ export class LayoutService {
         if (error.code === 'PGRST116') {
           const { data: fallback } = await this.supabase
             .from('crm_studio_layouts')
-            .select('*')
+            .select('id, org_id, module_id, name, api_name, layout_type, sections, is_default, is_active, created_by, created_at, updated_at')
             .eq('module_id', moduleId)
             .eq('layout_type', layoutType)
             .eq('is_active', true)
             .limit(1)
             .single();
 
-          return fallback as StudioLayout | null;
+          return fallback as unknown as StudioLayout | null;
         }
         console.error('Failed to get default layout:', error);
         return null;
       }
 
-      return data as StudioLayout;
+      return data as unknown as StudioLayout;
     } catch (error) {
       console.error('Get default layout error:', error);
       return null;
@@ -176,7 +176,7 @@ export class LayoutService {
     updates: LayoutUpdateInput
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // If setting as default, unset other defaults first
+      // If setting as unknown as default, unset other defaults first
       if (updates.is_default) {
         const layout = await this.getLayout(id);
         if (layout) {

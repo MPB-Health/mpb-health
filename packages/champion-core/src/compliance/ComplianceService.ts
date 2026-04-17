@@ -28,7 +28,7 @@ export class ComplianceService {
   ): Promise<ComplianceDocument[]> {
     let query = supabase
       .from('compliance_documents')
-      .select('id, org_id, title, description, document_type, content, file_url, version, is_required, is_active, due_date, created_at, updated_at')
+      .select('id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed, created_by, created_at, updated_at')
       .eq('org_id', orgId)
       .order('category')
       .order('title');
@@ -57,7 +57,7 @@ export class ComplianceService {
   async getDocument(documentId: string): Promise<ComplianceDocument | null> {
     const { data, error } = await supabase
       .from('compliance_documents')
-      .select('id, org_id, title, description, document_type, content, file_url, version, is_required, is_active, due_date, created_at, updated_at')
+      .select('id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed, created_by, created_at, updated_at')
       .eq('id', documentId)
       .single();
 
@@ -79,13 +79,18 @@ export class ComplianceService {
         org_id: orgId,
         title: input.title,
         description: input.description,
+        category: input.category || 'general',
         document_type: input.document_type || 'acknowledgment',
-        content: input.content_html || null,
-        file_url: input.content_url || null,
+        content_url: input.content_url,
+        content_html: input.content_html,
         is_required: input.is_required ?? true,
-        due_date: input.due_within_days ? new Date(Date.now() + input.due_within_days * 86400000).toISOString() : null,
+        required_for_roles: input.required_for_roles || ['advisor'],
+        due_within_days: input.due_within_days,
+        renewal_period_days: input.renewal_period_days,
+        quiz_questions: input.quiz_questions || [],
+        passing_score: input.passing_score || 80,
       })
-      .select('id, org_id, title, description, document_type, content, file_url, version, is_required, is_active, due_date, created_at, updated_at')
+      .select('id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -110,7 +115,7 @@ export class ComplianceService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', documentId)
-      .select('id, org_id, title, description, document_type, content, file_url, version, is_required, is_active, due_date, created_at, updated_at')
+      .select('id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -150,7 +155,7 @@ export class ComplianceService {
     let query = supabase
       .from('compliance_acknowledgments')
       .select(options.includeDocument !== false
-        ? 'id, user_id, document_id, status, acknowledged_at, due_date, ip_address, user_agent, created_at, updated_at, document:compliance_documents(id, org_id, title, description, document_type, content, file_url, version, is_required, is_active, due_date, created_at, updated_at)'
+        ? 'id, org_id, document_id, user_id, status, completed_at, ip_address, user_agent, signature_data, signed_name, quiz_score, quiz_answers, quiz_attempts, due_date, expires_at, created_at, updated_at, document:compliance_documents(id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed)'
         : 'id, user_id, document_id, status, acknowledged_at, due_date, ip_address, user_agent, created_at, updated_at')
       .eq('user_id', userId)
       .order('due_date', { ascending: true, nullsFirst: false });
@@ -182,7 +187,7 @@ export class ComplianceService {
   async getAcknowledgment(acknowledgmentId: string): Promise<ComplianceAcknowledgmentWithDocument | null> {
     const { data, error } = await supabase
       .from('compliance_acknowledgments')
-      .select('id, user_id, document_id, status, acknowledged_at, due_date, ip_address, user_agent, created_at, updated_at, document:compliance_documents(id, org_id, title, description, document_type, content, file_url, version, is_required, is_active, due_date, created_at, updated_at)')
+      .select('id, org_id, document_id, user_id, status, completed_at, ip_address, user_agent, signature_data, signed_name, quiz_score, quiz_answers, quiz_attempts, due_date, expires_at, created_at, updated_at, document:compliance_documents(id, org_id, title, description, category, document_type, content_url, content_html, version, is_required, required_for_roles, due_within_days, renewal_period_days, quiz_questions, passing_score, is_active, effective_date, expiration_date, total_required, total_completed)')
       .eq('id', acknowledgmentId)
       .single();
 
@@ -449,7 +454,7 @@ export class ComplianceService {
   async getDocumentCategories(orgId: string): Promise<string[]> {
     const { data, error } = await supabase
       .from('compliance_documents')
-      .select('document_type')
+      .select('category')
       .eq('org_id', orgId)
       .eq('is_active', true);
 

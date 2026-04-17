@@ -65,7 +65,7 @@ export const ContentManagementPanel: React.FC = () => {
     try {
       const { data: articlesData, error } = await supabase
         .from('blog_articles')
-        .select('id, title, slug, excerpt, featured_image_url, category, author, is_published, published_date, created_at')
+        .select('id, title, slug, excerpt, featured_image_url, category, author, is_published, published_date, created_at, view_count')
         .order('created_at', { ascending: false });
 
       if (error?.message?.includes('schema cache') || 

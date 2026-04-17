@@ -30,7 +30,7 @@ export const BlogArticle: React.FC = () => {
       try {
         const { data, error: fetchError } = await supabase
           .from('blog_articles')
-          .select('id, title, slug, excerpt, content, featured_image_url, category, author, published_date, is_published')
+          .select('id, title, slug, excerpt, content, featured_image_url, category, author, author_id, tags, published_date, read_time, is_published, view_count')
           .eq('slug', slug)
           .eq('is_published', true)
           .neq('category', 'Event')
@@ -73,7 +73,7 @@ export const BlogArticle: React.FC = () => {
           if (data.tags && data.tags.length > 0) {
             const { data: tagRelated } = await supabase
               .from('blog_articles')
-              .select('id, title, slug, excerpt, featured_image_url, category, published_date')
+              .select('id, title, slug, excerpt, featured_image_url, category, published_date, read_time, tags')
               .eq('is_published', true)
               .neq('category', 'Event')
               .neq('id', data.id)
@@ -91,7 +91,7 @@ export const BlogArticle: React.FC = () => {
             const existingIds = related.map(r => r.id);
             const { data: categoryRelated } = await supabase
               .from('blog_articles')
-              .select('id, title, slug, excerpt, featured_image_url, category, published_date')
+              .select('id, title, slug, excerpt, featured_image_url, category, published_date, read_time, tags')
               .eq('is_published', true)
               .eq('category', data.category)
               .neq('category', 'Event')

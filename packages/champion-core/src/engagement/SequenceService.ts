@@ -25,9 +25,11 @@ export class SequenceService {
     orgId: string,
     options: { status?: SequenceStatus; includeSteps?: boolean } = {}
   ): Promise<Sequence[] | SequenceWithSteps[]> {
+    const cols = 'id, org_id, name, description, trigger_type, trigger_conditions, send_window_start, send_window_end, send_days, timezone, exit_on_reply, exit_on_meeting_scheduled, exit_on_unsubscribe, total_enrolled, total_completed, total_replied, status, created_by, created_at, updated_at';
+    const stepsCols = 'id, sequence_id, step_number, delay_days, delay_hours, delay_minutes, action_type, channel, template_id, subject, body_text, body_html, action_config, condition_type, times_executed, times_skipped, is_active, created_at, updated_at';
     let query = supabase
       .from('sequences')
-      .select('id, org_id, name, description, trigger_type, status, steps, enrollment_count, completion_rate, created_by, created_at, updated_at')
+      .select(options.includeSteps ? `${cols}, steps:sequence_steps(${stepsCols})` : cols)
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
@@ -51,7 +53,7 @@ export class SequenceService {
   async getSequence(sequenceId: string): Promise<SequenceWithSteps | null> {
     const { data, error } = await supabase
       .from('sequences')
-      .select('id, org_id, name, description, trigger_type, status, steps, enrollment_count, completion_rate, created_by, created_at, updated_at')
+      .select('id, org_id, name, description, trigger_type, trigger_conditions, send_window_start, send_window_end, send_days, timezone, exit_on_reply, exit_on_meeting_scheduled, exit_on_unsubscribe, total_enrolled, total_completed, total_replied, status, created_by, created_at, updated_at, steps:sequence_steps(id, sequence_id, step_number, delay_days, delay_hours, delay_minutes, action_type, channel, template_id, subject, body_text, body_html, action_config, condition_type, times_executed, times_skipped, is_active, created_at, updated_at)')
       .eq('id', sequenceId)
       .single();
 
@@ -79,12 +81,19 @@ export class SequenceService {
       .insert({
         org_id: orgId,
         name: input.name,
-        description: input.description || null,
+        description: input.description,
         trigger_type: input.trigger_type || 'manual',
+        trigger_conditions: input.trigger_conditions || {},
+        send_window_start: input.send_window_start || '09:00',
+        send_window_end: input.send_window_end || '17:00',
+        send_days: input.send_days || ['mon', 'tue', 'wed', 'thu', 'fri'],
+        timezone: input.timezone || 'America/New_York',
+        exit_on_reply: input.exit_on_reply ?? true,
+        exit_on_meeting_scheduled: input.exit_on_meeting_scheduled ?? true,
+        exit_on_unsubscribe: input.exit_on_unsubscribe ?? true,
         status: 'draft',
-        steps: [],
       })
-      .select('id, org_id, name, description, trigger_type, status, steps, enrollment_count, completion_rate, created_by, created_at, updated_at')
+      .select('id, org_id, name, description, trigger_type, trigger_conditions, send_window_start, send_window_end, send_days, timezone, exit_on_reply, exit_on_meeting_scheduled, exit_on_unsubscribe, total_enrolled, total_completed, total_replied, status, created_by, created_at, updated_at')
       .single();
 
     if (error) {
@@ -109,7 +118,7 @@ export class SequenceService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', sequenceId)
-      .select('id, org_id, name, description, trigger_type, status, steps, enrollment_count, completion_rate, created_by, created_at, updated_at')
+      .select('id, org_id, name, description, trigger_type, trigger_conditions, send_window_start, send_window_end, send_days, timezone, exit_on_reply, exit_on_meeting_scheduled, exit_on_unsubscribe, total_enrolled, total_completed, total_replied, status, created_by, created_at, updated_at')
       .single();
 
     if (error) {

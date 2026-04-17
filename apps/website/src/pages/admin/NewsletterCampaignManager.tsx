@@ -49,7 +49,7 @@ const NewsletterCampaignManager: React.FC = () => {
   const loadBlogPosts = async () => {
     const { data } = await supabase
       .from('blog_articles')
-      .select('id, title, slug, excerpt, content, featured_image_url, category, author, published_date, is_published, created_at, updated_at')
+      .select('id, title, slug, excerpt, content, featured_image_url, category, author, author_id, tags, published_date, read_time, is_published, created_at, updated_at, view_count')
       .eq('is_published', true)
       .order('published_date', { ascending: false })
       .limit(50);

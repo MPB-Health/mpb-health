@@ -119,7 +119,7 @@ export default function TrainingManager() {
           .order('order_index', { ascending: true }),
         supabase
           .from('training_modules')
-          .select('id, title, description, category, type, duration_minutes, thumbnail_url, content_url, order_index, is_published, created_at, updated_at')
+          .select('id, title, description, category, content_type, duration_minutes, thumbnail_url, content_url, order_index, is_active, created_at, updated_at')
           .order('order_index', { ascending: true }),
         supabase
           .from('advisor_categories')

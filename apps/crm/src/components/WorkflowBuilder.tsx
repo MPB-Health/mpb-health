@@ -1008,7 +1008,7 @@ export function WorkflowBuilder({ ruleId, onSave, onCancel }: WorkflowBuilderPro
       try {
         const { data, error } = await supabase
           .from('ai_automation_rules')
-          .select('id, name, description, is_active, workflow_steps')
+          .select('id, name, description, is_active, workflow_steps, trigger_type, trigger_conditions, action_type, action_config')
           .eq('id', ruleId)
           .eq('org_id', activeOrgId)
           .single();

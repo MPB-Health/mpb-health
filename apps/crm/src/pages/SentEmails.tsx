@@ -70,7 +70,7 @@ export default function SentEmails() {
       const { data, error, count } = await query;
       if (error) throw error;
 
-      setEmails(data || []);
+      setEmails((data || []) as unknown as EmailLogEntry[]);
       setTotal(count || 0);
     } catch (err) {
       console.error('Failed to load emails:', err);

@@ -343,7 +343,7 @@ export class PlanInterestService {
     }
 
     return {
-      data: data || [],
+      data: (data || []) as unknown as LeadPlanInterestWithPlan[],
       total: count || 0,
     };
   }

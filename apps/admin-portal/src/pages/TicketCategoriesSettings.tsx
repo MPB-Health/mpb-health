@@ -47,7 +47,7 @@ export default function TicketCategoriesSettings() {
         .order('display_order', { ascending: true })
         .order('name', { ascending: true });
       if (err) throw err;
-      setCategories(data || []);
+      setCategories((data || []) as unknown as TicketCategory[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load categories');
     } finally {

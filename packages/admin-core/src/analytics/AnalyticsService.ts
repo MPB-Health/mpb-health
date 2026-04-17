@@ -277,19 +277,19 @@ export class AnalyticsService {
 
     if (error) return '';
 
-    // Convert to CSV
-    if (!data || data.length === 0) return '';
+    const rows_data = (data as unknown as Record<string, unknown>[]) || [];
+    if (rows_data.length === 0) return '';
 
     // TODO: HIPAA compliance — replace with logPhiExport() from @mpbhealth/auth
     // once @mpbhealth/auth is added as a dependency of admin-core.
     // PHI export events MUST be logged per HIPAA §164.312(b) audit controls.
     const { data: { session } } = await supabase.auth.getSession();
     console.warn(
-      `[PHI-EXPORT] type=${type} table=${table} records=${data.length} range=${fromDate}..${toDate} user=${session?.user?.id ?? 'unknown'}`
+      `[PHI-EXPORT] type=${type} table=${table} records=${rows_data.length} range=${fromDate}..${toDate} user=${session?.user?.id ?? 'unknown'}`
     );
 
-    const headers = Object.keys(data[0]);
-    const rows = data.map((row) =>
+    const headers = Object.keys(rows_data[0]);
+    const rows = rows_data.map((row) =>
       headers.map((h) => JSON.stringify(row[h] ?? '')).join(',')
     );
 

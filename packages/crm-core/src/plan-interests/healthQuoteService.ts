@@ -338,7 +338,7 @@ export class HealthQuoteService {
     }
 
     return {
-      data: data || [],
+      data: (data || []) as unknown as LeadHealthQuoteWithLead[],
       total: count || 0,
     };
   }

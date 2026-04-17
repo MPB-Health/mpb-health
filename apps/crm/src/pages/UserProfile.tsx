@@ -230,10 +230,10 @@ export default function UserProfile() {
 
       const merged: ProfileData = {
         ...EMPTY_PROFILE,
-        id: targetUserId,
-        created_at: '',
-        updated_at: '',
         ...data,
+        id: targetUserId,
+        created_at: data?.created_at || '',
+        updated_at: data?.updated_at || '',
         email: data?.email || user?.email || '',
       };
       setProfile(merged);

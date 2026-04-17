@@ -126,7 +126,7 @@ export default function ConnectedInbox() {
       setLoading(true);
       const accts = await loadAccounts();
       if (accts && accts.length > 0) {
-        const ids = accts.map(a => a.id);
+        const ids = accts.map((a: { id: string }) => a.id);
         await Promise.all([loadFolders(ids), loadStats(ids)]);
       }
       setLoading(false);

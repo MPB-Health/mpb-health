@@ -64,7 +64,7 @@ export class ProfileService {
     try {
       const { data, error } = await this.supabase
         .from('profiles')
-        .select('id, email, full_name, avatar_url, phone, role, org_id, is_active, created_at, updated_at')
+        .select('id, email, full_name, avatar_url, phone, role, created_at, updated_at')
         .eq('id', userId)
         .single();
 

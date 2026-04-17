@@ -129,7 +129,7 @@ export async function createBlogPost(
     const { data, error } = await supabase
       .from('blog_articles')
       .insert(insertData)
-      .select('id, title, slug, excerpt, content, featured_image_url, category, author, is_published, scheduled_publish_at, read_time, published_date, created_at, updated_at')
+      .select('id, title, slug, excerpt, content, featured_image_url, category, author, is_published, published_date, created_at, updated_at')
       .single();
 
     if (error) throw error;
@@ -404,7 +404,7 @@ export async function getScheduledPosts(): Promise<any[]> {
   try {
     const { data, error } = await supabase
       .from('blog_articles')
-      .select('id, title, slug, excerpt, content, featured_image_url, category, author, is_published, scheduled_publish_at, read_time, published_date, created_at, updated_at')
+      .select('id, title, slug, excerpt, content, featured_image_url, category, author, is_published, published_date, created_at, updated_at')
       .eq('is_published', false)
       .not('scheduled_publish_at', 'is', null)
       .order('scheduled_publish_at', { ascending: true });

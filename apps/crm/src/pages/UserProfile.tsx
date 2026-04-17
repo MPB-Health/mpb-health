@@ -41,12 +41,12 @@ interface ProfileData {
   avatar_url: string;
   phone: string;
   mobile_phone: string;
-  linkedin_url: string;
-  twitter_url: string;
-  facebook_url: string;
-  instagram_url: string;
-  github_url: string;
-  website_url: string;
+  social_linkedin: string;
+  social_twitter: string;
+  social_facebook: string;
+  social_instagram: string;
+  social_github: string;
+  social_website: string;
   address_line1: string;
   address_line2: string;
   city: string;
@@ -70,12 +70,12 @@ const EMPTY_PROFILE: Omit<ProfileData, 'id' | 'created_at' | 'updated_at'> = {
   avatar_url: '',
   phone: '',
   mobile_phone: '',
-  linkedin_url: '',
-  twitter_url: '',
-  facebook_url: '',
-  instagram_url: '',
-  github_url: '',
-  website_url: '',
+  social_linkedin: '',
+  social_twitter: '',
+  social_facebook: '',
+  social_instagram: '',
+  social_github: '',
+  social_website: '',
   address_line1: '',
   address_line2: '',
   city: '',
@@ -222,7 +222,7 @@ export default function UserProfile() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, display_name, email, bio, job_title, department, avatar_url, phone, mobile_phone, linkedin_url, twitter_url, facebook_url, instagram_url, github_url, website_url, address_line1, address_line2, city, state, postal_code, country, timezone, locale, created_at, updated_at')
+        .select('id, first_name, last_name, display_name, email, bio, job_title, department, avatar_url, phone, mobile_phone, social_linkedin, social_twitter, social_facebook, social_instagram, social_github, social_website, address_line1, address_line2, city, state, postal_code, country, timezone, locale, created_at, updated_at')
         .eq('id', targetUserId)
         .single();
 
@@ -263,17 +263,17 @@ export default function UserProfile() {
     if (!profile || !targetUserId) return;
 
     const urlFields = [
-      'linkedin_url',
-      'twitter_url',
-      'facebook_url',
-      'instagram_url',
-      'github_url',
-      'website_url',
+      'social_linkedin',
+      'social_twitter',
+      'social_facebook',
+      'social_instagram',
+      'social_github',
+      'social_website',
     ] as const;
 
     for (const field of urlFields) {
       if (profile[field] && !isValidUrl(profile[field])) {
-        toast.error(`Invalid URL in ${field.replace(/_url$/, '').replace(/_/g, ' ')}`);
+        toast.error(`Invalid URL in ${field.replace(/^social_/, '').replace(/_/g, ' ')}`);
         return;
       }
     }
@@ -528,57 +528,57 @@ export default function UserProfile() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field
                 label="LinkedIn"
-                value={profile.linkedin_url}
-                onChange={(v) => updateField('linkedin_url', v)}
+                value={profile.social_linkedin}
+                onChange={(v) => updateField('social_linkedin', v)}
                 disabled={!canEdit}
                 icon={<Linkedin className="h-4 w-4" />}
                 placeholder="https://linkedin.com/in/..."
-                error={profile.linkedin_url && !isValidUrl(profile.linkedin_url) ? 'Invalid URL' : undefined}
+                error={profile.social_linkedin && !isValidUrl(profile.social_linkedin) ? 'Invalid URL' : undefined}
               />
               <Field
                 label="Twitter / X"
-                value={profile.twitter_url}
-                onChange={(v) => updateField('twitter_url', v)}
+                value={profile.social_twitter}
+                onChange={(v) => updateField('social_twitter', v)}
                 disabled={!canEdit}
                 icon={<Twitter className="h-4 w-4" />}
                 placeholder="https://x.com/..."
-                error={profile.twitter_url && !isValidUrl(profile.twitter_url) ? 'Invalid URL' : undefined}
+                error={profile.social_twitter && !isValidUrl(profile.social_twitter) ? 'Invalid URL' : undefined}
               />
               <Field
                 label="Facebook"
-                value={profile.facebook_url}
-                onChange={(v) => updateField('facebook_url', v)}
+                value={profile.social_facebook}
+                onChange={(v) => updateField('social_facebook', v)}
                 disabled={!canEdit}
                 icon={<Facebook className="h-4 w-4" />}
                 placeholder="https://facebook.com/..."
-                error={profile.facebook_url && !isValidUrl(profile.facebook_url) ? 'Invalid URL' : undefined}
+                error={profile.social_facebook && !isValidUrl(profile.social_facebook) ? 'Invalid URL' : undefined}
               />
               <Field
                 label="Instagram"
-                value={profile.instagram_url}
-                onChange={(v) => updateField('instagram_url', v)}
+                value={profile.social_instagram}
+                onChange={(v) => updateField('social_instagram', v)}
                 disabled={!canEdit}
                 icon={<Instagram className="h-4 w-4" />}
                 placeholder="https://instagram.com/..."
-                error={profile.instagram_url && !isValidUrl(profile.instagram_url) ? 'Invalid URL' : undefined}
+                error={profile.social_instagram && !isValidUrl(profile.social_instagram) ? 'Invalid URL' : undefined}
               />
               <Field
                 label="GitHub"
-                value={profile.github_url}
-                onChange={(v) => updateField('github_url', v)}
+                value={profile.social_github}
+                onChange={(v) => updateField('social_github', v)}
                 disabled={!canEdit}
                 icon={<Github className="h-4 w-4" />}
                 placeholder="https://github.com/..."
-                error={profile.github_url && !isValidUrl(profile.github_url) ? 'Invalid URL' : undefined}
+                error={profile.social_github && !isValidUrl(profile.social_github) ? 'Invalid URL' : undefined}
               />
               <Field
                 label="Website"
-                value={profile.website_url}
-                onChange={(v) => updateField('website_url', v)}
+                value={profile.social_website}
+                onChange={(v) => updateField('social_website', v)}
                 disabled={!canEdit}
                 icon={<Globe className="h-4 w-4" />}
                 placeholder="https://yoursite.com"
-                error={profile.website_url && !isValidUrl(profile.website_url) ? 'Invalid URL' : undefined}
+                error={profile.social_website && !isValidUrl(profile.social_website) ? 'Invalid URL' : undefined}
               />
             </div>
           </Card>

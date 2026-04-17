@@ -242,7 +242,7 @@ export async function getUserOrgRole(orgId: string): Promise<OrgRole | null> {
 export async function getOrgMembers(orgId: string): Promise<OrgMembership[]> {
   const { data, error } = await supabase
     .from('org_memberships')
-    .select('id, user_id, org_id, role, status, permissions_override, joined_at, suspended_at, suspended_reason, created_at, updated_at')
+    .select('id, user_id, org_id, role, status, joined_at, suspended_at, suspended_reason, created_at, updated_at')
     .eq('org_id', orgId)
     .eq('status', 'active')
     .order('role', { ascending: true });

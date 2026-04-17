@@ -35,7 +35,7 @@ export class UserService {
   }): Promise<AdminUser[]> {
     let query = supabase
       .from('admin_users')
-      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at')
+      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (filters?.role) {
@@ -59,7 +59,7 @@ export class UserService {
   async getUser(userId: string): Promise<AdminUser | null> {
     const { data, error } = await supabase
       .from('admin_users')
-      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at')
+      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, created_at, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -74,7 +74,7 @@ export class UserService {
     const { data, error } = await supabase
       .from('admin_users')
       .insert(user)
-      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at')
+      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, created_at, updated_at')
       .single();
 
     if (error) throw error;
@@ -90,7 +90,7 @@ export class UserService {
       .from('admin_users')
       .update(updates)
       .eq('id', userId)
-      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, org_id, created_at, updated_at')
+      .select('id, email, first_name, last_name, role, status, permissions, avatar_url, last_login_at, created_at, updated_at')
       .single();
 
     if (error) throw error;

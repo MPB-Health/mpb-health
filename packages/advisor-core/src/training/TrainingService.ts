@@ -50,7 +50,7 @@ export class TrainingService {
   async getAdvisorProgress(advisorId: string): Promise<TrainingProgress[]> {
     const { data, error } = await supabase
       .from('training_progress')
-      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, attempts, created_at, updated_at')
       .eq('advisor_id', advisorId);
 
     if (error) throw error;
@@ -64,7 +64,7 @@ export class TrainingService {
   ): Promise<TrainingProgress | null> {
     const { data, error } = await supabase
       .from('training_progress')
-      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, attempts, created_at, updated_at')
       .eq('advisor_id', advisorId)
       .eq('module_id', moduleId)
       .single();
@@ -88,7 +88,7 @@ export class TrainingService {
             started_at: new Date().toISOString(),
           })
           .eq('id', existing.id)
-          .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
+          .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, attempts, created_at, updated_at')
           .single();
 
         if (error) throw error;
@@ -106,25 +106,25 @@ export class TrainingService {
         status: 'in_progress',
         started_at: new Date().toISOString(),
         time_spent_minutes: 0,
-        quiz_attempts: 0,
+        attempts: 0,
       })
-      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, attempts, created_at, updated_at')
       .single();
 
     if (error) throw error;
     return data as any;
   }
 
-  // Update progress (time spent, position)
+  // Update progress (time spent)
   async updateProgress(
     progressId: string,
-    updates: Partial<Pick<TrainingProgress, 'time_spent_minutes' | 'last_position'>>
+    updates: Partial<Pick<TrainingProgress, 'time_spent_minutes'>>
   ): Promise<TrainingProgress> {
     const { data, error } = await supabase
       .from('training_progress')
       .update(updates)
       .eq('id', progressId)
-      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, attempts, created_at, updated_at')
       .single();
 
     if (error) throw error;
@@ -149,12 +149,12 @@ export class TrainingService {
         status: 'completed',
         completed_at: new Date().toISOString(),
         quiz_score: quizScore ?? progress.quiz_score,
-        quiz_attempts: quizScore !== undefined
-          ? progress.quiz_attempts + 1
-          : progress.quiz_attempts,
+        attempts: quizScore !== undefined
+          ? progress.attempts + 1
+          : progress.attempts,
       })
       .eq('id', progress.id)
-      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, quiz_attempts, last_position, created_at, updated_at')
+      .select('id, advisor_id, module_id, status, started_at, completed_at, time_spent_minutes, quiz_score, attempts, created_at, updated_at')
       .single();
 
     if (error) throw error;

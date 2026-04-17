@@ -47,8 +47,7 @@ export interface TrainingProgress {
   completed_at: string | null;
   time_spent_minutes: number;
   quiz_score: number | null;
-  quiz_attempts: number;
-  last_position: number | null;
+  attempts: number;
   created_at: string;
   updated_at: string;
 }

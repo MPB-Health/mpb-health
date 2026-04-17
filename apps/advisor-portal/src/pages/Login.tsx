@@ -41,6 +41,11 @@ export default function Login() {
       throw new Error('Authentication service is not configured. Please contact support.');
     }
     try {
+      // Clear any stale session / internal lock before a fresh login attempt.
+      // scope:'local' only wipes the browser state — no server round-trip that
+      // could itself hang if the old token is already invalid.
+      await supabase.auth.signOut({ scope: 'local' });
+
       const { error } = await withTimeout(
         supabase.auth.signInWithPassword({ email, password }),
         15000,

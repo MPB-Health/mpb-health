@@ -11,6 +11,8 @@ export default function Login() {
       throw new Error('Authentication service is not configured. Please contact support.');
     }
     try {
+      // Clear any stale session / internal lock before a fresh login attempt
+      await supabase.auth.signOut({ scope: 'local' });
       const loginPromise = supabase.auth.signInWithPassword({ email, password });
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 15000),

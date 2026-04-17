@@ -88,7 +88,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       email: sessionUser.email || '',
       phone: null,
       specialization: 'Health Share',
-      bio: null,
       avatar_url: null,
       agent_id: null,
       company_name: null,

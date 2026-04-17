@@ -17,7 +17,7 @@ export class ProfileService {
   async getProfile(advisorId: string): Promise<AdvisorProfile | null> {
     const { data, error } = await supabase
       .from('advisor_profiles')
-      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .eq('id', advisorId)
       .limit(1);
 
@@ -30,7 +30,7 @@ export class ProfileService {
   async getProfileByEmail(email: string): Promise<AdvisorProfile | null> {
     const { data, error } = await supabase
       .from('advisor_profiles')
-      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .eq('email', email)
       .limit(1);
 
@@ -47,7 +47,7 @@ export class ProfileService {
       .from('advisor_profiles')
       .update(updates)
       .eq('id', advisorId)
-      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .single();
 
     if (error) throw error;
@@ -103,7 +103,7 @@ export class ProfileService {
   }): Promise<AdvisorProfile[]> {
     let query = supabase
       .from('advisor_profiles')
-      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .order('last_name', { ascending: true });
 
     if (filters?.status) {
@@ -160,7 +160,7 @@ export class ProfileService {
         },
         { onConflict: 'id' }
       )
-      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
+      .select('id, user_id, org_id, first_name, last_name, email, phone, specialization, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at')
       .single();
 
     if (error) {

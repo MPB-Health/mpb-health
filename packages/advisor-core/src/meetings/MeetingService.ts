@@ -161,7 +161,7 @@ export class MeetingService {
   async getMeetingInvitations(meetingId: string): Promise<MeetingInvitation[]> {
     const { data, error } = await supabase
       .from('meeting_invitations')
-      .select('id, meeting_id, advisor_id, status, responded_at, reminder_sent, created_at, advisor:advisor_profiles(id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at)')
+      .select('id, meeting_id, advisor_id, status, responded_at, reminder_sent, created_at, advisor:advisor_profiles(id, user_id, org_id, first_name, last_name, email, phone, specialization, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at)')
       .eq('meeting_id', meetingId);
 
     if (error) throw error;
@@ -277,7 +277,7 @@ export class MeetingService {
   async getAttendees(meetingId: string): Promise<MeetingAttendee[]> {
     const { data, error } = await supabase
       .from('meeting_attendees')
-      .select('id, meeting_id, advisor_id, joined_at, left_at, duration_minutes, advisor:advisor_profiles(id, user_id, org_id, first_name, last_name, email, phone, specialization, bio, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at)')
+      .select('id, meeting_id, advisor_id, joined_at, left_at, duration_minutes, advisor:advisor_profiles(id, user_id, org_id, first_name, last_name, email, phone, specialization, avatar_url, agent_id, company_name, must_change_password, status, training_completed, training_completed_at, onboarding_completed, onboarding_completed_at, created_at, updated_at)')
       .eq('meeting_id', meetingId);
 
     if (error) throw error;

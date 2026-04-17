@@ -8,7 +8,6 @@ export interface AdvisorProfile {
   email: string;
   phone: string | null;
   specialization: string;
-  bio: string | null;
   avatar_url: string | null;
   agent_id: string | null;
   company_name: string | null;

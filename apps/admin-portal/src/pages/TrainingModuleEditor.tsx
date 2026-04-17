@@ -44,7 +44,7 @@ export default function TrainingModuleEditor() {
     category: '',
     content_type: 'video' as AdminTrainingModule['content_type'],
     content_url: '',
-    content: '',
+    content_html: '',
     thumbnail_url: '',
     duration_minutes: 0,
     order_index: 0,
@@ -77,7 +77,7 @@ export default function TrainingModuleEditor() {
           category: module.category,
           content_type: module.content_type,
           content_url: module.content_url || '',
-          content: module.content || '',
+          content_html: module.content_html || '',
           thumbnail_url: module.thumbnail_url || '',
           duration_minutes: module.duration_minutes,
           order_index: module.order_index,
@@ -134,7 +134,7 @@ export default function TrainingModuleEditor() {
         description: formData.description.trim() || null,
         category: (newCategory.trim() || formData.category).trim(),
         content_url: formData.content_url.trim() || null,
-        content: formData.content.trim() || null,
+        content_html: formData.content_html.trim() || null,
         thumbnail_url: formData.thumbnail_url || null,
       };
 
@@ -269,8 +269,8 @@ export default function TrainingModuleEditor() {
             <div>
               <label className="block text-sm font-medium text-th-text-secondary mb-1">Notes / Additional Content</label>
               <textarea
-                value={formData.content}
-                onChange={(e) => setFormData((p) => ({ ...p, content: e.target.value }))}
+                value={formData.content_html}
+                onChange={(e) => setFormData((p) => ({ ...p, content_html: e.target.value }))}
                 placeholder="Optional notes or embedded HTML..."
                 rows={4}
                 className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary resize-y font-mono text-sm"

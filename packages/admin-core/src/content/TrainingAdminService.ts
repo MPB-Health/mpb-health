@@ -7,6 +7,7 @@ export interface AdminTrainingModule {
   category: string;
   content_type: 'video' | 'document' | 'interactive' | 'quiz' | 'external_link';
   content_url: string | null;
+  content_html: string | null;
   thumbnail_url: string | null;
   duration_minutes: number;
   order_index: number;
@@ -30,7 +31,7 @@ export class TrainingAdminService {
   async getModules(filters?: { category?: string; is_active?: boolean }): Promise<AdminTrainingModule[]> {
     let query = supabase
       .from('training_modules')
-      .select('id, title, description, category, content_type, content_url, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
+      .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .order('order_index', { ascending: true })
       .order('title', { ascending: true });
 
@@ -45,7 +46,7 @@ export class TrainingAdminService {
   async getModule(id: string): Promise<AdminTrainingModule | null> {
     const { data, error } = await supabase
       .from('training_modules')
-      .select('id, title, description, category, content_type, content_url, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
+      .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .eq('id', id)
       .single();
 
@@ -57,7 +58,7 @@ export class TrainingAdminService {
     const { data, error } = await supabase
       .from('training_modules')
       .insert(input)
-      .select('id, title, description, category, content_type, content_url, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
+      .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .single();
 
     if (error) throw error;
@@ -69,7 +70,7 @@ export class TrainingAdminService {
       .from('training_modules')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select('id, title, description, category, content_type, content_url, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
+      .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .single();
 
     if (error) throw error;

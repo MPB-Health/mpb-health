@@ -77,6 +77,7 @@ export default function Tickets() {
   const [page, setPage] = useState(1);
   const [selectedTicket, setSelectedTicket] = useState<TicketDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [loadingTicketId, setLoadingTicketId] = useState<string | null>(null);
   // Reply state
   const [replyContent, setReplyContent] = useState('');
   const [replySending, setReplySending] = useState(false);
@@ -160,21 +161,44 @@ export default function Tickets() {
 
   const openTicketDetail = async (ticketId: string) => {
     setDetailLoading(true);
+    setLoadingTicketId(ticketId);
     try {
       const detail = await executeWithAuth(() => ticketService.getTicketDetail(ticketId));
       if (!mountedRef.current) return;
       setSelectedTicket(detail);
+      window.scrollTo({ top: 0, behavior: 'auto' });
     } catch (err) {
       if (!mountedRef.current) return;
-      console.error('Failed to load ticket detail:', err);
+      console.error('[Tickets] Failed to load ticket detail:', {
+        ticketId,
+        error: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+      });
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
         window.location.href = '/login';
         return;
       }
-      toast.error("We couldn't open that ticket. Please refresh and try again, or contact support if it keeps happening.");
+      const msg = err instanceof Error ? err.message : '';
+      if (msg && /not.*synced|not.*configured|not.*found/i.test(msg)) {
+        toast.error(msg);
+      } else if (msg === 'TIMEOUT') {
+        toast.error('The support system is taking too long to respond. Please try again in a moment.');
+      } else {
+        toast.error("We couldn't open that ticket. Please refresh and try again, or contact support if it keeps happening.");
+      }
     } finally {
-      if (mountedRef.current) setDetailLoading(false);
+      if (mountedRef.current) {
+        setDetailLoading(false);
+        setLoadingTicketId(null);
+      }
     }
+  };
+
+  const handleBackToList = () => {
+    setSelectedTicket(null);
+    setReplyContent('');
+    setReplyError('');
+    setReplyAttachments([]);
+    window.scrollTo({ top: 0, behavior: 'auto' });
   };
 
   // Poll for new staff replies every 30s while ticket detail is open.
@@ -262,6 +286,8 @@ export default function Tickets() {
       setReplyAttachments([]);
       setReplyEditorKey((k) => k + 1);
       richReplyRef.current?.clear();
+      toast.success('Reply sent');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       if (!mountedRef.current) return;
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
@@ -289,15 +315,18 @@ export default function Tickets() {
 
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-10 -mx-4 px-4 py-3 bg-white/95 backdrop-blur border-b border-neutral-200 flex items-center justify-between gap-3">
           <button
-            onClick={() => { setSelectedTicket(null); setReplyContent(''); setReplyError(''); setReplyAttachments([]); }}
-            className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
-            aria-label="Back to tickets"
+            onClick={handleBackToList}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-300 bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-400 transition-colors shadow-sm"
+            aria-label="Back to ticket list"
           >
             <ChevronLeft className="w-4 h-4" />
-            Back to tickets
+            Back to Tickets
           </button>
+          <span className="text-xs text-neutral-400 hidden sm:inline">
+            #{ticket.ticket_number}
+          </span>
         </div>
 
         <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
@@ -415,7 +444,16 @@ export default function Tickets() {
                 <span>{replyError}</span>
               </div>
             )}
-            <div className="flex justify-end mt-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+              <button
+                type="button"
+                onClick={handleBackToList}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-neutral-300 bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-400 transition-colors"
+                aria-label="Back to ticket list"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Tickets
+              </button>
               <button
                 onClick={handleSendReply}
                 disabled={
@@ -438,6 +476,18 @@ export default function Tickets() {
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="flex justify-center pt-2 pb-6">
+          <button
+            type="button"
+            onClick={handleBackToList}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
+            aria-label="Return to ticket list"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Return to Ticket List
+          </button>
         </div>
       </div>
     );
@@ -590,12 +640,15 @@ export default function Tickets() {
             const sc = STATUS_CONFIG[ticket.status] ?? DEFAULT_STATUS;
             const pc = PRIORITY_CONFIG[ticket.priority] ?? DEFAULT_PRIORITY;
 
+            const isRowLoading = loadingTicketId === ticket.id;
             return (
               <button
                 key={ticket.id}
                 onClick={() => openTicketDetail(ticket.id)}
                 disabled={detailLoading}
-                className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-neutral-50 transition-colors"
+                className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${
+                  isRowLoading ? 'bg-blue-50' : 'hover:bg-neutral-50'
+                } ${detailLoading && !isRowLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -614,10 +667,16 @@ export default function Tickets() {
                   </div>
                   <h4 className="text-sm font-medium text-neutral-900 truncate">{ticket.subject}</h4>
                   <p className="text-xs text-neutral-400 mt-0.5">
-                    {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
+                    {isRowLoading
+                      ? 'Opening ticket…'
+                      : formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
                   </p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-neutral-300 flex-shrink-0" />
+                {isRowLoading ? (
+                  <Loader2 className="w-4 h-4 text-blue-500 flex-shrink-0 animate-spin" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-neutral-300 flex-shrink-0" />
+                )}
               </button>
             );
           })}

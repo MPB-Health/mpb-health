@@ -170,12 +170,20 @@ async function getTicketDetail(
 ) {
   const { data: ticket, error } = await itstsAdmin
     .from("tickets")
-    .select("id, subject, description, status, priority, category, requester_id, assigned_agent_id, created_at, updated_at, resolved_at")
+    .select("id, ticket_number, subject, description, status, priority, category, requester_id, assignee_id, created_at, updated_at")
     .eq("id", ticketId)
     .eq("requester_id", userId)
     .single();
 
-  if (error) throw error;
+  if (error) {
+    log.error("getTicketDetail query failed", {
+      ticketId,
+      userId,
+      code: (error as { code?: string }).code,
+      message: error.message,
+    });
+    throw error;
+  }
 
   // Fetch comments/replies visible to the requester (not internal notes).
   // Use OR so legacy rows with is_internal NULL still appear (PostgREST: eq.false excludes NULL).
@@ -311,11 +319,18 @@ async function getTicketDetailAdmin(
 ) {
   const { data: ticket, error } = await itstsAdmin
     .from("tickets")
-    .select("id, subject, description, status, priority, category, requester_id, assigned_agent_id, created_at, updated_at, resolved_at")
+    .select("id, ticket_number, subject, description, status, priority, category, requester_id, assignee_id, created_at, updated_at")
     .eq("id", ticketId)
     .single();
 
-  if (error) throw error;
+  if (error) {
+    log.error("getTicketDetailAdmin query failed", {
+      ticketId,
+      code: (error as { code?: string }).code,
+      message: error.message,
+    });
+    throw error;
+  }
 
   // Requester info
   let requesterName = "Unknown";

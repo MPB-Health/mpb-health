@@ -351,6 +351,11 @@ export default function AdminTickets() {
       setReplyAttachments([]);
     } catch (err) {
       console.error('Failed to load ticket detail:', err);
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+        window.location.href = '/login';
+        return;
+      }
+      toast.error("We couldn't open that ticket. Please refresh and try again.");
     } finally {
       setDetailLoading(false);
     }

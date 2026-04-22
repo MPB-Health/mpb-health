@@ -97,7 +97,7 @@ export class UserService {
     return data as any;
   }
 
-  // Delete a user (soft delete by setting status to inactive)
+  // Soft delete (sets admin_users.status = 'inactive'); kept for back-compat.
   async deleteUser(userId: string): Promise<void> {
     const { error } = await supabase
       .from('admin_users')
@@ -105,6 +105,86 @@ export class UserService {
       .eq('id', userId);
 
     if (error) throw error;
+  }
+
+  /**
+   * Permanently delete a user (super_admin only).
+   * Calls the `admin-delete-user` edge function which hard-deletes the
+   * auth user; FK cascades remove rows in admin_users, advisor_profiles,
+   * user_roles, etc.
+   */
+  async permanentlyDeleteUser(
+    userId: string,
+    options?: { confirmEmail?: string },
+  ): Promise<{ success: boolean; deleted_email?: string; error?: string }> {
+    const { data, error } = await invokeWithResolvedAuth<{
+      success?: boolean;
+      error?: string;
+      deleted_email?: string;
+      deleted_user_id?: string;
+    }>('admin-delete-user', {
+      body: {
+        userId,
+        confirmEmail: options?.confirmEmail,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to delete user');
+    }
+    if (data && data.success === false) {
+      throw new Error(data.error || 'Failed to delete user');
+    }
+
+    return {
+      success: true,
+      deleted_email: data?.deleted_email,
+    };
+  }
+
+  /**
+   * Update a user's profile across every table that stores their name.
+   *
+   * Keeps `auth.users.user_metadata.full_name`, `admin_users.first_name/last_name`
+   * and `advisor_profiles.first_name/last_name` in sync. Safe to call for any
+   * user — missing rows are simply skipped.
+   */
+  async updateUserProfile(
+    userId: string,
+    updates: { first_name?: string; last_name?: string },
+  ): Promise<void> {
+    const firstName = updates.first_name?.trim();
+    const lastName = updates.last_name?.trim();
+
+    if (firstName === undefined && lastName === undefined) return;
+
+    // 1. Auth metadata via edge function (needs full_name string)
+    const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+    if (fullName) {
+      const { data, error } = await supabase.functions.invoke('admin-update-user', {
+        body: { userId, full_name: fullName },
+      });
+      if (error) throw error;
+      if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to update user profile');
+      }
+    }
+
+    // 2. admin_users table (no-op if the user isn't an admin)
+    const adminPayload: Record<string, string> = {};
+    if (firstName !== undefined) adminPayload.first_name = firstName;
+    if (lastName !== undefined) adminPayload.last_name = lastName;
+    if (Object.keys(adminPayload).length > 0) {
+      await supabase.from('admin_users').update(adminPayload).eq('id', userId);
+    }
+
+    // 3. advisor_profiles table (no-op if the user isn't an advisor)
+    const advisorPayload: Record<string, string> = {};
+    if (firstName !== undefined) advisorPayload.first_name = firstName;
+    if (lastName !== undefined) advisorPayload.last_name = lastName;
+    if (Object.keys(advisorPayload).length > 0) {
+      await supabase.from('advisor_profiles').update(advisorPayload).eq('id', userId);
+    }
   }
 
   // Suspend a user

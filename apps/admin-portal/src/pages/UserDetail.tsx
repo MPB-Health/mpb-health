@@ -114,6 +114,17 @@ export default function UserDetail() {
   const [impersonating, setImpersonating] = useState(false);
   const [impersonateTempPw, setImpersonateTempPw] = useState('');
 
+  // Profile name editing (for cross-portal users without an admin_users row)
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileFirstName, setProfileFirstName] = useState('');
+  const [profileLastName, setProfileLastName] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Delete user
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     const loadData = async () => {
       if (!userId) return;
@@ -165,6 +176,17 @@ export default function UserDetail() {
     setSaving(true);
     try {
       const updated = await userService.updateUser(userId, formData);
+      // Also propagate the new name to auth.users metadata and advisor_profiles
+      // so every portal sees a consistent name (fire-and-forget; a failure here
+      // shouldn't discard the admin_users save).
+      userService
+        .updateUserProfile(userId, {
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+        })
+        .catch(() => {
+          // Don't surface a second error — admin_users was saved successfully.
+        });
       setUser(updated);
       setEditMode(false);
       toast.success('User updated!');
@@ -172,6 +194,84 @@ export default function UserDetail() {
       toast.error('Failed to update user');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startEditingProfile = () => {
+    const firstName = user?.first_name
+      ?? advisorProfile?.first_name
+      ?? crossUser?.full_name?.split(' ')[0]
+      ?? '';
+    const lastName = user?.last_name
+      ?? advisorProfile?.last_name
+      ?? crossUser?.full_name?.split(' ').slice(1).join(' ')
+      ?? '';
+    setProfileFirstName(firstName);
+    setProfileLastName(lastName);
+    setEditingProfile(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userId) return;
+    const firstName = profileFirstName.trim();
+    const lastName = profileLastName.trim();
+    if (!firstName && !lastName) {
+      toast.error('Please enter at least a first or last name');
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      await userService.updateUserProfile(userId, {
+        first_name: firstName,
+        last_name: lastName,
+      });
+
+      const combined = [firstName, lastName].filter(Boolean).join(' ');
+      if (crossUser) {
+        setCrossUser({ ...crossUser, full_name: combined || null });
+      }
+      if (user) {
+        setUser({ ...user, first_name: firstName, last_name: lastName });
+      }
+      if (advisorProfile) {
+        setAdvisorProfile({
+          ...advisorProfile,
+          first_name: firstName,
+          last_name: lastName,
+        });
+      }
+      setEditingProfile(false);
+      toast.success('Name updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update name');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userId) return;
+    const targetEmail = user?.email ?? crossUser?.email ?? '';
+    if (!targetEmail) {
+      toast.error('Missing user email — cannot confirm deletion');
+      return;
+    }
+    if (deleteConfirmEmail.trim().toLowerCase() !== targetEmail.toLowerCase()) {
+      toast.error('Confirmation email does not match');
+      return;
+    }
+    setDeleting(true);
+    try {
+      await userService.permanentlyDeleteUser(userId, {
+        confirmEmail: deleteConfirmEmail.trim(),
+      });
+      toast.success(`Deleted ${targetEmail}`);
+      setShowDeleteDialog(false);
+      navigate('/users');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete user');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -581,6 +681,204 @@ export default function UserDetail() {
     );
   };
 
+  const renderDeleteDialog = () => {
+    if (!showDeleteDialog) return null;
+    const targetEmail = user?.email ?? crossUser?.email ?? '';
+    const targetName = user
+      ? `${user.first_name} ${user.last_name}`.trim()
+      : crossUser?.full_name ?? crossUser?.email ?? 'this user';
+    const confirmed = deleteConfirmEmail.trim().toLowerCase() === targetEmail.toLowerCase();
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={() => { if (!deleting) { setShowDeleteDialog(false); setDeleteConfirmEmail(''); } }}
+        />
+        <div className="relative bg-surface-primary rounded-2xl border border-th-border shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-th-text-primary">Delete User</h3>
+                <p className="text-sm text-th-text-tertiary">This action cannot be undone</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setShowDeleteDialog(false); setDeleteConfirmEmail(''); }}
+              disabled={deleting}
+              aria-label="Close dialog"
+              className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded disabled:opacity-50"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="bg-surface-secondary rounded-lg p-3 space-y-1">
+            <p className="text-sm font-medium text-th-text-primary">{targetName}</p>
+            <p className="text-sm text-th-text-tertiary">{targetEmail}</p>
+          </div>
+
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/40">
+            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+            <div className="text-xs text-red-700 dark:text-red-300 space-y-1">
+              <p><strong>Permanently deleting</strong> this user will:</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>Remove their login (they will no longer be able to sign in to any portal)</li>
+                <li>Remove their admin profile, advisor profile, and portal role assignments</li>
+                <li>Cannot be reversed — historical records referencing this user may be affected</li>
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="delete-confirm-email" className="block text-sm font-medium text-th-text-secondary mb-2">
+              Type <span className="font-mono text-red-600 dark:text-red-400">{targetEmail}</span> to confirm
+            </label>
+            <input
+              id="delete-confirm-email"
+              type="email"
+              value={deleteConfirmEmail}
+              onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+              placeholder={targetEmail}
+              autoComplete="off"
+              className="w-full px-3 py-2 text-sm bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-th-text-primary placeholder-th-text-tertiary"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => { setShowDeleteDialog(false); setDeleteConfirmEmail(''); }}
+              disabled={deleting}
+              className="px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteUser}
+              disabled={!confirmed || deleting}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {deleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              <span>{deleting ? 'Deleting...' : 'Permanently Delete'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDeleteButton = () => {
+    if (!isSuperAdmin) return null;
+    return (
+      <button
+        type="button"
+        onClick={() => { setDeleteConfirmEmail(''); setShowDeleteDialog(true); }}
+        className="flex items-center space-x-2 px-4 py-2 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+      >
+        <Trash2 className="w-4 h-4" />
+        <span>Delete</span>
+      </button>
+    );
+  };
+
+  const renderProfileNameSection = () => {
+    // Only useful when there is NO admin_users row — otherwise the existing
+    // "User Details" card on the admin path already edits first/last name.
+    if (!isSuperAdmin) return null;
+    if (user) return null;
+    if (!crossUser) return null;
+
+    const currentFirst = advisorProfile?.first_name
+      ?? crossUser.full_name?.split(' ')[0]
+      ?? '';
+    const currentLast = advisorProfile?.last_name
+      ?? crossUser.full_name?.split(' ').slice(1).join(' ')
+      ?? '';
+
+    return (
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-2">
+            <User className="w-5 h-5 text-th-text-tertiary" />
+            <h2 className="text-lg font-semibold text-th-text-primary">Profile</h2>
+          </div>
+          {!editingProfile ? (
+            <button
+              type="button"
+              onClick={startEditingProfile}
+              className="px-4 py-2 border border-th-border rounded-lg text-sm text-th-text-secondary hover:bg-surface-secondary transition-colors"
+            >
+              Edit Name
+            </button>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setEditingProfile(false)}
+                disabled={savingProfile}
+                className="px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProfile}
+                disabled={savingProfile}
+                className="flex items-center space-x-2 px-4 py-2 text-sm bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                <span>{savingProfile ? 'Saving...' : 'Save'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="profile-first-name" className="block text-sm font-medium text-th-text-secondary mb-2">
+              First Name
+            </label>
+            <input
+              id="profile-first-name"
+              type="text"
+              value={editingProfile ? profileFirstName : currentFirst}
+              onChange={(e) => setProfileFirstName(e.target.value)}
+              disabled={!editingProfile}
+              className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 disabled:bg-surface-secondary text-th-text-primary"
+            />
+          </div>
+          <div>
+            <label htmlFor="profile-last-name" className="block text-sm font-medium text-th-text-secondary mb-2">
+              Last Name
+            </label>
+            <input
+              id="profile-last-name"
+              type="text"
+              value={editingProfile ? profileLastName : currentLast}
+              onChange={(e) => setProfileLastName(e.target.value)}
+              disabled={!editingProfile}
+              className="w-full px-4 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 disabled:bg-surface-secondary text-th-text-primary"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-th-text-tertiary mt-3">
+          Updates the display name everywhere this user appears (advisor portal,
+          CRM, support portal, etc.).
+        </p>
+      </div>
+    );
+  };
+
   // ── Shared section renderers ─────────────────────────────────────────────────
 
   const renderEmailSection = () => {
@@ -981,7 +1279,7 @@ export default function UserDetail() {
             </div>
           </div>
 
-          {/* Role badges + impersonate */}
+          {/* Role badges + impersonate + delete */}
           <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
             <div className="flex flex-wrap items-center gap-2">
               {crossUser.roles.length > 0 ? (
@@ -999,7 +1297,10 @@ export default function UserDetail() {
                 <span className="text-sm text-th-text-tertiary">No portal roles</span>
               )}
             </div>
-            {renderImpersonateButton()}
+            <div className="flex items-center space-x-2">
+              {renderImpersonateButton()}
+              {renderDeleteButton()}
+            </div>
           </div>
 
           {/* Meta */}
@@ -1020,11 +1321,13 @@ export default function UserDetail() {
           </div>
         </div>
 
+        {renderProfileNameSection()}
         {renderEmailSection()}
         {renderPasswordSection()}
         {renderPortalAccessSection()}
         {renderAdvisorProfileSection()}
         {renderImpersonateDialog()}
+        {renderDeleteDialog()}
       </div>
     );
   }
@@ -1072,7 +1375,7 @@ export default function UserDetail() {
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             {renderImpersonateButton()}
             {user.status === 'active' ? (
               <button
@@ -1095,6 +1398,7 @@ export default function UserDetail() {
                 <span>Activate</span>
               </button>
             )}
+            {renderDeleteButton()}
           </div>
         </div>
 
@@ -1256,6 +1560,7 @@ export default function UserDetail() {
       {renderPasswordSection()}
       {renderAdvisorProfileSection()}
       {renderImpersonateDialog()}
+      {renderDeleteDialog()}
     </div>
   );
 }

@@ -14,6 +14,8 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  Trash2,
+  Pencil,
 } from 'lucide-react';
 import {
   userService,
@@ -108,6 +110,17 @@ export default function Users() {
   const [showMassResetModal, setShowMassResetModal] = useState(false);
   const [massResetLoading, setMassResetLoading] = useState(false);
   const [massResetResult, setMassResetResult] = useState<{ sent: number; errors: number; total: number } | null>(null);
+
+  // Delete (single)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  // Delete (bulk)
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState('');
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteResult, setBulkDeleteResult] = useState<{ deleted: number; failed: number; total: number } | null>(null);
 
   const loadAdminUsers = useCallback(async () => {
     setLoading(true);
@@ -232,6 +245,100 @@ export default function Users() {
     setShowMassResetModal(true);
   };
 
+  // ── Delete handlers ─────────────────────────────────────────────────────────
+
+  const refreshCurrentTab = async () => {
+    if (activeTab === 'admin') await loadAdminUsers();
+    else if (activeTab === 'advisor') await loadCrossPortalUsers('advisor');
+    else if (activeTab === 'concierge') await loadCrossPortalUsers('concierge');
+    else if (activeTab === 'member') await loadCrossPortalUsers('member');
+    else await loadCrossPortalUsers();
+  };
+
+  const openDeleteDialog = (id: string, email: string, name: string) => {
+    setDeleteConfirmEmail('');
+    setDeleteTarget({ id, email, name });
+  };
+
+  const closeDeleteDialog = () => {
+    if (deleting) return;
+    setDeleteTarget(null);
+    setDeleteConfirmEmail('');
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    if (deleteConfirmEmail.trim().toLowerCase() !== deleteTarget.email.toLowerCase()) {
+      toast.error('Confirmation email does not match');
+      return;
+    }
+    setDeleting(true);
+    try {
+      await userService.permanentlyDeleteUser(deleteTarget.id, {
+        confirmEmail: deleteConfirmEmail.trim(),
+      });
+      toast.success(`Deleted ${deleteTarget.email}`);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(deleteTarget.id);
+        return next;
+      });
+      setDeleteTarget(null);
+      setDeleteConfirmEmail('');
+      await refreshCurrentTab();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete user');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const openBulkDelete = () => {
+    setBulkMenuOpen(false);
+    setBulkDeleteConfirm('');
+    setBulkDeleteResult(null);
+    setShowBulkDeleteDialog(true);
+  };
+
+  const closeBulkDelete = () => {
+    if (bulkDeleting) return;
+    setShowBulkDeleteDialog(false);
+    setBulkDeleteConfirm('');
+    setBulkDeleteResult(null);
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) {
+      toast.error('No users selected');
+      return;
+    }
+    if (bulkDeleteConfirm.trim().toUpperCase() !== 'DELETE') {
+      toast.error('Type DELETE to confirm');
+      return;
+    }
+    setBulkDeleting(true);
+    let deleted = 0;
+    let failed = 0;
+    try {
+      for (const id of ids) {
+        try {
+          await userService.permanentlyDeleteUser(id);
+          deleted += 1;
+        } catch {
+          failed += 1;
+        }
+      }
+      setBulkDeleteResult({ deleted, failed, total: ids.length });
+      if (deleted > 0) toast.success(`${deleted} user(s) deleted`);
+      if (failed > 0) toast.error(`${failed} user(s) could not be deleted`);
+      setSelectedIds(new Set());
+      await refreshCurrentTab();
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   // ── Render helpers ──────────────────────────────────────────────────────────
 
   const renderSelectCheckbox = (id: string, label: string) => (
@@ -332,15 +439,43 @@ export default function Users() {
                 <td className="py-3 px-4 text-sm text-th-text-tertiary">
                   {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never'}
                 </td>
-                <td className="py-3 px-4 text-right">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}`); }}
-                    aria-label="User actions"
-                    className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
+                <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/users/${user.id}`)}
+                      title="Edit user"
+                      aria-label={`Edit ${user.first_name} ${user.last_name}`}
+                      className="p-2 text-th-text-tertiary hover:text-th-accent-600 rounded-lg hover:bg-surface-tertiary"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openDeleteDialog(
+                            user.id,
+                            user.email,
+                            `${user.first_name} ${user.last_name}`.trim(),
+                          )
+                        }
+                        title="Delete user"
+                        aria-label={`Delete ${user.first_name} ${user.last_name}`}
+                        className="p-2 text-th-text-tertiary hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/users/${user.id}`)}
+                      aria-label="User actions"
+                      className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -438,15 +573,43 @@ export default function Users() {
                     <td className="py-3 px-4 text-sm text-th-text-tertiary">
                       {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
                     </td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); navigate(`/users/${user.id}`); }}
-                        aria-label="View user details"
-                        className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
-                      >
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
+                    <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/users/${user.id}`)}
+                          title="Edit user"
+                          aria-label={`Edit ${user.full_name ?? user.email}`}
+                          className="p-2 text-th-text-tertiary hover:text-th-accent-600 rounded-lg hover:bg-surface-tertiary"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        {isSuperAdmin && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openDeleteDialog(
+                                user.id,
+                                user.email,
+                                user.full_name ?? user.email,
+                              )
+                            }
+                            title="Delete user"
+                            aria-label={`Delete ${user.full_name ?? user.email}`}
+                            className="p-2 text-th-text-tertiary hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/users/${user.id}`)}
+                          aria-label="View user details"
+                          className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary"
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -520,6 +683,15 @@ export default function Users() {
                   >
                     <KeyRound className="w-4 h-4" />
                     <span>Send Password Reset</span>
+                  </button>
+                  <div className="border-t border-th-border my-1" />
+                  <button
+                    type="button"
+                    onClick={openBulkDelete}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Selected</span>
                   </button>
                 </div>
               )}
@@ -629,6 +801,204 @@ export default function Users() {
           loadAdminUsers();
         }}
       />
+
+      {/* Delete User Modal (single) */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={closeDeleteDialog}
+          />
+          <div className="relative bg-surface-primary rounded-2xl border border-th-border shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-th-text-primary">Delete User</h2>
+                  <p className="text-sm text-th-text-tertiary">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeDeleteDialog}
+                disabled={deleting}
+                aria-label="Close dialog"
+                className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-surface-secondary rounded-lg p-3 space-y-1">
+              <p className="text-sm font-medium text-th-text-primary">{deleteTarget.name || deleteTarget.email}</p>
+              <p className="text-sm text-th-text-tertiary">{deleteTarget.email}</p>
+            </div>
+
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/40">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-red-700 dark:text-red-300">
+                This will permanently remove the user's login, admin profile, advisor profile,
+                and all portal role assignments. Historical records referencing this user may be affected.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="delete-confirm-email-list" className="block text-sm font-medium text-th-text-secondary mb-2">
+                Type <span className="font-mono text-red-600 dark:text-red-400">{deleteTarget.email}</span> to confirm
+              </label>
+              <input
+                id="delete-confirm-email-list"
+                type="email"
+                value={deleteConfirmEmail}
+                onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+                placeholder={deleteTarget.email}
+                autoComplete="off"
+                className="w-full px-3 py-2 text-sm bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-th-text-primary placeholder-th-text-tertiary"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={closeDeleteDialog}
+                disabled={deleting}
+                className="px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={
+                  deleting
+                  || deleteConfirmEmail.trim().toLowerCase() !== deleteTarget.email.toLowerCase()
+                }
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                <span>{deleting ? 'Deleting...' : 'Permanently Delete'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Modal */}
+      {showBulkDeleteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={closeBulkDelete}
+          />
+          <div className="relative bg-surface-primary rounded-2xl border border-th-border shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-th-text-primary">Delete Selected Users</h2>
+                  <p className="text-sm text-th-text-tertiary">
+                    {selectedIds.size} user(s) will be permanently removed
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeBulkDelete}
+                disabled={bulkDeleting}
+                aria-label="Close dialog"
+                className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {!bulkDeleteResult ? (
+              <>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/40">
+                  <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-red-700 dark:text-red-300">
+                    This permanently removes logins, admin profiles, advisor profiles, and all portal role
+                    assignments for <strong>{selectedIds.size}</strong> user(s). This action cannot be undone.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="bulk-delete-confirm" className="block text-sm font-medium text-th-text-secondary mb-2">
+                    Type <span className="font-mono text-red-600 dark:text-red-400">DELETE</span> to confirm
+                  </label>
+                  <input
+                    id="bulk-delete-confirm"
+                    type="text"
+                    value={bulkDeleteConfirm}
+                    onChange={(e) => setBulkDeleteConfirm(e.target.value)}
+                    placeholder="DELETE"
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-th-text-primary placeholder-th-text-tertiary"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={closeBulkDelete}
+                    disabled={bulkDeleting}
+                    className="px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleting || bulkDeleteConfirm.trim().toUpperCase() !== 'DELETE'}
+                    className="flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {bulkDeleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                    <span>{bulkDeleting ? 'Deleting...' : `Delete ${selectedIds.size}`}</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="p-3 bg-surface-secondary rounded-lg">
+                    <p className="text-2xl font-bold text-th-text-primary">{bulkDeleteResult.total}</p>
+                    <p className="text-xs text-th-text-tertiary">Total</p>
+                  </div>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <p className="text-2xl font-bold text-green-600">{bulkDeleteResult.deleted}</p>
+                    <p className="text-xs text-green-600">Deleted</p>
+                  </div>
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <p className="text-2xl font-bold text-red-600">{bulkDeleteResult.failed}</p>
+                    <p className="text-xs text-red-600">Failed</p>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={closeBulkDelete}
+                    className="px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Mass Password Reset Modal */}
       {showMassResetModal && (

@@ -158,32 +158,24 @@ export class UserService {
 
     if (firstName === undefined && lastName === undefined) return;
 
-    // 1. Auth metadata via edge function (needs full_name string)
-    const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
-    if (fullName) {
-      const { data, error } = await supabase.functions.invoke('admin-update-user', {
-        body: { userId, full_name: fullName },
-      });
-      if (error) throw error;
-      if (data && data.success === false) {
-        throw new Error(data.error || 'Failed to update user profile');
-      }
-    }
+    // The edge function updates auth.users metadata AND syncs
+    // admin_users / advisor_profiles in a single service-role transaction,
+    // so the client only needs to make one authenticated call.
+    const { data, error } = await invokeWithResolvedAuth<{
+      success?: boolean;
+      error?: string;
+      warnings?: string[];
+    }>('admin-update-user', {
+      body: {
+        userId,
+        first_name: firstName,
+        last_name: lastName,
+      },
+    });
 
-    // 2. admin_users table (no-op if the user isn't an admin)
-    const adminPayload: Record<string, string> = {};
-    if (firstName !== undefined) adminPayload.first_name = firstName;
-    if (lastName !== undefined) adminPayload.last_name = lastName;
-    if (Object.keys(adminPayload).length > 0) {
-      await supabase.from('admin_users').update(adminPayload).eq('id', userId);
-    }
-
-    // 3. advisor_profiles table (no-op if the user isn't an advisor)
-    const advisorPayload: Record<string, string> = {};
-    if (firstName !== undefined) advisorPayload.first_name = firstName;
-    if (lastName !== undefined) advisorPayload.last_name = lastName;
-    if (Object.keys(advisorPayload).length > 0) {
-      await supabase.from('advisor_profiles').update(advisorPayload).eq('id', userId);
+    if (error) throw new Error(error.message || 'Failed to update user profile');
+    if (data && data.success === false) {
+      throw new Error(data.error || 'Failed to update user profile');
     }
   }
 
@@ -388,18 +380,19 @@ export class UserService {
    * Also syncs the new email to admin_users and/or advisor_profiles if those records exist.
    */
   async updateUserEmail(userId: string, newEmail: string): Promise<void> {
-    // 1. Update auth email via edge function
-    const { data, error } = await supabase.functions.invoke('admin-update-user', {
+    // The edge function updates auth.users.email AND syncs the change into
+    // admin_users / advisor_profiles server-side in one authenticated call.
+    const { data, error } = await invokeWithResolvedAuth<{
+      success?: boolean;
+      error?: string;
+      warnings?: string[];
+    }>('admin-update-user', {
       body: { userId, email: newEmail },
     });
-    if (error) throw error;
-    if (data && !data.success) throw new Error(data.error || 'Failed to update email');
-
-    // 2. Sync admin_users table (ignore error if user isn't an admin)
-    await supabase.from('admin_users').update({ email: newEmail }).eq('id', userId);
-
-    // 3. Sync advisor_profiles table (ignore error if user isn't an advisor)
-    await supabase.from('advisor_profiles').update({ email: newEmail }).eq('id', userId);
+    if (error) throw new Error(error.message || 'Failed to update email');
+    if (data && data.success === false) {
+      throw new Error(data.error || 'Failed to update email');
+    }
   }
 
   /** Send a password reset email via edge function (scanner-proof, uses Resend) */

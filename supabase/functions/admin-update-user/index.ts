@@ -8,6 +8,8 @@ const log = createLogger('admin-update-user');
 interface UpdateUserRequest {
   userId: string;
   full_name?: string;
+  first_name?: string;
+  last_name?: string;
   email?: string;
 }
 
@@ -70,12 +72,12 @@ Deno.serve(async (req: Request) => {
     }
 
     // Parse request body
-    const body: UpdateUserRequest = await req.json();
-    const { userId, full_name, email } = body;
+    const body: UpdateUserRequest = await req.json().catch(() => ({} as UpdateUserRequest));
+    const { userId, full_name, first_name, last_name, email } = body;
 
     if (!userId) {
       return new Response(
-        JSON.stringify({ error: "Missing userId" }),
+        JSON.stringify({ success: false, error: "Missing userId" }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
@@ -104,40 +106,99 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Build update payload
+    // Derive a final full_name if only first/last were provided
+    let resolvedFullName = full_name;
+    if (resolvedFullName === undefined && (first_name !== undefined || last_name !== undefined)) {
+      resolvedFullName = [first_name, last_name].filter((v) => typeof v === "string" && v.length > 0).join(" ").trim();
+    }
+
+    // Build update payload for auth.admin.updateUserById
     const updatePayload: {
       email?: string;
-      user_metadata?: { full_name?: string };
+      user_metadata?: Record<string, string | null | undefined>;
     } = {};
 
     if (email) {
       updatePayload.email = email;
     }
 
-    if (full_name !== undefined) {
-      updatePayload.user_metadata = { full_name };
+    const metadata: Record<string, string | null | undefined> = {};
+    if (resolvedFullName !== undefined) metadata.full_name = resolvedFullName;
+    if (first_name !== undefined) metadata.first_name = first_name;
+    if (last_name !== undefined) metadata.last_name = last_name;
+    if (Object.keys(metadata).length > 0) {
+      updatePayload.user_metadata = metadata;
     }
 
     if (Object.keys(updatePayload).length === 0) {
       return new Response(
-        JSON.stringify({ error: "No update fields provided" }),
+        JSON.stringify({ success: false, error: "No update fields provided" }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
-    // Update the user
+    // Update the auth user (email + metadata)
     const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, updatePayload);
 
     if (updateError) {
-      log.error("Error updating user:", updateError);
+      log.error("Error updating auth user:", updateError);
+      // Surface the real error message so the client can diagnose (e.g.
+      // "Email address already in use", "Invalid email", etc.).
+      const message = updateError.message || "Failed to update user";
+      const status = /not.?found/i.test(message) ? 404 : 400;
       return new Response(
-        JSON.stringify({ error: "Failed to update user" }),
-        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: message }),
+        { status, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
+    // Best-effort sync of name fields into admin_users and advisor_profiles so
+    // every portal sees a consistent name. These are no-ops when the target
+    // user doesn't have a row in the table.
+    const adminPayload: Record<string, string> = {};
+    const advisorPayload: Record<string, string> = {};
+    if (first_name !== undefined) {
+      adminPayload.first_name = first_name;
+      advisorPayload.first_name = first_name;
+    }
+    if (last_name !== undefined) {
+      adminPayload.last_name = last_name;
+      advisorPayload.last_name = last_name;
+    }
+    if (email) {
+      adminPayload.email = email;
+      advisorPayload.email = email;
+    }
+
+    const syncWarnings: string[] = [];
+    if (Object.keys(adminPayload).length > 0) {
+      const { error: adminErr } = await adminClient
+        .from("admin_users")
+        .update(adminPayload)
+        .eq("id", userId);
+      if (adminErr && adminErr.code !== "PGRST116") {
+        syncWarnings.push(`admin_users: ${adminErr.message}`);
+      }
+    }
+    if (Object.keys(advisorPayload).length > 0) {
+      const { error: advisorErr } = await adminClient
+        .from("advisor_profiles")
+        .update(advisorPayload)
+        .eq("id", userId);
+      if (advisorErr && advisorErr.code !== "PGRST116") {
+        syncWarnings.push(`advisor_profiles: ${advisorErr.message}`);
+      }
+    }
+    if (syncWarnings.length > 0) {
+      log.warn("Partial sync warnings", { warnings: syncWarnings, userId });
+    }
+
     return new Response(
-      JSON.stringify({ success: true, message: "User updated successfully" }),
+      JSON.stringify({
+        success: true,
+        message: "User updated successfully",
+        warnings: syncWarnings.length > 0 ? syncWarnings : undefined,
+      }),
       { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (error) {

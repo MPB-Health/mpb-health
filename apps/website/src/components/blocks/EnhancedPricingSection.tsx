@@ -42,8 +42,6 @@ const plansData: PlanData[] = [
       { name: 'MPB Concierge Assistance', category: 'support' },
       { name: 'Pharmacy Discounts', category: 'financial', tooltip: 'Save up to 80% on prescriptions at 65,000+ pharmacies nationwide' },
       { name: 'Vitamin Discounts', category: 'financial', tooltip: 'Save 30% on high-quality vitamins and supplements' },
-      { name: 'QR Life Code', category: 'additional', tooltip: 'Emergency medical information access for first responders' },
-      { name: 'Medical Records Vault', category: 'additional' },
       { name: 'Virtual Pet Care', category: 'additional' },
       { name: 'Debt Dismissal Program', category: 'financial', tooltip: 'Assistance with qualifying medical debt' },
     ],
@@ -67,8 +65,6 @@ const plansData: PlanData[] = [
       { name: 'Pharmacy Discounts', category: 'financial' },
       { name: 'Vitamin Discounts', category: 'financial' },
       { name: 'DNA Test Discounts', category: 'additional' },
-      { name: 'QR Life Code', category: 'additional' },
-      { name: 'Medical Records Vault', category: 'additional' },
       { name: 'Virtual Pet Care', category: 'additional' },
     ],
   },
@@ -84,6 +80,11 @@ const plansData: PlanData[] = [
     enrolledThisMonth: 389,
     features: [
       { name: 'Preventive Sharing', category: 'sharing', tooltip: 'Annual wellness visits and preventive screenings shared' },
+      {
+        name: '6-month wait: mammography & colonoscopy',
+        category: 'sharing',
+        tooltip: 'Screening mammography and colonoscopy have a 6-month waiting period on Direct',
+      },
       { name: 'Medical Cost Sharing', category: 'sharing' },
       { name: 'Virtual Urgent Care', category: 'virtual-care' },
       { name: 'Virtual Primary Care', category: 'virtual-care' },
@@ -92,8 +93,6 @@ const plansData: PlanData[] = [
       { name: 'Pharmacy Discounts', category: 'financial' },
       { name: 'Vitamin Discounts', category: 'financial' },
       { name: 'DNA Test Discounts', category: 'additional' },
-      { name: 'QR Life Code', category: 'additional' },
-      { name: 'Medical Records Vault', category: 'additional' },
       { name: 'Virtual Pet Care', category: 'additional' },
     ],
   },
@@ -113,6 +112,10 @@ const comparisonFeatures = [
     features: [
       { name: 'Medical Cost Sharing', plans: { 'Essentials': false, 'Care+': true, 'Direct': true } },
       { name: 'Preventive Sharing', plans: { 'Essentials': false, 'Care+': false, 'Direct': true } },
+      {
+        name: '6-mo wait: screening mammography & colonoscopy',
+        plans: { 'Essentials': false, 'Care+': false, 'Direct': true },
+      },
     ],
   },
   {
@@ -128,9 +131,7 @@ const comparisonFeatures = [
     features: [
       { name: 'MPB Concierge Assistance', plans: { 'Essentials': true, 'Care+': true, 'Direct': true } },
       { name: 'Virtual Pet Care', plans: { 'Essentials': true, 'Care+': true, 'Direct': true } },
-      { name: 'Medical Records Vault', plans: { 'Essentials': true, 'Care+': true, 'Direct': true } },
       { name: 'DNA Test Discounts', plans: { 'Essentials': false, 'Care+': true, 'Direct': true } },
-      { name: 'QR Life Code', plans: { 'Essentials': true, 'Care+': true, 'Direct': true } },
     ],
   },
 ];

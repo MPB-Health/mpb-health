@@ -26,7 +26,6 @@ const fallbackPlans: PlanWithFeatures[] = [
       { id: '1', feature_name: 'Virtual Care Access', category: 'Core Benefits', notes: '24/7 urgent, primary, and virtual behavioral health care' },
       { id: '2', feature_name: 'MPB Concierge', category: 'Member Support', notes: 'Personal healthcare navigation' },
       { id: '3', feature_name: 'Rx & Vitamin Discounts', category: 'Additional Benefits', notes: 'Save up to 80% on prescriptions' },
-      { id: '4', feature_name: 'Medical Records Vault', category: 'Additional Benefits' },
       { id: '5', feature_name: 'Debt Dismissal Program', category: 'Additional Benefits', notes: 'Medical debt assistance' }
     ]
   },
@@ -98,6 +97,7 @@ const fallbackPlans: PlanWithFeatures[] = [
     enroll_url: 'https://direct.enrollmpb.com/',
     features: [
       { id: '1', feature_name: 'Preventive Care Sharing', category: 'Core Benefits', notes: 'Wellness visits and screenings shared' },
+      { id: '1b', feature_name: 'Screening mammography & colonoscopy', category: 'Core Benefits', notes: '6-month waiting period on Direct' },
       { id: '2', feature_name: 'Medical Cost Sharing', category: 'Core Benefits', notes: 'Share eligible expenses after IUA' },
       { id: '3', feature_name: 'Virtual Care Access', category: 'Core Benefits', notes: '24/7 urgent, primary, virtual behavioral health' },
       { id: '4', feature_name: 'MPB Concierge', category: 'Member Support' },

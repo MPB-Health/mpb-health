@@ -46,8 +46,6 @@ const businessPlansData: PlanData[] = [
       { name: 'Pharmacy Discounts', category: 'financial', tooltip: 'Save up to 80% on prescriptions at 65,000+ pharmacies nationwide' },
       { name: 'Vitamin Discounts', category: 'financial', tooltip: 'Save 30% on high-quality vitamins and supplements' },
       { name: 'DNA Test Discounts', category: 'additional', tooltip: 'Discounted genetic testing services' },
-      { name: 'QR Life Code', category: 'additional', tooltip: 'Emergency medical information access for first responders' },
-      { name: 'Medical Records Vault', category: 'additional', tooltip: 'Secure storage for medical records' },
       { name: 'Virtual Pet Care', category: 'additional', tooltip: 'Veterinary consultations for your pets' },
     ],
   },
@@ -77,8 +75,6 @@ const businessPlansData: PlanData[] = [
       { name: 'Pharmacy Discounts', category: 'financial', tooltip: 'Save up to 80% on prescriptions nationwide' },
       { name: 'Vitamin Discounts', category: 'financial', tooltip: 'Save 30% on high-quality vitamins and supplements' },
       { name: 'DNA Test Discounts', category: 'additional', tooltip: 'Discounted genetic testing services' },
-      { name: 'QR Life Code', category: 'additional', tooltip: 'Emergency medical information access' },
-      { name: 'Medical Records Vault', category: 'additional', tooltip: 'Secure storage for medical records' },
       { name: 'Virtual Pet Care', category: 'additional', tooltip: 'Veterinary consultations for your pets' },
     ],
   },
@@ -117,9 +113,7 @@ const comparisonFeatures = [
     features: [
       { name: 'MPB Concierge Assistance', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
       { name: 'Virtual Pet Care', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'Medical Records Vault', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
       { name: 'DNA Test Discounts', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'QR Life Code', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
     ],
   },
 ];

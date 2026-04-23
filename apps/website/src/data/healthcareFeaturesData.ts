@@ -617,6 +617,10 @@ export const healthcareFeatures: HealthcareFeature[] = [
     ],
     faqs: [
       {
+        question: 'Are mammography and colonoscopy screening subject to a waiting period on Direct?',
+        answer: 'On the Direct membership, screening mammography and colonoscopy (colorectal screening) are subject to a 6-month waiting period. Refer to your Member Guidelines for the latest rules.'
+      },
+      {
         question: 'What\'s the difference between preventative and diagnostic care?',
         answer: 'Preventative care is routine screening when you have no symptoms (like an annual physical). Diagnostic care investigates symptoms or known conditions. Preventative services have no cost-sharing; diagnostic care may apply to your IUA.'
       },

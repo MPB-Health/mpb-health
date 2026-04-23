@@ -32,10 +32,17 @@ import {
   LifeBuoy,
   ClipboardList,
   UserMinus,
+  UserCircle,
   Shield,
   MapPin,
   Calculator,
   MessageCircle,
+  Edit3,
+  CreditCard,
+  Pill,
+  XCircle,
+  PartyPopper,
+  Book,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -65,13 +72,15 @@ const navIconMap: Record<string, LucideIcon> = {
   Home, Layers, Users, Building2, Briefcase, GitCompare, CircleHelp,
   Sparkles, Award, BookOpen, Newspaper, Library, Mic2, Calendar, Heart,
   HelpCircle, Info, Mail, LayoutDashboard, Wrench, ExternalLink, FileText,
-  UserCog, Zap, UserPlus, MessageSquare, Star, Phone, LifeBuoy,
+  UserCog, Zap, UserPlus, UserCircle, MessageSquare, Star, Phone, LifeBuoy,
   ClipboardList, UserMinus, Shield, MapPin, Calculator, MessageCircle,
+  Edit3, CreditCard, Pill, XCircle, PartyPopper, Book,
 };
 
-const getIconComponent = (iconName?: string) => {
-  if (!iconName) return null;
-  return navIconMap[iconName] || null;
+/** Resolves string keys from nav config; falls back so every link keeps a visible icon */
+const getIconComponent = (iconName?: string): LucideIcon => {
+  if (!iconName) return FileText;
+  return navIconMap[iconName] ?? FileText;
 };
 
 export const MegaMenuV2: React.FC<MegaMenuV2Props> = ({
@@ -127,7 +136,7 @@ export const MegaMenuV2: React.FC<MegaMenuV2Props> = ({
               return (
                 <div key={item.id} className="space-y-4">
                   <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    {Icon && <Icon className="h-4 w-4 text-blue-600" />}
+                    <Icon className="h-4 w-4 text-blue-600" />
                     {item.label}
                   </h3>
                   <ul className="space-y-3">
@@ -135,9 +144,7 @@ export const MegaMenuV2: React.FC<MegaMenuV2Props> = ({
                       const ChildIcon = getIconComponent(child.icon);
                       const content = (
                         <div className="flex items-start space-x-3 group">
-                          {ChildIcon && (
-                            <ChildIcon className="h-5 w-5 text-blue-600 mt-0.5 group-hover:scale-110 transition-transform flex-shrink-0" />
-                          )}
+                          <ChildIcon className="h-5 w-5 text-blue-600 mt-0.5 group-hover:scale-110 transition-transform flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-semibold text-neutral-900 group-hover:text-blue-600 transition-colors">
@@ -193,9 +200,7 @@ export const MegaMenuV2: React.FC<MegaMenuV2Props> = ({
 
             const content = (
               <div className="flex items-start space-x-3 group">
-                {Icon && (
-                  <Icon className="h-5 w-5 text-blue-600 mt-0.5 group-hover:scale-110 transition-transform flex-shrink-0" />
-                )}
+                <Icon className="h-5 w-5 text-blue-600 mt-0.5 group-hover:scale-110 transition-transform flex-shrink-0" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-neutral-900 group-hover:text-blue-600 transition-colors">

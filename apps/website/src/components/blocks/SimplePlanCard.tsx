@@ -194,7 +194,9 @@ export function SimplePlanCard({
 
         <div className="border-t border-neutral-200 pt-4 flex-1">
           <h5 className="text-sm font-semibold text-neutral-900 mb-1">What's Included</h5>
-          <p className="text-xs text-neutral-500 italic mb-3">*After IUA is met</p>
+          {plan.is_medical_cost_sharing && (
+            <p className="text-xs text-neutral-500 italic mb-3">*After IUA is met</p>
+          )}
           <div className="space-y-2">
             {Object.entries(groupedFeatures).map(([category, categoryFeatures]) => (
               <div key={category} className="border border-neutral-200 rounded-lg overflow-hidden">

@@ -157,15 +157,10 @@ export function MobileJourney({
                         <Button
                           onClick={() => {
                             onCTAClick('primary');
-                            const calculator = document.getElementById('calculator');
-                            if (calculator) {
-                              calculator.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            } else {
-                              window.location.href = '/individuals-and-families#calculator';
-                            }
+                            window.location.href = '/get-started';
                           }}
                           className="w-full bg-gradient-to-r from-blue-600 to-teal-600 hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
-                          aria-label="Calculate your personalized rate"
+                          aria-label="Start your MPB Health quote"
                         >
                           Get Your Quote
                         </Button>

@@ -8,7 +8,6 @@ import {
   Shield,
   TrendingDown,
   Stethoscope,
-  Clock,
   CalendarCheck,
   Eye,
   Phone,
@@ -17,7 +16,6 @@ import {
   Zap,
   DollarSign,
   FileText,
-  AlertCircle,
   Hourglass,
   ArrowRight,
   Video,
@@ -30,36 +28,44 @@ import {
 
 const faqsForSchema = [
   {
-    question: 'How quickly can I go from enrollment to my first sharing request?',
-    answer: 'The application itself takes roughly 10\u201315 minutes. If you enroll by the 20th of any month, coverage starts the first of the following month. From there, eligible needs can be submitted right away. Most sharing requests are processed within about 60 days, though some resolve in as little as two weeks.',
+    question: 'Is MPB Health a type of insurance?',
+    answer: 'No. MPB Health is a medical cost sharing community, not an insurance company. Members work together to share eligible medical expenses, rather than paying premiums to a corporate entity.',
   },
   {
-    question: 'What if I need care while a waiting period is in effect?',
-    answer: 'MPB Health does not turn anyone away based on medical history. Brand-new medical needs qualify for sharing immediately. Pre-existing conditions follow a 12-month phase-in window, but certain managed conditions\u2014diabetes, high blood pressure, high cholesterol\u2014can be eligible from Day One provided there has been no related hospitalization in the past year. Accidents are always eligible from the start.',
+    question: 'What is an Initial Unshareable Amount (IUA)?',
+    answer: 'The IUA is the specific dollar amount you take personal responsibility for when an eligible medical need arises. Once you have met this amount, the rest of the eligible expenses for that specific need are shared by the community.',
   },
   {
-    question: 'How can I tell whether a specific expense will be shared?',
-    answer: 'Our member guidelines spell out which categories of medical expenses qualify. If you have questions about a particular situation, our member support team can walk you through your sharing eligibility before you receive care.',
+    question: 'Do I need to belong to a specific religion or sign a statement of faith to join?',
+    answer: 'No. Unlike many faith-based healthshares, MPB Health has no religious requirements. We are a community open to everyone, and we welcome individuals and families from all backgrounds and belief systems.',
   },
   {
-    question: 'Am I able to change my IUA after I enroll?',
-    answer: 'Yes. Members may adjust their IUA level once each calendar year.',
+    question: 'Can I really see any doctor I want?',
+    answer: 'Yes. MPB Health does not have restrictive provider networks for Health Sharing. You have the freedom to choose any doctor, specialist, or facility that fits your needs.',
   },
   {
-    question: 'What recourse do I have if I disagree with a sharing outcome?',
-    answer: 'You can request a formal review. Our appeals process involves a thorough re-evaluation by senior staff. Reach out to member support to get the process started.',
+    question: 'What kinds of medical expenses are eligible for sharing?',
+    answer: 'Eligible expenses generally include hospitalizations, surgeries, emergency room visits, maternity care, and many other medically necessary services. For more information, please view our Member Guidelines for a comprehensive list of what qualifies for sharing within the community.',
   },
   {
-    question: 'What happens when a monthly share payment is missed?',
-    answer: 'Share amounts are billed automatically on the 20th for the upcoming month. If the payment is not received by the final business day of the month, the membership is cancelled as of that date.',
+    question: 'Can prescription medications be shared?',
+    answer: 'Eligible prescription expenses may be shared when they are part of a larger, eligible medical need. Additionally, certain memberships include access to RX Valet, which provides deeply discounted pricing on thousands of prescriptions.',
   },
   {
-    question: 'Can I submit bills for care I received before becoming a member?',
-    answer: 'No. Only expenses incurred after your membership effective date are eligible for sharing\u2014even if the provider has not billed you yet.',
+    question: 'Does care received outside the United States qualify for sharing?',
+    answer: 'Yes. Emergency or urgent care expenses incurred outside the United States or Puerto Rico may be eligible for sharing, subject to the Member Guidelines. If a medical need arises while you are traveling, the community is designed to support you.',
   },
   {
-    question: 'What is a MEC plan and why is it paired with my membership?',
-    answer: 'A Minimum Essential Coverage (MEC) plan is a federally recognized health plan that satisfies state individual mandate requirements. MPB Health pairs every membership with a MEC plan so you remain compliant with state laws while keeping your membership HSA-eligible for tax-advantaged savings.',
+    question: 'What if I have a pre-existing condition?',
+    answer: 'MPB Health does not turn anyone away based on medical history. While brand-new medical needs qualify for sharing immediately, pre-existing conditions typically follow a 12-month phase-in window. However, certain managed conditions\u2014like diabetes or high blood pressure\u2014may be eligible for sharing from Day One, provided there has been no related hospitalization in the past year.',
+  },
+  {
+    question: 'Can MPB Health be offered to employees?',
+    answer: 'Yes! Employers can provide their team with access to a medical cost sharing community as a cost-effective alternative to traditional group insurance, allowing employees to enjoy freedom of provider choice and significant monthly savings.',
+  },
+  {
+    question: 'Why should I join MPB Health?',
+    answer: 'Joining MPB Health means choosing a community-driven approach to health that prioritizes your freedom and your budget. Members typically save 30\u201360% monthly compared to traditional premiums, enjoy total provider choice with no network restrictions, and have 24/7 access to $0 virtual care and behavioral health resources. Whether you are looking for an inclusive environment with no religious requirements or a simpler way to manage medical costs, MPB Health provides a transparent, supportive alternative designed to put the power of healthcare back in your hands.',
   },
 ];
 
@@ -68,25 +74,25 @@ const benefits = [
     icon: TrendingDown,
     title: 'Significant Savings',
     description:
-      'Members typically pay 30\u201360% less each month compared to traditional insurance premiums. Every dollar goes toward the community\u2014no corporate profit margins in between.',
+      'Members typically save 30\u201360% per month compared to traditional insurance premiums. Instead of corporate overhead, contributions go directly toward supporting eligible medical needs within the community.',
   },
   {
     icon: Stethoscope,
-    title: 'Pick Any Provider',
+    title: 'No Network Restrictions',
     description:
-      'There are no network restrictions at MPB Health. Visit whichever doctor, specialist, or hospital you prefer\u2014the choice is entirely yours.',
+      'There are no network restrictions with MPB Health. Members can visit the doctor, specialist, or hospital of their choice, giving you full control over your care.',
   },
   {
     icon: CalendarCheck,
-    title: 'Enroll Any Time',
+    title: 'Enroll Anytime',
     description:
-      'Open enrollment windows do not apply here. Submit your application on any day of the year and your membership can begin as early as the first of next month.',
+      'No open enrollment windows. You can apply any time during the year with membership often beginning as soon as the first of the following month.',
   },
   {
     icon: Eye,
     title: 'Clear & Straightforward',
     description:
-      'MPB Health operates as a nonprofit community with full visibility into how contributions are allocated. No hidden charges, no confusing bills, no fine-print surprises.',
+      'MPB Health operates with transparency and simplicity. Members understand how contributions are used with no hidden fees, confusing billing structures, or surprise costs.',
   },
 ];
 
@@ -95,25 +101,19 @@ const whatToKnow = [
     icon: FileText,
     title: 'Eligibility & Guidelines',
     description:
-      'MPB Health is open to individuals and families who embrace a healthy lifestyle. Our member guidelines detail exactly which expenses qualify for sharing and what the community expects from its members.',
-  },
-  {
-    icon: AlertCircle,
-    title: 'Sharing Limitations',
-    description:
-      'Certain expenses fall outside the sharing guidelines. Conditions that existed before membership, elective procedures, and some non-emergency treatments may be limited or subject to waiting periods. Our team is available to clarify specifics.',
+      'MPB Health is open to individuals and families who are committed to maintaining a healthy lifestyle. Member guidelines clearly outline which medical expenses are eligible for sharing, along with the expectations for participating in the community.',
   },
   {
     icon: DollarSign,
     title: 'Your IUA Explained',
     description:
-      'The Initial Unshareable Amount ($1,250, $2,500, or $5,000) is what you cover before the community begins sharing. It applies per medical need rather than resetting each year like an insurance deductible.',
+      'The Initial Unshareable Amount (IUA) ($1,250, $2,500, or $5,000) is the amount you are responsible for paying before sharing begins. Unlike traditional insurance deductibles, the IUA applies per medical need.',
   },
   {
     icon: Hourglass,
     title: 'Phase-In Periods',
     description:
-      'Brand-new medical needs are eligible for sharing from day one. Pre-existing conditions carry a 12-month phase-in. Managed conditions such as diabetes, high blood pressure, and high cholesterol may qualify immediately if no related hospitalization occurred in the prior year.',
+      'New eligible medical needs may be shared from day one. Pre-existing conditions are subject to a phase-in period. Managed conditions such as diabetes, high blood pressure, and high cholesterol may be eligible sooner if there has been no related hospitalization within the past year.',
   },
 ];
 
@@ -152,19 +152,19 @@ const whyDifferent = [
     icon: Zap,
     title: 'Quick, Transparent Processing',
     description:
-      'Eligible expenses are typically resolved within 60 days\u2014sometimes in as few as two weeks. Every sharing summary breaks down exactly what was covered and why.',
+      'Eligible expenses are typically processed within 60 days, with some resolved in as little as two weeks. Each sharing summary clearly outlines what was shared and how the amount was determined.',
   },
   {
     icon: CalendarCheck,
     title: 'No Enrollment Windows',
     description:
-      'Apply whenever it suits you. There is no annual window to wait for\u2014your membership can take effect as soon as the first of the following month.',
+      'Apply any time of year! There are no annual enrollment periods, and membership can begin as soon as the first of the following month.',
   },
   {
     icon: TrendingDown,
     title: 'Budget-Friendly Contributions',
     description:
-      'Monthly share amounts frequently run 30\u201360% below comparable insurance premiums. Multiple IUA tiers let you dial in the right balance of monthly cost and out-of-pocket responsibility.',
+      'Monthly share amounts are often 30%\u201360% lower than comparable insurance premiums. Multiple IUA options allow you to choose the balance that fits your budget and comfort level.',
   },
 ];
 
@@ -227,19 +227,28 @@ const HowItWorksPage: React.FC = () => {
                   possible.
                 </p>
                 <Link
-                  to="/member-guidelines"
+                  to="/3d-flip-book/zion-guidelines"
                   className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-colors"
                 >
                   Read our Member Guidelines <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
 
-              {/* Image placeholder */}
-              <div className="relative">
-                <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-teal-50 border border-neutral-200 aspect-[4/3] flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <Shield className="w-16 h-16 text-blue-300 mx-auto mb-4" />
-                    <p className="text-neutral-400 text-sm">Community healthcare photo</p>
+              {/* Decorative illustration */}
+              <div className="relative" aria-hidden="true">
+                <div className="rounded-2xl bg-gradient-to-br from-blue-100 via-white to-teal-100 border border-blue-100 aspect-[4/3] flex items-center justify-center overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-200 via-transparent to-transparent" />
+                  <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-blue-200 via-transparent to-transparent" />
+                  <div className="relative flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
+                      <Shield className="w-10 h-10 text-blue-600" />
+                    </div>
+                    <div className="w-16 h-16 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
+                      <Heart className="w-8 h-8 text-teal-600" />
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
+                      <Users className="w-7 h-7 text-blue-500" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -251,12 +260,24 @@ const HowItWorksPage: React.FC = () => {
         <div className="bg-gradient-to-b from-neutral-50 to-white py-16 sm:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              {/* Image placeholder */}
-              <div className="relative order-2 lg:order-1">
-                <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-blue-50 border border-neutral-200 aspect-[4/3] flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <Users className="w-16 h-16 text-teal-300 mx-auto mb-4" />
-                    <p className="text-neutral-400 text-sm">Family &amp; community photo</p>
+              {/* Decorative illustration */}
+              <div className="relative order-2 lg:order-1" aria-hidden="true">
+                <div className="rounded-2xl bg-gradient-to-br from-teal-100 via-white to-blue-100 border border-teal-100 aspect-[4/3] flex items-center justify-center overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200 via-transparent to-transparent" />
+                  <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-teal-200 via-transparent to-transparent" />
+                  <div className="relative grid grid-cols-2 gap-4">
+                    <div className="w-24 h-24 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
+                      <Users className="w-12 h-12 text-teal-600" />
+                    </div>
+                    <div className="w-24 h-24 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
+                      <DollarSign className="w-12 h-12 text-blue-600" />
+                    </div>
+                    <div className="w-24 h-24 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
+                      <Heart className="w-12 h-12 text-blue-600" />
+                    </div>
+                    <div className="w-24 h-24 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
+                      <ShieldCheck className="w-12 h-12 text-teal-600" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -285,7 +306,7 @@ const HowItWorksPage: React.FC = () => {
 
             {/* ── MEC Plan + Telehealth cards ─────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16">
-              {/* MEC Plan card */}
+              {/* $0 Preventive Care card */}
               <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-8">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
@@ -293,22 +314,21 @@ const HowItWorksPage: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-neutral-900 mb-1">
-                      Paired with a MEC Plan
+                      $0 Preventive Care
                     </h3>
-                    <p className="text-sm text-blue-600 font-medium">HSA-Eligible &bull; State-Compliant</p>
+                    <p className="text-sm text-blue-600 font-medium">Included with MEC &bull; HSA-Eligible</p>
                   </div>
                 </div>
                 <p className="text-neutral-700 leading-relaxed mb-3">
-                  Every MPB Health membership is bundled with a Minimum Essential
-                  Coverage (MEC) plan. This pairing satisfies state individual
-                  mandate requirements so you stay compliant without purchasing a
-                  separate policy.
+                  Select MPB Health memberships include access to preventive care
+                  through Minimum Essential Coverage (MEC). This includes services
+                  like annual wellness visits, routine screenings, and recommended
+                  vaccinations.
                 </p>
                 <p className="text-neutral-700 leading-relaxed">
-                  Because the MEC plan meets federal guidelines, your membership
-                  also qualifies as HSA-eligible&mdash;meaning you can contribute
-                  to a Health Savings Account and take advantage of tax-free
-                  dollars for qualified medical expenses.
+                  When included, these services are available at no additional
+                  cost when received from an in-network provider, in accordance
+                  with plan guidelines.
                 </p>
               </div>
 
@@ -387,7 +407,7 @@ const HowItWorksPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {whatToKnow.map((item, index) => {
                 const Icon = item.icon;
                 return (

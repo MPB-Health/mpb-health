@@ -5,7 +5,6 @@ import { HowItWorks as HowItWorksAnimation } from '../components/blocks/HowItWor
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/Accordion';
 import { Button } from '../components/ui/button';
 import {
-  Shield,
   TrendingDown,
   Stethoscope,
   CalendarCheck,
@@ -234,22 +233,16 @@ const HowItWorksPage: React.FC = () => {
                 </Link>
               </div>
 
-              {/* Decorative illustration */}
-              <div className="relative" aria-hidden="true">
-                <div className="rounded-2xl bg-gradient-to-br from-blue-100 via-white to-teal-100 border border-blue-100 aspect-[4/3] flex items-center justify-center overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-200 via-transparent to-transparent" />
-                  <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-blue-200 via-transparent to-transparent" />
-                  <div className="relative flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
-                      <Shield className="w-10 h-10 text-blue-600" />
-                    </div>
-                    <div className="w-16 h-16 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
-                      <Heart className="w-8 h-8 text-teal-600" />
-                    </div>
-                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
-                      <Users className="w-7 h-7 text-blue-500" />
-                    </div>
-                  </div>
+              {/* Community healthcare photo */}
+              <div className="relative">
+                <div className="rounded-2xl overflow-hidden shadow-lg ring-1 ring-blue-100/60 aspect-[4/3] bg-blue-50">
+                  <img
+                    src="/assets/how-it-works-community.png"
+                    alt="A diverse group of people placing their hands together in the center, symbolizing the MPB Health sharing community"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             </div>
@@ -260,25 +253,16 @@ const HowItWorksPage: React.FC = () => {
         <div className="bg-gradient-to-b from-neutral-50 to-white py-16 sm:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              {/* Decorative illustration */}
-              <div className="relative order-2 lg:order-1" aria-hidden="true">
-                <div className="rounded-2xl bg-gradient-to-br from-teal-100 via-white to-blue-100 border border-teal-100 aspect-[4/3] flex items-center justify-center overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200 via-transparent to-transparent" />
-                  <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-teal-200 via-transparent to-transparent" />
-                  <div className="relative grid grid-cols-2 gap-4">
-                    <div className="w-24 h-24 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
-                      <Users className="w-12 h-12 text-teal-600" />
-                    </div>
-                    <div className="w-24 h-24 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
-                      <DollarSign className="w-12 h-12 text-blue-600" />
-                    </div>
-                    <div className="w-24 h-24 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
-                      <Heart className="w-12 h-12 text-blue-600" />
-                    </div>
-                    <div className="w-24 h-24 rounded-2xl bg-white/80 backdrop-blur border border-white shadow-lg flex items-center justify-center">
-                      <ShieldCheck className="w-12 h-12 text-teal-600" />
-                    </div>
-                  </div>
+              {/* Family & community photo */}
+              <div className="relative order-2 lg:order-1">
+                <div className="rounded-2xl overflow-hidden shadow-lg ring-1 ring-teal-100/60 aspect-[4/3] bg-teal-50">
+                  <img
+                    src="/assets/how-it-works-family.png"
+                    alt="A family holding hands and walking along the shoreline at sunset, representing the families MPB Health supports"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 

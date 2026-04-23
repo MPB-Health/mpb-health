@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Calendar, Mail, Phone, PhoneCall, ExternalLink } from 'lucide-react';
+import { Calendar, Mail, Phone, ExternalLink } from 'lucide-react';
 import { siteMediaService } from '../lib/siteMediaService';
 
-const BOOKING_URL = 'https://outlook-sdf.office.com/bookwithme/user/b5a563c9279c4a2bae04c6f70d39e03e%40mympb.com/meetingtype/470f7109-0022-46af-a43b-0bc75e0efad9?anonymous&ismsaljsauthenabled=true';
+// Shared MPB Sales team booking page. Update via VITE_SALES_BOOKING_URL once
+// Kiley provides the final Outlook group booking link. The fallback keeps the
+// CTA functional (routes to the contact page) instead of a broken link.
+const SALES_BOOKING_URL =
+  (import.meta.env.VITE_SALES_BOOKING_URL as string | undefined) ||
+  'https://mpb.health/contact?utm_source=welcome-email&utm_medium=email&utm_campaign=schedule-call';
+
+const SALES_EMAIL = 'sales@mympb.com';
+const SALES_PHONE_DISPLAY = '(855) 816-4650 ext 1';
+const SALES_PHONE_TEL = '+18558164650,1';
 
 export default function Welcome() {
   const [searchParams] = useSearchParams();
@@ -60,7 +69,7 @@ export default function Welcome() {
                     Health-share programs offer a great solution for unexpected medical bills. Our ability to custom tailor a program to your needs makes our health-share particularly beneficial for those looking to avoid pre-paying for benefits they'll never use.
                   </p>
                   <p className="text-slate-600 text-lg leading-relaxed">
-                    We offer a handful of the very best and unique healthshare options, and I can answer any questions you have and help you figure out which one is the right fit for you. You can read more about them on our website or watch the video below for more about how our programs work.
+                    We offer a handful of the very best and unique healthshare options. Our advisors can answer any questions you have and help you figure out which one is the right fit for you. You can read more about them on our website or watch the short video below for a quick overview of how our programs work.
                   </p>
                 </div>
 
@@ -82,21 +91,27 @@ export default function Welcome() {
                 {/* CTA Section */}
                 <div className="text-center space-y-4 pt-4">
                   <p className="text-slate-600 text-lg">
-                    If you'd like my assistance in deciding which program is right for you, just click on my calendar link and schedule a call with me or one of our advisors.
+                    Ready to talk it through? Click the calendar link below to book a call with the first available MPB Health advisor.
                   </p>
                   <p className="text-slate-500 font-medium">
                     There's no charge nor obligation.
                   </p>
                   <a
-                    href={BOOKING_URL}
+                    href={SALES_BOOKING_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                   >
                     <Calendar className="w-5 h-5" />
-                    Click Here For Our Online Appointment Scheduling System
+                    Schedule Your Free Consultation
                     <ExternalLink className="w-4 h-4" />
                   </a>
+                  <p className="text-slate-500 text-sm">
+                    Prefer to call?{' '}
+                    <a href={`tel:${SALES_PHONE_TEL}`} className="text-blue-600 font-semibold hover:text-blue-700">
+                      {SALES_PHONE_DISPLAY}
+                    </a>
+                  </p>
                 </div>
 
                 {/* Divider */}
@@ -106,37 +121,30 @@ export default function Welcome() {
                     <div className="flex flex-col md:flex-row md:items-center gap-6">
                       {/* Avatar/Name */}
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                          LM
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg tracking-wide">
+                          MPB
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-slate-900">Leonardo Moraes</h3>
-                          <p className="text-slate-500 text-sm">Health Share Advisor</p>
+                          <h3 className="text-xl font-bold text-slate-900">MPB Health Sales Team</h3>
+                          <p className="text-slate-500 text-sm">Your Health Share Advisors</p>
                         </div>
                       </div>
 
                       {/* Contact Info */}
                       <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <a
-                          href="mailto:Leonardo@mympb.com"
+                          href={`mailto:${SALES_EMAIL}`}
                           className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors"
                         >
                           <Mail className="w-4 h-4 text-blue-500" />
-                          <span className="text-sm">Leonardo@mympb.com</span>
+                          <span className="text-sm">{SALES_EMAIL}</span>
                         </a>
                         <a
-                          href="tel:8558164650"
+                          href={`tel:${SALES_PHONE_TEL}`}
                           className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors"
                         >
                           <Phone className="w-4 h-4 text-blue-500" />
-                          <span className="text-sm">Office: 855-816-4650 Ext.1001</span>
-                        </a>
-                        <a
-                          href="tel:5612863544"
-                          className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors sm:col-span-2"
-                        >
-                          <PhoneCall className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">Direct: (561) 286-3544 (Text or Call)</span>
+                          <span className="text-sm">Sales: {SALES_PHONE_DISPLAY}</span>
                         </a>
                       </div>
                     </div>

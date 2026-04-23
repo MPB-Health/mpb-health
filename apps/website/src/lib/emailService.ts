@@ -256,7 +256,18 @@ export async function sendLeadNotification(data: {
   });
 }
 
-const BOOKING_URL = 'https://outlook-sdf.office.com/bookwithme/user/b5a563c9279c4a2bae04c6f70d39e03e%40mympb.com/meetingtype/470f7109-0022-46af-a43b-0bc75e0efad9?anonymous&ismsaljsauthenabled=true';
+// Shared MPB Sales team booking page (all advisors, first-available calendar).
+// Override via VITE_SALES_BOOKING_URL once Kiley provides the final Outlook group
+// booking link. The fallback routes prospects to our contact page so the CTA
+// is never broken in production.
+const SALES_BOOKING_URL =
+  (import.meta as any).env?.VITE_SALES_BOOKING_URL ||
+  'https://mpb.health/contact?utm_source=welcome-email&utm_medium=email&utm_campaign=schedule-call';
+
+// Central sales contact info so every template stays in sync.
+const SALES_EMAIL = 'sales@mympb.com';
+const SALES_PHONE_DISPLAY = '(855) 816-4650 ext 1';
+const SALES_PHONE_TEL = '+18558164650,1';
 
 export async function sendLeadWelcomeEmail(data: {
   firstName: string;
@@ -275,7 +286,10 @@ export async function sendLeadWelcomeEmail(data: {
 }): Promise<EmailResponse> {
   const welcomePageUrl = `https://mpb.health/welcome?name=${encodeURIComponent(data.firstName)}`;
   const videoUrl = 'https://vimeo.com/1115561411';
-  
+  // Vumbnail returns the Vimeo poster frame as a plain jpg — works reliably in
+  // every major email client (Gmail, Outlook, Apple Mail) unlike iframes.
+  const videoPosterUrl = 'https://vumbnail.com/1115561411.jpg';
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -316,32 +330,47 @@ export async function sendLeadWelcomeEmail(data: {
                     </p>
                     
                     <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
-                      We offer a handful of the very best and unique healthshare options, and I can answer any questions you have and help you figure out which one is the right fit for you. You can read more about them on our website or watch the video below for more about how our programs work.
+                      We offer a handful of the very best and unique healthshare options. Our advisors can answer any questions you have and help you figure out which one is the right fit for you. You can read more about them on our website or watch the short video below for a quick overview of how our programs work.
                     </p>
-                    
-                    <!-- Video CTA -->
-                    <div style="text-align: center; margin: 30px 0;">
-                      <a href="${videoUrl}" style="display: inline-block; text-decoration: none;">
-                        <div style="background-color: #0f172a; border-radius: 8px; padding: 40px 60px; position: relative;">
-                          <div style="width: 60px; height: 60px; background-color: #2563eb; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
-                            <span style="color: white; font-size: 24px; margin-left: 4px;">▶</span>
-                          </div>
-                          <p style="color: #94a3b8; font-size: 14px; margin: 15px 0 0 0;">Watch: How MPB Health Works</p>
-                        </div>
-                      </a>
-                    </div>
-                    
+
+                    <!-- Video Preview (renders as a real poster image in every email client) -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                      <tr>
+                        <td align="center">
+                          <a href="${videoUrl}" target="_blank" style="display: block; text-decoration: none; color: #ffffff;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(15,23,42,0.18); max-width: 520px; width: 100%;">
+                              <tr>
+                                <td style="position: relative; padding: 0; background-color: #0f172a;">
+                                  <img src="${videoPosterUrl}" alt="Watch: How MPB Health Works" width="520" style="display: block; width: 100%; max-width: 520px; height: auto; border: 0; outline: none; text-decoration: none;" />
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 14px 20px; text-align: center;">
+                                  <span style="display: inline-block; vertical-align: middle; width: 28px; height: 28px; line-height: 28px; background-color: #ffffff; color: #2563eb; border-radius: 50%; font-size: 14px; font-weight: bold;">&#9654;</span>
+                                  <span style="display: inline-block; vertical-align: middle; margin-left: 10px; color: #ffffff; font-size: 16px; font-weight: 600;">Watch: How MPB Health Works</span>
+                                </td>
+                              </tr>
+                            </table>
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
                     <!-- Schedule CTA -->
                     <div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
                       <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 15px 0;">
-                        If you'd like my assistance in deciding which program is right for you, just click on my calendar link and schedule a call with me or one of our advisors.
+                        Ready to talk it through? Click the calendar link below to book a call with the first available MPB Health advisor.
                       </p>
                       <p style="color: #64748b; font-size: 14px; font-weight: 600; margin: 0 0 20px 0;">
                         There's no charge nor obligation.
                       </p>
-                      <a href="${BOOKING_URL}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                      <a href="${SALES_BOOKING_URL}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">
                         📅 Schedule Your Free Consultation
                       </a>
+                      <p style="color: #64748b; font-size: 13px; margin: 18px 0 0 0;">
+                        Prefer to call? Reach the sales line at
+                        <a href="tel:${SALES_PHONE_TEL}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${SALES_PHONE_DISPLAY}</a>.
+                      </p>
                     </div>
                     
                     <!-- View Online Link -->
@@ -358,21 +387,18 @@ export async function sendLeadWelcomeEmail(data: {
                       <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                           <td width="70" valign="top">
-                            <div style="width: 60px; height: 60px; background: linear-gradient(to bottom right, #3b82f6, #06b6d4); border-radius: 50%; text-align: center; line-height: 60px; color: white; font-size: 24px; font-weight: bold;">
-                              LM
+                            <div style="width: 60px; height: 60px; background: linear-gradient(to bottom right, #3b82f6, #06b6d4); border-radius: 50%; text-align: center; line-height: 60px; color: white; font-size: 18px; font-weight: bold; letter-spacing: 1px;">
+                              MPB
                             </div>
                           </td>
                           <td valign="top" style="padding-left: 15px;">
-                            <h3 style="color: #0f172a; font-size: 18px; margin: 0 0 5px 0;">Leonardo Moraes</h3>
-                            <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Health Share Advisor</p>
+                            <h3 style="color: #0f172a; font-size: 18px; margin: 0 0 5px 0;">MPB Health Sales Team</h3>
+                            <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Your Health Share Advisors</p>
                             <p style="margin: 0 0 8px 0;">
-                              <a href="mailto:Leonardo@mympb.com" style="color: #2563eb; font-size: 14px; text-decoration: none;">📧 Leonardo@mympb.com</a>
-                            </p>
-                            <p style="margin: 0 0 8px 0;">
-                              <a href="tel:8558164650" style="color: #333; font-size: 14px; text-decoration: none;">📞 Office: 855-816-4650 Ext.1001</a>
+                              <a href="mailto:${SALES_EMAIL}" style="color: #2563eb; font-size: 14px; text-decoration: none;">📧 ${SALES_EMAIL}</a>
                             </p>
                             <p style="margin: 0;">
-                              <a href="tel:5612863544" style="color: #059669; font-size: 14px; text-decoration: none;">📱 Direct: (561) 286-3544 (Text or Call)</a>
+                              <a href="tel:${SALES_PHONE_TEL}" style="color: #333; font-size: 14px; text-decoration: none;">📞 Sales: ${SALES_PHONE_DISPLAY}</a>
                             </p>
                           </td>
                         </tr>
@@ -409,30 +435,29 @@ Individual programs typically range from $160 to $350 per month, while family pl
 
 Health-share programs offer a great solution for unexpected medical bills. Our ability to custom tailor a program to your needs makes our health-share particularly beneficial for those looking to avoid pre-paying for benefits they'll never use.
 
-We offer a handful of the very best and unique healthshare options, and I can answer any questions you have and help you figure out which one is the right fit for you.
+We offer a handful of the very best and unique healthshare options. Our advisors can answer any questions and help you figure out which one is the right fit for you.
 
 Watch how our programs work: ${videoUrl}
 
-If you'd like my assistance in deciding which program is right for you, schedule a call with me or one of our advisors. There's no charge nor obligation.
+Ready to talk? Book a call with the first available MPB Health advisor — no charge, no obligation.
 
-Schedule Your Free Consultation: ${BOOKING_URL}
+Schedule Your Free Consultation: ${SALES_BOOKING_URL}
 
 View this message online: ${welcomePageUrl}
 
 ---
 
-Leonardo Moraes
-Health Share Advisor
-E: Leonardo@mympb.com
-Office: 855-816-4650 Ext.1001
-Direct: (561) 286-3544 (Text or Call)`;
+MPB Health Sales Team
+Your Health Share Advisors
+E: ${SALES_EMAIL}
+Sales: ${SALES_PHONE_DISPLAY}`;
 
   return sendEmail({
     to: data.email,
     subject: `${data.firstName}, Thank You for Exploring MPB Health`,
     html,
     text: textContent,
-    replyTo: 'Leonardo@mympb.com'
+    replyTo: SALES_EMAIL,
   });
 }
 

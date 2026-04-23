@@ -179,6 +179,16 @@ export class ImportService {
         }
       }
 
+      // Sales Plan 2026: lead_source resolution. Imports default to the
+      // existing pipeline source (`inhouse_round_robin`) unless the importer
+      // explicitly opts into a different picklist slug — either via options
+      // or a lead-level `lead_source` column in the CSV. The DB trigger
+      // (crm_validate_lead_source) rejects invalid slugs.
+      const importLeadSource =
+        (lead as unknown as { lead_source?: string }).lead_source ||
+        (options as unknown as { leadSource?: string }).leadSource ||
+        'inhouse_round_robin';
+
       // Insert lead
       const { data, error } = await this.supabase
         .from('lead_submissions')
@@ -189,6 +199,7 @@ export class ImportService {
           phone: lead.phone || null,
           source_page: options.source || 'CSV Import',
           source_cta: 'Import',
+          lead_source: importLeadSource,
           form_data: {
             imported: true,
             import_source: options.source || 'CSV Import',

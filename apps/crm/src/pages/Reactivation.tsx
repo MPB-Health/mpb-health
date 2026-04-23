@@ -47,7 +47,9 @@ export default function Reactivation() {
   const { activeOrgId } = useOrg();
   const queryClient = useQueryClient();
 
-  const [minDaysInactive, setMinDaysInactive] = useState(90);
+  // Sales Plan 2026: default lookback is the spec's 4-year window, not 90 days.
+  // The picker still lets a rep narrow it down when chasing recent decays.
+  const [minDaysInactive, setMinDaysInactive] = useState(365 * 4);
   const [stageFilter, setStageFilter] = useState<string>('all');
 
   // Modal state
@@ -80,12 +82,31 @@ export default function Reactivation() {
   );
   const reactivationCadenceId = reactivationCadence?.id ?? null;
 
+  // Sales Plan 2026 reactivation drip — one deliberate action per week across a
+  // 4-week arc. Wk1 email → Wk2 phone/text → Wk3 LinkedIn DM → Wk4 value asset.
+  // Delay hours are measured from enrollment, not from each prior step, so the
+  // cadence runner can place all four tasks deterministically.
   const DEFAULT_REACTIVATION_STEPS: CadenceStep[] = [
-    { delay_hours: 0, action_type: 'email', description: 'Re-engagement email — check in and offer help' },
-    { delay_hours: 48, action_type: 'call', description: 'Follow-up call — personal touch' },
-    { delay_hours: 120, action_type: 'email', description: 'Value-add email — share a relevant resource' },
-    { delay_hours: 240, action_type: 'call', description: 'Second call attempt' },
-    { delay_hours: 336, action_type: 'email', description: 'Final reactivation email — last chance offer' },
+    {
+      delay_hours: 0,
+      action_type: 'email',
+      description: 'Week 1 — Re-engagement email. Check in, reference their original inquiry, and invite a 15-min call.',
+    },
+    {
+      delay_hours: 24 * 7,
+      action_type: 'call',
+      description: 'Week 2 — Phone + text. Short voicemail if unanswered, follow with a 2-line text.',
+    },
+    {
+      delay_hours: 24 * 14,
+      action_type: 'linkedin_message',
+      description: 'Week 3 — LinkedIn DM. Lead with value, not a pitch — share a relevant article or case study.',
+    },
+    {
+      delay_hours: 24 * 21,
+      action_type: 'email',
+      description: 'Week 4 — Value drop. Send a benchmark or rate-sheet snippet; close the loop with "still a fit?".',
+    },
   ];
 
   const createCadenceMutation = useMutation({
@@ -236,9 +257,17 @@ export default function Reactivation() {
             onChange={(e) => setMinDaysInactive(Number(e.target.value))}
             className="rounded-lg border border-th-border bg-surface-primary px-2 py-1.5 text-sm text-th-text-primary focus:outline-none focus:ring-1 focus:ring-th-accent-500"
           >
-            {[30, 60, 90, 120, 180].map((d) => (
-              <option key={d} value={d}>
-                {d}+ days
+            {[
+              { value: 30, label: '30+ days' },
+              { value: 60, label: '60+ days' },
+              { value: 90, label: '90+ days' },
+              { value: 180, label: '6+ months' },
+              { value: 365, label: '1+ year' },
+              { value: 365 * 2, label: '2+ years' },
+              { value: 365 * 4, label: '4-year window (Sales Plan 2026)' },
+            ].map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.label}
               </option>
             ))}
           </select>

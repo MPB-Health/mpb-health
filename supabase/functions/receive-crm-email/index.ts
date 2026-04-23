@@ -189,11 +189,17 @@ serve(async (req) => {
 
     let threadId: string | null = null;
 
+    // Sales Plan 2026 A/B harness: when an inbound matches an outbound via
+    // In-Reply-To, the outbound row carries ab_test_id/ab_variant so we can
+    // count this reply against the right variant. We pull those along with
+    // thread_id in the same round-trip.
+    let replyParentAbTest: { ab_test_id: string | null; ab_variant: string | null } | null = null;
+
     // Try to match via In-Reply-To header first
     if (inReplyTo) {
       const { data: existingEmail } = await supabase
         .from('crm_email_log')
-        .select('thread_id')
+        .select('thread_id, ab_test_id, ab_variant')
         .eq('message_id', inReplyTo)
         .limit(1)
         .maybeSingle();
@@ -201,6 +207,12 @@ serve(async (req) => {
       if (existingEmail?.thread_id) {
         threadId = existingEmail.thread_id;
         log.info(`Matched thread via In-Reply-To: ${threadId}`);
+      }
+      if (existingEmail?.ab_test_id) {
+        replyParentAbTest = {
+          ab_test_id: existingEmail.ab_test_id,
+          ab_variant: existingEmail.ab_variant ?? null,
+        };
       }
     }
 
@@ -308,6 +320,26 @@ serve(async (req) => {
     }
 
     log.info(`Email logged with ID: ${emailLog.id}`);
+
+    // Sales Plan 2026 A/B harness: when the parent outbound was part of a
+    // test, count this reply against the winning metric if the test is
+    // configured for replies.
+    if (replyParentAbTest?.ab_test_id && replyParentAbTest.ab_variant) {
+      const col = replyParentAbTest.ab_variant === 'a' ? 'variant_a_success' : 'variant_b_success';
+      const { data: test } = await supabase
+        .from('crm_email_ab_tests')
+        .select(`id, metric, ${col}`)
+        .eq('id', replyParentAbTest.ab_test_id)
+        .single();
+      if (test && (test as { metric?: string }).metric === 'reply') {
+        const next = ((test as Record<string, number>)[col] ?? 0) + 1;
+        await supabase
+          .from('crm_email_ab_tests')
+          .update({ [col]: next })
+          .eq('id', replyParentAbTest.ab_test_id);
+        log.info(`A/B reply counted for test ${replyParentAbTest.ab_test_id} variant ${replyParentAbTest.ab_variant}`);
+      }
+    }
 
     // ========================================================================
     // 7. Handle attachments

@@ -153,15 +153,22 @@ export class SLAService {
     const config = await this.getConfig();
     if (!config) return false;
 
-    for (const userId of config.escalation_to) {
-      await this.supabase.from('lead_notifications').insert({
-        lead_id: leadId,
-        user_id: userId,
-        type: 'sla_breach',
-        message: 'SLA breach: Lead has not been contacted within the required time.',
-      });
-    }
+    const rows = config.escalation_to.map((userId) => ({
+      lead_id: leadId,
+      org_id: this.orgId,
+      user_id: userId,
+      notification_type: 'sla_breach',
+      priority: 'high',
+      message: 'SLA breach: Lead has not been contacted within the required time.',
+    }));
 
+    if (rows.length === 0) return true;
+
+    const { error } = await this.supabase.from('lead_notifications').insert(rows);
+    if (error) {
+      console.error('Failed to write SLA escalation notifications:', error);
+      return false;
+    }
     return true;
   }
 

@@ -144,7 +144,7 @@ export function LogCallModal({ open, onClose, leadId, onSuccess }: LogCallModalP
     },
     onSubmit: async (vals) => {
       markSaving();
-      const result = await activityService.logCall(leadId, vals.outcome as string, vals.notes as string || undefined);
+      const result = await activityService.logCall(leadId, vals.outcome as string, vals.notes as string || undefined, vals.direction as 'inbound' | 'outbound');
       if (!result.success) {
         markError(result.error || 'Failed to log call');
         toast.error(result.error || 'Failed to log call');

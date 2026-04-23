@@ -271,10 +271,55 @@ export class TaskService {
   }
 
   /**
-   * Delete a task
+   * Delete a task.
+   *
+   * Sales Plan 2026 requires every active lead to always have an active
+   * next-action task. The service refuses to delete the last open task on a
+   * lead that is not in a terminal (won/lost) stage unless the caller passes
+   * `{ allowOrphan: true }` (UI should prompt for a replacement first).
    */
-  async deleteTask(taskId: string): Promise<{ success: boolean; error?: string }> {
+  async deleteTask(
+    taskId: string,
+    options: { allowOrphan?: boolean } = {}
+  ): Promise<{ success: boolean; error?: string }> {
     try {
+      if (!options.allowOrphan) {
+        const { data: task } = await this.supabase
+          .from('lead_tasks')
+          .select('id, lead_id, completed')
+          .eq('id', taskId)
+          .maybeSingle();
+
+        if (task && task.lead_id && !task.completed) {
+          const [{ data: lead }, { count: otherOpen }] = await Promise.all([
+            this.supabase
+              .from('lead_submissions')
+              .select('pipeline_stage')
+              .eq('id', task.lead_id)
+              .maybeSingle(),
+            this.supabase
+              .from('lead_tasks')
+              .select('id', { count: 'exact', head: true })
+              .eq('lead_id', task.lead_id)
+              .eq('completed', false)
+              .neq('id', taskId),
+          ]);
+
+          const stage = lead?.pipeline_stage as string | undefined;
+          const isTerminal = stage === 'won' || stage === 'lost';
+          const wouldLeaveOrphan = (otherOpen ?? 0) === 0;
+
+          if (!isTerminal && wouldLeaveOrphan) {
+            return {
+              success: false,
+              error:
+                'Cannot delete the last open task on an active lead. ' +
+                'Create a replacement task first, or pass allowOrphan when cancelling a won/lost lead.',
+            };
+          }
+        }
+      }
+
       const { error } = await this.supabase
         .from('lead_tasks')
         .delete()

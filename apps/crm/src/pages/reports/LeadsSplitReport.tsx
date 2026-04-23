@@ -10,23 +10,28 @@ import {
 } from 'recharts';
 import { useCRMService } from '../../contexts/CRMServiceContext';
 import { useOrg } from '../../contexts/OrgContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { ReportLayout } from '../../components/reports/ReportLayout';
+import { ReportRepFilter } from '../../components/reports/ReportRepFilter';
+import { useCanExportReports } from '../../hooks/useCanExportReports';
+import { useIsLeadManager } from '../../hooks/useIsLeadManager';
 import { exportToXLSX } from '../../lib/xlsxExport';
 import { crmQueryKeys } from '../../query/crmQueryKeys';
 
-const COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EC4899', '#22C55E', '#EF4444', '#06B6D4', '#F97316'];
+const COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EC4899', '#22C55E', '#EF4444'];
 
-/** Sources that roll up into “TOTAL Self-Gen” (case-insensitive). */
-const SELF_GEN_SOURCE_KEYS = new Set(['linkedin', 'networking', 'referrals', 'community', 'reactivation']);
-
-function normalizeSourceLabel(label: string): string {
-  return label.trim().toLowerCase().replace(/\s+/g, '_');
-}
-
+/**
+ * Canonical row shape returned by `crm_leads_split_2026`. Rows come back
+ * in spec display order: LinkedIn → Networking → Referrals → Community →
+ * Reactivation → TOTAL Self-Gen → Inhouse (RR) → GRAND TOTAL.
+ */
 export interface LeadsSplitRow {
-  source_label: string;
+  display_order: number;
+  row_kind: 'source' | 'subtotal' | 'grand_total';
+  label: string;
   lead_count: number;
-  is_self_generated: boolean;
+  closed_count: number;
+  conversion_pct: number;
 }
 
 function num(v: unknown): number {
@@ -37,9 +42,12 @@ function num(v: unknown): number {
 
 function mapRow(r: Record<string, unknown>): LeadsSplitRow {
   return {
-    source_label: String(r.source_label ?? ''),
+    display_order: num(r.display_order),
+    row_kind: (r.row_kind as LeadsSplitRow['row_kind']) ?? 'source',
+    label: String(r.label ?? ''),
     lead_count: num(r.lead_count),
-    is_self_generated: Boolean(r.is_self_generated),
+    closed_count: num(r.closed_count),
+    conversion_pct: num(r.conversion_pct),
   };
 }
 
@@ -47,92 +55,79 @@ export default function LeadsSplitReport() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
+  const [ytd, setYtd] = useState(false);
   const { supabase, orgId } = useCRMService();
   const { orgLoading } = useOrg();
+  const canExport = useCanExportReports();
+  const isLeadManager = useIsLeadManager();
+  const { user } = useAuth();
+
+  const [repIds, setRepIds] = useState<string[] | null>(
+    isLeadManager ? null : user?.id ? [user.id] : null,
+  );
+  const effectiveRepIds = isLeadManager ? repIds : user?.id ? [user.id] : null;
 
   const { data = [], isLoading, isError, error } = useQuery({
-    queryKey: crmQueryKeys.reportLeadsSplit(orgId, month, year),
+    queryKey: crmQueryKeys.reportLeadsSplit(orgId, month, year, effectiveRepIds, ytd),
     queryFn: async () => {
-      const { data: rows, error: rpcError } = await supabase.rpc('crm_leads_inhouse_vs_selfgen', {
+      const { data: rows, error: rpcError } = await supabase.rpc('crm_leads_split_2026', {
         p_org_id: orgId,
         p_month: month,
         p_year: year,
+        p_rep_ids: effectiveRepIds,
+        p_ytd: ytd,
       });
       if (rpcError) throw rpcError;
-      return ((rows ?? []) as Record<string, unknown>[]).map(mapRow);
+      return ((rows ?? []) as Record<string, unknown>[])
+        .map(mapRow)
+        .sort((a, b) => a.display_order - b.display_order);
     },
     enabled: !!orgId && !orgLoading,
   });
 
-  const { pieData, totalSelfGenSources, totalInhouseFromSplit, grandTotal } = useMemo(() => {
-    let selfGenFlag = 0;
-    let inhouseFlag = 0;
-    let selfGenSources = 0;
-    let total = 0;
-
-    for (const row of data) {
-      total += row.lead_count;
-      if (row.is_self_generated) selfGenFlag += row.lead_count;
-      else inhouseFlag += row.lead_count;
-
-      if (SELF_GEN_SOURCE_KEYS.has(normalizeSourceLabel(row.source_label))) {
-        selfGenSources += row.lead_count;
-      }
-    }
-
-    const pie = [
-      { name: 'Self-generated', value: selfGenFlag },
-      { name: 'In-house', value: inhouseFlag },
+  const pieData = useMemo(() => {
+    const selfGen = data.find((r) => r.label === 'TOTAL Self-Gen')?.lead_count ?? 0;
+    const inhouse = data.find((r) => r.label === 'Inhouse (RR)')?.lead_count ?? 0;
+    return [
+      { name: 'Self-Gen', value: selfGen },
+      { name: 'Inhouse (RR)', value: inhouse },
     ].filter((d) => d.value > 0);
-
-    return {
-      pieData: pie,
-      totalSelfGenSources: selfGenSources,
-      totalInhouseFromSplit: Math.max(0, total - selfGenSources),
-      grandTotal: total,
-    };
   }, [data]);
 
   const handleExport = () => {
-    if (!data.length && grandTotal === 0) return;
-    const rows: Record<string, unknown>[] = data.map((r) => ({
-      source: r.source_label,
-      count: r.lead_count,
-      self_generated: r.is_self_generated ? 'Yes' : 'No',
-    }));
-    rows.push({
-      source: 'TOTAL Self-Gen (LinkedIn+Networking+Referrals+Community+Reactivation)',
-      count: totalSelfGenSources,
-      self_generated: '',
-    });
-    rows.push({
-      source: 'TOTAL In-house (remainder)',
-      count: totalInhouseFromSplit,
-      self_generated: '',
-    });
-    rows.push({ source: 'GRAND TOTAL', count: grandTotal, self_generated: '' });
-
+    if (!data.length) return;
     exportToXLSX(
       [
-        { header: 'Source', key: 'source', width: 48 },
-        { header: 'Count', key: 'count' },
-        { header: 'Self-Generated', key: 'self_generated', width: 16 },
+        { header: 'Source', key: 'label', width: 40 },
+        { header: 'Leads', key: 'lead_count' },
+        { header: 'Closed', key: 'closed_count' },
+        { header: 'Conv. %', key: 'conversion_pct', format: 'percent' },
       ],
-      rows,
+      data as unknown as Record<string, unknown>[],
       'Leads split',
-      `crm-leads-split-${year}-${String(month).padStart(2, '0')}.xlsx`
+      `crm-leads-split-${year}-${String(month).padStart(2, '0')}${ytd ? '-ytd' : ''}.xlsx`,
     );
+  };
+
+  const rowClass = (kind: LeadsSplitRow['row_kind']) => {
+    if (kind === 'grand_total') return 'bg-surface-secondary font-semibold border-t-2 border-th-border';
+    if (kind === 'subtotal') return 'bg-surface-secondary font-medium';
+    return 'border-b border-th-border';
   };
 
   return (
     <ReportLayout
       title="Leads: in-house vs self-generated"
-      description="Lead volume by source and self-generated flag for the selected month."
+      description={`Lead volume by spec row — ${ytd ? 'year to date' : 'selected month'}.`}
       month={month}
       year={year}
       onMonthChange={setMonth}
       onYearChange={setYear}
-      onExport={handleExport}
+      onExport={canExport ? handleExport : undefined}
+      showYtdToggle
+      ytdEnabled={ytd}
+      onYtdToggle={setYtd}
+      filters={<ReportRepFilter value={repIds} onChange={setRepIds} />}
     >
       {isError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -175,21 +170,17 @@ export default function LeadsSplitReport() {
         </div>
 
         <div className="rounded-xl border border-th-border bg-surface-primary p-6">
-          <h2 className="text-lg font-semibold text-th-text-primary mb-2">Totals</h2>
-          <ul className="space-y-2 text-sm text-th-text-secondary">
-            <li>
-              <span className="font-medium text-th-text-primary">TOTAL Self-Gen</span> (LinkedIn + Networking + Referrals +
-              Community + Reactivation):{' '}
-              <span className="tabular-nums font-semibold text-th-text-primary">{totalSelfGenSources.toLocaleString()}</span>
-            </li>
-            <li>
-              <span className="font-medium text-th-text-primary">TOTAL In-house</span> (remainder):{' '}
-              <span className="tabular-nums font-semibold text-th-text-primary">{totalInhouseFromSplit.toLocaleString()}</span>
-            </li>
-            <li>
-              <span className="font-medium text-th-text-primary">GRAND TOTAL</span>:{' '}
-              <span className="tabular-nums font-semibold text-th-text-primary">{grandTotal.toLocaleString()}</span>
-            </li>
+          <h2 className="text-lg font-semibold text-th-text-primary mb-2">Spec totals</h2>
+          <p className="text-xs text-th-text-tertiary mb-3">
+            Rows match Sales Reports & Dashboards 2026 Slide 24.
+          </p>
+          <ul className="space-y-1.5 text-sm text-th-text-secondary">
+            {data.filter((r) => r.row_kind !== 'source').map((r) => (
+              <li key={r.label} className="flex justify-between">
+                <span className="font-medium text-th-text-primary">{r.label}</span>
+                <span className="tabular-nums">{r.lead_count.toLocaleString()}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
@@ -199,44 +190,27 @@ export default function LeadsSplitReport() {
           <thead>
             <tr className="border-b border-th-border bg-surface-secondary text-left text-th-text-secondary">
               <th className="px-3 py-2 font-medium">Source</th>
-              <th className="px-3 py-2 font-medium text-right">Count</th>
-              <th className="px-3 py-2 font-medium">Self-generated</th>
+              <th className="px-3 py-2 font-medium text-right">Leads</th>
+              <th className="px-3 py-2 font-medium text-right">Closed</th>
+              <th className="px-3 py-2 font-medium text-right">Conv. %</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={3} className="px-3 py-8 text-center text-th-text-tertiary">
+                <td colSpan={4} className="px-3 py-8 text-center text-th-text-tertiary">
                   Loading…
                 </td>
               </tr>
             ) : (
-              <>
-                {data.map((r, idx) => (
-                  <tr key={`${r.source_label}-${r.is_self_generated}-${idx}`} className="border-b border-th-border">
-                    <td className="px-3 py-2 text-th-text-primary">{r.source_label}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.lead_count.toLocaleString()}</td>
-                    <td className="px-3 py-2">{r.is_self_generated ? 'Yes' : 'No'}</td>
-                  </tr>
-                ))}
-                <tr className="border-t-2 border-th-border bg-surface-secondary font-medium">
-                  <td className="px-3 py-2 text-th-text-primary">
-                    TOTAL Self-Gen (LinkedIn + Networking + Referrals + Community + Reactivation)
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{totalSelfGenSources.toLocaleString()}</td>
-                  <td className="px-3 py-2">—</td>
+              data.map((r) => (
+                <tr key={r.label} className={rowClass(r.row_kind)}>
+                  <td className="px-3 py-2 text-th-text-primary">{r.label}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.lead_count.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.closed_count.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.conversion_pct.toFixed(1)}%</td>
                 </tr>
-                <tr className="bg-surface-secondary font-medium">
-                  <td className="px-3 py-2 text-th-text-primary">TOTAL In-house (remainder)</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{totalInhouseFromSplit.toLocaleString()}</td>
-                  <td className="px-3 py-2">—</td>
-                </tr>
-                <tr className="bg-surface-secondary font-semibold">
-                  <td className="px-3 py-2 text-th-text-primary">GRAND TOTAL</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{grandTotal.toLocaleString()}</td>
-                  <td className="px-3 py-2">—</td>
-                </tr>
-              </>
+              ))
             )}
           </tbody>
         </table>

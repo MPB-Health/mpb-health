@@ -13,6 +13,10 @@ import {
 import { useCRMService } from '../../contexts/CRMServiceContext';
 import { useOrg } from '../../contexts/OrgContext';
 import { ReportLayout } from '../../components/reports/ReportLayout';
+import { ReportRepFilter } from '../../components/reports/ReportRepFilter';
+import { useCanExportReports } from '../../hooks/useCanExportReports';
+import { useIsLeadManager } from '../../hooks/useIsLeadManager';
+import { useAuth } from '../../contexts/AuthContext';
 import { exportToXLSX } from '../../lib/xlsxExport';
 import { crmQueryKeys } from '../../query/crmQueryKeys';
 
@@ -68,14 +72,27 @@ export default function PerformanceReport() {
   const [year, setYear] = useState(now.getFullYear());
   const { supabase, orgId } = useCRMService();
   const { orgLoading } = useOrg();
+  const canExport = useCanExportReports();
+  const isLeadManager = useIsLeadManager();
+  const { user } = useAuth();
+
+  // Non-managers are clamped to their own data by the RBAC rule from the
+  // Sales Plan 2026 spec: "a regular rep cannot see another rep's
+  // individual dashboard unless they also hold the Lead Manager role."
+  const [repIds, setRepIds] = useState<string[] | null>(
+    isLeadManager ? null : (user?.id ? [user.id] : null)
+  );
+
+  const effectiveRepIds = isLeadManager ? repIds : (user?.id ? [user.id] : null);
 
   const { data = [], isLoading, isError, error } = useQuery({
-    queryKey: crmQueryKeys.reportPerformance(orgId, month, year),
+    queryKey: crmQueryKeys.reportPerformance(orgId, month, year, effectiveRepIds),
     queryFn: async () => {
-      const { data: rows, error: rpcError } = await supabase.rpc('crm_individual_performance', {
+      const { data: rows, error: rpcError } = await supabase.rpc('crm_individual_performance_filtered', {
         p_org_id: orgId,
         p_month: month,
         p_year: year,
+        p_rep_ids: effectiveRepIds,
       });
       if (rpcError) throw rpcError;
       return ((rows ?? []) as Record<string, unknown>[]).map(mapPerformanceRow);
@@ -131,7 +148,8 @@ export default function PerformanceReport() {
       year={year}
       onMonthChange={setMonth}
       onYearChange={setYear}
-      onExport={handleExport}
+      onExport={canExport ? handleExport : undefined}
+      filters={<ReportRepFilter value={repIds} onChange={setRepIds} />}
     >
       {isError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

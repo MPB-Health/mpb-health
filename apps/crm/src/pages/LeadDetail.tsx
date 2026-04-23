@@ -60,6 +60,7 @@ import { ScoreBreakdownPanel } from '../components/ScoreBreakdownPanel';
 import { UnifiedTimeline } from '../components/UnifiedTimeline';
 import { AttachmentList } from '../components/AttachmentList';
 import { RelationshipSidebar } from '../components/RelationshipSidebar';
+import { SunbizLookup } from '../components/SunbizLookup';
 import { useFocusItems } from '../hooks/useFocusItems';
 import { useOrg } from '../contexts/OrgContext';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
@@ -677,6 +678,27 @@ export default function LeadDetail() {
               <DetailRow label="Contact Preference" value={lead.contact_preference} icon={Phone} />
               <DetailRow label="Source" value={lead.source_cta} icon={FileText} />
             </div>
+
+            {/* Sales Plan 2026: Florida Sunbiz helper for prospect research.
+                Surfaces whenever the lead names a company (either directly on
+                source_cta or via an imported `metadata.company` field); the
+                helper opens the public sunbiz.org corp search in a new tab.
+                Manual MVP — scraper is deferred to Phase 8. */}
+            {(() => {
+              const candidate =
+                (lead as unknown as { company?: string; metadata?: Record<string, unknown> })
+                  .company ??
+                (lead as unknown as { metadata?: Record<string, unknown> }).metadata?.company ??
+                (lead.source_cta && /sunbiz|lookup/i.test(lead.source_cta) ? lead.source_cta : null);
+              const companyName = typeof candidate === 'string' ? candidate.trim() : null;
+              if (!companyName) return null;
+              return (
+                <div className="mt-3 pt-3 border-t border-th-border-subtle flex items-center justify-between">
+                  <span className="text-xs text-th-text-tertiary">Florida corp lookup</span>
+                  <SunbizLookup companyName={companyName} />
+                </div>
+              );
+            })()}
             {lead.tags && lead.tags.length > 0 && (
               <div className="mt-4 pt-4 border-t border-th-border-subtle">
                 <div className="flex items-center gap-1.5 mb-2">

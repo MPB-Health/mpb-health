@@ -6,14 +6,18 @@ import { supabase } from '../lib/supabase';
 import { AlertCircle, RotateCcw } from 'lucide-react';
 import {
   createCarrierService,
+  createLeadSourceService,
   PLAN_TYPE_LABELS,
   TOBACCO_STATUS_LABELS,
   GROUP_TYPE_LABELS,
   type InsuranceCarrier,
+  type LeadSourceType,
 } from '@mpbhealth/crm-core';
 import type { SaveStatus } from '../hooks/useSaveStatus';
+import { useCRMService } from '../contexts/CRMServiceContext';
 
 const carrierService = createCarrierService(supabase);
+const leadSourceService = createLeadSourceService(supabase);
 
 interface LeadFormValues {
   first_name: string;
@@ -42,6 +46,11 @@ interface LeadFormValues {
   priority: string;
   lead_score: string;
   next_followup_at: string;
+  // Sales Plan 2026: required picklist; attribution IDs are optional and
+  // conditionally surfaced when the matching source is selected.
+  lead_source: string;
+  outside_advisor_id: string;
+  referral_partner_id: string;
 }
 
 interface LeadFormProps {
@@ -116,6 +125,11 @@ const defaultValues: LeadFormValues = {
   plan_type: '', carrier_id: '', tobacco_status: '', group_type: '',
   original_effective_date: '', premium_amount: '', subsidy_amount: '',
   member_responsibility: '', priority: 'medium', lead_score: '0', next_followup_at: '',
+  // Sales Plan 2026 attribution. Default to the pipeline source so validation
+  // never blocks a hurried rep; they can override from the picker.
+  lead_source: 'inhouse_round_robin',
+  outside_advisor_id: '',
+  referral_partner_id: '',
 };
 
 function SectionDivider({ label }: { label: string }) {
@@ -140,19 +154,55 @@ export function LeadForm({
   saveStatus = 'idle',
   saveErrorMessage,
 }: LeadFormProps) {
+  const { referralService, outsideAdvisorService, orgId } = useCRMService();
   const [carriers, setCarriers] = useState<InsuranceCarrier[]>([]);
   const [loadingCarriers, setLoadingCarriers] = useState(true);
+  const [leadSources, setLeadSources] = useState<LeadSourceType[]>([]);
+  const [loadingLeadSources, setLoadingLeadSources] = useState(true);
+  const [referralPartners, setReferralPartners] = useState<{ id: string; name: string }[]>([]);
+  const [outsideAdvisors, setOutsideAdvisors] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     carrierService.getCarriers({ is_active: true }).then((data: InsuranceCarrier[]) => {
       setCarriers(data);
       setLoadingCarriers(false);
     }).catch(() => setLoadingCarriers(false));
+
+    leadSourceService.listActive().then((data: LeadSourceType[]) => {
+      setLeadSources(data);
+      setLoadingLeadSources(false);
+    }).catch(() => setLoadingLeadSources(false));
   }, []);
+
+  // Load attribution pickers lazily once the org is known. Both queries are
+  // cheap (<1KB payload) but we still gate on orgId so CRMContext-less previews
+  // don't explode.
+  useEffect(() => {
+    if (!orgId) return;
+    referralService.getPartners(true).then((rows) => {
+      setReferralPartners(rows.map((r) => ({ id: r.id, name: r.name })));
+    }).catch(() => setReferralPartners([]));
+    outsideAdvisorService.getAdvisors(true).then((rows) => {
+      setOutsideAdvisors(rows.map((r) => ({ id: r.id, name: r.name })));
+    }).catch(() => setOutsideAdvisors([]));
+  }, [orgId, referralService, outsideAdvisorService]);
 
   const carrierOptions = [
     { value: '', label: loadingCarriers ? 'Loading carriers...' : 'Select Carrier...' },
     ...carriers.map((c) => ({ value: c.id, label: c.name })),
+  ];
+
+  const leadSourceOptions = loadingLeadSources
+    ? [{ value: '', label: 'Loading lead sources...' }]
+    : leadSources.map((s) => ({ value: s.slug, label: s.label }));
+
+  const referralPartnerOptions = [
+    { value: '', label: referralPartners.length ? 'Select referral partner...' : 'No partners yet' },
+    ...referralPartners.map((p) => ({ value: p.id, label: p.name })),
+  ];
+  const outsideAdvisorOptions = [
+    { value: '', label: outsideAdvisors.length ? 'Select outside advisor...' : 'No advisors yet' },
+    ...outsideAdvisors.map((p) => ({ value: p.id, label: p.name })),
   ];
 
   const { values, errors, loading, submitError, handleChange, handleSubmit, retry } = useForm<LeadFormValues>({
@@ -163,6 +213,7 @@ export function LeadForm({
       if (!vals.last_name.trim()) errs.last_name = 'Last name is required';
       if (!vals.email.trim()) errs.email = 'Email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email)) errs.email = 'Invalid email format';
+      if (!vals.lead_source.trim()) errs.lead_source = 'Lead source is required';
       return errs;
     },
     onSubmit,
@@ -238,6 +289,42 @@ export function LeadForm({
         <InputField label="Source / CTA" name="source_cta" value={values.source_cta} onChange={wrappedChange} placeholder="e.g. Website Hero Banner" />
       </div>
       <InputField label="Tags" name="tags" value={values.tags} onChange={wrappedChange} placeholder="Comma-separated tags" />
+
+      {/* ─── Sales Plan 2026 Attribution ───
+          Required picklist — drives the Inhouse vs Self-Generated split in every 2026 report.
+          Server-side trigger crm_validate_lead_source rejects unknown slugs and derives
+          is_self_generated from the lookup so reporting cannot drift from this picker. */}
+      <SectionDivider label="Attribution" />
+      <div className="grid grid-cols-2 gap-4">
+        <SelectField
+          label="Lead Source"
+          name="lead_source"
+          value={values.lead_source}
+          onChange={wrappedChange}
+          options={leadSourceOptions}
+          error={errors.lead_source}
+          required
+          disabled={loadingLeadSources}
+        />
+        {values.lead_source === 'referrals' && (
+          <SelectField
+            label="Referral Partner"
+            name="referral_partner_id"
+            value={values.referral_partner_id}
+            onChange={wrappedChange}
+            options={referralPartnerOptions}
+          />
+        )}
+        {values.lead_source === 'outside_advisors' && (
+          <SelectField
+            label="Outside Advisor"
+            name="outside_advisor_id"
+            value={values.outside_advisor_id}
+            onChange={wrappedChange}
+            options={outsideAdvisorOptions}
+          />
+        )}
+      </div>
 
       {/* ─── Admin (edit-only) ─── */}
       {isEdit && (

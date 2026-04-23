@@ -12,7 +12,11 @@ import {
 } from 'recharts';
 import { useCRMService } from '../../contexts/CRMServiceContext';
 import { useOrg } from '../../contexts/OrgContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { ReportLayout } from '../../components/reports/ReportLayout';
+import { ReportRepFilter } from '../../components/reports/ReportRepFilter';
+import { useCanExportReports } from '../../hooks/useCanExportReports';
+import { useIsLeadManager } from '../../hooks/useIsLeadManager';
 import { exportToXLSX } from '../../lib/xlsxExport';
 import { crmQueryKeys } from '../../query/crmQueryKeys';
 
@@ -37,17 +41,26 @@ export default function ConversionReport() {
   const [year, setYear] = useState(() => now.getFullYear());
   const { supabase, orgId } = useCRMService();
   const { activeOrgId } = useOrg();
+  const canExport = useCanExportReports();
+  const isLeadManager = useIsLeadManager();
+  const { user } = useAuth();
+
+  const [repIds, setRepIds] = useState<string[] | null>(
+    isLeadManager ? null : user?.id ? [user.id] : null,
+  );
+  const effectiveRepIds = isLeadManager ? repIds : user?.id ? [user.id] : null;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: crmQueryKeys.reportConversion(orgId ?? activeOrgId, month, year),
+    queryKey: crmQueryKeys.reportConversion(orgId ?? activeOrgId, month, year, effectiveRepIds),
     enabled: Boolean(orgId ?? activeOrgId),
     queryFn: async () => {
       const oid = orgId ?? activeOrgId;
       if (!oid) return [];
-      const { data: rows, error: rpcError } = await supabase.rpc('crm_conversion_rates', {
+      const { data: rows, error: rpcError } = await supabase.rpc('crm_conversion_rates_filtered', {
         p_org_id: oid,
         p_month: month,
         p_year: year,
+        p_rep_ids: effectiveRepIds,
       });
       if (rpcError) throw rpcError;
       return (rows ?? []) as ConversionRow[];
@@ -103,7 +116,8 @@ export default function ConversionReport() {
       year={year}
       onMonthChange={setMonth}
       onYearChange={setYear}
-      onExport={handleExport}
+      onExport={canExport ? handleExport : undefined}
+      filters={<ReportRepFilter value={repIds} onChange={setRepIds} />}
     >
       {error && (
         <p className="text-sm text-red-600 px-1">

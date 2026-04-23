@@ -1,6 +1,54 @@
 // Lead priority levels
 export type LeadPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+/**
+ * Sales Plan 2026 — required lead_source picklist.
+ * Slugs mirror `public.crm_lead_source_types.slug`. The DB trigger
+ * `crm_validate_lead_source` enforces that whatever gets written into
+ * `lead_submissions.lead_source` matches an `is_active=true` row, and always
+ * derives `is_self_generated` from the lookup so the split driving every 2026
+ * report cannot drift from the picklist.
+ *
+ * Keep in sync with 20260413100000_crm_sales_plan_2026.sql (crm_lead_source_types seed).
+ */
+export const LEAD_SOURCE_SLUGS = [
+  'linkedin',
+  'networking',
+  'referrals',
+  'community',
+  'reactivation',
+  'inhouse_round_robin',
+  'church_partnership',
+  'hydration_booth',
+  'chamber_bni_sbdc',
+  'outside_advisors',
+  'sunbiz_prospect',
+] as const;
+export type LeadSourceSlug = (typeof LEAD_SOURCE_SLUGS)[number];
+
+/** Source slugs that are considered self-generated (Self-Gen vs Inhouse (RR) split). */
+export const SELF_GENERATED_SOURCE_SLUGS: readonly LeadSourceSlug[] = [
+  'linkedin',
+  'networking',
+  'referrals',
+  'community',
+  'reactivation',
+  'church_partnership',
+  'hydration_booth',
+  'chamber_bni_sbdc',
+  'outside_advisors',
+  'sunbiz_prospect',
+] as const;
+
+/**
+ * Client-side helper mirroring the DB trigger. Always prefer the server value
+ * when available — this is for optimistic UI only.
+ */
+export function inferSelfGenerated(source: string | null | undefined): boolean {
+  if (!source) return false;
+  return (SELF_GENERATED_SOURCE_SLUGS as readonly string[]).includes(source);
+}
+
 // Main Lead interface matching database schema
 export interface Lead {
   id: string;
@@ -44,6 +92,12 @@ export interface Lead {
   member_responsibility?: number | null;
   state?: string | null;
   city?: string | null;
+  // Sales Plan 2026 attribution
+  lead_source?: LeadSourceSlug | string | null;
+  is_self_generated?: boolean | null;
+  outside_advisor_id?: string | null;
+  referral_partner_id?: string | null;
+  reactivation_source_lead_id?: string | null;
   // Joined relations (not persisted)
   carrier?: { id: string; name: string; carrier_type: string } | null;
   assigned_user?: { id: string; email: string; full_name?: string } | null;
@@ -63,6 +117,11 @@ export interface LeadFilters {
   tobaccoStatus?: string;
   groupType?: string;
   state?: string;
+  // Sales Plan 2026 report filters
+  leadSource?: LeadSourceSlug | string;
+  isSelfGenerated?: boolean;
+  outsideAdvisorId?: string;
+  referralPartnerId?: string;
 }
 
 // Pipeline stage configuration
@@ -140,6 +199,15 @@ export interface LeadCreateInput {
   member_responsibility?: number;
   state?: string;
   city?: string;
+  // Sales Plan 2026 — picklist is enforced DB-side by the
+  // crm_validate_lead_source trigger. If omitted here the trigger defaults to
+  // 'inhouse_round_robin' so automated intake paths stay unbroken during rollout,
+  // but every user-driven intake path MUST surface the picker.
+  lead_source?: LeadSourceSlug | string;
+  is_self_generated?: boolean;
+  outside_advisor_id?: string;
+  referral_partner_id?: string;
+  reactivation_source_lead_id?: string;
 }
 
 // Lead update input
@@ -172,4 +240,9 @@ export interface LeadUpdateInput {
   member_responsibility?: number | null;
   state?: string | null;
   city?: string | null;
+  // Sales Plan 2026 attribution
+  lead_source?: LeadSourceSlug | string | null;
+  outside_advisor_id?: string | null;
+  referral_partner_id?: string | null;
+  reactivation_source_lead_id?: string | null;
 }

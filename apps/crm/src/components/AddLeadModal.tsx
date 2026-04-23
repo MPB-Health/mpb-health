@@ -50,6 +50,10 @@ export function AddLeadModal({ open, onClose, onSuccess }: AddLeadModalProps) {
       tobacco_status: values.tobacco_status || undefined,
       group_type: values.group_type || undefined,
       original_effective_date: values.original_effective_date || undefined,
+      // Sales Plan 2026 attribution
+      lead_source: values.lead_source || undefined,
+      outside_advisor_id: values.outside_advisor_id || undefined,
+      referral_partner_id: values.referral_partner_id || undefined,
     });
 
     if (!result.success) {

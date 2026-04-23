@@ -20,6 +20,7 @@ import {
 import toast from 'react-hot-toast';
 import { PermissionGate } from '../components/PermissionGate';
 import { AddAccountModal } from '../components/AddAccountModal';
+import { SunbizLookup } from '../components/SunbizLookup';
 import { useOrg } from '../contexts/OrgContext';
 import {
   createAccountService,
@@ -441,6 +442,19 @@ export default function AccountDetail() {
                         >
                           {account.website}
                         </a>
+                      </div>
+                    </div>
+                  )}
+                  {/* Sales Plan 2026: Sunbiz public corp lookup for FL-facing
+                      B2B accounts. Manual MVP — scraper deferred to Phase 8. */}
+                  {account.name && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-surface-secondary rounded-lg flex items-center justify-center">
+                        <Globe className="w-5 h-5 text-th-text-tertiary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-th-text-tertiary">Florida corp lookup</label>
+                        <SunbizLookup companyName={account.name} />
                       </div>
                     </div>
                   )}

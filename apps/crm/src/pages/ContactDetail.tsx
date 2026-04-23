@@ -189,15 +189,20 @@ export default function ContactDetail() {
     setSavingNote(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from('crm_activities').insert({
+      // Sales Plan 2026 Phase 5: unify activity writes. Reports read from
+      // `lead_activities` and the legacy `crm_activities` table is being
+      // phased out for quick-log notes. The new `contact_id` column (added
+      // in 20260423500000) preserves the contact linkage when no lead is
+      // tied to the note.
+      const { error } = await supabase.from('lead_activities').insert({
         org_id: contact?.org_id ?? '00000000-0000-4000-a000-000000000001',
         activity_type: 'note',
+        title: noteTitle.trim(),
         subject: noteTitle.trim(),
         description: noteContent.trim() || null,
         contact_id: id,
         lead_id: contact?.converted_from_lead_id ?? null,
-        status: 'completed',
-        created_by: user?.id ?? '',
+        created_by: user?.id ?? null,
       });
       if (error) throw error;
       setNoteTitle('');

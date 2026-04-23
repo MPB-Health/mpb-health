@@ -38,6 +38,18 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
+    /**
+     * CRM project — runs any spec under tests/e2e/crm/.
+     * Defaults to local dev server; override with E2E_CRM_URL for staging/prod smoke.
+     */
+    {
+      name: 'crm',
+      testDir: './tests/e2e/crm',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.E2E_CRM_URL ?? 'http://localhost:5173',
+      },
+    },
   ],
 
   /* Launch advisor-portal dev server in CI. Comment out if targeting production/staging. */

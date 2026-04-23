@@ -1,6 +1,7 @@
 // Email is sent server-side via the send-website-email Supabase Edge Function.
 // VITE_RESEND_API_KEY must NOT be used here — the key lives only in Supabase secrets.
 import { supabase } from './supabase';
+import { getSalesBookingUrl } from './salesBookingUrl';
 
 export interface EmailOptions {
   to: string | string[];
@@ -256,18 +257,19 @@ export async function sendLeadNotification(data: {
   });
 }
 
-// Shared MPB Sales team booking page (all advisors, first-available calendar).
-// Override via VITE_SALES_BOOKING_URL once Kiley provides the final Outlook group
-// booking link. The fallback routes prospects to our contact page so the CTA
-// is never broken in production.
-const SALES_BOOKING_URL =
-  (import.meta as any).env?.VITE_SALES_BOOKING_URL ||
-  'https://mpb.health/contact?utm_source=welcome-email&utm_medium=email&utm_campaign=schedule-call';
-
 // Central sales contact info so every template stays in sync.
 const SALES_EMAIL = 'sales@mympb.com';
 const SALES_PHONE_DISPLAY = '(855) 816-4650 ext 1';
 const SALES_PHONE_TEL = '+18558164650,1';
+
+/** Lead welcome email — primary advisor (matches customer-facing follow-up) */
+const WELCOME_ADVISOR_FROM_EMAIL = 'leonardo@mympb.com';
+const WELCOME_ADVISOR_NAME = 'Leonardo Moraes';
+const WELCOME_ADVISOR_TITLE = 'Health Share Advisor';
+const WELCOME_OFFICE_PHONE_DISPLAY = '855-816-4650 Ext. 1001';
+const WELCOME_OFFICE_PHONE_TEL = '+18558164650';
+const WELCOME_DIRECT_PHONE_DISPLAY = '(561) 286-3544 (Text or Call)';
+const WELCOME_DIRECT_PHONE_TEL = '+15612863544';
 
 export async function sendLeadWelcomeEmail(data: {
   firstName: string;
@@ -284,6 +286,7 @@ export async function sendLeadWelcomeEmail(data: {
   householdSize?: number;
   membershipPriorities?: string[] | unknown[];
 }): Promise<EmailResponse> {
+  const salesBookingUrl = getSalesBookingUrl();
   const welcomePageUrl = `https://mpb.health/welcome?name=${encodeURIComponent(data.firstName)}`;
   const videoUrl = 'https://vimeo.com/1115561411';
   // Vumbnail returns the Vimeo poster frame as a plain jpg — works reliably in
@@ -330,7 +333,7 @@ export async function sendLeadWelcomeEmail(data: {
                     </p>
                     
                     <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
-                      We offer a handful of the very best and unique healthshare options. Our advisors can answer any questions you have and help you figure out which one is the right fit for you. You can read more about them on our website or watch the short video below for a quick overview of how our programs work.
+                      We offer a handful of the very best and unique healthshare options, and I can answer any questions you have and help you figure out which one is the right fit for you. You can read more about them on our website or watch the video below for more about how our programs work.
                     </p>
 
                     <!-- Video Preview (renders as a real poster image in every email client) -->
@@ -356,20 +359,20 @@ export async function sendLeadWelcomeEmail(data: {
                       </tr>
                     </table>
 
-                    <!-- Schedule CTA -->
+                    <!-- Schedule CTA (Microsoft Bookings — all advisors) -->
                     <div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
                       <p style="color: #333; font-size: 16px; line-height: 1.7; margin: 0 0 15px 0;">
-                        Ready to talk it through? Click the calendar link below to book a call with the first available MPB Health advisor.
+                        If you'd like my assistance in deciding which program is right for you, just click on my calendar link and schedule a call with me or one of our advisors.
                       </p>
                       <p style="color: #64748b; font-size: 14px; font-weight: 600; margin: 0 0 20px 0;">
                         There's no charge nor obligation.
                       </p>
-                      <a href="${SALES_BOOKING_URL}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                      <a href="${salesBookingUrl}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">
                         📅 Schedule Your Free Consultation
                       </a>
-                      <p style="color: #64748b; font-size: 13px; margin: 18px 0 0 0;">
-                        Prefer to call? Reach the sales line at
-                        <a href="tel:${SALES_PHONE_TEL}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${SALES_PHONE_DISPLAY}</a>.
+                      <p style="color: #64748b; font-size: 13px; margin: 18px 0 0 0; line-height: 1.6;">
+                        <span style="display: block; margin-top: 6px;">📞 Office: <a href="tel:${WELCOME_OFFICE_PHONE_TEL}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${WELCOME_OFFICE_PHONE_DISPLAY}</a></span>
+                        <span style="display: block; margin-top: 4px;">📱 Direct: <a href="tel:${WELCOME_DIRECT_PHONE_TEL}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${WELCOME_DIRECT_PHONE_DISPLAY}</a></span>
                       </p>
                     </div>
                     
@@ -387,19 +390,18 @@ export async function sendLeadWelcomeEmail(data: {
                       <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                           <td width="70" valign="top">
-                            <div style="width: 60px; height: 60px; background: linear-gradient(to bottom right, #3b82f6, #06b6d4); border-radius: 50%; text-align: center; line-height: 60px; color: white; font-size: 18px; font-weight: bold; letter-spacing: 1px;">
-                              MPB
+                            <div style="width: 60px; height: 60px; background: linear-gradient(to bottom right, #3b82f6, #06b6d4); border-radius: 50%; text-align: center; line-height: 60px; color: white; font-size: 15px; font-weight: bold; letter-spacing: 0.5px;">
+                              LM
                             </div>
                           </td>
                           <td valign="top" style="padding-left: 15px;">
-                            <h3 style="color: #0f172a; font-size: 18px; margin: 0 0 5px 0;">MPB Health Sales Team</h3>
-                            <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Your Health Share Advisors</p>
+                            <h3 style="color: #0f172a; font-size: 18px; margin: 0 0 5px 0;">${WELCOME_ADVISOR_NAME}</h3>
+                            <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">${WELCOME_ADVISOR_TITLE}</p>
                             <p style="margin: 0 0 8px 0;">
-                              <a href="mailto:${SALES_EMAIL}" style="color: #2563eb; font-size: 14px; text-decoration: none;">📧 ${SALES_EMAIL}</a>
+                              <a href="mailto:${WELCOME_ADVISOR_FROM_EMAIL}" style="color: #2563eb; font-size: 14px; text-decoration: none;">📧 Leonardo@mympb.com</a>
                             </p>
-                            <p style="margin: 0;">
-                              <a href="tel:${SALES_PHONE_TEL}" style="color: #333; font-size: 14px; text-decoration: none;">📞 Sales: ${SALES_PHONE_DISPLAY}</a>
-                            </p>
+                            <p style="margin: 0 0 4px 0; color: #333; font-size: 14px;">📞 Office: <a href="tel:${WELCOME_OFFICE_PHONE_TEL}" style="color: #2563eb; text-decoration: none;">${WELCOME_OFFICE_PHONE_DISPLAY}</a></p>
+                            <p style="margin: 0; color: #333; font-size: 14px;">📱 Direct: <a href="tel:${WELCOME_DIRECT_PHONE_TEL}" style="color: #2563eb; text-decoration: none;">${WELCOME_DIRECT_PHONE_DISPLAY}</a></p>
                           </td>
                         </tr>
                       </table>
@@ -435,29 +437,30 @@ Individual programs typically range from $160 to $350 per month, while family pl
 
 Health-share programs offer a great solution for unexpected medical bills. Our ability to custom tailor a program to your needs makes our health-share particularly beneficial for those looking to avoid pre-paying for benefits they'll never use.
 
-We offer a handful of the very best and unique healthshare options. Our advisors can answer any questions and help you figure out which one is the right fit for you.
+We offer a handful of the very best and unique healthshare options, and I can answer any questions and help you figure out which one is the right fit for you.
 
 Watch how our programs work: ${videoUrl}
 
-Ready to talk? Book a call with the first available MPB Health advisor — no charge, no obligation.
+If you'd like my assistance, use the calendar link to schedule a call with me or one of our advisors — no charge, no obligation.
 
-Schedule Your Free Consultation: ${SALES_BOOKING_URL}
+Schedule Your Free Consultation: ${salesBookingUrl}
 
 View this message online: ${welcomePageUrl}
 
 ---
 
-MPB Health Sales Team
-Your Health Share Advisors
-E: ${SALES_EMAIL}
-Sales: ${SALES_PHONE_DISPLAY}`;
+${WELCOME_ADVISOR_NAME}
+${WELCOME_ADVISOR_TITLE}
+E: ${WELCOME_ADVISOR_FROM_EMAIL}
+Office: ${WELCOME_OFFICE_PHONE_DISPLAY}
+Direct: ${WELCOME_DIRECT_PHONE_DISPLAY}`;
 
   return sendEmail({
     to: data.email,
     subject: `${data.firstName}, Thank You for Exploring MPB Health`,
     html,
     text: textContent,
-    replyTo: SALES_EMAIL,
+    replyTo: WELCOME_ADVISOR_FROM_EMAIL,
   });
 }
 

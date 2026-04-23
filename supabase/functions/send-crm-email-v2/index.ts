@@ -57,6 +57,12 @@ interface RequestBody {
   template_id?: string;
   attachment_ids?: string[];
   metadata?: Record<string, unknown>;
+
+  // Sales Plan 2026 A/B harness. When caller provides ab_test_id + ab_variant
+  // we stamp them on the email_log row and bump the running test's variant
+  // counter so Campaigns → A/B Tests shows real send totals.
+  ab_test_id?: string;
+  ab_variant?: 'a' | 'b';
 }
 
 interface ResendResponse {
@@ -142,6 +148,8 @@ serve(async (req) => {
       template_id,
       attachment_ids,
       metadata,
+      ab_test_id,
+      ab_variant,
     } = body;
 
     // Validate required fields
@@ -277,6 +285,8 @@ serve(async (req) => {
           error: errorMessage,
         },
         tracking_id: trackingId,
+        ab_test_id: ab_test_id || null,
+        ab_variant: ab_variant || null,
         sent_by: sentBy,
         sent_at: new Date().toISOString(),
       })
@@ -310,6 +320,23 @@ serve(async (req) => {
           }),
         })
         .eq('id', thread_id);
+    }
+
+    // Sales Plan 2026: bump the running test's per-variant send counter.
+    // Done via the service-role client so RLS doesn't block it; the edge
+    // function already runs as service-role.
+    if (ab_test_id && ab_variant && status === 'sent') {
+      const col = ab_variant === 'a' ? 'variant_a_sent' : 'variant_b_sent';
+      const { data: cur } = await supabase
+        .from('crm_email_ab_tests')
+        .select(col)
+        .eq('id', ab_test_id)
+        .single();
+      const next = ((cur as Record<string, number> | null)?.[col] ?? 0) + 1;
+      await supabase
+        .from('crm_email_ab_tests')
+        .update({ [col]: next })
+        .eq('id', ab_test_id);
     }
 
     // Create activity log for lead

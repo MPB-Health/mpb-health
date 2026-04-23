@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
@@ -29,7 +29,7 @@ const EVENT_TYPES: CommunityEventType[] = [
 
 export default function CommunityEventDetail() {
   const { id } = useParams<{ id: string }>();
-  const { communityEventService } = useCRMService();
+  const { communityEventService, supabase } = useCRMService();
   const { activeOrgId } = useOrg();
   const queryClient = useQueryClient();
 
@@ -37,6 +37,33 @@ export default function CommunityEventDetail() {
     queryKey: crmQueryKeys.communityEvent(activeOrgId, id ?? ''),
     queryFn: () => communityEventService.getEvent(id!),
     enabled: !!activeOrgId && !!id,
+  });
+
+  // Sales Plan 2026: show the leads that came in through this specific event.
+  // Filtering on `community_event_id` means this only returns leads captured
+  // via the public `/forms/community/:eventId` page or manual attribution.
+  const { data: attributedLeads = [] } = useQuery({
+    queryKey: ['communityEventLeads', activeOrgId, id],
+    enabled: !!activeOrgId && !!id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('lead_submissions')
+        .select('id, first_name, last_name, email, phone, pipeline_stage, created_at, assigned_to')
+        .eq('org_id', activeOrgId!)
+        .eq('community_event_id', id!)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      return (data ?? []) as Array<{
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        email: string | null;
+        phone: string | null;
+        pipeline_stage: string | null;
+        created_at: string;
+        assigned_to: string | null;
+      }>;
+    },
   });
 
   const [editForm, setEditForm] = useState<CommunityEventInput | null>(null);
@@ -152,6 +179,89 @@ export default function CommunityEventDetail() {
         </dl>
         {event.notes && (
           <p className="text-sm text-th-text-secondary border-t border-th-border pt-3">{event.notes}</p>
+        )}
+      </div>
+
+      {/* Sales Plan 2026: on-site capture URL. The rep opens this on a tablet
+          at the booth; the public form writes a lead with lead_source='community'
+          + community_event_id so attribution + counter are automatic. */}
+      <div className="rounded-xl border border-th-border bg-surface-primary p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-th-text-primary">On-site capture URL</h2>
+        <p className="text-xs text-th-text-secondary">
+          Open this on a tablet at the booth. Each submission is automatically attributed to
+          this event and round-robined to the next rep on rotation.
+        </p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 rounded-lg border border-th-border bg-surface-secondary px-3 py-2 text-xs font-mono text-th-text-primary truncate">
+            {`${window.location.origin}/forms/community/${event.id}`}
+          </code>
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard?.writeText(`${window.location.origin}/forms/community/${event.id}`);
+              toast.success('Copied');
+            }}
+            className="rounded-lg border border-th-border px-3 py-2 text-xs font-medium text-th-text-secondary hover:bg-surface-secondary"
+          >
+            <Copy className="w-3.5 h-3.5 inline mr-1" /> Copy
+          </button>
+          <a
+            href={`/forms/community/${event.id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg border border-th-border px-3 py-2 text-xs font-medium text-th-text-secondary hover:bg-surface-secondary"
+          >
+            <ExternalLink className="w-3.5 h-3.5 inline mr-1" /> Open
+          </a>
+        </div>
+      </div>
+
+      {/* Attributed leads */}
+      <div className="rounded-xl border border-th-border bg-surface-primary overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-th-border">
+          <h2 className="text-sm font-semibold text-th-text-primary">
+            Attributed leads ({attributedLeads.length})
+          </h2>
+          <p className="text-xs text-th-text-tertiary">Auto-updated as submissions come in</p>
+        </div>
+        {attributedLeads.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-th-text-tertiary">
+            No leads captured yet. Share the URL above from the booth.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-th-border text-left text-xs text-th-text-tertiary">
+                  <th className="px-4 py-2 font-medium">Lead</th>
+                  <th className="px-4 py-2 font-medium">Contact</th>
+                  <th className="px-4 py-2 font-medium">Stage</th>
+                  <th className="px-4 py-2 font-medium">Captured</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attributedLeads.map((l) => (
+                  <tr key={l.id} className="border-b border-th-border last:border-0">
+                    <td className="px-4 py-2">
+                      <Link
+                        to={`/leads/${l.id}`}
+                        className="font-medium text-th-accent-600 hover:underline"
+                      >
+                        {[l.first_name, l.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2 text-th-text-secondary">
+                      {l.email || l.phone || '—'}
+                    </td>
+                    <td className="px-4 py-2 text-th-text-secondary">{l.pipeline_stage || '—'}</td>
+                    <td className="px-4 py-2 text-th-text-secondary">
+                      {new Date(l.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

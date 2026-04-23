@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCRMService } from '../../contexts/CRMServiceContext';
 import { useOrg } from '../../contexts/OrgContext';
 import { ReportLayout } from '../../components/reports/ReportLayout';
+import { useCanExportReports } from '../../hooks/useCanExportReports';
 import { exportToXLSX } from '../../lib/xlsxExport';
 import { crmQueryKeys } from '../../query/crmQueryKeys';
 
@@ -21,6 +22,7 @@ export default function AdvisorProductionReport() {
   const [year, setYear] = useState(() => now.getFullYear());
   const { supabase, orgId } = useCRMService();
   const { activeOrgId } = useOrg();
+  const canExport = useCanExportReports();
 
   const { data, isLoading, error } = useQuery({
     queryKey: crmQueryKeys.reportAdvisorProduction(orgId ?? activeOrgId, month, year),
@@ -74,7 +76,7 @@ export default function AdvisorProductionReport() {
       year={year}
       onMonthChange={setMonth}
       onYearChange={setYear}
-      onExport={handleExport}
+      onExport={canExport ? handleExport : undefined}
     >
       {error && (
         <p className="text-sm text-red-600 px-1">

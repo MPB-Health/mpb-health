@@ -47,12 +47,12 @@ export const crmQueryKeys = {
   leadSourceTypes: () => [...crmQueryRoot, 'leadSourceTypes'] as const,
 
   // Reports 2026
-  reportPerformance: (orgId: string | null, month: number, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'performance', month, year] as const,
-  reportLeadsSplit: (orgId: string | null, month: number, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'leadsSplit', month, year] as const,
+  reportPerformance: (orgId: string | null, month: number, year: number, reps?: string[] | null) => [...crmQueryRoot, orgId ?? 'none', 'report', 'performance', month, year, (reps ?? []).slice().sort().join(',') || 'all'] as const,
+  reportLeadsSplit: (orgId: string | null, month: number, year: number, reps?: string[] | null, ytd?: boolean) => [...crmQueryRoot, orgId ?? 'none', 'report', 'leadsSplit2026', month, year, (reps ?? []).slice().sort().join(',') || 'all', ytd ? 'ytd' : 'mtd'] as const,
   reportSourceBreakdown: (orgId: string | null, month: number, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'sourceBreakdown', month, year] as const,
-  reportRevenue: (orgId: string | null, month: number, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'revenue', month, year] as const,
-  reportConversion: (orgId: string | null, month: number, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'conversion', month, year] as const,
-  reportActivityTargets: (orgId: string | null, month: number, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'activityTargets', month, year] as const,
+  reportRevenue: (orgId: string | null, month: number, year: number, reps?: string[] | null) => [...crmQueryRoot, orgId ?? 'none', 'report', 'revenue', month, year, (reps ?? []).slice().sort().join(',') || 'all'] as const,
+  reportConversion: (orgId: string | null, month: number, year: number, reps?: string[] | null) => [...crmQueryRoot, orgId ?? 'none', 'report', 'conversion', month, year, (reps ?? []).slice().sort().join(',') || 'all'] as const,
+  reportActivityTargets: (orgId: string | null, month: number, year: number, reps?: string[] | null) => [...crmQueryRoot, orgId ?? 'none', 'report', 'activityTargets', month, year, (reps ?? []).slice().sort().join(',') || 'all'] as const,
   reportAdvisorProduction: (orgId: string | null, month: number, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'advisorProduction', month, year] as const,
   reportAnnualLeadTrend: (orgId: string | null, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'annualLeadTrend', year] as const,
   reportAnnualRevenue: (orgId: string | null, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'annualRevenue', year] as const,

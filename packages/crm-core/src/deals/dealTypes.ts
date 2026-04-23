@@ -103,6 +103,12 @@ export interface DealCreateInput {
   owner_id?: string;
   tags?: string[];
   campaign_id?: string;
+  // Sales Plan 2026: every closed deal rolls up into the Revenue + Leads Split
+  // reports by product line (Health Insurance vs Medical Cost Sharing, with
+  // more lines seeded in `crm_product_lines`). Optional during create so legacy
+  // imports don't break; Revenue report rows without a line fall into a
+  // "(uncategorised)" bucket so the omission is visible in QA.
+  product_line?: string;
 }
 
 export interface DealUpdateInput extends Partial<DealCreateInput> {

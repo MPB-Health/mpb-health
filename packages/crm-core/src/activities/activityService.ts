@@ -113,13 +113,131 @@ export class ActivityService {
   async logCall(
     leadId: string,
     outcome: string,
-    notes?: string
+    notes?: string,
+    direction: 'inbound' | 'outbound' = 'outbound'
   ): Promise<{ success: boolean; error?: string }> {
     return this.logActivity(leadId, {
       activity_type: 'call',
       title: `Call: ${outcome}`,
       description: notes,
-      metadata: { outcome },
+      metadata: { outcome, direction },
+    });
+  }
+
+  /**
+   * Sales Plan 2026 quick-log surface. Each helper records a single row with
+   * a spec-aligned activity_type so the monthly PerformanceReport columns
+   * have an identifiable source feeding them (no more silent drops of call
+   * direction, LinkedIn subtype, etc.).
+   */
+  async logText(
+    leadId: string,
+    direction: 'inbound' | 'outbound',
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.logActivity(leadId, {
+      activity_type: 'text',
+      title: `Text: ${direction}`,
+      description: notes,
+      metadata: { direction },
+    });
+  }
+
+  async logLinkedInMessage(
+    leadId: string,
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.logActivity(leadId, {
+      activity_type: 'linkedin_message',
+      title: 'LinkedIn DM sent',
+      description: notes,
+    });
+  }
+
+  async logLinkedInConnection(
+    leadId: string,
+    phase: 'sent' | 'accepted',
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.logActivity(leadId, {
+      activity_type: phase === 'sent' ? 'linkedin_connection_sent' : 'linkedin_connection_accepted',
+      title: `LinkedIn connection ${phase}`,
+      description: notes,
+    });
+  }
+
+  async logLinkedInPost(
+    leadId: string,
+    variant: 'original' | 'shared' | 'short',
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    const typeMap = {
+      original: 'linkedin_post',
+      shared: 'linkedin_engagement',
+      short: 'linkedin_short',
+    } as const;
+    return this.logActivity(leadId, {
+      activity_type: typeMap[variant],
+      title: `LinkedIn ${variant} post`,
+      description: notes,
+      metadata: { variant },
+    });
+  }
+
+  async logProposalSent(
+    leadId: string,
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.logActivity(leadId, {
+      activity_type: 'proposal_sent',
+      title: 'Proposal sent',
+      description: notes,
+    });
+  }
+
+  async logReferralRequested(
+    leadId: string,
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.logActivity(leadId, {
+      activity_type: 'referral_requested',
+      title: 'Referral requested',
+      description: notes,
+    });
+  }
+
+  async logCommunityOutreach(
+    leadId: string,
+    notes?: string,
+    eventId?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.logActivity(leadId, {
+      activity_type: 'community_outreach',
+      title: 'Community outreach',
+      description: notes,
+      metadata: eventId ? { community_event_id: eventId } : undefined,
+    });
+  }
+
+  async logNetworkingEvent(
+    leadId: string,
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.logActivity(leadId, {
+      activity_type: 'networking_event',
+      title: 'Networking event',
+      description: notes,
+    });
+  }
+
+  async logLiveChat(
+    leadId: string,
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.logActivity(leadId, {
+      activity_type: 'live_chat',
+      title: 'Live chat',
+      description: notes,
     });
   }
 

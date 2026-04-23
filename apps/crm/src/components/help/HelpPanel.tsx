@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Lightbulb,
   BookOpen,
+  CalendarClock,
   ExternalLink,
   HelpCircle,
 } from 'lucide-react';
@@ -10,6 +11,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@m
 import { Modal } from '../Modal';
 import { getPageHelp } from '../../help/registry';
 import { HelpSearch } from './HelpSearch';
+import { getAdvisorBookingUrl, getAdvisorContactDisplay } from '../../lib/advisorLinks';
 
 interface HelpPanelProps {
   open: boolean;
@@ -20,6 +22,8 @@ export function HelpPanel({ open, onClose }: HelpPanelProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const pageHelp = getPageHelp(location.pathname);
+  const bookingUrl = getAdvisorBookingUrl();
+  const { email: contactEmail, phone: contactPhone } = getAdvisorContactDisplay();
 
   return (
     <Modal
@@ -156,6 +160,46 @@ export function HelpPanel({ open, onClose }: HelpPanelProps) {
             </button>
           </div>
         )}
+
+        {/* Advisor booking + optional general contact */}
+        <section className="rounded-lg border border-th-border bg-surface-secondary p-3 space-y-2">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-th-text-primary">
+            <CalendarClock className="w-4 h-4 text-th-accent-600 dark:text-th-accent-400" />
+            Schedule with an advisor
+          </h3>
+          <p className="text-xs text-th-text-secondary">
+            The booking page includes all team members and the general contact options (email/phone) for MPowering Benefits.
+          </p>
+          <a
+            href={bookingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-th-accent-600 dark:text-th-accent-400 hover:underline"
+          >
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+            Open booking page
+          </a>
+          {(contactEmail || contactPhone) && (
+            <p className="text-xs text-th-text-tertiary pt-1 border-t border-th-border/60">
+              {contactEmail && (
+                <span className="block">
+                  General email:{' '}
+                  <a href={`mailto:${contactEmail}`} className="text-th-accent-600 dark:text-th-accent-400 hover:underline">
+                    {contactEmail}
+                  </a>
+                </span>
+              )}
+              {contactPhone && (
+                <span className="block mt-0.5">
+                  Phone:{' '}
+                  <a href={`tel:${contactPhone.replace(/[^\d+]/g, '')}`} className="text-th-accent-600 dark:text-th-accent-400 hover:underline">
+                    {contactPhone}
+                  </a>
+                </span>
+              )}
+            </p>
+          )}
+        </section>
 
         {/* Learning Center link */}
         <div className="pt-4 border-t border-th-border">

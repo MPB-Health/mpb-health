@@ -215,7 +215,7 @@ async function trackOpen(
   // Find the email by tracking_id
   const { data: email } = await supabase
     .from('crm_email_log')
-    .select('id, open_count, first_opened_at')
+    .select('id, open_count, first_opened_at, ab_test_id, ab_variant')
     .eq('tracking_id', data.tracking_id)
     .single();
 
@@ -223,6 +223,8 @@ async function trackOpen(
     log.info(`Email not found for tracking_id: ${data.tracking_id}`);
     return;
   }
+
+  const isFirstOpen = !email.first_opened_at;
 
   // Insert tracking record
   await supabase.from('crm_email_tracking').insert({
@@ -244,6 +246,24 @@ async function trackOpen(
       status: 'opened',
     })
     .eq('id', email.id);
+
+  // Sales Plan 2026 A/B harness: only count *first* open per recipient so
+  // refresh loops don't pad the success rate.
+  if (isFirstOpen && email.ab_test_id && email.ab_variant) {
+    const col = email.ab_variant === 'a' ? 'variant_a_success' : 'variant_b_success';
+    const { data: test } = await supabase
+      .from('crm_email_ab_tests')
+      .select(`id, metric, ${col}`)
+      .eq('id', email.ab_test_id)
+      .single();
+    if (test && test.metric === 'open') {
+      const next = ((test as Record<string, number>)[col] ?? 0) + 1;
+      await supabase
+        .from('crm_email_ab_tests')
+        .update({ [col]: next })
+        .eq('id', email.ab_test_id);
+    }
+  }
 
   // Update thread if exists
   const { data: emailWithThread } = await supabase
@@ -271,7 +291,7 @@ async function trackClick(
   // Find the email by tracking_id
   const { data: email } = await supabase
     .from('crm_email_log')
-    .select('id, click_count')
+    .select('id, click_count, ab_test_id, ab_variant')
     .eq('tracking_id', data.tracking_id)
     .single();
 
@@ -279,6 +299,8 @@ async function trackClick(
     log.info(`Email not found for tracking_id: ${data.tracking_id}`);
     return;
   }
+
+  const isFirstClick = (email.click_count || 0) === 0;
 
   // Insert tracking record
   await supabase.from('crm_email_tracking').insert({
@@ -299,6 +321,24 @@ async function trackClick(
       status: 'clicked',
     })
     .eq('id', email.id);
+
+  // Sales Plan 2026 A/B harness — only count the *first* click on a given
+  // email so multi-click recipients don't skew the winner math.
+  if (isFirstClick && email.ab_test_id && email.ab_variant) {
+    const col = email.ab_variant === 'a' ? 'variant_a_success' : 'variant_b_success';
+    const { data: test } = await supabase
+      .from('crm_email_ab_tests')
+      .select(`id, metric, ${col}`)
+      .eq('id', email.ab_test_id)
+      .single();
+    if (test && test.metric === 'click') {
+      const next = ((test as Record<string, number>)[col] ?? 0) + 1;
+      await supabase
+        .from('crm_email_ab_tests')
+        .update({ [col]: next })
+        .eq('id', email.ab_test_id);
+    }
+  }
 
   log.info(`Tracked click for email ${email.id}: ${data.link_url}`);
 }

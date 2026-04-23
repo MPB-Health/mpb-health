@@ -8,6 +8,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import {
   createLeadService,
+  createLeadSourceService,
   createPipelineService,
   createActivityService,
   createTaskService,
@@ -66,6 +67,7 @@ import {
   createQuoteTemplateService,
   createProductFormService,
   type LeadService,
+  type LeadSourceService,
   type PipelineService,
   type ActivityService,
   type TaskService,
@@ -133,6 +135,7 @@ export interface CRMServiceContextType {
   orgId: string | null;
   user: User | null;
   leadService: LeadService;
+  leadSourceService: LeadSourceService;
   pipelineService: PipelineService;
   activityService: ActivityService;
   taskService: TaskService;
@@ -200,6 +203,7 @@ export function CRMServiceProvider({ children }: { children: ReactNode }) {
 
   const [services] = useState(() => ({
     leadService: createLeadService(supabase),
+    leadSourceService: createLeadSourceService(supabase),
     pipelineService: createPipelineService(supabase),
     activityService: createActivityService(supabase),
     taskService: createTaskService(supabase),

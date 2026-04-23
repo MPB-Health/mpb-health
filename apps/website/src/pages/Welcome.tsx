@@ -3,13 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Calendar, Mail, Phone, ExternalLink } from 'lucide-react';
 import { siteMediaService } from '../lib/siteMediaService';
-
-// Shared MPB Sales team booking page. Update via VITE_SALES_BOOKING_URL once
-// Kiley provides the final Outlook group booking link. The fallback keeps the
-// CTA functional (routes to the contact page) instead of a broken link.
-const SALES_BOOKING_URL =
-  (import.meta.env.VITE_SALES_BOOKING_URL as string | undefined) ||
-  'https://mpb.health/contact?utm_source=welcome-email&utm_medium=email&utm_campaign=schedule-call';
+import { getSalesBookingUrl } from '../lib/salesBookingUrl';
 
 const SALES_EMAIL = 'sales@mympb.com';
 const SALES_PHONE_DISPLAY = '(855) 816-4650 ext 1';
@@ -97,7 +91,7 @@ export default function Welcome() {
                     There's no charge nor obligation.
                   </p>
                   <a
-                    href={SALES_BOOKING_URL}
+                    href={getSalesBookingUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"

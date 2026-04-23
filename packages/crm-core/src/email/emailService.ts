@@ -114,6 +114,79 @@ export class EmailService {
     }
   }
 
+  /**
+   * Sales Plan 2026 A/B harness. Loads the running test, deterministically
+   * picks a variant (seeded by leadId so the same lead always sees the same
+   * variant), interpolates the basic {{first_name}}/{{last_name}} tokens,
+   * stamps ab_test_id + ab_variant on the outbound row, and fires a send.
+   *
+   * The edge function reads `ab_test_id`/`ab_variant` and bumps
+   * `crm_email_ab_tests.variant_{a,b}_sent`. `email-tracking` +
+   * `receive-crm-email` do the same for opens/clicks/replies.
+   */
+  async sendFromABTest(
+    abTestId: string,
+    leadId: string,
+    customVars?: Record<string, string>
+  ): Promise<EmailSendResult> {
+    try {
+      const { data: test, error: tErr } = await this.supabase
+        .from('crm_email_ab_tests')
+        .select('id, status, variant_a, variant_b')
+        .eq('id', abTestId)
+        .single();
+      if (tErr || !test) return { success: false, error: 'A/B test not found' };
+      if (test.status !== 'running') return { success: false, error: 'A/B test not running' };
+
+      // Deterministic 50/50 split by hashing leadId so retries don't flip
+      // the assignment. The `crm_email_log` stamp + tracking edge handlers
+      // read it back; no separate assignment store needed.
+      const bucket = [...leadId].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0) & 1;
+      const variant: 'a' | 'b' = bucket === 0 ? 'a' : 'b';
+      const vdef = (variant === 'a' ? test.variant_a : test.variant_b) as
+        | { subject?: string; body?: string; cta?: string }
+        | null;
+      if (!vdef || !vdef.subject || !vdef.body) {
+        return { success: false, error: `Variant ${variant} is not configured` };
+      }
+
+      const { data: lead, error: lErr } = await this.supabase
+        .from('lead_submissions')
+        .select('first_name, last_name, email')
+        .eq('id', leadId)
+        .single();
+      if (lErr || !lead) return { success: false, error: 'Lead not found' };
+      if (!lead.email) return { success: false, error: 'Lead has no email address' };
+
+      const vars: Record<string, string> = {
+        first_name: lead.first_name || '',
+        last_name: lead.last_name || '',
+        email: lead.email || '',
+        ...customVars,
+      };
+
+      let html = vdef.body;
+      let subject = vdef.subject;
+      for (const [k, v] of Object.entries(vars)) {
+        const re = new RegExp(`\\{\\{${k}\\}\\}`, 'g');
+        html = html.replace(re, v);
+        subject = subject.replace(re, v);
+      }
+
+      return this.invokeEdgeFunction({
+        to: lead.email,
+        subject,
+        html,
+        lead_id: leadId,
+        ab_test_id: abTestId,
+        ab_variant: variant,
+      });
+    } catch (err) {
+      console.error('sendFromABTest error:', err);
+      return { success: false, error: 'Unexpected error' };
+    }
+  }
+
   private async invokeEdgeFunction(input: EmailSendInput): Promise<EmailSendResult> {
     try {
       const { data: { session } } = await this.supabase.auth.getSession();

@@ -5,7 +5,11 @@ import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { crmQueryKeys } from '../query/crmQueryKeys';
 import { GradientHeader } from '@mpbhealth/ui';
-import type { ForecastScenario } from '@mpbhealth/crm-core';
+import type {
+  ForecastScenario,
+  MilestoneInput,
+  QuarterlyMilestone,
+} from '@mpbhealth/crm-core';
 
 const SCENARIO_LABELS: Record<ForecastScenario, string> = {
   conservative: 'Conservative',
@@ -13,9 +17,18 @@ const SCENARIO_LABELS: Record<ForecastScenario, string> = {
   aggressive: 'Aggressive',
 };
 
+// Sales Plan 2026 defaults. Users can override via the Forecast controls;
+// state is UI-only (not persisted) so each rep can stress-test scenarios.
+const DEFAULT_AVG_REVENUE: Record<ForecastScenario, number> = {
+  conservative: 2000,
+  moderate: 3500,
+  aggressive: 5000,
+};
+
 export default function Milestones() {
   const { milestoneService } = useCRMService();
-  const { activeOrgId } = useOrg();
+  const { activeOrgId, can } = useOrg();
+  const canManageTargets = can('targets.manage');
   const queryClient = useQueryClient();
 
   const currentYear = new Date().getFullYear();
@@ -24,6 +37,9 @@ export default function Milestones() {
     const m = new Date().getMonth();
     return Math.min(4, Math.floor(m / 3) + 1);
   });
+  const [avgRevenue, setAvgRevenue] = useState<Record<ForecastScenario, number>>(DEFAULT_AVG_REVENUE);
+  const [editingQuarter, setEditingQuarter] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState<MilestoneInput | null>(null);
 
   const { data: progress = [], isLoading: loadingProgress } = useQuery({
     queryKey: crmQueryKeys.milestoneProgress(activeOrgId, year),
@@ -32,10 +48,72 @@ export default function Milestones() {
   });
 
   const { data: forecast = [], isLoading: loadingForecast } = useQuery({
-    queryKey: crmQueryKeys.milestoneForecast(activeOrgId, year, forecastQuarter),
-    queryFn: () => milestoneService.getForecastScenarios(year, forecastQuarter),
+    queryKey: [
+      ...crmQueryKeys.milestoneForecast(activeOrgId, year, forecastQuarter),
+      avgRevenue.conservative,
+      avgRevenue.moderate,
+      avgRevenue.aggressive,
+    ],
+    queryFn: () => milestoneService.getForecastScenarios(year, forecastQuarter, avgRevenue),
     enabled: !!activeOrgId,
   });
+
+  const { data: milestones = [] } = useQuery({
+    queryKey: crmQueryKeys.milestones(activeOrgId, year),
+    queryFn: () => milestoneService.getMilestones(year),
+    enabled: !!activeOrgId,
+  });
+
+  const milestonesByQuarter = useMemo(() => {
+    const map = new Map<number, QuarterlyMilestone>();
+    for (const m of milestones) map.set(m.quarter, m);
+    return map;
+  }, [milestones]);
+
+  const saveMilestoneMutation = useMutation({
+    mutationFn: (input: MilestoneInput) => milestoneService.upsertMilestone(input),
+    onSuccess: (row) => {
+      queryClient.invalidateQueries({ queryKey: crmQueryKeys.milestones(activeOrgId, year) });
+      queryClient.invalidateQueries({ queryKey: crmQueryKeys.milestoneProgress(activeOrgId, year) });
+      queryClient.invalidateQueries({
+        queryKey: crmQueryKeys.milestoneForecast(activeOrgId, year, forecastQuarter),
+      });
+      if (row) {
+        toast.success(`Q${row.quarter} milestone saved`);
+        setEditingQuarter(null);
+        setEditDraft(null);
+      } else {
+        toast.error('Could not save milestone');
+      }
+    },
+    onError: () => toast.error('Could not save milestone'),
+  });
+
+  const beginEdit = (quarter: number) => {
+    const existing = milestonesByQuarter.get(quarter);
+    setEditingQuarter(quarter);
+    setEditDraft({
+      year,
+      quarter,
+      phase_name: existing?.phase_name ?? `Q${quarter} phase`,
+      lead_target: existing?.lead_target ?? 0,
+      sales_target: existing?.sales_target ?? 0,
+      revenue_target: existing?.revenue_target ?? 0,
+      linkedin_follower_target: existing?.linkedin_follower_target ?? 0,
+      referral_partner_target: existing?.referral_partner_target ?? 0,
+      community_event_target: existing?.community_event_target ?? 0,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingQuarter(null);
+    setEditDraft(null);
+  };
+
+  const commitEdit = () => {
+    if (!editDraft) return;
+    saveMilestoneMutation.mutate(editDraft);
+  };
 
   const progressByQuarter = useMemo(() => {
     const map = new Map<number, (typeof progress)[0]>();
@@ -110,11 +188,72 @@ export default function Milestones() {
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <h2 className="text-sm font-semibold text-th-text-primary">Q{q}</h2>
-                  <span className="text-xs text-th-text-tertiary">
-                    {block?.phase_name ?? 'No milestone row — seed defaults'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-th-text-tertiary">
+                      {block?.phase_name ?? 'No milestone row — seed defaults'}
+                    </span>
+                    {canManageTargets && editingQuarter !== q && (
+                      <button
+                        type="button"
+                        onClick={() => beginEdit(q)}
+                        className="rounded-md border border-th-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-th-text-secondary hover:bg-surface-secondary"
+                      >
+                        {block ? 'Edit' : 'Add'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {!block ? (
+                {editingQuarter === q && editDraft ? (
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <label className="col-span-2 block">
+                      <span className="text-th-text-tertiary">Phase</span>
+                      <input
+                        type="text"
+                        value={editDraft.phase_name ?? ''}
+                        onChange={(e) => setEditDraft((d) => (d ? { ...d, phase_name: e.target.value } : d))}
+                        className="mt-0.5 w-full rounded-md border border-th-border bg-surface-primary px-2 py-1"
+                      />
+                    </label>
+                    {[
+                      { key: 'lead_target' as const, label: 'Lead target' },
+                      { key: 'sales_target' as const, label: 'Sales target' },
+                      { key: 'revenue_target' as const, label: 'Revenue target $' },
+                      { key: 'linkedin_follower_target' as const, label: 'LinkedIn followers' },
+                      { key: 'referral_partner_target' as const, label: 'Referral partners' },
+                      { key: 'community_event_target' as const, label: 'Community events' },
+                    ].map((f) => (
+                      <label key={f.key} className="block">
+                        <span className="text-th-text-tertiary">{f.label}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={Number(editDraft[f.key] ?? 0)}
+                          onChange={(e) =>
+                            setEditDraft((d) => (d ? { ...d, [f.key]: Number(e.target.value) } : d))
+                          }
+                          className="mt-0.5 w-full rounded-md border border-th-border bg-surface-primary px-2 py-1 tabular-nums"
+                        />
+                      </label>
+                    ))}
+                    <div className="col-span-2 flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="rounded-md border border-th-border px-3 py-1 text-th-text-secondary hover:bg-surface-secondary"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={commitEdit}
+                        disabled={saveMilestoneMutation.isPending}
+                        className="rounded-md bg-th-accent-600 px-3 py-1 font-medium text-white hover:bg-th-accent-700 disabled:opacity-60"
+                      >
+                        {saveMilestoneMutation.isPending ? 'Saving…' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                ) : !block ? (
                   <p className="text-sm text-th-text-tertiary py-2">
                     No data for this quarter yet.
                   </p>
@@ -172,6 +311,45 @@ export default function Milestones() {
               ))}
             </select>
           </label>
+        </div>
+
+        {/* Sales Plan 2026: average revenue per sale drives the projected
+            revenue column. The defaults (Conservative 2,000 / Moderate 3,500
+            / Aggressive 5,000) match the deck — reps can stress-test other
+            assumptions live without touching the database. */}
+        <div className="border-b border-th-border px-4 py-3 grid gap-3 sm:grid-cols-3 bg-surface-secondary/50">
+          {(Object.keys(DEFAULT_AVG_REVENUE) as ForecastScenario[]).map((scenario) => (
+            <label key={scenario} className="block">
+              <span className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
+                Avg revenue / sale · {SCENARIO_LABELS[scenario]}
+              </span>
+              <div className="mt-1 flex rounded-lg border border-th-border bg-surface-primary overflow-hidden">
+                <span className="px-2 py-1.5 text-sm text-th-text-tertiary bg-surface-secondary">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={avgRevenue[scenario]}
+                  onChange={(e) =>
+                    setAvgRevenue((prev) => ({
+                      ...prev,
+                      [scenario]: Number(e.target.value) || 0,
+                    }))
+                  }
+                  className="flex-1 min-w-0 px-2 py-1.5 text-sm text-th-text-primary bg-transparent tabular-nums focus:outline-none"
+                />
+              </div>
+            </label>
+          ))}
+          <div className="sm:col-span-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setAvgRevenue(DEFAULT_AVG_REVENUE)}
+              className="text-xs text-th-text-tertiary hover:text-th-text-secondary underline"
+            >
+              Reset to Sales Plan 2026 defaults
+            </button>
+          </div>
         </div>
         {loadingForecast ? (
           <div className="flex justify-center py-12">

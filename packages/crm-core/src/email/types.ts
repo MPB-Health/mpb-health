@@ -5,6 +5,10 @@ export interface EmailSendInput {
   text?: string;
   template_id?: string;
   lead_id?: string;
+  // Sales Plan 2026 A/B harness — callers stamp these so send-crm-email +
+  // email-tracking can attribute opens/clicks/replies to the right variant.
+  ab_test_id?: string;
+  ab_variant?: 'a' | 'b';
 }
 
 export interface EmailSendResult {

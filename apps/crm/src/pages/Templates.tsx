@@ -81,10 +81,19 @@ const SORT_OPTIONS = [
   { value: 'last_used_at', label: 'Last Used' },
 ];
 
+// Sales Plan 2026 Phase 5: expose the full set of merge tokens reps actually
+// use (plan, renewal_date, industry, meeting_date). Callers auto-populate
+// from the lead + related deal + product row; templateService.renderTemplate
+// does a pure {{key}} replace, so adding a token here is enough to make it
+// available in the editor preview + send flow.
 const MERGE_FIELDS = [
   { key: 'first_name', label: 'First Name' },
   { key: 'last_name', label: 'Last Name' },
   { key: 'company', label: 'Company' },
+  { key: 'industry', label: 'Industry' },
+  { key: 'plan', label: 'Plan' },
+  { key: 'renewal_date', label: 'Renewal Date' },
+  { key: 'meeting_date', label: 'Meeting Date' },
   { key: 'product_interest', label: 'Product Interest' },
   { key: 'last_interaction_date', label: 'Last Interaction' },
   { key: 'assigned_rep_name', label: 'Rep Name' },
@@ -96,6 +105,10 @@ const SAMPLE_LEAD_DATA: Record<string, string> = {
   first_name: 'Jane',
   last_name: 'Doe',
   company: 'Acme Healthcare',
+  industry: 'Health Insurance',
+  plan: 'Gold PPO 2026',
+  renewal_date: 'Dec 31, 2026',
+  meeting_date: 'Feb 18, 2026 at 10:00 AM ET',
   product_interest: 'Enterprise Plan',
   last_interaction_date: 'Feb 10, 2026',
   assigned_rep_name: 'Alex Johnson',

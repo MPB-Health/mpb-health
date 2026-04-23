@@ -125,6 +125,7 @@ const WebForms = lazyRetry(() => import('./pages/WebForms'));
 const FormBuilder = lazyRetry(() => import('./pages/FormBuilder'));
 const FormSubmissions = lazyRetry(() => import('./pages/FormSubmissions'));
 const PublicForm = lazyRetry(() => import('./pages/PublicForm'));
+const CommunityForm = lazyRetry(() => import('./pages/CommunityForm'));
 
 // Team Management & User Profiles
 const TeamManagement = lazyRetry(() => import('./pages/TeamManagement'));
@@ -223,6 +224,20 @@ export default function App() {
       <Route path="/login" element={<Login />} />
 
       {/* Public form renderer - no auth required */}
+      {/*
+        Sales Plan 2026 Phase 4: community capture is a static, event-scoped
+        form (not a dynamic form-builder form) so it matches *before* the
+        generic /forms/:slug route; otherwise the slug matcher would grab
+        `community` as the slug and 404.
+      */}
+      <Route
+        path="/forms/community/:eventId"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <CommunityForm />
+          </Suspense>
+        }
+      />
       <Route
         path="/forms/:slug"
         element={

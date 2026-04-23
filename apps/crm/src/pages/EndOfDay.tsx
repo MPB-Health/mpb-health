@@ -8,14 +8,24 @@ import toast from 'react-hot-toast';
 import { sanitizeSearchInput, type ActivityType } from '@mpbhealth/crm-core';
 import { HelpBanner } from '../components/help';
 
+// Sales Plan 2026 Phase 5: every PerformanceReport column has a matching
+// activity_type row here, so a rep's EOD sheet can feed every metric the
+// monthly report reads from `lead_activities`. Ordering roughly mirrors
+// the deck's column order (inbound → outbound → LinkedIn → community →
+// proposal), which makes the EOD form easier to skim at end of day.
 const EOD_ACTIVITY_TYPES = [
   'call',
   'email',
   'meeting',
   'sms',
+  'text',
+  'live_chat',
   'linkedin_connection_sent',
+  'linkedin_connection_accepted',
   'linkedin_message',
   'linkedin_post',
+  'linkedin_engagement',
+  'linkedin_short',
   'presentation',
   'networking_event',
   'community_outreach',
@@ -31,9 +41,14 @@ const ACTIVITY_TYPE_LABELS: Record<EodActivityType, string> = {
   email: 'Email',
   meeting: 'Meeting',
   sms: 'SMS',
+  text: 'Text message',
+  live_chat: 'Live chat',
   linkedin_connection_sent: 'LinkedIn — connection sent',
+  linkedin_connection_accepted: 'LinkedIn — connection accepted',
   linkedin_message: 'LinkedIn — message',
-  linkedin_post: 'LinkedIn — post',
+  linkedin_post: 'LinkedIn — original post',
+  linkedin_engagement: 'LinkedIn — shared post',
+  linkedin_short: 'LinkedIn — short / video',
   presentation: 'Presentation',
   networking_event: 'Networking event',
   community_outreach: 'Community outreach',
@@ -47,10 +62,15 @@ function defaultTitleForType(type: EodActivityType): string {
     call: 'Phone call',
     email: 'Email',
     meeting: 'Meeting',
-    sms: 'Text message',
+    sms: 'SMS text',
+    text: 'Text message',
+    live_chat: 'Live chat',
     linkedin_connection_sent: 'LinkedIn connection sent',
+    linkedin_connection_accepted: 'LinkedIn connection accepted',
     linkedin_message: 'LinkedIn message',
-    linkedin_post: 'LinkedIn post',
+    linkedin_post: 'LinkedIn original post',
+    linkedin_engagement: 'LinkedIn shared post',
+    linkedin_short: 'LinkedIn short/video',
     presentation: 'Presentation',
     networking_event: 'Networking event',
     community_outreach: 'Community outreach',

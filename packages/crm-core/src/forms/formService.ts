@@ -274,10 +274,20 @@ export class FormService {
   }
 
   /**
-   * Convert a submission to a lead
+   * Convert a submission to a lead.
+   *
+   * The `lead_source` resolution order is:
+   *   1. Explicit `options.leadSource` argument (operator override).
+   *   2. `form.settings.lead_source` (form-level default chosen at form creation).
+   *   3. Trigger-level default `'inhouse_round_robin'` applied by
+   *      `crm_validate_lead_source` (see 20260423100000 migration).
+   *
+   * Sales Plan 2026 requires every lead to carry an accurate `lead_source` so
+   * the Inhouse vs Self-Generated split in every report is reliable.
    */
   async convertSubmission(
-    id: string
+    id: string,
+    options: { leadSource?: string; outsideAdvisorId?: string; referralPartnerId?: string } = {}
   ): Promise<{ success: boolean; leadId?: string; error?: string }> {
     try {
       const submission = await this.getSubmission(id);
@@ -293,8 +303,17 @@ export class FormService {
 
       // Map submission data to lead fields
       const submissionData = submission.data as Record<string, string>;
+      const formSettings = (form.settings ?? {}) as Record<string, unknown>;
+      const resolvedSource =
+        options.leadSource ??
+        (typeof formSettings.lead_source === 'string' ? (formSettings.lead_source as string) : undefined) ??
+        'inhouse_round_robin';
+
       const leadData: Record<string, unknown> = {
         source: 'web_form',
+        lead_source: resolvedSource,
+        outside_advisor_id: options.outsideAdvisorId ?? formSettings.outside_advisor_id ?? null,
+        referral_partner_id: options.referralPartnerId ?? formSettings.referral_partner_id ?? null,
         metadata: {
           web_form_id: form.id,
           web_form_name: form.name,

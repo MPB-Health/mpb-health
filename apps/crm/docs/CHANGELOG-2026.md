@@ -1,0 +1,122 @@
+# CRM 2026 Upgrade — Changelog
+
+Per-phase record of what shipped. Dates are phase completion dates.
+
+Format: each phase contains a flat bullet list of user-visible changes, schema changes, and behaviour changes. Links point at the commit-level files, not the plan.
+
+---
+
+## Phase 0 — Safety net & documentation baseline
+
+- Saved the phased implementation plan at [apps/crm/docs/UPGRADE-PLAN-2026.md](./UPGRADE-PLAN-2026.md).
+- Scaffolded this changelog and [apps/crm/docs/DEMO-SCRIPT-2026.md](./DEMO-SCRIPT-2026.md).
+- Added a `test` script + [`packages/crm-core/vitest.config.ts`](../../../packages/crm-core/vitest.config.ts) so `pnpm --filter @mpbhealth/crm-core test` runs (even with zero tests).
+- Added a first-class `crm` Playwright project in [`playwright.config.ts`](../../../playwright.config.ts) with `baseURL` driven by `E2E_CRM_URL` (default `http://localhost:5173`). CRM e2e specs are no longer opt-in smoke — they run under `--project=crm`.
+
+## Phase 1 — Foundations: users, Lead Manager role, lead source enforcement
+
+- Added migration [`20260423100000_crm_2026_phase1_foundations.sql`](../../../supabase/migrations/20260423100000_crm_2026_phase1_foundations.sql):
+  - `lead_submissions.outside_advisor_id` (FK → `crm_outside_advisors`, ON DELETE SET NULL, indexed)
+  - `lead_submissions.referral_partner_id` (FK → `crm_referral_partners`, ON DELETE SET NULL, indexed)
+  - `crm_validate_lead_source()` BEFORE INSERT/UPDATE trigger — rejects unknown slugs, auto-derives `is_self_generated` from the picklist lookup so the Inhouse vs Self-Gen split in every 2026 report cannot drift from the source definition.
+  - `lead_manager` + `reports.export` permissions seeded to owner/admin/manager (and propagated to every existing org).
+  - `crm_is_lead_manager(p_org_id)` security-definer helper for RLS / RPC use.
+  - `crm_seed_sales_plan_2026_demo(p_org_id, leonardo_email, tupac_email, adam_email)` — operator-callable helper that seeds Leonardo (manager) / Tupac (agent) / Adam (agent) into `org_members` + round-robin pool. Requires the auth.users rows to already exist.
+- `LeadCreateInput` / `LeadUpdateInput` / `LeadFilters` / `Lead` extended with `lead_source`, `is_self_generated`, `outside_advisor_id`, `referral_partner_id`, `reactivation_source_lead_id` in [`packages/crm-core/src/leads/leadTypes.ts`](../../../packages/crm-core/src/leads/leadTypes.ts).
+- New constants `LEAD_SOURCE_SLUGS`, `SELF_GENERATED_SOURCE_SLUGS`, helper `inferSelfGenerated()` for optimistic UI.
+- New `LeadSourceService` ([`packages/crm-core/src/leads/leadSourceService.ts`](../../../packages/crm-core/src/leads/leadSourceService.ts)) — drives the picker from `crm_lead_source_types` so operators can add sources without a UI deploy. Wired into `CRMServiceContext`.
+- `LeadForm` ([`apps/crm/src/components/LeadForm.tsx`](../../../apps/crm/src/components/LeadForm.tsx)) gained an Attribution section with a required Lead Source picker and conditional inputs for referral partner / outside advisor IDs (pickers upgraded in Phase 4).
+- `AddLeadModal` forwards the new fields through `leadService.createLead`.
+- `FormService.convertSubmission` accepts `{ leadSource, outsideAdvisorId, referralPartnerId }` and falls back to `form.settings.lead_source` → `'inhouse_round_robin'`.
+- `web-form-submit` Edge Function reads `settings.lead_source` + `settings.outside_advisor_id` + `settings.referral_partner_id` and writes them onto `lead_submissions`.
+- `ImportService` writes `lead_source` on every row (lead-level value wins, then importer option, then `'inhouse_round_robin'`).
+- `useIsLeadManager()` hook added in [`apps/crm/src/hooks/useIsLeadManager.ts`](../../../apps/crm/src/hooks/useIsLeadManager.ts) — `owner`/`admin` short-circuit, otherwise `can('lead_manager')`.
+- 6 vitest tests for the lead-source split helper ([`packages/crm-core/src/leads/leadTypes.test.ts`](../../../packages/crm-core/src/leads/leadTypes.test.ts)). `pnpm --filter @mpbhealth/crm-core test` passes.
+- `pnpm --filter @mpbhealth/crm typecheck` passes.
+
+## Phase 2 — Lead lifecycle wiring
+
+- Added migration [`20260423200000_crm_2026_phase2_lifecycle.sql`](../../../supabase/migrations/20260423200000_crm_2026_phase2_lifecycle.sql):
+  - `lead_notifications` schema fix: `user_id` (FK → `auth.users`), `notification_type`, `message` columns + indexes. Closes the silent-failure path `SLAService.escalate` was hitting.
+  - `crm_calc_business_hour_deadline(start, hours, bh_start, bh_end, business_days, tz)` SQL function — timezone-aware, used by triggers and the breach scanner.
+  - Seeds a default `Sales Plan 2026 — Default` follow-up cadence (24h → 3d → 7d → 14d → 30d nurture) and a default 24-business-hour SLA config (09:00–17:00 Mon–Fri, `America/New_York`) into every org that doesn't already have one.
+  - `crm_lead_after_insert_automation` `BEFORE INSERT` trigger on `lead_submissions` — runs round-robin assignment (if `assigned_to` wasn't set by caller), writes a round-robin audit row, creates the **Initial Contact** `lead_tasks` row with a business-hour-aware `due_date`, enrolls the lead into the default cadence, and persists `next_followup_at` on the new row. Unifies the three intake paths (app `LeadService.createLead`, `ImportService.bulkImportLeads`, `web-form-submit` Edge Function).
+  - `crm_lead_stage_cadence_pause` `AFTER UPDATE OF pipeline_stage` trigger — pauses active cadence state rows when the stage flips to `won` or `lost`.
+  - `crm_lead_contact_cadence_pause` `AFTER UPDATE OF last_contacted_at` trigger — pauses cadences as soon as a rep logs a call/email/reply (`last_contacted_at` transitions to a non-null value).
+  - `crm_activity_cadence_pause` `AFTER INSERT` trigger on `lead_activities` — pauses cadences when a `meeting` or `presentation` activity is logged (reply / meeting-booked pause rule from the Sales Plan 2026 spec).
+  - Best-effort `pg_cron` job `crm-sla-breach-scan` that posts to the `sla-breach-scan` Edge Function every 15 minutes. No-op if `pg_cron` / `pg_net` are unavailable.
+- Added Edge Function [`supabase/functions/sla-breach-scan/index.ts`](../../../supabase/functions/sla-breach-scan/index.ts): walks every active `crm_sla_config`, uses `crm_calc_business_hour_deadline` for breach math, writes idempotent `lead_notifications` (`notification_type='sla_breach'`, `priority='high'`), and optionally sends a Resend email when `escalation_email=true` and `RESEND_API_KEY` is set.
+- Fixed [`packages/crm-core/src/sla/slaService.ts`](../../../packages/crm-core/src/sla/slaService.ts) `SLAService.escalate` to write `org_id`, `user_id`, `notification_type='sla_breach'`, `priority='high'` columns — matches the schema the DB trigger now guarantees.
+- [`packages/crm-core/src/tasks/taskService.ts`](../../../packages/crm-core/src/tasks/taskService.ts) `TaskService.deleteTask` now refuses to delete the last open task on a non-terminal lead unless called with `{ allowOrphan: true }` — enforces the Sales Plan 2026 "every lead always has an active next-action task" rule in the service layer.
+- Added 4 vitest cases for the business-hour deadline calculator in [`packages/crm-core/src/sla/slaService.test.ts`](../../../packages/crm-core/src/sla/slaService.test.ts). `pnpm --filter @mpbhealth/crm-core test` reports 10/10 passing.
+- `pnpm --filter @mpbhealth/crm typecheck` passes.
+
+## Phase 3 — Reporting correctness, filters, XLSX column parity
+
+- Added migration [`20260423300000_crm_2026_phase3_reporting.sql`](../../../supabase/migrations/20260423300000_crm_2026_phase3_reporting.sql):
+  - **Fixed** `crm_outside_advisor_production` so it filters `lead_submissions` by `outside_advisor_id = oa.id` instead of the broken `lead_source = 'outside_advisors'` scope that fanned out the same aggregate to every row. Uses `LEFT JOIN LATERAL` for per-advisor month + YTD counts.
+  - Added `crm_leads_split_2026(p_org_id, p_month, p_year, p_rep_ids, p_ytd)` — returns the exact Slide 24 row order (LinkedIn → Networking → Referrals → Community → Reactivation → **TOTAL Self-Gen** → Inhouse (RR) → **GRAND TOTAL**) with `row_kind` discriminator for UI styling and built-in conversion %. Empty rows are returned as zero so the layout is stable month-to-month.
+  - Added per-rep filter wrappers: `crm_individual_performance_filtered`, `crm_revenue_closed_sales_filtered`, `crm_conversion_rates_filtered`, `crm_activity_summary_filtered`. All take an optional `p_rep_ids uuid[]` — NULL means "every active org member" (the Team Total behaviour).
+- Added [`packages/crm-core/src/reporting/formulas.ts`](../../../packages/crm-core/src/reporting/formulas.ts) — single source of truth for `closeRatePct`, `avgDealSize`, `inhouseConvPct`, `selfGenConvPct`, `overallConvPct`, `totalSelfGen`, `grandTotalLeads`, `runningYTD`, `formatPercent`, `formatCurrency`. All match the deck exactly; 8 vitest cases pin the math.
+- Added [`apps/crm/src/hooks/useOrgReps.ts`](../../../apps/crm/src/hooks/useOrgReps.ts) — stable, alphabetized list of active org members for the report rep switcher.
+- Added [`apps/crm/src/hooks/useCanExportReports.ts`](../../../apps/crm/src/hooks/useCanExportReports.ts) — gates the XLSX export button behind `reports.export` (with an owner/admin short-circuit).
+- Added [`apps/crm/src/components/reports/ReportRepFilter.tsx`](../../../apps/crm/src/components/reports/ReportRepFilter.tsx) — Lead-Manager-gated rep switcher. Non-Lead-Managers are locked to their own data ("My data only"), enforcing the Sales Plan 2026 RBAC rule "a regular rep can't see another rep's individual dashboard unless they also hold the Lead Manager role."
+- Updated [`apps/crm/src/pages/reports/LeadsSplitReport.tsx`](../../../apps/crm/src/pages/reports/LeadsSplitReport.tsx) to consume the new `crm_leads_split_2026` RPC — spec row order, conversion %, YTD toggle, rep filter, lead-manager gating, export gated by `reports.export`.
+- Wired the rep filter + `reports.export` gating + filtered RPCs into [`PerformanceReport`](../../../apps/crm/src/pages/reports/PerformanceReport.tsx), [`RevenueReport`](../../../apps/crm/src/pages/reports/RevenueReport.tsx), [`ConversionReport`](../../../apps/crm/src/pages/reports/ConversionReport.tsx), [`ActivityTargetsReport`](../../../apps/crm/src/pages/reports/ActivityTargetsReport.tsx), and export-gating into [`AdvisorProductionReport`](../../../apps/crm/src/pages/reports/AdvisorProductionReport.tsx).
+- Query keys in [`apps/crm/src/query/crmQueryKeys.ts`](../../../apps/crm/src/query/crmQueryKeys.ts) now include the rep-filter / YTD discriminator so caches don't cross-contaminate between filter selections.
+- `pnpm --filter @mpbhealth/crm-core test` reports 18/18 passing; `pnpm --filter @mpbhealth/crm typecheck` passes.
+
+## Phase 4 — Reactivation, entities, targets, milestones, products, sunbiz
+
+- Added migration [`20260423400000_crm_2026_phase4_attribution.sql`](../../../supabase/migrations/20260423400000_crm_2026_phase4_attribution.sql):
+  - `crm_product_lines` lookup table (org-scoped + system-wide) seeded with `health_insurance` and `medical_cost_sharing` so Revenue + LeadsSplit reports can split HI vs MCS without a code deploy. `crm_deals.product_line` column + `trg_crm_deals_validate_product_line` BEFORE INSERT/UPDATE trigger enforce membership.
+  - `lead_submissions.community_event_id` column + `trg_lead_submissions_community_counter` trigger automatically maintains `crm_community_events.leads_generated` — single source of truth for the event capture counter.
+- [`apps/crm/src/components/LeadForm.tsx`](../../../apps/crm/src/components/LeadForm.tsx) now renders dynamic `SelectField`-backed pickers for Referral Partner and Outside Advisor (populated from `referralService` / `outsideAdvisorService`) so the attribution pickers actually bind to real rows instead of free-text.
+- [`apps/crm/src/components/AddDealModal.tsx`](../../../apps/crm/src/components/AddDealModal.tsx) gained a Product Line picker sourced from `crm_product_lines`; the value rides `DealCreateInput.product_line` through `dealService`.
+- [`apps/crm/src/pages/Reactivation.tsx`](../../../apps/crm/src/pages/Reactivation.tsx) now defaults to the Sales Plan 2026 4-year lookback (not 90 days) with expanded picker options (6 mo / 1 yr / 2 yr / 4 yr). The default drip is replaced by the weekly-themed 4-week arc (Wk1 email → Wk2 phone/text → Wk3 LinkedIn DM → Wk4 value asset) with deterministic delay_hours.
+- New Edge Function [`supabase/functions/community-lead-submit/index.ts`](../../../supabase/functions/community-lead-submit/index.ts) and public page [`apps/crm/src/pages/CommunityForm.tsx`](../../../apps/crm/src/pages/CommunityForm.tsx) at `/forms/community/:eventId`. Captures booth leads with a +/-36h event-date window guard, stamps `lead_source='community'` + `community_event_id`, and rides the standard intake trigger (round-robin, SLA, cadence).
+- [`apps/crm/src/pages/CommunityEventDetail.tsx`](../../../apps/crm/src/pages/CommunityEventDetail.tsx) surfaces the event-scoped on-site capture URL (with copy + open-in-new-tab controls) and lists the leads attributed to the event.
+- [`apps/crm/src/pages/Milestones.tsx`](../../../apps/crm/src/pages/Milestones.tsx) gained an inline per-quarter target editor (gated on `targets.manage`) plus editable `avg revenue / sale` inputs that drive the Conservative / Moderate / Aggressive forecast columns. Reset-to-defaults button restores the Sales Plan 2026 seed values (2000 / 3500 / 5000).
+- Wired [`apps/crm/src/components/SunbizLookup.tsx`](../../../apps/crm/src/components/SunbizLookup.tsx) into `LeadDetail` (shows when the lead carries a company name) and `AccountDetail` (always shown when the account has a `name`). Manual MVP — background scraper deferred to Phase 8 per the open-decisions note.
+- `pnpm --filter @mpbhealth/crm typecheck` passes.
+
+## Phase 5 — Activity unification, email tokens, A/B, LinkedIn
+
+- Added migration [`20260423500000_crm_2026_phase5_activity_unification.sql`](../../../supabase/migrations/20260423500000_crm_2026_phase5_activity_unification.sql):
+  - `lead_activities` now carries optional `contact_id`, `account_id`, `deal_id` + `subject` columns with partial indexes, and a `lead_activities_target_not_null` CHECK guaranteeing at least one linkage. Reports read from `lead_activities` so quick-log writes from `ContactDetail` finally feed the same table.
+  - Expanded `lead_activities_activity_type_check` + `crm_activities_activity_type_check` to include `text` and `linkedin_short` so the EOD sheet + LinkedIn widget can record the distinct 2 original / 2 shared / 2 shorts cadence the deck calls out.
+  - `crm_email_log.ab_test_id` (FK) + `ab_variant` (a/b CHECK) with index so the A/B harness can tally opens, clicks, and replies per variant.
+  - `mail_accounts.is_primary_shared_inbox` boolean + partial unique index so each org can flag exactly one connected mailbox (e.g. `sales@mympb.com`) as the shared inbox the UI surfaces consistently.
+  - `crm_log_activity(...)` SECURITY DEFINER RPC centralises the multi-entity writer so callers don't need to know which FK column to populate.
+- [`apps/crm/src/pages/ContactDetail.tsx`](../../../apps/crm/src/pages/ContactDetail.tsx) now writes quick-log notes to `lead_activities` (was `crm_activities`) so contact notes are picked up by every Sales Plan 2026 report RPC without a second query path.
+- [`packages/crm-core/src/activities/activityService.ts`](../../../packages/crm-core/src/activities/activityService.ts) `logCall` now persists `direction` (was silently dropped). Added full quick-log surface: `logText`, `logLinkedInMessage`, `logLinkedInConnection(phase)`, `logLinkedInPost(variant)`, `logProposalSent`, `logReferralRequested`, `logCommunityOutreach(eventId?)`, `logNetworkingEvent`, `logLiveChat`. Every helper writes a row with a spec-aligned `activity_type` so each PerformanceReport column has a named source.
+- [`packages/crm-core/src/activities/types.ts`](../../../packages/crm-core/src/activities/types.ts) `ActivityType` union extended (`text`, `linkedin_short`); `LeadActivity` widened with contact/account/deal/subject; `EmailMetadata` gains `ab_test_id` / `ab_variant`.
+- [`apps/crm/src/pages/EndOfDay.tsx`](../../../apps/crm/src/pages/EndOfDay.tsx) now exposes the full 18-type matrix (inbound text, live chat, LinkedIn accepted, LinkedIn shared / short, …) so a rep's EOD sheet covers every PerformanceReport column.
+- [`apps/crm/src/pages/Templates.tsx`](../../../apps/crm/src/pages/Templates.tsx) MERGE_FIELDS + SAMPLE_LEAD_DATA extended with `industry`, `plan`, `renewal_date`, `meeting_date` — the spec-required tokens for plan-comparison and renewal-reminder templates.
+- [`apps/crm/src/components/dashboard/widgets/LinkedInContentWidget.tsx`](../../../apps/crm/src/components/dashboard/widgets/LinkedInContentWidget.tsx) rewritten to the per-rep 2 original + 2 shared + 2 shorts = 6/week model. Filters `created_by` to the signed-in user and surfaces a single 0/6 "this week" banner so reps can tell at a glance whether they're on target.
+- [`apps/crm/src/components/QuickActionModals.tsx`](../../../apps/crm/src/components/QuickActionModals.tsx) `LogCallModal` now forwards `direction` through `activityService.logCall`; the value rides in `metadata` on the `lead_activities` row.
+- A/B harness wired end-to-end:
+  - [`packages/crm-core/src/email/emailService.ts`](../../../packages/crm-core/src/email/emailService.ts) `sendFromABTest(abTestId, leadId, vars?)` deterministically buckets the lead (50/50 hash of leadId → variant a or b), loads `variant_a`/`variant_b` JSONB, interpolates tokens, and invokes `send-crm-email-v2` with `ab_test_id` + `ab_variant` stamped on the payload.
+  - [`supabase/functions/send-crm-email-v2`](../../../supabase/functions/send-crm-email-v2/index.ts) persists the stamps on `crm_email_log` and bumps `crm_email_ab_tests.variant_{a,b}_sent` on successful send.
+  - [`supabase/functions/email-tracking`](../../../supabase/functions/email-tracking/index.ts) increments `variant_{a,b}_success` on first open (if `metric='open'`) and on first click (if `metric='click'`).
+  - [`supabase/functions/receive-crm-email`](../../../supabase/functions/receive-crm-email/index.ts) matches the In-Reply-To parent and increments `variant_{a,b}_success` when `metric='reply'`.
+- `pnpm --filter @mpbhealth/crm-core build` + `pnpm --filter @mpbhealth/crm typecheck` pass.
+
+## Phase 6 — Tests, e2e, bundle budget, RBAC hardening
+
+- Added [`packages/crm-core/src/email/emailService.test.ts`](../../../packages/crm-core/src/email/emailService.test.ts) pinning the deterministic A/B bucket hash — three cases guard variant stability for a given `leadId`, roughly 50/50 distribution over 5k samples (±5% tolerance), and that the hash actually uses both buckets. `pnpm --filter @mpbhealth/crm-core test` now reports 21/21 passing.
+- Added three CRM Playwright specs under [`tests/e2e/crm/`](../../../tests/e2e/crm/):
+  - `reports.spec.ts` — per-report smoke over the eight Sales Plan 2026 routes (`/reports/performance`, `/reports/revenue`, `/reports/conversion`, `/reports/activity`, `/reports/leads-split`, `/reports/advisor-production`, `/reports/referral-production`, `/reports/community-impact`). Asserts route mounts without JS errors; under `E2E_CRM_AUTHED=1` also asserts the heading.
+  - `rbac.spec.ts` — exhaustive route-mount smoke across every gated Section A path (`/leads`, `/deals`, `/contacts`, `/accounts`, `/activities`, `/tasks`, `/calendar`, `/campaigns`, `/cases`, `/documents`, `/reports`, `/studio`, `/automation`, `/approvals`). Keeps the gate plumbing honest as we tighten RLS + permissions.
+  - `critical-path.spec.ts` — public community + web-form routes plus an authed-only placeholder for the full intake → round-robin → SLA → cadence → close path (gated on `E2E_CRM_AUTHED=1`).
+- Added [`apps/crm/scripts/check-bundle-size.mjs`](../../../apps/crm/scripts/check-bundle-size.mjs), a zero-dep post-build gate. Budgets in gzipped kB: single JS chunk 450, total JS 1400, total CSS 120. Exposed as `pnpm --filter @mpbhealth/crm check:bundle-size` and `build:verify` (build → verify in one shot). Root script `pnpm verify:crm-bundle` wraps it for CI.
+- Split CI [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml): `test` now runs vitest only; new `e2e-crm` job installs Playwright chromium + runs `pnpm test:e2e:crm` with a Playwright HTML-report artifact; `build` runs bundle verification after the build. The e2e + bundle steps use `continue-on-error` until the seeded-fixture harness lands so they surface regressions without blocking PRs.
+- RBAC audit pass on [`apps/crm/src/App.tsx`](../../../apps/crm/src/App.tsx) confirmed all 89 Section A routes (every `/leads*`, `/deals*`, `/contacts*`, `/accounts*`, `/activities*`, `/tasks*`, `/calendar*`, `/campaigns*`, `/cases*`, `/documents*`, `/reports*`, `/studio*`, `/automation*`, `/approvals*`, `/milestones`, `/reactivation`) wrapped in `Guarded permission="…"` gates. No bare Section A routes remain.
+
+## Phase 7 — Docs, demo script, release
+
+- [CHANGELOG-2026.md](./CHANGELOG-2026.md) finalized — every phase carries a flat bullet list of what shipped (no `_(unshipped)_` markers remain).
+- [DEMO-SCRIPT-2026.md](./DEMO-SCRIPT-2026.md) fully rewritten — 14 numbered sections with concrete clickstream + expected observation for every Sales Plan 2026 + Reports & Dashboards 2026 deliverable (intake → round-robin → SLA, cadence pause, breach escalation, report numbers, RBAC denial, reactivation, community attribution, product lines, Sunbiz, milestones, unified activities, A/B harness, LinkedIn 2+2+2, bundle budget).
+- New [ROLLOUT-2026.md](./ROLLOUT-2026.md) captures the end-to-end rollout checklist: pre-flight, migration order (all 5 phase migrations), secrets/infra, seeds, deploy, smoke, post-launch review, rollback plan.
+- New [RELEASE-NOTES-2026.md](./RELEASE-NOTES-2026.md) for the sales team — plain-English "what's new", breaking changes (crm_activities deprecation, lead_source required, reports.export gating, lead_notifications schema fix), known limitations (Sunbiz enrichment manual, seeded-fixture e2e pending, LinkedIn API pending), and verification results.
+- Final verification: `pnpm --filter @mpbhealth/crm-core test` → 21/21 passing. `pnpm --filter @mpbhealth/crm-core build` → clean. `pnpm --filter @mpbhealth/crm typecheck` → clean.

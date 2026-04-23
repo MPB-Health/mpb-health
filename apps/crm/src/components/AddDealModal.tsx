@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
 import { Modal } from './Modal';
 import { useCRM } from '../contexts/CRMContext';
+import { useCRMService } from '../contexts/CRMServiceContext';
 import { useOrg } from '../contexts/OrgContext';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type {
@@ -33,6 +34,7 @@ export function AddDealModal({
   defaultAccountId,
 }: AddDealModalProps) {
   const { dealService, accountService, contactService, dealStages, refreshDashboard } = useCRM();
+  const { supabase } = useCRMService();
   const { activeOrgId } = useOrg();
 
   const [loading, setLoading] = useState(false);
@@ -57,6 +59,43 @@ export function AddDealModal({
   const [nextStep, setNextStep] = useState('');
   const [tags, setTags] = useState('');
   const [description, setDescription] = useState('');
+  // Sales Plan 2026: every closed deal needs a product line so Revenue +
+  // Leads Split can split Health Insurance vs Medical Cost Sharing.
+  const [productLine, setProductLine] = useState('');
+  const [productLines, setProductLines] = useState<{ slug: string; label: string }[]>([]);
+
+  // Load product lines once per open — the row count is tiny (seeded + any
+  // per-org overrides) so we don't need caching. Silent failure leaves the
+  // picker empty rather than blocking deal creation.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('crm_product_lines')
+        .select('slug, label, org_id, is_active, sort_order')
+        .eq('is_active', true)
+        .or(`org_id.is.null,org_id.eq.${activeOrgId ?? ''}`)
+        .order('sort_order');
+      if (cancelled) return;
+      if (error) {
+        setProductLines([]);
+        return;
+      }
+      // Dedupe: org override wins over system seed when slug collides.
+      const seen = new Map<string, { slug: string; label: string; hasOrg: boolean }>();
+      for (const row of (data ?? []) as { slug: string; label: string; org_id: string | null }[]) {
+        const existing = seen.get(row.slug);
+        if (!existing || (!existing.hasOrg && row.org_id)) {
+          seen.set(row.slug, { slug: row.slug, label: row.label, hasOrg: !!row.org_id });
+        }
+      }
+      setProductLines(Array.from(seen.values()).map((r) => ({ slug: r.slug, label: r.label })));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, supabase, activeOrgId]);
 
   useEffect(() => {
     if (!open) return;
@@ -143,6 +182,7 @@ export function AddDealModal({
         setNextStep(deal.next_step || '');
         setTags(deal.tags?.join(', ') || '');
         setDescription(deal.description || '');
+        setProductLine((deal as unknown as { product_line?: string }).product_line ?? '');
       } else {
         // Reset form for new deal
         setName('');
@@ -156,6 +196,7 @@ export function AddDealModal({
         setNextStep('');
         setTags('');
         setDescription('');
+        setProductLine('');
       }
     }
   }, [open, deal, defaultStageId, defaultAccountId, dealStages]);
@@ -191,6 +232,7 @@ export function AddDealModal({
       next_step: nextStep || undefined,
       tags: tagsArray.length > 0 ? tagsArray : undefined,
       description: description || undefined,
+      product_line: productLine || undefined,
     };
 
     let result;
@@ -416,6 +458,28 @@ export function AddDealModal({
             placeholder="e.g., Website, Referral, Cold Call"
             className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
           />
+        </div>
+
+        {/* Product Line (Sales Plan 2026) */}
+        <div>
+          <label className="block text-sm font-medium text-th-text-secondary mb-1">
+            Product Line
+          </label>
+          <select
+            value={productLine}
+            onChange={(e) => setProductLine(e.target.value)}
+            className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+          >
+            <option value="">Select product line…</option>
+            {productLines.map((p) => (
+              <option key={p.slug} value={p.slug}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-th-text-tertiary">
+            Required for closed deals so Revenue + Leads Split reports can split Health Insurance vs Medical Cost Sharing.
+          </p>
         </div>
 
         {/* Next Step */}

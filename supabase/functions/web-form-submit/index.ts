@@ -142,8 +142,19 @@ serve(async (req) => {
     // If entity_type is 'lead', create a lead
     const settings = form.settings || {};
     if (form.entity_type === 'lead') {
+      // Sales Plan 2026: lead_source resolution (picklist is DB-enforced by
+      // the crm_validate_lead_source trigger). Priority:
+      //   1. settings.lead_source (set when the form was created)
+      //   2. 'inhouse_round_robin' (default for unclassified web-form intake)
+      const leadSource =
+        (typeof settings.lead_source === 'string' && settings.lead_source) ||
+        'inhouse_round_robin';
+
       const leadData: Record<string, unknown> = {
         source: 'web_form',
+        lead_source: leadSource,
+        outside_advisor_id: settings.outside_advisor_id ?? null,
+        referral_partner_id: settings.referral_partner_id ?? null,
         org_id: form.org_id,
         metadata: {
           web_form_id: form.id,

@@ -12,7 +12,11 @@ import {
 } from 'recharts';
 import { useCRMService } from '../../contexts/CRMServiceContext';
 import { useOrg } from '../../contexts/OrgContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { ReportLayout } from '../../components/reports/ReportLayout';
+import { ReportRepFilter } from '../../components/reports/ReportRepFilter';
+import { useCanExportReports } from '../../hooks/useCanExportReports';
+import { useIsLeadManager } from '../../hooks/useIsLeadManager';
 import { exportToXLSX } from '../../lib/xlsxExport';
 import { crmQueryKeys } from '../../query/crmQueryKeys';
 
@@ -52,14 +56,23 @@ export default function RevenueReport() {
   const [year, setYear] = useState(now.getFullYear());
   const { supabase, orgId } = useCRMService();
   const { orgLoading } = useOrg();
+  const canExport = useCanExportReports();
+  const isLeadManager = useIsLeadManager();
+  const { user } = useAuth();
+
+  const [repIds, setRepIds] = useState<string[] | null>(
+    isLeadManager ? null : user?.id ? [user.id] : null,
+  );
+  const effectiveRepIds = isLeadManager ? repIds : user?.id ? [user.id] : null;
 
   const { data = [], isLoading, isError, error } = useQuery({
-    queryKey: crmQueryKeys.reportRevenue(orgId, month, year),
+    queryKey: crmQueryKeys.reportRevenue(orgId, month, year, effectiveRepIds),
     queryFn: async () => {
-      const { data: rows, error: rpcError } = await supabase.rpc('crm_revenue_closed_sales', {
+      const { data: rows, error: rpcError } = await supabase.rpc('crm_revenue_closed_sales_filtered', {
         p_org_id: orgId,
         p_month: month,
         p_year: year,
+        p_rep_ids: effectiveRepIds,
       });
       if (rpcError) throw rpcError;
       return ((rows ?? []) as Record<string, unknown>[]).map(mapRow);
@@ -104,7 +117,8 @@ export default function RevenueReport() {
       year={year}
       onMonthChange={setMonth}
       onYearChange={setYear}
-      onExport={handleExport}
+      onExport={canExport ? handleExport : undefined}
+      filters={<ReportRepFilter value={repIds} onChange={setRepIds} />}
     >
       {isError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

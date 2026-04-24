@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react';
-import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
+import { supabase, isSupabaseConfigured, SUPABASE_AUTH_STORAGE_KEY } from '@mpbhealth/database';
 import {
   profileService,
   trainingService,
@@ -247,6 +247,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     }
     // Safety net: forcibly remove persisted session from storage
     try {
+      localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
       localStorage.removeItem('mpb-auth-token');
     } catch (_) { /* storage may not be available */ }
     clearNavCache();
@@ -324,7 +325,10 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
           setSessionUserCreatedAt(undefined);
           setHasSession(false);
           try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) { /* ignore */ }
-          try { localStorage.removeItem('mpb-auth-token'); } catch (_) { /* ignore */ }
+          try {
+            localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
+            localStorage.removeItem('mpb-auth-token');
+          } catch (_) { /* ignore */ }
           clearNavCache();
           if (!window.location.pathname.startsWith('/login') &&
               !window.location.pathname.startsWith('/forgot-password') &&

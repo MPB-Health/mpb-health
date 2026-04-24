@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, SUPABASE_AUTH_STORAGE_KEY } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -21,7 +21,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(() => {
     setSession(null);
     setUser(null);
-    try { localStorage.removeItem('mpb-auth-token'); } catch (_) { /* noop */ }
+    try {
+      localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
+      localStorage.removeItem('mpb-auth-token');
+    } catch (_) { /* noop */ }
   }, []);
 
   useEffect(() => {
@@ -106,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     // Safety net: forcibly remove persisted session from storage
     try {
+      localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
       localStorage.removeItem('mpb-auth-token');
     } catch (_) { /* storage may not be available */ }
     setUser(null);

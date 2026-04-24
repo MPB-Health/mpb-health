@@ -189,8 +189,17 @@ Deno.serve(async (req: Request) => {
 
     if (createUserError) {
       log.error('Create user error:', createUserError);
+      const message =
+        createUserError.message ||
+        (typeof (createUserError as { msg?: string }).msg === "string"
+          ? (createUserError as { msg: string }).msg
+          : "Failed to create user");
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to create user" }),
+        JSON.stringify({
+          success: false,
+          error: message,
+          code: (createUserError as { code?: string }).code,
+        }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }

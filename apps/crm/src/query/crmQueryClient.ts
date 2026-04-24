@@ -1,5 +1,5 @@
 import { QueryClient, QueryCache } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { supabase, SUPABASE_AUTH_STORAGE_KEY } from '../lib/supabase';
 
 function isAuthError(error: unknown): boolean {
   if (error && typeof error === 'object') {
@@ -24,7 +24,10 @@ function handleGlobalAuthError() {
 
   console.warn('[CRM] Auth error detected — signing out');
   supabase.auth.signOut({ scope: 'local' }).catch(() => {});
-  try { localStorage.removeItem('mpb-auth-token'); } catch (_) { /* noop */ }
+  try {
+    localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
+    localStorage.removeItem('mpb-auth-token');
+  } catch (_) { /* noop */ }
 
   setTimeout(() => {
     signOutScheduled = false;

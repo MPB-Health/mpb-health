@@ -19,6 +19,21 @@ const hasValidConfig = Boolean(
   supabaseUrl.includes('.supabase.co')
 );
 
+/** Subdomain from VITE_SUPABASE_URL, e.g. dtmnkzllidaiqyheguhl — isolates sessions per project (avoids wrong JWT when multiple Supabase projects share the same origin). */
+function getSupabaseProjectRef(url: string): string {
+  const m = url.match(/https?:\/\/([a-z0-9]+)\.supabase\.co/i);
+  return m?.[1] ?? 'default';
+}
+
+/**
+ * localStorage key for this app's Supabase session. One key per project ref
+ * so admin/member/website each store auth under a distinct name when the same
+ * browser profile runs apps that point at different Supabase projects.
+ */
+export const SUPABASE_AUTH_STORAGE_KEY = hasValidConfig
+  ? `mpb-auth-token-${getSupabaseProjectRef(supabaseUrl)}`
+  : 'mpb-auth-token-default';
+
 if (!hasValidConfig) {
   const isDevelopment = (import.meta as any).env?.DEV;
   const isProduction = (import.meta as any).env?.PROD;
@@ -85,7 +100,7 @@ export const supabase: SupabaseClient = createClient(
       persistSession: hasValidConfig,
       autoRefreshToken: hasValidConfig,
       detectSessionInUrl: hasValidConfig,
-      storageKey: 'mpb-auth-token',
+      storageKey: SUPABASE_AUTH_STORAGE_KEY,
       lock: noOpLock,
     },
     realtime: {

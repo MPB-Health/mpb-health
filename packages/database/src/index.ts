@@ -6,6 +6,7 @@
 export {
   supabase,
   supabaseUrl,
+  SUPABASE_AUTH_STORAGE_KEY,
   getSupabase,
   isSupabaseConfigured,
   checkSupabaseHealth,

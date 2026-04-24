@@ -1,4 +1,5 @@
 import { RateCalculatorInput, RateEstimate, RateOptions, ComparisonCalculatorInput } from './schema';
+import { getHouseholdPricingAge } from './householdPricingAge';
 import { 
   estimateMonthly as estimateMonthlyV2, 
   getBenefitTiersForPlan as getBenefitTiersV2,
@@ -41,8 +42,12 @@ export interface AllMembershipsEstimate {
   plans: PlanEstimate[];
   inputSummary: {
     householdType: string;
+    /** Entered age for the primary member. */
     primaryAge: number;
+    /** Oldest age among all covered members; used for rate band lookup. */
+    pricingAge: number;
     spouseAge?: number;
+    oldestDependentAge?: number;
     dependentsCount: number;
     state: string;
   };
@@ -65,10 +70,12 @@ const FLAT_RATE_PLANS = ['essentials', 'mec-essentials'];
  * - MemberFamily (couple with children)
  */
 export function estimateMonthly(input: RateCalculatorInput, opts?: RateOptions): RateEstimate {
+  const pricingAge = getHouseholdPricingAge(input);
   log.info('[RateEngine] Calculating estimate for:', {
     plan: input.selectedPlan,
     householdType: input.householdType,
     primaryAge: input.primaryAge,
+    pricingAge,
     benefitTier: input.benefitTier,
     dependentsCount: input.dependentsCount,
     spouseAge: input.spouseAge
@@ -81,7 +88,7 @@ export function estimateMonthly(input: RateCalculatorInput, opts?: RateOptions):
     const pricingResult = lookupPrice({
       planId: input.selectedPlan,
       householdType: input.householdType,
-      primaryAge: input.primaryAge,
+      primaryAge: pricingAge,
       primaryTobacco: input.primaryTobacco,
       spouseTobacco: input.spouseTobacco,
       benefitTier: input.benefitTier
@@ -273,7 +280,12 @@ export function estimateAllMemberships(input: ComparisonCalculatorInput, opts?: 
     inputSummary: {
       householdType: input.householdType,
       primaryAge: input.primaryAge,
+      pricingAge: getHouseholdPricingAge({
+        ...input,
+        dependentsCount: input.dependentsCount ?? 0,
+      }),
       spouseAge: input.spouseAge ?? undefined,
+      oldestDependentAge: input.oldestDependentAge ?? undefined,
       dependentsCount: input.dependentsCount ?? 0,
       state: input.state
     }

@@ -21,6 +21,7 @@ import {
 } from '@mpbhealth/plans-core';
 import type { RateCalculatorInput, RateEstimate as LegacyRateEstimate, RateOptions } from './schema';
 import type { AllMembershipsEstimate, PlanEstimate, TierEstimate, BenefitTier } from './newRateEngine';
+import { getHouseholdPricingAge } from './householdPricingAge';
 
 const rateEngine = createPlanRateEngine(supabase);
 const planService = createPlanService(supabase);
@@ -58,7 +59,7 @@ export async function dbEstimateMonthly(
 
   const result = await rateEngine.estimateMonthly({
     planSlug: input.selectedPlan,
-    age: input.primaryAge,
+    age: getHouseholdPricingAge(input),
     memberType,
     iuaAmount: iuaAmount && !isNaN(iuaAmount) ? iuaAmount : null,
     usesTobacco: input.primaryTobacco || input.spouseTobacco,
@@ -101,6 +102,7 @@ export async function dbEstimateAllMemberships(input: {
   householdType: string;
   primaryAge: number;
   spouseAge?: number | null;
+  oldestDependentAge?: number | null;
   dependentsCount?: number | null;
   state: string;
   primaryTobacco?: boolean;
@@ -108,9 +110,15 @@ export async function dbEstimateAllMemberships(input: {
 }): Promise<AllMembershipsEstimate> {
   const memberType = mapMemberType(input.householdType);
   const usesTobacco = input.primaryTobacco || input.spouseTobacco;
+  const pricingAge = getHouseholdPricingAge({
+    primaryAge: input.primaryAge,
+    spouseAge: input.spouseAge,
+    oldestDependentAge: input.oldestDependentAge,
+    dependentsCount: input.dependentsCount ?? 0,
+  });
 
   const allEstimates = await rateEngine.estimateAllMemberships({
-    age: input.primaryAge,
+    age: pricingAge,
     memberType,
     usesTobacco,
   });
@@ -153,6 +161,8 @@ export async function dbEstimateAllMemberships(input: {
     inputSummary: {
       householdType: input.householdType,
       primaryAge: input.primaryAge,
+      pricingAge,
+      oldestDependentAge: input.oldestDependentAge ?? undefined,
       spouseAge: input.spouseAge ?? undefined,
       dependentsCount: input.dependentsCount ?? 0,
       state: input.state,

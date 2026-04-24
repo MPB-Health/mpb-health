@@ -8,6 +8,7 @@ export function estimateBusinessMonthly(input: BusinessRateCalculatorInput): Bus
       householdType: input.householdType,
       primaryAge: input.primaryAge,
       spouseAge: input.spouseAge,
+      oldestDependentAge: input.oldestDependentAge,
       dependentsCount: input.dependentsCount,
       primaryTobacco: input.primaryTobacco,
       spouseTobacco: input.spouseTobacco,

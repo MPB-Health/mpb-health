@@ -1,4 +1,5 @@
 import { RateCalculatorInput, RateEstimate, RateOptions, RateVersion } from './schema';
+import { getHouseholdPricingAge } from './householdPricingAge';
 import rateTablesConfigV2 from '../../content/rate_tables.config.v2.json';
 
 interface MembershipRates {
@@ -129,7 +130,7 @@ export function estimateMonthly(input: RateCalculatorInput, opts?: RateOptions):
   }
 
   const iua = normalizeBenefitTier(input.benefitTier) || '2500';
-  const ageBand = getAgeBand(input.primaryAge);
+  const ageBand = getAgeBand(getHouseholdPricingAge(input));
 
   const rateTables = product.rate_tables[iua];
   if (!rateTables) {

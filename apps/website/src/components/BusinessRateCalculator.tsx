@@ -110,7 +110,7 @@ export default function BusinessRateCalculator() {
     const needsChildren = watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family';
     let totalFields = 5; // state, businessType, employeeCount, primaryAge, selectedPlan always required
     if (needsSpouse) totalFields++;
-    if (needsChildren) totalFields++;
+    if (needsChildren) totalFields += 2;
 
     if (watchedState) filledFields++;
     if (watchedBusinessType) filledFields++;
@@ -119,6 +119,7 @@ export default function BusinessRateCalculator() {
     if (watchedSelectedPlan) filledFields++;
     if (needsSpouse && watch('spouseAge')) filledFields++;
     if (needsChildren && watch('dependentsCount') >= 1) filledFields++;
+    if (needsChildren && Number.isFinite(watch('oldestDependentAge'))) filledFields++;
 
     setProgress((filledFields / totalFields) * 100);
   }, [watchedState, watchedBusinessType, watchedEmployeeCount, watchedPrimaryAge, watchedSelectedPlan, watchedHouseholdType, watch]);
@@ -403,6 +404,27 @@ export default function BusinessRateCalculator() {
                       <p className="text-sm text-red-600 flex items-center gap-1">
                         <Info className="h-4 w-4" />
                         {errors.dependentsCount.message}
+                      </p>
+                    )}
+                    <Label htmlFor="oldestDependentAge" className="text-base font-semibold text-gray-900">
+                      Oldest child/dependent age *
+                    </Label>
+                    <p className="text-xs text-gray-500">
+                      Per membership, pricing uses the oldest age among all covered members.
+                    </p>
+                    <Input
+                      id="oldestDependentAge"
+                      type="number"
+                      min={0}
+                      max={64}
+                      placeholder="e.g., 18"
+                      className="h-12 text-base bg-white"
+                      {...register('oldestDependentAge', { valueAsNumber: true })}
+                    />
+                    {errors.oldestDependentAge && (
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <Info className="h-4 w-4" />
+                        {errors.oldestDependentAge.message}
                       </p>
                     )}
                   </div>

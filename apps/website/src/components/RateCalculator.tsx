@@ -78,12 +78,13 @@ export default function RateCalculator() {
     const needsChildren = watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family';
     let totalFields = 2; // state + primaryAge always required
     if (needsSpouse) totalFields++;
-    if (needsChildren) totalFields++;
+    if (needsChildren) totalFields += 2; // count + oldest dependent age
 
     if (watchedState) filledFields++;
     if (watchedPrimaryAge) filledFields++;
     if (needsSpouse && watch('spouseAge')) filledFields++;
     if (needsChildren && watch('dependentsCount') >= 1) filledFields++;
+    if (needsChildren && Number.isFinite(watch('oldestDependentAge'))) filledFields++;
 
     setProgress((filledFields / totalFields) * 100);
   }, [watchedState, watchedPrimaryAge, watchedHouseholdType, watch]);
@@ -170,9 +171,12 @@ export default function RateCalculator() {
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
               <div className="text-center sm:text-left">
                 <p className="text-sm text-gray-600">
-                  Showing rates for <span className="font-semibold">{allEstimates.inputSummary.householdType}</span> coverage, 
-                  age <span className="font-semibold">{allEstimates.inputSummary.primaryAge}</span>
-                  {allEstimates.inputSummary.spouseAge && <>, spouse age <span className="font-semibold">{allEstimates.inputSummary.spouseAge}</span></>}
+                  Showing rates for <span className="font-semibold">{allEstimates.inputSummary.householdType}</span> coverage,{' '}
+                  <span className="font-semibold">{allEstimates.inputSummary.pricingAge}</span> (oldest covered age)
+                  {allEstimates.inputSummary.primaryAge !== allEstimates.inputSummary.pricingAge && (
+                    <> — primary <span className="font-semibold">{allEstimates.inputSummary.primaryAge}</span></>
+                  )}
+                  {allEstimates.inputSummary.spouseAge && <>, spouse <span className="font-semibold">{allEstimates.inputSummary.spouseAge}</span></>}
                   {allEstimates.inputSummary.dependentsCount > 0 && <>, <span className="font-semibold">{allEstimates.inputSummary.dependentsCount}</span> dependents</>}
                   {' '}in <span className="font-semibold">{allEstimates.inputSummary.state}</span>
                 </p>
@@ -357,6 +361,27 @@ export default function RateCalculator() {
                       <p className="text-sm text-red-600 flex items-center gap-1">
                         <Info className="h-4 w-4" />
                         {errors.dependentsCount.message}
+                      </p>
+                    )}
+                    <Label htmlFor="oldestDependentAge" className="text-sm font-medium text-gray-900">
+                      Oldest child/dependent age *
+                    </Label>
+                    <p className="text-xs text-gray-500">
+                      Quote uses the oldest age among everyone covered, including children.
+                    </p>
+                    <Input
+                      id="oldestDependentAge"
+                      type="number"
+                      min={0}
+                      max={64}
+                      placeholder="e.g., 18"
+                      className="h-10 text-sm bg-white"
+                      {...register('oldestDependentAge', { valueAsNumber: true })}
+                    />
+                    {errors.oldestDependentAge && (
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <Info className="h-4 w-4" />
+                        {errors.oldestDependentAge.message}
                       </p>
                     )}
                   </div>

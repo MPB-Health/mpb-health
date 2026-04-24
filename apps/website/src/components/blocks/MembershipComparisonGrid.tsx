@@ -226,11 +226,17 @@ export default function MembershipComparisonGrid({
   currentMonthly,
   onSelectPlan
 }: MembershipComparisonGridProps) {
-  const householdSize = estimates.inputSummary.householdType === 'individual' 
-    ? 1 
-    : estimates.inputSummary.householdType === 'couple' 
-      ? 2 
-      : 2 + (estimates.inputSummary.dependentsCount || 0);
+  const ht = estimates.inputSummary.householdType;
+  const householdSize =
+    ht === 'member-only' || ht === 'individual'
+      ? 1
+      : ht === 'member-spouse' || ht === 'couple'
+        ? 2
+        : ht === 'member-child'
+          ? 1 + (estimates.inputSummary.dependentsCount || 0)
+          : ht === 'member-family' || ht === 'family'
+            ? 2 + (estimates.inputSummary.dependentsCount || 0)
+            : 1;
 
   const handleSelectPlan = (planId: string, tierId?: string) => {
     if (onSelectPlan) {
@@ -267,9 +273,9 @@ export default function MembershipComparisonGrid({
           Your Personalized Membership Options
         </h3>
         <p className="text-gray-600">
-          Based on {estimates.inputSummary.householdType === 'individual' ? 'individual' : 
-            estimates.inputSummary.householdType === 'couple' ? 'couple' : 
-            `family of ${householdSize}`} coverage in {estimates.inputSummary.state}
+          Based on {ht === 'member-only' || ht === 'individual' ? 'individual' :
+            ht === 'member-spouse' || ht === 'couple' ? 'couple' :
+            `family of ${householdSize}`} coverage, oldest covered age {estimates.inputSummary.pricingAge ?? estimates.inputSummary.primaryAge}, in {estimates.inputSummary.state}
         </p>
         {currentMonthly && (
           <p className="text-sm text-blue-600 mt-1 font-medium">

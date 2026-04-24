@@ -29,6 +29,12 @@ export const rateCalculatorSchema = z.object({
     .max(10, 'Maximum 10 dependents')
     .optional()
     .default(0),
+  oldestDependentAge: z
+    .number()
+    .min(0, 'Enter a valid age')
+    .max(64, 'Age must be 64 or younger')
+    .optional()
+    .nullable(),
   primaryTobacco: z.boolean().default(false),
   spouseTobacco: z.boolean().default(false),
   selectedPlan: z.enum(
@@ -68,6 +74,17 @@ export const rateCalculatorSchema = z.object({
   }
 ).refine(
   (data) => {
+    if (data.householdType === 'member-child' || data.householdType === 'member-family') {
+      return data.oldestDependentAge !== undefined && data.oldestDependentAge !== null;
+    }
+    return true;
+  },
+  {
+    message: 'Age of oldest dependent is required',
+    path: ['oldestDependentAge'],
+  }
+).refine(
+  (data) => {
     const plansRequiringTier = ['care-plus', 'direct', 'secure-hsa'];
     if (plansRequiringTier.includes(data.selectedPlan)) {
       return data.benefitTier !== undefined && data.benefitTier !== '' && data.benefitTier !== null;
@@ -89,6 +106,7 @@ export interface RateCalculatorInput {
   householdType: MembershipType;
   primaryAge: number;
   spouseAge?: number | null;
+  oldestDependentAge?: number | null;
   dependentsCount: number;
   primaryTobacco: boolean;
   spouseTobacco: boolean;
@@ -120,6 +138,12 @@ export const comparisonCalculatorSchema = z.object({
     .max(10, 'Maximum 10 dependents')
     .optional()
     .default(0),
+  oldestDependentAge: z
+    .number()
+    .min(0, 'Enter a valid age')
+    .max(64, 'Age must be 64 or younger')
+    .optional()
+    .nullable(),
   primaryTobacco: z.boolean().default(false),
   spouseTobacco: z.boolean().default(false),
   currentMonthly: z.number().optional().nullable().or(z.nan()).transform((val: any) => {
@@ -149,6 +173,17 @@ export const comparisonCalculatorSchema = z.object({
   {
     message: 'Number of children is required',
     path: ['dependentsCount'],
+  }
+).refine(
+  (data) => {
+    if (data.householdType === 'member-child' || data.householdType === 'member-family') {
+      return data.oldestDependentAge !== undefined && data.oldestDependentAge !== null;
+    }
+    return true;
+  },
+  {
+    message: 'Age of oldest dependent is required',
+    path: ['oldestDependentAge'],
   }
 );
 
@@ -208,6 +243,12 @@ export const businessRateCalculatorSchema = z.object({
     .max(10, 'Maximum 10 dependents')
     .optional()
     .default(0),
+  oldestDependentAge: z
+    .number()
+    .min(0, 'Enter a valid age')
+    .max(64, 'Age must be 64 or younger')
+    .optional()
+    .nullable(),
   primaryTobacco: z.boolean().default(false),
   spouseTobacco: z.boolean().default(false),
   selectedPlan: z.enum(['mec-essentials', 'secure-hsa'] as const, {
@@ -241,6 +282,17 @@ export const businessRateCalculatorSchema = z.object({
   {
     message: 'Number of children is required',
     path: ['dependentsCount'],
+  }
+).refine(
+  (data) => {
+    if (data.householdType === 'member-child' || data.householdType === 'member-family') {
+      return data.oldestDependentAge !== undefined && data.oldestDependentAge !== null;
+    }
+    return true;
+  },
+  {
+    message: 'Age of oldest dependent is required',
+    path: ['oldestDependentAge'],
   }
 ).refine(
   (data) => {

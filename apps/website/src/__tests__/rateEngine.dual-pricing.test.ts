@@ -116,8 +116,9 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...carePlusInput,
           primaryAge: 35,
-          householdType: 'member-family',
+          householdType: 'member-child',
           dependentsCount: 1,
+          oldestDependentAge: 10,
           benefitTier: '5000'
         }, opts);
         expect(result.total).toBe(341);
@@ -211,8 +212,9 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...directInput,
           primaryAge: 35,
-          householdType: 'member-family',
+          householdType: 'member-child',
           dependentsCount: 1,
+          oldestDependentAge: 10,
           benefitTier: '5000'
         }, opts);
         expect(result.total).toBe(415);
@@ -305,8 +307,9 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
         const result = estimateMonthly({
           ...baseInput,
           primaryAge: 35,
-          householdType: 'member-family',
+          householdType: 'member-child',
           dependentsCount: 1,
+          oldestDependentAge: 10,
           benefitTier: '5000'
         }, opts);
         expect(result.total).toBe(450);
@@ -458,6 +461,89 @@ describe('Dual Pricing Rate Engine (Current vs 2026) - Championship Edition', ()
 
       expect(individual.total).toBeLessThan(couple.total);
       expect(couple.total).toBeLessThan(family.total);
+    });
+  });
+
+  describe('Household pricing age (oldest member)', () => {
+    const carePlusInput = { ...baseInput, selectedPlan: 'care-plus' as const, benefitTier: '1250' as const };
+    const opts = { rateVersion: '2026-01-01' as const };
+
+    it('uses the higher of primary and spouse for member-spouse', () => {
+      const a = estimateMonthly(
+        { ...carePlusInput, primaryAge: 35, householdType: 'member-spouse', spouseAge: 52 },
+        opts
+      );
+      const b = estimateMonthly(
+        { ...carePlusInput, primaryAge: 52, householdType: 'member-spouse', spouseAge: 35 },
+        opts
+      );
+      expect(a.total).toBe(b.total);
+    });
+
+    it('uses oldest dependent in the max when children are in the household', () => {
+      const withAdultChild = estimateMonthly(
+        {
+          ...carePlusInput,
+          primaryAge: 35,
+          spouseAge: 40,
+          householdType: 'member-family',
+          dependentsCount: 1,
+          oldestDependentAge: 50,
+        },
+        opts
+      );
+      const reference = estimateMonthly(
+        {
+          ...carePlusInput,
+          primaryAge: 50,
+          spouseAge: 40,
+          householdType: 'member-family',
+          dependentsCount: 1,
+          oldestDependentAge: 5,
+        },
+        opts
+      );
+      expect(withAdultChild.total).toBe(reference.total);
+    });
+
+    it('ticket: primary 35, spouse 52, dependent 18 — pricing age is 52 (not 35); order of primary/spouse does not matter', () => {
+      const asWritten = estimateMonthly(
+        {
+          ...carePlusInput,
+          primaryAge: 35,
+          spouseAge: 52,
+          householdType: 'member-family',
+          dependentsCount: 1,
+          oldestDependentAge: 18,
+        },
+        opts
+      );
+      const spouseListedAsPrimary = estimateMonthly(
+        {
+          ...carePlusInput,
+          primaryAge: 52,
+          spouseAge: 35,
+          householdType: 'member-family',
+          dependentsCount: 1,
+          oldestDependentAge: 18,
+        },
+        opts
+      );
+      expect(asWritten.total).toBe(spouseListedAsPrimary.total);
+
+      // Oldest is 52, not 35 — must not match a family where the max age is only 40
+      const maxAge40 = estimateMonthly(
+        {
+          ...carePlusInput,
+          primaryAge: 35,
+          spouseAge: 40,
+          householdType: 'member-family',
+          dependentsCount: 1,
+          oldestDependentAge: 10,
+        },
+        opts
+      );
+      expect(asWritten.total).not.toBe(maxAge40.total);
     });
   });
 

@@ -26,6 +26,7 @@ import { useAnalytics, AnalyticsEvents } from '../lib/analytics';
 import { CompactMembershipPrioritySelector } from './CompactMembershipPrioritySelector';
 import { recommendPlans } from '../lib/membershipPriorities';
 import { leadSubmissionService } from '../lib/leadSubmissionService';
+import { getHouseholdPricingAge } from '../lib/householdPricingAge';
 import { cn, fmtMoney } from '../lib/utils';
 
 const log = createClientLogger('HeroCalculator');
@@ -36,6 +37,7 @@ const heroCalculatorSchema = z.object({
   primaryAge: z.number().min(18, 'Age must be 18+').max(64, 'Age must be under 65'),
   spouseAge: z.number().min(18, 'Spouse age must be 18+').max(64, 'Spouse age must be under 65').optional(),
   dependentsCount: z.number().min(0).max(10).optional(),
+  oldestDependentAge: z.number().min(0).max(64).optional(),
   membershipPriorities: z.array(z.string()).min(1, 'Select at least one membership priority'),
   firstName: z.string().min(2, 'First name is required'),
   lastName: z.string().min(2, 'Last name is required'),
@@ -57,6 +59,14 @@ const heroCalculatorSchema = z.object({
     return true;
   },
   { message: 'Number of children is required', path: ['dependentsCount'] }
+).refine(
+  (data) => {
+    if (data.householdType === 'member-child' || data.householdType === 'member-family') {
+      return data.oldestDependentAge !== undefined && data.oldestDependentAge >= 0;
+    }
+    return true;
+  },
+  { message: 'Age of oldest child is required', path: ['oldestDependentAge'] }
 );
 
 type HeroCalculatorInput = z.infer<typeof heroCalculatorSchema>;
@@ -120,6 +130,7 @@ export default function HeroCalculator() {
   const watchedAge = watch('primaryAge');
   const watchedSpouseAge = watch('spouseAge');
   const watchedDependentsCount = watch('dependentsCount');
+  const watchedOldestDependentAge = watch('oldestDependentAge');
   const watchedFirstName = watch('firstName');
   const watchedLastName = watch('lastName');
   const watchedEmail = watch('email');
@@ -133,11 +144,21 @@ export default function HeroCalculator() {
 
   const canProceedStep1 = () => {
     if (!watchedState || !watchedAge) return false;
-    if (watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') {
+    if (watchedHouseholdType === 'member-spouse') {
       return watchedSpouseAge !== undefined && watchedSpouseAge >= 18 && watchedSpouseAge <= 64;
     }
+    if (watchedHouseholdType === 'member-family') {
+      return (
+        watchedSpouseAge !== undefined && watchedSpouseAge >= 18 && watchedSpouseAge <= 64 &&
+        watchedDependentsCount !== undefined && watchedDependentsCount >= 1 &&
+        watchedOldestDependentAge !== undefined
+      );
+    }
     if (watchedHouseholdType === 'member-child') {
-      return watchedDependentsCount !== undefined && watchedDependentsCount >= 1;
+      return (
+        watchedDependentsCount !== undefined && watchedDependentsCount >= 1 &&
+        watchedOldestDependentAge !== undefined
+      );
     }
     return true;
   };
@@ -155,6 +176,7 @@ export default function HeroCalculator() {
         primaryAge: (fd.primaryAge as number) ?? 18,
         spouseAge: fd.spouseAge as number | undefined,
         dependentsCount: fd.dependentsCount as number | undefined,
+        oldestDependentAge: fd.oldestDependentAge as number | undefined,
         membershipPriorities: (fd.membershipPriorities as string[]) ?? [],
         firstName: (fd.firstName as string) ?? '',
         lastName: (fd.lastName as string) ?? '',
@@ -170,7 +192,9 @@ export default function HeroCalculator() {
     if (step === 1) {
       const fields: (keyof HeroCalculatorInput)[] = ['state', 'primaryAge'];
       if (watchedHouseholdType === 'member-spouse' || watchedHouseholdType === 'member-family') fields.push('spouseAge');
-      if (watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') fields.push('dependentsCount');
+      if (watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') {
+        fields.push('dependentsCount', 'oldestDependentAge');
+      }
       const valid = await trigger(fields);
       if (valid && canProceedStep1()) setStep(2);
     } else if (step === 2 && canProceedStep2()) {
@@ -197,13 +221,22 @@ export default function HeroCalculator() {
         primaryAge: watchedAge,
         spouseAge: watchedSpouseAge ?? null,
         dependentsCount: watchedDependentsCount || 0,
+        oldestDependentAge: watchedOldestDependentAge ?? null,
         primaryTobacco: false,
         spouseTobacco: false,
         currentMonthly: undefined,
       };
       const estimates = estimateAllMemberships(comparisonInput);
       const recommendations = recommendPlans(selectedPriorities);
-      const traditionalCost = estimateTraditionalInsurance(watchedHouseholdType, watchedAge);
+      const traditionalCost = estimateTraditionalInsurance(
+        watchedHouseholdType,
+        getHouseholdPricingAge({
+          primaryAge: watchedAge,
+          spouseAge: watchedSpouseAge ?? null,
+          oldestDependentAge: watchedOldestDependentAge ?? null,
+          dependentsCount: watchedDependentsCount || 0,
+        })
+      );
 
       setInlineResults({ estimates, recommendations, traditionalCost });
 
@@ -269,6 +302,7 @@ export default function HeroCalculator() {
           primary_age: data.primaryAge,
           spouse_age: data.spouseAge,
           dependents_count: data.dependentsCount,
+          oldest_dependent_age: data.oldestDependentAge,
           membership_priorities: data.membershipPriorities,
           all_plan_rates: allPlanRates,
           priorities_matched: data.membershipPriorities,
@@ -415,18 +449,34 @@ export default function HeroCalculator() {
               )}
 
               {(watchedHouseholdType === 'member-child' || watchedHouseholdType === 'member-family') && (
-                <div className="p-4 bg-green-50 rounded-xl border border-green-100 animate-in fade-in duration-200">
-                  <Label htmlFor="hero-dependents" className="text-sm font-semibold text-gray-700"># of Children (under 26)</Label>
-                  <Input
-                    id="hero-dependents"
-                    type="number"
-                    min={1}
-                    max={10}
-                    placeholder="e.g., 2"
-                    className="h-11 text-sm bg-white mt-1.5"
-                    {...register('dependentsCount', { valueAsNumber: true })}
-                  />
-                  {errors.dependentsCount && <p className="text-xs text-red-600 mt-1">{errors.dependentsCount.message}</p>}
+                <div className="p-4 bg-green-50 rounded-xl border border-green-100 animate-in fade-in duration-200 space-y-3">
+                  <div>
+                    <Label htmlFor="hero-dependents" className="text-sm font-semibold text-gray-700"># of Children (under 26)</Label>
+                    <Input
+                      id="hero-dependents"
+                      type="number"
+                      min={1}
+                      max={10}
+                      placeholder="e.g., 2"
+                      className="h-11 text-sm bg-white mt-1.5"
+                      {...register('dependentsCount', { valueAsNumber: true })}
+                    />
+                    {errors.dependentsCount && <p className="text-xs text-red-600 mt-1">{errors.dependentsCount.message}</p>}
+                  </div>
+                  <div>
+                    <Label htmlFor="hero-oldest-dep" className="text-sm font-semibold text-gray-700">Oldest child age *</Label>
+                    <p className="text-[11px] text-gray-500 mt-0.5">We price using the oldest age in the household.</p>
+                    <Input
+                      id="hero-oldest-dep"
+                      type="number"
+                      min={0}
+                      max={64}
+                      placeholder="e.g., 18"
+                      className="h-11 text-sm bg-white mt-1.5"
+                      {...register('oldestDependentAge', { valueAsNumber: true })}
+                    />
+                    {errors.oldestDependentAge && <p className="text-xs text-red-600 mt-1">{errors.oldestDependentAge.message}</p>}
+                  </div>
                 </div>
               )}
             </div>

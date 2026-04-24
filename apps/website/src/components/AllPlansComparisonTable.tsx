@@ -193,7 +193,7 @@ export const AllPlansComparisonTable: React.FC<AllPlansComparisonTableProps> = (
               {formatHousehold(estimates.inputSummary.householdType)}
             </span>
             <span>•</span>
-            <span>Age {estimates.inputSummary.primaryAge}</span>
+            <span>Age {estimates.inputSummary.pricingAge ?? estimates.inputSummary.primaryAge} (oldest)</span>
             <span>•</span>
             <span>{estimates.inputSummary.state}</span>
           </p>

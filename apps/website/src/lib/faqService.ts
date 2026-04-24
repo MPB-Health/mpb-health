@@ -17,6 +17,7 @@ export async function getAllFAQItems(): Promise<FAQItem[]> {
       .from('faq_items')
       .select('id, title, content_html, category, order_index, is_active, created_at, updated_at')
       .eq('is_active', true)
+      .eq('category', 'mpb-faq-main')
       .order('order_index');
 
     if (error) {

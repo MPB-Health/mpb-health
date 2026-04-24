@@ -7,43 +7,58 @@ import { Phone } from 'lucide-react';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import { useFAQ } from '../hooks/useFAQ';
 
+/** Aligned with About Us / marketing FAQ (Apr 2026); also seeded as category `mpb-faq-main` in DB. */
 const FALLBACK_FAQS = [
   {
-    question: "How is health sharing different from insurance?",
-    answer: "Health sharing is a community-based approach where members share medical expenses, while insurance is a contract with a corporation. Health sharing typically offers more flexibility, no network restrictions, and significantly lower monthly costs. However, it's not insurance and doesn't guarantee payment of medical expenses."
+    question: 'What is MPB Health?',
+    answer:
+      'MPB Health offers memberships that are alternatives to traditional health insurance. MPB Health is not insurance; rather, it is a community-focused organization dedicated to providing transparent, non-insurance alternatives for healthcare. We facilitate a medical cost-sharing model that empowers individuals, families, and businesses to break free from traditional network restrictions and high corporate overhead. By prioritizing people over profit, we provide innovative solutions that combine sharing, preventive care, and personalized support to help our members take back control of their healthcare journey.',
   },
   {
-    question: "What medical expenses can be shared?",
-    answer: "Eligible medical expenses typically include hospital stays, surgeries, diagnostic tests, emergency room visits, and specialist consultations. Preventive care, maternity, virtual behavioral health, and prescription sharing vary by membership. Routine check-ups, pre-membership conditions (during waiting periods), and lifestyle-related issues may have different sharing guidelines."
+    question: 'Why do people choose MPB Health?',
+    answer:
+      'Members choose MPB Health for the greater flexibility of seeing any doctor, significantly lower monthly costs compared to traditional insurance, and access to a community-based model. Our members value a system that prioritizes transparency and shared responsibility over corporate profit margins.',
   },
   {
-    question: "Is there a waiting period for sharing?",
-    answer: "We don't decline membership based on medical history. New medical needs are shareable right away, while pre-existing conditions may have a phase-in period. Certain managed conditions—like diabetes, high blood pressure, and high cholesterol—can be eligible from Day One if there's been no hospitalization in the past year. Pre-membership conditions have a 12-month waiting period before they become eligible for sharing. Accidents are eligible immediately."
+    question: 'How much do members typically save by joining MPB Health?',
+    answer:
+      'On average, our members see a 30–60% reduction in their monthly costs compared to traditional insurance premiums. Because we are a community-driven model without the high overhead of corporate insurance, those savings are passed directly back to our members.',
   },
   {
-    question: "Can I use any doctor or hospital?",
-    answer: "Yes! Unlike traditional insurance, health sharing has no network restrictions for Medical Cost Sharing injury or illness. You can visit any licensed healthcare provider, specialist, or hospital in the United States. This freedom of choice is one of the key benefits of health sharing over traditional insurance plans. For preventative care services, there is a network of providers."
+    question: 'How is MPB Health different from traditional insurance?',
+    answer:
+      'Traditional insurance is built around premiums, restrictive networks, and corporate risk pools. MPB Health is a community-based alternative where members contribute monthly to share in eligible medical needs based on clear guidelines rather than insurance contracts. This model offers lower monthly costs and the freedom to choose any provider without network limitations.',
   },
   {
-    question: "How do I submit medical expenses for sharing?",
-    answer: "Submit expenses easily through our online member portal or mobile app. Upload your medical bills and supporting documentation. Our team reviews submissions according to sharing guidelines. Typical end-to-end processing time is about 60 days. Needs can be processed in as little as 2 weeks, however, times may vary."
+    question: 'What makes MPB Health different from other healthshares?',
+    answer:
+      'While many healthshares require a religious “statement of faith,” MPB Health is inclusive and open to everyone. We welcome members from all backgrounds, beliefs, and walks of life who share the common goal of taking personal responsibility for their health within a supportive community. Beyond our inclusivity, we differentiate ourselves by providing modern benefits such as $0 unlimited virtual care and behavioral health resources from day one, ensuring the community supports your daily wellness rather than just major medical events.',
   },
   {
-    question: "Are prescription drugs shareable?",
-    answer: "Prescription sharing varies by plan. All members receive prescription discounts through our partner network. Higher-tier memberships may include full prescription sharing for eligible medications. Contact our team for plan-specific details."
+    question: 'Is MPB Health a good fit for families?',
+    answer:
+      'Yes. Many families choose MPB Health because it offers total provider flexibility, allowing them to keep their trusted pediatricians and specialists. Families also benefit from significant monthly savings and immediate access to resources such as $0 unlimited virtual care and behavioral health, ensuring their everyday health needs are supported without the high costs of traditional insurance.',
   },
   {
-    question: "How are monthly sharing amounts determined?",
-    answer: "Monthly sharing amounts are based on age, family size, and chosen membership level. Adults and children have different rates. Families receive discounts compared to individual memberships. Amounts are fixed and do not increase based on usage."
+    question: 'Who typically joins MPB Health?',
+    answer:
+      'MPB Health is an ideal fit for individuals, families, small business owners, and self-employed professionals who prioritize freedom and flexibility in their healthcare. Our members are typically looking for a more affordable, community-driven alternative to traditional insurance that allows them to take full control of their healthcare choices without being restricted by corporate networks.',
   },
   {
-    question: "What is Direct Debit?",
-    answer: "Direct debit is a secure, automatic way to pay your monthly share amount. On your draft date, your payment is taken from the bank account or card you have on file, so you don't have to make a manual payment each month. You can update your payment method through the member portal before your draft date."
+    question: 'Is MPB Health available nationwide?',
+    answer:
+      'Yes. MPB Health is available to members across most of the United States and Puerto Rico, providing individuals and families access to a nationwide, community-based healthcare model that travels with you. Note: Membership is currently unavailable to residents of Washington state.',
   },
   {
-    question: "Can someone else pay for my membership (third-party payor)?",
-    answer: "Yes. A third party—such as an employer, family member, or sponsor—may pay your monthly share amount as long as they are the account holder on the payment method used. The member remains responsible for making sure payments are made on time. In some group or employer arrangements, additional authorization forms may be required; if needed, we will provide those during enrollment."
-  }
+    question: 'Do I have to wait for an "Open Enrollment" period to join?',
+    answer:
+      'No. One of the greatest advantages of MPB Health is that you can join any time of the year. There are no restrictive enrollment windows, meaning you can take control of your healthcare and start your membership as early as the first of the next month.',
+  },
+  {
+    question: 'Is maternity care eligible for sharing?',
+    answer:
+      "Yes. MPB Health supports growing families by sharing in eligible expenses related to prenatal care, delivery, and postnatal care. To be eligible for sharing, the pregnancy conception date must occur after at least six months of continuous membership. Once the Initial Unshareable Amount (IUA) is met for the pregnancy, the community shares in the remaining eligible costs for both the mother and the newborn's initial care.",
+  },
 ];
 
 const FAQ: React.FC = () => {

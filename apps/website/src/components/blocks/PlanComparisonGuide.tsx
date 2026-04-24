@@ -25,7 +25,6 @@ const comparisonData: ComparisonCategory[] = [
   },
   {
     name: 'Health Sharing Benefits',
-    note: '*After IUA is Met',
     rows: [
       { feature: 'Large Medical Expense Sharing', carePlus: true, direct: true, essentials: false },
       { feature: 'Hospitalization', carePlus: true, direct: true, essentials: false },
@@ -41,7 +40,12 @@ const comparisonData: ComparisonCategory[] = [
     rows: [
       { feature: 'Preventive Care Sharing', carePlus: false, direct: true, essentials: false },
       { feature: 'Annual Wellness Visit', carePlus: false, direct: '$175', essentials: false },
-      { feature: 'Mammogram, Colonoscopy', carePlus: false, direct: true, essentials: false },
+      {
+        feature: 'Mammogram, Colonoscopy',
+        carePlus: false,
+        direct: '6-mo wait (screening)',
+        essentials: false,
+      },
       { feature: 'Immunizations', carePlus: false, direct: 'Youth only', essentials: false },
     ],
   },
@@ -199,7 +203,8 @@ export const PlanComparisonGuide: React.FC<PlanComparisonGuideProps> = ({
           <h3 className="text-lg font-bold text-primary-900 mb-4">Important Notes</h3>
           <ul className="space-y-2 text-sm text-neutral-700">
             <li><strong>*Pricing:</strong> Monthly contributions shown are the lowest starting rates (Member Only, ages 18-29, $5,000 IUA). Actual rates vary by age, household size, and IUA selection. Use our <a href="/get-started" className="text-primary-600 hover:underline">rate calculator</a> for a personalized quote.</li>
-            <li><strong>Initial Unshareable Amount (IUA):</strong> This is the amount you pay before sharing begins for each medical need. Think of it like a deductible.</li>
+            <li><strong>Initial Unshareable Amount (IUA):</strong> This is the amount you pay before sharing begins for each medical need (Care+ and Direct). Essentials does not include medical cost sharing. Think of the IUA like a deductible for sharing plans.</li>
+            <li><strong>Screening mammography and colonoscopy (Direct):</strong> Subject to a 6-month waiting period. See Member Guidelines for current rules.</li>
             <li><strong>Pre-membership Conditions:</strong> Conditions diagnosed or treated in the 24 months prior to membership have a waiting period before they become shareable.</li>
             <li><strong>Maternity:</strong> Conception must occur 6+ months after membership effective date for maternity expenses to be shareable.</li>
           </ul>

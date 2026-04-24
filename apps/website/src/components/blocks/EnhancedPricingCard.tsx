@@ -228,7 +228,9 @@ export const EnhancedPricingCard: React.FC<PricingCardProps> = ({
 
       <div className="border-t border-neutral-200 pt-6 flex-1">
         <h5 className="text-sm font-semibold text-neutral-900 mb-1">What's Included</h5>
-        <p className="text-xs text-neutral-500 italic mb-4">*After IUA is met</p>
+        {planId !== 'essentials' && (
+          <p className="text-xs text-neutral-500 italic mb-4">*After IUA is met</p>
+        )}
 
         <div className="space-y-3">
           {Object.entries(groupedFeatures).map(([category, categoryFeatures]) => (

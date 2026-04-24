@@ -17,6 +17,8 @@ interface PathData {
   bestFor: string;
   imageUrl: string;
   imageAlt: string;
+  /** IUA copy applies to medical sharing paths only (not Essentials / HSA-only messaging). */
+  showIuaDisclaimer?: boolean;
 }
 
 const pathData: PathData[] = [
@@ -49,7 +51,8 @@ const pathData: PathData[] = [
     ],
     bestFor: "Members who want strong protection against large medical bills while maintaining affordable monthly contributions and community-based sharing.",
     imageUrl: "https://images.pexels.com/photos/7176026/pexels-photo-7176026.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-    imageAlt: "Healthcare professional providing care to family members"
+    imageAlt: "Healthcare professional providing care to family members",
+    showIuaDisclaimer: true,
   },
   {
     id: "businesses-and-organizations",
@@ -80,7 +83,8 @@ const pathData: PathData[] = [
     ],
     bestFor: "Self Employed or 1099 Individuals who want to maximize tax benefits while protecting against large medical expenses and building long-term healthcare savings.",
     imageUrl: "https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-    imageAlt: "Professional reviewing financial documents and healthcare savings plans"
+    imageAlt: "Professional reviewing financial documents and healthcare savings plans",
+    showIuaDisclaimer: false,
   }
 ];
 
@@ -176,9 +180,11 @@ const UnifiedPathSelector: React.FC = () => {
                         </ul>
                       </div>
 
-                      <div className="text-xs text-neutral-500 italic mt-2">
-                        *After IUA is met
-                      </div>
+                      {path.showIuaDisclaimer !== false && (
+                        <div className="text-xs text-neutral-500 italic mt-2">
+                          *After IUA is met
+                        </div>
+                      )}
                     </div>
 
                     {isExpanded && (
@@ -205,7 +211,9 @@ const UnifiedPathSelector: React.FC = () => {
                               </li>
                             ))}
                           </ul>
-                          <p className="text-xs text-neutral-500 italic mt-2">*After IUA is met</p>
+                          {path.showIuaDisclaimer !== false && (
+                            <p className="text-xs text-neutral-500 italic mt-2">*After IUA is met</p>
+                          )}
                         </div>
 
                         <div>

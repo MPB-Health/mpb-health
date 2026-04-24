@@ -31,7 +31,18 @@ export function SimplePlanCard({
     ];
 
     const textToCheck = `${featureName} ${notes || ''}`.toLowerCase();
-    return excludedTerms.some(term => textToCheck.includes(term.toLowerCase()));
+    if (excludedTerms.some(term => textToCheck.includes(term.toLowerCase()))) {
+      return true;
+    }
+    // Discontinued: QR Life Code, Medical Records Vault
+    if (
+      /qr\s*life|life\s*code|medical records vault|lifecode/i.test(
+        `${featureName} ${notes || ''}`
+      )
+    ) {
+      return true;
+    }
+    return false;
   };
 
   const toggleCategory = (category: string) => {
@@ -194,7 +205,7 @@ export function SimplePlanCard({
 
         <div className="border-t border-neutral-200 pt-4 flex-1">
           <h5 className="text-sm font-semibold text-neutral-900 mb-1">What's Included</h5>
-          {plan.is_medical_cost_sharing && (
+          {plan.is_medical_cost_sharing && plan.slug !== 'essentials' && (
             <p className="text-xs text-neutral-500 italic mb-3">*After IUA is met</p>
           )}
           <div className="space-y-2">

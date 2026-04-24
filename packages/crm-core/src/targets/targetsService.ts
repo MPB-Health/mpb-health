@@ -146,7 +146,7 @@ export class TargetsService {
     periodEnd: string
   ): Promise<RepTargetSummary[]> {
     const { data: members } = await this.supabase
-      .from('org_members')
+      .from('org_memberships')
       .select('user_id, users:auth_user_id(email, raw_user_meta_data)')
       .eq('org_id', this.orgId);
 

@@ -99,9 +99,10 @@ CREATE POLICY crm_product_lines_select ON public.crm_product_lines
     USING (
         org_id IS NULL
         OR EXISTS (
-            SELECT 1 FROM public.org_members m
+            SELECT 1 FROM public.org_memberships m
              WHERE m.org_id = crm_product_lines.org_id
                AND m.user_id = auth.uid()
+               AND m.status = 'active'
         )
     );
 
@@ -111,18 +112,20 @@ CREATE POLICY crm_product_lines_write ON public.crm_product_lines
     USING (
         org_id IS NOT NULL
         AND EXISTS (
-            SELECT 1 FROM public.org_members m
+            SELECT 1 FROM public.org_memberships m
              WHERE m.org_id = crm_product_lines.org_id
                AND m.user_id = auth.uid()
+               AND m.status = 'active'
                AND m.role IN ('owner', 'admin')
         )
     )
     WITH CHECK (
         org_id IS NOT NULL
         AND EXISTS (
-            SELECT 1 FROM public.org_members m
+            SELECT 1 FROM public.org_memberships m
              WHERE m.org_id = crm_product_lines.org_id
                AND m.user_id = auth.uid()
+               AND m.status = 'active'
                AND m.role IN ('owner', 'admin')
         )
     );

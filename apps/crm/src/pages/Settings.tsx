@@ -945,7 +945,7 @@ async function fetchSettingsOrgMembers(
   orgId: string,
 ): Promise<SettingsOrgMember[]> {
   const { data } = await supabase
-    .from('org_members')
+    .from('org_memberships')
     .select('user_id, users:user_id(id, email, raw_user_meta_data)')
     .eq('org_id', orgId);
 

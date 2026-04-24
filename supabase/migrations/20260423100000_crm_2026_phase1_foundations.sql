@@ -11,7 +11,7 @@
 --   3. Introduces a "lead_manager" permission key and seeds it to owner/admin/manager.
 --   4. Provides crm_seed_sales_plan_2026_demo(p_org_id) — an operator-callable
 --      helper that finds Leonardo/Tupac/Adam in auth.users by email and wires them
---      into org_members + round-robin pool for a demo org.
+--      into org_memberships + round-robin pool for a demo org.
 --
 -- This migration is additive and idempotent.
 -- ============================================================================
@@ -169,7 +169,7 @@ SET search_path = public
 AS $$
     SELECT EXISTS (
         SELECT 1
-        FROM public.org_members om
+        FROM public.org_memberships om
         JOIN public.role_permissions rp
           ON rp.org_id = om.org_id
          AND rp.role = om.role
@@ -177,6 +177,7 @@ AS $$
           ON p.id = rp.permission_id
         WHERE om.user_id = auth.uid()
           AND om.org_id = p_org_id
+          AND om.status = 'active'
           AND p.key = 'lead_manager'
     );
 $$;
@@ -218,19 +219,19 @@ BEGIN
 
     -- Org membership: Leonardo is manager (Lead Manager), the others are agents.
     IF v_leo IS NOT NULL THEN
-        INSERT INTO public.org_members (org_id, user_id, role)
-        VALUES (p_org_id, v_leo, 'manager')
-        ON CONFLICT (org_id, user_id) DO UPDATE SET role = EXCLUDED.role;
+        INSERT INTO public.org_memberships (org_id, user_id, role, status)
+        VALUES (p_org_id, v_leo, 'manager', 'active')
+        ON CONFLICT (user_id, org_id) DO UPDATE SET role = EXCLUDED.role, status = 'active';
     END IF;
     IF v_tup IS NOT NULL THEN
-        INSERT INTO public.org_members (org_id, user_id, role)
-        VALUES (p_org_id, v_tup, 'agent')
-        ON CONFLICT (org_id, user_id) DO NOTHING;
+        INSERT INTO public.org_memberships (org_id, user_id, role, status)
+        VALUES (p_org_id, v_tup, 'agent', 'active')
+        ON CONFLICT (user_id, org_id) DO NOTHING;
     END IF;
     IF v_adm IS NOT NULL THEN
-        INSERT INTO public.org_members (org_id, user_id, role)
-        VALUES (p_org_id, v_adm, 'agent')
-        ON CONFLICT (org_id, user_id) DO NOTHING;
+        INSERT INTO public.org_memberships (org_id, user_id, role, status)
+        VALUES (p_org_id, v_adm, 'agent', 'active')
+        ON CONFLICT (user_id, org_id) DO NOTHING;
     END IF;
 
     -- Round-robin pool (skip members we couldn't find)
@@ -275,7 +276,7 @@ REVOKE ALL ON FUNCTION public.crm_seed_sales_plan_2026_demo(uuid, text, text, te
 GRANT EXECUTE ON FUNCTION public.crm_seed_sales_plan_2026_demo(uuid, text, text, text) TO service_role;
 
 COMMENT ON FUNCTION public.crm_seed_sales_plan_2026_demo(uuid, text, text, text) IS
-  'Operator helper: seeds Leonardo/Tupac/Adam into org_members + round-robin pool for p_org_id. '
+  'Operator helper: seeds Leonardo/Tupac/Adam into org_memberships + round-robin pool for p_org_id. '
   'Must be run AFTER creating the auth.users entries (Supabase Dashboard → Authentication → Users). '
   'Returns one row per target user with status (seeded_as_* or not_found_in_auth_users).';
 

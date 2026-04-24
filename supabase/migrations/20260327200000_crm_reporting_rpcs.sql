@@ -101,7 +101,7 @@ BEGIN
             AND a.created_at >= date_trunc('month', CURRENT_DATE)
         ) AS activities_this_month
     FROM auth.users u
-    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
     LEFT JOIN public.zoho_lead_submissions l ON l.owner_id = u.id AND l.org_id = p_org_id
     GROUP BY u.id, u.email, u.raw_user_meta_data
     ORDER BY total_leads DESC;

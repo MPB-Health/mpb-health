@@ -70,10 +70,10 @@ export default function PlanComparison() {
         <div className="space-y-8">
           <div className="text-center space-y-4 animate-fade-in">
             <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary-700 via-primary-600 to-primary-500 bg-clip-text text-transparent">
-              Compare Plans
+              Compare Memberships
             </h1>
             <p className="mt-4 text-xl text-neutral-600 max-w-3xl mx-auto">
-              Select plans to compare features, benefits, and coverage options side-by-side
+              Select memberships to compare features, benefits, and coverage options side by side
             </p>
           </div>
 
@@ -81,7 +81,7 @@ export default function PlanComparison() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-primary-700 to-primary-600 bg-clip-text text-transparent">
-                  Select Plans to Compare
+                  Select Memberships to Compare
                 </h2>
                 <div className="flex gap-3">
                   <Button
@@ -166,7 +166,7 @@ export default function PlanComparison() {
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                       <p className="text-base font-medium bg-gradient-to-r from-primary-700 to-success-600 bg-clip-text text-transparent">
-                        {selectedPlans.length} {selectedPlans.length === 1 ? 'plan' : 'plans'} selected
+                        {selectedPlans.length} {selectedPlans.length === 1 ? 'membership' : 'memberships'} selected
                       </p>
                       <div className="h-2 w-48 bg-neutral-100 rounded-full overflow-hidden">
                         <div
@@ -214,10 +214,10 @@ export default function PlanComparison() {
                   <Shield className="w-10 h-10 text-primary-600" />
                 </div>
                 <p className="text-xl font-medium text-neutral-700">
-                  Select at least one plan above to start comparing
+                  Select at least one membership above to start comparing
                 </p>
                 <p className="text-sm text-neutral-500">
-                  Choose multiple plans to see a detailed side-by-side comparison of features and benefits
+                  Choose multiple memberships to see a detailed side-by-side comparison of features and benefits
                 </p>
               </div>
             </Card>

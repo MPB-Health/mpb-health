@@ -49,7 +49,7 @@ const coreValues = [
 
 const stats = [
   { icon: Users, value: '50K+', label: 'Members Served', color: 'text-blue-600' },
-  { icon: TrendingUp, value: '40-60%', label: 'Average Savings', color: 'text-green-600' },
+  { icon: TrendingUp, value: '30-60%', label: 'Average Savings', color: 'text-green-600' },
   { icon: Award, value: '98%', label: 'Satisfaction Rate', color: 'text-orange-600' },
   { icon: Globe, value: 'US-Wide', label: 'Membership', color: 'text-violet-600' }
 ];
@@ -65,17 +65,45 @@ const achievements = [
 
 const faqs = [
   {
-    question: 'How does medical cost sharing work, and how is it different from traditional health insurance?',
-    answer: "Members each contribute a fixed monthly share to a communal pool. When you incur a medical expense, you submit your bills, and the HealthSharing community's pooled funds help pay for eligible costs according to sharing guidelines. Unlike traditional insurance—where you pay premiums to an insurer that assumes risk—medical cost sharing is truly community-driven.\n\nEvery medical incident begins with your Initial Unshareable Amount (IUA), the portion you agree to pay before the community's share takes effect."
+    question: 'What is MPB Health?',
+    answer: 'MPB Health offers memberships that are alternatives to traditional health insurance. MPB Health is not insurance; rather, it is a community-focused organization dedicated to providing transparent, non-insurance alternatives for healthcare. We facilitate a medical cost-sharing model that empowers individuals, families, and businesses to break free from traditional network restrictions and high corporate overhead. By prioritizing people over profit, we provide innovative solutions that combine sharing, preventive care, and personalized support to help our members take back control of their healthcare journey.',
   },
   {
-    question: 'How much can I save on my healthcare?',
-    answer: 'Members typically save 40–60% versus traditional insurance, with transparent pricing and no surprise bills. Our community-driven model eliminates many overhead costs associated with traditional insurance, passing those savings directly to our members.'
+    question: 'Why do people choose MPB Health?',
+    answer: 'Members choose MPB Health for the greater flexibility of seeing any doctor, significantly lower monthly costs compared to traditional insurance, and access to a community-based model. Our members value a system that prioritizes transparency and shared responsibility over corporate profit margins.',
   },
   {
-    question: 'What requirements must I meet, and are there any waiting periods or pre‐existing condition restrictions before my expenses become share‐eligible?',
-    answer: "Health-sharing programs typically require that you reside in a supported region—most often within the United States or its territories—and maintain that address on file. You'll also be asked to affirm a set of guiding principles, such as a commitment to community-driven cost sharing, healthy lifestyle choices. Once enrolled, you select an \"Initial Unshareable Amount\" and make fixed monthly contributions; your eligibility for sharing remains in force only while your payments are current.\n\nTo safeguard the sustainability of the communal pool, some memberships may require waiting periods before certain expenses become share-eligible.\n\nHealthSharing programs typically set a waiting period before sharing costs for any medical conditions you had before joining. These are known as pre-membership medical conditions.\n\nBecause each health-sharing program has its own requirements, timeframes, and limitations—and may be subject to various state regulatory notices or disclaimers—it's essential to review the official guidelines and any state-specific notices of any program you're considering. That way, you'll understand precisely when and how your expenses become share-eligible."
-  }
+    question: 'How much do members typically save by joining MPB Health?',
+    answer: 'On average, our members see a 30–60% reduction in their monthly costs compared to traditional insurance premiums. Because we are a community-driven model without the high overhead of corporate insurance, those savings are passed directly back to our members.',
+  },
+  {
+    question: 'How is MPB Health different from traditional insurance?',
+    answer: 'Traditional insurance is built around premiums, restrictive networks, and corporate risk pools. MPB Health is a community-based alternative where members contribute monthly to share in eligible medical needs based on clear guidelines rather than insurance contracts. This model offers lower monthly costs and the freedom to choose any provider without network limitations.',
+  },
+  {
+    question: 'What makes MPB Health different from other healthshares?',
+    answer: "While many healthshares require a religious “statement of faith,” MPB Health is inclusive and open to everyone. We welcome members from all backgrounds, beliefs, and walks of life who share the common goal of taking personal responsibility for their health within a supportive community. Beyond our inclusivity, we differentiate ourselves by providing modern benefits such as $0 unlimited virtual care and behavioral health resources from day one, ensuring the community supports your daily wellness rather than just major medical events.",
+  },
+  {
+    question: 'Is MPB Health a good fit for families?',
+    answer: "Yes. Many families choose MPB Health because it offers total provider flexibility, allowing them to keep their trusted pediatricians and specialists. Families also benefit from significant monthly savings and immediate access to resources such as $0 unlimited virtual care and behavioral health, ensuring their everyday health needs are supported without the high costs of traditional insurance.",
+  },
+  {
+    question: 'Who typically joins MPB Health?',
+    answer: 'MPB Health is an ideal fit for individuals, families, small business owners, and self-employed professionals who prioritize freedom and flexibility in their healthcare. Our members are typically looking for a more affordable, community-driven alternative to traditional insurance that allows them to take full control of their healthcare choices without being restricted by corporate networks.',
+  },
+  {
+    question: 'Is MPB Health available nationwide?',
+    answer: 'Yes. MPB Health is available to members across most of the United States and Puerto Rico, providing individuals and families access to a nationwide, community-based healthcare model that travels with you. Note: Membership is currently unavailable to residents of Washington state.',
+  },
+  {
+    question: 'Do I have to wait for an "Open Enrollment" period to join?',
+    answer: 'No. One of the greatest advantages of MPB Health is that you can join any time of the year. There are no restrictive enrollment windows, meaning you can take control of your healthcare and start your membership as early as the first of the next month.',
+  },
+  {
+    question: 'Is maternity care eligible for sharing?',
+    answer: "Yes. MPB Health supports growing families by sharing in eligible expenses related to prenatal care, delivery, and postnatal care. To be eligible for sharing, the pregnancy conception date must occur after at least six months of continuous membership. Once the Initial Unshareable Amount (IUA) is met for the pregnancy, the community shares in the remaining eligible costs for both the mother and the newborn's initial care.",
+  },
 ];
 
 const AboutUs: React.FC = () => {

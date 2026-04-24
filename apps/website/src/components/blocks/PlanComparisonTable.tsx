@@ -47,7 +47,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
   const planColumnWidth = `${Math.floor(75 / plans.length)}%`;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 mb-16 md:mb-20">
       {/* Plan Header Cards */}
       <div className="grid gap-4" style={{ gridTemplateColumns: `250px repeat(${plans.length}, 1fr)` }}>
         <div className="flex items-end pb-4">
@@ -97,7 +97,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
       </div>
 
       {/* Comparison Table */}
-      <div className="overflow-x-auto rounded-2xl border border-neutral-200 shadow-lg bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-neutral-200 shadow-lg bg-white mb-2 pb-2">
         <table className="w-full min-w-[800px] border-collapse">
           <thead>
             <tr className="bg-gradient-to-r from-primary-700 to-primary-600">
@@ -150,16 +150,28 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                       </td>
                       {plans.map(plan => {
                         const feature = getFeatureForPlan(plan, category, featureName);
+                        const costLabel = (feature?.cost || 'Included').trim();
+                        const isLimited = /^limited$/i.test(costLabel) || /\blimited\b/i.test(costLabel);
                         return (
-                          <td key={plan.id} className="py-4 px-4 text-center">
+                          <td key={plan.id} className="py-4 px-4 text-center align-top">
                             {feature ? (
                               <div className="space-y-1">
                                 <div className="flex items-center justify-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0">
+                                  <div
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ${
+                                      isLimited
+                                        ? 'bg-gradient-to-br from-amber-500 to-orange-600'
+                                        : 'bg-gradient-to-br from-success-500 to-success-600'
+                                    }`}
+                                  >
                                     <Check className="h-4 w-4 text-white" />
                                   </div>
-                                  <span className="text-sm font-bold text-success-600">
-                                    {feature.cost || 'Included'}
+                                  <span
+                                    className={`text-sm font-bold ${
+                                      isLimited ? 'text-amber-700' : 'text-success-600'
+                                    }`}
+                                  >
+                                    {costLabel || 'Included'}
                                   </span>
                                 </div>
                                 {feature.feature_value && (

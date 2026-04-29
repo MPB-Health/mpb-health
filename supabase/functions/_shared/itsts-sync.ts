@@ -8,7 +8,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-type MonorepoRole = "super_admin" | "admin" | "advisor" | "member" | "crm_user" | "manager" | "staff";
+type MonorepoRole = "super_admin" | "admin" | "advisor" | "member" | "crm_user" | "manager" | "staff" | "concierge";
 type ItstsRole = "member" | "advisor" | "staff" | "agent" | "admin" | "super_admin" | "concierge";
 type SyncAction = "create" | "update" | "password_change";
 
@@ -44,6 +44,7 @@ export const ROLE_MAP: Record<string, ItstsRole> = {
   advisor: "advisor",
   crm_user: "member",
   member: "member",
+  concierge: "concierge",
 };
 
 export const ROLE_PRIORITY: ItstsRole[] = ["admin", "staff", "advisor", "concierge", "member"];

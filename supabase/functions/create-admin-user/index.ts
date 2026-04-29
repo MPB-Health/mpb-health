@@ -10,27 +10,37 @@ interface CreateUserRequest {
   email: string;
   first_name: string;
   last_name: string;
-  role: "super_admin" | "admin" | "manager" | "staff";
+  role: "super_admin" | "admin" | "manager" | "staff" | "concierge";
   permissions: string[];
   send_invite: boolean;
 }
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const CONCIERGE_LOGIN_URL =
+  Deno.env.get("CONCIERGE_PORTAL_LOGIN_URL") ?? "https://concierge.mpb.health/login";
+const ADMIN_LOGIN_URL = Deno.env.get("ADMIN_PORTAL_LOGIN_URL") ?? "https://admin.mpb.health/login";
 
-async function sendInviteEmail(email: string, firstName: string, tempPassword: string): Promise<void> {
+async function sendInviteEmail(
+  email: string,
+  firstName: string,
+  tempPassword: string,
+  portal: "admin" | "concierge",
+): Promise<void> {
   if (!RESEND_API_KEY) {
     log.error('Resend API key not configured, cannot send invite email');
     throw new Error("RESEND_API_KEY is not configured in Supabase. Add it in Project Settings → Edge Functions → Secrets.");
   }
 
-  const loginUrl = "https://admin.mpb.health/login";
+  const loginUrl = portal === "concierge" ? CONCIERGE_LOGIN_URL : ADMIN_LOGIN_URL;
+  const portalTitle = portal === "concierge" ? "Concierge Portal" : "Admin Portal";
+  const buttonLabel = portal === "concierge" ? "Log in to Concierge Portal" : "Log in to Admin Portal";
 
   const html = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
-        <title>Welcome to MPB Health Admin</title>
+        <title>Welcome to MPB Health ${portalTitle}</title>
       </head>
       <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 0;">
@@ -39,13 +49,13 @@ async function sendInviteEmail(email: string, firstName: string, tempPassword: s
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <tr>
                   <td style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px 40px; border-radius: 8px 8px 0 0; text-align: center;">
-                    <h1 style="color: #ffffff; font-size: 24px; margin: 0;">Welcome to MPB Health Admin!</h1>
+                    <h1 style="color: #ffffff; font-size: 24px; margin: 0;">Welcome to MPB Health ${portalTitle}!</h1>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding: 40px;">
                     <p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName},</p>
-                    <p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">You've been invited to join the MPB Health Admin Portal. Here are your login credentials:</p>
+                    <p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">You've been invited to the MPB Health ${portalTitle}. Here are your login credentials:</p>
 
                     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
                       <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${email}</p>
@@ -55,7 +65,7 @@ async function sendInviteEmail(email: string, firstName: string, tempPassword: s
                     <p style="color: #666; font-size: 14px; margin: 20px 0;">Please change your password after your first login.</p>
 
                     <div style="text-align: center; margin: 30px 0;">
-                      <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">Login to Admin Portal</a>
+                      <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(to right, #2563eb, #06b6d4); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">${buttonLabel}</a>
                     </div>
                   </td>
                 </tr>
@@ -81,7 +91,7 @@ async function sendInviteEmail(email: string, firstName: string, tempPassword: s
     body: JSON.stringify({
       from: Deno.env.get("RESEND_FROM_EMAIL") || "MPB Health <notifications@mpb.health>",
       to: [email],
-      subject: "Welcome to MPB Health Admin Portal",
+      subject: `Welcome to MPB Health ${portalTitle}`,
       html,
     }),
   });
@@ -146,15 +156,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check if caller is super_admin
-    const { data: callerRoles } = await supabaseAdmin
+    // Caller must have super_admin in user_roles (avoid .single() when user has multiple rows)
+    const { data: superRows, error: superErr } = await supabaseAdmin
       .from("user_roles")
-      .select("role")
+      .select("id")
       .eq("user_id", caller.id)
       .eq("role", "super_admin")
-      .single();
+      .limit(1);
 
-    if (!callerRoles) {
+    if (superErr || !superRows?.length) {
       return new Response(
         JSON.stringify({ success: false, error: "Only super admins can create users" }),
         { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
@@ -205,27 +215,92 @@ Deno.serve(async (req: Request) => {
     }
 
     const userId = authUser.user.id;
+    const DEFAULT_ORG_ID = "00000000-0000-4000-a000-000000000001";
 
-    // Create admin_users entry
-    const { error: adminUserError } = await supabaseAdmin
-      .from("admin_users")
-      .insert({
-        id: userId,
+    if (role === "concierge") {
+      // Concierge Portal access: user_roles.concierge only (admin_users forbids concierge)
+      const { error: conciergeRoleErr } = await supabaseAdmin.from("user_roles").insert({
+        user_id: userId,
+        role: "concierge",
+        granted_by: caller.id,
+      });
+
+      if (conciergeRoleErr) {
+        log.error("Concierge role insert error:", conciergeRoleErr);
+        const msg =
+          conciergeRoleErr.message ||
+          "Could not assign concierge role (duplicate role or constraint).";
+        return new Response(
+          JSON.stringify({ success: false, error: msg, code: conciergeRoleErr.code }),
+          { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error: orgError } = await supabaseAdmin.from("org_memberships").upsert(
+        {
+          user_id: userId,
+          org_id: DEFAULT_ORG_ID,
+          role: "member",
+          status: "active",
+          joined_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,org_id" },
+      );
+
+      if (orgError) {
+        log.error("Org membership insert error:", orgError);
+      }
+
+      let emailSent = false;
+      let emailError: string | undefined;
+      if (send_invite) {
+        try {
+          await sendInviteEmail(email, first_name, tempPassword, "concierge");
+          emailSent = true;
+        } catch (emailErr) {
+          log.error("Email send error:", emailErr);
+          emailError = emailErr instanceof Error ? emailErr.message : String(emailErr);
+        }
+      }
+
+      syncUserToItsts({
         email,
         first_name,
         last_name,
-        role,
-        status: "active",
-        permissions: permissions || [],
-      });
+        roles: ["concierge"],
+        action: "create",
+        password: tempPassword,
+      }).catch((e) => log.warn("ITSTS sync failed (non-blocking)", e));
 
-    if (adminUserError) {
-      log.error('Admin user insert error:', adminUserError);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          user_id: userId,
+          message: send_invite
+            ? (emailSent ? "Concierge user created and invitation email sent" : "User created but invitation email failed")
+            : "Concierge user created successfully",
+          email_sent: send_invite ? emailSent : undefined,
+          email_error: emailError,
+        }),
+        { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+      );
     }
 
-    // Map admin_users roles to valid user_role_type enum values for user_roles table.
-    // "manager" and "staff" are admin_users-only concepts; map them to "admin" for
-    // portal access, or skip if no portal role applies.
+    // Admin Portal users (admin_users + mapped user_roles)
+    const { error: adminUserError } = await supabaseAdmin.from("admin_users").insert({
+      id: userId,
+      email,
+      first_name,
+      last_name,
+      role,
+      status: "active",
+      permissions: permissions || [],
+    });
+
+    if (adminUserError) {
+      log.error("Admin user insert error:", adminUserError);
+    }
+
     const ROLE_TO_USER_ROLE: Record<string, string | null> = {
       super_admin: "super_admin",
       admin: "admin",
@@ -249,7 +324,6 @@ Deno.serve(async (req: Request) => {
     }
 
     // Provision org_memberships so org-scoped queries work
-    const DEFAULT_ORG_ID = "00000000-0000-4000-a000-000000000001";
     const orgRole = (role === "super_admin" || role === "admin") ? "admin" : "member";
     const { error: orgError } = await supabaseAdmin
       .from("org_memberships")
@@ -269,7 +343,7 @@ Deno.serve(async (req: Request) => {
     let emailError: string | undefined;
     if (send_invite) {
       try {
-        await sendInviteEmail(email, first_name, tempPassword);
+        await sendInviteEmail(email, first_name, tempPassword, "admin");
         emailSent = true;
       } catch (emailErr) {
         log.error('Email send error:', emailErr);
@@ -282,7 +356,7 @@ Deno.serve(async (req: Request) => {
       email,
       first_name,
       last_name,
-      roles: [role as "super_admin" | "admin"],
+      roles: [role as "super_admin" | "admin" | "manager" | "staff"],
       action: "create",
       password: tempPassword,
     }).catch((e) => log.warn("ITSTS sync failed (non-blocking)", e));

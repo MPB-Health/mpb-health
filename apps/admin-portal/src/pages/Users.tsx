@@ -705,14 +705,16 @@ export default function Users() {
             <Plus className="w-5 h-5" />
             <span>Invite</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Add User</span>
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add User</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -790,8 +792,11 @@ export default function Users() {
       <AddUserModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+        suggestedRole={activeTab === 'concierge' ? 'concierge' : undefined}
         onSuccess={() => {
-          loadAdminUsers();
+          if (activeTab === 'admin') loadAdminUsers();
+          else if (activeTab === 'concierge') loadCrossPortalUsers('concierge');
+          else loadCrossPortalUsers();
         }}
       />
       <InviteUserModal

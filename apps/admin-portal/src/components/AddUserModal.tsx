@@ -8,6 +8,8 @@ interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /** Pre-select role when opening from a portal tab (e.g. Concierge) */
+  suggestedRole?: FormData['role'];
 }
 
 interface CreateAdminUserResponse {
@@ -21,7 +23,7 @@ interface FormData {
   email: string;
   first_name: string;
   last_name: string;
-  role: 'super_admin' | 'admin' | 'manager' | 'staff';
+  role: 'super_admin' | 'admin' | 'manager' | 'staff' | 'concierge';
   permissions: string[];
   send_invite: boolean;
 }
@@ -39,10 +41,11 @@ const ROLES = [
   { value: 'staff', label: 'Staff', description: 'Basic access to admin portal' },
   { value: 'manager', label: 'Manager', description: 'Can manage templates and view reports' },
   { value: 'admin', label: 'Admin', description: 'Full admin access except user management' },
+  { value: 'concierge', label: 'Concierge', description: 'Concierge Portal only — member support dashboard' },
   { value: 'super_admin', label: 'Super Admin', description: 'Full access including user management' },
 ] as const;
 
-export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) {
+export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedRole }: AddUserModalProps) {
   const [form, setForm] = useState<FormData>(DEFAULT_FORM);
   const [permissions, setPermissions] = useState<Record<string, Permission[]>>({});
   const [saving, setSaving] = useState(false);
@@ -51,7 +54,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
   useEffect(() => {
     if (!isOpen) return;
 
-    setForm(DEFAULT_FORM);
+    setForm({ ...DEFAULT_FORM, role: suggestedRole ?? DEFAULT_FORM.role });
     setLoadingPermissions(true);
 
     let cancelled = false;
@@ -61,7 +64,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
       .finally(() => { if (!cancelled) setLoadingPermissions(false); });
 
     return () => { cancelled = true; };
-  }, [isOpen]);
+  }, [isOpen, suggestedRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,13 +136,15 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
       <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-surface-primary border-b border-th-border px-6 py-4 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             <div className="p-2 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg">
               <User className="w-5 h-5 text-th-accent-600" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-th-text-primary">Add New User</h2>
-              <p className="text-sm text-th-text-tertiary">Create an admin portal user</p>
+              <p className="text-sm text-th-text-tertiary">
+                Super admins only — create Admin Portal or Concierge Portal users
+              </p>
             </div>
           </div>
           <button
@@ -240,8 +245,8 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModa
             </div>
           </div>
 
-          {/* Permissions (only show if not super_admin) */}
-          {form.role !== 'super_admin' && (
+          {/* Permissions (admin portal roles only; concierge uses role-based portal access) */}
+          {form.role !== 'super_admin' && form.role !== 'concierge' && (
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-th-text-secondary">
                 Additional Permissions

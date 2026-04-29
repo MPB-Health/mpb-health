@@ -112,7 +112,9 @@ Deno.serve(async (req: Request) => {
 
         const { data: conversations, error: convErr } = await supabaseAdmin
           .from("chat_conversations")
-          .select("id, title, type, created_by, last_message_at, last_message_preview, is_archived, created_at, updated_at")
+          .select(
+            "id, org_id, name, slug, description, type, created_by, is_admin_only_posting, metadata, last_message_at, last_message_preview, is_archived, created_at, updated_at",
+          )
           .in("id", convIds)
           .eq("is_archived", false)
           .order("last_message_at", { ascending: false, nullsFirst: false });
@@ -289,7 +291,7 @@ Deno.serve(async (req: Request) => {
           .single();
 
         if (conv?.is_admin_only_posting) {
-          // Check if user has admin role in org_memberships or chat_members
+          // Posting: channel admin/owner, org owner/admin, or platform super_admin / admin (user_roles)
           const isAdminMember = membership.role === "admin" || membership.role === "owner";
           if (!isAdminMember) {
             const { data: orgMember } = await supabaseAdmin
@@ -299,7 +301,18 @@ Deno.serve(async (req: Request) => {
               .eq("org_id", conv.org_id)
               .single();
 
-            if (!orgMember || !["owner", "admin"].includes(orgMember.role)) {
+            const isOrgAdmin = orgMember && ["owner", "admin"].includes(orgMember.role);
+
+            const { data: platformRoles } = await supabaseAdmin
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", userId)
+              .in("role", ["super_admin", "admin"]);
+
+            const isPlatformAdmin =
+              (platformRoles?.length ?? 0) > 0;
+
+            if (!isOrgAdmin && !isPlatformAdmin) {
               return respondError("Only admins can post in this channel", 403);
             }
           }

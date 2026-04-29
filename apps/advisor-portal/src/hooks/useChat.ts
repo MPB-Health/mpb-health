@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { chatService } from '@mpbhealth/advisor-core';
 import type { ChatConversation, ChatMessage } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -10,6 +10,34 @@ import { useAdvisor } from '../contexts/AdvisorContext';
 /** Returns true for errors produced by AbortController cancellation. */
 function isAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError';
+}
+
+/** System org-wide announcements channel slug (migration 20260429160000). */
+const ADVISOR_ANNOUNCEMENTS_SLUG = 'advisor-announcements';
+
+function sortChannelsForUi(list: ChatConversation[]) {
+  return [...list].sort((a, b) => {
+    const pin = (slug: string | null) => (slug === ADVISOR_ANNOUNCEMENTS_SLUG ? 0 : 1);
+    const pinned = pin(a.slug) - pin(b.slug);
+    if (pinned !== 0) return pinned;
+    const aTime = new Date(a.last_message_at || a.created_at || 0).getTime();
+    const bTime = new Date(b.last_message_at || b.created_at || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+function sortDirectMessages(list: ChatConversation[]) {
+  return [...list].sort((a, b) => {
+    const aTime = new Date(a.last_message_at || a.created_at || 0).getTime();
+    const bTime = new Date(b.last_message_at || b.created_at || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+function normalizeConversationOrder(list: ChatConversation[]) {
+  const channels = sortChannelsForUi(list.filter((c) => c.type === 'channel'));
+  const dms = sortDirectMessages(list.filter((c) => c.type === 'direct'));
+  return [...channels, ...dms];
 }
 
 // ============================================================================
@@ -42,7 +70,7 @@ export function useChat() {
       setLoading(true);
       const data = await chatService.listConversations(controller.signal);
       if (!mountedRef.current || controller.signal.aborted) return;
-      setConversations(data);
+      setConversations(normalizeConversationOrder(data));
       setError(null);
     } catch (err) {
       if (isAbortError(err) || !mountedRef.current) return;
@@ -80,13 +108,9 @@ export function useChat() {
     const channel = chatService.subscribeToConversationUpdates((updated) => {
       if (!mountedRef.current) return;
       setConversations((prev) =>
-        prev
-          .map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
-          .sort((a, b) => {
-            const aTime = a.last_message_at || a.created_at;
-            const bTime = b.last_message_at || b.created_at;
-            return new Date(bTime).getTime() - new Date(aTime).getTime();
-          }),
+        normalizeConversationOrder(
+          prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)),
+        ),
       );
     });
 
@@ -97,8 +121,14 @@ export function useChat() {
 
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
 
-  const channels = conversations.filter((c) => c.type === 'channel');
-  const directMessages = conversations.filter((c) => c.type === 'direct');
+  const channels = useMemo(
+    () => sortChannelsForUi(conversations.filter((c) => c.type === 'channel')),
+    [conversations],
+  );
+  const directMessages = useMemo(
+    () => sortDirectMessages(conversations.filter((c) => c.type === 'direct')),
+    [conversations],
+  );
 
   return {
     conversations,

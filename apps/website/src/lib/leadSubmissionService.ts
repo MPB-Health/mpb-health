@@ -43,10 +43,9 @@ class LeadSubmissionService {
     const warnings: string[] = [];
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
+      // user_id is set on the server side from auth.uid() inside the RPC; no
+      // need to fetch the session here.
       const submissionData = {
-        user_id: user?.id || null,
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
@@ -69,11 +68,12 @@ class LeadSubmissionService {
         form_data: formData.formData,
       };
 
+      // Public lead intake routes through the submit_public_lead RPC, which is
+      // the single architectural boundary for anonymous form submissions. The
+      // table itself is no longer writable by anon (see migration
+      // 20260429140000_public_lead_intake_rpc.sql).
       const { data: submission, error: dbError } = await supabase
-        .from('lead_submissions')
-        .insert(submissionData)
-        .select()
-        .single();
+        .rpc('submit_public_lead', { payload: submissionData });
 
       if (dbError) {
         console.error('Database submission error:', {
@@ -83,12 +83,13 @@ class LeadSubmissionService {
           hint: dbError.hint,
         });
 
-        if (dbError.code === 'PGRST301' || dbError.message.includes('row-level security')) {
-          throw new Error('Your submission was received but could not be saved. Please contact support if this continues.');
-        }
-
         if (dbError.code === '23505') {
           throw new Error('It looks like you already submitted this form. Please check your email.');
+        }
+
+        // Validation errors raised by the RPC use SQLSTATE 22023.
+        if (dbError.code === '22023') {
+          throw new Error(dbError.message);
         }
 
         throw new Error(`Failed to save submission: ${dbError.message}`);

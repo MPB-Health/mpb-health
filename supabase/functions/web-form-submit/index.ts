@@ -150,17 +150,25 @@ serve(async (req) => {
         (typeof settings.lead_source === 'string' && settings.lead_source) ||
         'inhouse_round_robin';
 
+      // Lead intake routes through submit_trusted_lead RPC — the canonical
+      // server-side writer to lead_submissions. The RPC is the single
+      // boundary that owns column-shape validation; previously this code
+      // posted keys like `source`, `metadata`, and `company` that aren't
+      // columns on the table, which silently dropped every lead conversion.
+      // Webform-specific context now goes into form_data (jsonb).
+      const formContext: Record<string, unknown> = {
+        web_form_id: form.id,
+        web_form_name: form.name,
+        submission_id: submission.id,
+      };
+
       const leadData: Record<string, unknown> = {
-        source: 'web_form',
+        org_id: form.org_id,
         lead_source: leadSource,
         outside_advisor_id: settings.outside_advisor_id ?? null,
         referral_partner_id: settings.referral_partner_id ?? null,
-        org_id: form.org_id,
-        metadata: {
-          web_form_id: form.id,
-          web_form_name: form.name,
-          submission_id: submission.id,
-        },
+        source_cta: 'web_form',
+        form_data: formContext,
       };
 
       // Map fields to lead columns
@@ -182,7 +190,8 @@ serve(async (req) => {
           leadData.first_name = parts[0];
           leadData.last_name = parts.slice(1).join(' ') || '';
         } else if (label.includes('company') || label.includes('organization')) {
-          leadData.company = value;
+          // No `company` column on lead_submissions — capture it in form_data.
+          formContext.company = value;
         }
       }
 
@@ -196,13 +205,16 @@ serve(async (req) => {
         leadData.assigned_to = settings.assignTo;
       }
 
-      const { data: lead } = await supabase
-        .from('lead_submissions')
-        .insert(leadData)
-        .select('id')
-        .single();
+      const { data: lead, error: leadErr } = await supabase
+        .rpc('submit_trusted_lead', { payload: leadData });
 
-      if (lead) {
+      if (leadErr) {
+        log.error('Failed to insert lead via submit_trusted_lead', {
+          form_id,
+          submission_id: submission.id,
+          error: leadErr.message,
+        });
+      } else if (lead) {
         await supabase
           .from('crm_web_form_submissions')
           .update({ lead_id: lead.id, status: 'converted' })

@@ -111,27 +111,31 @@ serve(async (req) => {
     }
   }
 
+  // Lead intake routes through submit_trusted_lead RPC — the canonical
+  // server-side writer. The previous direct INSERT posted `source` and
+  // `metadata` keys that aren't columns on the table, which would have
+  // hard-failed every community capture. Booth context (event name, captured
+  // notes, client IP) now lives in form_data (jsonb).
   const { data: lead, error: leadErr } = await supabase
-    .from('lead_submissions')
-    .insert({
-      org_id: event.org_id,
-      source: 'community_event',
-      lead_source: 'community',
-      community_event_id: event.id,
-      first_name: body.first_name ?? null,
-      last_name: body.last_name ?? null,
-      email: body.email ?? null,
-      phone: body.phone ?? null,
-      zip_code: body.zip_code ?? null,
-      pipeline_stage: 'new',
-      metadata: {
-        community_event_name: event.name,
-        captured_notes: body.notes ?? null,
-        client_ip: clientIp,
+    .rpc('submit_trusted_lead', {
+      payload: {
+        org_id: event.org_id,
+        lead_source: 'community',
+        community_event_id: event.id,
+        first_name: body.first_name ?? null,
+        last_name: body.last_name ?? null,
+        email: body.email ?? null,
+        phone: body.phone ?? null,
+        zip_code: body.zip_code ?? null,
+        pipeline_stage: 'new',
+        source_cta: 'community_event',
+        form_data: {
+          community_event_name: event.name,
+          captured_notes: body.notes ?? null,
+          client_ip: clientIp,
+        },
       },
-    })
-    .select('id')
-    .single();
+    });
 
   if (leadErr) {
     log.error('Failed to insert community lead', { error: leadErr.message });

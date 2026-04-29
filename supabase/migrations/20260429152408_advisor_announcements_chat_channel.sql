@@ -1,0 +1,7 @@
+-- Empty placeholder superseded by:
+--   20260429160000_advisor_announcements_chat_channel.sql
+--
+-- Created accidentally by `supabase migration new` and immediately retried
+-- under a new timestamp. Safe to delete as soon as the file is no longer
+-- locked by an editor or OneDrive sync process. Kept as a no-op comment so
+-- it isn't a 0-byte broken migration.

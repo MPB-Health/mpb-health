@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { addDays, format, setISOWeek, startOfISOWeek } from 'date-fns';
 import {
   ClipboardList,
   Plus,
@@ -27,6 +28,8 @@ interface TeamMember {
   name: string;
   status: 'Active' | 'Inactive';
   role: string;
+  /** Part-time reps are excluded from peer-average performance alerts. */
+  partTime?: boolean;
 }
 
 interface LogEntry {
@@ -45,7 +48,7 @@ interface LogEntry {
 
 // ── Constants ──────────────────────────────────────────────────────────
 
-const CHANNELS = ['Phone', 'Email', 'SalesIQ', 'Chat', 'In-Person'];
+const CHANNELS = ['Phone', 'Email', 'SalesIQ', 'Chat'];
 
 const REASONS = [
   'Sharing Requests',
@@ -57,10 +60,26 @@ const REASONS = [
   'Appt Scheduling',
   'Provider Search',
   'Plan Education',
+  'Welcome Call',
   'Preventive/Billing',
   'Follow Up',
   'Other',
 ];
+
+/** Always treated as part-time for performance alerts (even if roster flag is missing). */
+const PART_TIME_NAMES = new Set(['Vanessa Orozco', 'Tupac Manzanarez']);
+
+function isPartTimeMember(m: TeamMember): boolean {
+  if (m.partTime === false) return false;
+  return m.partTime === true || PART_TIME_NAMES.has(m.name);
+}
+
+/** Full-time reps (not part-time) should log this many entries with "Review link sent" per day. */
+const REVIEW_LINKS_DAILY_TARGET = 3;
+
+function isFullTimeForReviewBenchmark(m: TeamMember): boolean {
+  return !isPartTimeMember(m);
+}
 
 const TABS = [
   { id: 'log', label: 'Daily Log', icon: ClipboardList },
@@ -75,12 +94,45 @@ type TabId = (typeof TABS)[number]['id'];
 
 const STORAGE_KEY_LOGS = 'concierge-daily-logs';
 const STORAGE_KEY_TEAM = 'concierge-team-members';
+const STORAGE_KEY_MEMBER_OFF_DAYS = 'concierge-member-off-days';
+/** Legacy `weekNum:memberId` keys — migrated once into member-id-only storage. */
+const STORAGE_KEY_MEMBER_OFF_DAYS_LEGACY = 'concierge-weekly-off-days';
 
 const DEFAULT_TEAM: TeamMember[] = [
   { id: '1', name: 'Acelyn', status: 'Active', role: 'Concierge' },
   { id: '2', name: 'Adam', status: 'Active', role: 'Concierge' },
   { id: '3', name: 'Ryan', status: 'Active', role: 'Concierge' },
+  { id: '4', name: 'Vanessa Orozco', status: 'Active', role: 'Concierge', partTime: true },
+  { id: '5', name: 'Tupac Manzanarez', status: 'Active', role: 'Concierge', partTime: true },
 ];
+
+function refYearForWeek(logs: LogEntry[], weekNum: number): number {
+  const hit = logs.find((l) => {
+    const d = new Date(l.date + 'T12:00:00');
+    return !isNaN(d.getTime()) && getISOWeek(d) === weekNum;
+  });
+  if (hit) return new Date(hit.date + 'T12:00:00').getFullYear();
+  return new Date().getFullYear();
+}
+
+function getWeekDateStrings(weekNum: number, refYear: number): string[] {
+  const anchor = setISOWeek(new Date(refYear, 5, 15), weekNum);
+  const monday = startOfISOWeek(anchor);
+  return Array.from({ length: 7 }, (_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
+}
+
+/** Full-time-only average for weekly totals (excludes part-time). */
+function fullTimeWeekAvg(
+  activeMembers: TeamMember[],
+  rows: { name: string; total: number }[],
+): number {
+  const ft = rows.filter((r) => {
+    const m = activeMembers.find((x) => x.name === r.name);
+    return m && !isPartTimeMember(m);
+  });
+  if (ft.length === 0) return 0;
+  return Math.round(ft.reduce((s, r) => s + r.total, 0) / ft.length);
+}
 
 function getISOWeek(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -101,6 +153,59 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 
 function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function normalizeStoredTeam(stored: TeamMember[]): TeamMember[] {
+  const byName = new Map(stored.map((m) => [m.name, m]));
+  const merged = [...stored];
+  for (const def of DEFAULT_TEAM) {
+    if (!byName.has(def.name)) {
+      merged.push({ ...def, id: uid() });
+    } else {
+      const idx = merged.findIndex((x) => x.name === def.name);
+      if (idx >= 0 && def.partTime) {
+        merged[idx] = { ...merged[idx], partTime: true };
+      }
+    }
+  }
+  return merged;
+}
+
+/** Load off-days keyed by member id; migrate legacy weekly-keyed storage if still present. */
+function loadMemberOffDaysFromStorage(): Record<string, string[]> {
+  try {
+    const v2raw = localStorage.getItem(STORAGE_KEY_MEMBER_OFF_DAYS);
+    let merged: Record<string, string[]> = {};
+    if (v2raw) {
+      const parsed = JSON.parse(v2raw) as Record<string, string[]>;
+      if (parsed && typeof parsed === 'object') {
+        merged = { ...parsed };
+      }
+    }
+
+    const legacyRaw = localStorage.getItem(STORAGE_KEY_MEMBER_OFF_DAYS_LEGACY);
+    if (legacyRaw) {
+      const raw = JSON.parse(legacyRaw) as Record<string, string[]>;
+      for (const [key, dates] of Object.entries(raw)) {
+        if (!Array.isArray(dates)) continue;
+        const colon = key.indexOf(':');
+        const memberId = colon >= 0 ? key.slice(colon + 1) : key;
+        if (!merged[memberId]) merged[memberId] = [];
+        for (const dt of dates) {
+          if (typeof dt === 'string' && !merged[memberId].includes(dt)) merged[memberId].push(dt);
+        }
+      }
+      localStorage.removeItem(STORAGE_KEY_MEMBER_OFF_DAYS_LEGACY);
+    }
+
+    for (const id of Object.keys(merged)) {
+      merged[id].sort();
+    }
+    localStorage.setItem(STORAGE_KEY_MEMBER_OFF_DAYS, JSON.stringify(merged));
+    return merged;
+  } catch {
+    return {};
+  }
 }
 
 // ── Share Modal ────────────────────────────────────────────────────────
@@ -496,7 +601,12 @@ function DailyLogTab({
               onChange={(e) => setForm((f) => ({ ...f, reviewLink: e.target.checked }))}
               className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
             />
-            Review Link Sent?
+            <span>
+              Review Link Sent?{' '}
+              <span className="text-xs text-slate-500 font-normal">
+                (full-time benchmark: {REVIEW_LINKS_DAILY_TARGET}/day)
+              </span>
+            </span>
           </label>
           <button
             onClick={handleAdd}
@@ -593,16 +703,242 @@ function DailyLogTab({
   );
 }
 
+// ── Member off days (any calendar date) ────────────────────────────────
+
+function MemberOffDaysPanel({
+  activeMembers,
+  memberOffDays,
+  setMemberOffDays,
+}: {
+  activeMembers: TeamMember[];
+  memberOffDays: Record<string, string[]>;
+  setMemberOffDays: (fn: (prev: Record<string, string[]>) => Record<string, string[]>) => void;
+}) {
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const [draftByMember, setDraftByMember] = useState<Record<string, string>>({});
+
+  const draftFor = (id: string) => draftByMember[id] ?? today;
+
+  const addOff = (memberId: string) => {
+    const d = draftFor(memberId);
+    if (!d) {
+      toast.error('Pick a date');
+      return;
+    }
+    const cur = memberOffDays[memberId] || [];
+    if (cur.includes(d)) {
+      toast.error('That day is already marked off');
+      return;
+    }
+    setMemberOffDays((prev) => ({
+      ...prev,
+      [memberId]: [...(prev[memberId] || []), d].sort(),
+    }));
+    toast.success('Off day saved');
+  };
+
+  const removeOff = (memberId: string, dateStr: string) => {
+    setMemberOffDays((prev) => {
+      const cur = prev[memberId] || [];
+      const next = cur.filter((x) => x !== dateStr);
+      const out = { ...prev };
+      if (next.length === 0) delete out[memberId];
+      else out[memberId] = next;
+      return out;
+    });
+    toast.success('Off day removed');
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5">
+      <h3 className="text-base font-bold text-[#2F3E2F] mb-1">Days marked off</h3>
+      <p className="text-sm text-slate-500 mb-4">
+        Choose any date per team member (PTO, holiday, etc.). Off days for the week you are viewing also appear in the table below.
+      </p>
+      <div className="space-y-4">
+        {activeMembers.map((m) => {
+          const dates = memberOffDays[m.id] || [];
+          return (
+            <div
+              key={m.id}
+              className="flex flex-col gap-2 pb-4 border-b border-[#A8B8AC]/15 last:border-0 last:pb-0"
+            >
+              <div className="font-medium text-[#2F3E2F] text-sm">{m.name}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="date"
+                  value={draftFor(m.id)}
+                  onChange={(e) =>
+                    setDraftByMember((prev) => ({ ...prev, [m.id]: e.target.value }))
+                  }
+                  className="px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => addOff(m.id)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Mark off
+                </button>
+              </div>
+              {dates.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {dates.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => removeOff(m.id, d)}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-200/80 text-[#2F3E2F] hover:bg-red-100 hover:text-red-700 transition-colors"
+                      title="Click to remove"
+                    >
+                      {d}
+                      <X className="w-3 h-3" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">No off days recorded yet.</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Review link benchmark (full-time) ────────────────────────────────
+
+function ReviewLinkBenchmarkCard({
+  activeMembers,
+  weekLogs,
+  weekDates,
+  memberOffDays,
+}: {
+  activeMembers: TeamMember[];
+  weekLogs: LogEntry[];
+  weekDates: string[];
+  memberOffDays: Record<string, string[]>;
+}) {
+  const fullTime = useMemo(
+    () => activeMembers.filter((m) => m.status === 'Active' && isFullTimeForReviewBenchmark(m)),
+    [activeMembers],
+  );
+
+  const rows = useMemo(() => {
+    return fullTime.map((m) => {
+      const ml = weekLogs.filter((l) => l.teamMember === m.name);
+      const offs = memberOffDays[m.id] || [];
+      const cells = weekDates.map((d) => {
+        const off = offs.includes(d);
+        const c = ml.filter((l) => l.date === d && l.reviewLink).length;
+        return { d, off, c };
+      });
+      let met = 0;
+      let denom = 0;
+      for (const { off, c } of cells) {
+        if (off) continue;
+        denom += 1;
+        if (c >= REVIEW_LINKS_DAILY_TARGET) met += 1;
+      }
+      return { m, cells, met, denom };
+    });
+  }, [fullTime, weekLogs, weekDates, memberOffDays]);
+
+  if (fullTime.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
+      <div className="p-5 border-b border-[#A8B8AC]/20">
+        <h3 className="text-base font-bold text-[#2F3E2F]">Review link benchmark — full-time</h3>
+        <p className="text-sm text-slate-500 mt-0.5">
+          Each full-time rep (Acelyn, Adam, Ryan, and any non–part-time teammate) should log{' '}
+          <strong>{REVIEW_LINKS_DAILY_TARGET}</strong> entries per day with <strong>Review Link Sent?</strong>{' '}
+          checked. Days marked <strong>off</strong> above do not count toward the goal or the denominator. Cells
+          show review-link count for that calendar day.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
+          <thead>
+            <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
+              <th className="px-3 py-3">Rep</th>
+              {weekDates.map((d) => (
+                <th key={d} className="px-1.5 py-3 text-center font-normal normal-case">
+                  <span className="block text-[10px] text-slate-500 leading-tight">{d.slice(5)}</span>
+                  <span className="text-[10px] text-slate-400">
+                    {format(new Date(d + 'T12:00:00'), 'EEE')}
+                  </span>
+                </th>
+              ))}
+              <th className="px-3 py-3 text-right font-normal normal-case">Days met</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#A8B8AC]/15">
+            {rows.map(({ m, cells, met, denom }) => (
+              <tr key={m.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
+                <td className="px-3 py-2.5 font-medium text-[#2F3E2F] whitespace-nowrap">{m.name}</td>
+                {cells.map(({ d, off, c }) => (
+                  <td key={d} className="px-1 py-2 text-center align-middle">
+                    {off ? (
+                      <span className="text-[10px] text-slate-400 font-medium">Off</span>
+                    ) : (
+                      <span
+                        className={`inline-flex flex-col items-center justify-center min-w-[2rem] px-1 py-0.5 rounded text-xs font-bold tabular-nums ${
+                          c >= REVIEW_LINKS_DAILY_TARGET
+                            ? 'bg-[#5B6B2E]/15 text-[#3d4a1f]'
+                            : c > 0
+                              ? 'bg-amber-100/80 text-amber-900'
+                              : 'bg-red-50 text-red-700'
+                        }`}
+                        title={`${c} review links (goal ${REVIEW_LINKS_DAILY_TARGET})`}
+                      >
+                        {c}
+                        <span className="text-[9px] font-normal opacity-80">/{REVIEW_LINKS_DAILY_TARGET}</span>
+                      </span>
+                    )}
+                  </td>
+                ))}
+                <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-[#2F3E2F]">
+                  {met}/{denom}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="p-4 border-t border-[#A8B8AC]/20 text-xs text-slate-500 flex flex-wrap gap-4">
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-[#5B6B2E]/20 border border-[#5B6B2E]/40" />
+          ≥{REVIEW_LINKS_DAILY_TARGET} = goal met
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-amber-100 border border-amber-300" />
+          1–{REVIEW_LINKS_DAILY_TARGET - 1} = below goal
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-red-50 border border-red-200" />0 = none logged
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ── Weekly Report Tab ──────────────────────────────────────────────────
 
 function WeeklyReportTab({
   logs,
   activeMembers,
   weekNumber,
+  memberOffDays,
+  setMemberOffDays,
 }: {
   logs: LogEntry[];
   activeMembers: TeamMember[];
   weekNumber: number;
+  memberOffDays: Record<string, string[]>;
+  setMemberOffDays: (fn: (prev: Record<string, string[]>) => Record<string, string[]>) => void;
 }) {
   const weekLogs = useMemo(
     () =>
@@ -613,10 +949,15 @@ function WeeklyReportTab({
     [logs, weekNumber],
   );
 
+  const refYear = useMemo(() => refYearForWeek(logs, weekNumber), [logs, weekNumber]);
+  const weekDates = useMemo(() => getWeekDateStrings(weekNumber, refYear), [weekNumber, refYear]);
+  const weekDateSet = useMemo(() => new Set(weekDates), [weekDates]);
+
   const rows = useMemo(() => {
     return activeMembers.map((m) => {
       const ml = weekLogs.filter((l) => l.teamMember === m.name);
       return {
+        member: m,
         name: m.name,
         total: ml.length,
         phone: ml.filter((l) => l.channel === 'Phone').length,
@@ -633,84 +974,181 @@ function WeeklyReportTab({
     });
   }, [weekLogs, activeMembers]);
 
-  const teamAvg = rows.length ? Math.round(rows.reduce((s, r) => s + r.total, 0) / rows.length) : 0;
+  const fullTimeAvg = useMemo(
+    () => fullTimeWeekAvg(activeMembers, rows.map((r) => ({ name: r.name, total: r.total }))),
+    [activeMembers, rows],
+  );
+
+  const overallAvg = rows.length ? Math.round(rows.reduce((s, r) => s + r.total, 0) / rows.length) : 0;
+
+  const underperformers = useMemo(() => {
+    if (fullTimeAvg <= 0) return [] as string[];
+    const names: string[] = [];
+    for (const r of rows) {
+      if (isPartTimeMember(r.member)) continue;
+      if (r.total <= fullTimeAvg * 0.8) names.push(r.name);
+    }
+    return names;
+  }, [rows, fullTimeAvg]);
+
+  useEffect(() => {
+    if (underperformers.length === 0) return;
+    toast.error(
+      `Performance alert (week ${weekNumber}): ${underperformers.join(', ')} ${
+        underperformers.length === 1 ? 'is' : 'are'
+      } at or below 80% of the full-time team average. Consider a coaching check-in.`,
+      { duration: 10000 },
+    );
+  }, [weekNumber, underperformers.join('|')]);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
-      <div className="p-5 border-b border-[#A8B8AC]/20">
-        <h3 className="text-base font-bold text-[#2F3E2F]">
-          Per-Rep Weekly Totals — Week {weekNumber}
-        </h3>
-        <p className="text-sm text-slate-500 mt-0.5">
-          {weekLogs.length} total contacts · Team avg {teamAvg}/rep
-        </p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
-              <th className="px-4 py-3">Team Member</th>
-              <th className="px-4 py-3 text-right">Total</th>
-              <th className="px-4 py-3 text-right">Phone</th>
-              <th className="px-4 py-3 text-right">Email</th>
-              <th className="px-4 py-3 text-right">SalesIQ</th>
-              <th className="px-4 py-3 text-right">Follow-ups</th>
-              <th className="px-4 py-3 text-right">Rx</th>
-              <th className="px-4 py-3 text-right">Labs</th>
-              <th className="px-4 py-3 text-right">Imaging</th>
-              <th className="px-4 py-3 text-right">Appt</th>
-              <th className="px-4 py-3 text-right">CRM %</th>
-              <th className="px-4 py-3 text-right">Review %</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#A8B8AC]/15">
-            {rows.map((r) => {
-              const belowAvg = teamAvg > 0 && r.total < teamAvg;
-              const farBelow = teamAvg > 0 && r.total < teamAvg * 0.75;
-              const rowClass = farBelow
-                ? 'bg-red-50/50'
-                : belowAvg
-                  ? 'bg-yellow-50/50'
-                  : '';
-              return (
-                <tr key={r.name} className={`${rowClass} hover:bg-[#A8B8AC]/5 transition-colors`}>
-                  <td className="px-4 py-3 font-medium text-[#2F3E2F]">{r.name}</td>
-                  <td className="px-4 py-3 text-right font-bold">{r.total}</td>
-                  <td className="px-4 py-3 text-right">{r.phone}</td>
-                  <td className="px-4 py-3 text-right">{r.email}</td>
-                  <td className="px-4 py-3 text-right">{r.salesiq}</td>
-                  <td className="px-4 py-3 text-right">{r.followups}</td>
-                  <td className="px-4 py-3 text-right">{r.rx}</td>
-                  <td className="px-4 py-3 text-right">{r.labs}</td>
-                  <td className="px-4 py-3 text-right">{r.imaging}</td>
-                  <td className="px-4 py-3 text-right">{r.appt}</td>
-                  <td className="px-4 py-3 text-right">{r.crmPct}%</td>
-                  <td className="px-4 py-3 text-right">{r.reviewPct}%</td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="bg-[#2F3E2F]/5 font-bold text-[#2F3E2F]">
-              <td className="px-4 py-3">TEAM TOTAL</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.total, 0)}</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.phone, 0)}</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.email, 0)}</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.salesiq, 0)}</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.followups, 0)}</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.rx, 0)}</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.labs, 0)}</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.imaging, 0)}</td>
-              <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.appt, 0)}</td>
-              <td className="px-4 py-3 text-right"></td>
-              <td className="px-4 py-3 text-right"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <div className="p-4 border-t border-[#A8B8AC]/20 flex items-center gap-4 text-xs text-slate-500">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-yellow-100 border border-yellow-300" /> Below team avg</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-100 border border-red-300" /> &gt;25% below avg</span>
+    <div className="space-y-4">
+      <MemberOffDaysPanel
+        activeMembers={activeMembers}
+        memberOffDays={memberOffDays}
+        setMemberOffDays={setMemberOffDays}
+      />
+
+      {underperformers.length > 0 && (
+        <div
+          role="alert"
+          className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 flex gap-3 items-start"
+        >
+          <AlertTriangle className="w-5 h-5 shrink-0 text-amber-700 mt-0.5" />
+          <div>
+            <p className="font-semibold text-amber-900">Below full-time team average (≥20% gap)</p>
+            <p className="mt-1 text-amber-900/90">
+              Full-time avg for week {weekNumber} is <strong>{fullTimeAvg}</strong> contacts per rep (part-time excluded from average).
+              Flagged: <strong>{underperformers.join(', ')}</strong> — at or under 80% of that average.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <ReviewLinkBenchmarkCard
+        activeMembers={activeMembers}
+        weekLogs={weekLogs}
+        weekDates={weekDates}
+        memberOffDays={memberOffDays}
+      />
+
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
+        <div className="p-5 border-b border-[#A8B8AC]/20">
+          <h3 className="text-base font-bold text-[#2F3E2F]">
+            Per-Rep Weekly Totals — Week {weekNumber}
+          </h3>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {weekLogs.length} total contacts · All-team avg {overallAvg}/rep · Full-time avg {fullTimeAvg}/rep (used for alerts)
+          </p>
+          <p className="text-xs text-slate-500 mt-2">
+            Part-time reps are not compared for performance alerts. Use <strong>Days marked off</strong> above to record any calendar date.
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
+                <th className="px-4 py-3">Team Member</th>
+                <th className="px-4 py-3">Off (this week)</th>
+                <th className="px-4 py-3 text-right">Total</th>
+                <th className="px-4 py-3 text-right">Phone</th>
+                <th className="px-4 py-3 text-right">Email</th>
+                <th className="px-4 py-3 text-right">SalesIQ</th>
+                <th className="px-4 py-3 text-right">Follow-ups</th>
+                <th className="px-4 py-3 text-right">Rx</th>
+                <th className="px-4 py-3 text-right">Labs</th>
+                <th className="px-4 py-3 text-right">Imaging</th>
+                <th className="px-4 py-3 text-right">Appt</th>
+                <th className="px-4 py-3 text-right">CRM %</th>
+                <th className="px-4 py-3 text-right">Review %</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#A8B8AC]/15">
+              {rows.map((r) => {
+                const allOff = memberOffDays[r.member.id] || [];
+                const offThisWeek = allOff.filter((d) => weekDateSet.has(d));
+                const part = isPartTimeMember(r.member);
+                const belowFtAvg = !part && fullTimeAvg > 0 && r.total < fullTimeAvg;
+                const alertRow = !part && fullTimeAvg > 0 && r.total <= fullTimeAvg * 0.8;
+                const rowClass = part
+                  ? 'bg-slate-50/80'
+                  : alertRow
+                    ? 'bg-red-50/50'
+                    : belowFtAvg
+                      ? 'bg-yellow-50/50'
+                      : '';
+                return (
+                  <tr key={r.name} className={`${rowClass} hover:bg-[#A8B8AC]/5 transition-colors`}>
+                    <td className="px-4 py-3 font-medium text-[#2F3E2F]">
+                      <span className="block">{r.name}</span>
+                      {part && (
+                        <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wide">
+                          Part-time
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 text-xs max-w-[220px]">
+                      {offThisWeek.length > 0 ? (
+                        <span className="flex flex-wrap gap-1">
+                          {offThisWeek.map((d) => (
+                            <span
+                              key={d}
+                              className="inline-block px-1.5 py-0.5 rounded bg-slate-200/90 text-[#2F3E2F] font-medium"
+                            >
+                              {d}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold">{r.total}</td>
+                    <td className="px-4 py-3 text-right">{r.phone}</td>
+                    <td className="px-4 py-3 text-right">{r.email}</td>
+                    <td className="px-4 py-3 text-right">{r.salesiq}</td>
+                    <td className="px-4 py-3 text-right">{r.followups}</td>
+                    <td className="px-4 py-3 text-right">{r.rx}</td>
+                    <td className="px-4 py-3 text-right">{r.labs}</td>
+                    <td className="px-4 py-3 text-right">{r.imaging}</td>
+                    <td className="px-4 py-3 text-right">{r.appt}</td>
+                    <td className="px-4 py-3 text-right">{r.crmPct}%</td>
+                    <td className="px-4 py-3 text-right">{r.reviewPct}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="bg-[#2F3E2F]/5 font-bold text-[#2F3E2F]">
+                <td className="px-4 py-3" colSpan={2}>
+                  TEAM TOTAL
+                </td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.total, 0)}</td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.phone, 0)}</td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.email, 0)}</td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.salesiq, 0)}</td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.followups, 0)}</td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.rx, 0)}</td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.labs, 0)}</td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.imaging, 0)}</td>
+                <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.appt, 0)}</td>
+                <td className="px-4 py-3 text-right"></td>
+                <td className="px-4 py-3 text-right"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="p-4 border-t border-[#A8B8AC]/20 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-yellow-100 border border-yellow-300" /> Below full-time avg (not yet 20%)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-red-100 border border-red-300" /> ≥20% below full-time avg
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-slate-100 border border-slate-300" /> Part-time (excluded from alert math)
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -1056,6 +1494,7 @@ function TeamTab({
             <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3">Schedule</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 w-24">Actions</th>
             </tr>
@@ -1065,6 +1504,25 @@ function TeamTab({
               <tr key={m.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
                 <td className="px-4 py-3 font-medium text-[#2F3E2F]">{m.name}</td>
                 <td className="px-4 py-3 text-slate-600">{m.role}</td>
+                <td className="px-4 py-3">
+                  <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isPartTimeMember(m)}
+                      onChange={() =>
+                        setTeam((prev) =>
+                          prev.map((x) =>
+                            x.id === m.id
+                              ? { ...x, partTime: isPartTimeMember(x) ? false : true }
+                              : x,
+                          ),
+                        )
+                      }
+                      className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
+                    />
+                    Part-time
+                  </label>
+                </td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => toggleStatus(m.id)}
@@ -1103,8 +1561,19 @@ export default function DailyLogs() {
 
   const [logs, setLogsRaw] = useState<LogEntry[]>(() => loadFromStorage(STORAGE_KEY_LOGS, []));
   const [team, setTeamRaw] = useState<TeamMember[]>(() =>
-    loadFromStorage(STORAGE_KEY_TEAM, DEFAULT_TEAM),
+    normalizeStoredTeam(loadFromStorage(STORAGE_KEY_TEAM, DEFAULT_TEAM)),
   );
+  const [memberOffDaysRaw, setMemberOffDaysRaw] = useState<Record<string, string[]>>(() =>
+    loadMemberOffDaysFromStorage(),
+  );
+
+  const setMemberOffDays: typeof setMemberOffDaysRaw = useCallback((fn) => {
+    setMemberOffDaysRaw((prev) => {
+      const next = typeof fn === 'function' ? fn(prev) : fn;
+      localStorage.setItem(STORAGE_KEY_MEMBER_OFF_DAYS, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const setLogs: typeof setLogsRaw = useCallback((fn) => {
     setLogsRaw((prev) => {
@@ -1222,7 +1691,15 @@ export default function DailyLogs() {
 
       {/* Tab Content */}
       {activeTab === 'log' && <DailyLogTab logs={logs} setLogs={setLogs} activeMembers={activeMembers} />}
-      {activeTab === 'weekly' && <WeeklyReportTab logs={logs} activeMembers={activeMembers} weekNumber={weekNumber} />}
+      {activeTab === 'weekly' && (
+        <WeeklyReportTab
+          logs={logs}
+          activeMembers={activeMembers}
+          weekNumber={weekNumber}
+          memberOffDays={memberOffDaysRaw}
+          setMemberOffDays={setMemberOffDays}
+        />
+      )}
       {activeTab === 'performance' && <PerformanceTab logs={logs} activeMembers={activeMembers} weekNumber={weekNumber} />}
       {activeTab === 'analytics' && <AnalyticsTab logs={logs} weekNumber={weekNumber} />}
       {activeTab === 'trends' && <TrendsTab logs={logs} />}

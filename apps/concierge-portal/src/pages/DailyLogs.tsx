@@ -733,24 +733,33 @@ function MemberOffDaysPanel({
   setMemberOffDays: (fn: (prev: Record<string, string[]>) => Record<string, string[]>) => void;
 }) {
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const [draftByMember, setDraftByMember] = useState<Record<string, string>>({});
+  const [selectedId, setSelectedId] = useState('');
+  const [offDate, setOffDate] = useState(today);
 
-  const draftFor = (id: string) => draftByMember[id] ?? today;
+  useEffect(() => {
+    if (activeMembers.length === 0) return;
+    setSelectedId((prev) =>
+      prev && activeMembers.some((m) => m.id === prev) ? prev : activeMembers[0].id,
+    );
+  }, [activeMembers]);
 
-  const addOff = (memberId: string) => {
-    const d = draftFor(memberId);
-    if (!d) {
+  const addOff = () => {
+    if (!selectedId) {
+      toast.error('Choose an employee');
+      return;
+    }
+    if (!offDate) {
       toast.error('Pick a date');
       return;
     }
-    const cur = memberOffDays[memberId] || [];
-    if (cur.includes(d)) {
-      toast.error('That day is already marked off');
+    const cur = memberOffDays[selectedId] || [];
+    if (cur.includes(offDate)) {
+      toast.error('That day is already marked off for this employee');
       return;
     }
     setMemberOffDays((prev) => ({
       ...prev,
-      [memberId]: [...(prev[memberId] || []), d].sort(),
+      [selectedId]: [...(prev[selectedId] || []), offDate].sort(),
     }));
     toast.success('Off day saved');
   };
@@ -767,61 +776,89 @@ function MemberOffDaysPanel({
     toast.success('Off day removed');
   };
 
+  const allEntries = useMemo(() => {
+    const out: { member: TeamMember; date: string }[] = [];
+    for (const m of activeMembers) {
+      for (const d of memberOffDays[m.id] || []) {
+        out.push({ member: m, date: d });
+      }
+    }
+    out.sort(
+      (a, b) => a.date.localeCompare(b.date) || a.member.name.localeCompare(b.member.name),
+    );
+    return out;
+  }, [activeMembers, memberOffDays]);
+
   return (
     <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5">
       <h3 className="text-base font-bold text-[#2F3E2F] mb-1">Days marked off</h3>
       <p className="text-sm text-slate-500 mb-4">
-        Choose any date per team member (PTO, holiday, etc.). Off days for the week you are viewing also appear in the table below.
+        PTO and other non-working days. Off days for the selected week also appear in the weekly table above.
       </p>
-      <div className="space-y-4">
-        {activeMembers.map((m) => {
-          const dates = memberOffDays[m.id] || [];
-          return (
-            <div
-              key={m.id}
-              className="flex flex-col gap-2 pb-4 border-b border-[#A8B8AC]/15 last:border-0 last:pb-0"
-            >
-              <div className="font-medium text-[#2F3E2F] text-sm">{m.name}</div>
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="date"
-                  value={draftFor(m.id)}
-                  onChange={(e) =>
-                    setDraftByMember((prev) => ({ ...prev, [m.id]: e.target.value }))
-                  }
-                  className="px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => addOff(m.id)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Mark off
-                </button>
-              </div>
-              {dates.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {dates.map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => removeOff(m.id, d)}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-200/80 text-[#2F3E2F] hover:bg-red-100 hover:text-red-700 transition-colors"
-                      title="Click to remove"
-                    >
-                      {d}
-                      <X className="w-3 h-3" />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400">No off days recorded yet.</p>
-              )}
-            </div>
-          );
-        })}
+
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+        <div className="min-w-[200px] flex-1 sm:flex-initial sm:max-w-xs">
+          <label htmlFor="off-employee" className="block text-xs font-medium text-slate-600 mb-1">
+            Employee
+          </label>
+          <select
+            id="off-employee"
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+          >
+            {activeMembers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-[160px]">
+          <label htmlFor="off-date" className="block text-xs font-medium text-slate-600 mb-1">
+            Date
+          </label>
+          <input
+            id="off-date"
+            type="date"
+            value={offDate}
+            onChange={(e) => setOffDate(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={addOff}
+          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors sm:shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          Mark off
+        </button>
       </div>
+
+      {allEntries.length > 0 ? (
+        <div className="mt-5 pt-4 border-t border-[#A8B8AC]/20">
+          <p className="text-xs font-medium text-slate-600 mb-2">All scheduled off days (click to remove)</p>
+          <div className="flex flex-wrap gap-1.5">
+            {allEntries.map(({ member, date }) => (
+              <button
+                key={`${member.id}-${date}`}
+                type="button"
+                onClick={() => removeOff(member.id, date)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-200/80 text-[#2F3E2F] hover:bg-red-100 hover:text-red-700 transition-colors"
+                title="Remove this off day"
+              >
+                <span className="font-semibold">{member.name}</span>
+                <span className="text-slate-500">·</span>
+                {date}
+                <X className="w-3 h-3" />
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 text-xs text-slate-400">No off days recorded yet.</p>
+      )}
     </div>
   );
 }
@@ -873,8 +910,8 @@ function ReviewLinkBenchmarkCard({
         <p className="text-sm text-slate-500 mt-0.5">
           Each full-time rep (Acelyn Calderon, Adam Jordano, Ryan Cahill, and any non–part-time teammate) should log{' '}
           <strong>{REVIEW_LINKS_DAILY_TARGET}</strong> entries per day with <strong>Review Link Sent?</strong>{' '}
-          checked. Days marked <strong>off</strong> above do not count toward the goal or the denominator. Cells
-          show review-link count for that calendar day.
+          checked. Days marked <strong>off</strong> (see <strong>Days marked off</strong> at the bottom of this tab) do
+          not count toward the goal or the denominator. Cells show review-link count for that calendar day.
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -1021,12 +1058,6 @@ function WeeklyReportTab({
 
   return (
     <div className="space-y-4">
-      <MemberOffDaysPanel
-        activeMembers={activeMembers}
-        memberOffDays={memberOffDays}
-        setMemberOffDays={setMemberOffDays}
-      />
-
       {underperformers.length > 0 && (
         <div
           role="alert"
@@ -1043,13 +1074,6 @@ function WeeklyReportTab({
         </div>
       )}
 
-      <ReviewLinkBenchmarkCard
-        activeMembers={activeMembers}
-        weekLogs={weekLogs}
-        weekDates={weekDates}
-        memberOffDays={memberOffDays}
-      />
-
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
         <div className="p-5 border-b border-[#A8B8AC]/20">
           <h3 className="text-base font-bold text-[#2F3E2F]">
@@ -1059,7 +1083,7 @@ function WeeklyReportTab({
             {weekLogs.length} total contacts · All-team avg {overallAvg}/rep · Full-time avg {fullTimeAvg}/rep (used for alerts)
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            Part-time reps are not compared for performance alerts. Use <strong>Days marked off</strong> above to record any calendar date.
+            Part-time reps are not compared for performance alerts. Use <strong>Days marked off</strong> at the bottom of this tab to record PTO or non-working days.
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -1168,6 +1192,19 @@ function WeeklyReportTab({
           </span>
         </div>
       </div>
+
+      <ReviewLinkBenchmarkCard
+        activeMembers={activeMembers}
+        weekLogs={weekLogs}
+        weekDates={weekDates}
+        memberOffDays={memberOffDays}
+      />
+
+      <MemberOffDaysPanel
+        activeMembers={activeMembers}
+        memberOffDays={memberOffDays}
+        setMemberOffDays={setMemberOffDays}
+      />
     </div>
   );
 }

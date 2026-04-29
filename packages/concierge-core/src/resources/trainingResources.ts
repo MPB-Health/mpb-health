@@ -28,8 +28,29 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     links: [
       { label: 'Zion HealthShare', url: 'https://zionhealthshare.org/how-it-works/member-guidelines/' },
       { label: 'Sedera', url: 'https://assets.ctfassets.net/01zqqfy0bb2m/BdCi3f2zO5AcFTHBLcNkJ/3cdf28f268d4186cc7550e11b11664c7/SELECT__Guidelines_-_Community_20231001.pdf' },
+      {
+        label: 'Zion vs Sedera',
+        url: 'https://netorg6712533-my.sharepoint.com/:x:/g/personal/julia_mympb_com/IQD4GvNM8LwXQKzAX6zyyT-jAdAVEGVRvYXfohBdzTCvAyY?rtime=ye2RGwim3kg',
+      },
     ],
-    keywords: ['eligibility', 'waiting period', 'pre-existing', 'pre-notification', 'maternity', 'mental health', 'substance abuse', 'tobacco', 'lifestyle', 'exclusions', 'limitations', 'appeal', 'needs processing'],
+    keywords: [
+      'eligibility',
+      'waiting period',
+      'pre-existing',
+      'pre-notification',
+      'maternity',
+      'mental health',
+      'substance abuse',
+      'tobacco',
+      'lifestyle',
+      'exclusions',
+      'limitations',
+      'appeal',
+      'needs processing',
+      'Zion vs Sedera',
+      'comparison',
+      'guidelines comparison',
+    ],
   },
   {
     id: 'zion-faq',
@@ -42,8 +63,8 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     links: [
       { label: 'Zion HealthShare FAQ', url: 'https://zionhealthshare.org/how-it-works/faq/' },
       {
-        label: 'Sedera & Savvos Health (PDF)',
-        url: '/docs/Sedera%20and%20Savvos%20SAVVOS%20Health%20(1).pdf',
+        label: 'SAVVOS & Sedera (PDF)',
+        url: '/docs/SAVVOS%20and%20Sedera.pdf',
       },
     ],
     keywords: [

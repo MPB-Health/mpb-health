@@ -99,12 +99,26 @@ const STORAGE_KEY_MEMBER_OFF_DAYS = 'concierge-member-off-days';
 const STORAGE_KEY_MEMBER_OFF_DAYS_LEGACY = 'concierge-weekly-off-days';
 
 const DEFAULT_TEAM: TeamMember[] = [
-  { id: '1', name: 'Acelyn', status: 'Active', role: 'Concierge' },
-  { id: '2', name: 'Adam', status: 'Active', role: 'Concierge' },
-  { id: '3', name: 'Ryan', status: 'Active', role: 'Concierge' },
+  { id: '1', name: 'Acelyn Calderon', status: 'Active', role: 'Concierge' },
+  { id: '2', name: 'Adam Jordano', status: 'Active', role: 'Concierge' },
+  { id: '3', name: 'Ryan Cahill', status: 'Active', role: 'Concierge' },
   { id: '4', name: 'Vanessa Orozco', status: 'Active', role: 'Concierge', partTime: true },
   { id: '5', name: 'Tupac Manzanarez', status: 'Active', role: 'Concierge', partTime: true },
 ];
+
+/** Migrates earlier roster / log entries that used first names only. */
+const LEGACY_TEAM_MEMBER_NAMES: Record<string, string> = {
+  Acelyn: 'Acelyn Calderon',
+  Adam: 'Adam Jordano',
+  Ryan: 'Ryan Cahill',
+};
+
+function applyLegacyTeamMemberNamesToLogs(logs: LogEntry[]): LogEntry[] {
+  return logs.map((l) => {
+    const next = LEGACY_TEAM_MEMBER_NAMES[l.teamMember];
+    return next ? { ...l, teamMember: next } : l;
+  });
+}
 
 function refYearForWeek(logs: LogEntry[], weekNum: number): number {
   const hit = logs.find((l) => {
@@ -156,8 +170,12 @@ function uid(): string {
 }
 
 function normalizeStoredTeam(stored: TeamMember[]): TeamMember[] {
-  const byName = new Map(stored.map((m) => [m.name, m]));
-  const merged = [...stored];
+  const renamed = stored.map((m) => {
+    const next = LEGACY_TEAM_MEMBER_NAMES[m.name];
+    return next ? { ...m, name: next } : { ...m };
+  });
+  const byName = new Map(renamed.map((m) => [m.name, m]));
+  const merged = [...renamed];
   for (const def of DEFAULT_TEAM) {
     if (!byName.has(def.name)) {
       merged.push({ ...def, id: uid() });
@@ -853,7 +871,7 @@ function ReviewLinkBenchmarkCard({
       <div className="p-5 border-b border-[#A8B8AC]/20">
         <h3 className="text-base font-bold text-[#2F3E2F]">Review link benchmark — full-time</h3>
         <p className="text-sm text-slate-500 mt-0.5">
-          Each full-time rep (Acelyn, Adam, Ryan, and any non–part-time teammate) should log{' '}
+          Each full-time rep (Acelyn Calderon, Adam Jordano, Ryan Cahill, and any non–part-time teammate) should log{' '}
           <strong>{REVIEW_LINKS_DAILY_TARGET}</strong> entries per day with <strong>Review Link Sent?</strong>{' '}
           checked. Days marked <strong>off</strong> above do not count toward the goal or the denominator. Cells
           show review-link count for that calendar day.
@@ -1559,10 +1577,31 @@ export default function DailyLogs() {
   const [showShare, setShowShare] = useState(false);
   const [weekNumber, setWeekNumber] = useState(() => getISOWeek(new Date()));
 
-  const [logs, setLogsRaw] = useState<LogEntry[]>(() => loadFromStorage(STORAGE_KEY_LOGS, []));
-  const [team, setTeamRaw] = useState<TeamMember[]>(() =>
-    normalizeStoredTeam(loadFromStorage(STORAGE_KEY_TEAM, DEFAULT_TEAM)),
-  );
+  const [logs, setLogsRaw] = useState<LogEntry[]>(() => {
+    const raw = loadFromStorage<LogEntry[]>(STORAGE_KEY_LOGS, []);
+    const migrated = applyLegacyTeamMemberNamesToLogs(raw);
+    try {
+      if (JSON.stringify(migrated) !== JSON.stringify(raw)) {
+        localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(migrated));
+      }
+    } catch {
+      /* ignore */
+    }
+    return migrated;
+  });
+  const [team, setTeamRaw] = useState<TeamMember[]>(() => {
+    const raw = loadFromStorage<TeamMember[]>(STORAGE_KEY_TEAM, []);
+    const base = raw.length ? raw : DEFAULT_TEAM.map((m) => ({ ...m }));
+    const normalized = normalizeStoredTeam(base);
+    try {
+      if (JSON.stringify(normalized) !== JSON.stringify(raw)) {
+        localStorage.setItem(STORAGE_KEY_TEAM, JSON.stringify(normalized));
+      }
+    } catch {
+      /* ignore */
+    }
+    return normalized;
+  });
   const [memberOffDaysRaw, setMemberOffDaysRaw] = useState<Record<string, string[]>>(() =>
     loadMemberOffDaysFromStorage(),
   );

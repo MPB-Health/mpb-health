@@ -1,0 +1,75 @@
+name: DB
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/db.yml"
+  push:
+    branches: [master]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/db.yml"
+
+concurrency:
+  group: db-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db-checks:
+    name: Migrations + invariants + anon smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Boot local Supabase stack
+        # `supabase start` brings up Postgres + PostgREST + GoTrue + Storage etc.
+        # Migrations under supabase/migrations/ are applied automatically.
+        # Versions in schema_migrations are the file timestamps by construction
+        # so this run validates the same shape `supabase db push` produces.
+        run: supabase start
+
+      - name: Capture local stack credentials
+        id: stack
+        run: |
+          # Parse `supabase status -o env` output (KEY=VALUE per line).
+          eval "$(supabase status -o env)"
+          {
+            echo "api_url=${API_URL}"
+            echo "db_url=${DB_URL}"
+            echo "anon_key=${ANON_KEY}"
+          } >> "$GITHUB_OUTPUT"
+          echo "::add-mask::${ANON_KEY}"
+          echo "::add-mask::${SERVICE_ROLE_KEY:-}"
+
+      - name: supabase db lint (advisor view + function search-path + RLS)
+        # Catches function_search_path_mutable, security_definer_view, missing
+        # RLS, etc. — the same class as the bugs we just spent a session
+        # mopping up. Fail the build on any new finding.
+        run: supabase db lint --level warning
+
+      - name: DB invariants (prosecdef + RPC contract + anon-grant lockdown)
+        env:
+          PGURL: ${{ steps.stack.outputs.db_url }}
+        run: |
+          # `psql -v ON_ERROR_STOP=1` makes RAISE EXCEPTION abort psql with a
+          # non-zero exit so the job fails on any assertion violation.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/db_invariants.sql
+
+      - name: Anon-key smoke test (submit_public_lead + table-write lockdown)
+        env:
+          SUPABASE_URL: ${{ steps.stack.outputs.api_url }}
+          SUPABASE_ANON_KEY: ${{ steps.stack.outputs.anon_key }}
+        run: bash supabase/tests/anon_smoke.sh
+
+      - name: Stop local stack
+        if: always()
+        run: supabase stop --no-backup || true

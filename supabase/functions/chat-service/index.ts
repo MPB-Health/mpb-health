@@ -205,7 +205,9 @@ Deno.serve(async (req: Request) => {
 
         let query = supabaseAdmin
           .from("chat_messages")
-          .select("id, conversation_id, sender_id, content, message_type, metadata, created_at, updated_at")
+          .select(
+            "id, conversation_id, sender_id, content, message_type, metadata, reply_to_id, is_deleted, deleted_by, deleted_at, created_at, updated_at",
+          )
           .eq("conversation_id", conversation_id)
           .order("created_at", { ascending: false })
           .limit(Math.min(limit, 100));

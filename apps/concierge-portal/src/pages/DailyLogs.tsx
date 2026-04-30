@@ -302,6 +302,12 @@ function formatOffDayForReport(isoDate: string): string {
   return isNaN(d.getTime()) ? isoDate : format(d, 'EEE MMM d');
 }
 
+/** date-fns `format` throws on Invalid Date — use for UI that must not crash. */
+function safeFormatWeekdayFromIso(isoDate: string): string {
+  const d = new Date(`${isoDate}T12:00:00`);
+  return isNaN(d.getTime()) ? '—' : format(d, 'EEE');
+}
+
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -1609,9 +1615,7 @@ function ReviewLinkBenchmarkCard({
               {weekDates.map((d) => (
                 <th key={d} className="px-1.5 py-3 text-center font-normal normal-case">
                   <span className="block text-[10px] text-slate-500 leading-tight">{d.slice(5)}</span>
-                  <span className="text-[10px] text-slate-400">
-                    {format(new Date(d + 'T12:00:00'), 'EEE')}
-                  </span>
+                  <span className="text-[10px] text-slate-400">{safeFormatWeekdayFromIso(d)}</span>
                 </th>
               ))}
               <th className="px-3 py-3 text-right font-normal normal-case">Days met</th>
@@ -1695,6 +1699,14 @@ function WeeklyReportTab({
     if (!weeklyCallTimesMemberId || !activeMembers.some((m) => m.id === weeklyCallTimesMemberId)) {
       setWeeklyCallTimesMemberId(activeMembers[0].id);
     }
+  }, [activeMembers, weeklyCallTimesMemberId]);
+
+  const resolvedCallTimesMemberId = useMemo(() => {
+    if (activeMembers.length === 0) return '';
+    if (weeklyCallTimesMemberId && activeMembers.some((m) => m.id === weeklyCallTimesMemberId)) {
+      return weeklyCallTimesMemberId;
+    }
+    return activeMembers[0].id;
   }, [activeMembers, weeklyCallTimesMemberId]);
 
   const weekDateSet = useMemo(() => new Set(weekDates), [weekDates]);
@@ -1938,7 +1950,7 @@ function WeeklyReportTab({
             </label>
             <select
               id="weekly-call-times-member"
-              value={weeklyCallTimesMemberId}
+              value={resolvedCallTimesMemberId}
               onChange={(e) => setWeeklyCallTimesMemberId(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             >
@@ -1956,13 +1968,13 @@ function WeeklyReportTab({
             <input
               id="weekly-call-times-value"
               type="text"
-              value={weeklyExtras.callTimesByMemberId[weeklyCallTimesMemberId] ?? ''}
+              value={weeklyExtras.callTimesByMemberId[resolvedCallTimesMemberId] ?? ''}
               onChange={(e) =>
                 setWeeklyExtras((prev) => ({
                   ...prev,
                   callTimesByMemberId: {
                     ...prev.callTimesByMemberId,
-                    [weeklyCallTimesMemberId]: e.target.value,
+                    [resolvedCallTimesMemberId]: e.target.value,
                   },
                 }))
               }

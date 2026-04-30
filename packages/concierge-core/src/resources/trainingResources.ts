@@ -55,13 +55,18 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
   },
   {
     id: 'proof-of-sharing-savvos-sedera',
-    title: 'Proof Of Sharing Letter',
-    description:
-      'Proof-of-sharing letter for SAVVOS and Sedera — opens in SharePoint (Word on the web).',
+    title: 'Proof of Sharing Letter',
+    description: 'Opens in SharePoint (Word on the web).',
     url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/IQDqN0fINTBARb2qH6OKUFAUAQQ6k_iUpFbwa8P7ZOr0s-M?e=k6epW6',
     category: 'health-sharing',
     type: 'document',
     external: true,
+    links: [
+      {
+        label: 'Open proof of sharing letter',
+        url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/IQDqN0fINTBARb2qH6OKUFAUAQQ6k_iUpFbwa8P7ZOr0s-M?e=k6epW6',
+      },
+    ],
     keywords: [
       'proof of sharing',
       'proof of sharing letter',
@@ -370,7 +375,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
   {
     id: 'arm-proof-of-coverage',
     title: 'ARM Proof of Coverage Letter',
-    description: 'Proof of coverage letter for ARM members — opens in SharePoint.',
+    description: 'Opens in SharePoint.',
     url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/IQAT4JP_jaafQKejx8ZJRsS5AX1mJaLP3gcQH3wnJpaYn5s?e=aDgCeJ',
     category: 'telehealth',
     subcategory: 'ARM',

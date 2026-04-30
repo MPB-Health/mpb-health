@@ -3,6 +3,7 @@ import { addDays, format, parse as parseDate, setISOWeek, startOfISOWeek } from 
 import {
   ClipboardList,
   Plus,
+  Pencil,
   Trash2,
   Download,
   Send,
@@ -44,13 +45,21 @@ interface LogEntry {
   followUp: boolean;
   reviewLink: boolean;
   additionalNotes: string;
-  /** Number of times the rep spoke with this member on this log date (counts toward weekly totals). */
+  /**
+   * Resolved touch count for this row (counts toward weekly totals): from Special Project duration,
+   * or a multiplier in Additional notes (e.g. x2), else legacy stored value defaulting to 1.
+   */
   timesSpokeWithMember: number;
   escalatedIssue: boolean;
   /** When reason is Special Project: what the work was (stored only for that reason). */
   specialProjectDescription: string;
   /** When reason is Special Project: time spent, minutes (drives touch count: 1 touch per 15 min, min 1). */
   specialProjectDurationMinutes: number;
+  /**
+   * When true (non–Special Project), `timesSpokeWithMember` is used as the touch count even if additional notes
+   * contain an xN multiplier — set when the rep overrides touches in Recent Entries.
+   */
+  touchOverride?: boolean;
 }
 
 interface EscalationItem {
@@ -94,6 +103,52 @@ const REASONS = [
 
 /** For Special Project logs: minutes ÷ this value (rounded up) = member touches, minimum 1. */
 const SPECIAL_PROJECT_MINUTES_PER_TOUCH = 15;
+
+/**
+ * If additional notes contain a multiplier like `x2` or `x 2` (case-insensitive), or compact `2x`, return that
+ * count; otherwise null. Bounds: 1–999.
+ */
+function touchesFromAdditionalNotes(text: string): number | null {
+  if (!text || !String(text).trim()) return null;
+  const s = String(text).toLowerCase();
+  const mX = s.match(/\bx\s*(\d{1,3})\b/);
+  if (mX) {
+    const n = parseInt(mX[1], 10);
+    if (n >= 1 && n <= 999) return n;
+  }
+  const mNumFirst = s.match(/\b(\d{1,3})x\b/);
+  if (mNumFirst) {
+    const n = parseInt(mNumFirst[1], 10);
+    if (n >= 1 && n <= 999) return n;
+  }
+  return null;
+}
+
+/** Touch weight for one log row (weekly totals, exports, UI). */
+function resolvedTouches(l: LogEntry): number {
+  if (l.reason === 'Special Project' && (l.specialProjectDurationMinutes ?? 0) > 0) {
+    return Math.min(
+      999,
+      Math.max(1, Math.ceil(l.specialProjectDurationMinutes / SPECIAL_PROJECT_MINUTES_PER_TOUCH)),
+    );
+  }
+  if (l.touchOverride === true) {
+    const t = l.timesSpokeWithMember;
+    return typeof t === 'number' && t >= 1 ? Math.min(999, Math.floor(t)) : 1;
+  }
+  const fromNotes = touchesFromAdditionalNotes(l.additionalNotes || '');
+  if (fromNotes !== null) return fromNotes;
+  const t = l.timesSpokeWithMember;
+  if (typeof t === 'number' && t >= 1) return Math.min(999, Math.floor(t));
+  return 1;
+}
+
+/** Whether saving should set `touchOverride` so notes multipliers don't overwrite an explicit touch count. */
+function computeTouchOverrideForSave(next: LogEntry): boolean {
+  if (next.reason === 'Special Project') return false;
+  const auto = resolvedTouches({ ...next, touchOverride: false });
+  return next.timesSpokeWithMember !== auto;
+}
 
 /** Always treated as part-time for performance alerts (even if roster flag is missing). */
 const PART_TIME_NAMES = new Set(['Vanessa Orozco', 'Tupac Manzanarez']);
@@ -166,23 +221,21 @@ function normalizeLogEntry(l: LogEntry): LogEntry {
     specialProjectDurationMinutes = 0;
   }
 
-  let ts =
-    typeof (l as unknown as { timesSpokeWithMember?: number }).timesSpokeWithMember === 'number' &&
-    (l as unknown as { timesSpokeWithMember: number }).timesSpokeWithMember >= 1
-      ? Math.min(999, Math.floor((l as unknown as { timesSpokeWithMember: number }).timesSpokeWithMember))
-      : 1;
-  if (isProject && specialProjectDurationMinutes > 0) {
-    ts = Math.min(
-      999,
-      Math.max(1, Math.ceil(specialProjectDurationMinutes / SPECIAL_PROJECT_MINUTES_PER_TOUCH)),
-    );
-  }
-
-  return {
+  const partial: LogEntry = {
     ...l,
     specialProjectDescription,
     specialProjectDurationMinutes,
+  };
+  const ts = resolvedTouches(partial);
+  const touchOverride =
+    isProject && specialProjectDurationMinutes > 0
+      ? false
+      : partial.touchOverride === true;
+
+  return {
+    ...partial,
     timesSpokeWithMember: ts,
+    touchOverride,
     escalatedIssue: (l as unknown as { escalatedIssue?: boolean }).escalatedIssue === true,
   };
 }
@@ -191,73 +244,8 @@ function migrateLogsStorage(logs: LogEntry[]): LogEntry[] {
   return applyLegacyTeamMemberNamesToLogs(logs).map(normalizeLogEntry);
 }
 
-/** Next or same Friday from date `d` (local). */
-function nextOrSameFriday(d: Date): Date {
-  const day = d.getDay();
-  const add = (5 - day + 7) % 7;
-  return addDays(d, add);
-}
-
-function defaultPresentationFridayStr(): string {
-  return format(nextOrSameFriday(new Date()), 'yyyy-MM-dd');
-}
-
-/**
- * Concierge reporting window: Friday through Thursday, presented Friday morning.
- * `presentationFridayStr` is the Friday when the report is delivered; the window is the 7 days ending the prior Thursday.
- */
-function getConciergeReportingWindow(presentationFridayStr: string): { start: string; end: string } {
-  const fd = parseDate(presentationFridayStr, 'yyyy-MM-dd', new Date());
-  if (isNaN(fd.getTime())) {
-    return getConciergeReportingWindow(defaultPresentationFridayStr());
-  }
-  let friday = fd;
-  if (friday.getDay() !== 5) {
-    const day = friday.getDay();
-    friday = addDays(friday, (5 - day + 7) % 7);
-  }
-  const thu = addDays(friday, -1);
-  const start = addDays(thu, -6);
-  return { start: format(start, 'yyyy-MM-dd'), end: format(thu, 'yyyy-MM-dd') };
-}
-
-/** Shift concierge presentation Friday by whole reporting periods (7 days). */
-function addPresentationFridays(presentationFridayStr: string, deltaPeriods: number): string {
-  const fd = parseDate(presentationFridayStr, 'yyyy-MM-dd', new Date());
-  if (isNaN(fd.getTime())) return defaultPresentationFridayStr();
-  let friday = fd;
-  if (friday.getDay() !== 5) {
-    const day = friday.getDay();
-    friday = addDays(friday, (5 - day + 7) % 7);
-  }
-  return format(addDays(friday, deltaPeriods * 7), 'yyyy-MM-dd');
-}
-
-function listDatesInRangeInclusive(start: string, end: string): string[] {
-  const out: string[] = [];
-  let d = parseDate(start, 'yyyy-MM-dd', new Date());
-  const endD = parseDate(end, 'yyyy-MM-dd', new Date());
-  if (isNaN(d.getTime()) || isNaN(endD.getTime())) return out;
-  while (d.getTime() <= endD.getTime()) {
-    out.push(format(d, 'yyyy-MM-dd'));
-    d = addDays(d, 1);
-  }
-  return out;
-}
-
-function filterLogsInRange(logs: LogEntry[], start: string, end: string): LogEntry[] {
-  return logs.filter((l) => l.date >= start && l.date <= end);
-}
-
-function buildReportStorageKey(
-  mode: 'iso' | 'friThu',
-  weekNumber: number,
-  refYear: number,
-  presentationFriday: string,
-): string {
-  if (mode === 'iso') return `iso:${refYear}-W${String(weekNumber).padStart(2, '0')}`;
-  const { start, end } = getConciergeReportingWindow(presentationFriday);
-  return `fri:${start}_${end}`;
+function buildReportStorageKey(weekNumber: number, refYear: number): string {
+  return `iso:${refYear}-W${String(weekNumber).padStart(2, '0')}`;
 }
 
 function defaultWeeklyExtras(): WeeklyReportExtras {
@@ -266,14 +254,7 @@ function defaultWeeklyExtras(): WeeklyReportExtras {
 
 /** Member-touch weight for one row (weekly totals, performance, header strip). */
 function metricTouches(l: LogEntry): number {
-  if (l.reason === 'Special Project' && (l.specialProjectDurationMinutes ?? 0) > 0) {
-    return Math.min(
-      999,
-      Math.max(1, Math.ceil(l.specialProjectDurationMinutes / SPECIAL_PROJECT_MINUTES_PER_TOUCH)),
-    );
-  }
-  const t = l.timesSpokeWithMember;
-  return typeof t === 'number' && t >= 1 ? Math.min(999, Math.floor(t)) : 1;
+  return resolvedTouches(l);
 }
 
 function sumTouches(ml: LogEntry[]): number {
@@ -627,6 +608,332 @@ function ShareModal({
   );
 }
 
+// ── Edit log entry (from Recent Entries) ───────────────────────────────
+
+function EditLogEntryModal({
+  log,
+  activeMembers,
+  onClose,
+  onSave,
+  onEscalationFromLog,
+}: {
+  log: LogEntry;
+  activeMembers: TeamMember[];
+  onClose: () => void;
+  onSave: (next: LogEntry) => void;
+  onEscalationFromLog: (item: EscalationItem) => void;
+}) {
+  const prevEscalated = log.escalatedIssue === true;
+  const [date, setDate] = useState(log.date);
+  const [teamMember, setTeamMember] = useState(log.teamMember);
+  const [channel, setChannel] = useState(log.channel);
+  const [memberName, setMemberName] = useState(log.memberName);
+  const [reason, setReason] = useState(log.reason);
+  const [otherNotes, setOtherNotes] = useState(log.otherNotes);
+  const [additionalNotes, setAdditionalNotes] = useState(log.additionalNotes);
+  const [timesSpoke, setTimesSpoke] = useState(() => String(metricTouches(log)));
+  const [crmNotes, setCrmNotes] = useState(log.crmNotes);
+  const [followUp, setFollowUp] = useState(log.followUp);
+  const [reviewLink, setReviewLink] = useState(log.reviewLink);
+  const [escalatedIssue, setEscalatedIssue] = useState(log.escalatedIssue);
+  const [specialProjectDescription, setSpecialProjectDescription] = useState(log.specialProjectDescription);
+  const [specialProjectDurationMinutes, setSpecialProjectDuration] = useState(
+    log.specialProjectDurationMinutes || 0,
+  );
+
+  const handleSave = () => {
+    if (!date || !teamMember) {
+      toast.error('Please fill in Date and Team Member');
+      return;
+    }
+    if (reason === 'Special Project') {
+      if (!specialProjectDescription.trim()) {
+        toast.error('Please describe the special project');
+        return;
+      }
+      if (Math.floor(Number(specialProjectDurationMinutes) || 0) < 1) {
+        toast.error('Enter time spent (minutes), at least 1');
+        return;
+      }
+    } else if (!memberName.trim()) {
+      toast.error('Please fill in Member Name');
+      return;
+    }
+    const memberNameNorm =
+      reason === 'Special Project' && !memberName.trim() ? '—' : memberName.trim();
+    const parsedTouches = Math.min(
+      999,
+      Math.max(1, Math.floor(Number(timesSpoke) || 1)),
+    );
+    const mins =
+      reason === 'Special Project'
+        ? Math.min(99999, Math.max(1, Math.floor(Number(specialProjectDurationMinutes) || 0)))
+        : 0;
+    const merged: LogEntry = {
+      ...log,
+      date,
+      teamMember,
+      channel,
+      memberName: memberNameNorm,
+      reason,
+      otherNotes: reason === 'Other' ? otherNotes : '',
+      additionalNotes,
+      timesSpokeWithMember: reason === 'Special Project' ? log.timesSpokeWithMember : parsedTouches,
+      crmNotes,
+      followUp,
+      reviewLink,
+      escalatedIssue,
+      specialProjectDescription: reason === 'Special Project' ? specialProjectDescription.trim() : '',
+      specialProjectDurationMinutes: mins,
+    };
+    const touchOverride = computeTouchOverrideForSave({ ...merged, touchOverride: false });
+    const next = normalizeLogEntry({ ...merged, touchOverride });
+    onSave(next);
+    if (next.escalatedIssue && !prevEscalated) {
+      const summary =
+        next.reason === 'Special Project'
+          ? [next.specialProjectDescription, next.additionalNotes].filter((x) => x.trim()).join(' — ') ||
+            'Escalated member issue'
+          : [next.reason, next.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated member issue';
+      onEscalationFromLog({
+        id: uid(),
+        memberName: next.memberName.trim(),
+        summary,
+        openedAt: next.date,
+        logEntryId: next.id,
+        status: 'open',
+      });
+    }
+    onClose();
+    toast.success('Entry updated');
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-[#A8B8AC]/30 sticky top-0 bg-white">
+          <h2 className="text-lg font-bold text-[#2F3E2F]">Edit log entry</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 hover:bg-[#A8B8AC]/20 rounded-lg transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5 text-slate-500" />
+          </button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Team Member</label>
+              <select
+                value={teamMember}
+                onChange={(e) => setTeamMember(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+              >
+                {!activeMembers.some((m) => m.name === teamMember) && teamMember ? (
+                  <option value={teamMember}>{teamMember}</option>
+                ) : null}
+                {activeMembers.map((m) => (
+                  <option key={m.id} value={m.name}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Channel</label>
+              <select
+                value={channel}
+                onChange={(e) => setChannel(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+              >
+                {CHANNELS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Reason</label>
+              <select
+                value={reason}
+                onChange={(e) => {
+                  const r = e.target.value;
+                  setReason(r);
+                  if (r !== 'Special Project') {
+                    setSpecialProjectDescription('');
+                    setSpecialProjectDuration(0);
+                  }
+                  if (r !== 'Other') setOtherNotes('');
+                }}
+                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+              >
+                {REASONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                Member Name{reason === 'Special Project' ? ' (optional)' : ''}
+              </label>
+              <input
+                type="text"
+                value={memberName}
+                onChange={(e) => setMemberName(e.target.value)}
+                placeholder={
+                  reason === 'Special Project' ? "Member, or leave blank for internal project" : "Member's name"
+                }
+                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+              />
+            </div>
+            {reason === 'Special Project' && (
+              <>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Special project — description</label>
+                  <input
+                    type="text"
+                    value={specialProjectDescription}
+                    onChange={(e) => setSpecialProjectDescription(e.target.value)}
+                    placeholder="What you worked on (required)"
+                    className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Time spent (minutes)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={99999}
+                    value={specialProjectDurationMinutes === 0 ? '' : specialProjectDurationMinutes}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setSpecialProjectDuration(
+                        v === '' ? 0 : Math.min(99999, Math.max(1, Math.floor(Number(v) || 0))),
+                      );
+                    }}
+                    placeholder="e.g. 90"
+                    className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm tabular-nums"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Touches follow time (1 per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up).
+                  </p>
+                </div>
+              </>
+            )}
+            {reason === 'Other' && (
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-slate-600 mb-1">Other / Notes</label>
+                <input
+                  type="text"
+                  value={otherNotes}
+                  onChange={(e) => setOtherNotes(e.target.value)}
+                  placeholder="Describe..."
+                  className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+                />
+              </div>
+            )}
+            {reason !== 'Special Project' && (
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-slate-600 mb-1">Touches (for weekly totals)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={999}
+                  value={timesSpoke}
+                  onChange={(e) => setTimesSpoke(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm tabular-nums"
+                />
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Overrides an x2-style multiplier in additional notes only if you change this away from the note-based
+                  count.
+                </p>
+              </div>
+            )}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-slate-600 mb-1">Additional Notes</label>
+              <input
+                type="text"
+                value={additionalNotes}
+                onChange={(e) => setAdditionalNotes(e.target.value)}
+                placeholder="Context; optional x2-style multipliers still apply unless touches are overridden above."
+                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 pt-1 border-t border-[#A8B8AC]/15">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={crmNotes}
+                onChange={(e) => setCrmNotes(e.target.checked)}
+                className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
+              />
+              Notes in CRM?
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={followUp}
+                onChange={(e) => setFollowUp(e.target.checked)}
+                className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
+              />
+              Follow-up Task?
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={reviewLink}
+                onChange={(e) => setReviewLink(e.target.checked)}
+                className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
+              />
+              Review Link Sent?
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={escalatedIssue}
+                onChange={(e) => setEscalatedIssue(e.target.checked)}
+                className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
+              />
+              Escalated member issue
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-[#A8B8AC]/40 text-sm font-medium text-[#2F3E2F] hover:bg-[#A8B8AC]/10"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773]"
+            >
+              Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Daily Log Tab ──────────────────────────────────────────────────────
 
 function DailyLogTab({
@@ -677,13 +984,6 @@ function DailyLogTab({
       toast.error('Please fill in Date, Team Member, and Member Name');
       return;
     }
-    let touches: number;
-    if (form.reason === 'Special Project') {
-      const mins = Math.min(99999, Math.max(1, Math.floor(Number(form.specialProjectDurationMinutes) || 0)));
-      touches = Math.min(999, Math.max(1, Math.ceil(mins / SPECIAL_PROJECT_MINUTES_PER_TOUCH)));
-    } else {
-      touches = Math.min(999, Math.max(1, Math.floor(Number(form.timesSpokeWithMember) || 1)));
-    }
     const id = uid();
     const memberNameNorm =
       form.reason === 'Special Project' && !form.memberName.trim()
@@ -693,7 +993,7 @@ function DailyLogTab({
       ...form,
       id,
       memberName: memberNameNorm,
-      timesSpokeWithMember: touches,
+      timesSpokeWithMember: 1,
       escalatedIssue: form.escalatedIssue === true,
       specialProjectDescription: form.specialProjectDescription.trim(),
       specialProjectDurationMinutes:
@@ -735,8 +1035,11 @@ function DailyLogTab({
 
   const [search, setSearch] = useState('');
 
+  const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
+
   const handleDelete = (id: string) => {
     setLogs((prev) => prev.filter((l) => l.id !== id));
+    if (editingLog?.id === id) setEditingLog(null);
     toast.success('Entry removed');
   };
 
@@ -756,7 +1059,11 @@ function DailyLogTab({
       (l) =>
         l.memberName.toLowerCase().includes(query) ||
         l.teamMember.toLowerCase().includes(query) ||
-        (l.specialProjectDescription || '').toLowerCase().includes(query),
+        (l.specialProjectDescription || '').toLowerCase().includes(query) ||
+        (l.additionalNotes || '').toLowerCase().includes(query) ||
+        (l.otherNotes || '').toLowerCase().includes(query) ||
+        l.reason.toLowerCase().includes(query) ||
+        l.channel.toLowerCase().includes(query),
     );
   }, [logs, query]);
 
@@ -835,7 +1142,7 @@ function DailyLogTab({
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
           </div>
-          {form.reason === 'Special Project' ? (
+          {form.reason === 'Special Project' && (
             <>
               <div className="sm:col-span-2 lg:col-span-2">
                 <label className="block text-xs font-medium text-slate-600 mb-1">Special project — description</label>
@@ -871,26 +1178,6 @@ function DailyLogTab({
                 </p>
               </div>
             </>
-          ) : (
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Times spoke (this day)
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={999}
-                value={form.timesSpokeWithMember}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    timesSpokeWithMember: Math.min(999, Math.max(1, Math.floor(Number(e.target.value) || 1))),
-                  }))
-                }
-                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm tabular-nums"
-              />
-              <p className="text-[10px] text-slate-400 mt-0.5">Counted toward weekly “touches” for this rep.</p>
-            </div>
           )}
           {form.reason === 'Other' && (
             <div>
@@ -910,22 +1197,13 @@ function DailyLogTab({
               type="text"
               value={form.additionalNotes}
               onChange={(e) => setForm((f) => ({ ...f, additionalNotes: e.target.value }))}
-              placeholder="Context, follow-up detail, or how many times you spoke (e.g. 5x) for the narrative…"
+              placeholder="Optional context. For multiple touches on the same day, include a multiplier (e.g. x2) — counts in weekly totals."
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 mt-4">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.escalatedIssue}
-              onChange={(e) => setForm((f) => ({ ...f, escalatedIssue: e.target.checked }))}
-              className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
-            />
-            Escalated member issue
-          </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -958,6 +1236,15 @@ function DailyLogTab({
               </span>
             </span>
           </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.escalatedIssue}
+              onChange={(e) => setForm((f) => ({ ...f, escalatedIssue: e.target.checked }))}
+              className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
+            />
+            Escalated member issue
+          </label>
           <button
             onClick={handleAdd}
             className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
@@ -983,7 +1270,7 @@ function DailyLogTab({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search member, rep, or special project…"
+              placeholder="Search member, rep, notes, channel, reason, or special project…"
               className="w-full pl-9 pr-8 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
             {search && (
@@ -1016,7 +1303,7 @@ function DailyLogTab({
                   <th className="px-4 py-3">CRM</th>
                   <th className="px-4 py-3">F/U</th>
                   <th className="px-4 py-3">Rev</th>
-                  <th className="px-4 py-3 w-10"></th>
+                  <th className="px-4 py-3 text-center w-[5.5rem]"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#A8B8AC]/15">
@@ -1049,7 +1336,11 @@ function DailyLogTab({
                         title={
                           log.reason === 'Special Project' && log.specialProjectDurationMinutes > 0
                             ? `${log.specialProjectDurationMinutes} min → ${metricTouches(log)} touch(es)`
-                            : undefined
+                            : log.touchOverride === true
+                              ? `${metricTouches(log)} touch(es) (manual override)`
+                              : touchesFromAdditionalNotes(log.additionalNotes || '') !== null
+                                ? `${metricTouches(log)} touch(es) from multiplier in additional notes`
+                                : undefined
                         }
                       >
                         {metricTouches(log)}
@@ -1067,9 +1358,24 @@ function DailyLogTab({
                       <td className="px-4 py-2.5 text-center">{log.followUp ? <Check className="w-4 h-4 text-[#5B6B2E] mx-auto" /> : '–'}</td>
                       <td className="px-4 py-2.5 text-center">{log.reviewLink ? <Check className="w-4 h-4 text-[#5B6B2E] mx-auto" /> : '–'}</td>
                       <td className="px-4 py-2.5">
-                        <button onClick={() => handleDelete(log.id)} className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setEditingLog(log)}
+                            className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
+                            aria-label="Edit entry"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(log.id)}
+                            className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
+                            aria-label="Delete entry"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1079,6 +1385,18 @@ function DailyLogTab({
           </div>
         )}
       </div>
+      {editingLog && (
+        <EditLogEntryModal
+          key={editingLog.id}
+          log={editingLog}
+          activeMembers={activeMembers}
+          onClose={() => setEditingLog(null)}
+          onSave={(next) => {
+            setLogs((prev) => prev.map((l) => (l.id === next.id ? next : l)));
+          }}
+          onEscalationFromLog={onEscalationFromLog}
+        />
+      )}
     </div>
   );
 }
@@ -1348,8 +1666,6 @@ function WeeklyReportTab({
   reportLogs,
   weekDates,
   periodLabel,
-  reportMode,
-  conciergeRangeLabel,
   activeMembers,
   memberOffDays,
   setMemberOffDays,
@@ -1359,9 +1675,6 @@ function WeeklyReportTab({
   reportLogs: LogEntry[];
   weekDates: string[];
   periodLabel: string;
-  reportMode: 'iso' | 'friThu';
-  /** Human Fri→Thu range when in concierge mode */
-  conciergeRangeLabel?: string;
   activeMembers: TeamMember[];
   memberOffDays: Record<string, string[]>;
   setMemberOffDays: (fn: (prev: Record<string, string[]>) => Record<string, string[]>) => void;
@@ -1441,19 +1754,15 @@ function WeeklyReportTab({
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
         <div className="p-5 border-b border-[#A8B8AC]/20">
           <h3 className="text-base font-bold text-[#2F3E2F]">Per-Rep Weekly Totals — {periodLabel}</h3>
-          {reportMode === 'friThu' && conciergeRangeLabel && (
-            <p className="text-xs font-medium text-[#4A7C8A] mt-1">
-              Concierge window (presented Friday morning): {conciergeRangeLabel}
-            </p>
-          )}
           <p className="text-sm text-slate-500 mt-0.5">
             {reportLogs.length} log rows · <strong>{totalTouches}</strong> total member touches · All-team avg{' '}
             {overallAvg} touches/rep · Full-time avg {fullTimeAvg} touches/rep (used for alerts)
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            <strong>Touches</strong> sums “Times spoke (this day)” per entry, and for <strong>Special Project</strong>{' '}
-            entries uses time spent (1 touch per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up). Channel/reason
-            columns still count log rows.
+            <strong>Touches</strong> default to 1 per log row unless <strong>Additional notes</strong> include a
+            multiplier (e.g. <strong>x2</strong> for two touches). <strong>Special Project</strong> rows use time spent
+            instead (1 touch per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up). Channel/reason columns still count
+            log rows.
             Part-time reps are not compared for performance alerts. Use <strong>Days marked off</strong> at the bottom of
             this tab to record PTO or non-working days.
           </p>
@@ -1571,8 +1880,8 @@ function WeeklyReportTab({
         <div>
           <h3 className="text-base font-bold text-[#2F3E2F]">Weekly report fields</h3>
           <p className="text-sm text-slate-500 mt-1">
-            Stored for <strong>{periodLabel}</strong>. Use for Friday morning readouts: per-rep call times / availability
-            and team total members helped.
+            Stored for <strong>{periodLabel}</strong>. Use for readouts: per-rep call times / availability and team
+            total members helped.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1633,24 +1942,15 @@ function WeeklyReportTab({
 function PerformanceTab({
   logs,
   activeMembers,
-  reportMode,
   weekNumber,
-  presentationFriday,
 }: {
   logs: LogEntry[];
   activeMembers: TeamMember[];
-  reportMode: 'iso' | 'friThu';
   weekNumber: number;
-  presentationFriday: string;
 }) {
   const isoWeeks = useMemo(
     () => [weekNumber - 4, weekNumber - 3, weekNumber - 2, weekNumber - 1, weekNumber],
     [weekNumber],
-  );
-
-  const presentationFridays = useMemo(
-    () => [0, 1, 2, 3, 4].map((i) => addPresentationFridays(presentationFriday, -4 + i)),
-    [presentationFriday],
   );
 
   const getISOWeekTouches = useCallback(
@@ -1664,44 +1964,21 @@ function PerformanceTab({
     [logs],
   );
 
-  const getConciergeTouches = useCallback(
-    (name: string, pf: string) => {
-      const { start, end } = getConciergeReportingWindow(pf);
-      return sumTouches(filterLogsInRange(logs.filter((l) => l.teamMember === name), start, end));
-    },
-    [logs],
-  );
-
   const periods = useMemo(() => {
-    return reportMode === 'iso'
-      ? { kind: 'iso' as const, labels: isoWeeks.map((w) => `Wk ${w}`), keys: isoWeeks }
-      : {
-          kind: 'friThu' as const,
-          labels: presentationFridays.map((pf) => {
-            const { start, end } = getConciergeReportingWindow(pf);
-            return `${start.slice(5)}→${end.slice(5)}`;
-          }),
-          keys: presentationFridays,
-        };
-  }, [reportMode, isoWeeks, presentationFridays]);
+    return { kind: 'iso' as const, labels: isoWeeks.map((w) => `Wk ${w}`), keys: isoWeeks };
+  }, [isoWeeks]);
 
   const data = useMemo(() => {
     return activeMembers.map((m) => {
-      const counts =
-        periods.kind === 'iso'
-          ? (periods.keys as number[]).map((wk) => getISOWeekTouches(m.name, wk))
-          : (periods.keys as string[]).map((pf) => getConciergeTouches(m.name, pf));
+      const counts = (periods.keys as number[]).map((wk) => getISOWeekTouches(m.name, wk));
       const avg = Math.round(counts.reduce((s, c) => s + c, 0) / counts.length);
       return { name: m.name, counts, avg };
     });
-  }, [activeMembers, periods, getISOWeekTouches, getConciergeTouches]);
+  }, [activeMembers, periods, getISOWeekTouches]);
 
   const maxCount = Math.max(1, ...data.flatMap((d) => d.counts));
 
-  const subtitle =
-    periods.kind === 'iso'
-      ? `ISO weeks ${isoWeeks[0]} – ${isoWeeks[4]} (member touches)`
-      : `Last 5 concierge Fri–Thu periods ending Thu before each presentation Friday (member touches)`;
+  const subtitle = `ISO weeks ${isoWeeks[0]} – ${isoWeeks[4]} (member touches)`;
 
   return (
     <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
@@ -2182,8 +2459,6 @@ function TeamTab({
 export default function DailyLogs() {
   const [activeTab, setActiveTab] = useState<TabId>('log');
   const [showShare, setShowShare] = useState(false);
-  const [reportMode, setReportMode] = useState<'iso' | 'friThu'>('friThu');
-  const [presentationFriday, setPresentationFriday] = useState(() => defaultPresentationFridayStr());
   const [weekNumber, setWeekNumber] = useState(() => getISOWeek(new Date()));
 
   const [logs, setLogsRaw] = useState<LogEntry[]>(() => {
@@ -2270,47 +2545,20 @@ export default function DailyLogs() {
 
   const isoRefYear = useMemo(() => refYearForWeek(logs, weekNumber), [logs, weekNumber]);
 
-  const conciergeWindow = useMemo(
-    () => getConciergeReportingWindow(presentationFriday),
-    [presentationFriday],
-  );
-
   const reportLogs = useMemo(() => {
-    if (reportMode === 'friThu') {
-      return filterLogsInRange(logs, conciergeWindow.start, conciergeWindow.end);
-    }
     return logs.filter((l) => {
       const d = new Date(l.date);
       return !isNaN(d.getTime()) && getISOWeek(d) === weekNumber;
     });
-  }, [reportMode, logs, conciergeWindow, weekNumber]);
+  }, [logs, weekNumber]);
 
-  const weekDates = useMemo(() => {
-    if (reportMode === 'friThu') {
-      return listDatesInRangeInclusive(conciergeWindow.start, conciergeWindow.end);
-    }
-    return getWeekDateStrings(weekNumber, isoRefYear);
-  }, [reportMode, conciergeWindow, weekNumber, isoRefYear]);
+  const weekDates = useMemo(() => getWeekDateStrings(weekNumber, isoRefYear), [weekNumber, isoRefYear]);
 
-  const periodLabel = useMemo(() => {
-    if (reportMode === 'friThu') {
-      const pf = parseDate(presentationFriday, 'yyyy-MM-dd', new Date());
-      const label = isNaN(pf.getTime()) ? presentationFriday : format(pf, 'MMM d, yyyy');
-      return `Friday presentation ${label}`;
-    }
-    return `ISO Week ${weekNumber}`;
-  }, [reportMode, presentationFriday, weekNumber]);
-
-  const conciergeRangeLabel = useMemo(() => {
-    if (reportMode !== 'friThu') return undefined;
-    const a = format(parseDate(conciergeWindow.start, 'yyyy-MM-dd', new Date()), 'EEE MMM d');
-    const b = format(parseDate(conciergeWindow.end, 'yyyy-MM-dd', new Date()), 'EEE MMM d, yyyy');
-    return `${a} – ${b} (Fri–Thu cycle)`;
-  }, [reportMode, conciergeWindow]);
+  const periodLabel = useMemo(() => `ISO Week ${weekNumber}`, [weekNumber]);
 
   const reportStorageKey = useMemo(
-    () => buildReportStorageKey(reportMode, weekNumber, isoRefYear, presentationFriday),
-    [reportMode, weekNumber, isoRefYear, presentationFriday],
+    () => buildReportStorageKey(weekNumber, isoRefYear),
+    [weekNumber, isoRefYear],
   );
 
   const currentWeeklyExtras = weeklyReportExtrasMap[reportStorageKey] ?? defaultWeeklyExtras();
@@ -2333,22 +2581,13 @@ export default function DailyLogs() {
   );
 
   const analyticsComparisonLogs = useMemo(() => {
-    if (reportMode === 'friThu') {
-      const acc: LogEntry[] = [];
-      for (let i = 1; i <= 4; i++) {
-        const pf = addPresentationFridays(presentationFriday, -i);
-        const { start, end } = getConciergeReportingWindow(pf);
-        acc.push(...filterLogsInRange(logs, start, end));
-      }
-      return acc;
-    }
     const prevWeeks = [weekNumber - 4, weekNumber - 3, weekNumber - 2, weekNumber - 1];
     return logs.filter((l) => {
       const d = new Date(l.date);
       if (isNaN(d.getTime())) return false;
       return prevWeeks.includes(getISOWeek(d));
     });
-  }, [reportMode, presentationFriday, logs, weekNumber]);
+  }, [logs, weekNumber]);
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -2362,91 +2601,34 @@ export default function DailyLogs() {
             <div>
               <h1 className="text-2xl font-bold text-[#2F3E2F]">Daily Logs & Reports</h1>
               <p className="text-sm text-[#5B6B2E]">
-                Track contacts, Fri–Thu concierge reporting (Friday AM readouts), and share with management
+                Track contacts, ISO weekly reports, and share with management
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="flex rounded-lg border border-[#A8B8AC]/40 overflow-hidden text-sm">
-              <button
-                type="button"
-                onClick={() => setReportMode('friThu')}
-                className={`px-3 py-2 font-medium transition-colors ${
-                  reportMode === 'friThu'
-                    ? 'bg-[#4A7C8A] text-white'
-                    : 'bg-white text-slate-600 hover:bg-[#A8B8AC]/10'
-                }`}
-              >
-                Fri–Thu cycle
-              </button>
-              <button
-                type="button"
-                onClick={() => setReportMode('iso')}
-                className={`px-3 py-2 font-medium transition-colors ${
-                  reportMode === 'iso'
-                    ? 'bg-[#4A7C8A] text-white'
-                    : 'bg-white text-slate-600 hover:bg-[#A8B8AC]/10'
-                }`}
-              >
-                ISO week
-              </button>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-600">ISO week:</label>
+              <div className="flex items-center border border-[#A8B8AC]/40 rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setWeekNumber((w) => w - 1)}
+                  className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
+                >
+                  <ChevronDown className="w-4 h-4 rotate-90" />
+                </button>
+                <span className="px-3 py-1.5 text-sm font-bold text-[#2F3E2F] tabular-nums bg-[#A8B8AC]/5 min-w-[40px] text-center">
+                  {weekNumber}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setWeekNumber((w) => w + 1)}
+                  className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
+                >
+                  <ChevronDown className="w-4 h-4 -rotate-90" />
+                </button>
+              </div>
             </div>
-
-            {reportMode === 'friThu' ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="text-sm font-medium text-slate-600 whitespace-nowrap">
-                  Presentation Friday
-                </label>
-                <div className="flex items-center border border-[#A8B8AC]/40 rounded-lg overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setPresentationFriday((p) => addPresentationFridays(p, -1))}
-                    className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
-                    aria-label="Previous reporting period"
-                  >
-                    <ChevronDown className="w-4 h-4 rotate-90" />
-                  </button>
-                  <input
-                    type="date"
-                    value={presentationFriday}
-                    onChange={(e) => setPresentationFriday(e.target.value)}
-                    className="px-2 py-1.5 text-sm font-medium text-[#2F3E2F] bg-[#A8B8AC]/5 border-x border-[#A8B8AC]/30 min-w-[10rem]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPresentationFriday((p) => addPresentationFridays(p, 1))}
-                    className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
-                    aria-label="Next reporting period"
-                  >
-                    <ChevronDown className="w-4 h-4 -rotate-90" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-slate-600">ISO week:</label>
-                <div className="flex items-center border border-[#A8B8AC]/40 rounded-lg overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setWeekNumber((w) => w - 1)}
-                    className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
-                  >
-                    <ChevronDown className="w-4 h-4 rotate-90" />
-                  </button>
-                  <span className="px-3 py-1.5 text-sm font-bold text-[#2F3E2F] tabular-nums bg-[#A8B8AC]/5 min-w-[40px] text-center">
-                    {weekNumber}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setWeekNumber((w) => w + 1)}
-                    className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
-                  >
-                    <ChevronDown className="w-4 h-4 -rotate-90" />
-                  </button>
-                </div>
-              </div>
-            )}
 
             <button
               type="button"
@@ -2515,8 +2697,7 @@ export default function DailyLogs() {
         </div>
 
         <p className="text-xs text-slate-500 rounded-lg bg-[#A8B8AC]/10 px-3 py-2 border border-[#A8B8AC]/20">
-          <strong>Active report:</strong> {periodLabel}
-          {conciergeRangeLabel ? ` · ${conciergeRangeLabel}` : ''} · {reportLogs.length} row(s),{' '}
+          <strong>Active report:</strong> {periodLabel} · {reportLogs.length} row(s),{' '}
           <strong>{sumTouches(reportLogs)}</strong> touches in view.
         </p>
       </div>
@@ -2558,8 +2739,6 @@ export default function DailyLogs() {
           reportLogs={reportLogs}
           weekDates={weekDates}
           periodLabel={periodLabel}
-          reportMode={reportMode}
-          conciergeRangeLabel={conciergeRangeLabel}
           activeMembers={activeMembers}
           memberOffDays={memberOffDaysRaw}
           setMemberOffDays={setMemberOffDays}
@@ -2568,13 +2747,7 @@ export default function DailyLogs() {
         />
       )}
       {activeTab === 'performance' && (
-        <PerformanceTab
-          logs={logs}
-          activeMembers={activeMembers}
-          reportMode={reportMode}
-          weekNumber={weekNumber}
-          presentationFriday={presentationFriday}
-        />
+        <PerformanceTab logs={logs} activeMembers={activeMembers} weekNumber={weekNumber} />
       )}
       {activeTab === 'analytics' && (
         <AnalyticsTab

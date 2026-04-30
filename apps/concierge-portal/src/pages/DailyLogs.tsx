@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { addDays, format, setISOWeek, startOfISOWeek } from 'date-fns';
+import { addDays, format, parse as parseDate, setISOWeek, startOfISOWeek } from 'date-fns';
 import {
   ClipboardList,
   Plus,
@@ -44,6 +44,30 @@ interface LogEntry {
   followUp: boolean;
   reviewLink: boolean;
   additionalNotes: string;
+  /** Number of times the rep spoke with this member on this log date (counts toward weekly totals). */
+  timesSpokeWithMember: number;
+  escalatedIssue: boolean;
+  /** When reason is Special Project: what the work was (stored only for that reason). */
+  specialProjectDescription: string;
+  /** When reason is Special Project: time spent, minutes (drives touch count: 1 touch per 15 min, min 1). */
+  specialProjectDurationMinutes: number;
+}
+
+interface EscalationItem {
+  id: string;
+  memberName: string;
+  summary: string;
+  openedAt: string;
+  logEntryId?: string;
+  status: 'open' | 'complete';
+  completedAt?: string;
+}
+
+interface WeeklyReportExtras {
+  /** Rep id → free-text call times / schedule for this report period */
+  callTimesByMemberId: Record<string, string>;
+  /** Total distinct members helped by the team this period (or notes). */
+  teamMembersHelped: string;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────
@@ -61,10 +85,15 @@ const REASONS = [
   'Provider Search',
   'Plan Education',
   'Welcome Call',
+  'Zion Portal Log In',
   'Preventive/Billing',
   'Follow Up',
+  'Special Project',
   'Other',
 ];
+
+/** For Special Project logs: minutes ÷ this value (rounded up) = member touches, minimum 1. */
+const SPECIAL_PROJECT_MINUTES_PER_TOUCH = 15;
 
 /** Always treated as part-time for performance alerts (even if roster flag is missing). */
 const PART_TIME_NAMES = new Set(['Vanessa Orozco', 'Tupac Manzanarez']);
@@ -97,6 +126,8 @@ const STORAGE_KEY_TEAM = 'concierge-team-members';
 const STORAGE_KEY_MEMBER_OFF_DAYS = 'concierge-member-off-days';
 /** Legacy `weekNum:memberId` keys — migrated once into member-id-only storage. */
 const STORAGE_KEY_MEMBER_OFF_DAYS_LEGACY = 'concierge-weekly-off-days';
+const STORAGE_KEY_ESCALATIONS = 'concierge-escalated-member-issues';
+const STORAGE_KEY_WEEKLY_EXTRAS = 'concierge-weekly-report-extras';
 
 const DEFAULT_TEAM: TeamMember[] = [
   { id: '1', name: 'Acelyn Calderon', status: 'Active', role: 'Concierge' },
@@ -118,6 +149,123 @@ function applyLegacyTeamMemberNamesToLogs(logs: LogEntry[]): LogEntry[] {
     const next = LEGACY_TEAM_MEMBER_NAMES[l.teamMember];
     return next ? { ...l, teamMember: next } : l;
   });
+}
+
+function normalizeLogEntry(l: LogEntry): LogEntry {
+  const isProject = l.reason === 'Special Project';
+  const rawDesc = (l as unknown as { specialProjectDescription?: string }).specialProjectDescription;
+  let specialProjectDescription =
+    typeof rawDesc === 'string' ? rawDesc.trim().slice(0, 500) : '';
+  const rawMin = (l as unknown as { specialProjectDurationMinutes?: number }).specialProjectDurationMinutes;
+  let specialProjectDurationMinutes =
+    typeof rawMin === 'number' && !Number.isNaN(rawMin)
+      ? Math.min(99999, Math.max(0, Math.floor(rawMin)))
+      : 0;
+  if (!isProject) {
+    specialProjectDescription = '';
+    specialProjectDurationMinutes = 0;
+  }
+
+  let ts =
+    typeof (l as unknown as { timesSpokeWithMember?: number }).timesSpokeWithMember === 'number' &&
+    (l as unknown as { timesSpokeWithMember: number }).timesSpokeWithMember >= 1
+      ? Math.min(999, Math.floor((l as unknown as { timesSpokeWithMember: number }).timesSpokeWithMember))
+      : 1;
+  if (isProject && specialProjectDurationMinutes > 0) {
+    ts = Math.min(
+      999,
+      Math.max(1, Math.ceil(specialProjectDurationMinutes / SPECIAL_PROJECT_MINUTES_PER_TOUCH)),
+    );
+  }
+
+  return {
+    ...l,
+    specialProjectDescription,
+    specialProjectDurationMinutes,
+    timesSpokeWithMember: ts,
+    escalatedIssue: (l as unknown as { escalatedIssue?: boolean }).escalatedIssue === true,
+  };
+}
+
+function migrateLogsStorage(logs: LogEntry[]): LogEntry[] {
+  return applyLegacyTeamMemberNamesToLogs(logs).map(normalizeLogEntry);
+}
+
+/** Next or same Friday from date `d` (local). */
+function nextOrSameFriday(d: Date): Date {
+  const day = d.getDay();
+  const add = (5 - day + 7) % 7;
+  return addDays(d, add);
+}
+
+function defaultPresentationFridayStr(): string {
+  return format(nextOrSameFriday(new Date()), 'yyyy-MM-dd');
+}
+
+/**
+ * Concierge reporting window: Friday through Thursday, presented Friday morning.
+ * `presentationFridayStr` is the Friday when the report is delivered; the window is the 7 days ending the prior Thursday.
+ */
+function getConciergeReportingWindow(presentationFridayStr: string): { start: string; end: string } {
+  const fd = parseDate(presentationFridayStr, 'yyyy-MM-dd', new Date());
+  if (isNaN(fd.getTime())) {
+    return getConciergeReportingWindow(defaultPresentationFridayStr());
+  }
+  let friday = fd;
+  if (friday.getDay() !== 5) {
+    const day = friday.getDay();
+    friday = addDays(friday, (5 - day + 7) % 7);
+  }
+  const thu = addDays(friday, -1);
+  const start = addDays(thu, -6);
+  return { start: format(start, 'yyyy-MM-dd'), end: format(thu, 'yyyy-MM-dd') };
+}
+
+/** Shift concierge presentation Friday by whole reporting periods (7 days). */
+function addPresentationFridays(presentationFridayStr: string, deltaPeriods: number): string {
+  const fd = parseDate(presentationFridayStr, 'yyyy-MM-dd', new Date());
+  if (isNaN(fd.getTime())) return defaultPresentationFridayStr();
+  let friday = fd;
+  if (friday.getDay() !== 5) {
+    const day = friday.getDay();
+    friday = addDays(friday, (5 - day + 7) % 7);
+  }
+  return format(addDays(friday, deltaPeriods * 7), 'yyyy-MM-dd');
+}
+
+function listDatesInRangeInclusive(start: string, end: string): string[] {
+  const out: string[] = [];
+  let d = parseDate(start, 'yyyy-MM-dd', new Date());
+  const endD = parseDate(end, 'yyyy-MM-dd', new Date());
+  if (isNaN(d.getTime()) || isNaN(endD.getTime())) return out;
+  while (d.getTime() <= endD.getTime()) {
+    out.push(format(d, 'yyyy-MM-dd'));
+    d = addDays(d, 1);
+  }
+  return out;
+}
+
+function filterLogsInRange(logs: LogEntry[], start: string, end: string): LogEntry[] {
+  return logs.filter((l) => l.date >= start && l.date <= end);
+}
+
+function buildReportStorageKey(
+  mode: 'iso' | 'friThu',
+  weekNumber: number,
+  refYear: number,
+  presentationFriday: string,
+): string {
+  if (mode === 'iso') return `iso:${refYear}-W${String(weekNumber).padStart(2, '0')}`;
+  const { start, end } = getConciergeReportingWindow(presentationFriday);
+  return `fri:${start}_${end}`;
+}
+
+function defaultWeeklyExtras(): WeeklyReportExtras {
+  return { callTimesByMemberId: {}, teamMembersHelped: '' };
+}
+
+function sumTouches(ml: LogEntry[]): number {
+  return ml.reduce((s, l) => s + (l.timesSpokeWithMember || 1), 0);
 }
 
 function refYearForWeek(logs: LogEntry[], weekNum: number): number {
@@ -230,29 +378,26 @@ function loadMemberOffDaysFromStorage(): Record<string, string[]> {
 
 function ShareModal({
   onClose,
-  logs,
+  weekLogs,
   team,
-  weekNumber,
+  periodTitle,
+  weeklyExtras,
 }: {
   onClose: () => void;
-  logs: LogEntry[];
+  weekLogs: LogEntry[];
   team: TeamMember[];
-  weekNumber: number;
+  periodTitle: string;
+  weeklyExtras: WeeklyReportExtras;
 }) {
   const [emails, setEmails] = useState('');
   const [includeWeekly, setIncludeWeekly] = useState(true);
   const [includeAnalytics, setIncludeAnalytics] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const weekLogs = logs.filter((l) => {
-    const d = new Date(l.date);
-    return !isNaN(d.getTime()) && getISOWeek(d) === weekNumber;
-  });
-
   const buildReportText = useCallback(() => {
     const activeMembers = team.filter((m) => m.status === 'Active');
     const lines: string[] = [
-      `CONCIERGE WEEKLY REPORT — Week ${weekNumber}`,
+      `CONCIERGE WEEKLY REPORT — ${periodTitle}`,
       `Generated: ${new Date().toLocaleDateString()}`,
       '',
     ];
@@ -260,15 +405,16 @@ function ShareModal({
     if (includeWeekly) {
       lines.push('═══ PER-REP WEEKLY TOTALS ═══', '');
       lines.push(
-        'Team Member | Total | Phone | Email | SalesIQ | Follow-ups | Rx | Labs | Imaging | Appt',
+        'Team Member | Touches | Rows | Phone | Email | SalesIQ | Follow-ups | Rx | Labs | Imaging | Appt | Weekly call times',
       );
-      lines.push('-'.repeat(95));
+      lines.push('-'.repeat(120));
 
-      let teamTotal = 0;
+      let teamTotalTouches = 0;
       for (const member of activeMembers) {
         const ml = weekLogs.filter((l) => l.teamMember === member.name);
-        const total = ml.length;
-        teamTotal += total;
+        const totalTouches = sumTouches(ml);
+        teamTotalTouches += totalTouches;
+        const rowCount = ml.length;
         const phone = ml.filter((l) => l.channel === 'Phone').length;
         const email = ml.filter((l) => l.channel === 'Email').length;
         const salesiq = ml.filter((l) => l.channel === 'SalesIQ').length;
@@ -277,12 +423,16 @@ function ShareModal({
         const labs = ml.filter((l) => l.reason === 'Labs Request').length;
         const imaging = ml.filter((l) => l.reason === 'Imaging Request').length;
         const appt = ml.filter((l) => l.reason === 'Appt Scheduling').length;
+        const callTimes = weeklyExtras.callTimesByMemberId[member.id]?.trim() || '—';
         lines.push(
-          `${member.name.padEnd(14)}| ${String(total).padStart(5)} | ${String(phone).padStart(5)} | ${String(email).padStart(5)} | ${String(salesiq).padStart(7)} | ${String(followups).padStart(10)} | ${String(rx).padStart(2)} | ${String(labs).padStart(4)} | ${String(imaging).padStart(7)} | ${String(appt).padStart(4)}`,
+          `${member.name.slice(0, 12).padEnd(12)}| ${String(totalTouches).padStart(7)} | ${String(rowCount).padStart(4)} | ${String(phone).padStart(5)} | ${String(email).padStart(5)} | ${String(salesiq).padStart(7)} | ${String(followups).padStart(10)} | ${String(rx).padStart(2)} | ${String(labs).padStart(4)} | ${String(imaging).padStart(7)} | ${String(appt).padStart(4)} | ${callTimes}`,
         );
       }
-      lines.push('-'.repeat(95));
-      lines.push(`TEAM TOTAL   | ${String(teamTotal).padStart(5)}`);
+      lines.push('-'.repeat(120));
+      lines.push(`TEAM TOUCHES | ${String(teamTotalTouches).padStart(7)}`);
+      if (weeklyExtras.teamMembersHelped.trim()) {
+        lines.push(`Team members helped (entered): ${weeklyExtras.teamMembersHelped.trim()}`);
+      }
       lines.push('');
     }
 
@@ -305,7 +455,7 @@ function ShareModal({
     }
 
     return lines.join('\n');
-  }, [weekLogs, team, weekNumber, includeWeekly, includeAnalytics]);
+  }, [weekLogs, team, periodTitle, includeWeekly, includeAnalytics, weeklyExtras]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(buildReportText());
@@ -323,7 +473,7 @@ function ShareModal({
       toast.error('Please enter at least one email address');
       return;
     }
-    const subject = encodeURIComponent(`Concierge Weekly Report — Week ${weekNumber}`);
+    const subject = encodeURIComponent(`Concierge Weekly Report — ${periodTitle}`);
     const body = encodeURIComponent(buildReportText());
     window.open(`mailto:${recipients.join(',')}?subject=${subject}&body=${body}`);
     toast.success('Opening email client...');
@@ -332,7 +482,7 @@ function ShareModal({
 
   const handleExportCSV = () => {
     const headers = [
-      'Week',
+      'Period',
       'Date',
       'Team Member',
       'Channel',
@@ -343,9 +493,13 @@ function ShareModal({
       'Follow-up',
       'Review Link',
       'Additional Notes',
+      'Times spoke (day)',
+      'Escalated issue',
+      'Special project',
+      'Special project (min)',
     ];
     const rows = weekLogs.map((l) => [
-      String(getISOWeek(new Date(l.date))),
+      periodTitle,
       l.date,
       l.teamMember,
       l.channel,
@@ -356,13 +510,18 @@ function ShareModal({
       l.followUp ? 'Yes' : 'No',
       l.reviewLink ? 'Yes' : 'No',
       l.additionalNotes,
+      String(l.timesSpokeWithMember ?? 1),
+      l.escalatedIssue ? 'Yes' : 'No',
+      l.reason === 'Special Project' ? l.specialProjectDescription : '',
+      l.reason === 'Special Project' ? String(l.specialProjectDurationMinutes || '') : '',
     ]);
-    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `concierge-report-week-${weekNumber}.csv`;
+    const safe = periodTitle.replace(/[^\w-]+/g, '_').slice(0, 80);
+    a.download = `concierge-report-${safe}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('CSV downloaded');
@@ -378,7 +537,7 @@ function ShareModal({
             </div>
             <div>
               <h2 className="text-lg font-bold text-[#2F3E2F]">Share Report</h2>
-              <p className="text-sm text-[#5B6B2E]">Week {weekNumber} summary</p>
+              <p className="text-sm text-[#5B6B2E]">{periodTitle}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-[#A8B8AC]/20 rounded-lg transition-colors">
@@ -462,10 +621,12 @@ function DailyLogTab({
   logs,
   setLogs,
   activeMembers,
+  onEscalationFromLog,
 }: {
   logs: LogEntry[];
   setLogs: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
   activeMembers: TeamMember[];
+  onEscalationFromLog: (item: EscalationItem) => void;
 }) {
   const today = new Date().toISOString().split('T')[0];
   const [form, setForm] = useState<Omit<LogEntry, 'id'>>({
@@ -479,15 +640,84 @@ function DailyLogTab({
     followUp: false,
     reviewLink: false,
     additionalNotes: '',
+    timesSpokeWithMember: 1,
+    escalatedIssue: false,
+    specialProjectDescription: '',
+    specialProjectDurationMinutes: 0,
   });
 
   const handleAdd = () => {
-    if (!form.date || !form.teamMember || !form.memberName.trim()) {
+    if (!form.date || !form.teamMember) {
+      toast.error('Please fill in Date and Team Member');
+      return;
+    }
+    if (form.reason === 'Special Project') {
+      if (!form.specialProjectDescription.trim()) {
+        toast.error('Please describe the special project');
+        return;
+      }
+      const mins = Math.floor(Number(form.specialProjectDurationMinutes) || 0);
+      if (mins < 1) {
+        toast.error('Enter time spent (minutes), at least 1');
+        return;
+      }
+    } else if (!form.memberName.trim()) {
       toast.error('Please fill in Date, Team Member, and Member Name');
       return;
     }
-    setLogs((prev) => [{ ...form, id: uid() }, ...prev]);
-    setForm((f) => ({ ...f, memberName: '', otherNotes: '', additionalNotes: '', crmNotes: false, followUp: false, reviewLink: false }));
+    let touches: number;
+    if (form.reason === 'Special Project') {
+      const mins = Math.min(99999, Math.max(1, Math.floor(Number(form.specialProjectDurationMinutes) || 0)));
+      touches = Math.min(999, Math.max(1, Math.ceil(mins / SPECIAL_PROJECT_MINUTES_PER_TOUCH)));
+    } else {
+      touches = Math.min(999, Math.max(1, Math.floor(Number(form.timesSpokeWithMember) || 1)));
+    }
+    const id = uid();
+    const memberNameNorm =
+      form.reason === 'Special Project' && !form.memberName.trim()
+        ? '—'
+        : form.memberName.trim();
+    const entry: LogEntry = normalizeLogEntry({
+      ...form,
+      id,
+      memberName: memberNameNorm,
+      timesSpokeWithMember: touches,
+      escalatedIssue: form.escalatedIssue === true,
+      specialProjectDescription: form.specialProjectDescription.trim(),
+      specialProjectDurationMinutes:
+        form.reason === 'Special Project'
+          ? Math.min(99999, Math.max(1, Math.floor(Number(form.specialProjectDurationMinutes) || 0)))
+          : 0,
+    });
+    setLogs((prev) => [entry, ...prev]);
+    if (entry.escalatedIssue) {
+      const summary =
+        entry.reason === 'Special Project'
+          ? [entry.specialProjectDescription, entry.additionalNotes].filter((x) => x.trim()).join(' — ') ||
+            'Escalated member issue'
+          : [entry.reason, entry.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated member issue';
+      onEscalationFromLog({
+        id: uid(),
+        memberName: entry.memberName.trim(),
+        summary,
+        openedAt: entry.date,
+        logEntryId: entry.id,
+        status: 'open',
+      });
+    }
+    setForm((f) => ({
+      ...f,
+      memberName: '',
+      otherNotes: '',
+      additionalNotes: '',
+      crmNotes: false,
+      followUp: false,
+      reviewLink: false,
+      timesSpokeWithMember: 1,
+      escalatedIssue: false,
+      specialProjectDescription: '',
+      specialProjectDurationMinutes: 0,
+    }));
     toast.success('Log entry added');
   };
 
@@ -504,7 +734,8 @@ function DailyLogTab({
     return logs.filter(
       (l) =>
         l.memberName.toLowerCase().includes(query) ||
-        l.teamMember.toLowerCase().includes(query),
+        l.teamMember.toLowerCase().includes(query) ||
+        (l.specialProjectDescription || '').toLowerCase().includes(query),
     );
   }, [logs, query]);
 
@@ -548,12 +779,16 @@ function DailyLogTab({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Member Name</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              Member Name{form.reason === 'Special Project' ? ' (optional)' : ''}
+            </label>
             <input
               type="text"
               value={form.memberName}
               onChange={(e) => setForm((f) => ({ ...f, memberName: e.target.value }))}
-              placeholder="Member's name"
+              placeholder={
+                form.reason === 'Special Project' ? "Member, or leave blank for internal project" : "Member's name"
+              }
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
           </div>
@@ -561,7 +796,16 @@ function DailyLogTab({
             <label className="block text-xs font-medium text-slate-600 mb-1">Reason</label>
             <select
               value={form.reason}
-              onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
+              onChange={(e) => {
+                const reason = e.target.value;
+                setForm((f) => ({
+                  ...f,
+                  reason,
+                  ...(reason === 'Special Project'
+                    ? {}
+                    : { specialProjectDescription: '', specialProjectDurationMinutes: 0 }),
+                }));
+              }}
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             >
               {REASONS.map((r) => (
@@ -569,6 +813,63 @@ function DailyLogTab({
               ))}
             </select>
           </div>
+          {form.reason === 'Special Project' ? (
+            <>
+              <div className="sm:col-span-2 lg:col-span-2">
+                <label className="block text-xs font-medium text-slate-600 mb-1">Special project — description</label>
+                <input
+                  type="text"
+                  value={form.specialProjectDescription}
+                  onChange={(e) => setForm((f) => ({ ...f, specialProjectDescription: e.target.value }))}
+                  placeholder="What you worked on (required)"
+                  className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Time spent (minutes)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={99999}
+                  value={form.specialProjectDurationMinutes === 0 ? '' : form.specialProjectDurationMinutes}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setForm((f) => ({
+                      ...f,
+                      specialProjectDurationMinutes:
+                        v === '' ? 0 : Math.min(99999, Math.max(1, Math.floor(Number(v) || 0))),
+                    }));
+                  }}
+                  placeholder="e.g. 90"
+                  className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm tabular-nums"
+                />
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Counts as weekly touches: 1 per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min (rounded up, min 1). Shown in
+                  the × column.
+                </p>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                Times spoke (this day)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={999}
+                value={form.timesSpokeWithMember}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    timesSpokeWithMember: Math.min(999, Math.max(1, Math.floor(Number(e.target.value) || 1))),
+                  }))
+                }
+                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm tabular-nums"
+              />
+              <p className="text-[10px] text-slate-400 mt-0.5">Counted toward weekly “touches” for this rep.</p>
+            </div>
+          )}
           {form.reason === 'Other' && (
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Other / Notes</label>
@@ -587,13 +888,22 @@ function DailyLogTab({
               type="text"
               value={form.additionalNotes}
               onChange={(e) => setForm((f) => ({ ...f, additionalNotes: e.target.value }))}
-              placeholder="Optional notes..."
+              placeholder="Context, follow-up detail, or how many times you spoke (e.g. 5x) for the narrative…"
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 mt-4">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.escalatedIssue}
+              onChange={(e) => setForm((f) => ({ ...f, escalatedIssue: e.target.checked }))}
+              className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
+            />
+            Escalated member issue
+          </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -651,7 +961,7 @@ function DailyLogTab({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by member or rep name..."
+              placeholder="Search member, rep, or special project…"
               className="w-full pl-9 pr-8 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
             {search && (
@@ -679,6 +989,8 @@ function DailyLogTab({
                   <th className="px-4 py-3">Channel</th>
                   <th className="px-4 py-3">Member</th>
                   <th className="px-4 py-3">Reason</th>
+                  <th className="px-4 py-3 text-right">×</th>
+                  <th className="px-4 py-3 text-center">Esc</th>
                   <th className="px-4 py-3">CRM</th>
                   <th className="px-4 py-3">F/U</th>
                   <th className="px-4 py-3">Rev</th>
@@ -700,7 +1012,35 @@ function DailyLogTab({
                         </span>
                       </td>
                       <td className="px-4 py-2.5">{log.memberName}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{log.reason}</td>
+                      <td
+                        className="px-4 py-2.5 text-slate-600 max-w-[14rem] truncate"
+                        title={
+                          log.reason === 'Special Project' ? log.specialProjectDescription || undefined : undefined
+                        }
+                      >
+                        {log.reason === 'Special Project' && log.specialProjectDescription
+                          ? `Special Project: ${log.specialProjectDescription}`
+                          : log.reason}
+                      </td>
+                      <td
+                        className="px-4 py-2.5 text-right tabular-nums font-semibold text-[#2F3E2F]"
+                        title={
+                          log.reason === 'Special Project' && log.specialProjectDurationMinutes > 0
+                            ? `${log.specialProjectDurationMinutes} min → ${log.timesSpokeWithMember ?? 1} touch(es)`
+                            : undefined
+                        }
+                      >
+                        {log.timesSpokeWithMember ?? 1}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        {log.escalatedIssue ? (
+                          <span title="Escalated">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 mx-auto" />
+                          </span>
+                        ) : (
+                          '–'
+                        )}
+                      </td>
                       <td className="px-4 py-2.5 text-center">{log.crmNotes ? <Check className="w-4 h-4 text-[#5B6B2E] mx-auto" /> : '–'}</td>
                       <td className="px-4 py-2.5 text-center">{log.followUp ? <Check className="w-4 h-4 text-[#5B6B2E] mx-auto" /> : '–'}</td>
                       <td className="px-4 py-2.5 text-center">{log.reviewLink ? <Check className="w-4 h-4 text-[#5B6B2E] mx-auto" /> : '–'}</td>
@@ -983,38 +1323,40 @@ function ReviewLinkBenchmarkCard({
 // ── Weekly Report Tab ──────────────────────────────────────────────────
 
 function WeeklyReportTab({
-  logs,
+  reportLogs,
+  weekDates,
+  periodLabel,
+  reportMode,
+  conciergeRangeLabel,
   activeMembers,
-  weekNumber,
   memberOffDays,
   setMemberOffDays,
+  weeklyExtras,
+  setWeeklyExtras,
 }: {
-  logs: LogEntry[];
+  reportLogs: LogEntry[];
+  weekDates: string[];
+  periodLabel: string;
+  reportMode: 'iso' | 'friThu';
+  /** Human Fri→Thu range when in concierge mode */
+  conciergeRangeLabel?: string;
   activeMembers: TeamMember[];
-  weekNumber: number;
   memberOffDays: Record<string, string[]>;
   setMemberOffDays: (fn: (prev: Record<string, string[]>) => Record<string, string[]>) => void;
+  weeklyExtras: WeeklyReportExtras;
+  setWeeklyExtras: (fn: (prev: WeeklyReportExtras) => WeeklyReportExtras) => void;
 }) {
-  const weekLogs = useMemo(
-    () =>
-      logs.filter((l) => {
-        const d = new Date(l.date);
-        return !isNaN(d.getTime()) && getISOWeek(d) === weekNumber;
-      }),
-    [logs, weekNumber],
-  );
-
-  const refYear = useMemo(() => refYearForWeek(logs, weekNumber), [logs, weekNumber]);
-  const weekDates = useMemo(() => getWeekDateStrings(weekNumber, refYear), [weekNumber, refYear]);
   const weekDateSet = useMemo(() => new Set(weekDates), [weekDates]);
+  const totalTouches = useMemo(() => sumTouches(reportLogs), [reportLogs]);
 
   const rows = useMemo(() => {
     return activeMembers.map((m) => {
-      const ml = weekLogs.filter((l) => l.teamMember === m.name);
+      const ml = reportLogs.filter((l) => l.teamMember === m.name);
       return {
         member: m,
         name: m.name,
-        total: ml.length,
+        total: sumTouches(ml),
+        rowCount: ml.length,
         phone: ml.filter((l) => l.channel === 'Phone').length,
         email: ml.filter((l) => l.channel === 'Email').length,
         salesiq: ml.filter((l) => l.channel === 'SalesIQ').length,
@@ -1027,7 +1369,7 @@ function WeeklyReportTab({
         reviewPct: ml.length ? Math.round((ml.filter((l) => l.reviewLink).length / ml.length) * 100) : 0,
       };
     });
-  }, [weekLogs, activeMembers]);
+  }, [reportLogs, activeMembers]);
 
   const fullTimeAvg = useMemo(
     () => fullTimeWeekAvg(activeMembers, rows.map((r) => ({ name: r.name, total: r.total }))),
@@ -1049,12 +1391,12 @@ function WeeklyReportTab({
   useEffect(() => {
     if (underperformers.length === 0) return;
     toast.error(
-      `Performance alert (week ${weekNumber}): ${underperformers.join(', ')} ${
+      `Performance alert (${periodLabel}): ${underperformers.join(', ')} ${
         underperformers.length === 1 ? 'is' : 'are'
       } at or below 80% of the full-time team average. Consider a coaching check-in.`,
       { duration: 10000 },
     );
-  }, [weekNumber, underperformers.join('|')]);
+  }, [periodLabel, underperformers.join('|')]);
 
   return (
     <div className="space-y-4">
@@ -1067,7 +1409,7 @@ function WeeklyReportTab({
           <div>
             <p className="font-semibold text-amber-900">Below full-time team average (≥20% gap)</p>
             <p className="mt-1 text-amber-900/90">
-              Full-time avg for week {weekNumber} is <strong>{fullTimeAvg}</strong> contacts per rep (part-time excluded from average).
+              Full-time avg for <strong>{periodLabel}</strong> is <strong>{fullTimeAvg}</strong> member touches per rep (part-time excluded from average).
               Flagged: <strong>{underperformers.join(', ')}</strong> — at or under 80% of that average.
             </p>
           </div>
@@ -1076,14 +1418,22 @@ function WeeklyReportTab({
 
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
         <div className="p-5 border-b border-[#A8B8AC]/20">
-          <h3 className="text-base font-bold text-[#2F3E2F]">
-            Per-Rep Weekly Totals — Week {weekNumber}
-          </h3>
+          <h3 className="text-base font-bold text-[#2F3E2F]">Per-Rep Weekly Totals — {periodLabel}</h3>
+          {reportMode === 'friThu' && conciergeRangeLabel && (
+            <p className="text-xs font-medium text-[#4A7C8A] mt-1">
+              Concierge window (presented Friday morning): {conciergeRangeLabel}
+            </p>
+          )}
           <p className="text-sm text-slate-500 mt-0.5">
-            {weekLogs.length} total contacts · All-team avg {overallAvg}/rep · Full-time avg {fullTimeAvg}/rep (used for alerts)
+            {reportLogs.length} log rows · <strong>{totalTouches}</strong> total member touches · All-team avg{' '}
+            {overallAvg} touches/rep · Full-time avg {fullTimeAvg} touches/rep (used for alerts)
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            Part-time reps are not compared for performance alerts. Use <strong>Days marked off</strong> at the bottom of this tab to record PTO or non-working days.
+            <strong>Touches</strong> sums “Times spoke (this day)” per entry, and for <strong>Special Project</strong>{' '}
+            entries uses time spent (1 touch per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up). Channel/reason
+            columns still count log rows.
+            Part-time reps are not compared for performance alerts. Use <strong>Days marked off</strong> at the bottom of
+            this tab to record PTO or non-working days.
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -1092,7 +1442,7 @@ function WeeklyReportTab({
               <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
                 <th className="px-4 py-3">Team Member</th>
                 <th className="px-4 py-3">Off (this week)</th>
-                <th className="px-4 py-3 text-right">Total</th>
+                <th className="px-4 py-3 text-right">Touches</th>
                 <th className="px-4 py-3 text-right">Phone</th>
                 <th className="px-4 py-3 text-right">Email</th>
                 <th className="px-4 py-3 text-right">SalesIQ</th>
@@ -1145,7 +1495,9 @@ function WeeklyReportTab({
                         <span className="text-slate-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold">{r.total}</td>
+                    <td className="px-4 py-3 text-right font-bold" title={`${r.rowCount} log row(s)`}>
+                      {r.total}
+                    </td>
                     <td className="px-4 py-3 text-right">{r.phone}</td>
                     <td className="px-4 py-3 text-right">{r.email}</td>
                     <td className="px-4 py-3 text-right">{r.salesiq}</td>
@@ -1193,9 +1545,54 @@ function WeeklyReportTab({
         </div>
       </div>
 
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5 space-y-4">
+        <div>
+          <h3 className="text-base font-bold text-[#2F3E2F]">Weekly report fields</h3>
+          <p className="text-sm text-slate-500 mt-1">
+            Stored for <strong>{periodLabel}</strong>. Use for Friday morning readouts: per-rep call times / availability
+            and team total members helped.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {activeMembers.map((m) => (
+            <div key={m.id}>
+              <label htmlFor={`call-times-${m.id}`} className="block text-xs font-medium text-slate-600 mb-1">
+                {m.name} — weekly call times
+              </label>
+              <input
+                id={`call-times-${m.id}`}
+                type="text"
+                value={weeklyExtras.callTimesByMemberId[m.id] ?? ''}
+                onChange={(e) =>
+                  setWeeklyExtras((prev) => ({
+                    ...prev,
+                    callTimesByMemberId: { ...prev.callTimesByMemberId, [m.id]: e.target.value },
+                  }))
+                }
+                placeholder="e.g. M–F 8–6 CT, or note split shifts"
+                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+              />
+            </div>
+          ))}
+        </div>
+        <div>
+          <label htmlFor="team-members-helped" className="block text-xs font-medium text-slate-600 mb-1">
+            Team — members helped (total for this period)
+          </label>
+          <input
+            id="team-members-helped"
+            type="text"
+            value={weeklyExtras.teamMembersHelped}
+            onChange={(e) => setWeeklyExtras((prev) => ({ ...prev, teamMembersHelped: e.target.value }))}
+            placeholder="e.g. 142 unique members, or short narrative"
+            className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+          />
+        </div>
+      </div>
+
       <ReviewLinkBenchmarkCard
         activeMembers={activeMembers}
-        weekLogs={weekLogs}
+        weekLogs={reportLogs}
         weekDates={weekDates}
         memberOffDays={memberOffDays}
       />
@@ -1214,40 +1611,81 @@ function WeeklyReportTab({
 function PerformanceTab({
   logs,
   activeMembers,
+  reportMode,
   weekNumber,
+  presentationFriday,
 }: {
   logs: LogEntry[];
   activeMembers: TeamMember[];
+  reportMode: 'iso' | 'friThu';
   weekNumber: number;
+  presentationFriday: string;
 }) {
-  const weeks = [weekNumber - 4, weekNumber - 3, weekNumber - 2, weekNumber - 1, weekNumber];
+  const isoWeeks = useMemo(
+    () => [weekNumber - 4, weekNumber - 3, weekNumber - 2, weekNumber - 1, weekNumber],
+    [weekNumber],
+  );
 
-  const getWeekCount = useCallback(
+  const presentationFridays = useMemo(
+    () => [0, 1, 2, 3, 4].map((i) => addPresentationFridays(presentationFriday, -4 + i)),
+    [presentationFriday],
+  );
+
+  const getISOWeekTouches = useCallback(
     (name: string, wk: number) =>
-      logs.filter((l) => {
-        const d = new Date(l.date);
-        return !isNaN(d.getTime()) && l.teamMember === name && getISOWeek(d) === wk;
-      }).length,
+      sumTouches(
+        logs.filter((l) => {
+          const d = new Date(l.date);
+          return !isNaN(d.getTime()) && l.teamMember === name && getISOWeek(d) === wk;
+        }),
+      ),
     [logs],
   );
 
-  const data = useMemo(
-    () =>
-      activeMembers.map((m) => {
-        const counts = weeks.map((wk) => getWeekCount(m.name, wk));
-        const avg = Math.round(counts.reduce((s, c) => s + c, 0) / counts.length);
-        return { name: m.name, counts, avg };
-      }),
-    [activeMembers, weeks, getWeekCount],
+  const getConciergeTouches = useCallback(
+    (name: string, pf: string) => {
+      const { start, end } = getConciergeReportingWindow(pf);
+      return sumTouches(filterLogsInRange(logs.filter((l) => l.teamMember === name), start, end));
+    },
+    [logs],
   );
 
+  const periods = useMemo(() => {
+    return reportMode === 'iso'
+      ? { kind: 'iso' as const, labels: isoWeeks.map((w) => `Wk ${w}`), keys: isoWeeks }
+      : {
+          kind: 'friThu' as const,
+          labels: presentationFridays.map((pf) => {
+            const { start, end } = getConciergeReportingWindow(pf);
+            return `${start.slice(5)}→${end.slice(5)}`;
+          }),
+          keys: presentationFridays,
+        };
+  }, [reportMode, isoWeeks, presentationFridays]);
+
+  const data = useMemo(() => {
+    return activeMembers.map((m) => {
+      const counts =
+        periods.kind === 'iso'
+          ? (periods.keys as number[]).map((wk) => getISOWeekTouches(m.name, wk))
+          : (periods.keys as string[]).map((pf) => getConciergeTouches(m.name, pf));
+      const avg = Math.round(counts.reduce((s, c) => s + c, 0) / counts.length);
+      return { name: m.name, counts, avg };
+    });
+  }, [activeMembers, periods, getISOWeekTouches, getConciergeTouches]);
+
   const maxCount = Math.max(1, ...data.flatMap((d) => d.counts));
+
+  const subtitle =
+    periods.kind === 'iso'
+      ? `ISO weeks ${isoWeeks[0]} – ${isoWeeks[4]} (member touches)`
+      : `Last 5 concierge Fri–Thu periods ending Thu before each presentation Friday (member touches)`;
 
   return (
     <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
       <div className="p-5 border-b border-[#A8B8AC]/20">
-        <h3 className="text-base font-bold text-[#2F3E2F]">5-Week Rolling Performance Comparison</h3>
-        <p className="text-sm text-slate-500 mt-0.5">Weeks {weeks[0]} – {weeks[4]}</p>
+        <h3 className="text-base font-bold text-[#2F3E2F]">5-Period Rolling Performance</h3>
+        <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>
       </div>
 
       <div className="overflow-x-auto">
@@ -1255,12 +1693,12 @@ function PerformanceTab({
           <thead>
             <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
               <th className="px-4 py-3">Team Member</th>
-              {weeks.map((wk, i) => (
-                <th key={wk} className="px-4 py-3 text-right">
-                  {i === 4 ? <span className="text-[#4A7C8A]">Wk {wk} ★</span> : `Wk ${wk}`}
+              {periods.labels.map((label, i) => (
+                <th key={i} className="px-4 py-3 text-right font-normal normal-case max-w-[7rem]">
+                  {i === 4 ? <span className="text-[#4A7C8A] font-semibold">{label} ★</span> : label}
                 </th>
               ))}
-              <th className="px-4 py-3 text-right">5-Wk Avg</th>
+              <th className="px-4 py-3 text-right">Avg</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#A8B8AC]/15">
@@ -1292,45 +1730,33 @@ function PerformanceTab({
 
 // ── Reason Analytics Tab ───────────────────────────────────────────────
 
-function AnalyticsTab({ logs, weekNumber }: { logs: LogEntry[]; weekNumber: number }) {
-  const weekLogs = useMemo(
-    () =>
-      logs.filter((l) => {
-        const d = new Date(l.date);
-        return !isNaN(d.getTime()) && getISOWeek(d) === weekNumber;
-      }),
-    [logs, weekNumber],
-  );
-
-  const prevWeeks = [weekNumber - 4, weekNumber - 3, weekNumber - 2, weekNumber - 1];
-  const prevLogs = useMemo(
-    () =>
-      logs.filter((l) => {
-        const d = new Date(l.date);
-        if (isNaN(d.getTime())) return false;
-        const wk = getISOWeek(d);
-        return prevWeeks.includes(wk);
-      }),
-    [logs, prevWeeks],
-  );
-
+function AnalyticsTab({
+  weekLogs,
+  comparisonLogs,
+  periodLabel,
+}: {
+  weekLogs: LogEntry[];
+  comparisonLogs: LogEntry[];
+  periodLabel: string;
+}) {
+  const prevWeekCount = 4;
   const rows = useMemo(() => {
     const total = weekLogs.length || 1;
     return REASONS.map((reason) => {
       const count = weekLogs.filter((l) => l.reason === reason).length;
-      const prevCount = prevLogs.filter((l) => l.reason === reason).length;
-      const prevAvg = prevCount / (prevWeeks.length || 1);
+      const prevCount = comparisonLogs.filter((l) => l.reason === reason).length;
+      const prevAvg = prevCount / (prevWeekCount || 1);
       const spike = prevAvg > 0 ? ((count - prevAvg) / prevAvg) * 100 : 0;
       return { reason, count, pct: (count / total) * 100, spike, prevAvg };
     }).sort((a, b) => b.count - a.count);
-  }, [weekLogs, prevLogs, prevWeeks.length]);
+  }, [weekLogs, comparisonLogs]);
 
   const maxCount = Math.max(1, ...rows.map((r) => r.count));
 
   return (
     <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
       <div className="p-5 border-b border-[#A8B8AC]/20">
-        <h3 className="text-base font-bold text-[#2F3E2F]">Reason for Contact — Week {weekNumber}</h3>
+        <h3 className="text-base font-bold text-[#2F3E2F]">Reason for Contact — {periodLabel}</h3>
         <p className="text-sm text-slate-500 mt-0.5">
           Identify which issues are driving the most contacts
         </p>
@@ -1343,7 +1769,7 @@ function AnalyticsTab({ logs, weekNumber }: { logs: LogEntry[]; weekNumber: numb
               <th className="px-4 py-3 text-right">Count</th>
               <th className="px-4 py-3">Distribution</th>
               <th className="px-4 py-3 text-right">% of Total</th>
-              <th className="px-4 py-3 text-right">vs 4-Wk Avg</th>
+              <th className="px-4 py-3 text-right">vs prior 4</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#A8B8AC]/15">
@@ -1386,7 +1812,7 @@ function AnalyticsTab({ logs, weekNumber }: { logs: LogEntry[]; weekNumber: numb
       <div className="p-4 border-t border-[#A8B8AC]/20 text-xs text-slate-500">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-red-100 border border-red-300" />
-          Red = current week is 50%+ higher than 4-week average (possible systemic issue)
+          Red = current period is 50%+ higher than average of the prior 4 periods (possible systemic issue)
         </span>
       </div>
     </div>
@@ -1395,7 +1821,44 @@ function AnalyticsTab({ logs, weekNumber }: { logs: LogEntry[]; weekNumber: numb
 
 // ── Member Trends Tab ──────────────────────────────────────────────────
 
-function TrendsTab({ logs }: { logs: LogEntry[] }) {
+function TrendsTab({
+  logs,
+  escalations,
+  setEscalations,
+}: {
+  logs: LogEntry[];
+  escalations: EscalationItem[];
+  setEscalations: (fn: (prev: EscalationItem[]) => EscalationItem[]) => void;
+}) {
+  const openEscalations = useMemo(
+    () => escalations.filter((e) => e.status === 'open').sort((a, b) => b.openedAt.localeCompare(a.openedAt)),
+    [escalations],
+  );
+  const doneEscalations = useMemo(
+    () =>
+      escalations
+        .filter((e) => e.status === 'complete')
+        .sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || '')),
+    [escalations],
+  );
+
+  const markComplete = (id: string) => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    setEscalations((prev) =>
+      prev.map((e) =>
+        e.id === id ? { ...e, status: 'complete' as const, completedAt: today } : e,
+      ),
+    );
+    toast.success('Marked complete');
+  };
+
+  const reopen = (id: string) => {
+    setEscalations((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, status: 'open' as const, completedAt: undefined } : e)),
+    );
+    toast.success('Moved back to open');
+  };
+
   const thirtyDaysAgo = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
@@ -1427,49 +1890,134 @@ function TrendsTab({ logs }: { logs: LogEntry[] }) {
   }, [logs, thirtyDaysAgo]);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
-      <div className="p-5 border-b border-[#A8B8AC]/20">
-        <h3 className="text-base font-bold text-[#2F3E2F]">Member Trends — Repeat Contacts (Last 30 Days)</h3>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Members who contacted 3+ times for the same reason. May need proactive outreach or escalation.
-        </p>
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
+        <div className="p-5 border-b border-[#A8B8AC]/20">
+          <h3 className="text-base font-bold text-[#2F3E2F]">Escalated member issues</h3>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Tracked from the <strong>Escalated member issue</strong> checkbox on daily logs. Use for ongoing issues,
+            reminders, and follow-up until resolved.
+          </p>
+        </div>
+        {openEscalations.length === 0 && doneEscalations.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 text-sm">No escalations recorded yet.</div>
+        ) : (
+          <div className="divide-y divide-[#A8B8AC]/15">
+            {openEscalations.length > 0 && (
+              <div className="p-4">
+                <p className="text-xs font-semibold text-[#2F3E2F] uppercase tracking-wide mb-3">Open</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
+                        <th className="px-4 py-3">Member</th>
+                        <th className="px-4 py-3">Summary</th>
+                        <th className="px-4 py-3">Opened</th>
+                        <th className="px-4 py-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#A8B8AC]/15">
+                      {openEscalations.map((e) => (
+                        <tr key={e.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
+                          <td className="px-4 py-3 font-medium text-[#2F3E2F]">{e.memberName}</td>
+                          <td className="px-4 py-3 text-slate-600 max-w-md">{e.summary}</td>
+                          <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{e.openedAt}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => markComplete(e.id)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#5B6B2E]/15 text-[#3d4a1f] text-xs font-medium hover:bg-[#5B6B2E]/25 transition-colors"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              Mark complete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {doneEscalations.length > 0 && (
+              <div className="p-4 bg-slate-50/80">
+                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">Completed</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
+                        <th className="px-4 py-3">Member</th>
+                        <th className="px-4 py-3">Summary</th>
+                        <th className="px-4 py-3">Completed</th>
+                        <th className="px-4 py-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#A8B8AC]/15">
+                      {doneEscalations.map((e) => (
+                        <tr key={e.id} className="opacity-80 hover:opacity-100 transition-opacity">
+                          <td className="px-4 py-3 font-medium text-[#2F3E2F]">{e.memberName}</td>
+                          <td className="px-4 py-3 text-slate-600 max-w-md">{e.summary}</td>
+                          <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{e.completedAt || '—'}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => reopen(e.id)}
+                              className="text-xs font-medium text-[#4A7C8A] hover:underline"
+                            >
+                              Reopen
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      {flagged.length === 0 ? (
-        <div className="p-8 text-center text-slate-500 text-sm">
-          No repeat-contact patterns detected in the last 30 days.
+
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
+        <div className="p-5 border-b border-[#A8B8AC]/20">
+          <h3 className="text-base font-bold text-[#2F3E2F]">Repeat contacts — same reason (last 30 days)</h3>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Members who logged 3+ contact rows for the same reason. May need proactive outreach.
+          </p>
         </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
-                <th className="px-4 py-3">Member</th>
-                <th className="px-4 py-3">Reason</th>
-                <th className="px-4 py-3 text-right">30-Day Count</th>
-                <th className="px-4 py-3">Flagged</th>
-                <th className="px-4 py-3">Last Contact</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#A8B8AC]/15">
-              {flagged.map((f, i) => (
-                <tr key={i} className="hover:bg-[#A8B8AC]/5 transition-colors">
-                  <td className="px-4 py-3 font-medium text-[#2F3E2F]">{f.memberName}</td>
-                  <td className="px-4 py-3 text-slate-600">{f.reason}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">{f.count}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
-                      <AlertTriangle className="w-3 h-3" /> Yes
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">{f.lastDate}</td>
+        {flagged.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 text-sm">
+            No repeat-contact patterns detected in the last 30 days.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
+                  <th className="px-4 py-3">Member</th>
+                  <th className="px-4 py-3">Reason</th>
+                  <th className="px-4 py-3 text-right">30-Day Rows</th>
+                  <th className="px-4 py-3">Last Contact</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-[#A8B8AC]/15">
+                {flagged.map((f, i) => (
+                  <tr key={i} className="hover:bg-[#A8B8AC]/5 transition-colors">
+                    <td className="px-4 py-3 font-medium text-[#2F3E2F]">{f.memberName}</td>
+                    <td className="px-4 py-3 text-slate-600">{f.reason}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        {f.count}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">{f.lastDate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1612,11 +2160,13 @@ function TeamTab({
 export default function DailyLogs() {
   const [activeTab, setActiveTab] = useState<TabId>('log');
   const [showShare, setShowShare] = useState(false);
+  const [reportMode, setReportMode] = useState<'iso' | 'friThu'>('friThu');
+  const [presentationFriday, setPresentationFriday] = useState(() => defaultPresentationFridayStr());
   const [weekNumber, setWeekNumber] = useState(() => getISOWeek(new Date()));
 
   const [logs, setLogsRaw] = useState<LogEntry[]>(() => {
     const raw = loadFromStorage<LogEntry[]>(STORAGE_KEY_LOGS, []);
-    const migrated = applyLegacyTeamMemberNamesToLogs(raw);
+    const migrated = migrateLogsStorage(raw);
     try {
       if (JSON.stringify(migrated) !== JSON.stringify(raw)) {
         localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(migrated));
@@ -1643,6 +2193,14 @@ export default function DailyLogs() {
     loadMemberOffDaysFromStorage(),
   );
 
+  const [escalations, setEscalationsRaw] = useState<EscalationItem[]>(() =>
+    loadFromStorage<EscalationItem[]>(STORAGE_KEY_ESCALATIONS, []),
+  );
+
+  const [weeklyReportExtrasMap, setWeeklyReportExtrasMapRaw] = useState<Record<string, WeeklyReportExtras>>(() =>
+    loadFromStorage<Record<string, WeeklyReportExtras>>(STORAGE_KEY_WEEKLY_EXTRAS, {}),
+  );
+
   const setMemberOffDays: typeof setMemberOffDaysRaw = useCallback((fn) => {
     setMemberOffDaysRaw((prev) => {
       const next = typeof fn === 'function' ? fn(prev) : fn;
@@ -1651,9 +2209,28 @@ export default function DailyLogs() {
     });
   }, []);
 
+  const setEscalations = useCallback(
+    (fn: EscalationItem[] | ((prev: EscalationItem[]) => EscalationItem[])) => {
+      setEscalationsRaw((prev) => {
+        const next = typeof fn === 'function' ? fn(prev) : fn;
+        localStorage.setItem(STORAGE_KEY_ESCALATIONS, JSON.stringify(next));
+        return next;
+      });
+    },
+    [],
+  );
+
+  const onEscalationFromLog = useCallback(
+    (item: EscalationItem) => {
+      setEscalations((prev) => [item, ...prev]);
+    },
+    [setEscalations],
+  );
+
   const setLogs: typeof setLogsRaw = useCallback((fn) => {
     setLogsRaw((prev) => {
-      const next = typeof fn === 'function' ? fn(prev) : fn;
+      const rawNext = typeof fn === 'function' ? fn(prev) : fn;
+      const next = rawNext.map(normalizeLogEntry);
       localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(next));
       return next;
     });
@@ -1669,78 +2246,257 @@ export default function DailyLogs() {
 
   const activeMembers = useMemo(() => team.filter((m) => m.status === 'Active'), [team]);
 
-  useEffect(() => {
-    setWeekNumber(getISOWeek(new Date()));
-  }, [activeTab]);
+  const isoRefYear = useMemo(() => refYearForWeek(logs, weekNumber), [logs, weekNumber]);
+
+  const conciergeWindow = useMemo(
+    () => getConciergeReportingWindow(presentationFriday),
+    [presentationFriday],
+  );
+
+  const reportLogs = useMemo(() => {
+    if (reportMode === 'friThu') {
+      return filterLogsInRange(logs, conciergeWindow.start, conciergeWindow.end);
+    }
+    return logs.filter((l) => {
+      const d = new Date(l.date);
+      return !isNaN(d.getTime()) && getISOWeek(d) === weekNumber;
+    });
+  }, [reportMode, logs, conciergeWindow, weekNumber]);
+
+  const weekDates = useMemo(() => {
+    if (reportMode === 'friThu') {
+      return listDatesInRangeInclusive(conciergeWindow.start, conciergeWindow.end);
+    }
+    return getWeekDateStrings(weekNumber, isoRefYear);
+  }, [reportMode, conciergeWindow, weekNumber, isoRefYear]);
+
+  const periodLabel = useMemo(() => {
+    if (reportMode === 'friThu') {
+      const pf = parseDate(presentationFriday, 'yyyy-MM-dd', new Date());
+      const label = isNaN(pf.getTime()) ? presentationFriday : format(pf, 'MMM d, yyyy');
+      return `Friday presentation ${label}`;
+    }
+    return `ISO Week ${weekNumber}`;
+  }, [reportMode, presentationFriday, weekNumber]);
+
+  const conciergeRangeLabel = useMemo(() => {
+    if (reportMode !== 'friThu') return undefined;
+    const a = format(parseDate(conciergeWindow.start, 'yyyy-MM-dd', new Date()), 'EEE MMM d');
+    const b = format(parseDate(conciergeWindow.end, 'yyyy-MM-dd', new Date()), 'EEE MMM d, yyyy');
+    return `${a} – ${b} (Fri–Thu cycle)`;
+  }, [reportMode, conciergeWindow]);
+
+  const reportStorageKey = useMemo(
+    () => buildReportStorageKey(reportMode, weekNumber, isoRefYear, presentationFriday),
+    [reportMode, weekNumber, isoRefYear, presentationFriday],
+  );
+
+  const currentWeeklyExtras = weeklyReportExtrasMap[reportStorageKey] ?? defaultWeeklyExtras();
+
+  const setWeeklyExtras = useCallback(
+    (fn: (prev: WeeklyReportExtras) => WeeklyReportExtras) => {
+      setWeeklyReportExtrasMapRaw((prev) => {
+        const cur = prev[reportStorageKey] ?? defaultWeeklyExtras();
+        const nextEntry = fn(cur);
+        const next = { ...prev, [reportStorageKey]: nextEntry };
+        try {
+          localStorage.setItem(STORAGE_KEY_WEEKLY_EXTRAS, JSON.stringify(next));
+        } catch {
+          /* ignore */
+        }
+        return next;
+      });
+    },
+    [reportStorageKey],
+  );
+
+  const analyticsComparisonLogs = useMemo(() => {
+    if (reportMode === 'friThu') {
+      const acc: LogEntry[] = [];
+      for (let i = 1; i <= 4; i++) {
+        const pf = addPresentationFridays(presentationFriday, -i);
+        const { start, end } = getConciergeReportingWindow(pf);
+        acc.push(...filterLogsInRange(logs, start, end));
+      }
+      return acc;
+    }
+    const prevWeeks = [weekNumber - 4, weekNumber - 3, weekNumber - 2, weekNumber - 1];
+    return logs.filter((l) => {
+      const d = new Date(l.date);
+      if (isNaN(d.getTime())) return false;
+      return prevWeeks.includes(getISOWeek(d));
+    });
+  }, [reportMode, presentationFriday, logs, weekNumber]);
 
   return (
     <div className="space-y-6 animate-fade-up">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2F3E2F] to-[#4A7C8A] flex items-center justify-center">
-            <ClipboardList className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-[#2F3E2F]">Daily Logs & Reports</h1>
-            <p className="text-sm text-[#5B6B2E]">Track contacts, view reports, and share with management</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-600">Week:</label>
-            <div className="flex items-center border border-[#A8B8AC]/40 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setWeekNumber((w) => w - 1)}
-                className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
-              >
-                <ChevronDown className="w-4 h-4 rotate-90" />
-              </button>
-              <span className="px-3 py-1.5 text-sm font-bold text-[#2F3E2F] tabular-nums bg-[#A8B8AC]/5 min-w-[40px] text-center">
-                {weekNumber}
-              </span>
-              <button
-                onClick={() => setWeekNumber((w) => w + 1)}
-                className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
-              >
-                <ChevronDown className="w-4 h-4 -rotate-90" />
-              </button>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2F3E2F] to-[#4A7C8A] flex items-center justify-center">
+              <ClipboardList className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-[#2F3E2F]">Daily Logs & Reports</h1>
+              <p className="text-sm text-[#5B6B2E]">
+                Track contacts, Fri–Thu concierge reporting (Friday AM readouts), and share with management
+              </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setShowShare(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
-          >
-            <Send className="w-4 h-4" />
-            Share Report
-          </button>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex rounded-lg border border-[#A8B8AC]/40 overflow-hidden text-sm">
+              <button
+                type="button"
+                onClick={() => setReportMode('friThu')}
+                className={`px-3 py-2 font-medium transition-colors ${
+                  reportMode === 'friThu'
+                    ? 'bg-[#4A7C8A] text-white'
+                    : 'bg-white text-slate-600 hover:bg-[#A8B8AC]/10'
+                }`}
+              >
+                Fri–Thu cycle
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportMode('iso')}
+                className={`px-3 py-2 font-medium transition-colors ${
+                  reportMode === 'iso'
+                    ? 'bg-[#4A7C8A] text-white'
+                    : 'bg-white text-slate-600 hover:bg-[#A8B8AC]/10'
+                }`}
+              >
+                ISO week
+              </button>
+            </div>
 
-          <button
-            onClick={() => {
-              const headers = ['Week', 'Date', 'Team Member', 'Channel', 'Member Name', 'Reason', 'Other/Notes', 'CRM Notes', 'Follow-up', 'Review Link', 'Additional Notes'];
-              const rows = logs.map((l) => [
-                String(isNaN(new Date(l.date).getTime()) ? '' : getISOWeek(new Date(l.date))),
-                l.date, l.teamMember, l.channel, l.memberName, l.reason, l.otherNotes,
-                l.crmNotes ? 'Yes' : 'No', l.followUp ? 'Yes' : 'No', l.reviewLink ? 'Yes' : 'No', l.additionalNotes,
-              ]);
-              const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
-              const blob = new Blob([csv], { type: 'text/csv' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `concierge-daily-log-all.csv`;
-              a.click();
-              URL.revokeObjectURL(url);
-              toast.success('Full log exported');
-            }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#A8B8AC]/40 text-[#2F3E2F] text-sm font-medium hover:bg-[#A8B8AC]/10 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Export All
-          </button>
+            {reportMode === 'friThu' ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-sm font-medium text-slate-600 whitespace-nowrap">
+                  Presentation Friday
+                </label>
+                <div className="flex items-center border border-[#A8B8AC]/40 rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setPresentationFriday((p) => addPresentationFridays(p, -1))}
+                    className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
+                    aria-label="Previous reporting period"
+                  >
+                    <ChevronDown className="w-4 h-4 rotate-90" />
+                  </button>
+                  <input
+                    type="date"
+                    value={presentationFriday}
+                    onChange={(e) => setPresentationFriday(e.target.value)}
+                    className="px-2 py-1.5 text-sm font-medium text-[#2F3E2F] bg-[#A8B8AC]/5 border-x border-[#A8B8AC]/30 min-w-[10rem]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPresentationFriday((p) => addPresentationFridays(p, 1))}
+                    className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
+                    aria-label="Next reporting period"
+                  >
+                    <ChevronDown className="w-4 h-4 -rotate-90" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-slate-600">ISO week:</label>
+                <div className="flex items-center border border-[#A8B8AC]/40 rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setWeekNumber((w) => w - 1)}
+                    className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
+                  >
+                    <ChevronDown className="w-4 h-4 rotate-90" />
+                  </button>
+                  <span className="px-3 py-1.5 text-sm font-bold text-[#2F3E2F] tabular-nums bg-[#A8B8AC]/5 min-w-[40px] text-center">
+                    {weekNumber}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setWeekNumber((w) => w + 1)}
+                    className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
+                  >
+                    <ChevronDown className="w-4 h-4 -rotate-90" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowShare(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
+            >
+              <Send className="w-4 h-4" />
+              Share Report
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const headers = [
+                  'Week',
+                  'Date',
+                  'Team Member',
+                  'Channel',
+                  'Member Name',
+                  'Reason',
+                  'Other/Notes',
+                  'CRM Notes',
+                  'Follow-up',
+                  'Review Link',
+                  'Additional Notes',
+                  'Times spoke (day)',
+                  'Escalated issue',
+                  'Special project',
+                  'Special project (min)',
+                ];
+                const rows = logs.map((l) => [
+                  String(isNaN(new Date(l.date).getTime()) ? '' : getISOWeek(new Date(l.date))),
+                  l.date,
+                  l.teamMember,
+                  l.channel,
+                  l.memberName,
+                  l.reason,
+                  l.otherNotes,
+                  l.crmNotes ? 'Yes' : 'No',
+                  l.followUp ? 'Yes' : 'No',
+                  l.reviewLink ? 'Yes' : 'No',
+                  l.additionalNotes,
+                  String(l.timesSpokeWithMember ?? 1),
+                  l.escalatedIssue ? 'Yes' : 'No',
+                  l.reason === 'Special Project' ? l.specialProjectDescription : '',
+                  l.reason === 'Special Project' ? String(l.specialProjectDurationMinutes || '') : '',
+                ]);
+                const csv = [headers, ...rows]
+                  .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+                  .join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `concierge-daily-log-all.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                toast.success('Full log exported');
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#A8B8AC]/40 text-[#2F3E2F] text-sm font-medium hover:bg-[#A8B8AC]/10 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export All
+            </button>
+          </div>
         </div>
+
+        <p className="text-xs text-slate-500 rounded-lg bg-[#A8B8AC]/10 px-3 py-2 border border-[#A8B8AC]/20">
+          <strong>Active report:</strong> {periodLabel}
+          {conciergeRangeLabel ? ` · ${conciergeRangeLabel}` : ''} · {reportLogs.length} row(s),{' '}
+          <strong>{sumTouches(reportLogs)}</strong> touches in view.
+        </p>
       </div>
 
       {/* Tabs */}
@@ -1751,6 +2507,7 @@ export default function DailyLogs() {
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 isActive
@@ -1766,28 +2523,57 @@ export default function DailyLogs() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'log' && <DailyLogTab logs={logs} setLogs={setLogs} activeMembers={activeMembers} />}
-      {activeTab === 'weekly' && (
-        <WeeklyReportTab
+      {activeTab === 'log' && (
+        <DailyLogTab
           logs={logs}
+          setLogs={setLogs}
           activeMembers={activeMembers}
-          weekNumber={weekNumber}
-          memberOffDays={memberOffDaysRaw}
-          setMemberOffDays={setMemberOffDays}
+          onEscalationFromLog={onEscalationFromLog}
         />
       )}
-      {activeTab === 'performance' && <PerformanceTab logs={logs} activeMembers={activeMembers} weekNumber={weekNumber} />}
-      {activeTab === 'analytics' && <AnalyticsTab logs={logs} weekNumber={weekNumber} />}
-      {activeTab === 'trends' && <TrendsTab logs={logs} />}
+      {activeTab === 'weekly' && (
+        <WeeklyReportTab
+          reportLogs={reportLogs}
+          weekDates={weekDates}
+          periodLabel={periodLabel}
+          reportMode={reportMode}
+          conciergeRangeLabel={conciergeRangeLabel}
+          activeMembers={activeMembers}
+          memberOffDays={memberOffDaysRaw}
+          setMemberOffDays={setMemberOffDays}
+          weeklyExtras={currentWeeklyExtras}
+          setWeeklyExtras={setWeeklyExtras}
+        />
+      )}
+      {activeTab === 'performance' && (
+        <PerformanceTab
+          logs={logs}
+          activeMembers={activeMembers}
+          reportMode={reportMode}
+          weekNumber={weekNumber}
+          presentationFriday={presentationFriday}
+        />
+      )}
+      {activeTab === 'analytics' && (
+        <AnalyticsTab
+          weekLogs={reportLogs}
+          comparisonLogs={analyticsComparisonLogs}
+          periodLabel={periodLabel}
+        />
+      )}
+      {activeTab === 'trends' && (
+        <TrendsTab logs={logs} escalations={escalations} setEscalations={setEscalations} />
+      )}
       {activeTab === 'team' && <TeamTab team={team} setTeam={setTeam} />}
 
       {/* Share Modal */}
       {showShare && (
         <ShareModal
           onClose={() => setShowShare(false)}
-          logs={logs}
+          weekLogs={reportLogs}
           team={team}
-          weekNumber={weekNumber}
+          periodTitle={periodLabel}
+          weeklyExtras={currentWeeklyExtras}
         />
       )}
     </div>

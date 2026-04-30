@@ -270,10 +270,11 @@ function refYearForWeek(logs: LogEntry[], weekNum: number): number {
   return new Date().getFullYear();
 }
 
+/** ISO week Monday through Friday only (business days; Sat/Sun omitted from report grids). */
 function getWeekDateStrings(weekNum: number, refYear: number): string[] {
   const anchor = setISOWeek(new Date(refYear, 5, 15), weekNum);
   const monday = startOfISOWeek(anchor);
-  return Array.from({ length: 7 }, (_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
+  return Array.from({ length: 5 }, (_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
 }
 
 /** Full-time-only average for weekly totals (excludes part-time). */
@@ -1486,7 +1487,8 @@ function MemberOffDaysPanel({
     <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5">
       <h3 className="text-base font-bold text-[#2F3E2F] mb-1">Days Marked Off</h3>
       <p className="text-sm text-slate-500 mb-4">
-        PTO and other non-working days. Off days for the selected week also appear in the weekly table above.
+        PTO and other non-working days. Off days that fall on <strong>Monday–Friday</strong> in the selected week also
+        appear in the weekly report above.
       </p>
 
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
@@ -1603,8 +1605,9 @@ function ReviewLinkBenchmarkCard({
         <p className="text-sm text-slate-500 mt-0.5">
           Each full-time rep (Acelyn Calderon, Adam Jordano, Ryan Cahill, and any non–part-time teammate) should log{' '}
           <strong>{REVIEW_LINKS_DAILY_TARGET}</strong> entries per day with <strong>Review Link Sent?</strong>{' '}
-          checked. Days marked <strong>off</strong> (see <strong>Days Marked Off</strong> on this tab) do not count toward
-          the goal or the denominator. Cells show review-link count for that calendar day.
+          checked, on scheduled workdays (<strong>Monday–Friday</strong> below). Days marked <strong>off</strong> (see{' '}
+          <strong>Days Marked Off</strong> on this tab) do not count toward the goal or the denominator. Cells show
+          review-link count for that calendar day.
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -1798,6 +1801,10 @@ function WeeklyReportTab({
           <p className="text-sm text-slate-500 mt-0.5">
             {reportLogs.length} log rows · <strong>{totalTouches}</strong> total member touches · All-team avg{' '}
             {overallAvg} touches/rep · Full-time avg {fullTimeAvg} touches/rep (used for alerts)
+            <span className="block text-xs text-slate-500 mt-1.5 font-normal">
+              Calendars and day grids show <strong>Monday–Friday</strong> only (open Mon–Fri). Touch and row totals still
+              count every log dated in this ISO week.
+            </span>
           </p>
         </div>
         <div className="overflow-x-auto">

@@ -73,7 +73,7 @@ interface EscalationItem {
 }
 
 interface WeeklyReportExtras {
-  /** Rep id → phone time / on-phone hours for this report period (shown on weekly table as Phone time (wk)) */
+  /** Rep id → phone time for this report period (column Phone time on weekly table) */
   callTimesByMemberId: Record<string, string>;
   /** Total distinct members helped by the team this period (or notes). */
   teamMembersHelped: string;
@@ -170,7 +170,7 @@ const TABS = [
   { id: 'weekly', label: 'Weekly Report', icon: BarChart3 },
   { id: 'performance', label: 'Performance', icon: TrendingUp },
   { id: 'analytics', label: 'Reason Analytics', icon: PieChart },
-  { id: 'trends', label: 'Member Trends', icon: AlertTriangle },
+  { id: 'trends', label: 'Member Issues', icon: AlertTriangle },
   { id: 'team', label: 'Team', icon: Users },
 ] as const;
 
@@ -410,7 +410,7 @@ function ShareModal({
     if (includeWeekly) {
       lines.push('═══ PER-REP WEEKLY TOTALS ═══', '');
       lines.push(
-        'Team Member | Touches | Rows | Phone | Phone time (wk) | Email | SalesIQ | Follow-ups | Rx | Labs | Imaging | Appt',
+        'Team Member | Touches | Rows | Phone | Phone time | Email | SalesIQ | Follow-ups | Rx | Labs | Imaging | Appt',
       );
       lines.push('-'.repeat(140));
 
@@ -707,8 +707,8 @@ function EditLogEntryModal({
       const summary =
         next.reason === 'Special Project'
           ? [next.specialProjectDescription, next.additionalNotes].filter((x) => x.trim()).join(' — ') ||
-            'Escalated member issue'
-          : [next.reason, next.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated member issue';
+            'Escalated Member Issue'
+          : [next.reason, next.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated Member Issue';
       onEscalationFromLog({
         id: uid(),
         memberName: next.memberName.trim(),
@@ -923,7 +923,7 @@ function EditLogEntryModal({
                 onChange={(e) => setEscalatedIssue(e.target.checked)}
                 className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
               />
-              ESCALATED MEMBER ISSUE
+              Escalated Member Issue
             </label>
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -1020,8 +1020,8 @@ function DailyLogTab({
       const summary =
         entry.reason === 'Special Project'
           ? [entry.specialProjectDescription, entry.additionalNotes].filter((x) => x.trim()).join(' — ') ||
-            'Escalated member issue'
-          : [entry.reason, entry.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated member issue';
+            'Escalated Member Issue'
+          : [entry.reason, entry.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated Member Issue';
       onEscalationFromLog({
         id: uid(),
         memberName: entry.memberName.trim(),
@@ -1257,7 +1257,7 @@ function DailyLogTab({
               onChange={(e) => setForm((f) => ({ ...f, escalatedIssue: e.target.checked }))}
               className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
             />
-            ESCALATED MEMBER ISSUE
+            Escalated Member Issue
           </label>
           <button
             onClick={handleAdd}
@@ -1815,7 +1815,7 @@ function WeeklyReportTab({
                 <th className="px-4 py-3 text-right">Touches</th>
                 <th className="px-4 py-3 text-right">Phone</th>
                 <th className="px-4 py-3 text-left min-w-[9rem]" title="Total phone / on-phone time for the week (entered below)">
-                  Phone time (wk)
+                  Phone time
                 </th>
                 <th className="px-4 py-3 text-right">Email</th>
                 <th className="px-4 py-3 text-right">SalesIQ</th>
@@ -1921,7 +1921,7 @@ function WeeklyReportTab({
             <strong>Touches</strong> default to 1 per log row unless <strong>Additional notes</strong> include a multiplier
             (e.g. <strong>x2</strong> for two touches). <strong>Special Project</strong> rows use time spent instead (1
             touch per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up). <strong>Phone</strong> is the count of log
-            rows on the Phone channel; <strong>Phone time (wk)</strong> is the total on-phone or scheduled time you enter
+            rows on the Phone channel; <strong>Phone time</strong> is the total on-phone or scheduled time you enter
             in <strong>Weekly Call Times</strong> at the bottom of this tab. Other channel/reason columns count log rows.
             Part-time reps are not compared for performance alerts.
           </p>
@@ -1945,7 +1945,7 @@ function WeeklyReportTab({
         <h3 className="text-base font-bold text-[#2F3E2F] mb-3">Weekly Call Times</h3>
         <p className="text-sm text-slate-500 mb-4">
           Choose a rep, enter their weekly call times (hours, schedule, or notes). It shows in{' '}
-          <strong>Phone time (wk)</strong> on the report above for <strong>{periodLabel}</strong>.
+          <strong>Phone time</strong> on the report above for <strong>{periodLabel}</strong>.
         </p>
         {activeMembers.length === 0 ? (
           <p className="text-sm text-slate-500">No active team members to log call times for.</p>
@@ -2177,7 +2177,7 @@ function AnalyticsTab({
   );
 }
 
-// ── Member Trends Tab ──────────────────────────────────────────────────
+// ── Member Issues Tab ──────────────────────────────────────────────────
 
 function TrendsTab({
   logs,
@@ -2251,9 +2251,9 @@ function TrendsTab({
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
         <div className="p-5 border-b border-[#A8B8AC]/20">
-          <h3 className="text-base font-bold text-[#2F3E2F]">Escalated member issues</h3>
+          <h3 className="text-base font-bold text-[#2F3E2F]">Escalated Member Issues</h3>
           <p className="text-sm text-slate-500 mt-0.5">
-            Tracked from the <strong>ESCALATED MEMBER ISSUE</strong> checkbox on daily logs. Use for ongoing issues,
+            Tracked from the <strong>Escalated Member Issue</strong> checkbox on daily logs. Use for ongoing issues,
             reminders, and follow-up until resolved.
           </p>
         </div>
@@ -2338,7 +2338,9 @@ function TrendsTab({
 
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
         <div className="p-5 border-b border-[#A8B8AC]/20">
-          <h3 className="text-base font-bold text-[#2F3E2F]">Repeat contacts — same reason (last 30 days)</h3>
+          <h3 className="text-base font-bold text-[#2F3E2F]">
+            Repeat Contacts — Same Reason (Last 30 Days)
+          </h3>
           <p className="text-sm text-slate-500 mt-0.5">
             Members who logged 3+ contact rows for the same reason. May need proactive outreach.
           </p>

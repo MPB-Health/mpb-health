@@ -1814,7 +1814,7 @@ function WeeklyReportTab({
                 <th className="px-4 py-3">Team Member</th>
                 <th className="px-4 py-3 text-right">Touches</th>
                 <th className="px-4 py-3 text-right">Phone</th>
-                <th className="px-4 py-3 text-left min-w-[9rem]" title="Total phone / on-phone time for the week (entered below)">
+                <th className="px-4 py-3 text-right" title="Total phone / on-phone time for the week (entered below)">
                   Phone time
                 </th>
                 <th className="px-4 py-3 text-right">Email</th>
@@ -1855,9 +1855,9 @@ function WeeklyReportTab({
                     <td className="px-4 py-3 text-right" title="Log rows with channel Phone">
                       {r.phone}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 text-xs max-w-[14rem]">
+                    <td className="px-4 py-3 text-right text-slate-600 text-xs">
                       {phoneTimeWeek ? (
-                        <span className="line-clamp-3" title={phoneTimeWeek}>
+                        <span className="line-clamp-3 text-right" title={phoneTimeWeek}>
                           {phoneTimeWeek}
                         </span>
                       ) : (
@@ -1880,7 +1880,7 @@ function WeeklyReportTab({
                 <td className="px-4 py-3">TEAM TOTAL</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.total, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.phone, 0)}</td>
-                <td className="px-4 py-3 text-slate-500 text-xs font-normal">—</td>
+                <td className="px-4 py-3 text-right text-slate-500 text-xs font-normal">—</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.email, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.salesiq, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.followups, 0)}</td>

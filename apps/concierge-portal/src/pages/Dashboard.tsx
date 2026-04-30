@@ -78,7 +78,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
 function ResourceCard({ resource, query }: { resource: TrainingResource; query: string }) {
   const colors = CATEGORY_COLORS[resource.category];
 
-  if (resource.links && resource.links.length > 1) {
+  if (resource.links && resource.links.length > 0) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200">
         <div className="flex items-center gap-2 mb-1.5">
@@ -88,14 +88,14 @@ function ResourceCard({ resource, query }: { resource: TrainingResource; query: 
           </span>
         </div>
         <h3 className="text-sm font-semibold text-slate-800 line-clamp-2"><HighlightMatch text={resource.title} query={query} /></h3>
-        <p className="mt-1 text-xs text-slate-500 line-clamp-2"><HighlightMatch text={resource.description} query={query} /></p>
+        <p className="mt-1 text-xs text-slate-500 text-balance"><HighlightMatch text={resource.description} query={query} /></p>
         <div className="mt-3 flex flex-wrap gap-2">
           {resource.links.map((link) => (
             <a
-              key={link.url}
+              key={link.url + link.label}
               href={link.url}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#A8B8AC]/40 bg-[#A8B8AC]/10 text-[#2F3E2F] hover:bg-[#4A7C8A]/10 hover:border-[#4A7C8A]/40 hover:text-[#4A7C8A] transition-all"
             >
               <HighlightMatch text={link.label} query={query} />
@@ -111,7 +111,7 @@ function ResourceCard({ resource, query }: { resource: TrainingResource; query: 
     <a
       href={resource.url}
       target="_blank"
-      rel="noopener noreferrer"
+      rel="noopener"
       className="group block rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200"
     >
       <div className="flex items-start justify-between gap-3">
@@ -128,7 +128,7 @@ function ResourceCard({ resource, query }: { resource: TrainingResource; query: 
           <h3 className="text-sm font-semibold text-slate-800 group-hover:text-[#4A7C8A] transition-colors line-clamp-2">
             <HighlightMatch text={resource.title} query={query} />
           </h3>
-          <p className="mt-1 text-xs text-slate-500 line-clamp-2"><HighlightMatch text={resource.description} query={query} /></p>
+          <p className="mt-1 text-xs text-slate-500 text-balance"><HighlightMatch text={resource.description} query={query} /></p>
         </div>
         <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#4A7C8A] shrink-0 mt-1 transition-colors" />
       </div>

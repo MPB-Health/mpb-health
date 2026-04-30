@@ -264,8 +264,20 @@ function defaultWeeklyExtras(): WeeklyReportExtras {
   return { callTimesByMemberId: {}, teamMembersHelped: '' };
 }
 
+/** Member-touch weight for one row (weekly totals, performance, header strip). */
+function metricTouches(l: LogEntry): number {
+  if (l.reason === 'Special Project' && (l.specialProjectDurationMinutes ?? 0) > 0) {
+    return Math.min(
+      999,
+      Math.max(1, Math.ceil(l.specialProjectDurationMinutes / SPECIAL_PROJECT_MINUTES_PER_TOUCH)),
+    );
+  }
+  const t = l.timesSpokeWithMember;
+  return typeof t === 'number' && t >= 1 ? Math.min(999, Math.floor(t)) : 1;
+}
+
 function sumTouches(ml: LogEntry[]): number {
-  return ml.reduce((s, l) => s + (l.timesSpokeWithMember || 1), 0);
+  return ml.reduce((s, l) => s + metricTouches(l), 0);
 }
 
 function refYearForWeek(logs: LogEntry[], weekNum: number): number {
@@ -493,7 +505,7 @@ function ShareModal({
       'Follow-up',
       'Review Link',
       'Additional Notes',
-      'Times spoke (day)',
+      'Touches',
       'Escalated issue',
       'Special project',
       'Special project (min)',
@@ -510,7 +522,7 @@ function ShareModal({
       l.followUp ? 'Yes' : 'No',
       l.reviewLink ? 'Yes' : 'No',
       l.additionalNotes,
-      String(l.timesSpokeWithMember ?? 1),
+      String(metricTouches(l)),
       l.escalatedIssue ? 'Yes' : 'No',
       l.reason === 'Special Project' ? l.specialProjectDescription : '',
       l.reason === 'Special Project' ? String(l.specialProjectDurationMinutes || '') : '',
@@ -728,6 +740,15 @@ function DailyLogTab({
     toast.success('Entry removed');
   };
 
+  useEffect(() => {
+    if (activeMembers.length === 0) return;
+    setForm((f) =>
+      f.teamMember && activeMembers.some((m) => m.name === f.teamMember)
+        ? f
+        : { ...f, teamMember: activeMembers[0].name },
+    );
+  }, [activeMembers]);
+
   const query = search.toLowerCase().trim();
   const filteredLogs = useMemo(() => {
     if (!query) return logs.slice(0, 50);
@@ -779,6 +800,28 @@ function DailyLogTab({
             </select>
           </div>
           <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Reason</label>
+            <select
+              value={form.reason}
+              onChange={(e) => {
+                const reason = e.target.value;
+                setForm((f) => ({
+                  ...f,
+                  reason,
+                  ...(reason !== 'Special Project'
+                    ? { specialProjectDescription: '', specialProjectDurationMinutes: 0 }
+                    : {}),
+                  ...(reason !== 'Other' ? { otherNotes: '' } : {}),
+                }));
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+            >
+              {REASONS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Member Name{form.reason === 'Special Project' ? ' (optional)' : ''}
             </label>
@@ -791,27 +834,6 @@ function DailyLogTab({
               }
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Reason</label>
-            <select
-              value={form.reason}
-              onChange={(e) => {
-                const reason = e.target.value;
-                setForm((f) => ({
-                  ...f,
-                  reason,
-                  ...(reason === 'Special Project'
-                    ? {}
-                    : { specialProjectDescription: '', specialProjectDurationMinutes: 0 }),
-                }));
-              }}
-              className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
-            >
-              {REASONS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
           </div>
           {form.reason === 'Special Project' ? (
             <>
@@ -844,8 +866,8 @@ function DailyLogTab({
                   className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm tabular-nums"
                 />
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Counts as weekly touches: 1 per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min (rounded up, min 1). Shown in
-                  the × column.
+                  Counts toward weekly totals in the Touches column (1 per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min
+                  worked, rounded up, min 1).
                 </p>
               </div>
             </>
@@ -989,7 +1011,7 @@ function DailyLogTab({
                   <th className="px-4 py-3">Channel</th>
                   <th className="px-4 py-3">Member</th>
                   <th className="px-4 py-3">Reason</th>
-                  <th className="px-4 py-3 text-right">×</th>
+                  <th className="px-4 py-3 text-right">Touches</th>
                   <th className="px-4 py-3 text-center">Esc</th>
                   <th className="px-4 py-3">CRM</th>
                   <th className="px-4 py-3">F/U</th>
@@ -1026,11 +1048,11 @@ function DailyLogTab({
                         className="px-4 py-2.5 text-right tabular-nums font-semibold text-[#2F3E2F]"
                         title={
                           log.reason === 'Special Project' && log.specialProjectDurationMinutes > 0
-                            ? `${log.specialProjectDurationMinutes} min → ${log.timesSpokeWithMember ?? 1} touch(es)`
+                            ? `${log.specialProjectDurationMinutes} min → ${metricTouches(log)} touch(es)`
                             : undefined
                         }
                       >
-                        {log.timesSpokeWithMember ?? 1}
+                        {metricTouches(log)}
                       </td>
                       <td className="px-4 py-2.5 text-center">
                         {log.escalatedIssue ? (
@@ -2450,7 +2472,7 @@ export default function DailyLogs() {
                   'Follow-up',
                   'Review Link',
                   'Additional Notes',
-                  'Times spoke (day)',
+                  'Touches',
                   'Escalated issue',
                   'Special project',
                   'Special project (min)',
@@ -2467,7 +2489,7 @@ export default function DailyLogs() {
                   l.followUp ? 'Yes' : 'No',
                   l.reviewLink ? 'Yes' : 'No',
                   l.additionalNotes,
-                  String(l.timesSpokeWithMember ?? 1),
+                  String(metricTouches(l)),
                   l.escalatedIssue ? 'Yes' : 'No',
                   l.reason === 'Special Project' ? l.specialProjectDescription : '',
                   l.reason === 'Special Project' ? String(l.specialProjectDurationMinutes || '') : '',

@@ -73,7 +73,7 @@ interface EscalationItem {
 }
 
 interface WeeklyReportExtras {
-  /** Rep id → free-text call times / schedule for this report period */
+  /** Rep id → phone time / on-phone hours for this report period (shown on weekly table as Phone time (wk)) */
   callTimesByMemberId: Record<string, string>;
   /** Total distinct members helped by the team this period (or notes). */
   teamMembersHelped: string;
@@ -297,6 +297,11 @@ function getISOWeek(date: Date): number {
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
+function formatOffDayForReport(isoDate: string): string {
+  const d = parseDate(isoDate, 'yyyy-MM-dd', new Date());
+  return isNaN(d.getTime()) ? isoDate : format(d, 'EEE MMM d');
+}
+
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -398,9 +403,9 @@ function ShareModal({
     if (includeWeekly) {
       lines.push('═══ PER-REP WEEKLY TOTALS ═══', '');
       lines.push(
-        'Team Member | Touches | Rows | Phone | Email | SalesIQ | Follow-ups | Rx | Labs | Imaging | Appt | Weekly call times',
+        'Team Member | Touches | Rows | Phone | Phone time (wk) | Email | SalesIQ | Follow-ups | Rx | Labs | Imaging | Appt',
       );
-      lines.push('-'.repeat(120));
+      lines.push('-'.repeat(140));
 
       let teamTotalTouches = 0;
       for (const member of activeMembers) {
@@ -416,12 +421,14 @@ function ShareModal({
         const labs = ml.filter((l) => l.reason === 'Labs Request').length;
         const imaging = ml.filter((l) => l.reason === 'Imaging Request').length;
         const appt = ml.filter((l) => l.reason === 'Appt Scheduling').length;
-        const callTimes = weeklyExtras.callTimesByMemberId[member.id]?.trim() || '—';
+        const phoneTimeWk = weeklyExtras.callTimesByMemberId[member.id]?.trim() || '—';
+        const phoneTimeCol =
+          phoneTimeWk.length > 22 ? `${phoneTimeWk.slice(0, 20)}…` : phoneTimeWk.padEnd(22);
         lines.push(
-          `${member.name.slice(0, 12).padEnd(12)}| ${String(totalTouches).padStart(7)} | ${String(rowCount).padStart(4)} | ${String(phone).padStart(5)} | ${String(email).padStart(5)} | ${String(salesiq).padStart(7)} | ${String(followups).padStart(10)} | ${String(rx).padStart(2)} | ${String(labs).padStart(4)} | ${String(imaging).padStart(7)} | ${String(appt).padStart(4)} | ${callTimes}`,
+          `${member.name.slice(0, 12).padEnd(12)}| ${String(totalTouches).padStart(7)} | ${String(rowCount).padStart(4)} | ${String(phone).padStart(5)} | ${phoneTimeCol} | ${String(email).padStart(5)} | ${String(salesiq).padStart(7)} | ${String(followups).padStart(10)} | ${String(rx).padStart(2)} | ${String(labs).padStart(4)} | ${String(imaging).padStart(7)} | ${String(appt).padStart(4)}`,
         );
       }
-      lines.push('-'.repeat(120));
+      lines.push('-'.repeat(140));
       lines.push(`TEAM TOUCHES | ${String(teamTotalTouches).padStart(7)}`);
       if (weeklyExtras.teamMembersHelped.trim()) {
         lines.push(`Team members helped (entered): ${weeklyExtras.teamMembersHelped.trim()}`);
@@ -909,7 +916,7 @@ function EditLogEntryModal({
                 onChange={(e) => setEscalatedIssue(e.target.checked)}
                 className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
               />
-              Escalated member issue
+              ESCALATED MEMBER ISSUE
             </label>
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -1243,7 +1250,7 @@ function DailyLogTab({
               onChange={(e) => setForm((f) => ({ ...f, escalatedIssue: e.target.checked }))}
               className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
             />
-            Escalated member issue
+            ESCALATED MEMBER ISSUE
           </label>
           <button
             onClick={handleAdd}
@@ -1681,8 +1688,32 @@ function WeeklyReportTab({
   weeklyExtras: WeeklyReportExtras;
   setWeeklyExtras: (fn: (prev: WeeklyReportExtras) => WeeklyReportExtras) => void;
 }) {
+  const [weeklyCallTimesMemberId, setWeeklyCallTimesMemberId] = useState(() => activeMembers[0]?.id ?? '');
+
+  useEffect(() => {
+    if (activeMembers.length === 0) return;
+    if (!weeklyCallTimesMemberId || !activeMembers.some((m) => m.id === weeklyCallTimesMemberId)) {
+      setWeeklyCallTimesMemberId(activeMembers[0].id);
+    }
+  }, [activeMembers, weeklyCallTimesMemberId]);
+
   const weekDateSet = useMemo(() => new Set(weekDates), [weekDates]);
   const totalTouches = useMemo(() => sumTouches(reportLogs), [reportLogs]);
+
+  const offDaysThisWeekByMember = useMemo(() => {
+    return activeMembers
+      .map((m) => {
+        const off = (memberOffDays[m.id] || [])
+          .filter((d) => weekDateSet.has(d))
+          .sort();
+        if (off.length === 0) return null;
+        return {
+          name: m.name,
+          line: `${m.name}: ${off.map(formatOffDayForReport).join(', ')}`,
+        };
+      })
+      .filter((x): x is { name: string; line: string } => x !== null);
+  }, [activeMembers, memberOffDays, weekDateSet]);
 
   const rows = useMemo(() => {
     return activeMembers.map((m) => {
@@ -1700,8 +1731,6 @@ function WeeklyReportTab({
         labs: ml.filter((l) => l.reason === 'Labs Request').length,
         imaging: ml.filter((l) => l.reason === 'Imaging Request').length,
         appt: ml.filter((l) => l.reason === 'Appt Scheduling').length,
-        crmPct: ml.length ? Math.round((ml.filter((l) => l.crmNotes).length / ml.length) * 100) : 0,
-        reviewPct: ml.length ? Math.round((ml.filter((l) => l.reviewLink).length / ml.length) * 100) : 0,
       };
     });
   }, [reportLogs, activeMembers]);
@@ -1758,23 +1787,17 @@ function WeeklyReportTab({
             {reportLogs.length} log rows · <strong>{totalTouches}</strong> total member touches · All-team avg{' '}
             {overallAvg} touches/rep · Full-time avg {fullTimeAvg} touches/rep (used for alerts)
           </p>
-          <p className="text-xs text-slate-500 mt-2">
-            <strong>Touches</strong> default to 1 per log row unless <strong>Additional notes</strong> include a
-            multiplier (e.g. <strong>x2</strong> for two touches). <strong>Special Project</strong> rows use time spent
-            instead (1 touch per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up). Channel/reason columns still count
-            log rows.
-            Part-time reps are not compared for performance alerts. Use <strong>Days marked off</strong> at the bottom of
-            this tab to record PTO or non-working days.
-          </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
+          <table className="w-full text-sm min-w-[760px]">
             <thead>
               <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
                 <th className="px-4 py-3">Team Member</th>
-                <th className="px-4 py-3">Off (this week)</th>
                 <th className="px-4 py-3 text-right">Touches</th>
                 <th className="px-4 py-3 text-right">Phone</th>
+                <th className="px-4 py-3 text-left min-w-[9rem]" title="Total phone / on-phone time for the week (entered below)">
+                  Phone time (wk)
+                </th>
                 <th className="px-4 py-3 text-right">Email</th>
                 <th className="px-4 py-3 text-right">SalesIQ</th>
                 <th className="px-4 py-3 text-right">Follow-ups</th>
@@ -1782,14 +1805,10 @@ function WeeklyReportTab({
                 <th className="px-4 py-3 text-right">Labs</th>
                 <th className="px-4 py-3 text-right">Imaging</th>
                 <th className="px-4 py-3 text-right">Appt</th>
-                <th className="px-4 py-3 text-right">CRM %</th>
-                <th className="px-4 py-3 text-right">Review %</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#A8B8AC]/15">
               {rows.map((r) => {
-                const allOff = memberOffDays[r.member.id] || [];
-                const offThisWeek = allOff.filter((d) => weekDateSet.has(d));
                 const part = isPartTimeMember(r.member);
                 const belowFtAvg = !part && fullTimeAvg > 0 && r.total < fullTimeAvg;
                 const alertRow = !part && fullTimeAvg > 0 && r.total <= fullTimeAvg * 0.8;
@@ -1800,6 +1819,7 @@ function WeeklyReportTab({
                     : belowFtAvg
                       ? 'bg-yellow-50/50'
                       : '';
+                const phoneTimeWeek = weeklyExtras.callTimesByMemberId[r.member.id]?.trim() || '';
                 return (
                   <tr key={r.name} className={`${rowClass} hover:bg-[#A8B8AC]/5 transition-colors`}>
                     <td className="px-4 py-3 font-medium text-[#2F3E2F]">
@@ -1810,26 +1830,21 @@ function WeeklyReportTab({
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 text-xs max-w-[220px]">
-                      {offThisWeek.length > 0 ? (
-                        <span className="flex flex-wrap gap-1">
-                          {offThisWeek.map((d) => (
-                            <span
-                              key={d}
-                              className="inline-block px-1.5 py-0.5 rounded bg-slate-200/90 text-[#2F3E2F] font-medium"
-                            >
-                              {d}
-                            </span>
-                          ))}
+                    <td className="px-4 py-3 text-right font-bold" title={`${r.rowCount} log row(s)`}>
+                      {r.total}
+                    </td>
+                    <td className="px-4 py-3 text-right" title="Log rows with channel Phone">
+                      {r.phone}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 text-xs max-w-[14rem]">
+                      {phoneTimeWeek ? (
+                        <span className="line-clamp-3" title={phoneTimeWeek}>
+                          {phoneTimeWeek}
                         </span>
                       ) : (
                         <span className="text-slate-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold" title={`${r.rowCount} log row(s)`}>
-                      {r.total}
-                    </td>
-                    <td className="px-4 py-3 text-right">{r.phone}</td>
                     <td className="px-4 py-3 text-right">{r.email}</td>
                     <td className="px-4 py-3 text-right">{r.salesiq}</td>
                     <td className="px-4 py-3 text-right">{r.followups}</td>
@@ -1837,19 +1852,16 @@ function WeeklyReportTab({
                     <td className="px-4 py-3 text-right">{r.labs}</td>
                     <td className="px-4 py-3 text-right">{r.imaging}</td>
                     <td className="px-4 py-3 text-right">{r.appt}</td>
-                    <td className="px-4 py-3 text-right">{r.crmPct}%</td>
-                    <td className="px-4 py-3 text-right">{r.reviewPct}%</td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot>
               <tr className="bg-[#2F3E2F]/5 font-bold text-[#2F3E2F]">
-                <td className="px-4 py-3" colSpan={2}>
-                  TEAM TOTAL
-                </td>
+                <td className="px-4 py-3">TEAM TOTAL</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.total, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.phone, 0)}</td>
+                <td className="px-4 py-3 text-slate-500 text-xs font-normal">—</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.email, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.salesiq, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.followups, 0)}</td>
@@ -1857,8 +1869,6 @@ function WeeklyReportTab({
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.labs, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.imaging, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.appt, 0)}</td>
-                <td className="px-4 py-3 text-right"></td>
-                <td className="px-4 py-3 text-right"></td>
               </tr>
             </tfoot>
           </table>
@@ -1874,51 +1884,81 @@ function WeeklyReportTab({
             <span className="w-3 h-3 rounded bg-slate-100 border border-slate-300" /> Part-time (excluded from alert math)
           </span>
         </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5 space-y-4">
-        <div>
-          <h3 className="text-base font-bold text-[#2F3E2F]">Weekly report fields</h3>
-          <p className="text-sm text-slate-500 mt-1">
-            Stored for <strong>{periodLabel}</strong>. Use for readouts: per-rep call times / availability and team
-            total members helped.
+        {offDaysThisWeekByMember.length > 0 && (
+          <div className="px-4 pb-4 border-t border-[#A8B8AC]/15 pt-4">
+            <p className="text-xs font-semibold text-[#2F3E2F] uppercase tracking-wide mb-2">Days off this week</p>
+            <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
+              {offDaysThisWeekByMember.map((item) => (
+                <li key={item.name}>{item.line}</li>
+              ))}
+            </ul>
+            <p className="text-xs text-slate-500 mt-2">
+              To add or change off days, use <strong>Days marked off</strong> below.
+            </p>
+          </div>
+        )}
+        <div className="px-4 pb-4 border-t border-[#A8B8AC]/15 pt-4">
+          <p className="text-xs text-slate-500 leading-relaxed">
+            <strong>Touches</strong> default to 1 per log row unless <strong>Additional notes</strong> include a multiplier
+            (e.g. <strong>x2</strong> for two touches). <strong>Special Project</strong> rows use time spent instead (1
+            touch per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up). <strong>Phone</strong> is the count of log
+            rows on the Phone channel; <strong>Phone time (wk)</strong> is the total on-phone or scheduled time you enter
+            in <strong>Weekly call times</strong> below. Other channel/reason columns count log rows. Part-time reps are not
+            compared for performance alerts.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {activeMembers.map((m) => (
-            <div key={m.id}>
-              <label htmlFor={`call-times-${m.id}`} className="block text-xs font-medium text-slate-600 mb-1">
-                {m.name} — weekly call times
-              </label>
-              <input
-                id={`call-times-${m.id}`}
-                type="text"
-                value={weeklyExtras.callTimesByMemberId[m.id] ?? ''}
-                onChange={(e) =>
-                  setWeeklyExtras((prev) => ({
-                    ...prev,
-                    callTimesByMemberId: { ...prev.callTimesByMemberId, [m.id]: e.target.value },
-                  }))
-                }
-                placeholder="e.g. M–F 8–6 CT, or note split shifts"
-                className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
-              />
-            </div>
-          ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5">
+        <h3 className="text-base font-bold text-[#2F3E2F] mb-3">Weekly call times</h3>
+        <p className="text-sm text-slate-500 mb-4">
+          Choose a rep, enter their weekly call times (hours, schedule, or notes). It shows in{' '}
+          <strong>Phone time (wk)</strong> on the report above for <strong>{periodLabel}</strong>.
+        </p>
+        {activeMembers.length === 0 ? (
+          <p className="text-sm text-slate-500">No active team members to log call times for.</p>
+        ) : (
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 max-w-2xl">
+          <div className="flex-1 min-w-[12rem]">
+            <label htmlFor="weekly-call-times-member" className="block text-xs font-medium text-slate-600 mb-1">
+              Team member
+            </label>
+            <select
+              id="weekly-call-times-member"
+              value={weeklyCallTimesMemberId}
+              onChange={(e) => setWeeklyCallTimesMemberId(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+            >
+              {activeMembers.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-[2] min-w-0 w-full">
+            <label htmlFor="weekly-call-times-value" className="block text-xs font-medium text-slate-600 mb-1">
+              Weekly call times
+            </label>
+            <input
+              id="weekly-call-times-value"
+              type="text"
+              value={weeklyExtras.callTimesByMemberId[weeklyCallTimesMemberId] ?? ''}
+              onChange={(e) =>
+                setWeeklyExtras((prev) => ({
+                  ...prev,
+                  callTimesByMemberId: {
+                    ...prev.callTimesByMemberId,
+                    [weeklyCallTimesMemberId]: e.target.value,
+                  },
+                }))
+              }
+              placeholder="e.g. 28 hrs on phone, M–F 8–6 CT"
+              className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="team-members-helped" className="block text-xs font-medium text-slate-600 mb-1">
-            Team — members helped (total for this period)
-          </label>
-          <input
-            id="team-members-helped"
-            type="text"
-            value={weeklyExtras.teamMembersHelped}
-            onChange={(e) => setWeeklyExtras((prev) => ({ ...prev, teamMembersHelped: e.target.value }))}
-            placeholder="e.g. 142 unique members, or short narrative"
-            className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
-          />
-        </div>
+        )}
       </div>
 
       <ReviewLinkBenchmarkCard
@@ -2194,7 +2234,7 @@ function TrendsTab({
         <div className="p-5 border-b border-[#A8B8AC]/20">
           <h3 className="text-base font-bold text-[#2F3E2F]">Escalated member issues</h3>
           <p className="text-sm text-slate-500 mt-0.5">
-            Tracked from the <strong>Escalated member issue</strong> checkbox on daily logs. Use for ongoing issues,
+            Tracked from the <strong>ESCALATED MEMBER ISSUE</strong> checkbox on daily logs. Use for ongoing issues,
             reminders, and follow-up until resolved.
           </p>
         </div>

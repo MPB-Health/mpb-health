@@ -1478,7 +1478,7 @@ function MemberOffDaysPanel({
 
   return (
     <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5">
-      <h3 className="text-base font-bold text-[#2F3E2F] mb-1">Days marked off</h3>
+      <h3 className="text-base font-bold text-[#2F3E2F] mb-1">Days Marked Off</h3>
       <p className="text-sm text-slate-500 mb-4">
         PTO and other non-working days. Off days for the selected week also appear in the weekly table above.
       </p>
@@ -1550,7 +1550,7 @@ function MemberOffDaysPanel({
   );
 }
 
-// ── Review link benchmark (full-time) ────────────────────────────────
+// ── Review Link Benchmark (full-time) ────────────────────────────────
 
 function ReviewLinkBenchmarkCard({
   activeMembers,
@@ -1593,12 +1593,12 @@ function ReviewLinkBenchmarkCard({
   return (
     <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
       <div className="p-5 border-b border-[#A8B8AC]/20">
-        <h3 className="text-base font-bold text-[#2F3E2F]">Review link benchmark — full-time</h3>
+        <h3 className="text-base font-bold text-[#2F3E2F]">Review Link Benchmark — Full-Time</h3>
         <p className="text-sm text-slate-500 mt-0.5">
           Each full-time rep (Acelyn Calderon, Adam Jordano, Ryan Cahill, and any non–part-time teammate) should log{' '}
           <strong>{REVIEW_LINKS_DAILY_TARGET}</strong> entries per day with <strong>Review Link Sent?</strong>{' '}
-          checked. Days marked <strong>off</strong> (see <strong>Days marked off</strong> at the bottom of this tab) do
-          not count toward the goal or the denominator. Cells show review-link count for that calendar day.
+          checked. Days marked <strong>off</strong> (see <strong>Days Marked Off</strong> on this tab) do not count toward
+          the goal or the denominator. Cells show review-link count for that calendar day.
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -1893,7 +1893,7 @@ function WeeklyReportTab({
               ))}
             </ul>
             <p className="text-xs text-slate-500 mt-2">
-              To add or change off days, use <strong>Days marked off</strong> below.
+              To add or change off days, use <strong>Days Marked Off</strong> below.
             </p>
           </div>
         )}
@@ -1903,14 +1903,27 @@ function WeeklyReportTab({
             (e.g. <strong>x2</strong> for two touches). <strong>Special Project</strong> rows use time spent instead (1
             touch per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up). <strong>Phone</strong> is the count of log
             rows on the Phone channel; <strong>Phone time (wk)</strong> is the total on-phone or scheduled time you enter
-            in <strong>Weekly call times</strong> below. Other channel/reason columns count log rows. Part-time reps are not
-            compared for performance alerts.
+            in <strong>Weekly Call Times</strong> at the bottom of this tab. Other channel/reason columns count log rows.
+            Part-time reps are not compared for performance alerts.
           </p>
         </div>
       </div>
 
+      <ReviewLinkBenchmarkCard
+        activeMembers={activeMembers}
+        weekLogs={reportLogs}
+        weekDates={weekDates}
+        memberOffDays={memberOffDays}
+      />
+
+      <MemberOffDaysPanel
+        activeMembers={activeMembers}
+        memberOffDays={memberOffDays}
+        setMemberOffDays={setMemberOffDays}
+      />
+
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5">
-        <h3 className="text-base font-bold text-[#2F3E2F] mb-3">Weekly call times</h3>
+        <h3 className="text-base font-bold text-[#2F3E2F] mb-3">Weekly Call Times</h3>
         <p className="text-sm text-slate-500 mb-4">
           Choose a rep, enter their weekly call times (hours, schedule, or notes). It shows in{' '}
           <strong>Phone time (wk)</strong> on the report above for <strong>{periodLabel}</strong>.
@@ -1938,7 +1951,7 @@ function WeeklyReportTab({
           </div>
           <div className="flex-[2] min-w-0 w-full">
             <label htmlFor="weekly-call-times-value" className="block text-xs font-medium text-slate-600 mb-1">
-              Weekly call times
+              Weekly Call Times
             </label>
             <input
               id="weekly-call-times-value"
@@ -1960,19 +1973,6 @@ function WeeklyReportTab({
         </div>
         )}
       </div>
-
-      <ReviewLinkBenchmarkCard
-        activeMembers={activeMembers}
-        weekLogs={reportLogs}
-        weekDates={weekDates}
-        memberOffDays={memberOffDays}
-      />
-
-      <MemberOffDaysPanel
-        activeMembers={activeMembers}
-        memberOffDays={memberOffDays}
-        setMemberOffDays={setMemberOffDays}
-      />
     </div>
   );
 }

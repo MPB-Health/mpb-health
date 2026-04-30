@@ -55,15 +55,17 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
   },
   {
     id: 'proof-of-sharing-savvos-sedera',
-    title: 'Proof of sharing — SAVVOS & Sedera',
+    title: 'Proof Of Sharing Letter',
     description:
-      'Proof of sharing reference for SAVVOS and Sedera — opens in SharePoint (Word on the web).',
+      'Proof-of-sharing letter for SAVVOS and Sedera — opens in SharePoint (Word on the web).',
     url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/IQDqN0fINTBARb2qH6OKUFAUAQQ6k_iUpFbwa8P7ZOr0s-M?e=k6epW6',
     category: 'health-sharing',
     type: 'document',
     external: true,
     keywords: [
       'proof of sharing',
+      'proof of sharing letter',
+      'letter',
       'SAVVOS',
       'Savvos',
       'Sedera',
@@ -368,8 +370,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
   {
     id: 'arm-proof-of-coverage',
     title: 'ARM Proof of Coverage Letter',
-    description:
-      'Current proof-of-coverage / eligibility letter for ARM (MEC + HDHP) members. Use when an employer, provider, school, or lender needs written confirmation of medical coverage: member name, effective dates, group / employer details, and plan identifiers. The full letter content lives in the linked Word document on SharePoint (Word on the web). Sign in with your MPB Microsoft 365 work account if the browser asks—guest or personal accounts may not open org-only files. The old downloadable .docx on the concierge site is removed; this link is the source of truth.',
+    description: 'Proof of coverage letter for ARM members — opens in SharePoint.',
     url: 'https://netorg6712533-my.sharepoint.com/:w:/g/personal/julia_mympb_com/IQAT4JP_jaafQKejx8ZJRsS5AX1mJaLP3gcQH3wnJpaYn5s?e=aDgCeJ',
     category: 'telehealth',
     subcategory: 'ARM',

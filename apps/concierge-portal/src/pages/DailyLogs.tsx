@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { addDays, format, parse as parseDate, setISOWeek, startOfISOWeek } from 'date-fns';
+import { addDays, format, parse as parseDate, getISOWeek, getISOWeekYear, setISOWeek, startOfISOWeek } from 'date-fns';
 import {
   ClipboardList,
   Plus,
@@ -261,19 +261,22 @@ function sumTouches(ml: LogEntry[]): number {
   return ml.reduce((s, l) => s + metricTouches(l), 0);
 }
 
-function refYearForWeek(logs: LogEntry[], weekNum: number): number {
-  const hit = logs.find((l) => {
+function reportISOWeekYearForWeek(logs: LogEntry[], weekNum: number): number {
+  const years: number[] = [];
+  for (const l of logs) {
     const d = parseLogDate(l.date);
-    return !isNaN(d.getTime()) && getISOWeek(d) === weekNum;
-  });
-  if (hit) return parseLogDate(hit.date).getFullYear();
-  return new Date().getFullYear();
+    if (isNaN(d.getTime()) || getISOWeek(d) !== weekNum) continue;
+    years.push(getISOWeekYear(d));
+  }
+  if (years.length > 0) return Math.max(...years);
+  return getISOWeekYear(new Date());
 }
 
 /** ISO week Monday through Friday only (business days; Sat/Sun omitted from report grids). */
-function getWeekDateStrings(weekNum: number, refYear: number): string[] {
-  const anchor = setISOWeek(new Date(refYear, 5, 15), weekNum);
-  const monday = startOfISOWeek(anchor);
+function getWeekDateStrings(weekNum: number, isoWeekYear: number): string[] {
+  const jan4 = new Date(isoWeekYear, 0, 4);
+  const inWeek = setISOWeek(jan4, weekNum);
+  const monday = startOfISOWeek(inWeek);
   return Array.from({ length: 5 }, (_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
 }
 
@@ -290,24 +293,19 @@ function fullTimeWeekAvg(
   return Math.round(ft.reduce((s, r) => s + r.total, 0) / ft.length);
 }
 
-function getISOWeek(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-}
-
-/**
- * Parse a stored log date for calendar / ISO-week logic.
- * `yyyy-MM-dd` alone is interpreted as UTC midnight by `new Date()`, which shifts the local calendar day
- * behind the stored date in US timezones and breaks weekly reports. Noon local fixes that.
- */
 function parseLogDate(isoDate: string): Date {
   const s = String(isoDate ?? '').trim();
   if (!s) return new Date(NaN);
   if (s.includes('T')) return new Date(s);
   return new Date(`${s}T12:00:00`);
+}
+
+/** Local calendar yyyy-MM-dd (avoids `toISOString()` UTC day shift for default log date). */
+function formatLocalYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function formatOffDayForReport(isoDate: string): string {
@@ -973,7 +971,7 @@ function DailyLogTab({
   activeMembers: TeamMember[];
   onEscalationFromLog: (item: EscalationItem) => void;
 }) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatLocalYmd(new Date());
   const [form, setForm] = useState<Omit<LogEntry, 'id'>>({
     date: today,
     teamMember: activeMembers[0]?.name || '',
@@ -1438,7 +1436,7 @@ function MemberOffDaysPanel({
   memberOffDays: Record<string, string[]>;
   setMemberOffDays: (fn: (prev: Record<string, string[]>) => Record<string, string[]>) => void;
 }) {
-  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const today = useMemo(() => formatLocalYmd(new Date()), []);
   const [selectedId, setSelectedId] = useState('');
   const [offDate, setOffDate] = useState(today);
 
@@ -2232,7 +2230,7 @@ function TrendsTab({
   const thirtyDaysAgo = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
-    return d.toISOString().split('T')[0];
+    return formatLocalYmd(d);
   }, []);
 
   const flagged = useMemo(() => {
@@ -2616,22 +2614,29 @@ export default function DailyLogs() {
 
   const activeMembers = useMemo(() => team.filter((m) => m.status === 'Active'), [team]);
 
-  const isoRefYear = useMemo(() => refYearForWeek(logs, weekNumber), [logs, weekNumber]);
+  const reportISOWeekYear = useMemo(
+    () => reportISOWeekYearForWeek(logs, weekNumber),
+    [logs, weekNumber],
+  );
 
   const reportLogs = useMemo(() => {
     return logs.filter((l) => {
       const d = parseLogDate(l.date);
-      return !isNaN(d.getTime()) && getISOWeek(d) === weekNumber;
+      if (isNaN(d.getTime())) return false;
+      return getISOWeek(d) === weekNumber && getISOWeekYear(d) === reportISOWeekYear;
     });
-  }, [logs, weekNumber]);
+  }, [logs, weekNumber, reportISOWeekYear]);
 
-  const weekDates = useMemo(() => getWeekDateStrings(weekNumber, isoRefYear), [weekNumber, isoRefYear]);
+  const weekDates = useMemo(
+    () => getWeekDateStrings(weekNumber, reportISOWeekYear),
+    [weekNumber, reportISOWeekYear],
+  );
 
   const periodLabel = useMemo(() => `ISO Week ${weekNumber}`, [weekNumber]);
 
   const reportStorageKey = useMemo(
-    () => buildReportStorageKey(weekNumber, isoRefYear),
-    [weekNumber, isoRefYear],
+    () => buildReportStorageKey(weekNumber, reportISOWeekYear),
+    [weekNumber, reportISOWeekYear],
   );
 
   const currentWeeklyExtras = weeklyReportExtrasMap[reportStorageKey] ?? defaultWeeklyExtras();

@@ -22,6 +22,8 @@ export interface TeamMember {
   status: 'Active' | 'Inactive';
   role: string;
   partTime?: boolean;
+  /** auth.users.id linked to this roster row; null for shared/legacy accounts. */
+  userId?: string | null;
 }
 
 export interface LogEntry {
@@ -75,6 +77,7 @@ function teamRowToMember(r: Record<string, unknown>): TeamMember {
     status: r.status === 'Inactive' ? 'Inactive' : 'Active',
     role: String(r.role ?? 'Concierge'),
     partTime: r.part_time === true,
+    userId: r.user_id ? String(r.user_id) : null,
   };
 }
 
@@ -99,11 +102,23 @@ function logRowToEntry(r: Record<string, unknown>): LogEntry {
   };
 }
 
-function logEntryToInsert(entry: LogEntry, id: string): Record<string, unknown> {
+async function resolveTeamMemberIdByName(name: string): Promise<string | null> {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  const { data } = await db
+    .from(T_TEAM)
+    .select('id')
+    .eq('name', trimmed)
+    .maybeSingle();
+  return data?.id ? String(data.id) : null;
+}
+
+async function logEntryToInsert(entry: LogEntry, id: string): Promise<Record<string, unknown>> {
   return {
     id,
     log_date: entry.date,
     team_member_name: entry.teamMember,
+    team_member_id: await resolveTeamMemberIdByName(entry.teamMember),
     channel: entry.channel,
     member_name: entry.memberName,
     reason: entry.reason,
@@ -258,7 +273,8 @@ export async function insertLogEntry(entry: LogEntry): Promise<LogEntry> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const payload = { ...logEntryToInsert({ ...entry, id }, id), created_by: user?.id ?? null };
+  const base = await logEntryToInsert({ ...entry, id }, id);
+  const payload = { ...base, created_by: user?.id ?? null };
   const { data, error } = await db.from(T_LOGS).insert(payload).select('*').single();
   if (error) throw error;
   return logRowToEntry(data);
@@ -266,7 +282,7 @@ export async function insertLogEntry(entry: LogEntry): Promise<LogEntry> {
 
 export async function updateLogEntry(entry: LogEntry): Promise<LogEntry> {
   const id = entry.id;
-  const payload = logEntryToInsert(entry, id);
+  const payload = await logEntryToInsert(entry, id);
   delete (payload as { id?: string }).id;
   const { data, error } = await db.from(T_LOGS).update(payload).eq('id', id).select('*').single();
   if (error) throw error;
@@ -373,12 +389,26 @@ function clearLegacyKeys(): void {
   }
 }
 
-/** If Supabase has no log rows but this browser still has legacy keys, upload once then clear keys. */
-export async function migrateLegacyLocalStorageIfNeeded(remoteLogCount: number): Promise<void> {
+/**
+ * One-time per-browser upload of pre-Supabase localStorage into shared tables.
+ *
+ * **Important:** Historically this only ran when `remoteLogCount === 0`. That meant whoever
+ * opened the app first (e.g. one rep) uploaded their browser’s data; everyone else’s
+ * localStorage was never imported because the remote was no longer empty — so only that
+ * person’s historical logs appeared in the shared DB. We now key off a local flag instead.
+ */
+const LEGACY_IMPORT_DONE_KEY = 'concierge_legacy_import_v1_done';
+
+/** If this browser still has legacy daily-log keys, upload once (even if Supabase already has rows), then clear. */
+export async function migrateLegacyLocalStorageIfNeeded(): Promise<void> {
   if (typeof window === 'undefined') return;
-  if (remoteLogCount > 0) return;
+  if (localStorage.getItem(LEGACY_IMPORT_DONE_KEY) === '1') return;
+
   const rawLogs = readLegacy<unknown[]>(LEGACY.LOGS, []);
-  if (!Array.isArray(rawLogs) || rawLogs.length === 0) return;
+  if (!Array.isArray(rawLogs) || rawLogs.length === 0) {
+    localStorage.setItem(LEGACY_IMPORT_DONE_KEY, '1');
+    return;
+  }
 
   const { data: dbTeam } = await db.from(T_TEAM).select('id, name');
   const nameToId = new Map<string, string>();
@@ -432,6 +462,7 @@ export async function migrateLegacyLocalStorageIfNeeded(remoteLogCount: number):
   }
 
   clearLegacyKeys();
+  localStorage.setItem(LEGACY_IMPORT_DONE_KEY, '1');
 }
 
 const DEFAULT_SEED_TEAM: Omit<TeamMember, 'id'>[] = [
@@ -448,6 +479,7 @@ export async function loadConciergeWorkspace(): Promise<{
   offDays: Record<string, string[]>;
   escalations: EscalationItem[];
   weeklyExtrasMap: Record<string, WeeklyReportExtras>;
+  currentUserId: string | null;
 }> {
   let team = await fetchTeamMembers();
   if (team.length === 0) {
@@ -458,13 +490,23 @@ export async function loadConciergeWorkspace(): Promise<{
   }
 
   let logs = await fetchLogEntries();
-  if (logs.length === 0) {
-    await migrateLegacyLocalStorageIfNeeded(0);
-    logs = await fetchLogEntries();
-  }
+  await migrateLegacyLocalStorageIfNeeded();
+  logs = await fetchLogEntries();
 
   const offDays = await fetchMemberOffDays();
   const escalations = await fetchEscalations();
   const weeklyExtrasMap = await fetchWeeklyReportExtrasMap();
-  return { team, logs, offDays, escalations, weeklyExtrasMap };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return {
+    team,
+    logs,
+    offDays,
+    escalations,
+    weeklyExtrasMap,
+    currentUserId: user?.id ?? null,
+  };
 }

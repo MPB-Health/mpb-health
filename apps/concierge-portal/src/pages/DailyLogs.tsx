@@ -54,6 +54,8 @@ interface TeamMember {
   role: string;
   /** Part-time reps are excluded from peer-average performance alerts. */
   partTime?: boolean;
+  /** auth.users.id linked to this roster row; null for shared/legacy accounts. */
+  userId?: string | null;
 }
 
 interface LogEntry {
@@ -992,6 +994,7 @@ function DailyLogTab({
   onDeleteLog,
   rosterTeam,
   onEscalationFromLog,
+  currentUserId,
 }: {
   logs: LogEntry[];
   onAddLog: (entry: LogEntry) => Promise<LogEntry>;
@@ -999,11 +1002,17 @@ function DailyLogTab({
   onDeleteLog: (id: string) => Promise<void>;
   rosterTeam: TeamMember[];
   onEscalationFromLog: (item: EscalationItem) => Promise<void>;
+  currentUserId: string | null;
 }) {
   const today = formatLocalYmd(new Date());
+  /** Roster row matching the logged-in user (when linked); falls back to roster[0]. */
+  const defaultTeamMemberName =
+    (currentUserId && rosterTeam.find((m) => m.userId === currentUserId)?.name) ||
+    rosterTeam[0]?.name ||
+    '';
   const [form, setForm] = useState<Omit<LogEntry, 'id'>>({
     date: today,
-    teamMember: rosterTeam[0]?.name || '',
+    teamMember: defaultTeamMemberName,
     channel: 'Phone',
     memberName: '',
     reason: 'Sharing Requests',
@@ -1106,12 +1115,15 @@ function DailyLogTab({
 
   useEffect(() => {
     if (rosterTeam.length === 0) return;
+    const linked =
+      currentUserId && rosterTeam.find((m) => m.userId === currentUserId)?.name;
+    const fallback = linked || rosterTeam[0].name;
     setForm((f) =>
       f.teamMember && rosterTeam.some((m) => m.name === f.teamMember)
         ? f
-        : { ...f, teamMember: rosterTeam[0].name },
+        : { ...f, teamMember: fallback },
     );
-  }, [rosterTeam]);
+  }, [rosterTeam, currentUserId]);
 
   const query = search.toLowerCase().trim();
   const filteredLogs = useMemo(() => {
@@ -2736,6 +2748,7 @@ export default function DailyLogs() {
   const [memberOffDaysRaw, setMemberOffDaysRaw] = useState<Record<string, string[]>>({});
   const [escalations, setEscalationsRaw] = useState<EscalationItem[]>([]);
   const [weeklyReportExtrasMap, setWeeklyReportExtrasMapRaw] = useState<Record<string, WeeklyReportExtras>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -2749,6 +2762,7 @@ export default function DailyLogs() {
         setMemberOffDaysRaw(w.offDays);
         setEscalationsRaw(w.escalations);
         setWeeklyReportExtrasMapRaw(w.weeklyExtrasMap);
+        setCurrentUserId(w.currentUserId);
       } catch (e) {
         if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Could not load concierge data');
       } finally {
@@ -2927,6 +2941,7 @@ export default function DailyLogs() {
                 setMemberOffDaysRaw(w.offDays);
                 setEscalationsRaw(w.escalations);
                 setWeeklyReportExtrasMapRaw(w.weeklyExtrasMap);
+                setCurrentUserId(w.currentUserId);
                 setLoadError(null);
               } catch (e) {
                 setLoadError(e instanceof Error ? e.message : 'Could not load concierge data');
@@ -3107,6 +3122,7 @@ export default function DailyLogs() {
           onDeleteLog={onDeleteLog}
           rosterTeam={team}
           onEscalationFromLog={onEscalationFromLog}
+          currentUserId={currentUserId}
         />
       )}
       {activeTab === 'weekly' && (

@@ -19,8 +19,21 @@ import {
   Copy,
   Mail,
   FileSpreadsheet,
+  Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import {
+  loadConciergeWorkspace,
+  insertLogEntry,
+  updateLogEntry,
+  deleteLogEntry,
+  syncTeamRoster,
+  fetchTeamMembers,
+  replaceMemberOffDays,
+  insertEscalation,
+  updateEscalation,
+  upsertWeeklyReportExtras,
+} from '../lib/concierge-api';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -176,14 +189,6 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-const STORAGE_KEY_LOGS = 'concierge-daily-logs';
-const STORAGE_KEY_TEAM = 'concierge-team-members';
-const STORAGE_KEY_MEMBER_OFF_DAYS = 'concierge-member-off-days';
-/** Legacy `weekNum:memberId` keys — migrated once into member-id-only storage. */
-const STORAGE_KEY_MEMBER_OFF_DAYS_LEGACY = 'concierge-weekly-off-days';
-const STORAGE_KEY_ESCALATIONS = 'concierge-escalated-member-issues';
-const STORAGE_KEY_WEEKLY_EXTRAS = 'concierge-weekly-report-extras';
-
 const DEFAULT_TEAM: TeamMember[] = [
   { id: '1', name: 'Acelyn Calderon', status: 'Active', role: 'Concierge' },
   { id: '2', name: 'Adam Jordano', status: 'Active', role: 'Concierge' },
@@ -308,6 +313,15 @@ function formatLocalYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Newest calendar date first so the daily log table is not limited to “last N inserted”. */
+function sortLogsByDateDesc(logs: LogEntry[]): LogEntry[] {
+  return [...logs].sort((a, b) => {
+    const dc = b.date.localeCompare(a.date);
+    if (dc !== 0) return dc;
+    return String(b.id).localeCompare(String(a.id));
+  });
+}
+
 function formatOffDayForReport(isoDate: string): string {
   const d = parseDate(isoDate, 'yyyy-MM-dd', new Date());
   return isNaN(d.getTime()) ? isoDate : format(d, 'EEE MMM d');
@@ -319,74 +333,8 @@ function safeFormatWeekdayFromIso(isoDate: string): string {
   return isNaN(d.getTime()) ? '—' : format(d, 'EEE');
 }
 
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function normalizeStoredTeam(stored: TeamMember[]): TeamMember[] {
-  const renamed = stored.map((m) => {
-    const next = LEGACY_TEAM_MEMBER_NAMES[m.name];
-    return next ? { ...m, name: next } : { ...m };
-  });
-  const byName = new Map(renamed.map((m) => [m.name, m]));
-  const merged = [...renamed];
-  for (const def of DEFAULT_TEAM) {
-    if (!byName.has(def.name)) {
-      merged.push({ ...def, id: uid() });
-    } else {
-      const idx = merged.findIndex((x) => x.name === def.name);
-      if (idx >= 0 && def.partTime) {
-        merged[idx] = { ...merged[idx], partTime: true };
-      }
-    }
-  }
-  return merged;
-}
-
-/** Load off-days keyed by member id; migrate legacy weekly-keyed storage if still present. */
-function loadMemberOffDaysFromStorage(): Record<string, string[]> {
-  try {
-    const v2raw = localStorage.getItem(STORAGE_KEY_MEMBER_OFF_DAYS);
-    let merged: Record<string, string[]> = {};
-    if (v2raw) {
-      const parsed = JSON.parse(v2raw) as Record<string, string[]>;
-      if (parsed && typeof parsed === 'object') {
-        merged = { ...parsed };
-      }
-    }
-
-    const legacyRaw = localStorage.getItem(STORAGE_KEY_MEMBER_OFF_DAYS_LEGACY);
-    if (legacyRaw) {
-      const raw = JSON.parse(legacyRaw) as Record<string, string[]>;
-      for (const [key, dates] of Object.entries(raw)) {
-        if (!Array.isArray(dates)) continue;
-        const colon = key.indexOf(':');
-        const memberId = colon >= 0 ? key.slice(colon + 1) : key;
-        if (!merged[memberId]) merged[memberId] = [];
-        for (const dt of dates) {
-          if (typeof dt === 'string' && !merged[memberId].includes(dt)) merged[memberId].push(dt);
-        }
-      }
-      localStorage.removeItem(STORAGE_KEY_MEMBER_OFF_DAYS_LEGACY);
-    }
-
-    for (const id of Object.keys(merged)) {
-      merged[id].sort();
-    }
-    localStorage.setItem(STORAGE_KEY_MEMBER_OFF_DAYS, JSON.stringify(merged));
-    return merged;
-  } catch {
-    return {};
-  }
 }
 
 // ── Share Modal ────────────────────────────────────────────────────────
@@ -644,8 +592,8 @@ function EditLogEntryModal({
   log: LogEntry;
   activeMembers: TeamMember[];
   onClose: () => void;
-  onSave: (next: LogEntry) => void;
-  onEscalationFromLog: (item: EscalationItem) => void;
+  onSave: (next: LogEntry) => void | Promise<void>;
+  onEscalationFromLog: (item: EscalationItem) => void | Promise<void>;
 }) {
   const prevEscalated = log.escalatedIssue === true;
   const [date, setDate] = useState(log.date);
@@ -665,7 +613,7 @@ function EditLogEntryModal({
     log.specialProjectDurationMinutes || 0,
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!date || !teamMember) {
       toast.error('Please fill in Date and Team Member');
       return;
@@ -712,24 +660,28 @@ function EditLogEntryModal({
     };
     const touchOverride = computeTouchOverrideForSave({ ...merged, touchOverride: false });
     const next = normalizeLogEntry({ ...merged, touchOverride });
-    onSave(next);
-    if (next.escalatedIssue && !prevEscalated) {
-      const summary =
-        next.reason === 'Special Project'
-          ? [next.specialProjectDescription, next.additionalNotes].filter((x) => x.trim()).join(' — ') ||
-            'Escalated Member Issue'
-          : [next.reason, next.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated Member Issue';
-      onEscalationFromLog({
-        id: uid(),
-        memberName: next.memberName.trim(),
-        summary,
-        openedAt: next.date,
-        logEntryId: next.id,
-        status: 'open',
-      });
+    try {
+      await onSave(next);
+      if (next.escalatedIssue && !prevEscalated) {
+        const summary =
+          next.reason === 'Special Project'
+            ? [next.specialProjectDescription, next.additionalNotes].filter((x) => x.trim()).join(' — ') ||
+              'Escalated Member Issue'
+            : [next.reason, next.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated Member Issue';
+        await onEscalationFromLog({
+          id: uid(),
+          memberName: next.memberName.trim(),
+          summary,
+          openedAt: next.date,
+          logEntryId: next.id,
+          status: 'open',
+        });
+      }
+      onClose();
+      toast.success('Entry updated');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not save entry');
     }
-    onClose();
-    toast.success('Entry updated');
   };
 
   return (
@@ -962,14 +914,18 @@ function EditLogEntryModal({
 
 function DailyLogTab({
   logs,
-  setLogs,
+  onAddLog,
+  onUpdateLog,
+  onDeleteLog,
   activeMembers,
   onEscalationFromLog,
 }: {
   logs: LogEntry[];
-  setLogs: (fn: (prev: LogEntry[]) => LogEntry[]) => void;
+  onAddLog: (entry: LogEntry) => Promise<LogEntry>;
+  onUpdateLog: (entry: LogEntry) => Promise<LogEntry>;
+  onDeleteLog: (id: string) => Promise<void>;
   activeMembers: TeamMember[];
-  onEscalationFromLog: (item: EscalationItem) => void;
+  onEscalationFromLog: (item: EscalationItem) => Promise<void>;
 }) {
   const today = formatLocalYmd(new Date());
   const [form, setForm] = useState<Omit<LogEntry, 'id'>>({
@@ -989,7 +945,7 @@ function DailyLogTab({
     specialProjectDurationMinutes: 0,
   });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.date || !form.teamMember) {
       toast.error('Please fill in Date and Team Member');
       return;
@@ -1025,46 +981,54 @@ function DailyLogTab({
           ? Math.min(99999, Math.max(1, Math.floor(Number(form.specialProjectDurationMinutes) || 0)))
           : 0,
     });
-    setLogs((prev) => [entry, ...prev]);
-    if (entry.escalatedIssue) {
-      const summary =
-        entry.reason === 'Special Project'
-          ? [entry.specialProjectDescription, entry.additionalNotes].filter((x) => x.trim()).join(' — ') ||
-            'Escalated Member Issue'
-          : [entry.reason, entry.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated Member Issue';
-      onEscalationFromLog({
-        id: uid(),
-        memberName: entry.memberName.trim(),
-        summary,
-        openedAt: entry.date,
-        logEntryId: entry.id,
-        status: 'open',
-      });
+    try {
+      const saved = await onAddLog(entry);
+      if (saved.escalatedIssue) {
+        const summary =
+          saved.reason === 'Special Project'
+            ? [saved.specialProjectDescription, saved.additionalNotes].filter((x) => x.trim()).join(' — ') ||
+              'Escalated Member Issue'
+            : [saved.reason, saved.additionalNotes].filter((x) => x.trim()).join(' — ') || 'Escalated Member Issue';
+        await onEscalationFromLog({
+          id: uid(),
+          memberName: saved.memberName.trim(),
+          summary,
+          openedAt: saved.date,
+          logEntryId: saved.id,
+          status: 'open',
+        });
+      }
+      setForm((f) => ({
+        ...f,
+        memberName: '',
+        otherNotes: '',
+        additionalNotes: '',
+        crmNotes: false,
+        followUp: false,
+        reviewLink: false,
+        timesSpokeWithMember: 1,
+        escalatedIssue: false,
+        specialProjectDescription: '',
+        specialProjectDurationMinutes: 0,
+      }));
+      toast.success('Log entry added');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not add entry');
     }
-    setForm((f) => ({
-      ...f,
-      memberName: '',
-      otherNotes: '',
-      additionalNotes: '',
-      crmNotes: false,
-      followUp: false,
-      reviewLink: false,
-      timesSpokeWithMember: 1,
-      escalatedIssue: false,
-      specialProjectDescription: '',
-      specialProjectDurationMinutes: 0,
-    }));
-    toast.success('Log entry added');
   };
 
   const [search, setSearch] = useState('');
 
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
 
-  const handleDelete = (id: string) => {
-    setLogs((prev) => prev.filter((l) => l.id !== id));
-    if (editingLog?.id === id) setEditingLog(null);
-    toast.success('Entry removed');
+  const handleDelete = async (id: string) => {
+    try {
+      await onDeleteLog(id);
+      if (editingLog?.id === id) setEditingLog(null);
+      toast.success('Entry removed');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not delete entry');
+    }
   };
 
   useEffect(() => {
@@ -1078,8 +1042,9 @@ function DailyLogTab({
 
   const query = search.toLowerCase().trim();
   const filteredLogs = useMemo(() => {
-    if (!query) return logs.slice(0, 50);
-    return logs.filter(
+    const ordered = sortLogsByDateDesc(logs);
+    if (!query) return ordered;
+    return ordered.filter(
       (l) =>
         l.memberName.toLowerCase().includes(query) ||
         l.teamMember.toLowerCase().includes(query) ||
@@ -1283,9 +1248,9 @@ function DailyLogTab({
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
         <div className="p-4 border-b border-[#A8B8AC]/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h3 className="text-base font-bold text-[#2F3E2F]">
-            {query ? 'Search Results' : 'Recent Entries'}{' '}
+            {query ? 'Search Results' : 'All entries'}{' '}
             <span className="text-sm font-normal text-slate-500">
-              ({query ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}` : `${logs.length} total`})
+              ({query ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}` : `${logs.length} total, newest date first`})
             </span>
           </h3>
           <div className="relative w-full sm:w-72">
@@ -1415,8 +1380,8 @@ function DailyLogTab({
           log={editingLog}
           activeMembers={activeMembers}
           onClose={() => setEditingLog(null)}
-          onSave={(next) => {
-            setLogs((prev) => prev.map((l) => (l.id === next.id ? next : l)));
+          onSave={async (next) => {
+            await onUpdateLog(next);
           }}
           onEscalationFromLog={onEscalationFromLog}
         />
@@ -2192,11 +2157,11 @@ function AnalyticsTab({
 function TrendsTab({
   logs,
   escalations,
-  setEscalations,
+  onSaveEscalation,
 }: {
   logs: LogEntry[];
   escalations: EscalationItem[];
-  setEscalations: (fn: (prev: EscalationItem[]) => EscalationItem[]) => void;
+  onSaveEscalation: (item: EscalationItem) => Promise<void>;
 }) {
   const openEscalations = useMemo(
     () => escalations.filter((e) => e.status === 'open').sort((a, b) => b.openedAt.localeCompare(a.openedAt)),
@@ -2210,21 +2175,37 @@ function TrendsTab({
     [escalations],
   );
 
-  const markComplete = (id: string) => {
+  const markComplete = async (id: string) => {
     const today = format(new Date(), 'yyyy-MM-dd');
-    setEscalations((prev) =>
-      prev.map((e) =>
-        e.id === id ? { ...e, status: 'complete' as const, completedAt: today } : e,
-      ),
-    );
-    toast.success('Marked complete');
+    const item = escalations.find((e) => e.id === id);
+    if (!item) return;
+    const updated: EscalationItem = {
+      ...item,
+      status: 'complete',
+      completedAt: today,
+    };
+    try {
+      await onSaveEscalation(updated);
+      toast.success('Marked complete');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not update');
+    }
   };
 
-  const reopen = (id: string) => {
-    setEscalations((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: 'open' as const, completedAt: undefined } : e)),
-    );
-    toast.success('Moved back to open');
+  const reopen = async (id: string) => {
+    const item = escalations.find((e) => e.id === id);
+    if (!item) return;
+    const updated: EscalationItem = {
+      ...item,
+      status: 'open',
+      completedAt: undefined,
+    };
+    try {
+      await onSaveEscalation(updated);
+      toast.success('Moved back to open');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not update');
+    }
   };
 
   const thirtyDaysAgo = useMemo(() => {
@@ -2531,83 +2512,85 @@ export default function DailyLogs() {
   const [activeTab, setActiveTab] = useState<TabId>('log');
   const [showShare, setShowShare] = useState(false);
   const [weekNumber, setWeekNumber] = useState(() => getISOWeek(new Date()));
+  const [hydrated, setHydrated] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [logs, setLogsRaw] = useState<LogEntry[]>(() => {
-    const raw = loadFromStorage<LogEntry[]>(STORAGE_KEY_LOGS, []);
-    const migrated = migrateLogsStorage(raw);
-    try {
-      if (JSON.stringify(migrated) !== JSON.stringify(raw)) {
-        localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(migrated));
+  const [logs, setLogsRaw] = useState<LogEntry[]>([]);
+  const [team, setTeamRaw] = useState<TeamMember[]>([]);
+  const [memberOffDaysRaw, setMemberOffDaysRaw] = useState<Record<string, string[]>>({});
+  const [escalations, setEscalationsRaw] = useState<EscalationItem[]>([]);
+  const [weeklyReportExtrasMap, setWeeklyReportExtrasMapRaw] = useState<Record<string, WeeklyReportExtras>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadError(null);
+        const w = await loadConciergeWorkspace();
+        if (cancelled) return;
+        setTeamRaw(w.team);
+        setLogsRaw(migrateLogsStorage(w.logs));
+        setMemberOffDaysRaw(w.offDays);
+        setEscalationsRaw(w.escalations);
+        setWeeklyReportExtrasMapRaw(w.weeklyExtrasMap);
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Could not load concierge data');
+      } finally {
+        if (!cancelled) setHydrated(true);
       }
-    } catch {
-      /* ignore */
-    }
-    return migrated;
-  });
-  const [team, setTeamRaw] = useState<TeamMember[]>(() => {
-    const raw = loadFromStorage<TeamMember[]>(STORAGE_KEY_TEAM, []);
-    const base = raw.length ? raw : DEFAULT_TEAM.map((m) => ({ ...m }));
-    const normalized = normalizeStoredTeam(base);
-    try {
-      if (JSON.stringify(normalized) !== JSON.stringify(raw)) {
-        localStorage.setItem(STORAGE_KEY_TEAM, JSON.stringify(normalized));
-      }
-    } catch {
-      /* ignore */
-    }
-    return normalized;
-  });
-  const [memberOffDaysRaw, setMemberOffDaysRaw] = useState<Record<string, string[]>>(() =>
-    loadMemberOffDaysFromStorage(),
-  );
-
-  const [escalations, setEscalationsRaw] = useState<EscalationItem[]>(() =>
-    loadFromStorage<EscalationItem[]>(STORAGE_KEY_ESCALATIONS, []),
-  );
-
-  const [weeklyReportExtrasMap, setWeeklyReportExtrasMapRaw] = useState<Record<string, WeeklyReportExtras>>(() =>
-    loadFromStorage<Record<string, WeeklyReportExtras>>(STORAGE_KEY_WEEKLY_EXTRAS, {}),
-  );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const setMemberOffDays: typeof setMemberOffDaysRaw = useCallback((fn) => {
     setMemberOffDaysRaw((prev) => {
       const next = typeof fn === 'function' ? fn(prev) : fn;
-      localStorage.setItem(STORAGE_KEY_MEMBER_OFF_DAYS, JSON.stringify(next));
+      void replaceMemberOffDays(next).catch((e) =>
+        toast.error(e instanceof Error ? e.message : 'Could not save off days'),
+      );
       return next;
     });
   }, []);
 
-  const setEscalations = useCallback(
-    (fn: EscalationItem[] | ((prev: EscalationItem[]) => EscalationItem[])) => {
-      setEscalationsRaw((prev) => {
-        const next = typeof fn === 'function' ? fn(prev) : fn;
-        localStorage.setItem(STORAGE_KEY_ESCALATIONS, JSON.stringify(next));
-        return next;
-      });
-    },
-    [],
-  );
+  const onSaveEscalation = useCallback(async (item: EscalationItem) => {
+    await updateEscalation(item);
+    setEscalationsRaw((prev) => prev.map((e) => (e.id === item.id ? item : e)));
+  }, []);
 
-  const onEscalationFromLog = useCallback(
-    (item: EscalationItem) => {
-      setEscalations((prev) => [item, ...prev]);
-    },
-    [setEscalations],
-  );
+  const onEscalationFromLog = useCallback(async (item: EscalationItem) => {
+    const saved = await insertEscalation(item);
+    setEscalationsRaw((prev) => [saved, ...prev]);
+  }, []);
 
-  const setLogs: typeof setLogsRaw = useCallback((fn) => {
-    setLogsRaw((prev) => {
-      const rawNext = typeof fn === 'function' ? fn(prev) : fn;
-      const next = rawNext.map(normalizeLogEntry);
-      localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(next));
-      return next;
-    });
+  const onAddLog = useCallback(async (entry: LogEntry) => {
+    const saved = await insertLogEntry(entry);
+    setLogsRaw((prev) => [saved, ...prev]);
+    return saved;
+  }, []);
+
+  const onUpdateLog = useCallback(async (entry: LogEntry) => {
+    const saved = await updateLogEntry(entry);
+    setLogsRaw((prev) => prev.map((l) => (l.id === saved.id ? saved : l)));
+    return saved;
+  }, []);
+
+  const onDeleteLog = useCallback(async (id: string) => {
+    await deleteLogEntry(id);
+    setLogsRaw((prev) => prev.filter((l) => l.id !== id));
   }, []);
 
   const setTeam: typeof setTeamRaw = useCallback((fn) => {
     setTeamRaw((prev) => {
       const next = typeof fn === 'function' ? fn(prev) : fn;
-      localStorage.setItem(STORAGE_KEY_TEAM, JSON.stringify(next));
+      void syncTeamRoster(next)
+        .then(() => fetchTeamMembers())
+        .then((fresh) => setTeamRaw(fresh))
+        .catch((e) => {
+          toast.error(e instanceof Error ? e.message : 'Could not save team');
+          void fetchTeamMembers().then(setTeamRaw);
+        });
       return next;
     });
   }, []);
@@ -2632,7 +2615,10 @@ export default function DailyLogs() {
     [weekNumber, reportISOWeekYear],
   );
 
-  const periodLabel = useMemo(() => `ISO Week ${weekNumber}`, [weekNumber]);
+  const periodLabel = useMemo(
+    () => `ISO Week ${weekNumber} · ${reportISOWeekYear}`,
+    [weekNumber, reportISOWeekYear],
+  );
 
   const reportStorageKey = useMemo(
     () => buildReportStorageKey(weekNumber, reportISOWeekYear),
@@ -2647,11 +2633,9 @@ export default function DailyLogs() {
         const cur = prev[reportStorageKey] ?? defaultWeeklyExtras();
         const nextEntry = fn(cur);
         const next = { ...prev, [reportStorageKey]: nextEntry };
-        try {
-          localStorage.setItem(STORAGE_KEY_WEEKLY_EXTRAS, JSON.stringify(next));
-        } catch {
-          /* ignore */
-        }
+        void upsertWeeklyReportExtras(reportStorageKey, nextEntry).catch((e) =>
+          toast.error(e instanceof Error ? e.message : 'Could not save weekly notes'),
+        );
         return next;
       });
     },
@@ -2667,10 +2651,59 @@ export default function DailyLogs() {
     });
   }, [logs, weekNumber]);
 
-  return (
+  if (!hydrated) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-600">
+        <Loader2 className="w-8 h-8 animate-spin text-[#4A7C8A]" />
+        <p className="text-sm">Loading concierge data…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50/80 p-6 text-center space-y-3">
+        <p className="text-sm text-red-900 font-medium">Could not load daily logs</p>
+        <p className="text-xs text-red-800/90">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setHydrated(false);
+            setLoadError(null);
+            void (async () => {
+              try {
+                const w = await loadConciergeWorkspace();
+                setTeamRaw(w.team);
+                setLogsRaw(migrateLogsStorage(w.logs));
+                setMemberOffDaysRaw(w.offDays);
+                setEscalationsRaw(w.escalations);
+                setWeeklyReportExtrasMapRaw(w.weeklyExtrasMap);
+                setLoadError(null);
+              } catch (e) {
+                setLoadError(e instanceof Error ? e.message : 'Could not load concierge data');
+              } finally {
+                setHydrated(true);
+              }
+            })();
+          }}
+          className="px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773]"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
     <div className="space-y-6 animate-fade-up">
       {/* Header */}
       <div className="flex flex-col gap-4">
+        <div
+          className="rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-950 [&_strong]:font-semibold"
+          role="status"
+        >
+          <strong>Shared team data.</strong> Roster, log entries, and weekly report notes are stored in Supabase. Anyone
+          signed in with the concierge (or admin) role sees the same data. If you get a permission error, ask an admin
+          to assign your account the <strong>concierge</strong> role.
+        </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2F3E2F] to-[#4A7C8A] flex items-center justify-center">
@@ -2809,7 +2842,9 @@ export default function DailyLogs() {
       {activeTab === 'log' && (
         <DailyLogTab
           logs={logs}
-          setLogs={setLogs}
+          onAddLog={onAddLog}
+          onUpdateLog={onUpdateLog}
+          onDeleteLog={onDeleteLog}
           activeMembers={activeMembers}
           onEscalationFromLog={onEscalationFromLog}
         />
@@ -2837,7 +2872,7 @@ export default function DailyLogs() {
         />
       )}
       {activeTab === 'trends' && (
-        <TrendsTab logs={logs} escalations={escalations} setEscalations={setEscalations} />
+        <TrendsTab logs={logs} escalations={escalations} onSaveEscalation={onSaveEscalation} />
       )}
       {activeTab === 'team' && <TeamTab team={team} setTeam={setTeam} />}
 

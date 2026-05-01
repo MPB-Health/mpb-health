@@ -203,7 +203,37 @@ const LEGACY_TEAM_MEMBER_NAMES: Record<string, string> = {
   Acelyn: 'Acelyn Calderon',
   Adam: 'Adam Jordano',
   Ryan: 'Ryan Cahill',
+  Vanessa: 'Vanessa Orozco',
+  Tupac: 'Tupac Manzanarez',
 };
+
+/** Map stored log rep string to canonical roster `name` (case / spacing / first-name only). */
+function resolveTeamMemberToRosterName(raw: string, roster: TeamMember[]): string {
+  const t = raw.trim().replace(/\s+/g, ' ');
+  if (!t || roster.length === 0) return t;
+  const lower = t.toLowerCase();
+  for (const m of roster) {
+    if (m.name.toLowerCase() === lower) return m.name;
+  }
+  const firstTok = t.split(/\s+/)[0];
+  const titled =
+    firstTok.length > 0
+      ? firstTok.charAt(0).toUpperCase() + firstTok.slice(1).toLowerCase()
+      : '';
+  const legacyFull =
+    LEGACY_TEAM_MEMBER_NAMES[t] ??
+    (firstTok ? LEGACY_TEAM_MEMBER_NAMES[firstTok] : undefined) ??
+    (titled ? LEGACY_TEAM_MEMBER_NAMES[titled] : undefined);
+  if (legacyFull) {
+    const hit = roster.find((m) => m.name === legacyFull);
+    if (hit) return hit.name;
+  }
+  const first = t.split(/\s+/)[0];
+  const firstLower = first.toLowerCase();
+  const firstMatches = roster.filter((m) => m.name.split(/\s+/)[0].toLowerCase() === firstLower);
+  if (firstMatches.length === 1) return firstMatches[0].name;
+  return t;
+}
 
 function applyLegacyTeamMemberNamesToLogs(logs: LogEntry[]): LogEntry[] {
   return logs.map((l) => {
@@ -246,8 +276,16 @@ function normalizeLogEntry(l: LogEntry): LogEntry {
   };
 }
 
-function migrateLogsStorage(logs: LogEntry[]): LogEntry[] {
-  return applyLegacyTeamMemberNamesToLogs(logs).map(normalizeLogEntry);
+function migrateLogsStorage(logs: LogEntry[], roster?: TeamMember[]): LogEntry[] {
+  const legacy = applyLegacyTeamMemberNamesToLogs(logs);
+  const aligned =
+    roster && roster.length > 0
+      ? legacy.map((l) => ({
+          ...l,
+          teamMember: resolveTeamMemberToRosterName(l.teamMember, roster),
+        }))
+      : legacy;
+  return aligned.map(normalizeLogEntry);
 }
 
 function buildReportStorageKey(weekNumber: number, refYear: number): string {
@@ -286,14 +324,14 @@ function getWeekDateStrings(weekNum: number, isoWeekYear: number): string[] {
   return Array.from({ length: 5 }, (_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
 }
 
-/** Full-time-only average for weekly totals (excludes part-time). */
+/** Full-time-only average for weekly totals (excludes part-time and Inactive). */
 function fullTimeWeekAvg(
-  activeMembers: TeamMember[],
+  teamRoster: TeamMember[],
   rows: { name: string; total: number }[],
 ): number {
   const ft = rows.filter((r) => {
-    const m = activeMembers.find((x) => x.name === r.name);
-    return m && !isPartTimeMember(m);
+    const m = teamRoster.find((x) => x.name === r.name);
+    return m && m.status === 'Active' && !isPartTimeMember(m);
   });
   if (ft.length === 0) return 0;
   return Math.round(ft.reduce((s, r) => s + r.total, 0) / ft.length);
@@ -1658,6 +1696,7 @@ function WeeklyReportTab({
   onJumpToLatestLogWeek,
   weekDates,
   periodLabel,
+  rosterTeam,
   activeMembers,
   memberOffDays,
   setMemberOffDays,
@@ -1669,34 +1708,36 @@ function WeeklyReportTab({
   onJumpToLatestLogWeek: () => void;
   weekDates: string[];
   periodLabel: string;
+  /** Full roster (Active + Inactive) so every rep gets a row when logs use roster names. */
+  rosterTeam: TeamMember[];
   activeMembers: TeamMember[];
   memberOffDays: Record<string, string[]>;
   setMemberOffDays: (fn: (prev: Record<string, string[]>) => Record<string, string[]>) => void;
   weeklyExtras: WeeklyReportExtras;
   setWeeklyExtras: (fn: (prev: WeeklyReportExtras) => WeeklyReportExtras) => void;
 }) {
-  const [weeklyCallTimesMemberId, setWeeklyCallTimesMemberId] = useState(() => activeMembers[0]?.id ?? '');
+  const [weeklyCallTimesMemberId, setWeeklyCallTimesMemberId] = useState(() => rosterTeam[0]?.id ?? '');
 
   useEffect(() => {
-    if (activeMembers.length === 0) return;
-    if (!weeklyCallTimesMemberId || !activeMembers.some((m) => m.id === weeklyCallTimesMemberId)) {
-      setWeeklyCallTimesMemberId(activeMembers[0].id);
+    if (rosterTeam.length === 0) return;
+    if (!weeklyCallTimesMemberId || !rosterTeam.some((m) => m.id === weeklyCallTimesMemberId)) {
+      setWeeklyCallTimesMemberId(rosterTeam[0].id);
     }
-  }, [activeMembers, weeklyCallTimesMemberId]);
+  }, [rosterTeam, weeklyCallTimesMemberId]);
 
   const resolvedCallTimesMemberId = useMemo(() => {
-    if (activeMembers.length === 0) return '';
-    if (weeklyCallTimesMemberId && activeMembers.some((m) => m.id === weeklyCallTimesMemberId)) {
+    if (rosterTeam.length === 0) return '';
+    if (weeklyCallTimesMemberId && rosterTeam.some((m) => m.id === weeklyCallTimesMemberId)) {
       return weeklyCallTimesMemberId;
     }
-    return activeMembers[0].id;
-  }, [activeMembers, weeklyCallTimesMemberId]);
+    return rosterTeam[0].id;
+  }, [rosterTeam, weeklyCallTimesMemberId]);
 
   const weekDateSet = useMemo(() => new Set(weekDates), [weekDates]);
   const totalTouches = useMemo(() => sumTouches(reportLogs), [reportLogs]);
 
   const offDaysThisWeekByMember = useMemo(() => {
-    return activeMembers
+    return rosterTeam
       .map((m) => {
         const off = (memberOffDays[m.id] || [])
           .filter((d) => weekDateSet.has(d))
@@ -1708,10 +1749,10 @@ function WeeklyReportTab({
         };
       })
       .filter((x): x is { name: string; line: string } => x !== null);
-  }, [activeMembers, memberOffDays, weekDateSet]);
+  }, [rosterTeam, memberOffDays, weekDateSet]);
 
   const rows = useMemo(() => {
-    return activeMembers.map((m) => {
+    return rosterTeam.map((m) => {
       const ml = reportLogs.filter((l) => l.teamMember === m.name);
       return {
         member: m,
@@ -1728,11 +1769,11 @@ function WeeklyReportTab({
         appt: ml.filter((l) => l.reason === 'Appt Scheduling').length,
       };
     });
-  }, [reportLogs, activeMembers]);
+  }, [reportLogs, rosterTeam]);
 
   const fullTimeAvg = useMemo(
-    () => fullTimeWeekAvg(activeMembers, rows.map((r) => ({ name: r.name, total: r.total }))),
-    [activeMembers, rows],
+    () => fullTimeWeekAvg(rosterTeam, rows.map((r) => ({ name: r.name, total: r.total }))),
+    [rosterTeam, rows],
   );
 
   const overallAvg = rows.length ? Math.round(rows.reduce((s, r) => s + r.total, 0) / rows.length) : 0;
@@ -1741,6 +1782,7 @@ function WeeklyReportTab({
     if (fullTimeAvg <= 0) return [] as string[];
     const names: string[] = [];
     for (const r of rows) {
+      if (r.member.status !== 'Active') continue;
       if (isPartTimeMember(r.member)) continue;
       if (r.total <= fullTimeAvg * 0.8) names.push(r.name);
     }
@@ -1824,22 +1866,30 @@ function WeeklyReportTab({
             </thead>
             <tbody className="divide-y divide-[#A8B8AC]/15">
               {rows.map((r) => {
+                const inactive = r.member.status !== 'Active';
                 const part = isPartTimeMember(r.member);
-                const belowFtAvg = !part && fullTimeAvg > 0 && r.total < fullTimeAvg;
-                const alertRow = !part && fullTimeAvg > 0 && r.total <= fullTimeAvg * 0.8;
-                const rowClass = part
-                  ? 'bg-slate-50/80'
-                  : alertRow
-                    ? 'bg-red-50/50'
-                    : belowFtAvg
-                      ? 'bg-yellow-50/50'
-                      : '';
+                const belowFtAvg = !inactive && !part && fullTimeAvg > 0 && r.total < fullTimeAvg;
+                const alertRow = !inactive && !part && fullTimeAvg > 0 && r.total <= fullTimeAvg * 0.8;
+                const rowClass = inactive
+                  ? 'bg-slate-50/70 text-slate-600'
+                  : part
+                    ? 'bg-slate-50/80'
+                    : alertRow
+                      ? 'bg-red-50/50'
+                      : belowFtAvg
+                        ? 'bg-yellow-50/50'
+                        : '';
                 const phoneTimeWeek = weeklyExtras.callTimesByMemberId[r.member.id]?.trim() || '';
                 return (
                   <tr key={r.name} className={`${rowClass} hover:bg-[#A8B8AC]/5 transition-colors`}>
                     <td className="px-4 py-3 font-medium text-[#2F3E2F]">
                       <span className="block">{r.name}</span>
-                      {part && (
+                      {inactive && (
+                        <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wide block">
+                          Inactive
+                        </span>
+                      )}
+                      {part && !inactive && (
                         <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wide">
                           Part-time
                         </span>
@@ -1932,7 +1982,7 @@ function WeeklyReportTab({
       />
 
       <MemberOffDaysPanel
-        activeMembers={activeMembers}
+        activeMembers={rosterTeam}
         memberOffDays={memberOffDays}
         setMemberOffDays={setMemberOffDays}
       />
@@ -1943,8 +1993,8 @@ function WeeklyReportTab({
           Choose a rep, enter their weekly call times (hours, schedule, or notes). It shows in{' '}
           <strong>Phone time</strong> on the report above for <strong>{periodLabel}</strong>.
         </p>
-        {activeMembers.length === 0 ? (
-          <p className="text-sm text-slate-500">No active team members to log call times for.</p>
+        {rosterTeam.length === 0 ? (
+          <p className="text-sm text-slate-500">No team members on the roster yet.</p>
         ) : (
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 max-w-2xl">
           <div className="flex-1 min-w-[12rem]">
@@ -1957,9 +2007,10 @@ function WeeklyReportTab({
               onChange={(e) => setWeeklyCallTimesMemberId(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             >
-              {activeMembers.map((m) => (
+              {rosterTeam.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
+                  {m.status !== 'Active' ? ' (inactive)' : ''}
                 </option>
               ))}
             </select>
@@ -1996,11 +2047,11 @@ function WeeklyReportTab({
 
 function PerformanceTab({
   logs,
-  activeMembers,
+  team,
   weekNumber,
 }: {
   logs: LogEntry[];
-  activeMembers: TeamMember[];
+  team: TeamMember[];
   weekNumber: number;
 }) {
   const isoWeeks = useMemo(
@@ -2024,12 +2075,12 @@ function PerformanceTab({
   }, [isoWeeks]);
 
   const data = useMemo(() => {
-    return activeMembers.map((m) => {
+    return team.map((m) => {
       const counts = (periods.keys as number[]).map((wk) => getISOWeekTouches(m.name, wk));
       const avg = Math.round(counts.reduce((s, c) => s + c, 0) / counts.length);
       return { name: m.name, counts, avg };
     });
-  }, [activeMembers, periods, getISOWeekTouches]);
+  }, [team, periods, getISOWeekTouches]);
 
   const maxCount = Math.max(1, ...data.flatMap((d) => d.counts));
 
@@ -2550,7 +2601,7 @@ export default function DailyLogs() {
         const w = await loadConciergeWorkspace();
         if (cancelled) return;
         setTeamRaw(w.team);
-        setLogsRaw(migrateLogsStorage(w.logs));
+        setLogsRaw(migrateLogsStorage(w.logs, w.team));
         setMemberOffDaysRaw(w.offDays);
         setEscalationsRaw(w.escalations);
         setWeeklyReportExtrasMapRaw(w.weeklyExtrasMap);
@@ -2684,9 +2735,10 @@ export default function DailyLogs() {
   useEffect(() => {
     const onVis = () => {
       if (document.visibilityState !== 'visible') return;
-      void fetchLogEntries()
-        .then((next) => setLogsRaw(migrateLogsStorage(next)))
-        .catch(() => {});
+      void Promise.all([fetchLogEntries(), fetchTeamMembers()]).then(([nextLogs, nextTeam]) => {
+        setTeamRaw(nextTeam);
+        setLogsRaw(migrateLogsStorage(nextLogs, nextTeam));
+      });
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
@@ -2715,7 +2767,7 @@ export default function DailyLogs() {
               try {
                 const w = await loadConciergeWorkspace();
                 setTeamRaw(w.team);
-                setLogsRaw(migrateLogsStorage(w.logs));
+                setLogsRaw(migrateLogsStorage(w.logs, w.team));
                 setMemberOffDaysRaw(w.offDays);
                 setEscalationsRaw(w.escalations);
                 setWeeklyReportExtrasMapRaw(w.weeklyExtrasMap);
@@ -2908,6 +2960,7 @@ export default function DailyLogs() {
           onJumpToLatestLogWeek={jumpToLatestLogWeek}
           weekDates={weekDates}
           periodLabel={periodLabel}
+          rosterTeam={team}
           activeMembers={activeMembers}
           memberOffDays={memberOffDaysRaw}
           setMemberOffDays={setMemberOffDays}
@@ -2916,7 +2969,7 @@ export default function DailyLogs() {
         />
       )}
       {activeTab === 'performance' && (
-        <PerformanceTab logs={logs} activeMembers={activeMembers} weekNumber={weekNumber} />
+        <PerformanceTab logs={logs} team={team} weekNumber={weekNumber} />
       )}
       {activeTab === 'analytics' && (
         <AnalyticsTab

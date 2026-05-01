@@ -1,5 +1,14 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { addDays, format, parse as parseDate, getISOWeek, getISOWeekYear, setISOWeek, startOfISOWeek } from 'date-fns';
+import {
+  addDays,
+  format,
+  parse as parseDate,
+  getISOWeek,
+  getISOWeekYear,
+  setISOWeek,
+  startOfISOWeek,
+  subWeeks,
+} from 'date-fns';
 import {
   ClipboardList,
   Plus,
@@ -232,6 +241,24 @@ function resolveTeamMemberToRosterName(raw: string, roster: TeamMember[]): strin
   const firstLower = first.toLowerCase();
   const firstMatches = roster.filter((m) => m.name.split(/\s+/)[0].toLowerCase() === firstLower);
   if (firstMatches.length === 1) return firstMatches[0].name;
+
+  const tokens = t.split(/\s+/).filter(Boolean);
+  for (const tok of tokens) {
+    const tl = tok.toLowerCase();
+    const byLast = roster.filter((m) => {
+      const parts = m.name.split(/\s+/);
+      return parts.length > 0 && parts[parts.length - 1].toLowerCase() === tl;
+    });
+    if (byLast.length === 1) return byLast[0].name;
+  }
+
+  if (lower.length >= 3) {
+    const contained = roster.filter(
+      (m) => m.name.toLowerCase().includes(lower) || lower.includes(m.name.toLowerCase()),
+    );
+    if (contained.length === 1) return contained[0].name;
+  }
+
   return t;
 }
 
@@ -324,6 +351,12 @@ function getWeekDateStrings(weekNum: number, isoWeekYear: number): string[] {
   return Array.from({ length: 5 }, (_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
 }
 
+/** Monday of an ISO week (local), for week-number / ISO week-year math. */
+function mondayOfISOWeek(isoWeekYear: number, weekNum: number): Date {
+  const jan4 = new Date(isoWeekYear, 0, 4);
+  return startOfISOWeek(setISOWeek(jan4, weekNum));
+}
+
 /** Full-time-only average for weekly totals (excludes part-time and Inactive). */
 function fullTimeWeekAvg(
   teamRoster: TeamMember[],
@@ -397,7 +430,6 @@ function ShareModal({
   const [copied, setCopied] = useState(false);
 
   const buildReportText = useCallback(() => {
-    const activeMembers = team.filter((m) => m.status === 'Active');
     const lines: string[] = [
       `CONCIERGE WEEKLY REPORT — ${periodTitle}`,
       `Generated: ${new Date().toLocaleDateString()}`,
@@ -411,11 +443,12 @@ function ShareModal({
       );
       lines.push('-'.repeat(140));
 
-      let teamTotalTouches = 0;
-      for (const member of activeMembers) {
+      /** Same roster as the on-screen weekly table (Active + Inactive). */
+      const rosterForShare = team;
+      const teamTotalTouches = sumTouches(weekLogs);
+      for (const member of rosterForShare) {
         const ml = weekLogs.filter((l) => l.teamMember === member.name);
         const totalTouches = sumTouches(ml);
-        teamTotalTouches += totalTouches;
         const rowCount = ml.length;
         const phone = ml.filter((l) => l.channel === 'Phone').length;
         const email = ml.filter((l) => l.channel === 'Email').length;
@@ -623,13 +656,13 @@ function ShareModal({
 
 function EditLogEntryModal({
   log,
-  activeMembers,
+  rosterTeam,
   onClose,
   onSave,
   onEscalationFromLog,
 }: {
   log: LogEntry;
-  activeMembers: TeamMember[];
+  rosterTeam: TeamMember[];
   onClose: () => void;
   onSave: (next: LogEntry) => void | Promise<void>;
   onEscalationFromLog: (item: EscalationItem) => void | Promise<void>;
@@ -755,12 +788,13 @@ function EditLogEntryModal({
                 onChange={(e) => setTeamMember(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
               >
-                {!activeMembers.some((m) => m.name === teamMember) && teamMember ? (
+                {!rosterTeam.some((m) => m.name === teamMember) && teamMember ? (
                   <option value={teamMember}>{teamMember}</option>
                 ) : null}
-                {activeMembers.map((m) => (
+                {rosterTeam.map((m) => (
                   <option key={m.id} value={m.name}>
                     {m.name}
+                    {m.status === 'Inactive' ? ' (inactive)' : ''}
                   </option>
                 ))}
               </select>
@@ -956,20 +990,20 @@ function DailyLogTab({
   onAddLog,
   onUpdateLog,
   onDeleteLog,
-  activeMembers,
+  rosterTeam,
   onEscalationFromLog,
 }: {
   logs: LogEntry[];
   onAddLog: (entry: LogEntry) => Promise<LogEntry>;
   onUpdateLog: (entry: LogEntry) => Promise<LogEntry>;
   onDeleteLog: (id: string) => Promise<void>;
-  activeMembers: TeamMember[];
+  rosterTeam: TeamMember[];
   onEscalationFromLog: (item: EscalationItem) => Promise<void>;
 }) {
   const today = formatLocalYmd(new Date());
   const [form, setForm] = useState<Omit<LogEntry, 'id'>>({
     date: today,
-    teamMember: activeMembers[0]?.name || '',
+    teamMember: rosterTeam[0]?.name || '',
     channel: 'Phone',
     memberName: '',
     reason: 'Sharing Requests',
@@ -1071,13 +1105,13 @@ function DailyLogTab({
   };
 
   useEffect(() => {
-    if (activeMembers.length === 0) return;
+    if (rosterTeam.length === 0) return;
     setForm((f) =>
-      f.teamMember && activeMembers.some((m) => m.name === f.teamMember)
+      f.teamMember && rosterTeam.some((m) => m.name === f.teamMember)
         ? f
-        : { ...f, teamMember: activeMembers[0].name },
+        : { ...f, teamMember: rosterTeam[0].name },
     );
-  }, [activeMembers]);
+  }, [rosterTeam]);
 
   const query = search.toLowerCase().trim();
   const filteredLogs = useMemo(() => {
@@ -1117,8 +1151,11 @@ function DailyLogTab({
               onChange={(e) => setForm((f) => ({ ...f, teamMember: e.target.value }))}
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             >
-              {activeMembers.map((m) => (
-                <option key={m.id} value={m.name}>{m.name}</option>
+              {rosterTeam.map((m) => (
+                <option key={m.id} value={m.name}>
+                  {m.name}
+                  {m.status === 'Inactive' ? ' (inactive)' : ''}
+                </option>
               ))}
             </select>
           </div>
@@ -1417,7 +1454,7 @@ function DailyLogTab({
         <EditLogEntryModal
           key={editingLog.id}
           log={editingLog}
-          activeMembers={activeMembers}
+          rosterTeam={rosterTeam}
           onClose={() => setEditingLog(null)}
           onSave={async (next) => {
             await onUpdateLog(next);
@@ -2136,15 +2173,52 @@ function PerformanceTab({
 // ── Reason Analytics Tab ───────────────────────────────────────────────
 
 function AnalyticsTab({
+  team,
   weekLogs,
   comparisonLogs,
   periodLabel,
 }: {
+  team: TeamMember[];
   weekLogs: LogEntry[];
   comparisonLogs: LogEntry[];
   periodLabel: string;
 }) {
   const prevWeekCount = 4;
+  const rosterNames = useMemo(() => new Set(team.map((m) => m.name)), [team]);
+
+  const memberBreakdown = useMemo(() => {
+    const rows = team.map((m) => {
+      const wl = weekLogs.filter((l) => l.teamMember === m.name);
+      const cl = comparisonLogs.filter((l) => l.teamMember === m.name);
+      return {
+        member: m,
+        touches: sumTouches(wl),
+        rowCount: wl.length,
+        prevTouches: sumTouches(cl),
+        prevRowCount: cl.length,
+      };
+    });
+    const orphanWeek = weekLogs.filter((l) => !rosterNames.has(l.teamMember));
+    const orphanPrev = comparisonLogs.filter((l) => !rosterNames.has(l.teamMember));
+    if (orphanWeek.length > 0 || orphanPrev.length > 0) {
+      rows.push({
+        member: {
+          id: '__orphan__',
+          name: 'Other (not on roster)',
+          status: 'Active' as const,
+          role: '—',
+        },
+        touches: sumTouches(orphanWeek),
+        rowCount: orphanWeek.length,
+        prevTouches: sumTouches(orphanPrev),
+        prevRowCount: orphanPrev.length,
+      });
+    }
+    return rows;
+  }, [team, weekLogs, comparisonLogs, rosterNames]);
+
+  const maxMemberTouches = Math.max(1, ...memberBreakdown.map((r) => r.touches));
+
   const rows = useMemo(() => {
     const total = weekLogs.length || 1;
     return REASONS.map((reason) => {
@@ -2159,66 +2233,136 @@ function AnalyticsTab({
   const maxCount = Math.max(1, ...rows.map((r) => r.count));
 
   return (
-    <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
-      <div className="p-5 border-b border-[#A8B8AC]/20">
-        <h3 className="text-base font-bold text-[#2F3E2F]">Reason for Contact — {periodLabel}</h3>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Identify which issues are driving the most contacts
-        </p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
-              <th className="px-4 py-3">Reason</th>
-              <th className="px-4 py-3 text-right">Count</th>
-              <th className="px-4 py-3">Distribution</th>
-              <th className="px-4 py-3 text-right">% of Total</th>
-              <th className="px-4 py-3 text-right">vs prior 4</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#A8B8AC]/15">
-            {rows.map((r) => (
-              <tr key={r.reason} className={`hover:bg-[#A8B8AC]/5 transition-colors ${r.spike >= 50 ? 'bg-red-50/40' : ''}`}>
-                <td className="px-4 py-3 font-medium text-[#2F3E2F]">{r.reason}</td>
-                <td className="px-4 py-3 text-right font-bold tabular-nums">{r.count}</td>
-                <td className="px-4 py-3">
-                  <div className="w-full bg-[#A8B8AC]/15 rounded-full h-2.5">
-                    <div
-                      className="bg-gradient-to-r from-[#4A7C8A] to-[#8B9B3A] h-2.5 rounded-full transition-all"
-                      style={{ width: `${(r.count / maxCount) * 100}%` }}
-                    />
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">{r.pct.toFixed(1)}%</td>
-                <td className="px-4 py-3 text-right">
-                  {r.prevAvg > 0 ? (
-                    <span className={`text-xs font-medium ${r.spike >= 50 ? 'text-red-600' : r.spike > 0 ? 'text-orange-600' : 'text-[#5B6B2E]'}`}>
-                      {r.spike > 0 ? '+' : ''}{r.spike.toFixed(0)}%
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400">N/A</span>
-                  )}
-                </td>
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
+        <div className="p-5 border-b border-[#A8B8AC]/20">
+          <h3 className="text-base font-bold text-[#2F3E2F]">Reason for Contact — {periodLabel}</h3>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Identify which issues are driving the most contacts. &quot;vs prior 4&quot; compares this ISO week to the per-week
+            average across the <strong>four ISO weeks immediately before</strong> it (week-year aware).
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
+                <th className="px-4 py-3">Reason</th>
+                <th className="px-4 py-3 text-right">Count</th>
+                <th className="px-4 py-3">Distribution</th>
+                <th className="px-4 py-3 text-right">% of Total</th>
+                <th className="px-4 py-3 text-right">vs prior 4</th>
               </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="bg-[#2F3E2F]/5 font-bold text-[#2F3E2F]">
-              <td className="px-4 py-3">TOTAL</td>
-              <td className="px-4 py-3 text-right">{weekLogs.length}</td>
-              <td className="px-4 py-3"></td>
-              <td className="px-4 py-3 text-right">100%</td>
-              <td className="px-4 py-3"></td>
-            </tr>
-          </tfoot>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#A8B8AC]/15">
+              {rows.map((r) => (
+                <tr
+                  key={r.reason}
+                  className={`hover:bg-[#A8B8AC]/5 transition-colors ${r.spike >= 50 ? 'bg-red-50/40' : ''}`}
+                >
+                  <td className="px-4 py-3 font-medium text-[#2F3E2F]">{r.reason}</td>
+                  <td className="px-4 py-3 text-right font-bold tabular-nums">{r.count}</td>
+                  <td className="px-4 py-3">
+                    <div className="w-full bg-[#A8B8AC]/15 rounded-full h-2.5">
+                      <div
+                        className="bg-gradient-to-r from-[#4A7C8A] to-[#8B9B3A] h-2.5 rounded-full transition-all"
+                        style={{ width: `${(r.count / maxCount) * 100}%` }}
+                      />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">{r.pct.toFixed(1)}%</td>
+                  <td className="px-4 py-3 text-right">
+                    {r.prevAvg > 0 ? (
+                      <span
+                        className={`text-xs font-medium ${r.spike >= 50 ? 'text-red-600' : r.spike > 0 ? 'text-orange-600' : 'text-[#5B6B2E]'}`}
+                      >
+                        {r.spike > 0 ? '+' : ''}
+                        {r.spike.toFixed(0)}%
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">N/A</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-[#2F3E2F]/5 font-bold text-[#2F3E2F]">
+                <td className="px-4 py-3">TOTAL</td>
+                <td className="px-4 py-3 text-right">{weekLogs.length}</td>
+                <td className="px-4 py-3"></td>
+                <td className="px-4 py-3 text-right">100%</td>
+                <td className="px-4 py-3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="p-4 border-t border-[#A8B8AC]/20 text-xs text-slate-500">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-red-100 border border-red-300" />
+            Red = current period is 50%+ higher than average of the prior four ISO weeks (possible systemic issue)
+          </span>
+        </div>
       </div>
-      <div className="p-4 border-t border-[#A8B8AC]/20 text-xs text-slate-500">
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-red-100 border border-red-300" />
-          Red = current period is 50%+ higher than average of the prior 4 periods (possible systemic issue)
-        </span>
+
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
+        <div className="p-5 border-b border-[#A8B8AC]/20">
+          <h3 className="text-base font-bold text-[#2F3E2F]">Member touches — {periodLabel}</h3>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Full roster (active and inactive). Touches use the same rules as the Weekly Report. Prior column is{' '}
+            <strong>total touches</strong> across the four ISO weeks before this one—not a weekly average.
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[520px]">
+            <thead>
+              <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
+                <th className="px-4 py-3">Team member</th>
+                <th className="px-4 py-3 text-right">Touches</th>
+                <th className="px-4 py-3 text-right">Log rows</th>
+                <th className="px-4 py-3">This week</th>
+                <th className="px-4 py-3 text-right">Prior 4w touches</th>
+                <th className="px-4 py-3 text-right">Prior 4w rows</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#A8B8AC]/15">
+              {memberBreakdown.map((r) => (
+                <tr
+                  key={r.member.id}
+                  className={`hover:bg-[#A8B8AC]/5 transition-colors ${r.member.id === '__orphan__' ? 'bg-amber-50/50' : ''}`}
+                >
+                  <td className="px-4 py-3 font-medium text-[#2F3E2F]">
+                    <span className="block">{r.member.name}</span>
+                    {r.member.status === 'Inactive' && r.member.id !== '__orphan__' && (
+                      <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wide">Inactive</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right font-bold tabular-nums">{r.touches}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{r.rowCount}</td>
+                  <td className="px-4 py-3">
+                    <div className="w-full max-w-[200px] bg-[#A8B8AC]/15 rounded-full h-2">
+                      <div
+                        className="bg-[#4A7C8A] h-2 rounded-full transition-all"
+                        style={{ width: `${(r.touches / maxMemberTouches) * 100}%` }}
+                      />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">{r.prevTouches}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{r.prevRowCount}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-[#2F3E2F]/5 font-bold text-[#2F3E2F]">
+                <td className="px-4 py-3">TEAM</td>
+                <td className="px-4 py-3 text-right">{sumTouches(weekLogs)}</td>
+                <td className="px-4 py-3 text-right">{weekLogs.length}</td>
+                <td className="px-4 py-3"></td>
+                <td className="px-4 py-3 text-right">{sumTouches(comparisonLogs)}</td>
+                <td className="px-4 py-3 text-right">{comparisonLogs.length}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -2638,15 +2782,15 @@ export default function DailyLogs() {
 
   const onAddLog = useCallback(async (entry: LogEntry) => {
     const saved = await insertLogEntry(entry);
-    setLogsRaw((prev) => [saved, ...prev]);
+    setLogsRaw((prev) => migrateLogsStorage([saved, ...prev], team));
     return saved;
-  }, []);
+  }, [team]);
 
   const onUpdateLog = useCallback(async (entry: LogEntry) => {
     const saved = await updateLogEntry(entry);
-    setLogsRaw((prev) => prev.map((l) => (l.id === saved.id ? saved : l)));
+    setLogsRaw((prev) => migrateLogsStorage(prev.map((l) => (l.id === saved.id ? saved : l)), team));
     return saved;
-  }, []);
+  }, [team]);
 
   const onDeleteLog = useCallback(async (id: string) => {
     await deleteLogEntry(id);
@@ -2668,6 +2812,12 @@ export default function DailyLogs() {
   }, []);
 
   const activeMembers = useMemo(() => team.filter((m) => m.status === 'Active'), [team]);
+
+  /** Re-align log rep names when roster loads or changes (canonical names, legacy keys). */
+  useEffect(() => {
+    if (team.length === 0) return;
+    setLogsRaw((prev) => migrateLogsStorage(prev, team));
+  }, [team]);
 
   const reportISOWeekYear = useMemo(
     () => reportISOWeekYearForWeek(logs, weekNumber),
@@ -2715,13 +2865,19 @@ export default function DailyLogs() {
   );
 
   const analyticsComparisonLogs = useMemo(() => {
-    const prevWeeks = [weekNumber - 4, weekNumber - 3, weekNumber - 2, weekNumber - 1];
+    const reportMonday = mondayOfISOWeek(reportISOWeekYear, weekNumber);
+    const keys = new Set(
+      [1, 2, 3, 4].map((n) => {
+        const d = subWeeks(reportMonday, n);
+        return `${getISOWeekYear(d)}-${getISOWeek(d)}`;
+      }),
+    );
     return logs.filter((l) => {
       const d = parseLogDate(l.date);
       if (isNaN(d.getTime())) return false;
-      return prevWeeks.includes(getISOWeek(d));
+      return keys.has(`${getISOWeekYear(d)}-${getISOWeek(d)}`);
     });
-  }, [logs, weekNumber]);
+  }, [logs, weekNumber, reportISOWeekYear]);
 
   const jumpToLatestLogWeek = useCallback(() => {
     if (logs.length === 0) return;
@@ -2949,7 +3105,7 @@ export default function DailyLogs() {
           onAddLog={onAddLog}
           onUpdateLog={onUpdateLog}
           onDeleteLog={onDeleteLog}
-          activeMembers={activeMembers}
+          rosterTeam={team}
           onEscalationFromLog={onEscalationFromLog}
         />
       )}
@@ -2973,6 +3129,7 @@ export default function DailyLogs() {
       )}
       {activeTab === 'analytics' && (
         <AnalyticsTab
+          team={team}
           weekLogs={reportLogs}
           comparisonLogs={analyticsComparisonLogs}
           periodLabel={periodLabel}

@@ -47,6 +47,7 @@ import {
   upsertWeeklyReportExtras,
   inspectLegacyLocalStorage,
   forceLegacyImportFromThisBrowser,
+  importLegacyJsonForMember,
 } from '../lib/concierge-api';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -1142,6 +1143,12 @@ function DailyLogTab({
   }>(() => inspectLegacyLocalStorage());
   const [importing, setImporting] = useState(false);
 
+  /** Admin "Import JSON for rep" modal state. */
+  const [showJsonImport, setShowJsonImport] = useState(false);
+  const [jsonImportRep, setJsonImportRep] = useState<string>('');
+  const [jsonImportText, setJsonImportText] = useState('');
+  const [jsonImporting, setJsonImporting] = useState(false);
+
   const handleForceImport = async () => {
     if (importing) return;
     if (legacyState.rawLogCount === 0) {
@@ -1165,6 +1172,32 @@ function DailyLogTab({
       toast.error(e instanceof Error ? e.message : 'Could not import legacy entries');
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleJsonImportSubmit = async () => {
+    if (jsonImporting) return;
+    if (!jsonImportRep) {
+      toast.error('Pick which rep this data belongs to');
+      return;
+    }
+    if (!jsonImportText.trim()) {
+      toast.error('Paste the JSON dump from the rep’s browser');
+      return;
+    }
+    setJsonImporting(true);
+    try {
+      const { imported, skipped } = await importLegacyJsonForMember(jsonImportRep, jsonImportText);
+      await onRefresh();
+      toast.success(
+        `Imported ${imported} entries for ${jsonImportRep}${skipped > 0 ? ` (skipped ${skipped})` : ''}`,
+      );
+      setJsonImportText('');
+      setShowJsonImport(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Import failed');
+    } finally {
+      setJsonImporting(false);
     }
   };
 
@@ -1426,6 +1459,15 @@ function DailyLogTab({
               )}
               <button
                 type="button"
+                onClick={() => setShowJsonImport(true)}
+                title="Paste a rep's localStorage JSON dump and attribute every entry to them"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#4A7C8A]/40 bg-[#4A7C8A]/5 text-[#2F3E2F] text-sm font-medium hover:bg-[#4A7C8A]/10 transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                Import JSON for rep
+              </button>
+              <button
+                type="button"
                 onClick={handleRefresh}
                 disabled={refreshing}
                 title="Re-fetch logs and roster from Supabase"
@@ -1621,6 +1663,98 @@ function DailyLogTab({
           }}
           onEscalationFromLog={onEscalationFromLog}
         />
+      )}
+      {showJsonImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-[#A8B8AC]/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2F3E2F] to-[#4A7C8A] flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-[#2F3E2F]">Import legacy entries for a rep</h2>
+                  <p className="text-sm text-[#5B6B2E]">
+                    Paste the rep’s <code>concierge-daily-logs</code> JSON dump from their browser
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Close"
+                title="Close"
+                onClick={() => setShowJsonImport(false)}
+                className="p-2 hover:bg-[#A8B8AC]/20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="rounded-lg border border-[#4A7C8A]/30 bg-[#4A7C8A]/5 p-4 text-sm text-[#2F3E2F] space-y-2">
+                <p className="font-medium">Send the rep this snippet (browser DevTools → Console):</p>
+                <pre className="bg-white border border-[#A8B8AC]/30 rounded p-2 text-xs overflow-x-auto whitespace-pre-wrap">
+{`copy(localStorage.getItem('concierge-daily-logs') || '[]'); console.log('Copied to clipboard');`}
+                </pre>
+                <p className="text-xs text-slate-600">
+                  They run it on https://concierge.mpb.health in the browser they used yesterday, then send you the clipboard contents.
+                </p>
+              </div>
+              <div>
+                <label htmlFor="json-import-rep" className="block text-xs font-medium text-slate-600 mb-1">
+                  Attribute all entries to
+                </label>
+                <select
+                  id="json-import-rep"
+                  value={jsonImportRep}
+                  onChange={(e) => setJsonImportRep(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+                >
+                  <option value="">— Select rep —</option>
+                  {rosterTeam.map((m) => (
+                    <option key={m.id} value={m.name}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="json-import-text" className="block text-xs font-medium text-slate-600 mb-1">
+                  JSON dump
+                </label>
+                <textarea
+                  id="json-import-text"
+                  value={jsonImportText}
+                  onChange={(e) => setJsonImportText(e.target.value)}
+                  placeholder='[{"id":"...","date":"2026-04-30","teamMember":"Adam","channel":"Phone","memberName":"...","reason":"...","timesSpokeWithMember":1, ...}]'
+                  rows={10}
+                  className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-xs font-mono"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  The <code>teamMember</code> field in each row is ignored — every entry will be saved
+                  under the rep selected above.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowJsonImport(false)}
+                  className="px-4 py-2 rounded-lg border border-[#A8B8AC]/40 text-[#2F3E2F] text-sm font-medium hover:bg-[#A8B8AC]/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleJsonImportSubmit}
+                  disabled={jsonImporting || !jsonImportRep || !jsonImportText.trim()}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Upload className={`w-4 h-4 ${jsonImporting ? 'animate-pulse' : ''}`} />
+                  {jsonImporting ? 'Importing…' : 'Import entries'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

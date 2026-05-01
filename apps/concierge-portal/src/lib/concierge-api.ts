@@ -495,6 +495,71 @@ export async function forceLegacyImportFromThisBrowser(): Promise<{ uploaded: nu
   return { uploaded: rawLogCount };
 }
 
+/**
+ * Admin path: import legacy log JSON dumped from another rep's browser localStorage.
+ *
+ * `rawJson` should be the value of their `concierge-daily-logs` key (an array of legacy
+ * LogEntry-shaped objects). All inserted rows have `team_member_name` forced to
+ * `targetRep` so a misconfigured rep dropdown in the source browser doesn't matter.
+ *
+ * Returns counts so the admin UI can show "imported X / skipped Y".
+ */
+export async function importLegacyJsonForMember(
+  targetRep: string,
+  rawJson: string,
+): Promise<{ imported: number; skipped: number }> {
+  const trimmedRep = targetRep.trim();
+  if (!trimmedRep) throw new Error('Target rep name is required');
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch {
+    throw new Error('Pasted text is not valid JSON');
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error(
+      'Expected a JSON array of log entries (the value of localStorage["concierge-daily-logs"])',
+    );
+  }
+
+  let imported = 0;
+  let skipped = 0;
+  for (const raw of parsed) {
+    const l = raw as Record<string, unknown>;
+    const date = String(l.date ?? '').slice(0, 10);
+    if (!date) {
+      skipped++;
+      continue;
+    }
+    const entry: LogEntry = {
+      id: crypto.randomUUID(),
+      date,
+      teamMember: trimmedRep,
+      channel: String(l.channel ?? 'Phone'),
+      memberName: String(l.memberName ?? ''),
+      reason: String(l.reason ?? ''),
+      otherNotes: String(l.otherNotes ?? ''),
+      crmNotes: l.crmNotes === true,
+      followUp: l.followUp === true,
+      reviewLink: l.reviewLink === true,
+      additionalNotes: String(l.additionalNotes ?? ''),
+      timesSpokeWithMember: Number(l.timesSpokeWithMember ?? 1),
+      escalatedIssue: l.escalatedIssue === true,
+      specialProjectDescription: String(l.specialProjectDescription ?? ''),
+      specialProjectDurationMinutes: Number(l.specialProjectDurationMinutes ?? 0),
+      touchOverride: l.touchOverride === true ? true : undefined,
+    };
+    try {
+      await insertLogEntry(entry);
+      imported++;
+    } catch {
+      skipped++;
+    }
+  }
+  return { imported, skipped };
+}
+
 const DEFAULT_SEED_TEAM: Omit<TeamMember, 'id'>[] = [
   { name: 'Acelyn Calderon', status: 'Active', role: 'Concierge' },
   { name: 'Adam Jordano', status: 'Active', role: 'Concierge' },

@@ -263,10 +263,10 @@ function sumTouches(ml: LogEntry[]): number {
 
 function refYearForWeek(logs: LogEntry[], weekNum: number): number {
   const hit = logs.find((l) => {
-    const d = new Date(l.date + 'T12:00:00');
+    const d = parseLogDate(l.date);
     return !isNaN(d.getTime()) && getISOWeek(d) === weekNum;
   });
-  if (hit) return new Date(hit.date + 'T12:00:00').getFullYear();
+  if (hit) return parseLogDate(hit.date).getFullYear();
   return new Date().getFullYear();
 }
 
@@ -296,6 +296,18 @@ function getISOWeek(date: Date): number {
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+/**
+ * Parse a stored log date for calendar / ISO-week logic.
+ * `yyyy-MM-dd` alone is interpreted as UTC midnight by `new Date()`, which shifts the local calendar day
+ * behind the stored date in US timezones and breaks weekly reports. Noon local fixes that.
+ */
+function parseLogDate(isoDate: string): Date {
+  const s = String(isoDate ?? '').trim();
+  if (!s) return new Date(NaN);
+  if (s.includes('T')) return new Date(s);
+  return new Date(`${s}T12:00:00`);
 }
 
 function formatOffDayForReport(isoDate: string): string {
@@ -1322,7 +1334,7 @@ function DailyLogTab({
               </thead>
               <tbody className="divide-y divide-[#A8B8AC]/15">
                 {filteredLogs.map((log) => {
-                  const d = new Date(log.date);
+                  const d = parseLogDate(log.date);
                   const wk = isNaN(d.getTime()) ? '–' : getISOWeek(d);
                   return (
                     <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
@@ -2016,7 +2028,7 @@ function PerformanceTab({
     (name: string, wk: number) =>
       sumTouches(
         logs.filter((l) => {
-          const d = new Date(l.date);
+          const d = parseLogDate(l.date);
           return !isNaN(d.getTime()) && l.teamMember === name && getISOWeek(d) === wk;
         }),
       ),
@@ -2608,7 +2620,7 @@ export default function DailyLogs() {
 
   const reportLogs = useMemo(() => {
     return logs.filter((l) => {
-      const d = new Date(l.date);
+      const d = parseLogDate(l.date);
       return !isNaN(d.getTime()) && getISOWeek(d) === weekNumber;
     });
   }, [logs, weekNumber]);
@@ -2644,7 +2656,7 @@ export default function DailyLogs() {
   const analyticsComparisonLogs = useMemo(() => {
     const prevWeeks = [weekNumber - 4, weekNumber - 3, weekNumber - 2, weekNumber - 1];
     return logs.filter((l) => {
-      const d = new Date(l.date);
+      const d = parseLogDate(l.date);
       if (isNaN(d.getTime())) return false;
       return prevWeeks.includes(getISOWeek(d));
     });
@@ -2720,8 +2732,10 @@ export default function DailyLogs() {
                   'Special project',
                   'Special project (min)',
                 ];
-                const rows = logs.map((l) => [
-                  String(isNaN(new Date(l.date).getTime()) ? '' : getISOWeek(new Date(l.date))),
+                const rows = logs.map((l) => {
+                  const pd = parseLogDate(l.date);
+                  return [
+                  String(isNaN(pd.getTime()) ? '' : getISOWeek(pd)),
                   l.date,
                   l.teamMember,
                   l.channel,
@@ -2736,8 +2750,8 @@ export default function DailyLogs() {
                   l.escalatedIssue ? 'Yes' : 'No',
                   l.reason === 'Special Project' ? l.specialProjectDescription : '',
                   l.reason === 'Special Project' ? String(l.specialProjectDurationMinutes || '') : '',
-                ]);
-                const csv = [headers, ...rows]
+                  ];
+                });
                   .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
                   .join('\n');
                 const blob = new Blob([csv], { type: 'text/csv' });

@@ -29,6 +29,7 @@ import {
   Mail,
   FileSpreadsheet,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -995,6 +996,7 @@ function DailyLogTab({
   rosterTeam,
   onEscalationFromLog,
   currentUserId,
+  onRefresh,
 }: {
   logs: LogEntry[];
   onAddLog: (entry: LogEntry) => Promise<LogEntry>;
@@ -1003,6 +1005,7 @@ function DailyLogTab({
   rosterTeam: TeamMember[];
   onEscalationFromLog: (item: EscalationItem) => Promise<void>;
   currentUserId: string | null;
+  onRefresh: () => Promise<void>;
 }) {
   const today = formatLocalYmd(new Date());
   /** Roster row matching the logged-in user (when linked); falls back to roster[0]. */
@@ -1100,6 +1103,9 @@ function DailyLogTab({
   };
 
   const [search, setSearch] = useState('');
+  /** null = show all reps; otherwise filter logs to this team-member name. */
+  const [repFilter, setRepFilter] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
 
@@ -1110,6 +1116,19 @@ function DailyLogTab({
       toast.success('Entry removed');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not delete entry');
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+      toast.success('Logs refreshed');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not refresh logs');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -1128,8 +1147,11 @@ function DailyLogTab({
   const query = search.toLowerCase().trim();
   const filteredLogs = useMemo(() => {
     const ordered = sortLogsByDateDesc(logs);
-    if (!query) return ordered;
-    return ordered.filter(
+    const byRep = repFilter
+      ? ordered.filter((l) => l.teamMember === repFilter)
+      : ordered;
+    if (!query) return byRep;
+    return byRep.filter(
       (l) =>
         l.memberName.toLowerCase().includes(query) ||
         l.teamMember.toLowerCase().includes(query) ||
@@ -1139,7 +1161,14 @@ function DailyLogTab({
         l.reason.toLowerCase().includes(query) ||
         l.channel.toLowerCase().includes(query),
     );
-  }, [logs, query]);
+  }, [logs, query, repFilter]);
+
+  /** Per-rep counts for the chip badges. */
+  const repCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const l of logs) counts.set(l.teamMember, (counts.get(l.teamMember) ?? 0) + 1);
+    return counts;
+  }, [logs]);
 
   return (
     <div className="space-y-6">
@@ -1334,28 +1363,97 @@ function DailyLogTab({
 
       {/* Recent Entries */}
       <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
-        <div className="p-4 border-b border-[#A8B8AC]/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h3 className="text-base font-bold text-[#2F3E2F]">
-            {query ? 'Search Results' : 'All entries'}{' '}
-            <span className="text-sm font-normal text-slate-500">
-              ({query ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}` : `${logs.length} total, newest date first`})
-            </span>
-          </h3>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search member, rep, notes, channel, reason, or special project…"
-              className="w-full pl-9 pr-8 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
-            />
-            {search && (
+        <div className="p-4 border-b border-[#A8B8AC]/20 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h3 className="text-base font-bold text-[#2F3E2F]">
+              {query || repFilter ? 'Filtered entries' : 'All entries'}{' '}
+              <span className="text-sm font-normal text-slate-500">
+                ({query || repFilter
+                  ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}`
+                  : `${logs.length} total, newest date first`})
+              </span>
+            </h3>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[#A8B8AC]/20 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                type="button"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Re-fetch logs and roster from Supabase"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#A8B8AC]/40 text-[#2F3E2F] text-sm font-medium hover:bg-[#A8B8AC]/10 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
-                <X className="w-3.5 h-3.5" />
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing…' : 'Refresh'}
+              </button>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search member, rep, notes, channel, reason…"
+                  className="w-full pl-9 pr-8 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    title="Clear search"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[#A8B8AC]/20 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mr-1">
+              Filter by rep:
+            </span>
+            <button
+              type="button"
+              onClick={() => setRepFilter(null)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                repFilter === null
+                  ? 'bg-[#2F3E2F] text-white border-[#2F3E2F]'
+                  : 'bg-white text-[#2F3E2F] border-[#A8B8AC]/40 hover:bg-[#A8B8AC]/10'
+              }`}
+            >
+              All
+              <span className="ml-1.5 text-[10px] opacity-70">{logs.length}</span>
+            </button>
+            {rosterTeam
+              .filter((m) => m.status === 'Active')
+              .map((m) => {
+                const count = repCounts.get(m.name) ?? 0;
+                const active = repFilter === m.name;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setRepFilter(active ? null : m.name)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      active
+                        ? 'bg-[#4A7C8A] text-white border-[#4A7C8A]'
+                        : 'bg-white text-[#2F3E2F] border-[#A8B8AC]/40 hover:bg-[#A8B8AC]/10'
+                    }`}
+                  >
+                    {m.name.split(' ')[0]}
+                    <span className="ml-1.5 text-[10px] opacity-70">{count}</span>
+                  </button>
+                );
+              })}
+            {(repFilter || query) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRepFilter(null);
+                  setSearch('');
+                }}
+                className="ml-auto px-2.5 py-1 rounded-md text-xs text-slate-500 hover:text-[#2F3E2F] hover:bg-[#A8B8AC]/10 flex items-center gap-1"
+              >
+                <X className="w-3 h-3" /> Clear filters
               </button>
             )}
           </div>
@@ -2811,6 +2909,13 @@ export default function DailyLogs() {
     setLogsRaw((prev) => prev.filter((l) => l.id !== id));
   }, []);
 
+  /** Manual refresh — re-fetch logs and roster from Supabase and re-align names. */
+  const onRefreshLogs = useCallback(async () => {
+    const [nextLogs, nextTeam] = await Promise.all([fetchLogEntries(), fetchTeamMembers()]);
+    setTeamRaw(nextTeam);
+    setLogsRaw(migrateLogsStorage(nextLogs, nextTeam));
+  }, []);
+
   const setTeam: typeof setTeamRaw = useCallback((fn) => {
     setTeamRaw((prev) => {
       const next = typeof fn === 'function' ? fn(prev) : fn;
@@ -3123,6 +3228,7 @@ export default function DailyLogs() {
           rosterTeam={team}
           onEscalationFromLog={onEscalationFromLog}
           currentUserId={currentUserId}
+          onRefresh={onRefreshLogs}
         />
       )}
       {activeTab === 'weekly' && (

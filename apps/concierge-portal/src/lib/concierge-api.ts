@@ -465,6 +465,36 @@ export async function migrateLegacyLocalStorageIfNeeded(): Promise<void> {
   localStorage.setItem(LEGACY_IMPORT_DONE_KEY, '1');
 }
 
+/**
+ * Read this browser's `concierge-daily-logs` key without touching anything.
+ * Used by the admin "Re-import from this browser" button to show counts before a
+ * destructive import.
+ */
+export function inspectLegacyLocalStorage(): {
+  rawLogCount: number;
+  importFlagSet: boolean;
+} {
+  if (typeof window === 'undefined') return { rawLogCount: 0, importFlagSet: false };
+  const arr = readLegacy<unknown[]>(LEGACY.LOGS, []);
+  return {
+    rawLogCount: Array.isArray(arr) ? arr.length : 0,
+    importFlagSet: localStorage.getItem(LEGACY_IMPORT_DONE_KEY) === '1',
+  };
+}
+
+/**
+ * Admin-triggered re-import of this browser's localStorage even when the per-browser
+ * flag is already set. Clears the flag, runs `migrateLegacyLocalStorageIfNeeded`, and
+ * returns how many rows were attempted (caller should re-fetch logs after).
+ */
+export async function forceLegacyImportFromThisBrowser(): Promise<{ uploaded: number }> {
+  if (typeof window === 'undefined') return { uploaded: 0 };
+  const { rawLogCount } = inspectLegacyLocalStorage();
+  localStorage.removeItem(LEGACY_IMPORT_DONE_KEY);
+  await migrateLegacyLocalStorageIfNeeded();
+  return { uploaded: rawLogCount };
+}
+
 const DEFAULT_SEED_TEAM: Omit<TeamMember, 'id'>[] = [
   { name: 'Acelyn Calderon', status: 'Active', role: 'Concierge' },
   { name: 'Adam Jordano', status: 'Active', role: 'Concierge' },

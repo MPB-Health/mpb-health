@@ -30,6 +30,7 @@ import {
   FileSpreadsheet,
   Loader2,
   RefreshCw,
+  Upload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -44,6 +45,8 @@ import {
   insertEscalation,
   updateEscalation,
   upsertWeeklyReportExtras,
+  inspectLegacyLocalStorage,
+  forceLegacyImportFromThisBrowser,
 } from '../lib/concierge-api';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -1132,6 +1135,39 @@ function DailyLogTab({
     }
   };
 
+  /** Stranded-localStorage state for the recover button (legacy import). */
+  const [legacyState, setLegacyState] = useState<{
+    rawLogCount: number;
+    importFlagSet: boolean;
+  }>(() => inspectLegacyLocalStorage());
+  const [importing, setImporting] = useState(false);
+
+  const handleForceImport = async () => {
+    if (importing) return;
+    if (legacyState.rawLogCount === 0) {
+      toast('No legacy entries found in this browser.', { icon: 'ℹ️' });
+      return;
+    }
+    if (
+      !window.confirm(
+        `Upload ${legacyState.rawLogCount} legacy entries from this browser to Supabase? Existing rows in the shared DB are not affected.`,
+      )
+    ) {
+      return;
+    }
+    setImporting(true);
+    try {
+      const { uploaded } = await forceLegacyImportFromThisBrowser();
+      await onRefresh();
+      setLegacyState(inspectLegacyLocalStorage());
+      toast.success(`Uploaded ${uploaded} legacy entries from this browser`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not import legacy entries');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   useEffect(() => {
     if (rosterTeam.length === 0) return;
     const linked =
@@ -1373,7 +1409,21 @@ function DailyLogTab({
                   : `${logs.length} total, newest date first`})
               </span>
             </h3>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {legacyState.rawLogCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleForceImport}
+                  disabled={importing}
+                  title={`This browser still has ${legacyState.rawLogCount} legacy entries from before the Supabase rollout. Click to upload them.`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-sm font-medium hover:bg-amber-100 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Upload className={`w-4 h-4 ${importing ? 'animate-pulse' : ''}`} />
+                  {importing
+                    ? 'Importing…'
+                    : `Recover ${legacyState.rawLogCount} from this browser`}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleRefresh}

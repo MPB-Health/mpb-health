@@ -29,6 +29,7 @@ import {
   deleteLogEntry,
   syncTeamRoster,
   fetchTeamMembers,
+  fetchLogEntries,
   replaceMemberOffDays,
   insertEscalation,
   updateEscalation,
@@ -1653,6 +1654,8 @@ function ReviewLinkBenchmarkCard({
 
 function WeeklyReportTab({
   reportLogs,
+  allLogsCount,
+  onJumpToLatestLogWeek,
   weekDates,
   periodLabel,
   activeMembers,
@@ -1662,6 +1665,8 @@ function WeeklyReportTab({
   setWeeklyExtras,
 }: {
   reportLogs: LogEntry[];
+  allLogsCount: number;
+  onJumpToLatestLogWeek: () => void;
   weekDates: string[];
   periodLabel: string;
   activeMembers: TeamMember[];
@@ -1778,9 +1783,25 @@ function WeeklyReportTab({
             {overallAvg} touches/rep · Full-time avg {fullTimeAvg} touches/rep (used for alerts)
             <span className="block text-xs text-slate-500 mt-1.5 font-normal">
               Calendars and day grids show <strong>Monday–Friday</strong> only (open Mon–Fri). Touch and row totals still
-              count every log dated in this ISO week.
+              count every log dated in this ISO week ({weekDates[0] ? `${weekDates[0]}–${weekDates[4] ?? weekDates[weekDates.length - 1]}` : ''} weekdays shown below).
             </span>
           </p>
+          {allLogsCount > 0 && reportLogs.length === 0 && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/90 px-3 py-2.5 text-xs text-amber-950 space-y-2">
+              <p>
+                <strong>No entries match {periodLabel}.</strong> This table only sums rows whose <strong>log date</strong>{' '}
+                falls in that ISO week and year.                 You have <strong>{allLogsCount}</strong> saved entr{allLogsCount === 1 ? 'y' : 'ies'} in the system — the ISO week in the page header may not match those
+                dates (e.g. week 17 vs 18).
+              </p>
+              <button
+                type="button"
+                onClick={onJumpToLatestLogWeek}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#4A7C8A] text-white text-xs font-medium hover:bg-[#3D6773] transition-colors"
+              >
+                Use ISO week of most recent log
+              </button>
+            </div>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[760px]">
@@ -2651,6 +2672,26 @@ export default function DailyLogs() {
     });
   }, [logs, weekNumber]);
 
+  const jumpToLatestLogWeek = useCallback(() => {
+    if (logs.length === 0) return;
+    const sorted = [...logs].sort((a, b) => b.date.localeCompare(a.date));
+    const d = parseLogDate(sorted[0].date);
+    if (isNaN(d.getTime())) return;
+    setWeekNumber(getISOWeek(d));
+    toast.success(`Switched to ISO week ${getISOWeek(d)} (${getISOWeekYear(d)})`);
+  }, [logs]);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState !== 'visible') return;
+      void fetchLogEntries()
+        .then((next) => setLogsRaw(migrateLogsStorage(next)))
+        .catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
   if (!hydrated) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-600">
@@ -2693,6 +2734,8 @@ export default function DailyLogs() {
       </div>
     );
   }
+
+  return (
     <div className="space-y-6 animate-fade-up">
       {/* Header */}
       <div className="flex flex-col gap-4">
@@ -2718,6 +2761,14 @@ export default function DailyLogs() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              disabled={logs.length === 0}
+              onClick={jumpToLatestLogWeek}
+              className="text-xs font-medium text-[#4A7C8A] hover:underline disabled:opacity-40 disabled:no-underline px-1"
+            >
+              Jump to latest log week
+            </button>
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-slate-600">ISO week:</label>
               <div className="flex items-center border border-[#A8B8AC]/40 rounded-lg overflow-hidden">
@@ -2790,6 +2841,7 @@ export default function DailyLogs() {
                   l.reason === 'Special Project' ? String(l.specialProjectDurationMinutes || '') : '',
                   ];
                 });
+                const csv = [headers, ...rows]
                   .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
                   .join('\n');
                 const blob = new Blob([csv], { type: 'text/csv' });
@@ -2852,6 +2904,8 @@ export default function DailyLogs() {
       {activeTab === 'weekly' && (
         <WeeklyReportTab
           reportLogs={reportLogs}
+          allLogsCount={logs.length}
+          onJumpToLatestLogWeek={jumpToLatestLogWeek}
           weekDates={weekDates}
           periodLabel={periodLabel}
           activeMembers={activeMembers}

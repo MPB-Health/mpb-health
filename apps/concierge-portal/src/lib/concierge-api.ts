@@ -58,6 +58,14 @@ export interface WeeklyReportExtras {
   teamMembersHelped: string;
 }
 
+/** Collapse DB `date` / timestamptz strings to `YYYY-MM-DD` so ISO week math matches the calendar day users picked. */
+export function toYmdOnly(val: unknown): string {
+  const s = String(val ?? '').trim();
+  const head = s.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(head)) return head;
+  return head;
+}
+
 // —— Row mappers ———————————————————————————————————————————————————————
 
 function teamRowToMember(r: Record<string, unknown>): TeamMember {
@@ -73,7 +81,7 @@ function teamRowToMember(r: Record<string, unknown>): TeamMember {
 function logRowToEntry(r: Record<string, unknown>): LogEntry {
   return {
     id: String(r.id),
-    date: String(r.log_date),
+    date: toYmdOnly(r.log_date),
     teamMember: String(r.team_member_name),
     channel: String(r.channel),
     memberName: String(r.member_name),
@@ -117,10 +125,10 @@ function escRowToItem(r: Record<string, unknown>): EscalationItem {
     id: String(r.id),
     memberName: String(r.member_name),
     summary: String(r.summary),
-    openedAt: String(r.opened_at),
+    openedAt: toYmdOnly(r.opened_at),
     logEntryId: r.log_entry_id ? String(r.log_entry_id) : undefined,
     status: r.status === 'complete' ? 'complete' : 'open',
-    completedAt: r.completed_at ? String(r.completed_at) : undefined,
+    completedAt: r.completed_at ? toYmdOnly(r.completed_at) : undefined,
   };
 }
 

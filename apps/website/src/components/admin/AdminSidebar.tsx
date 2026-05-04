@@ -37,6 +37,7 @@ import {
   Crown,
   ArrowRight,
   Clock,
+  Calculator,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -96,6 +97,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { id: 'crm-leads', label: 'All Leads', icon: List, href: '/admin/crm/leads' },
       { id: 'crm-templates', label: 'Email Templates', icon: Mail, href: '/admin/crm/templates' },
       { id: 'crm-calendar', label: 'Calendar', icon: Calendar, href: '/admin/crm/calendar' },
+      { id: 'crm-quote-results', label: 'Quote Results Returned', icon: Calculator, href: '/admin/crm/quote-results-returned' },
     ]
   },
   {

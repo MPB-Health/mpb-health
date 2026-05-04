@@ -117,6 +117,7 @@ const navigation: NavItem[] = [
       { name: 'Overview', href: '/analytics/overview' },
       { name: 'Unified Analytics', href: '/analytics/unified' },
       { name: 'Membership & Sales', href: '/analytics/membership-sales' },
+      { name: 'Quote Results Returned', href: '/analytics/quote-results-returned' },
     ],
   },
   {

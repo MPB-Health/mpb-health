@@ -196,6 +196,7 @@ const navigationSections: NavSection[] = [
           { name: 'Conversion', href: '/reports/conversion', permission: 'reports.read' },
           { name: 'Activity vs Targets', href: '/reports/activity-targets', permission: 'reports.read' },
           { name: 'Advisor Production', href: '/reports/advisor-production', permission: 'reports.read' },
+          { name: 'Quote Results Returned', href: '/reports/quote-results-returned', permission: 'reports.read' },
           { name: 'Milestones', href: '/milestones', permission: 'targets.read' },
         ],
       },

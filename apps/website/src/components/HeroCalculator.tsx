@@ -26,6 +26,7 @@ import { useAnalytics, AnalyticsEvents } from '../lib/analytics';
 import { CompactMembershipPrioritySelector } from './CompactMembershipPrioritySelector';
 import { recommendPlans } from '../lib/membershipPriorities';
 import { leadSubmissionService } from '../lib/leadSubmissionService';
+import { getQuoteCalculatorSessionId, recordQuoteCalculatorEvent } from '../lib/quoteCalculatorTracking';
 import { getHouseholdPricingAge } from '../lib/householdPricingAge';
 import { cn, fmtMoney } from '../lib/utils';
 
@@ -255,6 +256,15 @@ export default function HeroCalculator() {
           best_match: recommendations[0]?.planId || 'none',
         },
       });
+
+      recordQuoteCalculatorEvent('results_viewed', {
+        plan_count: estimates.plans.length,
+        best_match: recommendations[0]?.planId ?? null,
+        state: watchedState,
+        household_type: watchedHouseholdType,
+        traditional_cost: traditionalCost,
+        source_path: typeof window !== 'undefined' ? window.location.pathname : '',
+      });
     } catch (error) {
       log.error('Failed to compute results:', error);
     } finally {
@@ -297,6 +307,7 @@ export default function HeroCalculator() {
         sourceCTA: 'hero-calculator-all-plans-comparison',
         formData: {
           lead_type: 'Quick Rate Estimate Leads',
+          quote_calc_session_id: getQuoteCalculatorSessionId(),
           household_type: data.householdType,
           state: data.state,
           primary_age: data.primaryAge,
@@ -315,6 +326,11 @@ export default function HeroCalculator() {
       if (!result.success) {
         throw new Error(result.error || 'Failed to submit lead');
       }
+
+      recordQuoteCalculatorEvent('lead_submitted', {
+        state: data.state,
+        household_type: data.householdType,
+      });
 
       track({
         event: AnalyticsEvents.CALCULATE_RATE,
@@ -622,7 +638,12 @@ export default function HeroCalculator() {
                     <div className="space-y-2 pt-1">
                       <button
                         type="button"
-                        onClick={() => setShowContactForm(true)}
+                        onClick={() => {
+                          recordQuoteCalculatorEvent('contact_opened', {
+                            source_path: typeof window !== 'undefined' ? window.location.pathname : '',
+                          });
+                          setShowContactForm(true);
+                        }}
                         className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2"
                       >
                         <Sparkles className="h-4 w-4" />

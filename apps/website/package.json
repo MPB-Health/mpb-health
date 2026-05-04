@@ -19,6 +19,7 @@
     "@hello-pangea/dnd": "^16.6.0",
     "@hookform/resolvers": "^5.2.2",
     "@mpbhealth/auth": "workspace:*",
+    "@mpbhealth/admin-core": "workspace:*",
     "@mpbhealth/config": "workspace:*",
     "@mpbhealth/crm-core": "workspace:*",
     "@mpbhealth/database": "workspace:*",

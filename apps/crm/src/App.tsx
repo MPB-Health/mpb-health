@@ -105,6 +105,7 @@ const ConversionReport = lazyRetry(() => import('./pages/reports/ConversionRepor
 const ActivityTargetsReport = lazyRetry(() => import('./pages/reports/ActivityTargetsReport'));
 const AdvisorProductionReport = lazyRetry(() => import('./pages/reports/AdvisorProductionReport'));
 const AnnualOverview = lazyRetry(() => import('./pages/reports/AnnualOverview'));
+const QuoteResultsReturnedPage = lazyRetry(() => import('./pages/reports/QuoteResultsReturnedPage'));
 
 // Sales Plan 2026 Entities
 const ReferralPartners = lazyRetry(() => import('./pages/ReferralPartners'));
@@ -387,6 +388,7 @@ export default function App() {
                 <Route path="/reports/activity-targets" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><ActivityTargetsReport /></Suspense></Guarded>} />
                 <Route path="/reports/advisor-production" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AdvisorProductionReport /></Suspense></Guarded>} />
                 <Route path="/reports/annual" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AnnualOverview /></Suspense></Guarded>} />
+                <Route path="/reports/quote-results-returned" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><QuoteResultsReturnedPage /></Suspense></Guarded>} />
 
                 {/* Sales Plan 2026 Entities */}
                 <Route path="/referral-partners" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartners /></Suspense></Guarded>} />

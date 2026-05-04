@@ -153,6 +153,7 @@ const LeadDetail = lazyAuto(() => import('./pages/admin/LeadDetail'));
 const CRMTemplates = lazyAuto(() => import('./pages/admin/CRMTemplates'));
 const CRMCalendar = lazyAuto(() => import('./pages/admin/CRMCalendar'));
 const CRMReports = lazyAuto(() => import('./pages/admin/CRMReports'));
+const QuoteResultsReturned = lazyAuto(() => import('./pages/admin/QuoteResultsReturned'));
 
 // Advisor Portal CMS - Legacy
 const AdvisorPortalCMSLegacy = lazyAuto(() => import('./pages/admin/AdvisorPortalCMS'));
@@ -630,6 +631,14 @@ const App = () => {
                     element={
                       <ProtectedRoute requiredRole="admin">
                         <CRMCalendar />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/crm/quote-results-returned"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <QuoteResultsReturned />
                       </ProtectedRoute>
                     }
                   />

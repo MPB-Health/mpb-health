@@ -19,6 +19,7 @@
     "@dnd-kit/sortable": "catalog:",
     "@dnd-kit/utilities": "catalog:",
     "@mpbhealth/auth": "workspace:*",
+    "@mpbhealth/admin-core": "workspace:*",
     "@mpbhealth/config": "workspace:*",
     "@mpbhealth/crm-core": "workspace:*",
     "@mpbhealth/database": "workspace:*",

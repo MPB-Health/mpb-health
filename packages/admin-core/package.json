@@ -13,11 +13,16 @@
     "@mpbhealth/advisor-core": "workspace:*",
     "@mpbhealth/crm-core": "workspace:*",
     "@mpbhealth/database": "workspace:*",
-    "@mpbhealth/utils": "workspace:*"
+    "@mpbhealth/utils": "workspace:*",
+    "lucide-react": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
   },
   "devDependencies": {
     "@mpbhealth/eslint-config": "workspace:*",
     "@mpbhealth/typescript-config": "workspace:*",
+    "@types/react": "catalog:",
     "typescript": "catalog:"
   }
 }

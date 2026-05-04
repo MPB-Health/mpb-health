@@ -34,6 +34,14 @@ export {
   type CRMContact,
   type ConvertLeadInput,
 } from './analytics/CRMBridgeService';
+export {
+  quoteResultsAnalyticsService,
+  QuoteResultsAnalyticsService,
+  type QuoteResultsAnalytics,
+  type QuoteResultsByDay,
+  type QuoteFunnelEventRow,
+} from './analytics/QuoteResultsAnalyticsService';
+export { QuoteResultsReturnedPanel } from './analytics/QuoteResultsReturnedPanel';
 
 // Specialized Settings Services
 export {

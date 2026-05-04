@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Smartphone, Shield, Clock, Heart, CheckCircle } from 'lucide-react';
+import { MemberExperienceSection } from '../components/blocks/MemberExperienceSection';
 import { APP_STORE_URLS, isAppAvailable } from '../config/apps';
 
 const DownloadApp = () => {
@@ -31,10 +32,10 @@ const DownloadApp = () => {
     <>
     <Helmet>
       <title>Download the MPB Health App | Manage Your Membership</title>
-      <meta name="description" content="Download the MPB Health mobile app. Submit medical expenses, find providers, track sharing requests, and manage your membership on the go." />
+      <meta name="description" content="Download the MPB Health app and use the member portal. Submit expenses, find providers, track requests, and manage your membership with our mobile apps and web dashboard." />
       <link rel="canonical" href="https://mpb.health/download-app" />
-      <meta property="og:title" content="MPB Health Mobile App" />
-      <meta property="og:description" content="Manage your health sharing membership from your phone." />
+      <meta property="og:title" content="MPB Health App & Member Portal" />
+      <meta property="og:description" content="Mobile apps plus the member portal for expenses, providers, tracking, and concierge support." />
       <meta property="og:url" content="https://mpb.health/download-app" />
     </Helmet>
     <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50">
@@ -151,6 +152,8 @@ const DownloadApp = () => {
           </div>
         </div>
       </section>
+
+      <MemberExperienceSection />
 
       {/* Features Section */}
       <section className="py-16 lg:py-24 bg-white">

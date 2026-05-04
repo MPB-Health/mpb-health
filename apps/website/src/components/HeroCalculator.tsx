@@ -384,7 +384,7 @@ export default function HeroCalculator() {
             <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
               <div>
                 <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 1 of 3</p>
-                <h4 className="text-base font-bold text-gray-900">Who&apos;s covered?</h4>
+                <h4 className="text-base font-bold text-gray-900">Who is included?</h4>
                 <p className="text-sm text-gray-500 mt-0.5">30 seconds to your comparison</p>
               </div>
 

@@ -124,11 +124,6 @@ const EnhancedTrustBar: React.FC = () => {
             <Award className="w-5 h-5 text-yellow-500" />
             <span className="font-medium">Top Rated Service</span>
           </div>
-          <div className="w-px h-6 bg-neutral-300" />
-          <div className="flex items-center gap-2 text-sm text-neutral-600">
-            <Users className="w-5 h-5 text-teal-600" />
-            <span className="font-medium">50,000+ Families Trust Us</span>
-          </div>
         </div>
       </div>
     </section>

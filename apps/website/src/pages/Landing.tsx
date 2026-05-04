@@ -5,7 +5,6 @@ import { EnhancedTrustBar } from '../components/blocks/EnhancedTrustBar';
 import { SolutionsSection } from '../components/blocks/SolutionsSection';
 import { UnifiedPathSelector } from '../components/blocks/UnifiedPathSelector';
 import { MedicalCostSharingInfo } from '../components/blocks/MedicalCostSharingInfo';
-import { MemberExperienceSection } from '../components/blocks/MemberExperienceSection';
 import RateCalculator from '../components/RateCalculator';
 import { AffiliateProvider } from '../components/AffiliateProvider';
 import { StickyMobileCTA } from '../components/layout/StickyMobileCTA';
@@ -67,7 +66,6 @@ const Landing: React.FC = () => {
           <RateCalculator />
         </div>
       </AffiliateProvider>
-      <MemberExperienceSection />
 
       {/* Below the fold - lazy loaded */}
       <Suspense fallback={<Loading />}>

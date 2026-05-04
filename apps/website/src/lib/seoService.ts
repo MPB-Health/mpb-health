@@ -204,10 +204,12 @@ export const pageSEO: Record<string, SEOMetadata> = {
   },
   '/download-app': {
     title: 'Download the MPB Health App | Manage Your Membership',
-    description: 'Download the MPB Health mobile app. Submit medical expenses, find providers, track sharing requests, and manage your membership on the go.',
-    keywords: 'MPB Health app, mobile app, health sharing app, member app, download app',
-    ogTitle: 'MPB Health Mobile App',
-    ogDescription: 'Manage your health sharing membership from your phone.',
+    description:
+      'Download the MPB Health mobile app and access the member portal. Submit medical expenses, find providers, track sharing requests, telehealth, and manage your membership on the go.',
+    keywords: 'MPB Health app, mobile app, health sharing app, member app, download app, member portal',
+    ogTitle: 'MPB Health App & Member Portal',
+    ogDescription:
+      'Mobile apps plus the member portal for expenses, providers, tracking, and concierge support.',
     canonicalUrl: 'https://mpb.health/download-app',
     robots: 'index, follow'
   },

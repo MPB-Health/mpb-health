@@ -82,7 +82,8 @@ const faqs = [
   },
   {
     question: 'What makes MPB Health different from other healthshares?',
-    answer: "While many healthshares require a religious “statement of faith,” MPB Health is inclusive and open to everyone. We welcome members from all backgrounds, beliefs, and walks of life who share the common goal of taking personal responsibility for their health within a supportive community. Beyond our inclusivity, we differentiate ourselves by providing modern benefits such as $0 unlimited virtual care and behavioral health resources from day one, ensuring the community supports your daily wellness rather than just major medical events.",
+    answer:
+      'While many healthshares require a religious "statement of faith," MPB Health is inclusive and open to everyone. We welcome members from all backgrounds, beliefs, and walks of life who share the common goal of taking personal responsibility for their health within a supportive community. Beyond our inclusivity, we differentiate ourselves by providing modern benefits such as $0 unlimited virtual care and behavioral health resources from day one, ensuring the community supports your daily wellness rather than just major medical events.',
   },
   {
     question: 'Is MPB Health a good fit for families?',
@@ -94,7 +95,8 @@ const faqs = [
   },
   {
     question: 'Is MPB Health available nationwide?',
-    answer: 'Yes. MPB Health is available to members across most of the United States and Puerto Rico, providing individuals and families access to a nationwide, community-based healthcare model that travels with you. Note: Membership is currently unavailable to residents of Washington state.',
+    answer:
+      'Yes. MPB Health is available to members across most of the United States and Puerto Rico, providing individuals and families access to a nationwide, community-based healthcare model that travels with you.\n\nNote: Membership is currently unavailable to residents of Washington state.',
   },
   {
     question: 'Do I have to wait for an "Open Enrollment" period to join?',

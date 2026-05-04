@@ -7,7 +7,7 @@ import { Phone } from 'lucide-react';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import { useFAQ } from '../hooks/useFAQ';
 
-/** Aligned with About Us / marketing FAQ (Apr 2026); also seeded as category `mpb-faq-main` in DB. */
+/** Aligned with About Us / marketing FAQ; also seeded as category `mpb-faq-main` in DB. */
 const FALLBACK_FAQS = [
   {
     question: 'What is MPB Health?',
@@ -32,7 +32,7 @@ const FALLBACK_FAQS = [
   {
     question: 'What makes MPB Health different from other healthshares?',
     answer:
-      'While many healthshares require a religious “statement of faith,” MPB Health is inclusive and open to everyone. We welcome members from all backgrounds, beliefs, and walks of life who share the common goal of taking personal responsibility for their health within a supportive community. Beyond our inclusivity, we differentiate ourselves by providing modern benefits such as $0 unlimited virtual care and behavioral health resources from day one, ensuring the community supports your daily wellness rather than just major medical events.',
+      'While many healthshares require a religious "statement of faith," MPB Health is inclusive and open to everyone. We welcome members from all backgrounds, beliefs, and walks of life who share the common goal of taking personal responsibility for their health within a supportive community. Beyond our inclusivity, we differentiate ourselves by providing modern benefits such as $0 unlimited virtual care and behavioral health resources from day one, ensuring the community supports your daily wellness rather than just major medical events.',
   },
   {
     question: 'Is MPB Health a good fit for families?',
@@ -47,7 +47,7 @@ const FALLBACK_FAQS = [
   {
     question: 'Is MPB Health available nationwide?',
     answer:
-      'Yes. MPB Health is available to members across most of the United States and Puerto Rico, providing individuals and families access to a nationwide, community-based healthcare model that travels with you. Note: Membership is currently unavailable to residents of Washington state.',
+      'Yes. MPB Health is available to members across most of the United States and Puerto Rico, providing individuals and families access to a nationwide, community-based healthcare model that travels with you.\n\nNote: Membership is currently unavailable to residents of Washington state.',
   },
   {
     question: 'Do I have to wait for an "Open Enrollment" period to join?',
@@ -126,9 +126,14 @@ const FAQ: React.FC = () => {
                       </span>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <p className="text-neutral-700 leading-relaxed text-base">
-                        {faq.answer}
-                      </p>
+                      {faq.answer.split('\n\n').map((paragraph, pIndex) => (
+                        <p
+                          key={pIndex}
+                          className="text-neutral-700 leading-relaxed text-base mb-4 last:mb-0"
+                        >
+                          {paragraph}
+                        </p>
+                      ))}
                     </AccordionContent>
                   </AccordionItem>
                 ))}

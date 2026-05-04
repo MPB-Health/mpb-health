@@ -198,7 +198,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                             ) : (
                               <div className="flex items-center justify-center gap-2">
                                 <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
-                                  <X className="h-4 w-4 text-neutral-400" />
+                                  <Check className="h-4 w-4 text-neutral-500" />
                                 </div>
                                 <span className="text-sm text-neutral-400">Not Included</span>
                               </div>

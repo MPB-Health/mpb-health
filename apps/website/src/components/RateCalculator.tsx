@@ -239,7 +239,7 @@ export default function RateCalculator() {
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-900">Who's Covered? *</Label>
+                  <Label className="text-sm font-medium text-gray-900">Who is Included? *</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {householdTypes.map((type) => (
                       <button

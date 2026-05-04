@@ -262,15 +262,6 @@ const SALES_EMAIL = 'sales@mympb.com';
 const SALES_PHONE_DISPLAY = '(855) 816-4650 ext 1';
 const SALES_PHONE_TEL = '+18558164650,1';
 
-/** Lead welcome email — primary advisor (matches customer-facing follow-up) */
-const WELCOME_ADVISOR_FROM_EMAIL = 'leonardo@mympb.com';
-const WELCOME_ADVISOR_NAME = 'Leonardo Moraes';
-const WELCOME_ADVISOR_TITLE = 'Health Share Advisor';
-const WELCOME_OFFICE_PHONE_DISPLAY = '855-816-4650 Ext. 1001';
-const WELCOME_OFFICE_PHONE_TEL = '+18558164650';
-const WELCOME_DIRECT_PHONE_DISPLAY = '(561) 286-3544 (Text or Call)';
-const WELCOME_DIRECT_PHONE_TEL = '+15612863544';
-
 export async function sendLeadWelcomeEmail(data: {
   firstName: string;
   email: string;
@@ -371,40 +362,14 @@ export async function sendLeadWelcomeEmail(data: {
                         📅 Schedule Your Free Consultation
                       </a>
                       <p style="color: #64748b; font-size: 13px; margin: 18px 0 0 0; line-height: 1.6;">
-                        <span style="display: block; margin-top: 6px;">📞 Office: <a href="tel:${WELCOME_OFFICE_PHONE_TEL}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${WELCOME_OFFICE_PHONE_DISPLAY}</a></span>
-                        <span style="display: block; margin-top: 4px;">📱 Direct: <a href="tel:${WELCOME_DIRECT_PHONE_TEL}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${WELCOME_DIRECT_PHONE_DISPLAY}</a></span>
+                        Questions? Call <a href="tel:${SALES_PHONE_TEL}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${SALES_PHONE_DISPLAY}</a>
+                        or email <a href="mailto:${SALES_EMAIL}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${SALES_EMAIL}</a>.
                       </p>
                     </div>
                     
                     <!-- View Online Link -->
                     <div style="text-align: center; margin: 25px 0;">
                       <a href="${welcomePageUrl}" style="color: #2563eb; font-size: 14px;">View this message on our website →</a>
-                    </div>
-                  </td>
-                </tr>
-                
-                <!-- Contact Card -->
-                <tr>
-                  <td style="padding: 0 40px 40px 40px;">
-                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 25px;">
-                      <table width="100%" cellpadding="0" cellspacing="0">
-                        <tr>
-                          <td width="70" valign="top">
-                            <div style="width: 60px; height: 60px; background: linear-gradient(to bottom right, #3b82f6, #06b6d4); border-radius: 50%; text-align: center; line-height: 60px; color: white; font-size: 15px; font-weight: bold; letter-spacing: 0.5px;">
-                              LM
-                            </div>
-                          </td>
-                          <td valign="top" style="padding-left: 15px;">
-                            <h3 style="color: #0f172a; font-size: 18px; margin: 0 0 5px 0;">${WELCOME_ADVISOR_NAME}</h3>
-                            <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">${WELCOME_ADVISOR_TITLE}</p>
-                            <p style="margin: 0 0 8px 0;">
-                              <a href="mailto:${WELCOME_ADVISOR_FROM_EMAIL}" style="color: #2563eb; font-size: 14px; text-decoration: none;">📧 Leonardo@mympb.com</a>
-                            </p>
-                            <p style="margin: 0 0 4px 0; color: #333; font-size: 14px;">📞 Office: <a href="tel:${WELCOME_OFFICE_PHONE_TEL}" style="color: #2563eb; text-decoration: none;">${WELCOME_OFFICE_PHONE_DISPLAY}</a></p>
-                            <p style="margin: 0; color: #333; font-size: 14px;">📱 Direct: <a href="tel:${WELCOME_DIRECT_PHONE_TEL}" style="color: #2563eb; text-decoration: none;">${WELCOME_DIRECT_PHONE_DISPLAY}</a></p>
-                          </td>
-                        </tr>
-                      </table>
                     </div>
                   </td>
                 </tr>
@@ -449,18 +414,14 @@ View this message online: ${welcomePageUrl}
 
 ---
 
-${WELCOME_ADVISOR_NAME}
-${WELCOME_ADVISOR_TITLE}
-E: ${WELCOME_ADVISOR_FROM_EMAIL}
-Office: ${WELCOME_OFFICE_PHONE_DISPLAY}
-Direct: ${WELCOME_DIRECT_PHONE_DISPLAY}`;
+Questions? ${SALES_PHONE_DISPLAY} · ${SALES_EMAIL}`;
 
   return sendEmail({
     to: data.email,
     subject: `${data.firstName}, Thank You for Exploring MPB Health`,
     html,
     text: textContent,
-    replyTo: WELCOME_ADVISOR_FROM_EMAIL,
+    replyTo: SALES_EMAIL,
   });
 }
 

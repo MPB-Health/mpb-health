@@ -193,7 +193,7 @@ const GetAQuote: React.FC = () => {
                 Join Thousands of Members Who've Made the Switch
               </h2>
               <p className="text-xl text-blue-100 mb-6">
-                Save an average of 40% on healthcare costs while getting better coverage
+                Save an average of 40% on healthcare costs while getting quality care
               </p>
               <div className="flex flex-wrap justify-center gap-8 text-lg">
                 <div>

@@ -43,23 +43,21 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
   const categories = getAllUniqueCategories(plans);
 
-  /** Match table columns: sticky feature column ~25%; plan columns split remaining 75% equally */
-  const headerGridTemplateColumns = `minmax(11rem, 25%) repeat(${plans.length}, minmax(0, 1fr))`;
-  const planColPercent = 75 / plans.length;
+  /** Table only: compact feature column; plan columns share the rest equally */
+  const featureRailPercent = 18;
+  const planTableColPercent = (100 - featureRailPercent) / plans.length;
 
   return (
-    <div className="mx-auto w-full max-w-6xl 2xl:max-w-7xl space-y-8 mb-16 md:mb-20 px-2 sm:px-0">
-      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
-        <div className="w-full min-w-0 mx-auto space-y-8 pb-2">
-          {/* Plan Header Cards — columns align with table below */}
-          <div
-            className="grid gap-4 items-stretch"
-            style={{ gridTemplateColumns: headerGridTemplateColumns }}
-          >
-            <div className="flex items-end justify-center sm:justify-start pb-4 min-w-0">
-              <h3 className="text-xl font-bold text-primary-700 text-center sm:text-left">Features</h3>
-            </div>
-        {plans.map((plan, index) => (
+    <div className="mx-auto w-full max-w-7xl space-y-8 mb-16 md:mb-20 px-2 sm:px-6 lg:px-8">
+      {/* Plan hero cards — plans only (no Features cell); equal width */}
+      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] pb-1">
+        <div
+          className="grid gap-3 sm:gap-4 items-stretch w-full mx-auto"
+          style={{
+            gridTemplateColumns: `repeat(${plans.length}, minmax(11rem, 1fr))`,
+          }}
+        >
+          {plans.map((plan, index) => (
           <Card
             key={plan.id}
             className="p-6 h-full flex flex-col bg-gradient-to-br from-white via-primary-50/20 to-white border-2 border-primary-200 shadow-xl hover:shadow-2xl transition-all duration-300 animate-slide-up"
@@ -102,17 +100,19 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
             </div>
           </Card>
         ))}
-          </div>
+        </div>
+      </div>
 
-          {/* Comparison Table */}
-          <div className="rounded-2xl border border-neutral-200 shadow-lg bg-white">
-            <table className="w-full border-collapse table-fixed">
-              <colgroup>
-                <col style={{ width: '25%' }} />
-                {plans.map(plan => (
-                  <col key={`col-${plan.id}`} style={{ width: `${planColPercent}%` }} />
-                ))}
-              </colgroup>
+      {/* Feature matrix — Features column only applies here */}
+      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
+        <div className="rounded-2xl border border-neutral-200 shadow-lg bg-white w-full">
+          <table className="w-full border-collapse table-fixed">
+            <colgroup>
+              <col style={{ width: `${featureRailPercent}%` }} />
+              {plans.map(plan => (
+                <col key={`col-${plan.id}`} style={{ width: `${planTableColPercent}%` }} />
+              ))}
+            </colgroup>
               <thead>
                 <tr className="bg-gradient-to-r from-primary-700 to-primary-600">
                   <th className="text-left py-4 px-6 text-white font-semibold sticky left-0 z-10 bg-gradient-to-r from-primary-700 to-primary-600 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
@@ -359,7 +359,6 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
             </table>
           </div>
         </div>
-      </div>
     </div>
   );
 }

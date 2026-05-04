@@ -131,28 +131,28 @@ const IndividualsFamiliesHero: React.FC = () => {
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 mb-8 justify-center">
-              <Link to="/get-started" className="flex-1 sm:flex-initial">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 w-full max-w-3xl mx-auto items-stretch">
+              <Link to="/get-started" className="w-full min-h-0 flex">
                 <Button
                   size="lg"
-                  className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold px-10 py-6 text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
+                  className="w-full h-full min-h-[4.25rem] bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold px-10 py-6 text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
                 >
                   Get Your Personalized Quote
-                  <ArrowRight className="ml-2 w-6 h-6" />
+                  <ArrowRight className="ml-2 w-6 h-6 shrink-0" />
                 </Button>
               </Link>
 
               <a
                 href="tel:8558164650"
-                className="flex items-center justify-center gap-3 px-10 py-6 bg-white border-3 border-blue-600 text-blue-600 font-bold text-lg rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl group"
+                className="flex w-full min-h-[4.25rem] items-center justify-center gap-3 px-10 py-6 bg-white border-3 border-blue-600 text-blue-600 font-bold text-lg rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl group"
               >
-                <div className="relative">
+                <div className="relative shrink-0">
                   <Phone className="w-6 h-6" />
                   {isAdvisorAvailable && (
                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
                   )}
                 </div>
-                <div className="text-left">
+                <div className="text-left leading-tight">
                   <div className="text-sm text-neutral-600 group-hover:text-neutral-700">Call Now</div>
                   <div>(855) 816-4650</div>
                 </div>

@@ -49,18 +49,18 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
   return (
     <div className="space-y-8 mb-16 md:mb-20">
       {/* Plan Header Cards */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: `250px repeat(${plans.length}, 1fr)` }}>
+      <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: `250px repeat(${plans.length}, 1fr)` }}>
         <div className="flex items-end pb-4">
           <h3 className="text-xl font-bold text-primary-700">Features</h3>
         </div>
         {plans.map((plan, index) => (
           <Card
             key={plan.id}
-            className="p-6 bg-gradient-to-br from-white via-primary-50/20 to-white border-2 border-primary-200 shadow-xl hover:shadow-2xl transition-all duration-300 animate-slide-up"
+            className="p-6 h-full flex flex-col bg-gradient-to-br from-white via-primary-50/20 to-white border-2 border-primary-200 shadow-xl hover:shadow-2xl transition-all duration-300 animate-slide-up"
             style={{ animationDelay: `${(index + 1) * 100}ms` }}
           >
-            <div className="space-y-4">
-              <div className="relative">
+            <div className="flex flex-col gap-4 flex-1 min-h-0">
+              <div className="relative shrink-0">
                 <div className="absolute -top-3 -right-3 w-20 h-20 bg-gradient-to-br from-primary-200/30 to-success-200/30 rounded-full blur-2xl"></div>
                 <h3 className="text-2xl font-bold bg-gradient-to-r from-primary-700 via-primary-600 to-primary-500 bg-clip-text text-transparent relative">
                   {plan.name}
@@ -70,7 +70,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 shrink-0 min-h-[1.75rem] content-start">
                 {getPlanBadges(plan).map((badge, idx) => (
                   <Badge
                     key={idx}
@@ -82,15 +82,17 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                 ))}
               </div>
 
-              <Button
-                className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                asChild
-              >
-                <a href={`/${plan.slug}`} className="inline-flex items-center justify-center">
-                  View Details
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </a>
-              </Button>
+              <div className="mt-auto pt-1 w-full shrink-0">
+                <Button
+                  className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                  asChild
+                >
+                  <a href={`/${plan.slug}`} className="inline-flex items-center justify-center gap-2">
+                    View Details
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                  </a>
+                </Button>
+              </div>
             </div>
           </Card>
         ))}

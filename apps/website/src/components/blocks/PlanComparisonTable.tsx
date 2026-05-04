@@ -43,16 +43,22 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
   const categories = getAllUniqueCategories(plans);
 
-  // Calculate column width based on number of plans
-  const planColumnWidth = `${Math.floor(75 / plans.length)}%`;
+  /** Match table columns: sticky feature column ~25%; plan columns split remaining 75% equally */
+  const headerGridTemplateColumns = `minmax(11rem, 25%) repeat(${plans.length}, minmax(0, 1fr))`;
+  const planColPercent = 75 / plans.length;
 
   return (
-    <div className="space-y-8 mb-16 md:mb-20">
-      {/* Plan Header Cards */}
-      <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: `250px repeat(${plans.length}, 1fr)` }}>
-        <div className="flex items-end pb-4">
-          <h3 className="text-xl font-bold text-primary-700">Features</h3>
-        </div>
+    <div className="mx-auto w-full max-w-6xl 2xl:max-w-7xl space-y-8 mb-16 md:mb-20 px-2 sm:px-0">
+      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
+        <div className="w-full min-w-0 mx-auto space-y-8 pb-2">
+          {/* Plan Header Cards — columns align with table below */}
+          <div
+            className="grid gap-4 items-stretch"
+            style={{ gridTemplateColumns: headerGridTemplateColumns }}
+          >
+            <div className="flex items-end justify-center sm:justify-start pb-4 min-w-0">
+              <h3 className="text-xl font-bold text-primary-700 text-center sm:text-left">Features</h3>
+            </div>
         {plans.map((plan, index) => (
           <Card
             key={plan.id}
@@ -96,27 +102,29 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
             </div>
           </Card>
         ))}
-      </div>
+          </div>
 
-      {/* Comparison Table */}
-      <div className="overflow-x-auto rounded-2xl border border-neutral-200 shadow-lg bg-white mb-2 pb-2">
-        <table className="w-full min-w-[800px] border-collapse">
-          <thead>
-            <tr className="bg-gradient-to-r from-primary-700 to-primary-600">
-              <th className="text-left py-4 px-6 text-white font-semibold w-1/4 sticky left-0 bg-gradient-to-r from-primary-700 to-primary-600">
-                Features
-              </th>
-              {plans.map(plan => (
-                <th 
-                  key={plan.id} 
-                  className="text-center py-4 px-4 text-white font-semibold"
-                  style={{ width: planColumnWidth }}
-                >
-                  {plan.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
+          {/* Comparison Table */}
+          <div className="rounded-2xl border border-neutral-200 shadow-lg bg-white">
+            <table className="w-full border-collapse table-fixed">
+              <colgroup>
+                <col style={{ width: '25%' }} />
+                {plans.map(plan => (
+                  <col key={`col-${plan.id}`} style={{ width: `${planColPercent}%` }} />
+                ))}
+              </colgroup>
+              <thead>
+                <tr className="bg-gradient-to-r from-primary-700 to-primary-600">
+                  <th className="text-left py-4 px-6 text-white font-semibold sticky left-0 z-10 bg-gradient-to-r from-primary-700 to-primary-600 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
+                    Features
+                  </th>
+                  {plans.map(plan => (
+                    <th key={plan.id} className="text-center py-4 px-4 text-white font-semibold">
+                      {plan.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
           <tbody>
             {categories.map(category => {
               const allFeatureNames = Array.from(
@@ -348,7 +356,9 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
               </>
             )}
           </tbody>
-        </table>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

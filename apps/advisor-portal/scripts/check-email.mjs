@@ -1,0 +1,40 @@
+import { supabase } from '@mpbhealth/database';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const root = join(__dirname, '..');
+
+function loadEnv() {
+  for (const p of ['.env', '.env.local']) {
+    const full = join(root, p);
+    if (existsSync(full)) {
+      readFileSync(full, 'utf8').split('\n').forEach((line) => {
+        const m = line.match(/^\s*([^#=]+)=(.*)$/);
+        if (m && !process.env[m[1].trim()]) process.env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, '');
+      });
+      break;
+    }
+  }
+}
+loadEnv();
+
+const email = process.argv[2] || 'leonardo@mympb.com';
+
+const { data, error } = await supabase
+  .from('advisor_profiles')
+  .select('id, first_name, last_name, email, status')
+  .ilike('email', email);
+
+if (error) {
+  console.error('Error:', error.message);
+  process.exit(1);
+}
+
+if (data?.length) {
+  console.log('Found in advisor_profiles:');
+  console.log(JSON.stringify(data, null, 2));
+} else {
+  console.log(email + ' NOT found in advisor_profiles');
+}

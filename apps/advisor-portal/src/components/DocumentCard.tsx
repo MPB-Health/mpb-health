@@ -1,13 +1,13 @@
 import {
   FileText,
-  Eye,
   ExternalLink,
   Presentation,
   FileType,
-  Image,
+  Image as ImageIcon,
   FileSpreadsheet,
 } from 'lucide-react';
 import type { SOPDocument } from '@mpbhealth/advisor-core';
+import SafeImage from './SafeImage';
 
 interface DocumentCardProps {
   doc: SOPDocument;
@@ -15,8 +15,9 @@ interface DocumentCardProps {
 }
 
 /**
- * DocumentCard - A clean, responsive card component for displaying documents
- * Uses a simple structure with no complex flexbox/grid that could cause gaps
+ * DocumentCard - Resource Center–style card for a SOP document.
+ * Renders a 16:9 thumbnail (image when available, otherwise a colored
+ * file-type icon block) above a title + description.
  */
 export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
   const hasImage = !!doc.image_url;
@@ -29,7 +30,17 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
     (url.includes('sharepoint') || url.includes('onedrive')) &&
     (url.includes('/:p:/') || url.includes('%3ap%3a'));
   const isExternalLink = !!doc.file_url;
-  const FallbackIcon = isXLSX ? FileSpreadsheet : FileText;
+
+  // File-type styling for the icon-only thumbnail (no image_url).
+  const FallbackIcon = isXLSX
+    ? FileSpreadsheet
+    : isPPTX || isSharePointPresentation
+      ? Presentation
+      : isPDF
+        ? FileType
+        : isImage
+          ? ImageIcon
+          : FileText;
   const fallbackTint = isXLSX
     ? 'bg-emerald-100 dark:bg-emerald-900/30'
     : 'bg-th-accent-100 dark:bg-th-accent-900/30';
@@ -37,81 +48,62 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
     ? 'text-emerald-600 dark:text-emerald-400'
     : 'text-th-accent-600 dark:text-th-accent-400';
 
+  // Action icon shown next to the title.
+  const ActionIcon = isPPTX || isSharePointPresentation
+    ? Presentation
+    : isPDF
+      ? FileType
+      : isXLSX
+        ? FileSpreadsheet
+        : isImage
+          ? ImageIcon
+          : isExternalLink
+            ? ExternalLink
+            : null;
+
   return (
     <div
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
       role="button"
       tabIndex={0}
-      className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col"
-    >{/* No whitespace between elements */}{hasImage ? (
+      className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5 cursor-pointer text-left flex flex-col"
+    >
+      {hasImage ? (
+        <div className="relative w-full aspect-[16/9] overflow-hidden bg-surface-tertiary">
+          <SafeImage
+            src={doc.image_url!}
+            alt={doc.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            style={{ objectPosition: (doc.metadata?.image_position as string) || 'center top' }}
+            fallbackClassName="w-full h-full flex items-center justify-center bg-surface-tertiary text-th-text-tertiary"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        </div>
+      ) : (
         <div
-          className="document-card__thumbnail bg-surface-tertiary"
+          className={`relative w-full aspect-[16/9] flex items-center justify-center ${fallbackTint}`}
           role="img"
           aria-label={doc.title}
         >
-          <img
-            src={doc.image_url!}
-            alt={doc.title}
-            className="w-full h-full object-cover"
-            style={{ objectPosition: (doc.metadata?.image_position as string) || 'center top' }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
+          <FallbackIcon className={`w-12 h-12 ${fallbackIconColor}`} />
         </div>
-      ) : (
-        <div className="document-card__content p-5 pb-0">
-          <div className="flex items-start justify-between">
-            <div
-              className={`w-12 h-12 ${fallbackTint} rounded-lg flex items-center justify-center flex-shrink-0`}
-            >
-              <FallbackIcon className={`w-6 h-6 ${fallbackIconColor}`} />
-            </div>
-            <div className="text-right text-sm text-th-text-tertiary">
-              <div className="flex items-center space-x-1">
-                <Eye className="w-4 h-4" />
-                <span>{doc.view_count}</span>
-              </div>
-            </div>
-          </div>
+      )}
+
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex items-center justify-between mb-1.5 gap-2">
+          <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
+            {doc.title}
+          </h3>
+          {ActionIcon && (
+            <ActionIcon className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0" />
+          )}
         </div>
-      )}{/* No whitespace */}<div className={`document-card__content flex-1 flex flex-col ${hasImage ? 'p-5' : 'p-5 pt-4'}`}>
-        <h3 className="font-semibold text-th-text-primary leading-snug">
-          {doc.title}
-        </h3>
         {doc.description && (
-          <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
+          <p className="text-sm text-th-text-secondary leading-relaxed line-clamp-2">
             {doc.description}
           </p>
         )}
-        <div className="mt-auto" aria-hidden="true"></div>
-        <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
-          <span className="text-sm text-th-text-tertiary">{doc.category}</span>
-          <span className="text-sm text-th-accent-600 font-medium flex items-center gap-1">
-            {isPPTX || isSharePointPresentation ? (
-              <>
-                Preview <Presentation className="w-3.5 h-3.5" />
-              </>
-            ) : isPDF ? (
-              <>
-                Preview <FileType className="w-3.5 h-3.5" />
-              </>
-            ) : isXLSX ? (
-              <>
-                Preview <FileSpreadsheet className="w-3.5 h-3.5" />
-              </>
-            ) : isImage ? (
-              <>
-                Preview <Image className="w-3.5 h-3.5" />
-              </>
-            ) : isExternalLink ? (
-              <>
-                Open <ExternalLink className="w-3.5 h-3.5" />
-              </>
-            ) : (
-              'View →'
-            )}
-          </span>
-        </div>
       </div>
     </div>
   );

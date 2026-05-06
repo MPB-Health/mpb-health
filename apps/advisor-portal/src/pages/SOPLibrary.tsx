@@ -282,12 +282,15 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
           </div>
         </div>
         <div className="h-11 bg-surface-tertiary rounded-lg" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="bg-surface-primary rounded-xl border border-th-border p-5 space-y-3">
-              <div className="h-5 w-3/4 bg-surface-tertiary rounded" />
-              <div className="h-4 w-full bg-surface-tertiary rounded" />
-              <div className="h-4 w-1/2 bg-surface-tertiary rounded" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+              <div className="aspect-[16/9] bg-surface-tertiary" />
+              <div className="p-4 space-y-2">
+                <div className="h-4 w-3/4 bg-surface-tertiary rounded" />
+                <div className="h-3 w-full bg-surface-tertiary rounded" />
+                <div className="h-3 w-2/3 bg-surface-tertiary rounded" />
+              </div>
             </div>
           ))}
         </div>
@@ -331,16 +334,8 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
         />
       </div>
 
-      {/* Cards grid - using CSS Grid with auto-fill for responsive layout */}
-      <div 
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '1rem',
-          fontSize: 0,      // Reset to prevent text-based spacing affecting grid items
-          lineHeight: 0,
-        }}
-      >
+      {/* Cards grid - matches Resource Center layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filteredDocuments.length > 0 ? (
           filteredDocuments.map((doc) => {
             const url = doc.file_url?.toLowerCase() || '';
@@ -375,7 +370,7 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
             );
           })
         ) : (
-          <div style={{ gridColumn: '1 / -1' }} className="bg-surface-primary rounded-xl border border-th-border p-12 text-center">
+          <div className="col-span-full bg-surface-primary rounded-xl border border-th-border p-12 text-center">
             <BookOpen className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
             <p className="text-th-text-tertiary">No documents found</p>
           </div>

@@ -142,9 +142,9 @@ const fallbackNavigation: NavItem[] = [
     icon: BookOpen,
     children: [
       { name: 'Handbooks', href: '/sops/handbooks' },
+      { name: 'Overview', href: '/overview' },
     ],
   },
-  { name: 'Overview', href: '/overview', icon: Compass },
   { 
     name: 'Forms', 
     href: '/forms', 

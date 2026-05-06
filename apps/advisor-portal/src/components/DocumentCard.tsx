@@ -1,4 +1,12 @@
-import { FileText, Eye, ExternalLink, Presentation, FileType, Image } from 'lucide-react';
+import {
+  FileText,
+  Eye,
+  ExternalLink,
+  Presentation,
+  FileType,
+  Image,
+  FileSpreadsheet,
+} from 'lucide-react';
 import type { SOPDocument } from '@mpbhealth/advisor-core';
 
 interface DocumentCardProps {
@@ -14,12 +22,20 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
   const hasImage = !!doc.image_url;
   const url = doc.file_url?.toLowerCase() || '';
   const isPPTX = url.match(/\.pptx?$/) !== null;
+  const isXLSX = url.match(/\.xlsx?$/) !== null;
   const isPDF = url.endsWith('.pdf') === true;
   const isImage = /\.(png|jpe?g|gif|webp)$/i.test(doc.file_url || '');
   const isSharePointPresentation =
     (url.includes('sharepoint') || url.includes('onedrive')) &&
     (url.includes('/:p:/') || url.includes('%3ap%3a'));
   const isExternalLink = !!doc.file_url;
+  const FallbackIcon = isXLSX ? FileSpreadsheet : FileText;
+  const fallbackTint = isXLSX
+    ? 'bg-emerald-100 dark:bg-emerald-900/30'
+    : 'bg-th-accent-100 dark:bg-th-accent-900/30';
+  const fallbackIconColor = isXLSX
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : 'text-th-accent-600 dark:text-th-accent-400';
 
   return (
     <div
@@ -45,8 +61,10 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
       ) : (
         <div className="document-card__content p-5 pb-0">
           <div className="flex items-start justify-between">
-            <div className="w-12 h-12 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-              <FileText className="w-6 h-6 text-th-accent-600 dark:text-th-accent-400" />
+            <div
+              className={`w-12 h-12 ${fallbackTint} rounded-lg flex items-center justify-center flex-shrink-0`}
+            >
+              <FallbackIcon className={`w-6 h-6 ${fallbackIconColor}`} />
             </div>
             <div className="text-right text-sm text-th-text-tertiary">
               <div className="flex items-center space-x-1">
@@ -76,6 +94,10 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
             ) : isPDF ? (
               <>
                 Preview <FileType className="w-3.5 h-3.5" />
+              </>
+            ) : isXLSX ? (
+              <>
+                Preview <FileSpreadsheet className="w-3.5 h-3.5" />
               </>
             ) : isImage ? (
               <>

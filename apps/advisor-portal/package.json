@@ -18,6 +18,7 @@
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
+    "@tanstack/react-query": "^5.90.21",
     "@tiptap/core": "^3.20.4",
     "@tiptap/extension-code-block-lowlight": "^3.20.4",
     "@tiptap/extension-color": "^3.20.4",
@@ -40,11 +41,11 @@
     "date-fns": "catalog:",
     "lowlight": "^3.3.0",
     "lucide-react": "catalog:",
+    "pdfjs-dist": "^4.10.38",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^9.1.0",
-    "@tanstack/react-query": "^5.90.21",
     "react-router-dom": "catalog:"
   },
   "devDependencies": {

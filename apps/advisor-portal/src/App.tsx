@@ -7,6 +7,7 @@ import MainLayout from './layouts/MainLayout';
 // Route module factories for lazy loading + prefetching
 const routeModules = {
   Dashboard: () => import('./pages/Dashboard'),
+  Overview: () => import('./pages/Overview'),
   Training: () => import('./pages/Training'),
   TrainingModule: () => import('./pages/TrainingModule'),
   Forms: () => import('./pages/Forms'),
@@ -53,6 +54,7 @@ export function prefetchRoute(name: keyof typeof routeModules) {
 // Map route paths to module names for link-based prefetching
 const pathToModule: Record<string, keyof typeof routeModules> = {
   '/': 'Dashboard',
+  '/overview': 'Overview',
   '/training': 'Training',
   '/forms': 'Forms',
   '/quick-links': 'QuickLinks',
@@ -78,6 +80,7 @@ export function prefetchRouteByPath(path: string) {
 
 // Lazy-loaded page components (using shared module factories)
 const Dashboard = React.lazy(routeModules.Dashboard);
+const Overview = React.lazy(routeModules.Overview);
 const Training = React.lazy(routeModules.Training);
 const TrainingModule = React.lazy(routeModules.TrainingModule);
 const Forms = React.lazy(routeModules.Forms);
@@ -285,6 +288,7 @@ export default function App() {
             {/* Authenticated routes — Suspense renders inside the layout shell */}
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Suspense fallback={<RouteSpinner />}><Dashboard /></Suspense>} />
+              <Route path="overview" element={<Suspense fallback={<RouteSpinner />}><Overview /></Suspense>} />
               <Route path="training" element={<Suspense fallback={<RouteSpinner />}><Training /></Suspense>} />
               <Route path="training/mpb" element={<Suspense fallback={<RouteSpinner />}><Training section="mpb" /></Suspense>} />
               <Route path="training/sedera" element={<Suspense fallback={<RouteSpinner />}><Training section="sedera" /></Suspense>} />

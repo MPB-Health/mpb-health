@@ -392,12 +392,12 @@ function formatLocalYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Newest calendar date first so the daily log table is not limited to “last N inserted”. */
-function sortLogsByDateDesc(logs: LogEntry[]): LogEntry[] {
+/** Oldest calendar date first (chronological); same-day rows tie-break by id for stable order. */
+function sortLogsChronologically(logs: LogEntry[]): LogEntry[] {
   return [...logs].sort((a, b) => {
-    const dc = b.date.localeCompare(a.date);
+    const dc = a.date.localeCompare(b.date);
     if (dc !== 0) return dc;
-    return String(b.id).localeCompare(String(a.id));
+    return String(a.id).localeCompare(String(b.id));
   });
 }
 
@@ -1215,7 +1215,7 @@ function DailyLogTab({
 
   const query = search.toLowerCase().trim();
   const filteredLogs = useMemo(() => {
-    const ordered = sortLogsByDateDesc(logs);
+    const ordered = sortLogsChronologically(logs);
     const byRep = repFilter
       ? ordered.filter((l) => l.teamMember === repFilter)
       : ordered;
@@ -3128,11 +3128,12 @@ export default function DailyLogs() {
   );
 
   const reportLogs = useMemo(() => {
-    return logs.filter((l) => {
+    const filtered = logs.filter((l) => {
       const d = parseLogDate(l.date);
       if (isNaN(d.getTime())) return false;
       return getISOWeek(d) === weekNumber && getISOWeekYear(d) === reportISOWeekYear;
     });
+    return sortLogsChronologically(filtered);
   }, [logs, weekNumber, reportISOWeekYear]);
 
   const weekDates = useMemo(
@@ -3333,7 +3334,7 @@ export default function DailyLogs() {
                   'Special project',
                   'Special project (min)',
                 ];
-                const rows = logs.map((l) => {
+                const rows = sortLogsChronologically(logs).map((l) => {
                   const pd = parseLogDate(l.date);
                   return [
                   String(isNaN(pd.getTime()) ? '' : getISOWeek(pd)),

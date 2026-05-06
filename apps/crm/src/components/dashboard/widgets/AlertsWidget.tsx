@@ -5,9 +5,20 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, AlertTriangle, Clock, User, ArrowRight, Check, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Bell, AlertTriangle, Clock, User, ArrowRight, Check, X, GitBranch } from 'lucide-react';
 import { useCRM } from '../../../contexts/CRMContext';
+import { useOrg } from '../../../contexts/OrgContext';
+import { supabase } from '../../../lib/supabase';
 import type { BaseWidgetProps } from '../types';
+
+interface StalledLeadRow {
+  lead_id: string;
+  pipeline_stage: string;
+  workflow_subsection: string | null;
+  days_in_stage: number;
+  assigned_to: string | null;
+}
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
   classes.filter(Boolean).join(' ');
@@ -18,7 +29,7 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
 
 interface Alert {
   id: string;
-  type: 'overdue_task' | 'high_priority_lead' | 'upcoming_deadline' | 'system' | 'mention';
+  type: 'overdue_task' | 'high_priority_lead' | 'upcoming_deadline' | 'system' | 'mention' | 'stalled_lead';
   title: string;
   message: string;
   timestamp: string;
@@ -33,10 +44,30 @@ interface Alert {
 
 export default function AlertsWidget({ config, size }: BaseWidgetProps) {
   const { tasksDueToday, overdueTasks, recentLeads } = useCRM();
+  const { activeOrgId } = useOrg();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   const showOnlyUrgent = config.showOnlyUrgent === true;
+  const stalledThresholdDays = (config.stalledThresholdDays as number | undefined) ?? 14;
+
+  const { data: stalledLeads = [] } = useQuery({
+    queryKey: ['crmStalledLeads', activeOrgId, stalledThresholdDays],
+    queryFn: async () => {
+      if (!activeOrgId) return [] as StalledLeadRow[];
+      const { data, error } = await supabase.rpc('crm_report_stalled_leads', {
+        p_org_id: activeOrgId,
+        p_threshold_days: stalledThresholdDays,
+      });
+      if (error) {
+        console.warn('Failed to load stalled leads:', error.message);
+        return [] as StalledLeadRow[];
+      }
+      return (data || []) as StalledLeadRow[];
+    },
+    enabled: !!activeOrgId,
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
     // Generate alerts from CRM data
@@ -86,6 +117,21 @@ export default function AlertsWidget({ config, size }: BaseWidgetProps) {
       });
     });
 
+    // Stalled-stage leads (MP 8-stage spec — non-terminal stages past threshold)
+    stalledLeads.slice(0, 5).forEach((row) => {
+      const stageLabel = row.pipeline_stage.replace(/_/g, ' ');
+      generatedAlerts.push({
+        id: `stalled-${row.lead_id}`,
+        type: 'stalled_lead',
+        title: `Stalled in ${stageLabel}`,
+        message: `${row.days_in_stage}d without progress`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        link: `/leads/${row.lead_id}`,
+        priority: row.days_in_stage >= stalledThresholdDays * 2 ? 'urgent' : 'high',
+      });
+    });
+
     // Filter and sort
     let filtered = generatedAlerts.filter((a) => !dismissedIds.has(a.id));
     if (showOnlyUrgent) {
@@ -101,7 +147,7 @@ export default function AlertsWidget({ config, size }: BaseWidgetProps) {
     });
 
     setAlerts(filtered.slice(0, 10));
-  }, [tasksDueToday, overdueTasks, recentLeads, showOnlyUrgent, dismissedIds]);
+  }, [tasksDueToday, overdueTasks, recentLeads, stalledLeads, stalledThresholdDays, showOnlyUrgent, dismissedIds]);
 
   const handleDismiss = (alertId: string) => {
     setDismissedIds((prev) => new Set([...prev, alertId]));
@@ -183,6 +229,7 @@ const ALERT_ICONS: Record<string, typeof Bell> = {
   upcoming_deadline: Clock,
   system: Bell,
   mention: User,
+  stalled_lead: GitBranch,
 };
 
 const PRIORITY_COLORS: Record<string, string> = {

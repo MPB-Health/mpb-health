@@ -65,7 +65,7 @@ function CRMQueryDataProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       const [stats, stages, dStages, activities] = await Promise.all([
         svc.pipelineService.getDashboardStats(),
-        svc.pipelineService.getPipelineStages(),
+        svc.pipelineService.getPipelineStages(activeOrgId),
         svc.dealService.getStages(),
         svc.activityService.getRecentActivities(10),
       ]);

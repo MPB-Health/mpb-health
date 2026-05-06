@@ -1,5 +1,5 @@
 // Lead Management
-export { LeadService, createLeadService } from './leads/leadService';
+export { LeadService, createLeadService, LEAD_ROW_SELECT } from './leads/leadService';
 export { PipelineService, createPipelineService } from './leads/pipelineService';
 export type {
   Lead,

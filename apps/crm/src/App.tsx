@@ -106,6 +106,9 @@ const ActivityTargetsReport = lazyRetry(() => import('./pages/reports/ActivityTa
 const AdvisorProductionReport = lazyRetry(() => import('./pages/reports/AdvisorProductionReport'));
 const AnnualOverview = lazyRetry(() => import('./pages/reports/AnnualOverview'));
 const QuoteResultsReturnedPage = lazyRetry(() => import('./pages/reports/QuoteResultsReturnedPage'));
+const DailyLogReport = lazyRetry(() => import('./pages/reports/DailyLogReport'));
+const MessageTemplatesPage = lazyRetry(() => import('./pages/MessageTemplatesPage'));
+const IntegrationsHub = lazyRetry(() => import('./pages/IntegrationsHub'));
 
 // Sales Plan 2026 Entities
 const ReferralPartners = lazyRetry(() => import('./pages/ReferralPartners'));
@@ -389,6 +392,16 @@ export default function App() {
                 <Route path="/reports/advisor-production" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AdvisorProductionReport /></Suspense></Guarded>} />
                 <Route path="/reports/annual" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AnnualOverview /></Suspense></Guarded>} />
                 <Route path="/reports/quote-results-returned" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><QuoteResultsReturnedPage /></Suspense></Guarded>} />
+                <Route
+                  path="/reports/daily-log"
+                  element={
+                    <Guarded permission="reports.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <DailyLogReport />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
 
                 {/* Sales Plan 2026 Entities */}
                 <Route path="/referral-partners" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartners /></Suspense></Guarded>} />
@@ -406,6 +419,16 @@ export default function App() {
                     <Guarded permission="settings.manage">
                       <Suspense fallback={<PageLoader />}>
                         <Settings />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/integrations"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <IntegrationsHub />
                       </Suspense>
                     </Guarded>
                   }
@@ -506,6 +529,16 @@ export default function App() {
                     <Guarded permission="email.read">
                       <Suspense fallback={<PageLoader />}>
                         <EmailDeliverability />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/email/my-templates"
+                  element={
+                    <Guarded permission="email.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <MessageTemplatesPage />
                       </Suspense>
                     </Guarded>
                   }

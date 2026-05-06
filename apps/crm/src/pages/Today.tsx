@@ -19,6 +19,7 @@ import {
   Sun,
   Sunrise,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useCRM } from '../contexts/CRMContext';
 import { useOrg } from '../contexts/OrgContext';
 import type { LeadTask, Lead, CalendarEvent } from '@mpbhealth/crm-core';
@@ -64,7 +65,51 @@ export default function Today() {
   const { activeOrgId } = useOrg();
   const navigate = useNavigate();
 
+  const [sortBySalesperson, setSortBySalesperson] = useState(false);
   const [summary, setSummary] = useState<TodaySummary | null>(null);
+
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['crmTeamMembers'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('org_memberships')
+        .select('user_id, role, profiles!inner(id, email, full_name, avatar_url)')
+        .eq('status', 'active')
+        .limit(100);
+      return (data || []).map((m: Record<string, unknown>) => {
+        const p = m.profiles as Record<string, unknown>;
+        return {
+          id: (p?.id || m.user_id) as string,
+          name: (p?.full_name || p?.email || 'Unknown') as string,
+        };
+      });
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const ownerLabel = useMemo(() => {
+    const m = new Map<string, string>();
+    teamMembers.forEach((t) => m.set(t.id, t.name));
+    return m;
+  }, [teamMembers]);
+
+  const byOwner = <T extends { assigned_to?: string }>(items: T[]) => {
+    if (!sortBySalesperson) return items;
+    return [...items].sort((a, b) =>
+      (ownerLabel.get(a.assigned_to || '') || '').localeCompare(ownerLabel.get(b.assigned_to || '') || '', undefined, {
+        sensitivity: 'base',
+      }),
+    );
+  };
+
+  const sortLeadsByOwner = (items: Lead[]) => {
+    if (!sortBySalesperson) return items;
+    return [...items].sort((a, b) =>
+      (ownerLabel.get(a.assigned_to || '') || '').localeCompare(ownerLabel.get(b.assigned_to || '') || '', undefined, {
+        sensitivity: 'base',
+      }),
+    );
+  };
   const [todayTasks, setTodayTasks] = useState<LeadTask[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<LeadTask[]>([]);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
@@ -198,8 +243,16 @@ export default function Today() {
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column: Tasks */}
         <div className="lg:col-span-2 space-y-6">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setSortBySalesperson((v) => !v)}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-secondary"
+            >
+              {sortBySalesperson ? 'Clear salesperson sort' : 'Sort tasks & leads by salesperson'}
+            </button>
+          </div>
           {/* Overdue tasks — urgent */}
           {overdueTasks.length > 0 && (
             <section>
@@ -212,7 +265,7 @@ export default function Today() {
                 linkTo="/tasks"
               />
               <div className="space-y-2 mt-3">
-                {overdueTasks.map((task) => (
+                {byOwner(overdueTasks).map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}
@@ -236,7 +289,7 @@ export default function Today() {
             />
             {todayTasks.length > 0 ? (
               <div className="space-y-2 mt-3">
-                {todayTasks.map((task) => (
+                {byOwner(todayTasks).map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}
@@ -261,7 +314,7 @@ export default function Today() {
             />
             {recentLeads.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                {recentLeads.map((lead) => (
+                {sortLeadsByOwner(recentLeads).map((lead) => (
                   <LeadCard key={lead.id} lead={lead} />
                 ))}
               </div>

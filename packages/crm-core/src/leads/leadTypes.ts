@@ -98,6 +98,16 @@ export interface Lead {
   outside_advisor_id?: string | null;
   referral_partner_id?: string | null;
   reactivation_source_lead_id?: string | null;
+  /** Leads-module subsection: working | nurture | linkedin | do_not_contact */
+  workflow_subsection?: 'working' | 'nurture' | 'linkedin' | 'do_not_contact' | null;
+  linkedin_workflow_status?: string | null;
+  do_not_contact?: boolean | null;
+  preliminary_quote_sent_at?: string | null;
+  quote_cadence_started_at?: string | null;
+  engagement_detected_at?: string | null;
+  concierge_handoff_at?: string | null;
+  last_opt_out_signal_at?: string | null;
+  enrollment_approved_at?: string | null;
   // Joined relations (not persisted)
   carrier?: { id: string; name: string; carrier_type: string } | null;
   assigned_user?: { id: string; email: string; full_name?: string } | null;
@@ -122,6 +132,10 @@ export interface LeadFilters {
   isSelfGenerated?: boolean;
   outsideAdvisorId?: string;
   referralPartnerId?: string;
+  /** Filter Leads module subsection tab */
+  workflowSubsection?: 'working' | 'nurture' | 'linkedin' | 'do_not_contact';
+  sortBy?: 'created_at' | 'last_contacted_at' | 'pipeline_stage' | 'assigned_to';
+  sortDir?: 'asc' | 'desc';
 }
 
 // Pipeline stage configuration
@@ -139,15 +153,16 @@ export interface PipelineStage {
   count?: number;
 }
 
-// Default pipeline stages
+// Default pipeline stages (8-stage MP Health model — DB `crm_pipeline_stages` is source of truth per org)
 export const DEFAULT_PIPELINE_STAGES: PipelineStage[] = [
   { id: '1', name: 'new', display_name: 'New', color: '#3B82F6', sort_order: 1, is_active: true, is_won_stage: false, is_lost_stage: false },
-  { id: '2', name: 'contacted', display_name: 'Contacted', color: '#8B5CF6', sort_order: 2, is_active: true, is_won_stage: false, is_lost_stage: false },
-  { id: '3', name: 'qualified', display_name: 'Qualified', color: '#10B981', sort_order: 3, is_active: true, is_won_stage: false, is_lost_stage: false },
-  { id: '4', name: 'proposal', display_name: 'Proposal', color: '#F59E0B', sort_order: 4, is_active: true, is_won_stage: false, is_lost_stage: false },
-  { id: '5', name: 'negotiation', display_name: 'Negotiation', color: '#EC4899', sort_order: 5, is_active: true, is_won_stage: false, is_lost_stage: false },
-  { id: '6', name: 'won', display_name: 'Won', color: '#22C55E', sort_order: 6, is_active: true, is_won_stage: true, is_lost_stage: false },
-  { id: '7', name: 'lost', display_name: 'Lost', color: '#EF4444', sort_order: 7, is_active: true, is_won_stage: false, is_lost_stage: true },
+  { id: '2', name: 'working', display_name: 'Working', color: '#6366F1', sort_order: 2, is_active: true, is_won_stage: false, is_lost_stage: false },
+  { id: '3', name: 'quoted', display_name: 'Quoted', color: '#8B5CF6', sort_order: 3, is_active: true, is_won_stage: false, is_lost_stage: false },
+  { id: '4', name: 'engaged', display_name: 'Engaged / Qualifying', color: '#10B981', sort_order: 4, is_active: true, is_won_stage: false, is_lost_stage: false },
+  { id: '5', name: 'application_in_progress', display_name: 'Application in Progress', color: '#F59E0B', sort_order: 5, is_active: true, is_won_stage: false, is_lost_stage: false },
+  { id: '6', name: 'won', display_name: 'Won — Enrolled', color: '#22C55E', sort_order: 6, is_active: true, is_won_stage: true, is_lost_stage: false },
+  { id: '7', name: 'nurture', display_name: 'Nurture', color: '#64748B', sort_order: 7, is_active: true, is_won_stage: false, is_lost_stage: false },
+  { id: '8', name: 'lost', display_name: 'Lost', color: '#EF4444', sort_order: 8, is_active: true, is_won_stage: false, is_lost_stage: true },
 ];
 
 // CRM Dashboard statistics
@@ -245,4 +260,7 @@ export interface LeadUpdateInput {
   outside_advisor_id?: string | null;
   referral_partner_id?: string | null;
   reactivation_source_lead_id?: string | null;
+  workflow_subsection?: 'working' | 'nurture' | 'linkedin' | 'do_not_contact' | null;
+  linkedin_workflow_status?: string | null;
+  do_not_contact?: boolean | null;
 }

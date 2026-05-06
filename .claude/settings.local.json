@@ -50,7 +50,21 @@
       "Bash(git status:*)",
       "Bash(git push:*)",
       "Bash(npx supabase@latest functions deploy ticket-proxy --no-verify-jwt)",
-      "Bash(npx supabase@latest functions deploy ticket-proxy --no-verify-jwt --project-ref dtmnkzllidaiqyheguhl)"
+      "Bash(npx supabase@latest functions deploy ticket-proxy --no-verify-jwt --project-ref dtmnkzllidaiqyheguhl)",
+      "Bash(brew install *)",
+      "Bash(sudo -n true)",
+      "Read(//opt/**)",
+      "Bash(/opt/homebrew/bin/brew --version)",
+      "Bash(npm --version)",
+      "Read(//Users/juliaavalon/.nvm/versions/**)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/juliaavalon/.volta/**)",
+      "Read(//Users/juliaavalon/**)",
+      "Read(//Users/juliaavalon/Library/**)",
+      "Read(//private/tmp/**)",
+      "Bash(curl -fsSL \"https://api.github.com/repos/supabase/cli/releases/latest\")",
+      "Bash(supabase --help)",
+      "Bash(supabase login *)"
     ]
   }
 }

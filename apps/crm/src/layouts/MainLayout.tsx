@@ -48,6 +48,7 @@ import {
   LayoutGrid,
   BookOpen,
   ClipboardList,
+  Plug,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -197,6 +198,7 @@ const navigationSections: NavSection[] = [
           { name: 'Activity vs Targets', href: '/reports/activity-targets', permission: 'reports.read' },
           { name: 'Advisor Production', href: '/reports/advisor-production', permission: 'reports.read' },
           { name: 'Quote Results Returned', href: '/reports/quote-results-returned', permission: 'reports.read' },
+          { name: 'Daily activity log', href: '/reports/daily-log', permission: 'reports.read' },
           { name: 'Milestones', href: '/milestones', permission: 'targets.read' },
         ],
       },
@@ -218,9 +220,11 @@ const navigationSections: NavSection[] = [
           { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
           { name: 'Sequences', href: '/email/sequences', permission: 'email.read' },
           { name: 'Deliverability', href: '/email/deliverability', permission: 'email.read' },
+          { name: 'My templates', href: '/email/my-templates', permission: 'email.read' },
         ],
       },
       { name: 'Signatures', href: '/email/signatures', icon: PenTool, permission: 'email.read' },
+      { name: 'Integrations', href: '/integrations', icon: Plug, permission: 'email.read' },
     ],
   },
   {

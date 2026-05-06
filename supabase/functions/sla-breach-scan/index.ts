@@ -74,13 +74,13 @@ serve(async () => {
   let emailed = 0;
 
   for (const cfg of (configs ?? []) as SLAConfigRow[]) {
-    // Fetch still-uncontacted leads that are new/contacted
+    // Fetch still-uncontacted leads in early pipeline stages (MP 8-stage model)
     const { data: leads, error: leadErr } = await supabase
       .from('lead_submissions')
       .select('id, first_name, last_name, assigned_to, created_at, pipeline_stage, last_contacted_at')
       .eq('org_id', cfg.org_id)
       .is('last_contacted_at', null)
-      .in('pipeline_stage', ['new', 'contacted']);
+      .in('pipeline_stage', ['new', 'working']);
 
     if (leadErr) {
       log.warn('Failed to load leads for org', { org_id: cfg.org_id, error: leadErr.message });

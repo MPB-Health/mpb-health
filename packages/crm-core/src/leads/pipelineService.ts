@@ -6,22 +6,32 @@ export class PipelineService {
   constructor(private supabase: SupabaseClient) {}
 
   /**
-   * Get all active pipeline stages
+   * Get all active pipeline stages for an org (org_id must match crm_pipeline_stages.org_id)
    */
-  async getPipelineStages(): Promise<PipelineStage[]> {
+  async getPipelineStages(orgId?: string | null): Promise<PipelineStage[]> {
     try {
-      const { data, error } = await this.supabase
+      let query  = this.supabase
         .from('crm_pipeline_stages')
         .select('id, pipeline_id, name, display_name, probability, sort_order, is_won_stage, is_lost_stage, is_active, color, created_at')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
+
+      if (orgId) {
+        query = query.eq('org_id', orgId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Failed to get pipeline stages:', error);
         return DEFAULT_PIPELINE_STAGES;
       }
 
-      return data || DEFAULT_PIPELINE_STAGES;
+      if (!data?.length) {
+        return DEFAULT_PIPELINE_STAGES;
+      }
+
+      return data as PipelineStage[];
     } catch (error) {
       console.error('Pipeline stages error:', error);
       return DEFAULT_PIPELINE_STAGES;

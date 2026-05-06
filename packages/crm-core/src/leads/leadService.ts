@@ -8,6 +8,14 @@ import type {
 } from './leadTypes';
 import { sanitizeSearchInput } from '../utils/sanitize';
 
+/** Columns for list/detail fetches (PostgREST select) */
+export const LEAD_ROW_SELECT = `
+  id, org_id, first_name, last_name, email, phone, household_size, zip_code, city, state, contact_preference, primary_concern, source_page, source_cta, created_at, updated_at,
+  pipeline_stage, priority, plan_type, assigned_to, lead_score, tags, lead_source, next_followup_at, last_contacted_at, stage_changed_at,
+  workflow_subsection, linkedin_workflow_status, do_not_contact,
+  carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
+`;
+
 export class LeadService {
   constructor(private supabase: SupabaseClient) {}
 
@@ -22,13 +30,13 @@ export class LeadService {
     try {
       let query = this.supabase
         .from('lead_submissions')
-        .select(`
-        id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_page, source_cta, created_at,
-          carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
-        `, { count: 'exact' });
+        .select(LEAD_ROW_SELECT, { count: 'exact' });
 
       if (filters.stage) {
         query = query.eq('pipeline_stage', filters.stage);
+      }
+      if (filters.workflowSubsection) {
+        query = query.eq('workflow_subsection', filters.workflowSubsection);
       }
       if (filters.priority) {
         query = query.eq('priority', filters.priority);
@@ -68,7 +76,10 @@ export class LeadService {
       }
 
       const { data, error, count } = await query
-        .order('created_at', { ascending: false })
+        .order(filters.sortBy || 'created_at', {
+          ascending: filters.sortDir === 'asc',
+          nullsFirst: false,
+        })
         .range(offset, offset + limit - 1);
 
       if (error) {
@@ -125,10 +136,7 @@ export class LeadService {
     try {
       const { data, error } = await this.supabase
         .from('lead_submissions')
-        .select(`
-        id, first_name, last_name, email, phone, household_size, zip_code, contact_preference, primary_concern, source_page, source_cta, created_at,
-          carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
-        `)
+        .select(LEAD_ROW_SELECT)
         .eq('id', id)
         .single();
 

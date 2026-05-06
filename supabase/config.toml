@@ -397,6 +397,11 @@ verify_jwt = true
 [functions.social-linkedin-oauth-callback]
 verify_jwt = false
 
+# crm-scheduled-jobs is invoked server-side by Supabase Cron / curl with the
+# service-role key, so the gateway should not require a user JWT.
+[functions.crm-scheduled-jobs]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

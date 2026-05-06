@@ -61,6 +61,7 @@ import { UnifiedTimeline } from '../components/UnifiedTimeline';
 import { AttachmentList } from '../components/AttachmentList';
 import { RelationshipSidebar } from '../components/RelationshipSidebar';
 import { SunbizLookup } from '../components/SunbizLookup';
+import { LeadMpWorkflowPanel } from '../components/leads/LeadMpWorkflowPanel';
 import { useFocusItems } from '../hooks/useFocusItems';
 import { useOrg } from '../contexts/OrgContext';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
@@ -657,6 +658,8 @@ export default function LeadDetail() {
             </span>
           )}
         </div>
+
+        <LeadMpWorkflowPanel lead={lead} onRefresh={refreshLead} />
       </div>
 
       {/* ─── Main Content + Sidebar ─── */}

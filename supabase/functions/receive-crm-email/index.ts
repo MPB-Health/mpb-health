@@ -271,6 +271,30 @@ serve(async (req) => {
       .trim()
       .substring(0, 200);
 
+    // Opt-out keyword detection (MP CRM spec 2g — tune list in DB function).
+    // If not opted out, treat the inbound message as engagement so a 'quoted'
+    // lead promotes to 'engaged' (RPC is a no-op for other stages).
+    if (leadId && (payload.text || payload.html)) {
+      const cleanText = (payload.text || payload.html || '').replace(/<[^>]*>/g, ' ');
+      const { data: optOutHit } = await supabase.rpc('crm_detect_opt_out_keywords', {
+        p_body: cleanText,
+      });
+      if (optOutHit === true) {
+        await supabase.rpc('crm_apply_lead_opt_out', {
+          p_lead_id: leadId,
+          p_reason: 'inbound_opt_out_keywords',
+        });
+        log.info('Applied DNC from inbound opt-out phrases', { leadId });
+      } else {
+        const { error: engageErr } = await supabase.rpc('crm_record_lead_engagement', {
+          p_lead_id: leadId,
+        });
+        if (engageErr) {
+          log.warn('Failed to record inbound engagement', { leadId, error: engageErr.message });
+        }
+      }
+    }
+
     // ========================================================================
     // 6. Insert email record into crm_email_log
     // ========================================================================

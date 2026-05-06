@@ -1,6 +1,5 @@
 import { FileText, Eye, ExternalLink, Presentation, FileType, Image } from 'lucide-react';
 import type { SOPDocument } from '@mpbhealth/advisor-core';
-import PDFThumbnail from './PDFThumbnail';
 
 interface DocumentCardProps {
   doc: SOPDocument;
@@ -21,9 +20,6 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
     (url.includes('sharepoint') || url.includes('onedrive')) &&
     (url.includes('/:p:/') || url.includes('%3ap%3a'));
   const isExternalLink = !!doc.file_url;
-  // Render the first page of a PDF as the thumbnail when no static image is set.
-  const showPdfThumbnail = !hasImage && isPDF && !!doc.file_url;
-  const showThumbnailArea = hasImage || showPdfThumbnail;
 
   return (
     <div
@@ -46,12 +42,6 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         </div>
-      ) : showPdfThumbnail ? (
-        <PDFThumbnail
-          url={doc.file_url!}
-          alt={doc.title}
-          className="flex-shrink-0"
-        />
       ) : (
         <div className="document-card__content p-5 pb-0">
           <div className="flex items-start justify-between">
@@ -66,7 +56,7 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
             </div>
           </div>
         </div>
-      )}{/* No whitespace */}<div className={`document-card__content flex-1 flex flex-col ${showThumbnailArea ? 'p-5' : 'p-5 pt-4'}`}>
+      )}{/* No whitespace */}<div className={`document-card__content flex-1 flex flex-col ${hasImage ? 'p-5' : 'p-5 pt-4'}`}>
         <h3 className="font-semibold text-th-text-primary leading-snug">
           {doc.title}
         </h3>

@@ -345,13 +345,15 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
           filteredDocuments.map((doc) => {
             const url = doc.file_url?.toLowerCase() || '';
             const isPPTX = url.match(/\.pptx?$/) !== null;
+            const isXLSX = url.match(/\.xlsx?$/) !== null;
+            const isDOCX = url.match(/\.docx?$/) !== null;
             const isPDF = url.endsWith('.pdf') === true;
             const isImage = /\.(png|jpe?g|gif|webp)$/i.test(doc.file_url || '');
             const isSharePointPresentation =
               (url.includes('sharepoint') || url.includes('onedrive')) &&
               (url.includes('/:p:/') || url.includes('%3ap%3a'));
             const canPreview =
-              isPPTX || isPDF || isImage || isSharePointPresentation;
+              isPPTX || isXLSX || isDOCX || isPDF || isImage || isSharePointPresentation;
             const isExternalLink = !!doc.file_url;
 
             const handleClick = () => {

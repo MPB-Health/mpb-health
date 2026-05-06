@@ -36,12 +36,12 @@ SELECT
   'Zion vs Sedera comparison spreadsheet - MPB Health.',
   'spreadsheet',
   'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/Zion%20vs%20Sedera%20-%20Updated%20Comparison%202026.xlsx',
-  NULL,
+  'https://advisor.mpb.health/thumbnails/zion-vs-sedera-comparison-2026.png',
   '1.0',
   true,
   true,
   0,
-  '{}'::jsonb
+  '{"image_position": "center top"}'::jsonb
 WHERE NOT EXISTS (
   SELECT 1 FROM public.sop_documents
   WHERE slug = 'zion-vs-sedera-comparison-2026-toolkit'
@@ -73,13 +73,23 @@ SELECT
   'Zion vs Sedera comparison spreadsheet - MPB Health.',
   'spreadsheet',
   'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/Zion%20vs%20Sedera%20-%20Updated%20Comparison%202026.xlsx',
-  NULL,
+  'https://advisor.mpb.health/thumbnails/zion-vs-sedera-comparison-2026.png',
   '1.0',
   true,
   true,
   0,
-  '{}'::jsonb
+  '{"image_position": "center top"}'::jsonb
 WHERE NOT EXISTS (
   SELECT 1 FROM public.sop_documents
   WHERE slug = 'zion-vs-sedera-comparison-2026-sharing'
 );
+
+-- Backfill image_url for any rows already inserted from a prior run.
+UPDATE public.sop_documents
+   SET image_url = 'https://advisor.mpb.health/thumbnails/zion-vs-sedera-comparison-2026.png',
+       metadata  = COALESCE(metadata, '{}'::jsonb) || '{"image_position": "center top"}'::jsonb
+ WHERE slug IN (
+        'zion-vs-sedera-comparison-2026-toolkit',
+        'zion-vs-sedera-comparison-2026-sharing'
+      )
+   AND (image_url IS NULL OR image_url = '');

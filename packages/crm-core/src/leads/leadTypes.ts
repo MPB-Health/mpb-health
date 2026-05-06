@@ -52,6 +52,7 @@ export function inferSelfGenerated(source: string | null | undefined): boolean {
 // Main Lead interface matching database schema
 export interface Lead {
   id: string;
+  org_id?: string | null;
   first_name: string;
   last_name: string;
   email: string;

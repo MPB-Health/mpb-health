@@ -45,39 +45,31 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* Cards grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '1rem',
-        }}
-      >
+      {/* Cards grid — matches Resource Center sizing (1/2/3/4 cols, 16:9 thumbs) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {CARDS.map((card) => (
           <button
             key={card.fileUrl}
             type="button"
             onClick={() => setPreviewCard(card)}
-            className="document-card group bg-surface-primary rounded-xl border border-th-border hover:border-th-accent-300 hover:shadow-md transition-all cursor-pointer h-full flex flex-col text-left"
+            className="group bg-surface-primary rounded-xl border border-th-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-th-accent-300 hover:-translate-y-0.5 text-left flex flex-col"
           >
             <PDFThumbnail
               url={card.fileUrl}
               alt={`${card.title} — first page preview`}
+              aspectRatio="16 / 9"
+              cover
             />
-            <div className="document-card__content flex-1 flex flex-col p-5">
-              <h3 className="font-semibold text-th-text-primary leading-snug">
-                {card.title}
-              </h3>
-              <p className="text-sm text-th-text-tertiary mt-1 line-clamp-2">
+            <div className="p-4 flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-1.5">
+                <h3 className="font-semibold text-th-text-primary group-hover:text-th-accent-600 transition-colors">
+                  {card.title}
+                </h3>
+                <FileType className="w-4 h-4 text-th-text-tertiary group-hover:text-th-accent-500 transition-colors flex-shrink-0 ml-2" />
+              </div>
+              <p className="text-sm text-th-text-secondary leading-relaxed">
                 {card.description}
               </p>
-              <div className="mt-auto" aria-hidden="true" />
-              <div className="document-card__footer flex items-center justify-between pt-3.5 mt-[14px] border-t border-th-border-subtle">
-                <span className="text-sm text-th-text-tertiary">PDF</span>
-                <span className="text-sm text-th-accent-600 font-medium flex items-center gap-1">
-                  Preview <FileType className="w-3.5 h-3.5" />
-                </span>
-              </div>
             </div>
           </button>
         ))}

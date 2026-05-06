@@ -15,13 +15,33 @@ interface PDFThumbnailProps {
   alt?: string;
   /** Optional Tailwind classes applied to the wrapper. */
   className?: string;
+  /**
+   * Aspect ratio of the wrapper while loading (and the visible crop
+   * when `cover` is true). Use '8.5 / 11' for full portrait pages or
+   * '16 / 9' for compact landscape thumbnails.
+   * @default '8.5 / 11'
+   */
+  aspectRatio?: string;
+  /**
+   * When true, the rendered PDF page is anchored to the top of the
+   * wrapper and clipped by overflow, giving a "cover" / compact look.
+   * Useful for tile-style cards.
+   * @default false
+   */
+  cover?: boolean;
 }
 
 /**
  * Renders the first page of a PDF onto a canvas as a thumbnail.
  * Falls back to a file icon if rendering fails.
  */
-export default function PDFThumbnail({ url, alt, className }: PDFThumbnailProps) {
+export default function PDFThumbnail({
+  url,
+  alt,
+  className,
+  aspectRatio = '8.5 / 11',
+  cover = false,
+}: PDFThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -78,14 +98,20 @@ export default function PDFThumbnail({ url, alt, className }: PDFThumbnailProps)
   }, [url]);
 
   const showCanvas = state === 'ready';
+  // In `cover` mode the wrapper always has a fixed aspect ratio and the
+  // canvas overflows below the visible area, mimicking object-fit: cover.
+  // Otherwise the wrapper only enforces the aspect ratio while loading and
+  // collapses to the canvas height once ready.
+  const wrapperStyle: React.CSSProperties | undefined =
+    cover || !showCanvas ? { aspectRatio } : undefined;
 
   return (
     <div
       ref={wrapperRef}
       className={`relative bg-surface-tertiary overflow-hidden ${
-        showCanvas ? '' : 'flex items-center justify-center'
+        showCanvas && !cover ? '' : 'flex items-center justify-center'
       } ${className || ''}`}
-      style={!showCanvas ? { aspectRatio: '8.5 / 11' } : undefined}
+      style={wrapperStyle}
       role="img"
       aria-label={alt}
     >
@@ -97,7 +123,13 @@ export default function PDFThumbnail({ url, alt, className }: PDFThumbnailProps)
       )}
       <canvas
         ref={canvasRef}
-        className={showCanvas ? 'block w-full h-auto' : 'hidden'}
+        className={
+          showCanvas
+            ? cover
+              ? 'absolute top-0 left-0 block w-full h-auto'
+              : 'block w-full h-auto'
+            : 'hidden'
+        }
       />
     </div>
   );

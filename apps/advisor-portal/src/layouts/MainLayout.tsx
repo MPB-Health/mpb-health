@@ -50,6 +50,7 @@ import {
   CreditCard,
   Activity,
   Pill,
+  Compass,
 } from 'lucide-react';
 import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
@@ -117,6 +118,7 @@ const iconMap: Record<string, LucideIcon> = {
   CreditCard,
   Activity,
   Pill,
+  Compass,
   Video,
   Radio,
   Headphones,
@@ -142,6 +144,7 @@ const fallbackNavigation: NavItem[] = [
       { name: 'Handbooks', href: '/sops/handbooks' },
     ],
   },
+  { name: 'Overview', href: '/overview', icon: Compass },
   { 
     name: 'Forms', 
     href: '/forms', 

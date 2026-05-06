@@ -121,8 +121,9 @@ body {
 .document-card__thumbnail {
   display: block !important;
   width: 100%;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  aspect-ratio: 16 / 9;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .document-card__content {

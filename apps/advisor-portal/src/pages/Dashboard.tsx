@@ -500,13 +500,19 @@ export default function Dashboard() {
               <p className="text-th-text-tertiary text-sm font-medium uppercase tracking-wider">
                 {format(new Date(), 'EEEE, MMMM d, yyyy')}
               </p>
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-th-text-primary">
-                {(() => {
-                  const h = new Date().getHours();
-                  if (h < 12) return 'Good morning';
-                  if (h < 17) return 'Good afternoon';
-                  return 'Good evening';
-                })()}, {profile?.first_name}
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-th-text-primary flex flex-wrap items-baseline gap-x-3 gap-y-2">
+                <span>
+                  {(() => {
+                    const h = new Date().getHours();
+                    if (h < 12) return 'Good morning';
+                    if (h < 17) return 'Good afternoon';
+                    return 'Good evening';
+                  })()}, {profile?.first_name}
+                </span>
+                {/* TODO: remove after May 12 advisor call */}
+                <span className="text-base md:text-lg font-semibold text-red-600 dark:text-red-400 leading-snug">
+                  IMPORTANT: May 12 Advisor Call – Walkthrough of New Landing Pages
+                </span>
               </h1>
               <p className="text-th-text-tertiary text-sm max-w-md">
                 Empowering Healthcare Advisors — Making a Difference Every Day.

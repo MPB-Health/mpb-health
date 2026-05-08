@@ -459,33 +459,9 @@ function sortLogEntriesByCreatedAtDesc(logs: LogEntry[]): LogEntry[] {
     .map(({ entry }) => entry);
 }
 
-/**
- * Oldest save first (`created_at` ASC) — chronological order top-to-bottom.
- * Same shape as the DESC variant but inverted; legacy rows missing `created_at`
- * fall to the bottom so timestamped rows always show in true order at the top.
- */
-function sortLogEntriesByCreatedAtAsc(logs: LogEntry[]): LogEntry[] {
-  return [...logs]
-    .map((entry, stableIdx) => ({ entry, stableIdx }))
-    .sort((a, b) => {
-      const ma = logCreatedMs(a.entry);
-      const mb = logCreatedMs(b.entry);
-      if (ma !== null && mb !== null && ma !== mb) return ma - mb;
-      if (ma === null && mb !== null) return 1;
-      if (mb === null && ma !== null) return -1;
-      if (ma === null && mb === null) {
-        const da = parseLogDate(a.entry.date).getTime();
-        const db = parseLogDate(b.entry.date).getTime();
-        if (Number.isFinite(da) && Number.isFinite(db) && da !== db) return da - db;
-      }
-      return a.stableIdx - b.stableIdx;
-    })
-    .map(({ entry }) => entry);
-}
-
 /** Sort + roster normalize for anything that updates `logs` in workspace state. */
 function orderLogsForWorkspace(logs: LogEntry[], roster?: TeamMember[]): LogEntry[] {
-  return migrateLogsStorage(sortLogEntriesByCreatedAtAsc(logs), roster);
+  return migrateLogsStorage(sortLogEntriesByCreatedAtDesc(logs), roster);
 }
 
 function entryWasMeaningfullyEdited(entry: LogEntry): boolean {
@@ -1207,8 +1183,13 @@ function DailyLogTab({
           status: 'open',
         });
       }
+      // Reset the form to today's date too. Without this, a user who edits
+      // the date to log a missed entry from a previous day will keep that
+      // stale date on subsequent entries — silently logging them on the wrong
+      // sheet where today's-feed reader can't see them.
       setForm((f) => ({
         ...f,
+        date: today,
         memberName: '',
         otherNotes: '',
         additionalNotes: '',
@@ -1220,7 +1201,12 @@ function DailyLogTab({
         specialProjectDescription: '',
         specialProjectDurationMinutes: 0,
       }));
-      toast.success('Log entry added');
+      const savedOnTodaysSheet = saved.date === today;
+      toast.success(
+        savedOnTodaysSheet
+          ? 'Log entry added'
+          : `Log entry added for ${saved.date} — switch to that day's view to see it`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not add entry');
     }
@@ -1373,7 +1359,7 @@ function DailyLogTab({
               l.reason.toLowerCase().includes(query) ||
               l.channel.toLowerCase().includes(query),
           );
-    return sortLogEntriesByCreatedAtAsc(searched);
+    return sortLogEntriesByCreatedAtDesc(searched);
   }, [logsOnTodaySheet, query, repFilter]);
 
   /** Per-rep counts (today sheet only) for chip badges. */
@@ -1397,8 +1383,22 @@ function DailyLogTab({
               type="date"
               value={form.date}
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-              className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+              className={`w-full px-3 py-2 rounded-lg border text-sm focus:ring-2 focus:ring-[#4A7C8A]/15 ${
+                form.date && form.date !== today
+                  ? 'border-amber-400 bg-amber-50 focus:border-amber-500'
+                  : 'border-[#A8B8AC]/40 focus:border-[#4A7C8A]'
+              }`}
             />
+            {form.date && form.date !== today && (
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, date: today }))}
+                className="mt-1 text-[11px] text-amber-700 hover:text-amber-900 underline-offset-2 hover:underline cursor-pointer"
+                title="Reset to today"
+              >
+                ⚠ Logging for {form.date}, not today — click to reset
+              </button>
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Team Member</label>
@@ -1586,12 +1586,12 @@ function DailyLogTab({
                 (
                 {query || repFilter
                   ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}`
-                  : `${filteredLogs.length} with log date ${formatLocalYmd(todayDayRef)} · Chronological — oldest first`}
+                  : `${filteredLogs.length} with log date ${formatLocalYmd(todayDayRef)} · Newest entries on top`}
                 )
                 {!query && !repFilter && (
                   <>
                     {' '}
-                    · Same sheet shows every row whose log DATE matches today (local calendar). Rows are stacked in chronological order — oldest saved at the top, newest at the bottom — so you read down the day in the order it happened.
+                    · Same sheet shows every row whose log DATE matches today (local calendar). Newest entries appear on top so you always see what was just saved at a glance.
                   </>
                 )}
               </span>

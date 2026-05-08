@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { usePlans } from '@/hooks/usePlans';
 import { PlanComparisonTable } from '@/components/blocks/PlanComparisonTable';
@@ -38,6 +38,12 @@ export default function PlanComparison() {
   const handleClearAll = () => {
     setSelectedPlans([]);
   };
+
+  /** Every available plan is selected — hide static Care+/Direct/Essentials guide; dynamic table is enough. */
+  const allPlansSelected = useMemo(() => {
+    if (plans.length === 0 || selectedPlans.length !== plans.length) return false;
+    return plans.every((p) => selectedPlans.includes(p.slug));
+  }, [plans, selectedPlans]);
 
   if (loading) {
     return (
@@ -225,11 +231,13 @@ export default function PlanComparison() {
         </div>
       </div>
 
-      {/* Full Plan Comparison Guide */}
-      <PlanComparisonGuide
-        title="Complete Plan Comparison Guide"
-        subtitle="View all plans and features at a glance"
-      />
+      {/* Static Care+/Direct/Essentials guide — hidden when all memberships are selected to avoid stacking with the full DB comparison */}
+      {!allPlansSelected && (
+        <PlanComparisonGuide
+          title="Complete Plan Comparison Guide"
+          subtitle="View all plans and features at a glance"
+        />
+      )}
     </div>
     </>
   );

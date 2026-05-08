@@ -399,11 +399,21 @@ function formatLocalYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Oldest calendar date first (chronological); same-day rows tie-break by id for stable order. */
+/**
+ * Oldest calendar date first (chronological).
+ * Same-day rows tie-break by `created_at` ASC (oldest entered first), then by id
+ * for fully stable order. Falls back to id-only when `created_at` is missing on
+ * legacy rows.
+ */
 function sortLogsChronologically(logs: LogEntry[]): LogEntry[] {
   return [...logs].sort((a, b) => {
     const dc = a.date.localeCompare(b.date);
     if (dc !== 0) return dc;
+    const ma = logCreatedMs(a);
+    const mb = logCreatedMs(b);
+    if (ma !== null && mb !== null && ma !== mb) return ma - mb;
+    if (ma === null && mb !== null) return 1;
+    if (mb === null && ma !== null) return -1;
     return String(a.id).localeCompare(String(b.id));
   });
 }
@@ -449,9 +459,33 @@ function sortLogEntriesByCreatedAtDesc(logs: LogEntry[]): LogEntry[] {
     .map(({ entry }) => entry);
 }
 
+/**
+ * Oldest save first (`created_at` ASC) — chronological order top-to-bottom.
+ * Same shape as the DESC variant but inverted; legacy rows missing `created_at`
+ * fall to the bottom so timestamped rows always show in true order at the top.
+ */
+function sortLogEntriesByCreatedAtAsc(logs: LogEntry[]): LogEntry[] {
+  return [...logs]
+    .map((entry, stableIdx) => ({ entry, stableIdx }))
+    .sort((a, b) => {
+      const ma = logCreatedMs(a.entry);
+      const mb = logCreatedMs(b.entry);
+      if (ma !== null && mb !== null && ma !== mb) return ma - mb;
+      if (ma === null && mb !== null) return 1;
+      if (mb === null && ma !== null) return -1;
+      if (ma === null && mb === null) {
+        const da = parseLogDate(a.entry.date).getTime();
+        const db = parseLogDate(b.entry.date).getTime();
+        if (Number.isFinite(da) && Number.isFinite(db) && da !== db) return da - db;
+      }
+      return a.stableIdx - b.stableIdx;
+    })
+    .map(({ entry }) => entry);
+}
+
 /** Sort + roster normalize for anything that updates `logs` in workspace state. */
 function orderLogsForWorkspace(logs: LogEntry[], roster?: TeamMember[]): LogEntry[] {
-  return migrateLogsStorage(sortLogEntriesByCreatedAtDesc(logs), roster);
+  return migrateLogsStorage(sortLogEntriesByCreatedAtAsc(logs), roster);
 }
 
 function entryWasMeaningfullyEdited(entry: LogEntry): boolean {
@@ -1339,7 +1373,7 @@ function DailyLogTab({
               l.reason.toLowerCase().includes(query) ||
               l.channel.toLowerCase().includes(query),
           );
-    return sortLogEntriesByCreatedAtDesc(searched);
+    return sortLogEntriesByCreatedAtAsc(searched);
   }, [logsOnTodaySheet, query, repFilter]);
 
   /** Per-rep counts (today sheet only) for chip badges. */
@@ -1552,12 +1586,12 @@ function DailyLogTab({
                 (
                 {query || repFilter
                   ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}`
-                  : `${filteredLogs.length} with log date ${formatLocalYmd(todayDayRef)} · Newest saved on top`}
+                  : `${filteredLogs.length} with log date ${formatLocalYmd(todayDayRef)} · Chronological — oldest first`}
                 )
                 {!query && !repFilter && (
                   <>
                     {' '}
-                    · Same sheet shows every row whose log DATE matches today (local calendar). Rows are stacked by saved time — newest on top — and edits usually keep their place once saved.
+                    · Same sheet shows every row whose log DATE matches today (local calendar). Rows are stacked in chronological order — oldest saved at the top, newest at the bottom — so you read down the day in the order it happened.
                   </>
                 )}
               </span>

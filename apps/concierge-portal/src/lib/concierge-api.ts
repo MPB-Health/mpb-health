@@ -116,24 +116,39 @@ function logRowToEntry(r: Record<string, unknown>): LogEntry {
   };
 }
 
+/** If the payload has no parseable `created_at`, assign one so newest-first ordering never falls apart. */
+export function patchMissingConciergeTimestamps(entry: LogEntry): LogEntry {
+  const parsed = entry.createdAt ? new Date(entry.createdAt).getTime() : NaN;
+  if (Number.isFinite(parsed)) return entry;
+  const now = new Date().toISOString();
+  const uOk = entry.updatedAt ? Number.isFinite(new Date(entry.updatedAt).getTime()) : false;
+  return {
+    ...entry,
+    createdAt: now,
+    updatedAt: uOk ? entry.updatedAt : now,
+  };
+}
+
 /**
  * Merge a realtime or partial row onto what we already have in memory.
  * Postgres/Supabase UPDATE broadcasts often omit unchanged columns; without this, `created_at`
  * would be dropped and the today feed sort falls back to arbitrary id order.
  */
 export function mergeConciergeLogEntry(existing: LogEntry | undefined, incoming: LogEntry): LogEntry {
-  if (!existing) return incoming;
-  return {
-    ...existing,
-    ...incoming,
-    createdAt: incoming.createdAt ?? existing.createdAt,
-    updatedAt: incoming.updatedAt ?? existing.updatedAt,
-  };
+  const merged = !existing
+    ? incoming
+    : {
+        ...existing,
+        ...incoming,
+        createdAt: incoming.createdAt ?? existing.createdAt,
+        updatedAt: incoming.updatedAt ?? existing.updatedAt,
+      };
+  return patchMissingConciergeTimestamps(merged);
 }
 
 /** Maps a Supabase / realtime payload row to `LogEntry` (includes timestamps). */
 export function conciergeRemoteRowToLogEntry(row: Record<string, unknown>): LogEntry {
-  return logRowToEntry(row);
+  return patchMissingConciergeTimestamps(logRowToEntry(row));
 }
 
 export type ConciergeDailyLogRealtimeEvent =
@@ -223,7 +238,7 @@ export async function fetchLogEntries(): Promise<LogEntry[]> {
     .order('created_at', { ascending: false })
     .order('id', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(logRowToEntry);
+  return (data ?? []).map((row) => patchMissingConciergeTimestamps(logRowToEntry(row as Record<string, unknown>)));
 }
 
 export async function fetchMemberOffDays(): Promise<Record<string, string[]>> {
@@ -338,7 +353,7 @@ export async function insertLogEntry(entry: LogEntry): Promise<LogEntry> {
   const payload = { ...base, created_by: user?.id ?? null };
   const { data, error } = await db.from(T_LOGS).insert(payload).select('*').single();
   if (error) throw error;
-  return logRowToEntry(data);
+  return patchMissingConciergeTimestamps(logRowToEntry(data));
 }
 
 export async function updateLogEntry(entry: LogEntry): Promise<LogEntry> {
@@ -347,7 +362,7 @@ export async function updateLogEntry(entry: LogEntry): Promise<LogEntry> {
   delete (payload as { id?: string }).id;
   const { data, error } = await db.from(T_LOGS).update(payload).eq('id', id).select('*').single();
   if (error) throw error;
-  return logRowToEntry(data);
+  return patchMissingConciergeTimestamps(logRowToEntry(data));
 }
 
 export async function deleteLogEntry(id: string): Promise<void> {

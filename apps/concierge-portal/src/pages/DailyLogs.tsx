@@ -3,12 +3,9 @@ import {
   addDays,
   format,
   parse as parseDate,
-  endOfDay,
   getISOWeek,
   getISOWeekYear,
-  isWithinInterval,
   setISOWeek,
-  startOfDay,
   startOfISOWeek,
   subWeeks,
 } from 'date-fns';
@@ -417,35 +414,36 @@ function logCreatedMs(entry: LogEntry): number | null {
   return Number.isFinite(t) ? t : null;
 }
 
-function isLogCreatedLocalCalendarDay(entry: LogEntry, dayRef: Date): boolean {
-  const ms = logCreatedMs(entry);
-  if (ms !== null) {
-    return isWithinInterval(new Date(ms), {
-      start: startOfDay(dayRef),
-      end: endOfDay(dayRef),
-    });
-  }
+/**
+ * Which rows belong on today's sheet: calendar **log date** (DATE field) matches local today.
+ * Matches the column reps see — not necessarily the clock day of `created_at`.
+ */
+function isLogRowForLocalCalendarSheetDay(entry: LogEntry, dayRef: Date): boolean {
   return entry.date === formatLocalYmd(dayRef);
 }
 
 /**
- * Newest input first: server `created_at` DESC, then id DESC tie-break.
- * Edits do not change `created_at`, so rows keep their original vertical position in the list.
+ * Newest save first (`created_at` DESC).
+ * Stable for equal timestamps via **input order**: keep fetch order (already newest-first) and prepend
+ * live inserts so ties resolve with the freshest row near the top instead of UUID roulette.
  */
 function sortLogEntriesByCreatedAtDesc(logs: LogEntry[]): LogEntry[] {
-  return [...logs].sort((a, b) => {
-    const ma = logCreatedMs(a);
-    const mb = logCreatedMs(b);
-    if (ma !== null && mb !== null && mb !== ma) return mb - ma;
-    if (mb === null && ma !== null) return -1;
-    if (ma === null && mb !== null) return 1;
-    if (ma === null && mb === null) {
-      const da = parseLogDate(a.date).getTime();
-      const db = parseLogDate(b.date).getTime();
-      if (Number.isFinite(da) && Number.isFinite(db) && db !== da) return db - da;
-    }
-    return String(b.id).localeCompare(String(a.id));
-  });
+  return [...logs]
+    .map((entry, stableIdx) => ({ entry, stableIdx }))
+    .sort((a, b) => {
+      const ma = logCreatedMs(a.entry);
+      const mb = logCreatedMs(b.entry);
+      if (ma !== null && mb !== null && mb !== ma) return mb - ma;
+      if (mb === null && ma !== null) return -1;
+      if (ma === null && mb !== null) return 1;
+      if (ma === null && mb === null) {
+        const da = parseLogDate(a.entry.date).getTime();
+        const db = parseLogDate(b.entry.date).getTime();
+        if (Number.isFinite(da) && Number.isFinite(db) && db !== da) return db - da;
+      }
+      return a.stableIdx - b.stableIdx;
+    })
+    .map(({ entry }) => entry);
 }
 
 /** Sort + roster normalize for anything that updates `logs` in workspace state. */
@@ -1306,13 +1304,13 @@ function DailyLogTab({
   }, []);
 
   const todayDayRef = useMemo(() => new Date(todayTicker), [todayTicker]);
-  const logsCreatedTodayLocal = useMemo(
-    () => logs.filter((l) => isLogCreatedLocalCalendarDay(l, todayDayRef)),
+  const logsOnTodaySheet = useMemo(
+    () => logs.filter((l) => isLogRowForLocalCalendarSheetDay(l, todayDayRef)),
     [logs, todayDayRef],
   );
 
   const filteredLogs = useMemo(() => {
-    const base = logsCreatedTodayLocal;
+    const base = logsOnTodaySheet;
     const byRep = repFilter ? base.filter((l) => l.teamMember === repFilter) : base;
     const searched =
       !query
@@ -1329,16 +1327,16 @@ function DailyLogTab({
               l.channel.toLowerCase().includes(query),
           );
     return sortLogEntriesByCreatedAtDesc(searched);
-  }, [logsCreatedTodayLocal, query, repFilter]);
+  }, [logsOnTodaySheet, query, repFilter]);
 
-  /** Per-rep counts (today only) for chip badges. */
+  /** Per-rep counts (today sheet only) for chip badges. */
   const repCountsToday = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const l of logsCreatedTodayLocal) {
+    for (const l of logsOnTodaySheet) {
       counts.set(l.teamMember, (counts.get(l.teamMember) ?? 0) + 1);
     }
     return counts;
-  }, [logsCreatedTodayLocal]);
+  }, [logsOnTodaySheet]);
 
   return (
     <div className="space-y-6">
@@ -1541,12 +1539,12 @@ function DailyLogTab({
                 (
                 {query || repFilter
                   ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}`
-                  : `${filteredLogs.length} logged today (${formatLocalYmd(todayDayRef)}) · Newest save on top`}
+                  : `${filteredLogs.length} with log date ${formatLocalYmd(todayDayRef)} · Newest saved on top`}
                 )
                 {!query && !repFilter && (
                   <>
                     {' '}
-                    · Rows use save time, not the date field; edits keep the same position.
+                    · Same sheet shows every row whose log DATE matches today (local calendar). Rows are stacked by saved time — newest on top — and edits usually keep their place once saved.
                   </>
                 )}
               </span>
@@ -1622,7 +1620,7 @@ function DailyLogTab({
               }`}
             >
               All
-              <span className="ml-1.5 text-[10px] opacity-70">{logsCreatedTodayLocal.length}</span>
+              <span className="ml-1.5 text-[10px] opacity-70">{logsOnTodaySheet.length}</span>
             </button>
             {rosterTeam
               .filter((m) => m.status === 'Active')
@@ -3208,7 +3206,7 @@ export default function DailyLogs() {
         const prior = prev.find((l) => l.id === ev.entry.id);
         const merged = mergeConciergeLogEntry(prior, ev.entry);
         return orderLogsForWorkspace(
-          [...prev.filter((l) => l.id !== merged.id), merged],
+          [merged, ...prev.filter((l) => l.id !== merged.id)],
           roster,
         );
       });

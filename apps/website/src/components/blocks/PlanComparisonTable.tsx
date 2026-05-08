@@ -118,10 +118,10 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
         </div>
       </div>
 
-      {/* Feature matrix — Features column only applies here */}
-      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
-        <div className="rounded-2xl border border-neutral-200 shadow-lg bg-white w-full">
-          <table className="w-full border-collapse table-fixed">
+      {/* Feature matrix — isolate + opaque backdrop so sticky columns do not composite with content below */}
+      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] relative z-[1] isolate">
+        <div className="rounded-2xl border border-neutral-200 shadow-lg bg-white w-full relative">
+          <table className="w-full border-collapse table-fixed bg-white">
             <colgroup>
               <col style={{ width: `${featureRailPercent}%` }} />
               {plans.map(plan => (

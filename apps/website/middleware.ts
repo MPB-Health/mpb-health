@@ -37,6 +37,16 @@ interface SeoRow {
   structured_data: Record<string, unknown> | null;
 }
 
+interface BlogArticleRow {
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  featured_image_url: string | null;
+  category: string | null;
+  author: string | null;
+  published_date: string | null;
+}
+
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY =
   process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -77,6 +87,69 @@ const fetchSeo = async (path: string): Promise<SeoRow | null> => {
   } catch {
     return null;
   }
+};
+
+const fetchBlogArticle = async (slug: string): Promise<BlogArticleRow | null> => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+
+  const params = new URLSearchParams({
+    slug: `eq.${slug}`,
+    is_published: 'eq.true',
+    select: 'title,slug,excerpt,featured_image_url,category,author,published_date',
+    limit: '1',
+  });
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/blog_articles?${params}`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Accept: 'application/json',
+      },
+      cf: { cacheTtl: 300, cacheEverything: true },
+    } as RequestInit);
+
+    if (!res.ok) return null;
+    const rows = (await res.json()) as BlogArticleRow[];
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/** Convert a blog_articles row into the SeoRow shape expected by applySeo. */
+const blogArticleToSeo = (a: BlogArticleRow, pagePath: string, requestUrl: string): SeoRow => {
+  const title = `${a.title} | MPB Health Blog`;
+  const description = (a.excerpt && a.excerpt.trim()) || `Read "${a.title}" on the MPB Health blog.`;
+  const image = a.featured_image_url && a.featured_image_url.trim() ? a.featured_image_url : null;
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: a.title,
+    description,
+    image: image ? [image] : undefined,
+    datePublished: a.published_date ?? undefined,
+    author: { '@type': 'Person', name: a.author || 'MPB Health' },
+    publisher: { '@type': 'Organization', name: 'MPB Health' },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': requestUrl },
+    articleSection: a.category ?? undefined,
+  };
+  return {
+    page_path: pagePath,
+    meta_title: title,
+    meta_description: description,
+    meta_keywords: null,
+    og_title: title,
+    og_description: description,
+    og_image: image,
+    og_type: 'article',
+    twitter_card: 'summary_large_image',
+    twitter_title: title,
+    twitter_description: description,
+    twitter_image: image,
+    canonical_url: requestUrl,
+    robots: 'index,follow',
+    structured_data: articleSchema as unknown as Record<string, unknown>,
+  };
 };
 
 const replaceTitle = (html: string, value: string): string =>
@@ -140,6 +213,29 @@ const applySeo = (html: string, seo: SeoRow, requestUrl: string): string => {
   return out;
 };
 
+/**
+ * Resolve the SEO row for a path. Lookup chain:
+ *   1. seo_metadata table — admin override always wins
+ *   2. /blog/:slug → blog_articles table — auto-derived from the post itself
+ *      so each blog post has correct meta without manual entry
+ *   3. null — caller falls back to static index.html
+ */
+const resolveSeo = async (path: string, requestUrl: string): Promise<{ seo: SeoRow; source: string } | null> => {
+  const override = await fetchSeo(path);
+  if (override) return { seo: override, source: 'seo_metadata' };
+
+  const blogMatch = path.match(/^\/blog\/([^/]+)\/?$/);
+  if (blogMatch) {
+    const slug = decodeURIComponent(blogMatch[1]);
+    const article = await fetchBlogArticle(slug);
+    if (article) {
+      return { seo: blogArticleToSeo(article, path, requestUrl), source: 'blog_articles' };
+    }
+  }
+
+  return null;
+};
+
 export default async function middleware(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname === '' ? '/' : url.pathname;
@@ -148,14 +244,14 @@ export default async function middleware(request: Request): Promise<Response> {
   if (request.method !== 'GET') return fetch(request);
 
   // Lookup + asset fetch in parallel
-  const [seo, htmlRes] = await Promise.all([
-    fetchSeo(path),
+  const [resolved, htmlRes] = await Promise.all([
+    resolveSeo(path, url.toString()),
     fetch(new URL('/index.html', url), { headers: { Accept: 'text/html' } }),
   ]);
 
   if (!htmlRes.ok) return htmlRes;
-  if (!seo) {
-    // No row for this path — pass the static HTML through with edge caching
+  if (!resolved) {
+    // No SEO row for this path — pass the static HTML through with edge caching
     return new Response(htmlRes.body, {
       status: htmlRes.status,
       headers: {
@@ -168,16 +264,16 @@ export default async function middleware(request: Request): Promise<Response> {
   }
 
   const originalHtml = await htmlRes.text();
-  const transformed = applySeo(originalHtml, seo, url.toString());
+  const transformed = applySeo(originalHtml, resolved.seo, url.toString());
 
   return new Response(transformed, {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       // 5-minute edge cache, 1-hour stale-while-revalidate. Editing a row in
-      // the admin propagates within 5 min worst-case (or instantly via purge).
+      // the admin (or publishing a blog post) propagates within 5 min worst-case.
       'Cache-Control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
-      'X-Seo-Source': 'middleware',
+      'X-Seo-Source': resolved.source,
       'X-Seo-Path': path,
     },
   });

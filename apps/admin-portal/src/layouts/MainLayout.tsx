@@ -95,6 +95,7 @@ const navigation: NavItem[] = [
       { name: 'Widget Config', href: '/content/widgets-config' },
       { name: 'Handbooks', href: '/content/handbooks' },
       { name: 'FAQ', href: '/content/faq' },
+      { name: 'SEO Metadata', href: '/content/seo' },
       { name: 'Enrollment Links', href: '/content/enrollment-links' },
       { name: 'Portal Settings', href: '/content/portal-settings' },
     ],

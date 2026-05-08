@@ -6,7 +6,7 @@ import {
   getAllUniqueCategories,
   getCategoryLabel,
   getPlanBadges,
-  getFeatureForPlanOrMecPreventiveMirror,
+  getFeatureForPlanOrPreventivePeerMirror,
 } from '@/lib/planUtils';
 import { Check, X, ExternalLink } from 'lucide-react';
 
@@ -178,7 +178,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                         {featureName}
                       </td>
                       {plans.map(plan => {
-                        const feature = getFeatureForPlanOrMecPreventiveMirror(
+                        const feature = getFeatureForPlanOrPreventivePeerMirror(
                           plans,
                           plan,
                           category,

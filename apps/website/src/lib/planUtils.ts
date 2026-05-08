@@ -93,31 +93,43 @@ export function getFeatureForPlan(
   ) || null;
 }
 
-/** Slugs prioritized when mirroring Preventive rows onto MEC+ Essentials (marketing DB often omits duplicate lines). */
-const MEC_ESSENTIALS_PREVENTIVE_MIRROR_SLUGS = ['secure-hsa', 'direct'] as const;
+function getFeatureForPlanLenient(
+  plan: PlanWithDetails,
+  category: string,
+  featureName: string,
+): PlanFeature | null {
+  const exact = getFeatureForPlan(plan, category, featureName);
+  if (exact) return exact;
+  const want = featureName.trim().toLowerCase();
+  return (
+    plan.features.find(
+      (f) => f.category === category && f.feature_name.trim().toLowerCase() === want,
+    ) ?? null
+  );
+}
 
 /**
- * For **MEC+ Essentials** only: if Preventive Care is missing in CMS but peers in the comparison have the same row,
- * show that row’s wording/cost (matches Secure HSA / Direct preventive chart used in Ops migrations).
+ * Preventive Care rows are often missing for some plans in CMS while the left column plan has full data.
+ * For any empty cell, reuse the **leftmost plan column**’s row first, then any other selected plan (lenient name match).
  */
-export function getFeatureForPlanOrMecPreventiveMirror(
+export function getFeatureForPlanOrPreventivePeerMirror(
   plansInComparison: PlanWithDetails[],
   plan: PlanWithDetails,
   category: string,
   featureName: string,
 ): PlanFeature | null {
-  const own = getFeatureForPlan(plan, category, featureName);
+  const own = getFeatureForPlanLenient(plan, category, featureName);
   if (own) return own;
-  if (plan.slug.trim() !== 'mec-essentials' || category !== 'Preventive Care') return null;
-  for (const slug of MEC_ESSENTIALS_PREVENTIVE_MIRROR_SLUGS) {
-    const peer = plansInComparison.find((p) => p.slug === slug);
-    if (!peer) continue;
-    const mirrored = getFeatureForPlan(peer, category, featureName);
-    if (mirrored) return mirrored;
+  if (category !== 'Preventive Care') return null;
+
+  const leftCol = plansInComparison[0];
+  if (leftCol && leftCol.id !== plan.id) {
+    const fromLeft = getFeatureForPlanLenient(leftCol, category, featureName);
+    if (fromLeft) return fromLeft;
   }
   for (const peer of plansInComparison) {
     if (peer.id === plan.id) continue;
-    const mirrored = getFeatureForPlan(peer, category, featureName);
+    const mirrored = getFeatureForPlanLenient(peer, category, featureName);
     if (mirrored) return mirrored;
   }
   return null;

@@ -14,6 +14,21 @@ interface PlanComparisonTableProps {
   planSlugs: string[];
 }
 
+const MEC_ESSENTIALS_PLAN_SLUG = 'mec-essentials';
+
+/** Only this cell treats a missing DB row as “Included” — MEC+ Essentials + MEC row in the MEC category. */
+function missingFeatureTreatAsIncluded(
+  plan: { slug: string },
+  category: string,
+  featureName: string,
+): boolean {
+  return (
+    plan.slug === MEC_ESSENTIALS_PLAN_SLUG &&
+    category === 'Minimum Essential Coverage' &&
+    featureName.trim().toLowerCase() === 'minimum essential coverage'
+  );
+}
+
 export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
   const { plans, loading, error } = usePlanComparison(planSlugs);
 
@@ -103,10 +118,10 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
         </div>
       </div>
 
-      {/* Feature matrix — Features column only applies here */}
-      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
-        <div className="rounded-2xl border border-neutral-200 shadow-lg bg-white w-full">
-          <table className="w-full border-collapse table-fixed">
+      {/* Feature matrix — isolate + opaque backdrop so sticky columns do not composite with content below */}
+      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] relative z-[1] isolate">
+        <div className="rounded-2xl border border-neutral-200 shadow-lg bg-white w-full relative">
+          <table className="w-full border-collapse table-fixed bg-white">
             <colgroup>
               <col style={{ width: `${featureRailPercent}%` }} />
               {plans.map(plan => (
@@ -115,7 +130,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
             </colgroup>
               <thead>
                 <tr className="bg-gradient-to-r from-primary-700 to-primary-600">
-                  <th className="text-left py-4 px-6 text-white font-semibold sticky left-0 z-10 bg-gradient-to-r from-primary-700 to-primary-600 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
+                  <th className="text-left py-4 px-6 text-white font-semibold sticky left-0 z-30 bg-gradient-to-r from-primary-700 to-primary-600 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
                     Features
                   </th>
                   {plans.map(plan => (
@@ -155,7 +170,11 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                       key={`${category}-${featureName}`}
                       className={`${rowIndex % 2 === 0 ? 'bg-white' : 'bg-neutral-50'} hover:bg-primary-50/50 transition-colors`}
                     >
-                      <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                      <td
+                        className={`py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)] ${
+                          rowIndex % 2 === 0 ? 'bg-white' : 'bg-neutral-50'
+                        }`}
+                      >
                         {featureName}
                       </td>
                       {plans.map(plan => {
@@ -195,6 +214,16 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                                   </p>
                                 )}
                               </div>
+                            ) : missingFeatureTreatAsIncluded(plan, category, featureName) ? (
+                              <div className="flex items-center justify-center gap-2 py-1">
+                                <div
+                                  className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0"
+                                  aria-hidden
+                                >
+                                  <Check className="h-4 w-4 text-white" />
+                                </div>
+                                <span className="text-sm font-bold text-success-600">Included</span>
+                              </div>
                             ) : (
                               <div className="flex flex-col items-center justify-center gap-2 py-1">
                                 <div
@@ -231,7 +260,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
                 {/* Lifetime Cap Row */}
                 <tr className="bg-white hover:bg-primary-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-white shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                     Lifetime Cap
                   </td>
                   {plans.map(plan => (
@@ -266,7 +295,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
                 {/* Annual Cap Row */}
                 <tr className="bg-neutral-50 hover:bg-primary-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-neutral-50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                     Annual Cap
                   </td>
                   {plans.map(plan => (
@@ -301,7 +330,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
                 {/* Pre-membership Lookback Row */}
                 <tr className="bg-white hover:bg-primary-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-white shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                     Pre-membership Lookback
                   </td>
                   {plans.map(plan => (
@@ -331,7 +360,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
                 {/* Maternity Waiting Period Row */}
                 <tr className="bg-neutral-50 hover:bg-primary-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-neutral-50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                     Maternity Waiting Period
                   </td>
                   {plans.map(plan => (

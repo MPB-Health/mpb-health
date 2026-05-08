@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { usePlans } from '@/hooks/usePlans';
 import { PlanComparisonTable } from '@/components/blocks/PlanComparisonTable';
@@ -32,12 +32,22 @@ export default function PlanComparison() {
   };
 
   const handleSelectAll = () => {
-    setSelectedPlans(plans.map(p => p.slug));
+    setSelectedPlans([...new Set(plans.map((p) => p.slug.trim()))]);
   };
 
   const handleClearAll = () => {
     setSelectedPlans([]);
   };
+
+  /**
+   * Every distinct catalog slug is represented in the selection — hides legacy 3‑column guide
+   * even if CMS mistakenly returns duplicate plan rows sharing a slug.
+   */
+  const allPlansSelected = useMemo(() => {
+    const distinctCatalog = [...new Set(plans.map((p) => p.slug.trim()))].sort().join('|');
+    const distinctSelected = [...new Set(selectedPlans.map((s) => s.trim()))].sort().join('|');
+    return distinctCatalog.length > 0 && distinctCatalog === distinctSelected;
+  }, [plans, selectedPlans]);
 
   if (loading) {
     return (
@@ -61,7 +71,7 @@ export default function PlanComparison() {
       <meta property="og:description" content="Side-by-side plan comparison. Find the right health sharing plan for your family." />
       <meta property="og:url" content="https://mpb.health/compare-plans" />
     </Helmet>
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-neutral-50 py-12 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-neutral-50 py-12 relative overflow-x-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-100/40 via-transparent to-transparent"></div>
       <div className="absolute top-20 right-10 w-96 h-96 bg-gradient-to-br from-primary-200/20 to-accent-200/20 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 left-10 w-80 h-80 bg-gradient-to-tr from-success-200/20 to-primary-200/20 rounded-full blur-3xl"></div>
@@ -166,12 +176,20 @@ export default function PlanComparison() {
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                       <p className="text-base font-medium bg-gradient-to-r from-primary-700 to-success-600 bg-clip-text text-transparent">
-                        {selectedPlans.length} {selectedPlans.length === 1 ? 'membership' : 'memberships'} selected
+                        {new Set(selectedPlans.map((s) => s.trim())).size}{' '}
+                        {new Set(selectedPlans.map((s) => s.trim())).size === 1
+                          ? 'membership'
+                          : 'memberships'}{' '}
+                        selected
                       </p>
                       <div className="h-2 w-48 bg-neutral-100 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-primary-500 to-success-500 rounded-full transition-all duration-500"
-                          style={{ width: `${(selectedPlans.length / plans.length) * 100}%` }}
+                          style={{
+                            width: `${(new Set(selectedPlans.map((s) => s.trim())).size /
+                              Math.max(1, new Set(plans.map((p) => p.slug.trim())).size)) *
+                              100}%`,
+                          }}
                         ></div>
                       </div>
                     </div>
@@ -222,14 +240,16 @@ export default function PlanComparison() {
               </div>
             </Card>
           )}
+
+          {/* Static Care+/Direct/Essentials guide — omit when entire catalog is selected (full dynamic matrix replaces it). */}
+          {!allPlansSelected && (
+            <PlanComparisonGuide
+              title="Complete Plan Comparison Guide"
+              subtitle="View all plans and features at a glance"
+            />
+          )}
         </div>
       </div>
-
-      {/* Full Plan Comparison Guide */}
-      <PlanComparisonGuide
-        title="Complete Plan Comparison Guide"
-        subtitle="View all plans and features at a glance"
-      />
     </div>
     </>
   );

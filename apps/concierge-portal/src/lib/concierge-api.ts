@@ -85,32 +85,91 @@ function teamRowToMember(r: Record<string, unknown>): TeamMember {
   };
 }
 
+/**
+ * PostgREST often returns `timestamptz` as `YYYY-MM-DD HH:mm:ss…+00` (space, not `T`).
+ * Some engines treat that as Invalid Date, so every row ties on sort and the list looks "random".
+ */
+export function normalizeConciergeInstant(raw: unknown): string | undefined {
+  if (raw == null) return undefined;
+  const s = String(raw).trim();
+  if (!s) return undefined;
+  const withT =
+    /\d{4}-\d{2}-\d{2}\s+[0-9]/.test(s) && !s.includes('T')
+      ? s.replace(/^(\d{4}-\d{2}-\d{2})\s+/, '$1T')
+      : s;
+  const ms = Date.parse(withT);
+  return Number.isFinite(ms) ? withT : undefined;
+}
+
+function readOptionalIsoTs(row: Record<string, unknown>, snake: string, camel: string): string | undefined {
+  return normalizeConciergeInstant(row[snake] ?? row[camel]);
+}
+
 function logRowToEntry(r: Record<string, unknown>): LogEntry {
   return {
     id: String(r.id),
-    date: toYmdOnly(r.log_date),
-    teamMember: String(r.team_member_name),
+    date: toYmdOnly(r.log_date ?? r.logDate),
+    teamMember: String(r.team_member_name ?? r.teamMemberName ?? ''),
     channel: String(r.channel),
-    memberName: String(r.member_name),
+    memberName: String(r.member_name ?? r.memberName ?? ''),
     reason: String(r.reason),
-    otherNotes: String(r.other_notes ?? ''),
-    crmNotes: r.crm_notes === true,
-    followUp: r.follow_up === true,
-    reviewLink: r.review_link === true,
-    additionalNotes: String(r.additional_notes ?? ''),
-    timesSpokeWithMember: Number(r.times_spoke_with_member ?? 1),
-    escalatedIssue: r.escalated_issue === true,
-    specialProjectDescription: String(r.special_project_description ?? ''),
-    specialProjectDurationMinutes: Number(r.special_project_duration_minutes ?? 0),
+    otherNotes: String(r.other_notes ?? r.otherNotes ?? ''),
+    crmNotes: r.crm_notes === true || r.crmNotes === true,
+    followUp: r.follow_up === true || r.followUp === true,
+    reviewLink: r.review_link === true || r.reviewLink === true,
+    additionalNotes: String(r.additional_notes ?? r.additionalNotes ?? ''),
+    timesSpokeWithMember: Number(r.times_spoke_with_member ?? r.timesSpokeWithMember ?? 1),
+    escalatedIssue: r.escalated_issue === true || r.escalatedIssue === true,
+    specialProjectDescription: String(r.special_project_description ?? r.specialProjectDescription ?? ''),
+    specialProjectDurationMinutes: Number(
+      r.special_project_duration_minutes ?? r.specialProjectDurationMinutes ?? 0,
+    ),
     touchOverride: r.touch_override === true ? true : r.touch_override === false ? false : undefined,
-    createdAt: r.created_at != null ? String(r.created_at) : undefined,
-    updatedAt: r.updated_at != null ? String(r.updated_at) : undefined,
+    createdAt: readOptionalIsoTs(r, 'created_at', 'createdAt'),
+    updatedAt: readOptionalIsoTs(r, 'updated_at', 'updatedAt'),
   };
+}
+
+/** If the payload has no parseable `created_at`, assign one so newest-first ordering never falls apart. */
+export function patchMissingConciergeTimestamps(entry: LogEntry): LogEntry {
+  const c0 = normalizeConciergeInstant(entry.createdAt);
+  const u0 = normalizeConciergeInstant(entry.updatedAt);
+  const base: LogEntry = {
+    ...entry,
+    ...(c0 ? { createdAt: c0 } : {}),
+    ...(u0 ? { updatedAt: u0 } : {}),
+  };
+  const parsed = base.createdAt ? Date.parse(base.createdAt) : NaN;
+  if (Number.isFinite(parsed)) return base;
+  const now = new Date().toISOString();
+  const uOk = base.updatedAt ? Number.isFinite(Date.parse(base.updatedAt)) : false;
+  return {
+    ...base,
+    createdAt: now,
+    updatedAt: uOk ? base.updatedAt : now,
+  };
+}
+
+/**
+ * Merge a realtime or partial row onto what we already have in memory.
+ * Postgres/Supabase UPDATE broadcasts often omit unchanged columns; without this, `created_at`
+ * would be dropped and the today feed sort falls back to arbitrary id order.
+ */
+export function mergeConciergeLogEntry(existing: LogEntry | undefined, incoming: LogEntry): LogEntry {
+  const merged = !existing
+    ? incoming
+    : {
+        ...existing,
+        ...incoming,
+        createdAt: incoming.createdAt ?? existing.createdAt,
+        updatedAt: incoming.updatedAt ?? existing.updatedAt,
+      };
+  return patchMissingConciergeTimestamps(merged);
 }
 
 /** Maps a Supabase / realtime payload row to `LogEntry` (includes timestamps). */
 export function conciergeRemoteRowToLogEntry(row: Record<string, unknown>): LogEntry {
-  return logRowToEntry(row);
+  return patchMissingConciergeTimestamps(logRowToEntry(row));
 }
 
 export type ConciergeDailyLogRealtimeEvent =
@@ -200,7 +259,7 @@ export async function fetchLogEntries(): Promise<LogEntry[]> {
     .order('created_at', { ascending: false })
     .order('id', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(logRowToEntry);
+  return (data ?? []).map((row) => patchMissingConciergeTimestamps(logRowToEntry(row as Record<string, unknown>)));
 }
 
 export async function fetchMemberOffDays(): Promise<Record<string, string[]>> {
@@ -315,7 +374,7 @@ export async function insertLogEntry(entry: LogEntry): Promise<LogEntry> {
   const payload = { ...base, created_by: user?.id ?? null };
   const { data, error } = await db.from(T_LOGS).insert(payload).select('*').single();
   if (error) throw error;
-  return logRowToEntry(data);
+  return patchMissingConciergeTimestamps(logRowToEntry(data));
 }
 
 export async function updateLogEntry(entry: LogEntry): Promise<LogEntry> {
@@ -324,7 +383,7 @@ export async function updateLogEntry(entry: LogEntry): Promise<LogEntry> {
   delete (payload as { id?: string }).id;
   const { data, error } = await db.from(T_LOGS).update(payload).eq('id', id).select('*').single();
   if (error) throw error;
-  return logRowToEntry(data);
+  return patchMissingConciergeTimestamps(logRowToEntry(data));
 }
 
 export async function deleteLogEntry(id: string): Promise<void> {

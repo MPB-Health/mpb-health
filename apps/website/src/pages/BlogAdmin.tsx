@@ -299,6 +299,7 @@ export const BlogAdmin: React.FC = () => {
                       required
                       className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
+                    <CharCount value={formData.title} limit={60} hint="Used as the page title in browser tabs, Google search, and social link previews. Best under 60 characters." />
                   </div>
 
                   <div>
@@ -320,7 +321,7 @@ export const BlogAdmin: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Excerpt *
+                      Excerpt / Meta Description *
                     </label>
                     <textarea
                       name="excerpt"
@@ -330,6 +331,7 @@ export const BlogAdmin: React.FC = () => {
                       rows={3}
                       className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
+                    <CharCount value={formData.excerpt} limit={160} hint="Shown as the snippet in Google and as the description on Slack/Facebook/iMessage cards. Best under 160 characters." />
                   </div>
 
                   <div>
@@ -343,12 +345,24 @@ export const BlogAdmin: React.FC = () => {
                     />
                   </div>
 
-                  <ImageUploader
-                    value={formData.featured_image_url}
-                    onChange={(url) => setFormData((prev) => ({ ...prev, featured_image_url: url }))}
+                  <div>
+                    <ImageUploader
+                      value={formData.featured_image_url}
+                      onChange={(url) => setFormData((prev) => ({ ...prev, featured_image_url: url }))}
+                      slug={formData.slug}
+                      label="Featured Image / Social Share Image"
+                      showUrlInput={true}
+                    />
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Shown as the featured image on the post and as the link-preview image on Slack, Facebook, X, and iMessage. 1200×630 px recommended.
+                    </p>
+                  </div>
+
+                  <SeoPreviewPanel
+                    title={formData.title}
+                    excerpt={formData.excerpt}
+                    image={formData.featured_image_url}
                     slug={formData.slug}
-                    label="Featured Image"
-                    showUrlInput={true}
                   />
 
                   <div className="grid grid-cols-2 gap-4">
@@ -554,3 +568,60 @@ export const BlogAdmin: React.FC = () => {
 };
 
 export default BlogAdmin;
+
+// ─── SEO helpers ───────────────────────────────────────────────────────────
+
+const DEFAULT_SOCIAL_IMAGE = 'https://mpb.health/assets/MPB-Health-No-background.png?v=2';
+
+const CharCount: React.FC<{ value: string; limit: number; hint: string }> = ({ value, limit, hint }) => {
+  const count = value.length;
+  const over = count > limit;
+  const near = !over && count > limit * 0.9;
+  const tone = over ? 'text-red-600' : near ? 'text-amber-600' : 'text-neutral-500';
+  return (
+    <div className="flex items-start justify-between gap-3 mt-1">
+      <p className="text-xs text-neutral-500 flex-1">{hint}</p>
+      <p className={`text-xs font-mono ${tone}`}>{count} / {limit}</p>
+    </div>
+  );
+};
+
+const SeoPreviewPanel: React.FC<{ title: string; excerpt: string; image: string; slug: string }> = ({ title, excerpt, image, slug }) => {
+  const url = `mpb.health/blog/${slug || 'your-article-slug'}`;
+  const imageSrc = image && image.trim() ? (image.startsWith('http') ? image : `/${image.replace(/^\//, '')}`) : DEFAULT_SOCIAL_IMAGE;
+  const safeTitle = title.trim() || 'Untitled blog post';
+  const safeDescription = excerpt.trim() || 'No description set yet — write an excerpt above to control how this post appears in search results and link previews.';
+
+  return (
+    <div className="border-t border-neutral-200 pt-5">
+      <h3 className="text-sm font-semibold text-neutral-900 mb-3">SEO preview</h3>
+      <p className="text-xs text-neutral-500 mb-4">
+        How this post will look in search results and when shared. Updates live as you edit above.
+      </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Google search result */}
+        <div className="bg-white border border-neutral-200 rounded-lg p-4">
+          <div className="text-[11px] uppercase tracking-wide text-neutral-500 mb-2">Google search</div>
+          <div className="text-xs text-neutral-700">{url}</div>
+          <div className="text-base text-blue-700 hover:underline cursor-pointer mt-0.5 line-clamp-2">{safeTitle}</div>
+          <div className="text-sm text-neutral-700 mt-1 line-clamp-3">{safeDescription}</div>
+        </div>
+        {/* Social link card */}
+        <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
+          <div className="text-[11px] uppercase tracking-wide text-neutral-500 px-3 pt-2 mb-1">Slack / Facebook / iMessage</div>
+          <img
+            src={imageSrc}
+            alt=""
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            className="w-full aspect-[1200/630] object-cover bg-neutral-100"
+          />
+          <div className="px-3 py-2 border-t border-neutral-100">
+            <div className="text-[11px] uppercase tracking-wide text-neutral-500">{url}</div>
+            <div className="text-sm font-semibold text-neutral-900 line-clamp-1 mt-0.5">{safeTitle}</div>
+            <div className="text-xs text-neutral-600 mt-0.5 line-clamp-2">{safeDescription}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

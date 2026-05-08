@@ -293,6 +293,17 @@ export {
   type FAQStats,
 } from './content/FAQAdminService';
 
+// SEO metadata management
+export {
+  SeoAdminService,
+  seoAdminService,
+  type SeoMetadataRow,
+  type SeoMetadataCreateInput,
+  type SeoMetadataUpdateInput,
+  type SeoStats,
+  type SitemapImportResult,
+} from './content/SeoAdminService';
+
 // Analytics overview
 export {
   AnalyticsOverviewService,

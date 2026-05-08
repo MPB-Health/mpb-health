@@ -50,6 +50,7 @@ const LeadSubmissions = lazyRetry(() => import('./pages/LeadSubmissions'));
 const NewsletterAdmin = lazyRetry(() => import('./pages/NewsletterAdmin'));
 // FAQ, Enrollment Links & Portal Settings
 const FAQAdmin = lazyRetry(() => import('./pages/FAQAdmin'));
+const SeoMetadata = lazyRetry(() => import('./pages/SeoMetadata'));
 const EnrollmentLinks = lazyRetry(() => import('./pages/EnrollmentLinks'));
 const PortalSettings = lazyRetry(() => import('./pages/PortalSettings'));
 // Analytics
@@ -330,6 +331,7 @@ export default function App() {
               <Route path="events/new" element={<EventEditor />} />
               <Route path="events/:eventId" element={<EventEditor />} />
               <Route path="content/faq" element={<FAQAdmin />} />
+              <Route path="content/seo" element={<SeoMetadata />} />
               <Route path="content/enrollment-links" element={<EnrollmentLinks />} />
               <Route path="content/portal-settings" element={<PortalSettings />} />
               {/* Operations */}

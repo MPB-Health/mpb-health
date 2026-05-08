@@ -39,10 +39,15 @@ export default function PlanComparison() {
     setSelectedPlans([]);
   };
 
-  /** Every available plan is selected — hide static Care+/Direct/Essentials guide; dynamic table is enough. */
+  /** True when selection exactly matches every active catalog plan (unordered). */
   const allPlansSelected = useMemo(() => {
     if (plans.length === 0 || selectedPlans.length !== plans.length) return false;
-    return plans.every((p) => selectedPlans.includes(p.slug));
+    const catalog = new Set(plans.map((p) => p.slug.trim()));
+    if (catalog.size !== plans.length) return false;
+    for (const slug of catalog) {
+      if (!selectedPlans.some((s) => s.trim() === slug)) return false;
+    }
+    return true;
   }, [plans, selectedPlans]);
 
   if (loading) {
@@ -228,16 +233,16 @@ export default function PlanComparison() {
               </div>
             </Card>
           )}
+
+          {/* Static Care+/Direct/Essentials guide — omit when entire catalog is selected (full dynamic matrix replaces it). */}
+          {!allPlansSelected && (
+            <PlanComparisonGuide
+              title="Complete Plan Comparison Guide"
+              subtitle="View all plans and features at a glance"
+            />
+          )}
         </div>
       </div>
-
-      {/* Static Care+/Direct/Essentials guide — hidden when all memberships are selected to avoid stacking with the full DB comparison */}
-      {!allPlansSelected && (
-        <PlanComparisonGuide
-          title="Complete Plan Comparison Guide"
-          subtitle="View all plans and features at a glance"
-        />
-      )}
     </div>
     </>
   );

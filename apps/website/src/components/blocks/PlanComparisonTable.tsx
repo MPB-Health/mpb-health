@@ -130,7 +130,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
             </colgroup>
               <thead>
                 <tr className="bg-gradient-to-r from-primary-700 to-primary-600">
-                  <th className="text-left py-4 px-6 text-white font-semibold sticky left-0 z-10 bg-gradient-to-r from-primary-700 to-primary-600 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
+                  <th className="text-left py-4 px-6 text-white font-semibold sticky left-0 z-30 bg-gradient-to-r from-primary-700 to-primary-600 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
                     Features
                   </th>
                   {plans.map(plan => (
@@ -170,7 +170,11 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                       key={`${category}-${featureName}`}
                       className={`${rowIndex % 2 === 0 ? 'bg-white' : 'bg-neutral-50'} hover:bg-primary-50/50 transition-colors`}
                     >
-                      <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                      <td
+                        className={`py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)] ${
+                          rowIndex % 2 === 0 ? 'bg-white' : 'bg-neutral-50'
+                        }`}
+                      >
                         {featureName}
                       </td>
                       {plans.map(plan => {
@@ -256,7 +260,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
                 {/* Lifetime Cap Row */}
                 <tr className="bg-white hover:bg-primary-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-white shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                     Lifetime Cap
                   </td>
                   {plans.map(plan => (
@@ -291,7 +295,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
                 {/* Annual Cap Row */}
                 <tr className="bg-neutral-50 hover:bg-primary-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-neutral-50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                     Annual Cap
                   </td>
                   {plans.map(plan => (
@@ -326,7 +330,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
                 {/* Pre-membership Lookback Row */}
                 <tr className="bg-white hover:bg-primary-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-white shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                     Pre-membership Lookback
                   </td>
                   {plans.map(plan => (
@@ -356,7 +360,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
                 {/* Maternity Waiting Period Row */}
                 <tr className="bg-neutral-50 hover:bg-primary-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 bg-inherit">
+                  <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-neutral-50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                     Maternity Waiting Period
                   </td>
                   {plans.map(plan => (

@@ -53,6 +53,7 @@ import {
   forceLegacyImportFromThisBrowser,
   importLegacyJsonForMember,
   subscribeConciergeDailyLogEntries,
+  mergeConciergeLogEntry,
 } from '../lib/concierge-api';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -3204,8 +3205,10 @@ export default function DailyLogs() {
           return prev.filter((l) => l.id !== ev.id);
         }
         const roster = teamRef.current;
+        const prior = prev.find((l) => l.id === ev.entry.id);
+        const merged = mergeConciergeLogEntry(prior, ev.entry);
         return orderLogsForWorkspace(
-          [...prev.filter((l) => l.id !== ev.entry.id), ev.entry],
+          [...prev.filter((l) => l.id !== merged.id), merged],
           roster,
         );
       });

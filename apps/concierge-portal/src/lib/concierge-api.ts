@@ -85,26 +85,49 @@ function teamRowToMember(r: Record<string, unknown>): TeamMember {
   };
 }
 
+function readOptionalIsoTs(row: Record<string, unknown>, snake: string, camel: string): string | undefined {
+  const v = row[snake] ?? row[camel];
+  if (v == null || v === '') return undefined;
+  return String(v);
+}
+
 function logRowToEntry(r: Record<string, unknown>): LogEntry {
   return {
     id: String(r.id),
-    date: toYmdOnly(r.log_date),
-    teamMember: String(r.team_member_name),
+    date: toYmdOnly(r.log_date ?? r.logDate),
+    teamMember: String(r.team_member_name ?? r.teamMemberName ?? ''),
     channel: String(r.channel),
-    memberName: String(r.member_name),
+    memberName: String(r.member_name ?? r.memberName ?? ''),
     reason: String(r.reason),
-    otherNotes: String(r.other_notes ?? ''),
-    crmNotes: r.crm_notes === true,
-    followUp: r.follow_up === true,
-    reviewLink: r.review_link === true,
-    additionalNotes: String(r.additional_notes ?? ''),
-    timesSpokeWithMember: Number(r.times_spoke_with_member ?? 1),
-    escalatedIssue: r.escalated_issue === true,
-    specialProjectDescription: String(r.special_project_description ?? ''),
-    specialProjectDurationMinutes: Number(r.special_project_duration_minutes ?? 0),
+    otherNotes: String(r.other_notes ?? r.otherNotes ?? ''),
+    crmNotes: r.crm_notes === true || r.crmNotes === true,
+    followUp: r.follow_up === true || r.followUp === true,
+    reviewLink: r.review_link === true || r.reviewLink === true,
+    additionalNotes: String(r.additional_notes ?? r.additionalNotes ?? ''),
+    timesSpokeWithMember: Number(r.times_spoke_with_member ?? r.timesSpokeWithMember ?? 1),
+    escalatedIssue: r.escalated_issue === true || r.escalatedIssue === true,
+    specialProjectDescription: String(r.special_project_description ?? r.specialProjectDescription ?? ''),
+    specialProjectDurationMinutes: Number(
+      r.special_project_duration_minutes ?? r.specialProjectDurationMinutes ?? 0,
+    ),
     touchOverride: r.touch_override === true ? true : r.touch_override === false ? false : undefined,
-    createdAt: r.created_at != null ? String(r.created_at) : undefined,
-    updatedAt: r.updated_at != null ? String(r.updated_at) : undefined,
+    createdAt: readOptionalIsoTs(r, 'created_at', 'createdAt'),
+    updatedAt: readOptionalIsoTs(r, 'updated_at', 'updatedAt'),
+  };
+}
+
+/**
+ * Merge a realtime or partial row onto what we already have in memory.
+ * Postgres/Supabase UPDATE broadcasts often omit unchanged columns; without this, `created_at`
+ * would be dropped and the today feed sort falls back to arbitrary id order.
+ */
+export function mergeConciergeLogEntry(existing: LogEntry | undefined, incoming: LogEntry): LogEntry {
+  if (!existing) return incoming;
+  return {
+    ...existing,
+    ...incoming,
+    createdAt: incoming.createdAt ?? existing.createdAt,
+    updatedAt: incoming.updatedAt ?? existing.updatedAt,
   };
 }
 

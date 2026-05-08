@@ -64,7 +64,16 @@
       "Read(//private/tmp/**)",
       "Bash(curl -fsSL \"https://api.github.com/repos/supabase/cli/releases/latest\")",
       "Bash(supabase --help)",
-      "Bash(supabase login *)"
+      "Bash(supabase login *)",
+      "Bash(zsh -lic 'which pnpm')",
+      "Read(//Users/vinnie/.nvm/versions/node/**)",
+      "Read(//Users/vinnie/.local/share/pnpm/**)",
+      "Read(//Users/vinnie/Library/pnpm/**)",
+      "Read(//Users/vinnie/**)",
+      "Bash(npx --version)",
+      "Bash(corepack --version)",
+      "Bash(/Users/vinnie/.nvm/versions/node/v24.15.0/bin/corepack pnpm *)",
+      "Read(//tmp/**)"
     ]
   }
 }

@@ -1215,7 +1215,7 @@ function LeadPickerModal({
   const searchLeads = useCallback(async () => {
     setLoading(true);
     let query = supabase
-      .from('crm_leads')
+      .from('leads')
       .select('id, first_name, last_name, email, company')
       .eq('org_id', orgIdProp)
       .order('created_at', { ascending: false })
@@ -1649,7 +1649,7 @@ function SequenceBuilderModal({
         let leadMap: Record<string, { name: string; email: string }> = {};
         if (leadIds.length > 0) {
           const { data: leads } = await sb
-            .from('crm_leads')
+            .from('leads')
             .select('id, first_name, last_name, email')
             .in('id', leadIds);
           if (leads) {
@@ -1857,7 +1857,7 @@ function SequenceBuilderModal({
         const ids = data.filter((e: Record<string, unknown>) => e.lead_id).map((e: Record<string, unknown>) => e.lead_id as string);
         let leadMap: Record<string, { name: string; email: string }> = {};
         if (ids.length > 0) {
-          const { data: leads } = await sb.from('crm_leads').select('id, first_name, last_name, email').in('id', ids);
+          const { data: leads } = await sb.from('leads').select('id, first_name, last_name, email').in('id', ids);
           if (leads) {
             leadMap = Object.fromEntries(
               leads.map((l: Record<string, string | null>) => [l.id, { name: `${l.first_name || ''} ${l.last_name || ''}`.trim(), email: l.email || '' }])
@@ -2164,9 +2164,10 @@ export default function EmailSequences() {
     (async () => {
       try {
         const { data } = await sb
-          .from('crm_email_templates')
+          .from('crm_templates')
           .select('id, name, subject, body')
-          .eq('org_id', activeOrgId)
+          .in('template_type', ['email', 'both'])
+          .eq('is_active', true)
           .order('name');
         setTemplates((data || []) as unknown as EmailTemplate[]);
       } catch {
@@ -2323,7 +2324,7 @@ export default function EmailSequences() {
     if (enrollData.length > 0) {
       const leadIds = enrollData.filter((e) => e.lead_id).map((e) => e.lead_id!);
       if (leadIds.length > 0) {
-        const { data: leads } = await sb.from('crm_leads').select('id, first_name, last_name, email').in('id', leadIds);
+        const { data: leads } = await sb.from('leads').select('id, first_name, last_name, email').in('id', leadIds);
         if (leads) {
           const leadMap = Object.fromEntries(
             leads.map((l: Record<string, string | null>) => [l.id, { name: `${l.first_name || ''} ${l.last_name || ''}`.trim(), email: l.email || '' }])

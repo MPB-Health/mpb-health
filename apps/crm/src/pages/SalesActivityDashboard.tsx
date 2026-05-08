@@ -80,10 +80,10 @@ interface CalendarEventRow {
 
 interface DealRow {
   id: string;
-  value: number;
-  stage: string;
+  amount: number;
+  stage_id: string;
   updated_at: string;
-  lead_id: string;
+  converted_from_lead_id: string | null;
 }
 
 // KPI data
@@ -319,8 +319,8 @@ export default function SalesActivityDashboard() {
 
       // Fetch deals with activity in period
       const dealQuery = supabase
-        .from('deals')
-        .select('id, value, stage, updated_at, lead_id')
+        .from('crm_deals')
+        .select('id, amount, stage_id, updated_at, converted_from_lead_id')
         .gte('updated_at', fromISO)
         .lte('updated_at', toISO);
 
@@ -421,7 +421,7 @@ export default function SalesActivityDashboard() {
 
     const callsMade = filteredActivities.filter((a) => a.activity_type === 'call').length;
 
-    const pipelineValue = deals.reduce((sum, d) => sum + (d.value || 0), 0);
+    const pipelineValue = deals.reduce((sum, d) => sum + (d.amount || 0), 0);
 
     return { emailsSent, emailsReceived, avgResponseMinutes, meetingsHeld, callsMade, pipelineValue };
   }, [filteredEmails, filteredActivities, filteredCalendarEvents, deals]);
@@ -705,9 +705,9 @@ export default function SalesActivityDashboard() {
   const pipelineImpact = useMemo(() => {
     const stageMap: Record<string, { count: number; value: number }> = {};
     deals.forEach((d) => {
-      if (!stageMap[d.stage]) stageMap[d.stage] = { count: 0, value: 0 };
-      stageMap[d.stage].count += 1;
-      stageMap[d.stage].value += d.value || 0;
+      if (!stageMap[d.stage_id]) stageMap[d.stage_id] = { count: 0, value: 0 };
+      stageMap[d.stage_id].count += 1;
+      stageMap[d.stage_id].value += d.amount || 0;
     });
 
     return Object.entries(stageMap).map(([stage, data]) => ({

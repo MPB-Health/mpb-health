@@ -1,11 +1,14 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   addDays,
   format,
   parse as parseDate,
+  endOfDay,
   getISOWeek,
   getISOWeekYear,
+  isWithinInterval,
   setISOWeek,
+  startOfDay,
   startOfISOWeek,
   subWeeks,
 } from 'date-fns';
@@ -33,6 +36,7 @@ import {
   Upload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { safeRemoveChannel } from '@mpbhealth/database';
 import {
   loadConciergeWorkspace,
   insertLogEntry,
@@ -48,6 +52,7 @@ import {
   inspectLegacyLocalStorage,
   forceLegacyImportFromThisBrowser,
   importLegacyJsonForMember,
+  subscribeConciergeDailyLogEntries,
 } from '../lib/concierge-api';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -90,6 +95,9 @@ interface LogEntry {
    * contain an xN multiplier — set when the rep overrides touches in Recent Entries.
    */
   touchOverride?: boolean;
+  /** Server timestamps (optional on legacy hydration); drives today-feed order and edits. */
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface EscalationItem {
@@ -401,9 +409,63 @@ function sortLogsChronologically(logs: LogEntry[]): LogEntry[] {
   });
 }
 
-/** Same comparator as chronological, reversed so the latest entry appears first in lists. */
-function sortLogsRecentFirst(logs: LogEntry[]): LogEntry[] {
-  return [...sortLogsChronologically(logs)].reverse();
+const EDIT_CREATED_TOLERANCE_MS = 2000;
+
+function logCreatedMs(entry: LogEntry): number | null {
+  const t = entry.createdAt ? new Date(entry.createdAt).getTime() : NaN;
+  return Number.isFinite(t) ? t : null;
+}
+
+function isLogCreatedLocalCalendarDay(entry: LogEntry, dayRef: Date): boolean {
+  const ms = logCreatedMs(entry);
+  if (ms !== null) {
+    return isWithinInterval(new Date(ms), {
+      start: startOfDay(dayRef),
+      end: endOfDay(dayRef),
+    });
+  }
+  return entry.date === formatLocalYmd(dayRef);
+}
+
+/** Newest first for the Log tab “today” list: `created_at` DESC, then id DESC. */
+function sortTodayFeedEntries(logs: LogEntry[]): LogEntry[] {
+  return [...logs].sort((a, b) => {
+    const ma = logCreatedMs(a);
+    const mb = logCreatedMs(b);
+    if (ma !== null && mb !== null && mb !== ma) return mb - ma;
+    if (mb === null && ma !== null) return -1;
+    if (ma === null && mb !== null) return 1;
+    return String(b.id).localeCompare(String(a.id));
+  });
+}
+
+function entryWasMeaningfullyEdited(entry: LogEntry): boolean {
+  const c = entry.createdAt ? new Date(entry.createdAt).getTime() : NaN;
+  const u = entry.updatedAt ? new Date(entry.updatedAt).getTime() : NaN;
+  if (!Number.isFinite(c) || !Number.isFinite(u)) return false;
+  return u - c > EDIT_CREATED_TOLERANCE_MS;
+}
+
+function formatLogEntryTimeOnly(entry: LogEntry): string {
+  const t = entry.createdAt ? new Date(entry.createdAt) : null;
+  if (t && !isNaN(t.getTime())) return format(t, 'p');
+  return '—';
+}
+
+/** Single-line body for the today feed (full detail still in edit). */
+function formatTodayFeedLogContent(entry: LogEntry): string {
+  const reasonLine =
+    entry.reason === 'Special Project' && entry.specialProjectDescription.trim()
+      ? `Special Project: ${entry.specialProjectDescription.trim()}`
+      : entry.reason;
+  const parts = [
+    entry.channel,
+    entry.memberName,
+    reasonLine,
+    entry.otherNotes.trim(),
+    entry.additionalNotes.trim(),
+  ].filter((p) => typeof p === 'string' && p.length > 0);
+  return parts.join(' · ');
 }
 
 function formatOffDayForReport(isoDate: string): string {
@@ -1219,30 +1281,56 @@ function DailyLogTab({
   }, [rosterTeam, currentUserId]);
 
   const query = search.toLowerCase().trim();
-  const filteredLogs = useMemo(() => {
-    const ordered = sortLogsRecentFirst(logs);
-    const byRep = repFilter
-      ? ordered.filter((l) => l.teamMember === repFilter)
-      : ordered;
-    if (!query) return byRep;
-    return byRep.filter(
-      (l) =>
-        l.memberName.toLowerCase().includes(query) ||
-        l.teamMember.toLowerCase().includes(query) ||
-        (l.specialProjectDescription || '').toLowerCase().includes(query) ||
-        (l.additionalNotes || '').toLowerCase().includes(query) ||
-        (l.otherNotes || '').toLowerCase().includes(query) ||
-        l.reason.toLowerCase().includes(query) ||
-        l.channel.toLowerCase().includes(query),
-    );
-  }, [logs, query, repFilter]);
+  /** Re-render today feed when the calendar day changes (approx. once per minute). */
+  const [todayTicker, setTodayTicker] = useState(() => Date.now());
 
-  /** Per-rep counts for the chip badges. */
-  const repCounts = useMemo(() => {
+  useEffect(() => {
+    const id = window.setInterval(() => setTodayTicker(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const bump = () => {
+      if (document.visibilityState === 'visible') setTodayTicker(Date.now());
+    };
+    document.addEventListener('visibilitychange', bump);
+    return () => document.removeEventListener('visibilitychange', bump);
+  }, []);
+
+  const todayDayRef = useMemo(() => new Date(todayTicker), [todayTicker]);
+  const logsCreatedTodayLocal = useMemo(
+    () => logs.filter((l) => isLogCreatedLocalCalendarDay(l, todayDayRef)),
+    [logs, todayDayRef],
+  );
+
+  const filteredLogs = useMemo(() => {
+    const base = logsCreatedTodayLocal;
+    const byRep = repFilter ? base.filter((l) => l.teamMember === repFilter) : base;
+    const searched =
+      !query
+        ? byRep
+        : byRep.filter(
+            (l) =>
+              formatTodayFeedLogContent(l).toLowerCase().includes(query) ||
+              l.memberName.toLowerCase().includes(query) ||
+              l.teamMember.toLowerCase().includes(query) ||
+              (l.specialProjectDescription || '').toLowerCase().includes(query) ||
+              (l.additionalNotes || '').toLowerCase().includes(query) ||
+              (l.otherNotes || '').toLowerCase().includes(query) ||
+              l.reason.toLowerCase().includes(query) ||
+              l.channel.toLowerCase().includes(query),
+          );
+    return sortTodayFeedEntries(searched);
+  }, [logsCreatedTodayLocal, query, repFilter]);
+
+  /** Per-rep counts (today only) for chip badges. */
+  const repCountsToday = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const l of logs) counts.set(l.teamMember, (counts.get(l.teamMember) ?? 0) + 1);
+    for (const l of logsCreatedTodayLocal) {
+      counts.set(l.teamMember, (counts.get(l.teamMember) ?? 0) + 1);
+    }
     return counts;
-  }, [logs]);
+  }, [logsCreatedTodayLocal]);
 
   return (
     <div className="space-y-6">
@@ -1440,11 +1528,19 @@ function DailyLogTab({
         <div className="p-4 border-b border-[#A8B8AC]/20 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 className="text-base font-bold text-[#2F3E2F]">
-              {query || repFilter ? 'Filtered entries' : 'All entries'}{' '}
+              {query || repFilter ? 'Filtered entries' : "Today's entries"}{' '}
               <span className="text-sm font-normal text-slate-500">
-                ({query || repFilter
+                (
+                {query || repFilter
                   ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}`
-                  : `${logs.length} total, newest date first`})
+                  : `${filteredLogs.length} today · Sorted by logged time (${formatLocalYmd(todayDayRef)})`}
+                )
+                {!query && !repFilter && (
+                  <>
+                    {' '}
+                    · New entries appear at top; edits keep their original slot.
+                  </>
+                )}
               </span>
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
@@ -1487,7 +1583,7 @@ function DailyLogTab({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search member, rep, notes, channel, reason…"
+                  placeholder="Search today's entries (member, rep, channel, reason…)"
                   className="w-full pl-9 pr-8 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
                 />
                 {search && (
@@ -1518,12 +1614,12 @@ function DailyLogTab({
               }`}
             >
               All
-              <span className="ml-1.5 text-[10px] opacity-70">{logs.length}</span>
+              <span className="ml-1.5 text-[10px] opacity-70">{logsCreatedTodayLocal.length}</span>
             </button>
             {rosterTeam
               .filter((m) => m.status === 'Active')
               .map((m) => {
-                const count = repCounts.get(m.name) ?? 0;
+                const count = repCountsToday.get(m.name) ?? 0;
                 const active = repFilter === m.name;
                 return (
                   <button
@@ -1557,101 +1653,65 @@ function DailyLogTab({
         </div>
         {filteredLogs.length === 0 ? (
           <div className="p-8 text-center text-slate-500 text-sm">
-            {query ? `No entries found for "${search}"` : 'No entries yet. Add your first log entry above.'}
+            {query
+              ? `No entries today match "${search}"`
+              : 'No entries yet today. Add your first log entry above — the list resets at midnight in your local time.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
-                  <th className="px-4 py-3">Wk</th>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Rep</th>
-                  <th className="px-4 py-3">Channel</th>
-                  <th className="px-4 py-3">Member</th>
-                  <th className="px-4 py-3">Reason</th>
-                  <th className="px-4 py-3 text-right">Touches</th>
-                  <th className="px-4 py-3 text-center">Esc</th>
-                  <th className="px-4 py-3">CRM</th>
-                  <th className="px-4 py-3">F/U</th>
-                  <th className="px-4 py-3">Rev</th>
+                  <th className="px-4 py-3">Team member</th>
+                  <th className="px-4 py-3 w-[7rem] whitespace-nowrap">Time</th>
+                  <th className="px-4 py-3">Log</th>
                   <th className="px-4 py-3 text-center w-[5.5rem]"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#A8B8AC]/15">
-                {filteredLogs.map((log) => {
-                  const d = parseLogDate(log.date);
-                  const wk = isNaN(d.getTime()) ? '–' : getISOWeek(d);
-                  return (
-                    <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
-                      <td className="px-4 py-2.5 text-slate-500">{wk}</td>
-                      <td className="px-4 py-2.5 whitespace-nowrap">{log.date}</td>
-                      <td className="px-4 py-2.5 font-medium text-[#2F3E2F]">{log.teamMember}</td>
-                      <td className="px-4 py-2.5">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#4A7C8A]/10 text-[#4A7C8A]">
-                          {log.channel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5">{log.memberName}</td>
-                      <td
-                        className="px-4 py-2.5 text-slate-600 max-w-[14rem] truncate"
-                        title={
-                          log.reason === 'Special Project' ? log.specialProjectDescription || undefined : undefined
-                        }
-                      >
-                        {log.reason === 'Special Project' && log.specialProjectDescription
-                          ? `Special Project: ${log.specialProjectDescription}`
-                          : log.reason}
-                      </td>
-                      <td
-                        className="px-4 py-2.5 text-right tabular-nums font-semibold text-[#2F3E2F]"
-                        title={
-                          log.reason === 'Special Project' && log.specialProjectDurationMinutes > 0
-                            ? `${log.specialProjectDurationMinutes} min → ${metricTouches(log)} touch(es)`
-                            : log.touchOverride === true
-                              ? `${metricTouches(log)} touch(es) (manual override)`
-                              : touchesFromAdditionalNotes(log.additionalNotes || '') !== null
-                                ? `${metricTouches(log)} touch(es) from multiplier in additional notes`
-                                : undefined
-                        }
-                      >
-                        {metricTouches(log)}
-                      </td>
-                      <td className="px-4 py-2.5 text-center">
-                        {log.escalatedIssue ? (
-                          <span title="Escalated">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 mx-auto" />
+                {filteredLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
+                    <td className="px-4 py-2.5 font-medium text-[#2F3E2F] whitespace-nowrap align-top">
+                      {log.teamMember}
+                    </td>
+                    <td className="px-4 py-2.5 tabular-nums text-slate-600 whitespace-nowrap align-top">
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span>{formatLogEntryTimeOnly(log)}</span>
+                        {entryWasMeaningfullyEdited(log) && log.updatedAt && (
+                          <span
+                            className="text-[10px] font-normal text-slate-400 normal-case cursor-default"
+                            title={`Edited ${format(new Date(log.updatedAt), 'PPpp')}`}
+                          >
+                            edited
                           </span>
-                        ) : (
-                          '–'
                         )}
-                      </td>
-                      <td className="px-4 py-2.5 text-center">{log.crmNotes ? <Check className="w-4 h-4 text-[#5B6B2E] mx-auto" /> : '–'}</td>
-                      <td className="px-4 py-2.5 text-center">{log.followUp ? <Check className="w-4 h-4 text-[#5B6B2E] mx-auto" /> : '–'}</td>
-                      <td className="px-4 py-2.5 text-center">{log.reviewLink ? <Check className="w-4 h-4 text-[#5B6B2E] mx-auto" /> : '–'}</td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center justify-end gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => setEditingLog(log)}
-                            className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
-                            aria-label="Edit entry"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(log.id)}
-                            className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
-                            aria-label="Delete entry"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-700 align-top min-w-0">
+                      <p className="whitespace-pre-wrap break-words">{formatTodayFeedLogContent(log)}</p>
+                    </td>
+                    <td className="px-4 py-2.5 align-top">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setEditingLog(log)}
+                          className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
+                          aria-label="Edit entry"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(log.id)}
+                          className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
+                          aria-label="Delete entry"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -3037,6 +3097,9 @@ export default function DailyLogs() {
   const [weeklyReportExtrasMap, setWeeklyReportExtrasMapRaw] = useState<Record<string, WeeklyReportExtras>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  const teamRef = useRef(team);
+  teamRef.current = team;
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -3083,7 +3146,9 @@ export default function DailyLogs() {
 
   const onAddLog = useCallback(async (entry: LogEntry) => {
     const saved = await insertLogEntry(entry);
-    setLogsRaw((prev) => migrateLogsStorage([saved, ...prev], team));
+    setLogsRaw((prev) =>
+      migrateLogsStorage([saved, ...prev.filter((l) => l.id !== saved.id)], team),
+    );
     return saved;
   }, [team]);
 
@@ -3126,6 +3191,23 @@ export default function DailyLogs() {
     if (team.length === 0) return;
     setLogsRaw((prev) => migrateLogsStorage(prev, team));
   }, [team]);
+
+  /** Live updates when other reps add/edit/delete rows (table is in `supabase_realtime` publication). */
+  useEffect(() => {
+    if (!hydrated || loadError) return;
+    const ch = subscribeConciergeDailyLogEntries((ev) => {
+      setLogsRaw((prev) => {
+        if (ev.kind === 'delete') {
+          return prev.filter((l) => l.id !== ev.id);
+        }
+        const roster = teamRef.current;
+        return migrateLogsStorage([ev.entry, ...prev.filter((l) => l.id !== ev.entry.id)], roster);
+      });
+    });
+    return () => {
+      safeRemoveChannel(ch);
+    };
+  }, [hydrated, loadError]);
 
   const reportISOWeekYear = useMemo(
     () => reportISOWeekYearForWeek(logs, weekNumber),

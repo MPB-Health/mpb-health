@@ -3,6 +3,7 @@
  * Tables are created in migration: 20260430100000_concierge_portal_data.sql
  */
 import { supabase } from '@mpbhealth/database';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /** Typed escape hatch until `pnpm db:generate` includes concierge tables. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- remote schema not in generated Database yet
@@ -43,6 +44,9 @@ export interface LogEntry {
   specialProjectDescription: string;
   specialProjectDurationMinutes: number;
   touchOverride?: boolean;
+  /** Server `created_at` — source of truth for today-feed sort (not updated after edits). */
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EscalationItem {
@@ -99,7 +103,41 @@ function logRowToEntry(r: Record<string, unknown>): LogEntry {
     specialProjectDescription: String(r.special_project_description ?? ''),
     specialProjectDurationMinutes: Number(r.special_project_duration_minutes ?? 0),
     touchOverride: r.touch_override === true ? true : r.touch_override === false ? false : undefined,
+    createdAt: r.created_at != null ? String(r.created_at) : undefined,
+    updatedAt: r.updated_at != null ? String(r.updated_at) : undefined,
   };
+}
+
+/** Maps a Supabase / realtime payload row to `LogEntry` (includes timestamps). */
+export function conciergeRemoteRowToLogEntry(row: Record<string, unknown>): LogEntry {
+  return logRowToEntry(row);
+}
+
+export type ConciergeDailyLogRealtimeEvent =
+  | { kind: 'upsert'; entry: LogEntry }
+  | { kind: 'delete'; id: string };
+
+/**
+ * Supabase Realtime subscription for shared daily log rows (publication configured in migrations).
+ */
+export function subscribeConciergeDailyLogEntries(
+  onEvent: (ev: ConciergeDailyLogRealtimeEvent) => void,
+): RealtimeChannel {
+  const ch = supabase.channel('concierge_portal_daily_log_entries');
+  ch.on(
+    'postgres_changes',
+    { event: '*', schema: 'public', table: T_LOGS },
+    (payload) => {
+      if (payload.eventType === 'DELETE') {
+        const oldRow = payload.old as { id?: string } | undefined;
+        if (oldRow?.id) onEvent({ kind: 'delete', id: String(oldRow.id) });
+        return;
+      }
+      const newRow = payload.new as Record<string, unknown>;
+      if (newRow?.id != null) onEvent({ kind: 'upsert', entry: conciergeRemoteRowToLogEntry(newRow) });
+    },
+  ).subscribe();
+  return ch;
 }
 
 async function resolveTeamMemberIdByName(name: string): Promise<string | null> {

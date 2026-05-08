@@ -6,7 +6,7 @@ import {
   getAllUniqueCategories,
   getCategoryLabel,
   getPlanBadges,
-  getFeatureForPlan,
+  getFeatureForPlanOrMecPreventiveMirror,
 } from '@/lib/planUtils';
 import { Check, X, ExternalLink } from 'lucide-react';
 
@@ -178,7 +178,12 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                         {featureName}
                       </td>
                       {plans.map(plan => {
-                        const feature = getFeatureForPlan(plan, category, featureName);
+                        const feature = getFeatureForPlanOrMecPreventiveMirror(
+                          plans,
+                          plan,
+                          category,
+                          featureName,
+                        );
                         const costLabel = (feature?.cost || 'Included').trim();
                         const isLimited = /^limited$/i.test(costLabel) || /\blimited\b/i.test(costLabel);
                         return (

@@ -93,6 +93,36 @@ export function getFeatureForPlan(
   ) || null;
 }
 
+/** Slugs prioritized when mirroring Preventive rows onto MEC+ Essentials (marketing DB often omits duplicate lines). */
+const MEC_ESSENTIALS_PREVENTIVE_MIRROR_SLUGS = ['secure-hsa', 'direct'] as const;
+
+/**
+ * For **MEC+ Essentials** only: if Preventive Care is missing in CMS but peers in the comparison have the same row,
+ * show that row’s wording/cost (matches Secure HSA / Direct preventive chart used in Ops migrations).
+ */
+export function getFeatureForPlanOrMecPreventiveMirror(
+  plansInComparison: PlanWithDetails[],
+  plan: PlanWithDetails,
+  category: string,
+  featureName: string,
+): PlanFeature | null {
+  const own = getFeatureForPlan(plan, category, featureName);
+  if (own) return own;
+  if (plan.slug.trim() !== 'mec-essentials' || category !== 'Preventive Care') return null;
+  for (const slug of MEC_ESSENTIALS_PREVENTIVE_MIRROR_SLUGS) {
+    const peer = plansInComparison.find((p) => p.slug === slug);
+    if (!peer) continue;
+    const mirrored = getFeatureForPlan(peer, category, featureName);
+    if (mirrored) return mirrored;
+  }
+  for (const peer of plansInComparison) {
+    if (peer.id === plan.id) continue;
+    const mirrored = getFeatureForPlan(peer, category, featureName);
+    if (mirrored) return mirrored;
+  }
+  return null;
+}
+
 export function formatSharingDetails(plan: PlanWithDetails): string[] {
   const details: string[] = [];
   const sharing = plan.sharing_details;

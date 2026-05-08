@@ -427,16 +427,29 @@ function isLogCreatedLocalCalendarDay(entry: LogEntry, dayRef: Date): boolean {
   return entry.date === formatLocalYmd(dayRef);
 }
 
-/** Newest first for the Log tab “today” list: `created_at` DESC, then id DESC. */
-function sortTodayFeedEntries(logs: LogEntry[]): LogEntry[] {
+/**
+ * Newest input first: server `created_at` DESC, then id DESC tie-break.
+ * Edits do not change `created_at`, so rows keep their original vertical position in the list.
+ */
+function sortLogEntriesByCreatedAtDesc(logs: LogEntry[]): LogEntry[] {
   return [...logs].sort((a, b) => {
     const ma = logCreatedMs(a);
     const mb = logCreatedMs(b);
     if (ma !== null && mb !== null && mb !== ma) return mb - ma;
     if (mb === null && ma !== null) return -1;
     if (ma === null && mb !== null) return 1;
+    if (ma === null && mb === null) {
+      const da = parseLogDate(a.date).getTime();
+      const db = parseLogDate(b.date).getTime();
+      if (Number.isFinite(da) && Number.isFinite(db) && db !== da) return db - da;
+    }
     return String(b.id).localeCompare(String(a.id));
   });
+}
+
+/** Sort + roster normalize for anything that updates `logs` in workspace state. */
+function orderLogsForWorkspace(logs: LogEntry[], roster?: TeamMember[]): LogEntry[] {
+  return migrateLogsStorage(sortLogEntriesByCreatedAtDesc(logs), roster);
 }
 
 function entryWasMeaningfullyEdited(entry: LogEntry): boolean {
@@ -444,12 +457,6 @@ function entryWasMeaningfullyEdited(entry: LogEntry): boolean {
   const u = entry.updatedAt ? new Date(entry.updatedAt).getTime() : NaN;
   if (!Number.isFinite(c) || !Number.isFinite(u)) return false;
   return u - c > EDIT_CREATED_TOLERANCE_MS;
-}
-
-function formatLogEntryTimeOnly(entry: LogEntry): string {
-  const t = entry.createdAt ? new Date(entry.createdAt) : null;
-  if (t && !isNaN(t.getTime())) return format(t, 'p');
-  return '—';
 }
 
 /** Single-line body for the today feed (full detail still in edit). */
@@ -1320,7 +1327,7 @@ function DailyLogTab({
               l.reason.toLowerCase().includes(query) ||
               l.channel.toLowerCase().includes(query),
           );
-    return sortTodayFeedEntries(searched);
+    return sortLogEntriesByCreatedAtDesc(searched);
   }, [logsCreatedTodayLocal, query, repFilter]);
 
   /** Per-rep counts (today only) for chip badges. */
@@ -1533,12 +1540,12 @@ function DailyLogTab({
                 (
                 {query || repFilter
                   ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}`
-                  : `${filteredLogs.length} today · Sorted by logged time (${formatLocalYmd(todayDayRef)})`}
+                  : `${filteredLogs.length} logged today (${formatLocalYmd(todayDayRef)}) · Newest save on top`}
                 )
                 {!query && !repFilter && (
                   <>
                     {' '}
-                    · New entries appear at top; edits keep their original slot.
+                    · Rows use save time, not the date field; edits keep the same position.
                   </>
                 )}
               </span>
@@ -1663,7 +1670,6 @@ function DailyLogTab({
               <thead>
                 <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
                   <th className="px-4 py-3">Team member</th>
-                  <th className="px-4 py-3 w-[7rem] whitespace-nowrap">Time</th>
                   <th className="px-4 py-3">Log</th>
                   <th className="px-4 py-3 text-center w-[5.5rem]"></th>
                 </tr>
@@ -1672,11 +1678,8 @@ function DailyLogTab({
                 {filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
                     <td className="px-4 py-2.5 font-medium text-[#2F3E2F] whitespace-nowrap align-top">
-                      {log.teamMember}
-                    </td>
-                    <td className="px-4 py-2.5 tabular-nums text-slate-600 whitespace-nowrap align-top">
                       <div className="flex flex-col items-start gap-0.5">
-                        <span>{formatLogEntryTimeOnly(log)}</span>
+                        <span>{log.teamMember}</span>
                         {entryWasMeaningfullyEdited(log) && log.updatedAt && (
                           <span
                             className="text-[10px] font-normal text-slate-400 normal-case cursor-default"
@@ -3108,7 +3111,7 @@ export default function DailyLogs() {
         const w = await loadConciergeWorkspace();
         if (cancelled) return;
         setTeamRaw(w.team);
-        setLogsRaw(migrateLogsStorage(w.logs, w.team));
+        setLogsRaw(orderLogsForWorkspace(w.logs, w.team));
         setMemberOffDaysRaw(w.offDays);
         setEscalationsRaw(w.escalations);
         setWeeklyReportExtrasMapRaw(w.weeklyExtrasMap);
@@ -3147,14 +3150,14 @@ export default function DailyLogs() {
   const onAddLog = useCallback(async (entry: LogEntry) => {
     const saved = await insertLogEntry(entry);
     setLogsRaw((prev) =>
-      migrateLogsStorage([saved, ...prev.filter((l) => l.id !== saved.id)], team),
+      orderLogsForWorkspace([saved, ...prev.filter((l) => l.id !== saved.id)], team),
     );
     return saved;
   }, [team]);
 
   const onUpdateLog = useCallback(async (entry: LogEntry) => {
     const saved = await updateLogEntry(entry);
-    setLogsRaw((prev) => migrateLogsStorage(prev.map((l) => (l.id === saved.id ? saved : l)), team));
+    setLogsRaw((prev) => orderLogsForWorkspace(prev.map((l) => (l.id === saved.id ? saved : l)), team));
     return saved;
   }, [team]);
 
@@ -3167,7 +3170,7 @@ export default function DailyLogs() {
   const onRefreshLogs = useCallback(async () => {
     const [nextLogs, nextTeam] = await Promise.all([fetchLogEntries(), fetchTeamMembers()]);
     setTeamRaw(nextTeam);
-    setLogsRaw(migrateLogsStorage(nextLogs, nextTeam));
+    setLogsRaw(orderLogsForWorkspace(nextLogs, nextTeam));
   }, []);
 
   const setTeam: typeof setTeamRaw = useCallback((fn) => {
@@ -3189,7 +3192,7 @@ export default function DailyLogs() {
   /** Re-align log rep names when roster loads or changes (canonical names, legacy keys). */
   useEffect(() => {
     if (team.length === 0) return;
-    setLogsRaw((prev) => migrateLogsStorage(prev, team));
+    setLogsRaw((prev) => orderLogsForWorkspace(prev, team));
   }, [team]);
 
   /** Live updates when other reps add/edit/delete rows (table is in `supabase_realtime` publication). */
@@ -3201,7 +3204,10 @@ export default function DailyLogs() {
           return prev.filter((l) => l.id !== ev.id);
         }
         const roster = teamRef.current;
-        return migrateLogsStorage([ev.entry, ...prev.filter((l) => l.id !== ev.entry.id)], roster);
+        return orderLogsForWorkspace(
+          [...prev.filter((l) => l.id !== ev.entry.id), ev.entry],
+          roster,
+        );
       });
     });
     return () => {
@@ -3284,7 +3290,7 @@ export default function DailyLogs() {
       if (document.visibilityState !== 'visible') return;
       void Promise.all([fetchLogEntries(), fetchTeamMembers()]).then(([nextLogs, nextTeam]) => {
         setTeamRaw(nextTeam);
-        setLogsRaw(migrateLogsStorage(nextLogs, nextTeam));
+        setLogsRaw(orderLogsForWorkspace(nextLogs, nextTeam));
       });
     };
     document.addEventListener('visibilitychange', onVis);
@@ -3314,7 +3320,7 @@ export default function DailyLogs() {
               try {
                 const w = await loadConciergeWorkspace();
                 setTeamRaw(w.team);
-                setLogsRaw(migrateLogsStorage(w.logs, w.team));
+                setLogsRaw(orderLogsForWorkspace(w.logs, w.team));
                 setMemberOffDaysRaw(w.offDays);
                 setEscalationsRaw(w.escalations);
                 setWeeklyReportExtrasMapRaw(w.weeklyExtrasMap);

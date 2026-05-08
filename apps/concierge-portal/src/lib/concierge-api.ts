@@ -197,8 +197,8 @@ export async function fetchLogEntries(): Promise<LogEntry[]> {
   const { data, error } = await db
     .from(T_LOGS)
     .select('*')
-    .order('log_date', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false });
   if (error) throw error;
   return (data ?? []).map(logRowToEntry);
 }

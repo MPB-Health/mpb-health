@@ -18,6 +18,7 @@
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
+    "@supabase/supabase-js": "catalog:",
     "@tanstack/react-query": "^5.90.21",
     "date-fns": "catalog:",
     "lucide-react": "catalog:",

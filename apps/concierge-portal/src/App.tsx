@@ -51,19 +51,69 @@ function FullPageLoader() {
   );
 }
 
+/**
+ * Magic-link / recovery callbacks land on `/` with auth tokens in the URL hash
+ * (e.g. `/#access_token=…&refresh_token=…&type=magiclink`). Supabase's `detectSessionInUrl`
+ * processes them asynchronously, so we must hold the guard in `loading` until that finishes
+ * — otherwise `getSession()` returns null first and we bounce the user to `/login`.
+ */
+function hasAuthCallbackInUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash || '';
+  if (hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('error_description=')) {
+    return true;
+  }
+  const search = window.location.search || '';
+  return /[?&](code|token_hash|token)=/.test(search);
+}
+
+function clearAuthCallbackHash(): void {
+  if (typeof window === 'undefined') return;
+  const { pathname, search } = window.location;
+  if (window.location.hash) {
+    window.history.replaceState(null, '', `${pathname}${search}`);
+  }
+}
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(session ? 'authenticated' : 'unauthenticated');
-    });
+    let cancelled = false;
+    const awaitingCallback = hasAuthCallbackInUrl();
+
+    const settle = (next: 'authenticated' | 'unauthenticated') => {
+      if (cancelled) return;
+      setState(next);
+      if (awaitingCallback) clearAuthCallbackHash();
+    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState(session ? 'authenticated' : 'unauthenticated');
+      settle(session ? 'authenticated' : 'unauthenticated');
     });
 
-    return () => subscription.unsubscribe();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        settle('authenticated');
+        return;
+      }
+      if (!awaitingCallback) {
+        settle('unauthenticated');
+        return;
+      }
+      // Hash callback present but session not yet established — give detectSessionInUrl a moment.
+      setTimeout(() => {
+        if (cancelled) return;
+        supabase.auth.getSession().then(({ data: { session: late } }) => {
+          settle(late ? 'authenticated' : 'unauthenticated');
+        });
+      }, 1500);
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (state === 'loading') return <FullPageLoader />;
@@ -75,9 +125,27 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let cancelled = false;
+    const awaitingCallback = hasAuthCallbackInUrl();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
       setState(session ? 'authenticated' : 'unauthenticated');
     });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      if (session) {
+        setState('authenticated');
+      } else if (!awaitingCallback) {
+        setState('unauthenticated');
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (state === 'loading') return <FullPageLoader />;

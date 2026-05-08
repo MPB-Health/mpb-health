@@ -3,7 +3,13 @@
  * Tables are created in migration: 20260430100000_concierge_portal_data.sql
  */
 import { supabase } from '@mpbhealth/database';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+
+/**
+ * Inferred from the already-resolved `@mpbhealth/database` client so this file never imports
+ * `@supabase/supabase-js` directly — Vercel's build cache occasionally keeps an older
+ * `apps/concierge-portal/node_modules` without the app-level symlink, which broke `tsc -b`.
+ */
+type RealtimeChannel = ReturnType<typeof supabase.channel>;
 
 /** Typed escape hatch until `pnpm db:generate` includes concierge tables. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- remote schema not in generated Database yet

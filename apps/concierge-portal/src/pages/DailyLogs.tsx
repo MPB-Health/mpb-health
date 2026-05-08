@@ -401,6 +401,11 @@ function sortLogsChronologically(logs: LogEntry[]): LogEntry[] {
   });
 }
 
+/** Same comparator as chronological, reversed so the latest entry appears first in lists. */
+function sortLogsRecentFirst(logs: LogEntry[]): LogEntry[] {
+  return [...sortLogsChronologically(logs)].reverse();
+}
+
 function formatOffDayForReport(isoDate: string): string {
   const d = parseDate(isoDate, 'yyyy-MM-dd', new Date());
   return isNaN(d.getTime()) ? isoDate : format(d, 'EEE MMM d');
@@ -1215,7 +1220,7 @@ function DailyLogTab({
 
   const query = search.toLowerCase().trim();
   const filteredLogs = useMemo(() => {
-    const ordered = sortLogsChronologically(logs);
+    const ordered = sortLogsRecentFirst(logs);
     const byRep = repFilter
       ? ordered.filter((l) => l.teamMember === repFilter)
       : ordered;

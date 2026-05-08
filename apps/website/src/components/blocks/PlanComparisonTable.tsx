@@ -196,16 +196,14 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                                 )}
                               </div>
                             ) : (
-                              <div className="flex flex-col items-center justify-center gap-2 py-1">
+                              <div className="flex items-center justify-center gap-2 py-1">
                                 <div
-                                  className="w-7 h-7 rounded-full bg-neutral-300 flex items-center justify-center flex-shrink-0 shadow-sm"
+                                  className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0"
                                   aria-hidden
                                 >
-                                  <Check className="h-4 w-4 text-neutral-800" strokeWidth={2.5} />
+                                  <Check className="h-4 w-4 text-white" />
                                 </div>
-                                <span className="text-xs sm:text-sm text-neutral-500 text-center leading-snug max-w-[12ch]">
-                                  Not Included
-                                </span>
+                                <span className="text-sm font-bold text-success-600">Included</span>
                               </div>
                             )}
                           </td>

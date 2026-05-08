@@ -51,6 +51,7 @@ import {
   importLegacyJsonForMember,
   subscribeConciergeDailyLogEntries,
   mergeConciergeLogEntry,
+  normalizeConciergeInstant,
 } from '../lib/concierge-api';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -410,7 +411,9 @@ function sortLogsChronologically(logs: LogEntry[]): LogEntry[] {
 const EDIT_CREATED_TOLERANCE_MS = 2000;
 
 function logCreatedMs(entry: LogEntry): number | null {
-  const t = entry.createdAt ? new Date(entry.createdAt).getTime() : NaN;
+  const iso = normalizeConciergeInstant(entry.createdAt);
+  if (!iso) return null;
+  const t = Date.parse(iso);
   return Number.isFinite(t) ? t : null;
 }
 
@@ -452,10 +455,13 @@ function orderLogsForWorkspace(logs: LogEntry[], roster?: TeamMember[]): LogEntr
 }
 
 function entryWasMeaningfullyEdited(entry: LogEntry): boolean {
-  const c = entry.createdAt ? new Date(entry.createdAt).getTime() : NaN;
-  const u = entry.updatedAt ? new Date(entry.updatedAt).getTime() : NaN;
-  if (!Number.isFinite(c) || !Number.isFinite(u)) return false;
-  return u - c > EDIT_CREATED_TOLERANCE_MS;
+  const c = normalizeConciergeInstant(entry.createdAt);
+  const u = normalizeConciergeInstant(entry.updatedAt);
+  if (!c || !u) return false;
+  const created = Date.parse(c);
+  const updated = Date.parse(u);
+  if (!Number.isFinite(created) || !Number.isFinite(updated)) return false;
+  return updated - created > EDIT_CREATED_TOLERANCE_MS;
 }
 
 /** Single-line body for the today feed (full detail still in edit). */
@@ -472,6 +478,13 @@ function formatTodayFeedLogContent(entry: LogEntry): string {
     entry.additionalNotes.trim(),
   ].filter((p) => typeof p === 'string' && p.length > 0);
   return parts.join(' · ');
+}
+
+/** Reason column text in the spreadsheet ledger (matches weekly exports). */
+function ledgerReasonLabel(log: LogEntry): string {
+  if (log.reason === 'Special Project' && log.specialProjectDescription.trim())
+    return `Special Project: ${log.specialProjectDescription.trim()}`;
+  return log.reason;
 }
 
 function formatOffDayForReport(isoDate: string): string {
@@ -1665,55 +1678,104 @@ function DailyLogTab({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[960px]">
               <thead>
                 <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
-                  <th className="px-4 py-3">Team member</th>
-                  <th className="px-4 py-3">Log</th>
-                  <th className="px-4 py-3 text-center w-[5.5rem]"></th>
+                  <th className="px-3 py-3 whitespace-nowrap">Wk</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Date</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Rep</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Channel</th>
+                  <th className="px-3 py-3 whitespace-nowrap min-w-[7rem]">Member</th>
+                  <th className="px-3 py-3 whitespace-nowrap min-w-[8rem]">Reason</th>
+                  <th className="px-3 py-3 text-right whitespace-nowrap">Touches</th>
+                  <th className="px-3 py-3 text-center whitespace-nowrap">CRM</th>
+                  <th className="px-3 py-3 text-center whitespace-nowrap">F/U</th>
+                  <th className="px-3 py-3 text-center whitespace-nowrap">Rev</th>
+                  <th className="px-3 py-3 text-center whitespace-nowrap">Esc</th>
+                  <th className="px-3 py-3 text-right whitespace-nowrap w-[5rem]"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#A8B8AC]/15">
-                {filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
-                    <td className="px-4 py-2.5 font-medium text-[#2F3E2F] whitespace-nowrap align-top">
-                      <div className="flex flex-col items-start gap-0.5">
-                        <span>{log.teamMember}</span>
-                        {entryWasMeaningfullyEdited(log) && log.updatedAt && (
-                          <span
-                            className="text-[10px] font-normal text-slate-400 normal-case cursor-default"
-                            title={`Edited ${format(new Date(log.updatedAt), 'PPpp')}`}
-                          >
-                            edited
-                          </span>
+                {filteredLogs.map((log) => {
+                  const pd = parseLogDate(log.date);
+                  const wk = !isNaN(pd.getTime()) ? String(getISOWeek(pd)) : '—';
+                  return (
+                    <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
+                      <td className="px-3 py-2.5 text-slate-500 tabular-nums whitespace-nowrap align-top">{wk}</td>
+                      <td className="px-3 py-2.5 text-slate-600 tabular-nums whitespace-nowrap align-top">{log.date}</td>
+                      <td className="px-3 py-2.5 font-medium text-[#2F3E2F] align-top min-w-[7rem]">
+                        <div className="flex flex-col items-start gap-0.5">
+                          <span>{log.teamMember}</span>
+                          {entryWasMeaningfullyEdited(log) && normalizeConciergeInstant(log.updatedAt) && (
+                            <span
+                              className="text-[10px] font-normal text-slate-400 normal-case cursor-default"
+                              title={`Edited ${format(
+                                new Date(Date.parse(normalizeConciergeInstant(log.updatedAt)!)),
+                                'PPpp',
+                              )}`}
+                            >
+                              edited
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap align-top">
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-sky-50 text-sky-900 border border-sky-200/80">
+                          {log.channel}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-800 align-top min-w-[7rem] break-words">
+                        {log.memberName}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-700 align-top min-w-[8rem] break-words">
+                        {ledgerReasonLabel(log)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-slate-800 align-top">
+                        {metricTouches(log)}
+                      </td>
+                      <td className="px-3 py-2.5 text-center align-top text-slate-400">
+                        {log.crmNotes ? <Check className="w-4 h-4 text-emerald-600 inline" aria-label="CRM notes" /> : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-center align-top text-slate-400">
+                        {log.followUp ? <Check className="w-4 h-4 text-emerald-600 inline" aria-label="Follow-up" /> : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-center align-top text-slate-400">
+                        {log.reviewLink ? (
+                          <Check className="w-4 h-4 text-emerald-600 inline" aria-label="Review link" />
+                        ) : (
+                          '—'
                         )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-slate-700 align-top min-w-0">
-                      <p className="whitespace-pre-wrap break-words">{formatTodayFeedLogContent(log)}</p>
-                    </td>
-                    <td className="px-4 py-2.5 align-top">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => setEditingLog(log)}
-                          className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
-                          aria-label="Edit entry"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(log.id)}
-                          className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
-                          aria-label="Delete entry"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-3 py-2.5 text-center align-top text-slate-400">
+                        {log.escalatedIssue ? (
+                          <Check className="w-4 h-4 text-emerald-600 inline" aria-label="Escalated" />
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 align-top">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setEditingLog(log)}
+                            className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
+                            aria-label="Edit entry"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(log.id)}
+                            className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
+                            aria-label="Delete entry"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

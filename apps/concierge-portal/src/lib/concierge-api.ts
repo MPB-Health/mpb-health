@@ -85,10 +85,24 @@ function teamRowToMember(r: Record<string, unknown>): TeamMember {
   };
 }
 
+/**
+ * PostgREST often returns `timestamptz` as `YYYY-MM-DD HH:mm:ss…+00` (space, not `T`).
+ * Some engines treat that as Invalid Date, so every row ties on sort and the list looks "random".
+ */
+export function normalizeConciergeInstant(raw: unknown): string | undefined {
+  if (raw == null) return undefined;
+  const s = String(raw).trim();
+  if (!s) return undefined;
+  const withT =
+    /\d{4}-\d{2}-\d{2}\s+[0-9]/.test(s) && !s.includes('T')
+      ? s.replace(/^(\d{4}-\d{2}-\d{2})\s+/, '$1T')
+      : s;
+  const ms = Date.parse(withT);
+  return Number.isFinite(ms) ? withT : undefined;
+}
+
 function readOptionalIsoTs(row: Record<string, unknown>, snake: string, camel: string): string | undefined {
-  const v = row[snake] ?? row[camel];
-  if (v == null || v === '') return undefined;
-  return String(v);
+  return normalizeConciergeInstant(row[snake] ?? row[camel]);
 }
 
 function logRowToEntry(r: Record<string, unknown>): LogEntry {
@@ -118,14 +132,21 @@ function logRowToEntry(r: Record<string, unknown>): LogEntry {
 
 /** If the payload has no parseable `created_at`, assign one so newest-first ordering never falls apart. */
 export function patchMissingConciergeTimestamps(entry: LogEntry): LogEntry {
-  const parsed = entry.createdAt ? new Date(entry.createdAt).getTime() : NaN;
-  if (Number.isFinite(parsed)) return entry;
-  const now = new Date().toISOString();
-  const uOk = entry.updatedAt ? Number.isFinite(new Date(entry.updatedAt).getTime()) : false;
-  return {
+  const c0 = normalizeConciergeInstant(entry.createdAt);
+  const u0 = normalizeConciergeInstant(entry.updatedAt);
+  const base: LogEntry = {
     ...entry,
+    ...(c0 ? { createdAt: c0 } : {}),
+    ...(u0 ? { updatedAt: u0 } : {}),
+  };
+  const parsed = base.createdAt ? Date.parse(base.createdAt) : NaN;
+  if (Number.isFinite(parsed)) return base;
+  const now = new Date().toISOString();
+  const uOk = base.updatedAt ? Number.isFinite(Date.parse(base.updatedAt)) : false;
+  return {
+    ...base,
     createdAt: now,
-    updatedAt: uOk ? entry.updatedAt : now,
+    updatedAt: uOk ? base.updatedAt : now,
   };
 }
 

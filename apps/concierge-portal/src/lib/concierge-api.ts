@@ -259,7 +259,9 @@ export async function fetchLogEntries(): Promise<LogEntry[]> {
     .order('created_at', { ascending: false })
     .order('id', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((row) => patchMissingConciergeTimestamps(logRowToEntry(row as Record<string, unknown>)));
+  return (data ?? []).map((row: Record<string, unknown>) =>
+    patchMissingConciergeTimestamps(logRowToEntry(row)),
+  );
 }
 
 export async function fetchMemberOffDays(): Promise<Record<string, string[]>> {

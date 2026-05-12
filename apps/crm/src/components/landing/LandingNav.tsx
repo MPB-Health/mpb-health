@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import { getBrandLogo } from '../../lib/brand';
 
 const navLinks = [
   { label: 'Features', href: '#features' },
@@ -35,7 +36,7 @@ export function LandingNav() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 shrink-0">
             <img
-              src="/assets/MPB-Health-No-background.png"
+              src={getBrandLogo()}
               alt="MPB Health"
               className="h-9 w-auto"
             />

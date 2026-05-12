@@ -6,6 +6,7 @@ import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
+import { getBrandLogo } from '../lib/brand';
 import {
   LayoutDashboard,
   Users,
@@ -611,7 +612,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       <AppLayout
         appName="CRM"
-        logoSrc="/assets/MPB-Health-No-background.png"
+        logoSrc={getBrandLogo()}
         navigation={visibleNav}
         portalSwitcher={
           <PortalSwitcher

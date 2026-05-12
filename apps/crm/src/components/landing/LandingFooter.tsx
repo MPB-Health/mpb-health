@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Shield, Lock } from 'lucide-react';
+import { getBrandLogo } from '../../lib/brand';
 
 interface FooterLink {
   label: string;
@@ -77,7 +78,7 @@ export function LandingFooter() {
         <div className="border-t border-neutral-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img
-              src="/assets/MPB-Health-No-background.png"
+              src={getBrandLogo({ dark: true })}
               alt="MPB Health"
               className="h-8 w-auto opacity-60"
             />

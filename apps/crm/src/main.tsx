@@ -8,9 +8,16 @@ import { AuthProvider } from './contexts/AuthContext';
 import { OrgProvider } from './contexts/OrgContext';
 import { CRMProvider } from './contexts/CRMContext';
 import { AppErrorBoundary } from './components/ErrorBoundary';
+import { applyBrandClass } from './lib/brand';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
+import './styles/aryx-brand.css';
 import '@mpbhealth/ui/login-animations.css';
+
+// Set <html class="brand-mpb"> or "brand-aryx" before first render so the
+// overlay CSS in aryx-brand.css applies on first paint (no flash of mpb-blue
+// when visiting crm.aryxcloud.com). Hostname check lives in src/lib/brand.ts.
+applyBrandClass();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

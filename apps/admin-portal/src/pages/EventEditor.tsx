@@ -8,10 +8,16 @@ import {
   type EventType,
   type EventLocationType,
 } from '@mpbhealth/admin-core';
+import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
 import { useAdmin } from '../contexts/AdminContext';
 import RichTextEditor from '../components/RichTextEditor';
 import { ImageUploader } from '../components/cms/ImageUploader';
 import { uploadEventImage, validateImageFile } from '../components/cms/imageUploadService';
+
+// Hard ceiling for the network round-trip; if the Supabase call hangs longer
+// (auth refresh stuck, network drop, etc.) we surface a real error instead of
+// leaving the user staring at a greyed-out button.
+const EVENT_SAVE_TIMEOUT_MS = 30_000;
 
 const EVENT_TYPE_OPTIONS: { value: EventType; label: string }[] = [
   { value: 'conference', label: 'Conference' },
@@ -132,13 +138,21 @@ export default function EventEditor() {
   };
 
   const handleSave = async (publish?: boolean) => {
+    if (saving) return;
+
     if (!formData.title || !formData.content || !formData.event_date || !formData.organizer) {
       toast.error('Title, content, event date, and organizer are required');
       return;
     }
 
-    setSaving(true);
     const shouldPublish = publish ?? isPublished;
+    const loadingMessage = shouldPublish
+      ? isNew
+        ? 'Publishing event…'
+        : 'Saving & publishing…'
+      : 'Saving draft…';
+    const toastId = toast.loading(loadingMessage);
+    setSaving(true);
 
     try {
       const payload: EventCreateInput = {
@@ -164,18 +178,42 @@ export default function EventEditor() {
       };
 
       if (isNew) {
-        await eventsAdminService.createEvent(payload);
-        toast.success(shouldPublish ? 'Event published!' : 'Event saved as draft');
+        await withTimeout(
+          eventsAdminService.createEvent(payload),
+          EVENT_SAVE_TIMEOUT_MS,
+          'event_create'
+        );
+        toast.success(shouldPublish ? 'Event published!' : 'Event saved as draft', {
+          id: toastId,
+        });
       } else {
         const { created_by: _cb, ...updatePayload } = payload;
-        await eventsAdminService.updateEvent(eventId, updatePayload);
-        toast.success('Event updated!');
+        await withTimeout(
+          eventsAdminService.updateEvent(eventId, updatePayload),
+          EVENT_SAVE_TIMEOUT_MS,
+          'event_update'
+        );
+        toast.success(
+          shouldPublish && !isPublished
+            ? 'Event published!'
+            : !shouldPublish && isPublished
+              ? 'Event unpublished'
+              : 'Event updated!',
+          { id: toastId }
+        );
       }
 
       navigate('/events');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      toast.error(`Failed to save event: ${message}`);
+      // console.warn survives Vite's terser drop_console=['log','info','debug']
+      // so we always have a breadcrumb in the prod browser console.
+      console.warn('[EventEditor] save failed', err);
+      const message = isTimeoutError(err)
+        ? 'Save took too long. Check your connection and try again.'
+        : err instanceof Error
+          ? err.message
+          : 'Unknown error';
+      toast.error(`Failed to save event: ${message}`, { id: toastId });
     } finally {
       setSaving(false);
     }
@@ -193,11 +231,15 @@ export default function EventEditor() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header — sticky so the action buttons are always reachable, and z-20
+          keeps them above the editor cards (which would otherwise win the
+          hit-test in some flex/scroll states and silently swallow the click). */}
+      <div className="sticky top-11 z-20 -mx-2 px-2 py-2 bg-surface-secondary/90 backdrop-blur border-b border-th-border/40 flex items-center justify-between gap-3">
         <button
+          type="button"
           onClick={() => navigate('/events')}
-          className="flex items-center space-x-2 text-th-text-secondary hover:text-th-text-primary"
+          disabled={saving}
+          className="flex items-center space-x-2 text-th-text-secondary hover:text-th-text-primary disabled:opacity-50"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Back to Events</span>
@@ -206,39 +248,43 @@ export default function EventEditor() {
           {isPublished && !isNew ? (
             <>
               <button
+                type="button"
                 onClick={() => handleSave(false)}
                 disabled={saving}
-                className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
-                <EyeOff className="w-4 h-4" />
-                <span>Unpublish</span>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <EyeOff className="w-4 h-4" />}
+                <span>{saving ? 'Saving…' : 'Unpublish'}</span>
               </button>
               <button
+                type="button"
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
-                <Save className="w-4 h-4" />
-                <span>Save</span>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>{saving ? 'Saving…' : 'Save'}</span>
               </button>
             </>
           ) : (
             <>
               <button
+                type="button"
                 onClick={() => handleSave(false)}
                 disabled={saving}
-                className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-50 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
-                <Save className="w-4 h-4" />
-                <span>Save Draft</span>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>{saving ? 'Saving…' : 'Save Draft'}</span>
               </button>
               <button
+                type="button"
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
-                <Globe className="w-4 h-4" />
-                <span>Publish</span>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                <span>{saving ? 'Publishing…' : 'Publish'}</span>
               </button>
             </>
           )}

@@ -21,6 +21,9 @@ import {
   type AdminEvent,
   type EventType,
 } from '@mpbhealth/admin-core';
+import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
+
+const EVENT_ACTION_TIMEOUT_MS = 30_000;
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   conference: 'Conference',
@@ -84,42 +87,70 @@ export default function EventsAdmin() {
     load();
   }, [searchQuery, publishedFilter, typeFilter]);
 
+  const describeError = (err: unknown, fallback: string): string => {
+    if (isTimeoutError(err)) {
+      return `${fallback} (timed out — please retry)`;
+    }
+    if (err instanceof Error && err.message) {
+      return `${fallback}: ${err.message}`;
+    }
+    return fallback;
+  };
+
   const handlePublish = async (id: string) => {
+    setActiveMenu(null);
+    const toastId = toast.loading('Publishing event…');
     try {
-      await eventsAdminService.publishEvent(id);
+      await withTimeout(
+        eventsAdminService.publishEvent(id),
+        EVENT_ACTION_TIMEOUT_MS,
+        'event_publish'
+      );
       setEvents((prev) =>
         prev.map((e) => (e.id === id ? { ...e, is_published: true } : e))
       );
-      toast.success('Event published');
-    } catch {
-      toast.error('Failed to publish event');
+      toast.success('Event published', { id: toastId });
+    } catch (err) {
+      console.warn('[EventsAdmin] publish failed', err);
+      toast.error(describeError(err, 'Failed to publish event'), { id: toastId });
     }
-    setActiveMenu(null);
   };
 
   const handleUnpublish = async (id: string) => {
+    setActiveMenu(null);
+    const toastId = toast.loading('Unpublishing event…');
     try {
-      await eventsAdminService.unpublishEvent(id);
+      await withTimeout(
+        eventsAdminService.unpublishEvent(id),
+        EVENT_ACTION_TIMEOUT_MS,
+        'event_unpublish'
+      );
       setEvents((prev) =>
         prev.map((e) => (e.id === id ? { ...e, is_published: false } : e))
       );
-      toast.success('Event unpublished');
-    } catch {
-      toast.error('Failed to unpublish event');
+      toast.success('Event unpublished', { id: toastId });
+    } catch (err) {
+      console.warn('[EventsAdmin] unpublish failed', err);
+      toast.error(describeError(err, 'Failed to unpublish event'), { id: toastId });
     }
-    setActiveMenu(null);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this event?')) return;
-    try {
-      await eventsAdminService.deleteEvent(id);
-      setEvents((prev) => prev.filter((e) => e.id !== id));
-      toast.success('Event deleted');
-    } catch {
-      toast.error('Failed to delete event');
-    }
     setActiveMenu(null);
+    const toastId = toast.loading('Deleting event…');
+    try {
+      await withTimeout(
+        eventsAdminService.deleteEvent(id),
+        EVENT_ACTION_TIMEOUT_MS,
+        'event_delete'
+      );
+      setEvents((prev) => prev.filter((e) => e.id !== id));
+      toast.success('Event deleted', { id: toastId });
+    } catch (err) {
+      console.warn('[EventsAdmin] delete failed', err);
+      toast.error(describeError(err, 'Failed to delete event'), { id: toastId });
+    }
   };
 
   return (

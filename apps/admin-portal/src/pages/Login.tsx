@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
-import { LoginLayout } from '@mpbhealth/ui';
+import { LoginLayout, AryxAuthShell, detectBrand } from '@mpbhealth/ui';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -27,6 +27,22 @@ export default function Login() {
       throw err instanceof Error ? err : new Error('Login failed. Please try again.');
     }
   };
+
+  if (detectBrand() === 'aryx') {
+    return (
+      <AryxAuthShell
+        appName="Admin Portal"
+        appDescription="Sign in to manage your platform"
+        onSubmit={handleSubmit}
+        emailPlaceholder="admin@mpb.health"
+        formFooter={
+          <p style={{ textAlign: 'center', margin: 0 }}>
+            Access restricted to authorized administrators only.
+          </p>
+        }
+      />
+    );
+  }
 
   return (
     <LoginLayout

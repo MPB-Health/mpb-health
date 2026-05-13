@@ -1,7 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isSupabaseConfigured } from '../lib/supabase';
-import { LoginLayout } from '@mpbhealth/ui';
+import { LoginLayout, AryxAuthShell, detectBrand } from '@mpbhealth/ui';
 import { ArrowLeft } from 'lucide-react';
 
 export default function Login() {
@@ -26,6 +26,17 @@ export default function Login() {
       throw err instanceof Error ? err : new Error('Login failed. Please try again.');
     }
   };
+
+  if (detectBrand() === 'aryx') {
+    return (
+      <AryxAuthShell
+        appName="CRM"
+        appDescription="MPB Health Customer Relationship Management"
+        onSubmit={handleSubmit}
+        emailPlaceholder="you@mympb.com"
+      />
+    );
+  }
 
   return (
     <LoginLayout

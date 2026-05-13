@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
-import { LoginLayout } from '@mpbhealth/ui';
+import { LoginLayout, AryxAuthShell, detectBrand } from '@mpbhealth/ui';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -63,6 +63,19 @@ export default function Login() {
   const handleForgotPassword = () => {
     navigate('/forgot-password');
   };
+
+  if (detectBrand() === 'aryx') {
+    return (
+      <AryxAuthShell
+        appName="Advisor Portal"
+        appDescription="Sign in to access your dashboard"
+        onSubmit={handleSubmit}
+        emailPlaceholder="advisor@mympb.com"
+        showForgotPassword={true}
+        onForgotPassword={handleForgotPassword}
+      />
+    );
+  }
 
   return (
     <LoginLayout

@@ -1,4 +1,5 @@
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
+import { getBrandLogo } from '../lib/brand';
 import {
   LayoutDashboard,
   Users,
@@ -205,7 +206,7 @@ export default function MainLayout() {
   return (
     <AppLayout
       appName="Admin Portal"
-      logoSrc="/logo.png"
+      logoSrc={getBrandLogo()}
       navigation={navWithBadges}
       portalSwitcher={
         <PortalSwitcher

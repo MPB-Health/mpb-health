@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useCallback, useTransition } from 'react';
+import { getBrandLogo } from '../lib/brand';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -541,7 +542,7 @@ export default function MainLayout() {
       <div className="pb-16 lg:pb-0">
         <AppLayout
         appName="Advisor Portal"
-        logoSrc="/assets/MPB-Health-No-background.png"
+        logoSrc={getBrandLogo()}
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
         portalSwitcher={

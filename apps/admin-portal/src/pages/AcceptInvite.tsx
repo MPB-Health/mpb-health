@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { CheckCircle, XCircle, Loader2, Mail, Lock, User } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
+import { getBrandLogo } from '../lib/brand';
 
 type InviteStatus = 'loading' | 'valid' | 'expired' | 'invalid' | 'accepted' | 'error';
 
@@ -268,7 +269,7 @@ export default function AcceptInvite() {
         {/* Header */}
         <div className="text-center mb-8">
           <img
-            src="https://mpb.health/assets/MPB-Health-No-background.png"
+            src={getBrandLogo()}
             alt="MPB Health"
             className="h-12 mx-auto mb-4"
           />

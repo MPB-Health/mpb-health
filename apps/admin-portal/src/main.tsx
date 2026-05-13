@@ -5,8 +5,15 @@ import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mpbhealth/ui';
 import App from './App';
+import { applyBrandClass } from './lib/brand';
 import './index.css';
+import './styles/aryx-brand.css';
 import '@mpbhealth/ui/login-animations.css';
+
+// Set <html class="brand-mpb"> or "brand-aryx" before first render so the
+// overlay CSS in aryx-brand.css applies on first paint (no flash of mpb-blue
+// when visiting admin.aryxcloud.com). Hostname check lives in src/lib/brand.ts.
+applyBrandClass();
 
 function isAuthError(error: unknown): boolean {
   if (error && typeof error === 'object') {

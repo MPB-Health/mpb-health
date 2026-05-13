@@ -6,6 +6,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/favicon.ico",
+      "destination": "/favicon.svg"
+    },
+    {
       "source": "/((?!api|assets|favicon|.*\\..*).*)",
       "destination": "/index.html"
     }

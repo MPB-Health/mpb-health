@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- /favicon.ico is rewritten to /favicon.svg by Vercel (see vercel.json)
+         so legacy auditors checking the .ico path still get a 200. -->
+    <link rel="alternate icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0ea5e9" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- DNS Prefetch for external services -->
@@ -53,6 +58,40 @@
     <meta name="twitter:image" content="https://mpb.health/assets/MPB-Health-No-background.png?v=2" />
   </head>
   <body>
+    <!--
+      No-JS fallback so crawlers, SEO auditors (e.g. SEOptimer), and visitors
+      with JavaScript disabled see real readable content instead of an empty
+      <div id="root">. Hidden the moment React hydrates because <noscript>
+      is removed from the DOM by user agents that DO run JS.
+    -->
+    <noscript>
+      <header style="padding:1.5rem;max-width:64rem;margin:0 auto;font-family:system-ui,-apple-system,sans-serif;">
+        <h1 style="font-size:2rem;margin:0 0 .5rem;color:#0f172a;">MPB Health — Affordable Health Sharing</h1>
+        <p style="font-size:1.125rem;color:#475569;margin:0 0 1rem;">
+          Flexible, affordable health share programs that put you in control of
+          your healthcare costs. Join a community of members helping each other
+          with medical expenses.
+        </p>
+        <nav aria-label="Primary" style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;">
+          <a href="/plans">Plans</a>
+          <a href="/how-it-works">How it works</a>
+          <a href="/benefits">Benefits</a>
+          <a href="/individuals-and-families">For Individuals &amp; Families</a>
+          <a href="/businesses-and-organizations">For Businesses</a>
+          <a href="/advisors">Advisors</a>
+          <a href="/blog">Blog</a>
+          <a href="/faq">FAQ</a>
+          <a href="/contact">Contact</a>
+          <a href="/get-a-quote">Get a Quote</a>
+        </nav>
+        <p style="padding:1rem;border:1px solid #e2e8f0;border-radius:.5rem;background:#f8fafc;color:#475569;font-size:.9rem;">
+          This site uses JavaScript to load its full interactive experience.
+          Please enable JavaScript in your browser, or
+          <a href="/contact">contact us</a> for help.
+        </p>
+      </header>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 

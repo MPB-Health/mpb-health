@@ -1,0 +1,26 @@
+{
+  "name": "MPB Health",
+  "short_name": "MPB Health",
+  "description": "Affordable health share programs from MPB Health — flexible, member-first healthcare that puts you in control of your costs.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "lang": "en-US",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/MPB-Health-No-background.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}

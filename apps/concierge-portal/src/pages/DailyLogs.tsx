@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   addDays,
   format,
+  isValid,
   parse as parseDate,
   getISOWeek,
   getISOWeekYear,
@@ -425,14 +426,6 @@ function logCreatedMs(entry: LogEntry): number | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   return Number.isFinite(t) ? t : null;
-}
-
-/**
- * Which rows belong on today's sheet: calendar **log date** (DATE field) matches local today.
- * Matches the column reps see — not necessarily the clock day of `created_at`.
- */
-function isLogRowForLocalCalendarSheetDay(entry: LogEntry, dayRef: Date): boolean {
-  return entry.date === formatLocalYmd(dayRef);
 }
 
 /**
@@ -1320,6 +1313,11 @@ function DailyLogTab({
   }, [rosterTeam, currentUserId]);
 
   const query = search.toLowerCase().trim();
+
+  /** Which calendar day's rows appear in the table below (`entry.date` / form DATE field). Defaults to today. */
+  const logSheetFollowsCalendarTodayRef = useRef(true);
+  const [logSheetYmd, setLogSheetYmd] = useState(() => formatLocalYmd(new Date()));
+
   /** Re-render today feed when the calendar day changes (approx. once per minute). */
   const [todayTicker, setTodayTicker] = useState(() => Date.now());
 
@@ -1337,13 +1335,27 @@ function DailyLogTab({
   }, []);
 
   const todayDayRef = useMemo(() => new Date(todayTicker), [todayTicker]);
-  const logsOnTodaySheet = useMemo(
-    () => logs.filter((l) => isLogRowForLocalCalendarSheetDay(l, todayDayRef)),
-    [logs, todayDayRef],
+  const calTodayStr = formatLocalYmd(todayDayRef);
+  const viewingTodaySheet = logSheetYmd === calTodayStr;
+
+  useEffect(() => {
+    if (logSheetFollowsCalendarTodayRef.current) {
+      setLogSheetYmd(calTodayStr);
+    }
+  }, [calTodayStr]);
+
+  const logSheetPretty = useMemo(() => {
+    const d = parseDate(logSheetYmd, 'yyyy-MM-dd', new Date());
+    return isValid(d) ? format(d, 'EEE, MMM d, yyyy') : logSheetYmd;
+  }, [logSheetYmd]);
+
+  const logsForSheetDay = useMemo(
+    () => logs.filter((l) => l.date.slice(0, 10) === logSheetYmd.slice(0, 10)),
+    [logs, logSheetYmd],
   );
 
   const filteredLogs = useMemo(() => {
-    const base = logsOnTodaySheet;
+    const base = logsForSheetDay;
     const byRep = repFilter ? base.filter((l) => l.teamMember === repFilter) : base;
     const searched =
       !query
@@ -1360,16 +1372,16 @@ function DailyLogTab({
               l.channel.toLowerCase().includes(query),
           );
     return sortLogEntriesByCreatedAtDesc(searched);
-  }, [logsOnTodaySheet, query, repFilter]);
+  }, [logsForSheetDay, query, repFilter]);
 
-  /** Per-rep counts (today sheet only) for chip badges. */
+  /** Per-rep counts for the selected log-date sheet (chip badges). */
   const repCountsToday = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const l of logsOnTodaySheet) {
+    for (const l of logsForSheetDay) {
       counts.set(l.teamMember, (counts.get(l.teamMember) ?? 0) + 1);
     }
     return counts;
-  }, [logsOnTodaySheet]);
+  }, [logsForSheetDay]);
 
   return (
     <div className="space-y-6">
@@ -1581,17 +1593,22 @@ function DailyLogTab({
         <div className="p-4 border-b border-[#A8B8AC]/20 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 className="text-base font-bold text-[#2F3E2F]">
-              {query || repFilter ? 'Filtered entries' : "Today's entries"}{' '}
+              {query || repFilter
+                ? 'Filtered entries'
+                : viewingTodaySheet
+                  ? 'Today’s log sheet'
+                  : `Log sheet — ${logSheetPretty}`}{' '}
               <span className="text-sm font-normal text-slate-500">
                 (
                 {query || repFilter
                   ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}`
-                  : `${filteredLogs.length} with log date ${formatLocalYmd(todayDayRef)} · Newest entries on top`}
+                  : `${filteredLogs.length} rows · Log date ${logSheetYmd} · Newest on top`}
                 )
                 {!query && !repFilter && (
                   <>
                     {' '}
-                    · Same sheet shows every row whose log DATE matches today (local calendar). Newest entries appear on top so you always see what was just saved at a glance.
+                    · Rows match the DATE on each saved entry—pick any past (or upcoming) calendar day below to search
+                    and review historic logs together with the filters.
                   </>
                 )}
               </span>
@@ -1636,7 +1653,7 @@ function DailyLogTab({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search today's entries (member, rep, channel, reason…)"
+                  placeholder="Search this day's entries (member, rep, channel, reason…)"
                   className="w-full pl-9 pr-8 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
                 />
                 {search && (
@@ -1653,8 +1670,38 @@ function DailyLogTab({
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mr-1">
+          <div className="flex flex-wrap items-center gap-3 gap-y-2">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide whitespace-nowrap">
+                Show log date
+              </span>
+              <input
+                type="date"
+                value={logSheetYmd}
+                onChange={(e) => {
+                  const v = e.target.value?.slice(0, 10) ?? '';
+                  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+                  setLogSheetYmd(v);
+                  logSheetFollowsCalendarTodayRef.current = v === calTodayStr;
+                }}
+                className="px-2.5 py-1.5 rounded-lg border border-[#A8B8AC]/40 bg-white text-sm text-[#2F3E2F] focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 tabular-nums"
+                aria-label="Calendar day whose saved logs are shown below"
+              />
+              {!viewingTodaySheet ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    logSheetFollowsCalendarTodayRef.current = true;
+                    setLogSheetYmd(calTodayStr);
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-[#4A7C8A]/40 bg-[#4A7C8A]/5 text-[#2F3E2F] hover:bg-[#4A7C8A]/15 transition-colors"
+                >
+                  Jump to today ({calTodayStr})
+                </button>
+              ) : null}
+            </div>
+            <div className="hidden sm:block w-px h-6 bg-[#A8B8AC]/30 shrink-0" aria-hidden />
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide whitespace-nowrap">
               Filter by rep:
             </span>
             <button
@@ -1667,7 +1714,7 @@ function DailyLogTab({
               }`}
             >
               All
-              <span className="ml-1.5 text-[10px] opacity-70">{logsOnTodaySheet.length}</span>
+              <span className="ml-1.5 text-[10px] opacity-70">{logsForSheetDay.length}</span>
             </button>
             {rosterTeam
               .filter((m) => m.status === 'Active')
@@ -1707,8 +1754,10 @@ function DailyLogTab({
         {filteredLogs.length === 0 ? (
           <div className="p-8 text-center text-slate-500 text-sm">
             {query
-              ? `No entries today match "${search}"`
-              : 'No entries yet today. Add your first log entry above — the list resets at midnight in your local time.'}
+              ? `No entries match “${search}” for log date ${logSheetYmd}. Try another term or adjust the filters.`
+              : viewingTodaySheet
+                ? 'No entries yet today. Add your first log entry above — or pick another calendar day if you logged under a different date.'
+                : `No entries for ${logSheetPretty} (${logSheetYmd}). Try another calendar day.`}
           </div>
         ) : (
           <div className="overflow-x-auto">

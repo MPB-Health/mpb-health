@@ -194,6 +194,7 @@ const navigationSections: NavSection[] = [
         icon: BarChart3,
         children: [
           { name: 'Overview', href: '/reports', permission: 'reports.read' },
+          { name: 'Pipeline Movement', href: '/reports/pipeline', permission: 'reports.read' },
           { name: 'Annual Overview', href: '/reports/annual', permission: 'reports.read' },
           { name: 'Performance', href: '/reports/performance', permission: 'reports.read' },
           { name: 'Lead Sources', href: '/reports/source-breakdown', permission: 'reports.read' },

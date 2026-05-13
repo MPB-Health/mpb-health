@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ClipboardList,
@@ -14,6 +15,8 @@ import {
   AlertTriangle,
   Plus,
   Lock,
+  XCircle,
+  Layers,
 } from 'lucide-react';
 import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
@@ -79,7 +82,8 @@ const SECTIONS: { key: Section; label: string; icon: typeof Mail; description: s
     key: 'lead_communication',
     label: 'Lead Communication',
     icon: Mail,
-    description: 'Calls, emails, SMS, notes — auto-captured from CRM activity',
+    description:
+      'Calls (incl. cancellation), emails, SMS, notes — auto-captured from CRM activity',
   },
   {
     key: 'linkedin_activity',
@@ -123,7 +127,15 @@ export default function DailyLogV2() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeOrgId } = useOrg();
+  const [searchParams] = useSearchParams();
 
+  // Section 9 / Round 5 — End-of-Day collapsed into Sales Daily Logs as
+  // "multi mode": rep can backfill several entries in one EOD pass.
+  const isMultiMode = searchParams.get('mode') === 'multi';
+
+  // Section 12 / Round 6 Addendum — accordion is multi-expand and the
+  // open/closed state persists per user across sessions in
+  // `crm_rep_daily_log_entries.section_open_state` (jsonb).
   const [openSections, setOpenSections] = useState<Record<Section, boolean>>({
     lead_communication: true,
     linkedin_activity: false,
@@ -206,11 +218,62 @@ export default function DailyLogV2() {
     return map;
   }, [events]);
 
+  // Section 11 — Cancellation Calls count separately. Reads the
+  // `activity_subtype = 'cancellation'` flag set by the
+  // crm_dl_emit_from_activity trigger.
+  const cancellationCount = useMemo(
+    () =>
+      events.filter(
+        (e) => e.activity_type === 'call' && e.activity_subtype === 'cancellation',
+      ).length,
+    [events],
+  );
+
   const totalToday = events.length;
 
   const toggleSection = (key: Section) => {
-    setOpenSections((s) => ({ ...s, [key]: !s[key] }));
+    setOpenSections((s) => {
+      const next = { ...s, [key]: !s[key] };
+      void persistOpenState(next);
+      return next;
+    });
   };
+
+  // Persist accordion state to crm_rep_daily_log_entries.section_open_state.
+  async function persistOpenState(next: Record<Section, boolean>) {
+    if (!activeOrgId || !user?.id) return;
+    await supabase.from('crm_rep_daily_log_entries').upsert(
+      {
+        org_id: activeOrgId,
+        user_id: user.id,
+        log_date: today,
+        section_open_state: next,
+      },
+      { onConflict: 'org_id,user_id,log_date' },
+    );
+  }
+
+  // Hydrate open state on first load.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!activeOrgId || !user?.id) return;
+      const { data } = await supabase
+        .from('crm_rep_daily_log_entries')
+        .select('section_open_state')
+        .eq('org_id', activeOrgId)
+        .eq('user_id', user.id)
+        .eq('log_date', today)
+        .maybeSingle();
+      const stored = (data?.section_open_state ?? null) as Record<Section, boolean> | null;
+      if (!cancelled && stored && typeof stored === 'object') {
+        setOpenSections((s) => ({ ...s, ...stored }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeOrgId, user?.id, today]);
 
   // ── Special Projects manual entry ──────────────────────────────────────
   const [showProjectForm, setShowProjectForm] = useState(false);
@@ -259,17 +322,44 @@ export default function DailyLogV2() {
   return (
     <div className="space-y-6">
       <GradientHeader
-        title="Daily Log"
-        subtitle="Auto-captured per Section 11. Manual entries are flagged."
+        title={isMultiMode ? 'End of Day — Multi Entry' : 'Daily Log'}
+        subtitle={
+          isMultiMode
+            ? 'Backfill multiple entries in one pass. Auto-captured rows are read-only; new manual rows land below.'
+            : 'Auto-captured per Section 11. Manual entries are flagged.'
+        }
         icon={<ClipboardList className="w-5 h-5" />}
         size="sm"
         actions={
-          <div className="text-xs text-th-text-tertiary">
-            <span className="font-semibold tabular-nums text-th-text-primary">{totalToday}</span>{' '}
-            events today
+          <div className="flex items-center gap-3 text-xs text-th-text-tertiary">
+            {cancellationCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                <XCircle className="w-3 h-3" />
+                <span className="font-semibold tabular-nums">{cancellationCount}</span> cancellation{' '}
+                {cancellationCount === 1 ? 'call' : 'calls'}
+              </span>
+            )}
+            <span>
+              <span className="font-semibold tabular-nums text-th-text-primary">{totalToday}</span>{' '}
+              events today
+            </span>
           </div>
         }
       />
+
+      {isMultiMode && (
+        <div className="bg-th-accent-50 border border-th-accent-200 rounded-2xl p-4 flex items-start gap-3">
+          <Layers className="w-5 h-5 text-th-accent-600 mt-0.5 shrink-0" />
+          <div className="text-sm text-th-accent-800">
+            <p className="font-semibold">Multi-entry mode</p>
+            <p className="mt-0.5 text-th-accent-700/90">
+              Use this view at end-of-day to log activity that happened off-CRM. Auto-captured rows
+              from calls, emails, and meetings already appear above each section — you only need to
+              add what's missing.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Performance Lag Alert (Section 12 / Round 6 payload). Shown only if
           a recent alert is still inside the quiet window. */}
@@ -393,31 +483,43 @@ export default function DailyLogV2() {
                     </div>
                   ) : (
                     <ul className="divide-y divide-th-border-subtle">
-                      {sectionEvents.map((e) => (
-                        <li key={e.id} className="px-5 py-3 flex items-start gap-3">
-                          <span className="mt-1 inline-block w-2 h-2 rounded-full bg-th-accent-500" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium text-th-text-primary truncate">
-                                {e.description || prettyType(e.activity_type)}
+                      {sectionEvents.map((e) => {
+                        const isCancellation = e.activity_subtype === 'cancellation';
+                        return (
+                          <li key={e.id} className="px-5 py-3 flex items-start gap-3">
+                            <span
+                              className={`mt-1 inline-block w-2 h-2 rounded-full ${
+                                isCancellation ? 'bg-red-500' : 'bg-th-accent-500'
+                              }`}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm font-medium text-th-text-primary truncate">
+                                  {e.description || prettyType(e.activity_type)}
+                                </p>
+                                {isCancellation && (
+                                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-50 text-red-700 inline-flex items-center gap-0.5">
+                                    <XCircle className="w-2.5 h-2.5" /> cancellation
+                                  </span>
+                                )}
+                                {e.manual ? (
+                                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">
+                                    manual
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 inline-flex items-center gap-0.5">
+                                    <Lock className="w-2.5 h-2.5" /> auto
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-th-text-tertiary mt-0.5">
+                                {prettyType(e.activity_type)} · {e.source} ·{' '}
+                                {formatTimeAgo(e.occurred_at)}
                               </p>
-                              {e.manual ? (
-                                <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">
-                                  manual
-                                </span>
-                              ) : (
-                                <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 inline-flex items-center gap-0.5">
-                                  <Lock className="w-2.5 h-2.5" /> auto
-                                </span>
-                              )}
                             </div>
-                            <p className="text-[11px] text-th-text-tertiary mt-0.5">
-                              {prettyType(e.activity_type)} · {e.source} ·{' '}
-                              {formatTimeAgo(e.occurred_at)}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>

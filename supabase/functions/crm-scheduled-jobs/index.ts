@@ -171,5 +171,30 @@ serve(async (req) => {
     );
   }
 
+  // CRM rebuild Phase 6 / Section 5 / Round 2 — Day-30 Nurture aging.
+  //
+  // Body: { "job": "age_to_nurture", "org_id"?: "<uuid>" }
+  //
+  // Calls `crm_age_to_nurture(p_org_id)` for each target org. The RPC
+  // moves Working/Engaged leads with no engagement signal AND no opt-
+  // out to Nurture (Stage 7) and routes them to the Nurture Leads
+  // subsection. Run daily.
+  if (job === 'age_to_nurture') {
+    const aged: Record<string, number> = {};
+    for (const o of targetOrgs as { id: string }[]) {
+      const { data, error } = await supabase.rpc('crm_age_to_nurture', {
+        p_org_id: o.id,
+      });
+      if (error) {
+        aged[o.id] = -1;
+        continue;
+      }
+      aged[o.id] = Array.isArray(data) ? data.length : 0;
+    }
+    return new Response(JSON.stringify({ ok: true, job, aged_by_org: aged }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   return new Response(JSON.stringify({ ok: false, error: 'unknown_job' }), { status: 400 });
 });

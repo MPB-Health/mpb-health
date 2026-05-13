@@ -109,6 +109,7 @@ const AdvisorProductionReport = lazyRetry(() => import('./pages/reports/AdvisorP
 const AnnualOverview = lazyRetry(() => import('./pages/reports/AnnualOverview'));
 const QuoteResultsReturnedPage = lazyRetry(() => import('./pages/reports/QuoteResultsReturnedPage'));
 const DailyLogReport = lazyRetry(() => import('./pages/reports/DailyLogReport'));
+const PipelineReports = lazyRetry(() => import('./pages/reports/PipelineReports'));
 const MessageTemplatesPage = lazyRetry(() => import('./pages/MessageTemplatesPage'));
 const IntegrationsHub = lazyRetry(() => import('./pages/IntegrationsHub'));
 
@@ -438,6 +439,7 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                <Route path="/reports/pipeline" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><PipelineReports /></Suspense></Guarded>} />
                 <Route path="/reports/performance" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><PerformanceReport /></Suspense></Guarded>} />
                 <Route path="/reports/leads-split" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><LeadsSplitReport /></Suspense></Guarded>} />
                 <Route path="/reports/source-breakdown" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><SourceBreakdownReport /></Suspense></Guarded>} />

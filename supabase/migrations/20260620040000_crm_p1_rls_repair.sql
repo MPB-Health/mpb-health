@@ -68,8 +68,11 @@ CREATE POLICY crm_email_sequences_delete ON public.crm_email_sequences
     );
 
 -- Keep the existing service-role full-access policy if it's already there;
--- create one if not.
+-- create one if not. Drop BOTH the legacy human-readable name AND our new
+-- canonical name to stay idempotent if a parallel-path (e.g. Studio) already
+-- created `crm_email_sequences_service_all`.
 DROP POLICY IF EXISTS "Service role full access to email_sequences" ON public.crm_email_sequences;
+DROP POLICY IF EXISTS crm_email_sequences_service_all ON public.crm_email_sequences;
 CREATE POLICY crm_email_sequences_service_all ON public.crm_email_sequences
     FOR ALL TO service_role
     USING (true)
@@ -89,6 +92,9 @@ DROP POLICY IF EXISTS message_templates_select ON public.message_templates;
 DROP POLICY IF EXISTS message_templates_insert ON public.message_templates;
 DROP POLICY IF EXISTS message_templates_update ON public.message_templates;
 DROP POLICY IF EXISTS message_templates_delete ON public.message_templates;
+-- Idempotency: a parallel-path (Studio) may have created the service-all
+-- policy already; drop here so the CREATE below doesn't 42710.
+DROP POLICY IF EXISTS message_templates_service_all ON public.message_templates;
 
 CREATE POLICY message_templates_select ON public.message_templates
     FOR SELECT TO authenticated

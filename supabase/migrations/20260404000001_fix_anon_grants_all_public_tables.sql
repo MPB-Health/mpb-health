@@ -20,10 +20,7 @@ DROP POLICY IF EXISTS "Anyone can insert onboarding responses" ON public.onboard
 CREATE POLICY "Anyone can insert onboarding responses" ON public.onboarding_responses
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT INSERT ON public.onboarding_responses TO anon;
-
-
 -- ============================================================================
 -- 2. newsletter_subscribers (public subscribe form)
 -- ============================================================================
@@ -32,10 +29,7 @@ DROP POLICY IF EXISTS "Anyone can subscribe to newsletter" ON public.newsletter_
 CREATE POLICY "Anyone can subscribe to newsletter" ON public.newsletter_subscribers
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT INSERT ON public.newsletter_subscribers TO anon;
-
-
 -- ============================================================================
 -- 3. analytics_events (anonymous visitor analytics)
 -- ============================================================================
@@ -45,10 +39,7 @@ DROP POLICY IF EXISTS "Anyone can insert analytics events" ON public.analytics_e
 CREATE POLICY "Anyone can insert analytics events" ON public.analytics_events
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT SELECT, INSERT ON public.analytics_events TO anon;
-
-
 -- ============================================================================
 -- 4. analytics_sessions (anonymous session tracking)
 -- ============================================================================
@@ -58,10 +49,7 @@ DROP POLICY IF EXISTS "Anyone can insert analytics sessions" ON public.analytics
 CREATE POLICY "Anyone can insert analytics sessions" ON public.analytics_sessions
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT SELECT, INSERT ON public.analytics_sessions TO anon;
-
-
 -- ============================================================================
 -- 5. plan_selections (anonymous plan browsing tracking)
 -- ============================================================================
@@ -70,10 +58,7 @@ DROP POLICY IF EXISTS "Allow anonymous insert on plan_selections" ON public.plan
 CREATE POLICY "Allow anonymous insert on plan_selections" ON public.plan_selections
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT SELECT, INSERT ON public.plan_selections TO anon;
-
-
 -- ============================================================================
 -- 6. rate_calculator_views (anonymous rate calculator tracking)
 -- ============================================================================
@@ -82,10 +67,7 @@ DROP POLICY IF EXISTS "Allow anonymous insert on rate_calculator_views" ON publi
 CREATE POLICY "Allow anonymous insert on rate_calculator_views" ON public.rate_calculator_views
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT SELECT, INSERT ON public.rate_calculator_views TO anon;
-
-
 -- ============================================================================
 -- 7. page_views (anonymous page view tracking)
 -- ============================================================================
@@ -94,10 +76,7 @@ DROP POLICY IF EXISTS "Analytics can insert page views" ON public.page_views;
 CREATE POLICY "Analytics can insert page views" ON public.page_views
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT SELECT, INSERT ON public.page_views TO anon;
-
-
 -- ============================================================================
 -- 8. lead_routing_logs (public form routing)
 -- ============================================================================
@@ -106,10 +85,7 @@ DROP POLICY IF EXISTS "Anon or authenticated can insert routing logs" ON public.
 CREATE POLICY "Anon or authenticated can insert routing logs" ON public.lead_routing_logs
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT INSERT ON public.lead_routing_logs TO anon;
-
-
 -- ============================================================================
 -- 9. zoho_salesiq_errors (widget error logging)
 -- ============================================================================
@@ -118,5 +94,4 @@ DROP POLICY IF EXISTS "zoho_errors_anonymous_insert" ON public.zoho_salesiq_erro
 CREATE POLICY "zoho_errors_anonymous_insert" ON public.zoho_salesiq_errors
   FOR INSERT TO anon, authenticated
   WITH CHECK (true);
-
 GRANT INSERT ON public.zoho_salesiq_errors TO anon;

@@ -4,7 +4,6 @@
 
 -- Clear and re-insert with correct URLs
 DELETE FROM public.advisor_quick_links;
-
 INSERT INTO public.advisor_quick_links (label, url, icon, order_index, is_external, is_active) VALUES
     ('Employer Forms', '/employer-forms', 'Briefcase', 1, FALSE, TRUE),
     ('Member Forms', '/member-forms', 'Users', 2, FALSE, TRUE),

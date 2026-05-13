@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS recent_searches (
 
   CONSTRAINT recent_searches_query_length CHECK (char_length(query) >= 1)
 );
-
 -- Saved searches (bookmarked queries)
 CREATE TABLE IF NOT EXISTS saved_searches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -31,7 +30,6 @@ CREATE TABLE IF NOT EXISTS saved_searches (
 
   CONSTRAINT saved_searches_name_length CHECK (char_length(name) >= 1)
 );
-
 -- Search analytics (for improving search)
 CREATE TABLE IF NOT EXISTS search_analytics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -44,7 +42,6 @@ CREATE TABLE IF NOT EXISTS search_analytics (
   search_duration_ms INTEGER,
   searched_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- Indexes
 -- ============================================================================
@@ -55,7 +52,6 @@ CREATE INDEX IF NOT EXISTS idx_saved_searches_user ON saved_searches(user_id);
 CREATE INDEX IF NOT EXISTS idx_saved_searches_org ON saved_searches(org_id);
 CREATE INDEX IF NOT EXISTS idx_search_analytics_org ON search_analytics(org_id, searched_at DESC);
 CREATE INDEX IF NOT EXISTS idx_search_analytics_query ON search_analytics(org_id, query);
-
 -- ============================================================================
 -- Row Level Security
 -- ============================================================================
@@ -63,24 +59,18 @@ CREATE INDEX IF NOT EXISTS idx_search_analytics_query ON search_analytics(org_id
 ALTER TABLE recent_searches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE saved_searches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE search_analytics ENABLE ROW LEVEL SECURITY;
-
 -- Recent searches: users can only see their own
 CREATE POLICY recent_searches_select ON recent_searches
   FOR SELECT USING (user_id = auth.uid());
-
 CREATE POLICY recent_searches_insert ON recent_searches
   FOR INSERT WITH CHECK (user_id = auth.uid());
-
 CREATE POLICY recent_searches_delete ON recent_searches
   FOR DELETE USING (user_id = auth.uid());
-
 -- Saved searches: users can only manage their own
 CREATE POLICY saved_searches_select ON saved_searches
   FOR SELECT USING (user_id = auth.uid());
-
 CREATE POLICY saved_searches_all ON saved_searches
   FOR ALL USING (user_id = auth.uid());
-
 -- Search analytics: org members can insert, admins can view
 CREATE POLICY search_analytics_insert ON search_analytics
   FOR INSERT WITH CHECK (
@@ -90,7 +80,6 @@ CREATE POLICY search_analytics_insert ON search_analytics
       AND organization_members.user_id = auth.uid()
     )
   );
-
 CREATE POLICY search_analytics_select ON search_analytics
   FOR SELECT USING (
     EXISTS (
@@ -100,7 +89,6 @@ CREATE POLICY search_analytics_select ON search_analytics
       AND organization_members.role IN ('owner', 'admin')
     )
   );
-
 -- ============================================================================
 -- Functions
 -- ============================================================================
@@ -307,7 +295,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$;
-
 -- Record a search (for recent searches)
 CREATE OR REPLACE FUNCTION record_search(
   p_user_id UUID,
@@ -341,7 +328,6 @@ BEGIN
   RETURN v_search_id;
 END;
 $$;
-
 -- Get recent searches for a user
 CREATE OR REPLACE FUNCTION get_recent_searches(
   p_user_id UUID,
@@ -371,7 +357,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$;
-
 -- ============================================================================
 -- Quick Actions Table (for command palette)
 -- ============================================================================
@@ -390,12 +375,9 @@ CREATE TABLE IF NOT EXISTS quick_actions (
   display_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_quick_actions_org ON quick_actions(org_id);
 CREATE INDEX IF NOT EXISTS idx_quick_actions_category ON quick_actions(category);
-
 ALTER TABLE quick_actions ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY quick_actions_select ON quick_actions
   FOR SELECT USING (
     org_id IS NULL -- Global actions visible to all
@@ -405,7 +387,6 @@ CREATE POLICY quick_actions_select ON quick_actions
       AND organization_members.user_id = auth.uid()
     )
   );
-
 -- Insert default quick actions
 INSERT INTO quick_actions (name, description, icon, action_type, action_data, shortcut, category, display_order) VALUES
   -- Navigation

@@ -81,10 +81,8 @@ CREATE TABLE IF NOT EXISTS crm_email_signatures (
 
   CONSTRAINT unique_default_signature UNIQUE (user_id, org_id, is_default) DEFERRABLE
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_signatures_user ON crm_email_signatures(user_id);
 CREATE INDEX IF NOT EXISTS idx_crm_email_signatures_org ON crm_email_signatures(org_id);
-
 -- ============================================================================
 -- PART 2: Email Attachments
 -- ============================================================================
@@ -110,10 +108,8 @@ CREATE TABLE IF NOT EXISTS crm_email_attachments (
   uploaded_by uuid REFERENCES auth.users(id),
   uploaded_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_attachments_email ON crm_email_attachments(email_id);
 CREATE INDEX IF NOT EXISTS idx_crm_email_attachments_draft ON crm_email_attachments(draft_id);
-
 -- ============================================================================
 -- PART 3: Email Drafts
 -- ============================================================================
@@ -160,12 +156,10 @@ CREATE TABLE IF NOT EXISTS crm_email_drafts (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_drafts_user ON crm_email_drafts(user_id);
 CREATE INDEX IF NOT EXISTS idx_crm_email_drafts_lead ON crm_email_drafts(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_email_drafts_scheduled ON crm_email_drafts(scheduled_send_at)
   WHERE scheduled_send_at IS NOT NULL;
-
 -- ============================================================================
 -- PART 4: Email Threads (Conversations)
 -- ============================================================================
@@ -202,12 +196,10 @@ CREATE TABLE IF NOT EXISTS crm_email_threads (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_threads_org ON crm_email_threads(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_email_threads_lead ON crm_email_threads(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_email_threads_last_message ON crm_email_threads(last_message_at DESC);
 CREATE INDEX IF NOT EXISTS idx_crm_email_threads_unread ON crm_email_threads(has_unread) WHERE has_unread = true;
-
 -- ============================================================================
 -- PART 5: Enhanced Email Log (Messages)
 -- ============================================================================
@@ -231,21 +223,17 @@ ALTER TABLE crm_email_log
   ADD COLUMN IF NOT EXISTS is_archived boolean DEFAULT false,
   ADD COLUMN IF NOT EXISTS labels text[] DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb;
-
 -- Foreign key for attachments
 ALTER TABLE crm_email_attachments
   ADD CONSTRAINT fk_email_attachments_email
   FOREIGN KEY (email_id) REFERENCES crm_email_log(id) ON DELETE CASCADE;
-
 ALTER TABLE crm_email_attachments
   ADD CONSTRAINT fk_email_attachments_draft
   FOREIGN KEY (draft_id) REFERENCES crm_email_drafts(id) ON DELETE CASCADE;
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_log_thread ON crm_email_log(thread_id);
 CREATE INDEX IF NOT EXISTS idx_crm_email_log_direction ON crm_email_log(direction);
 CREATE INDEX IF NOT EXISTS idx_crm_email_log_archived ON crm_email_log(is_archived) WHERE is_archived = false;
 CREATE INDEX IF NOT EXISTS idx_crm_email_log_starred ON crm_email_log(is_starred) WHERE is_starred = true;
-
 -- ============================================================================
 -- PART 6: Email Templates (Enhanced)
 -- ============================================================================
@@ -257,19 +245,16 @@ ALTER TABLE crm_templates
   ADD COLUMN IF NOT EXISTS is_shared boolean DEFAULT false,
   ADD COLUMN IF NOT EXISTS preview_text text,
   ADD COLUMN IF NOT EXISTS default_signature_id uuid REFERENCES crm_email_signatures(id) ON DELETE SET NULL;
-
 -- ============================================================================
 -- PART 7: RLS Policies
 -- ============================================================================
 
 -- Signatures
 ALTER TABLE crm_email_signatures ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can manage their own signatures" ON crm_email_signatures
   FOR ALL TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
-
 CREATE POLICY "Admins can view all org signatures" ON crm_email_signatures
   FOR SELECT TO authenticated
   USING (
@@ -279,15 +264,12 @@ CREATE POLICY "Admins can view all org signatures" ON crm_email_signatures
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 -- Attachments
 ALTER TABLE crm_email_attachments ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can manage their own attachments" ON crm_email_attachments
   FOR ALL TO authenticated
   USING (uploaded_by = auth.uid())
   WITH CHECK (uploaded_by = auth.uid());
-
 CREATE POLICY "Users can view attachments from visible emails" ON crm_email_attachments
   FOR SELECT TO authenticated
   USING (
@@ -301,18 +283,14 @@ CREATE POLICY "Users can view attachments from visible emails" ON crm_email_atta
       )
     )
   );
-
 -- Drafts
 ALTER TABLE crm_email_drafts ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can manage their own drafts" ON crm_email_drafts
   FOR ALL TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
-
 -- Threads
 ALTER TABLE crm_email_threads ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view org threads" ON crm_email_threads
   FOR SELECT TO authenticated
   USING (
@@ -322,7 +300,6 @@ CREATE POLICY "Users can view org threads" ON crm_email_threads
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 CREATE POLICY "Users can manage org threads" ON crm_email_threads
   FOR ALL TO authenticated
   USING (
@@ -339,7 +316,6 @@ CREATE POLICY "Users can manage org threads" ON crm_email_threads
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 -- ============================================================================
 -- PART 8: Helper Functions
 -- ============================================================================
@@ -352,19 +328,16 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trigger_email_signature_updated ON crm_email_signatures;
 CREATE TRIGGER trigger_email_signature_updated
   BEFORE UPDATE ON crm_email_signatures
   FOR EACH ROW
   EXECUTE FUNCTION update_email_signature_updated_at();
-
 DROP TRIGGER IF EXISTS trigger_email_draft_updated ON crm_email_drafts;
 CREATE TRIGGER trigger_email_draft_updated
   BEFORE UPDATE ON crm_email_drafts
   FOR EACH ROW
   EXECUTE FUNCTION update_email_signature_updated_at();
-
 -- Function to render signature with variables
 CREATE OR REPLACE FUNCTION render_email_signature(
   p_signature_id uuid,
@@ -401,7 +374,6 @@ BEGIN
   RETURN v_result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to create/get thread for email
 CREATE OR REPLACE FUNCTION get_or_create_email_thread(
   p_org_id uuid,
@@ -450,7 +422,6 @@ BEGIN
   RETURN v_thread_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to update thread stats after email
 CREATE OR REPLACE FUNCTION update_thread_on_email()
 RETURNS TRIGGER AS $$
@@ -468,13 +439,11 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trigger_update_thread_on_email ON crm_email_log;
 CREATE TRIGGER trigger_update_thread_on_email
   AFTER INSERT ON crm_email_log
   FOR EACH ROW
   EXECUTE FUNCTION update_thread_on_email();
-
 -- ============================================================================
 -- PART 9: Storage Bucket Setup
 -- ============================================================================

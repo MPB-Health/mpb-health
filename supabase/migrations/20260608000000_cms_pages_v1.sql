@@ -36,17 +36,13 @@ CREATE TABLE IF NOT EXISTS public.cms_pages (
   CONSTRAINT cms_pages_slug_unique UNIQUE (slug),
   CONSTRAINT cms_pages_path_format CHECK (path ~ '^/[a-zA-Z0-9/_-]*$')
 );
-
 CREATE INDEX IF NOT EXISTS cms_pages_path_idx
   ON public.cms_pages (path);
-
 CREATE INDEX IF NOT EXISTS cms_pages_published_idx
   ON public.cms_pages (is_published)
   WHERE is_published = true;
-
 CREATE INDEX IF NOT EXISTS cms_pages_updated_at_idx
   ON public.cms_pages (updated_at DESC);
-
 -- Keep updated_at fresh on any change.
 CREATE OR REPLACE FUNCTION public.cms_pages_set_updated_at()
 RETURNS trigger
@@ -59,15 +55,12 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS cms_pages_set_updated_at ON public.cms_pages;
 CREATE TRIGGER cms_pages_set_updated_at
   BEFORE UPDATE ON public.cms_pages
   FOR EACH ROW
   EXECUTE FUNCTION public.cms_pages_set_updated_at();
-
 ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
-
 -- Public visitors (anon + authenticated members) can read published pages.
 DROP POLICY IF EXISTS "cms_pages_select_published" ON public.cms_pages;
 CREATE POLICY "cms_pages_select_published"
@@ -75,7 +68,6 @@ CREATE POLICY "cms_pages_select_published"
   FOR SELECT
   TO anon, authenticated
   USING (is_published = true);
-
 -- Admin / superadmin / staff can read EVERYTHING (drafts + published).
 DROP POLICY IF EXISTS "cms_pages_admin_select_all" ON public.cms_pages;
 CREATE POLICY "cms_pages_admin_select_all"
@@ -89,7 +81,6 @@ CREATE POLICY "cms_pages_admin_select_all"
         AND profiles.role = ANY (ARRAY['admin','superadmin','staff']::text[])
     )
   );
-
 DROP POLICY IF EXISTS "cms_pages_admin_insert" ON public.cms_pages;
 CREATE POLICY "cms_pages_admin_insert"
   ON public.cms_pages
@@ -102,7 +93,6 @@ CREATE POLICY "cms_pages_admin_insert"
         AND profiles.role = ANY (ARRAY['admin','superadmin','staff']::text[])
     )
   );
-
 DROP POLICY IF EXISTS "cms_pages_admin_update" ON public.cms_pages;
 CREATE POLICY "cms_pages_admin_update"
   ON public.cms_pages
@@ -122,7 +112,6 @@ CREATE POLICY "cms_pages_admin_update"
         AND profiles.role = ANY (ARRAY['admin','superadmin','staff']::text[])
     )
   );
-
 DROP POLICY IF EXISTS "cms_pages_admin_delete" ON public.cms_pages;
 CREATE POLICY "cms_pages_admin_delete"
   ON public.cms_pages
@@ -135,12 +124,10 @@ CREATE POLICY "cms_pages_admin_delete"
         AND profiles.role = ANY (ARRAY['admin','superadmin','staff']::text[])
     )
   );
-
 -- Allow PostgREST to publish change events for Realtime subscriptions.
 -- The replica identity needs to be FULL so UPDATE events carry old row data
 -- (useful when the admin wants to subscribe to draft-->published transitions).
 ALTER TABLE public.cms_pages REPLICA IDENTITY FULL;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -150,17 +137,13 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.cms_pages;
   END IF;
 END $$;
-
 GRANT SELECT ON public.cms_pages TO anon;
 GRANT ALL ON public.cms_pages TO authenticated;
 GRANT ALL ON public.cms_pages TO service_role;
-
 COMMENT ON TABLE public.cms_pages IS
   'Admin-driven CMS pages for the public website. Each row is a single page identified by its URL path. The sections JSONB array defines the block layout rendered by apps/website/src/components/CmsPage.tsx.';
-
 COMMENT ON COLUMN public.cms_pages.sections IS
   'Ordered list of blocks: [{id, kind, props}]. See apps/website/src/components/cms-blocks/index.ts for the supported `kind` values and the props each accepts.';
-
 -- ----------------------------------------------------------------------------
 -- Starter content: a draft About page so the admin has something to play with.
 -- Marked is_published=false so the public site shows nothing until an admin

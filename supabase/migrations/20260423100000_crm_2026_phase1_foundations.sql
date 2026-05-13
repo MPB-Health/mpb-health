@@ -17,7 +17,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. FK columns on lead_submissions
 -- ----------------------------------------------------------------------------
@@ -25,7 +24,6 @@ BEGIN;
 ALTER TABLE public.lead_submissions
     ADD COLUMN IF NOT EXISTS outside_advisor_id uuid,
     ADD COLUMN IF NOT EXISTS referral_partner_id uuid;
-
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -55,15 +53,12 @@ BEGIN
     END IF;
 END
 $$;
-
 CREATE INDEX IF NOT EXISTS idx_lead_submissions_outside_advisor_id
     ON public.lead_submissions(outside_advisor_id)
     WHERE outside_advisor_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_lead_submissions_referral_partner_id
     ON public.lead_submissions(referral_partner_id)
     WHERE referral_partner_id IS NOT NULL;
-
 -- ----------------------------------------------------------------------------
 -- 2. lead_source validation + is_self_generated auto-population
 -- ----------------------------------------------------------------------------
@@ -104,19 +99,16 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_submissions_validate_lead_source ON public.lead_submissions;
 CREATE TRIGGER trg_lead_submissions_validate_lead_source
     BEFORE INSERT OR UPDATE OF lead_source ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_validate_lead_source();
-
 -- Backfill NULL lead_source rows (existing data) so reports don't throw NULLs.
 UPDATE public.lead_submissions
 SET lead_source = 'inhouse_round_robin'
 WHERE lead_source IS NULL
    OR lead_source = '';
-
 -- ----------------------------------------------------------------------------
 -- 3. "lead_manager" permission
 -- ----------------------------------------------------------------------------
@@ -127,7 +119,6 @@ INSERT INTO public.permissions (key, module, description) VALUES
     ('reports.export', 'reports',
      'Export CRM reports to XLSX / PDF')
 ON CONFLICT (key) DO NOTHING;
-
 -- Grant lead_manager to owner + admin + manager for the seed org; reports.export
 -- is broader and also goes to agents (any rep should be able to export their own).
 INSERT INTO public.role_permissions (org_id, role, permission_id)
@@ -136,14 +127,12 @@ FROM (VALUES ('owner'), ('admin'), ('manager')) AS r(role)
 CROSS JOIN public.permissions p
 WHERE p.key = 'lead_manager'
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT '00000000-0000-4000-a000-000000000001', r.role, p.id
 FROM (VALUES ('owner'), ('admin'), ('manager'), ('agent')) AS r(role)
 CROSS JOIN public.permissions p
 WHERE p.key = 'reports.export'
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- Propagate to all existing orgs
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT DISTINCT o.id, rp.role, rp.permission_id
@@ -155,7 +144,6 @@ WHERE rp.org_id = '00000000-0000-4000-a000-000000000001'
       SELECT id FROM public.permissions WHERE key IN ('lead_manager', 'reports.export')
   )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 4. crm_is_lead_manager(p_org_id) — callable from RPCs / RLS policies
 -- ----------------------------------------------------------------------------
@@ -181,13 +169,10 @@ AS $$
           AND p.key = 'lead_manager'
     );
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_is_lead_manager(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_is_lead_manager(uuid) TO authenticated;
-
 COMMENT ON FUNCTION public.crm_is_lead_manager(uuid) IS
   'Returns true when the caller holds the lead_manager permission bundle in the given org.';
-
 -- ----------------------------------------------------------------------------
 -- 5. crm_seed_sales_plan_2026_demo(p_org_id) — operator-runbook entry point
 -- ----------------------------------------------------------------------------
@@ -271,13 +256,10 @@ BEGIN
         (p_adam_email,     v_adm, CASE WHEN v_adm IS NULL THEN 'not_found_in_auth_users' ELSE 'seeded_as_agent' END);
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_seed_sales_plan_2026_demo(uuid, text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_seed_sales_plan_2026_demo(uuid, text, text, text) TO service_role;
-
 COMMENT ON FUNCTION public.crm_seed_sales_plan_2026_demo(uuid, text, text, text) IS
   'Operator helper: seeds Leonardo/Tupac/Adam into org_memberships + round-robin pool for p_org_id. '
   'Must be run AFTER creating the auth.users entries (Supabase Dashboard → Authentication → Users). '
   'Returns one row per target user with status (seeded_as_* or not_found_in_auth_users).';
-
 COMMIT;

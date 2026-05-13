@@ -106,7 +106,6 @@ VALUES (
   content = EXCLUDED.content,
   excerpt = EXCLUDED.excerpt,
   title = EXCLUDED.title;
-
 -- Also update if the article exists under a different slug (e.g. from WordPress import)
 UPDATE advisor_content
 SET content = (SELECT content FROM advisor_content WHERE slug = 'advisor-bulletin-august-14-2025' AND content_type = 'bulletin'),
@@ -115,7 +114,6 @@ SET content = (SELECT content FROM advisor_content WHERE slug = 'advisor-bulleti
 WHERE content_type = 'bulletin'
   AND title LIKE '%August 14%'
   AND slug != 'advisor-bulletin-august-14-2025';
-
 UPDATE advisor_content
 SET content = (SELECT content FROM advisor_content WHERE slug = 'advisor-bulletin-august-14-2025' AND content_type = 'bulletin'),
     excerpt = 'August First Half — "Great things are not done by impulse, but by a series of small things brought together." Updates on Virtual Care Upgrades, new MPB Health App demo, enrollment reminders, and rewards.',

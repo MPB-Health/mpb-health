@@ -6,7 +6,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: EXTEND PLANS TABLE WITH CRM + PRICING FIELDS
 -- ============================================================================
@@ -21,7 +20,6 @@ ALTER TABLE public.plans
   ADD COLUMN IF NOT EXISTS cost_basis numeric(10,2),
   ADD COLUMN IF NOT EXISTS description text,
   ADD COLUMN IF NOT EXISTS external_product_id text;
-
 -- ============================================================================
 -- SECTION B: UPDATE EXISTING PLANS WITH ENROLLMENT URLS AND PRICING META
 -- ============================================================================
@@ -34,7 +32,6 @@ UPDATE public.plans SET
   tobacco_surcharge_pct = 0,
   external_product_id = '42463'
 WHERE slug = 'essentials';
-
 -- MEC+ Essentials
 UPDATE public.plans SET
   enroll_url = 'https://mec.enrollmpb.com/',
@@ -43,7 +40,6 @@ UPDATE public.plans SET
   tobacco_surcharge_pct = 0,
   external_product_id = '45388'
 WHERE slug = 'mec-essentials';
-
 -- Care Plus
 UPDATE public.plans SET
   enroll_url = 'https://careplus.enrollmpb.com/',
@@ -52,7 +48,6 @@ UPDATE public.plans SET
   tobacco_surcharge_pct = 50,
   external_product_id = '42464'
 WHERE slug = 'care-plus';
-
 -- Direct
 UPDATE public.plans SET
   enroll_url = 'https://direct.enrollmpb.com/',
@@ -61,7 +56,6 @@ UPDATE public.plans SET
   tobacco_surcharge_pct = 50,
   external_product_id = '42465'
 WHERE slug = 'direct';
-
 -- Secure HSA
 UPDATE public.plans SET
   enroll_url = 'https://securehsa.enrollmpb.com/',
@@ -70,7 +64,6 @@ UPDATE public.plans SET
   tobacco_surcharge_pct = 50,
   external_product_id = '45800'
 WHERE slug = 'secure-hsa';
-
 -- ============================================================================
 -- SECTION C: SEED PLAN PRICING — FLAT RATE PLANS (2026-01-01)
 -- ============================================================================
@@ -79,7 +72,6 @@ WHERE slug = 'secure-hsa';
 DELETE FROM public.plan_pricing
 WHERE plan_id IN (SELECT id FROM public.plans WHERE slug IN ('essentials', 'mec-essentials', 'care-plus', 'direct', 'secure-hsa'))
   AND effective_date IN ('2025-01-01'::date, '2026-01-01'::date);
-
 -- Essentials (flat rate, all ages)
 INSERT INTO public.plan_pricing (plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 SELECT p.id, v.age_min, v.age_max, v.member_type, v.iua_amount, v.monthly_contribution, v.effective_date
@@ -90,7 +82,6 @@ CROSS JOIN (VALUES
   (18, 64, 'family',     NULL, 69.95, '2026-01-01')
 ) AS v(age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 WHERE p.slug = 'essentials';
-
 -- MEC+ Essentials (flat rate, all ages)
 INSERT INTO public.plan_pricing (plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 SELECT p.id, v.age_min, v.age_max, v.member_type, v.iua_amount, v.monthly_contribution, v.effective_date
@@ -102,7 +93,6 @@ CROSS JOIN (VALUES
   (18, 64, 'member_child',  NULL, 160.00, '2026-01-01')
 ) AS v(age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 WHERE p.slug = 'mec-essentials';
-
 -- ============================================================================
 -- SECTION D: SEED PLAN PRICING — CARE PLUS (IUA-based, 2026-01-01)
 -- ============================================================================
@@ -152,7 +142,6 @@ CROSS JOIN (VALUES
   (50, 64, 'family',     5000, 647.00, '2026-01-01')
 ) AS v(age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 WHERE p.slug = 'care-plus';
-
 -- ============================================================================
 -- SECTION E: SEED PLAN PRICING — DIRECT (IUA-based, 2026-01-01)
 -- ============================================================================
@@ -202,7 +191,6 @@ CROSS JOIN (VALUES
   (50, 64, 'family',     5000, 707.00, '2026-01-01')
 ) AS v(age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 WHERE p.slug = 'direct';
-
 -- ============================================================================
 -- SECTION F: SEED PLAN PRICING — SECURE HSA (IUA-based, 2026-01-01)
 -- ============================================================================
@@ -252,7 +240,6 @@ CROSS JOIN (VALUES
   (50, 64, 'family',     5000, 753.00, '2026-01-01')
 ) AS v(age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 WHERE p.slug = 'secure-hsa';
-
 -- ============================================================================
 -- SECTION G: SEED HISTORICAL PRICING (2025-01-01)
 -- ============================================================================
@@ -276,7 +263,6 @@ CROSS JOIN (VALUES
   (18,29,'family',5000,402.00,'2025-01-01'),(30,49,'family',5000,458.00,'2025-01-01'),(50,64,'family',5000,580.00,'2025-01-01')
 ) AS v(age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 WHERE p.slug = 'care-plus';
-
 -- Direct 2025
 INSERT INTO public.plan_pricing (plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 SELECT p.id, v.age_min, v.age_max, v.member_type, v.iua_amount, v.monthly_contribution, v.effective_date
@@ -296,7 +282,6 @@ CROSS JOIN (VALUES
   (18,29,'family',5000,475.00,'2025-01-01'),(30,49,'family',5000,625.00,'2025-01-01'),(50,64,'family',5000,688.00,'2025-01-01')
 ) AS v(age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 WHERE p.slug = 'direct';
-
 -- Secure HSA 2025
 INSERT INTO public.plan_pricing (plan_id, age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 SELECT p.id, v.age_min, v.age_max, v.member_type, v.iua_amount, v.monthly_contribution, v.effective_date
@@ -316,14 +301,12 @@ CROSS JOIN (VALUES
   (18,29,'family',5000,578.00,'2025-01-01'),(30,49,'family',5000,640.00,'2025-01-01'),(50,64,'family',5000,752.00,'2025-01-01')
 ) AS v(age_min, age_max, member_type, iua_amount, monthly_contribution, effective_date)
 WHERE p.slug = 'secure-hsa';
-
 -- ============================================================================
 -- SECTION H: ADD COMPOSITE INDEX FOR RATE LOOKUPS
 -- ============================================================================
 
 CREATE INDEX IF NOT EXISTS idx_plan_pricing_rate_lookup
   ON public.plan_pricing (plan_id, effective_date, member_type, iua_amount);
-
 -- ============================================================================
 -- SECTION I: DATABASE FUNCTION FOR RATE LOOKUP
 -- ============================================================================
@@ -369,7 +352,6 @@ BEGIN
   LIMIT 1;
 END;
 $$;
-
 -- ============================================================================
 -- SECTION J: UPDATE RLS — allow authenticated CRM users to read all plans
 -- ============================================================================
@@ -388,7 +370,6 @@ BEGIN
       USING (true);
   END IF;
 END$$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -401,7 +382,6 @@ BEGIN
       USING (true);
   END IF;
 END$$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -414,7 +394,6 @@ BEGIN
       USING (true);
   END IF;
 END$$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -427,7 +406,6 @@ BEGIN
       USING (true);
   END IF;
 END$$;
-
 -- ============================================================================
 -- SECTION K: UPDATED_AT TRIGGER FOR PLANS
 -- ============================================================================
@@ -441,11 +419,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_plans_updated_at ON public.plans;
 CREATE TRIGGER trigger_plans_updated_at
     BEFORE UPDATE ON public.plans
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_plans_updated_at();
-
 COMMIT;

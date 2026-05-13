@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS saved_reports (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- Report export archive
 CREATE TABLE IF NOT EXISTS report_exports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -43,7 +42,6 @@ CREATE TABLE IF NOT EXISTS report_exports (
     exported_at TIMESTAMPTZ DEFAULT now(),
     expires_at TIMESTAMPTZ DEFAULT (now() + INTERVAL '30 days')
 );
-
 -- User presence tracking (online now)
 CREATE TABLE IF NOT EXISTS user_presence (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,7 +55,6 @@ CREATE TABLE IF NOT EXISTS user_presence (
     user_agent TEXT,
     UNIQUE(user_id)
 );
-
 -- Member/Agent interaction tracking
 CREATE TABLE IF NOT EXISTS interaction_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -75,7 +72,6 @@ CREATE TABLE IF NOT EXISTS interaction_logs (
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- =====================================================
 -- SECTION 2: EMAIL SCHEDULING & TRACKING
 -- =====================================================
@@ -102,7 +98,6 @@ CREATE TABLE IF NOT EXISTS email_schedules (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- Email tracking (opens, clicks)
 CREATE TABLE IF NOT EXISTS email_tracking (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -116,7 +111,6 @@ CREATE TABLE IF NOT EXISTS email_tracking (
     location_city VARCHAR(100),
     tracked_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- Add tracking columns to email log if not exists
 DO $$
 BEGIN
@@ -141,7 +135,6 @@ BEGIN
         ALTER TABLE crm_email_log ADD COLUMN last_opened_at TIMESTAMPTZ;
     END IF;
 END $$;
-
 -- =====================================================
 -- SECTION 3: SETTINGS - PAYMENT PROCESSORS
 -- =====================================================
@@ -164,7 +157,6 @@ CREATE TABLE IF NOT EXISTS payment_processors (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- =====================================================
 -- SECTION 4: SETTINGS - SMS ACCOUNTS
 -- =====================================================
@@ -188,7 +180,6 @@ CREATE TABLE IF NOT EXISTS sms_accounts (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- SMS message log
 CREATE TABLE IF NOT EXISTS sms_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -208,7 +199,6 @@ CREATE TABLE IF NOT EXISTS sms_log (
     sent_at TIMESTAMPTZ DEFAULT now(),
     delivered_at TIMESTAMPTZ
 );
-
 -- =====================================================
 -- SECTION 5: SETTINGS - PROMO CODES
 -- =====================================================
@@ -237,7 +227,6 @@ CREATE TABLE IF NOT EXISTS promo_codes (
     updated_at TIMESTAMPTZ DEFAULT now(),
     UNIQUE(org_id, code)
 );
-
 -- Promo code usage tracking
 CREATE TABLE IF NOT EXISTS promo_code_usage (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -248,7 +237,6 @@ CREATE TABLE IF NOT EXISTS promo_code_usage (
     discount_applied NUMERIC(10,2) NOT NULL,
     used_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- =====================================================
 -- SECTION 6: SETTINGS - CODE INVENTORY
 -- =====================================================
@@ -271,7 +259,6 @@ CREATE TABLE IF NOT EXISTS code_inventory (
     created_at TIMESTAMPTZ DEFAULT now(),
     UNIQUE(org_id, code_type, code)
 );
-
 -- Code batches for bulk generation
 CREATE TABLE IF NOT EXISTS code_batches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -286,7 +273,6 @@ CREATE TABLE IF NOT EXISTS code_batches (
     created_by UUID REFERENCES auth.users(id),
     created_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- =====================================================
 -- SECTION 7: SETTINGS - RESOURCES
 -- =====================================================
@@ -312,7 +298,6 @@ CREATE TABLE IF NOT EXISTS admin_resources (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- =====================================================
 -- SECTION 8: SETTINGS - E-SIGNATURE
 -- =====================================================
@@ -332,7 +317,6 @@ CREATE TABLE IF NOT EXISTS esignature_providers (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- E-signature documents
 CREATE TABLE IF NOT EXISTS esignature_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -353,7 +337,6 @@ CREATE TABLE IF NOT EXISTS esignature_documents (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
-
 -- =====================================================
 -- SECTION 9: PERMISSION DEFINITIONS
 -- =====================================================
@@ -384,7 +367,6 @@ INSERT INTO permissions (key, module, description) VALUES
 ('settings.codes', 'settings', 'Manage promo codes and inventory'),
 ('settings.resources', 'settings', 'Manage admin resources')
 ON CONFLICT (key) DO NOTHING;
-
 -- Assign permissions to roles
 INSERT INTO role_permissions (org_id, role, permission_id)
 SELECT o.id, r.role, p.id
@@ -393,7 +375,6 @@ CROSS JOIN (VALUES ('owner'), ('admin')) AS r(role)
 CROSS JOIN permissions p
 WHERE p.module IN ('reports', 'email', 'sms', 'settings')
 ON CONFLICT DO NOTHING;
-
 -- Manager gets read + limited permissions
 INSERT INTO role_permissions (org_id, role, permission_id)
 SELECT o.id, 'manager', p.id
@@ -401,7 +382,6 @@ FROM orgs o
 CROSS JOIN permissions p
 WHERE p.key IN ('reports.read', 'reports.export', 'email.read', 'email.send', 'email.templates', 'sms.read', 'sms.send', 'settings.view')
 ON CONFLICT DO NOTHING;
-
 -- Agent gets minimal permissions
 INSERT INTO role_permissions (org_id, role, permission_id)
 SELECT o.id, 'agent', p.id
@@ -409,7 +389,6 @@ FROM orgs o
 CROSS JOIN permissions p
 WHERE p.key IN ('reports.read', 'email.read', 'email.send', 'sms.read', 'sms.send')
 ON CONFLICT DO NOTHING;
-
 -- =====================================================
 -- SECTION 10: INDEXES
 -- =====================================================
@@ -417,46 +396,35 @@ ON CONFLICT DO NOTHING;
 CREATE INDEX IF NOT EXISTS idx_saved_reports_org ON saved_reports(org_id);
 CREATE INDEX IF NOT EXISTS idx_saved_reports_type ON saved_reports(report_type);
 CREATE INDEX IF NOT EXISTS idx_saved_reports_created_by ON saved_reports(created_by);
-
 CREATE INDEX IF NOT EXISTS idx_report_exports_org ON report_exports(org_id);
 CREATE INDEX IF NOT EXISTS idx_report_exports_exported_at ON report_exports(exported_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_user_presence_org ON user_presence(org_id);
 CREATE INDEX IF NOT EXISTS idx_user_presence_status ON user_presence(status);
 CREATE INDEX IF NOT EXISTS idx_user_presence_last_activity ON user_presence(last_activity_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_interaction_logs_org ON interaction_logs(org_id);
 CREATE INDEX IF NOT EXISTS idx_interaction_logs_member ON interaction_logs(member_id);
 CREATE INDEX IF NOT EXISTS idx_interaction_logs_agent ON interaction_logs(agent_id);
 CREATE INDEX IF NOT EXISTS idx_interaction_logs_created ON interaction_logs(created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_email_schedules_org ON email_schedules(org_id);
 CREATE INDEX IF NOT EXISTS idx_email_schedules_status ON email_schedules(status);
 CREATE INDEX IF NOT EXISTS idx_email_schedules_next_run ON email_schedules(next_run_at);
-
 CREATE INDEX IF NOT EXISTS idx_email_tracking_email_log ON email_tracking(email_log_id);
 CREATE INDEX IF NOT EXISTS idx_email_tracking_type ON email_tracking(tracking_type);
-
 CREATE INDEX IF NOT EXISTS idx_payment_processors_org ON payment_processors(org_id);
 CREATE INDEX IF NOT EXISTS idx_sms_accounts_org ON sms_accounts(org_id);
 CREATE INDEX IF NOT EXISTS idx_sms_log_org ON sms_log(org_id);
 CREATE INDEX IF NOT EXISTS idx_sms_log_sent_at ON sms_log(sent_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_promo_codes_org ON promo_codes(org_id);
 CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code);
 CREATE INDEX IF NOT EXISTS idx_promo_codes_active ON promo_codes(is_active, valid_until);
-
 CREATE INDEX IF NOT EXISTS idx_code_inventory_org ON code_inventory(org_id);
 CREATE INDEX IF NOT EXISTS idx_code_inventory_status ON code_inventory(status);
 CREATE INDEX IF NOT EXISTS idx_code_inventory_type ON code_inventory(code_type);
-
 CREATE INDEX IF NOT EXISTS idx_admin_resources_org ON admin_resources(org_id);
 CREATE INDEX IF NOT EXISTS idx_admin_resources_category ON admin_resources(category);
-
 CREATE INDEX IF NOT EXISTS idx_esignature_providers_org ON esignature_providers(org_id);
 CREATE INDEX IF NOT EXISTS idx_esignature_documents_org ON esignature_documents(org_id);
 CREATE INDEX IF NOT EXISTS idx_esignature_documents_status ON esignature_documents(status);
-
 -- =====================================================
 -- SECTION 11: RLS POLICIES
 -- =====================================================
@@ -477,64 +445,47 @@ ALTER TABLE code_batches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_resources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE esignature_providers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE esignature_documents ENABLE ROW LEVEL SECURITY;
-
 -- Generic org-based policies for authenticated users
 CREATE POLICY "Users can access their org saved_reports" ON saved_reports
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org report_exports" ON report_exports
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org user_presence" ON user_presence
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org interaction_logs" ON interaction_logs
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org email_schedules" ON email_schedules
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access email_tracking for their emails" ON email_tracking
     FOR ALL USING (email_log_id IN (
         SELECT id FROM crm_email_log WHERE org_id IN (
             SELECT org_id FROM org_memberships WHERE user_id = auth.uid()
         )
     ));
-
 CREATE POLICY "Users can access their org payment_processors" ON payment_processors
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org sms_accounts" ON sms_accounts
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org sms_log" ON sms_log
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org promo_codes" ON promo_codes
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access promo_code_usage" ON promo_code_usage
     FOR ALL USING (promo_code_id IN (
         SELECT id FROM promo_codes WHERE org_id IN (
             SELECT org_id FROM org_memberships WHERE user_id = auth.uid()
         )
     ));
-
 CREATE POLICY "Users can access their org code_inventory" ON code_inventory
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org code_batches" ON code_batches
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org admin_resources" ON admin_resources
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org esignature_providers" ON esignature_providers
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 CREATE POLICY "Users can access their org esignature_documents" ON esignature_documents
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 -- =====================================================
 -- SECTION 12: TRIGGER FUNCTIONS
 -- =====================================================
@@ -547,12 +498,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER trigger_update_user_presence
     BEFORE UPDATE ON user_presence
     FOR EACH ROW
     EXECUTE FUNCTION update_user_presence();
-
 -- Increment email tracking counters
 CREATE OR REPLACE FUNCTION increment_email_tracking()
 RETURNS TRIGGER AS $$
@@ -571,12 +520,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER trigger_increment_email_tracking
     AFTER INSERT ON email_tracking
     FOR EACH ROW
     EXECUTE FUNCTION increment_email_tracking();
-
 -- Increment promo code usage
 CREATE OR REPLACE FUNCTION increment_promo_usage()
 RETURNS TRIGGER AS $$
@@ -588,12 +535,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER trigger_increment_promo_usage
     AFTER INSERT ON promo_code_usage
     FOR EACH ROW
     EXECUTE FUNCTION increment_promo_usage();
-
 -- Update schedule stats after email send
 CREATE OR REPLACE FUNCTION update_schedule_stats()
 RETURNS TRIGGER AS $$

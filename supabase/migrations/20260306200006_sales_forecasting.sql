@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: FORECAST TYPE AND STATUS ENUMS
 -- ============================================================================
@@ -14,19 +13,16 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-
 DO $$ BEGIN
     CREATE TYPE public.forecast_status AS ENUM ('draft', 'active', 'closed');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-
 DO $$ BEGIN
     CREATE TYPE public.forecast_category AS ENUM ('committed', 'best_case', 'pipeline', 'omitted');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-
 -- ============================================================================
 -- SECTION B: CREATE CRM_FORECASTS TABLE
 -- ============================================================================
@@ -54,7 +50,6 @@ CREATE TABLE IF NOT EXISTS public.crm_forecasts (
     -- Constraints
     CONSTRAINT crm_forecasts_period_check CHECK (period_end > period_start)
 );
-
 -- ============================================================================
 -- SECTION C: CREATE CRM_FORECAST_ENTRIES TABLE
 -- ============================================================================
@@ -87,7 +82,6 @@ CREATE TABLE IF NOT EXISTS public.crm_forecast_entries (
     -- Prevent duplicate deal entries per forecast
     CONSTRAINT crm_forecast_entries_unique_deal UNIQUE (forecast_id, deal_id)
 );
-
 -- ============================================================================
 -- SECTION D: CREATE CRM_DEAL_STAGE_METRICS VIEW
 -- ============================================================================
@@ -134,7 +128,6 @@ LEFT JOIN stage_durations sd ON sd.deal_id = d.id AND sd.to_stage_id = s.id
 WHERE s.is_active = true
 GROUP BY d.org_id, s.id, s.name, s.display_name, s.sort_order, s.is_won_stage, s.is_lost_stage
 ORDER BY s.sort_order;
-
 -- ============================================================================
 -- SECTION E: INDEXES
 -- ============================================================================
@@ -142,39 +135,29 @@ ORDER BY s.sort_order;
 -- Forecasts indexes
 CREATE INDEX IF NOT EXISTS idx_crm_forecasts_org_id
     ON public.crm_forecasts (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_forecasts_status
     ON public.crm_forecasts (status);
-
 CREATE INDEX IF NOT EXISTS idx_crm_forecasts_period
     ON public.crm_forecasts (period_start, period_end);
-
 CREATE INDEX IF NOT EXISTS idx_crm_forecasts_created_at
     ON public.crm_forecasts (created_at DESC);
-
 -- Forecast entries indexes
 CREATE INDEX IF NOT EXISTS idx_crm_forecast_entries_forecast_id
     ON public.crm_forecast_entries (forecast_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_forecast_entries_deal_id
     ON public.crm_forecast_entries (deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_forecast_entries_user_id
     ON public.crm_forecast_entries (user_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_forecast_entries_category
     ON public.crm_forecast_entries (forecast_category);
-
 CREATE INDEX IF NOT EXISTS idx_crm_forecast_entries_close_date
     ON public.crm_forecast_entries (close_date);
-
 -- ============================================================================
 -- SECTION F: ROW LEVEL SECURITY
 -- ============================================================================
 
 ALTER TABLE public.crm_forecasts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_forecast_entries ENABLE ROW LEVEL SECURITY;
-
 -- Forecasts policies
 DROP POLICY IF EXISTS "crm_forecasts_select" ON public.crm_forecasts;
 CREATE POLICY "crm_forecasts_select"
@@ -184,7 +167,6 @@ CREATE POLICY "crm_forecasts_select"
     USING (
         public.is_org_member(org_id)
     );
-
 DROP POLICY IF EXISTS "crm_forecasts_insert" ON public.crm_forecasts;
 CREATE POLICY "crm_forecasts_insert"
     ON public.crm_forecasts
@@ -193,7 +175,6 @@ CREATE POLICY "crm_forecasts_insert"
     WITH CHECK (
         public.has_org_permission(org_id, 'deals.write')
     );
-
 DROP POLICY IF EXISTS "crm_forecasts_update" ON public.crm_forecasts;
 CREATE POLICY "crm_forecasts_update"
     ON public.crm_forecasts
@@ -205,7 +186,6 @@ CREATE POLICY "crm_forecasts_update"
     WITH CHECK (
         public.has_org_permission(org_id, 'deals.write')
     );
-
 DROP POLICY IF EXISTS "crm_forecasts_delete" ON public.crm_forecasts;
 CREATE POLICY "crm_forecasts_delete"
     ON public.crm_forecasts
@@ -214,7 +194,6 @@ CREATE POLICY "crm_forecasts_delete"
     USING (
         public.has_org_permission(org_id, 'deals.delete')
     );
-
 -- Forecast entries policies (access via forecast -> org_id)
 DROP POLICY IF EXISTS "crm_forecast_entries_select" ON public.crm_forecast_entries;
 CREATE POLICY "crm_forecast_entries_select"
@@ -228,7 +207,6 @@ CREATE POLICY "crm_forecast_entries_select"
             AND public.is_org_member(f.org_id)
         )
     );
-
 DROP POLICY IF EXISTS "crm_forecast_entries_insert" ON public.crm_forecast_entries;
 CREATE POLICY "crm_forecast_entries_insert"
     ON public.crm_forecast_entries
@@ -241,7 +219,6 @@ CREATE POLICY "crm_forecast_entries_insert"
             AND public.has_org_permission(f.org_id, 'deals.write')
         )
     );
-
 DROP POLICY IF EXISTS "crm_forecast_entries_update" ON public.crm_forecast_entries;
 CREATE POLICY "crm_forecast_entries_update"
     ON public.crm_forecast_entries
@@ -261,7 +238,6 @@ CREATE POLICY "crm_forecast_entries_update"
             AND public.has_org_permission(f.org_id, 'deals.write')
         )
     );
-
 DROP POLICY IF EXISTS "crm_forecast_entries_delete" ON public.crm_forecast_entries;
 CREATE POLICY "crm_forecast_entries_delete"
     ON public.crm_forecast_entries
@@ -274,7 +250,6 @@ CREATE POLICY "crm_forecast_entries_delete"
             AND public.has_org_permission(f.org_id, 'deals.delete')
         )
     );
-
 -- ============================================================================
 -- SECTION G: UPDATED_AT TRIGGERS
 -- ============================================================================
@@ -288,13 +263,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_forecasts_updated_at ON public.crm_forecasts;
 CREATE TRIGGER trigger_crm_forecasts_updated_at
     BEFORE UPDATE ON public.crm_forecasts
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_forecasts_updated_at();
-
 CREATE OR REPLACE FUNCTION public.handle_crm_forecast_entries_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -306,11 +279,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_forecast_entries_updated_at ON public.crm_forecast_entries;
 CREATE TRIGGER trigger_crm_forecast_entries_updated_at
     BEFORE INSERT OR UPDATE ON public.crm_forecast_entries
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_forecast_entries_updated_at();
-
 COMMIT;

@@ -39,7 +39,6 @@ BEGIN
     WHERE u.id = target_user_id;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.get_user_with_roles(UUID) TO authenticated;
 COMMENT ON FUNCTION public.get_user_with_roles(UUID) IS
     'Returns a single user with their roles by ID. Only accessible by admins.';

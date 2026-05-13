@@ -12,7 +12,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Permission catalog
 -- ----------------------------------------------------------------------------
@@ -22,7 +21,6 @@ INSERT INTO public.permissions (key, module, description) VALUES
     ('recruiting.write',        'recruiting', 'Create and edit agent recruiting records'),
     ('templates.master.manage', 'templates',  'Manage the admin-only Master Template Library')
 ON CONFLICT (key) DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 2. Default org grants — owner/admin get everything
 -- ----------------------------------------------------------------------------
@@ -40,7 +38,6 @@ WHERE p.key IN (
     'templates.master.manage'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 3. Manager: full Recruiting use, NO master template management
 -- ----------------------------------------------------------------------------
@@ -56,7 +53,6 @@ WHERE p.key IN (
     'recruiting.write'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 4. Agent: read Recruiting, write own records (recruiting.write covers it
 --    behind RLS that scopes by owner_id)
@@ -73,5 +69,4 @@ WHERE p.key IN (
     'recruiting.write'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 COMMIT;

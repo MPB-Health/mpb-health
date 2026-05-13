@@ -60,7 +60,6 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_ensure_advisor_profile_on_role_grant ON user_roles;
 CREATE TRIGGER trg_ensure_advisor_profile_on_role_grant
   AFTER INSERT ON user_roles

@@ -14,12 +14,10 @@ CREATE TABLE IF NOT EXISTS admin_users (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- Index for common queries
 CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role);
 CREATE INDEX IF NOT EXISTS idx_admin_users_status ON admin_users(status);
 CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email);
-
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_admin_users_updated_at()
 RETURNS TRIGGER AS $$
@@ -28,15 +26,12 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER admin_users_updated_at
   BEFORE UPDATE ON admin_users
   FOR EACH ROW
   EXECUTE FUNCTION update_admin_users_updated_at();
-
 -- Enable RLS
 ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
-
 -- Admins and super_admins can read all admin users
 CREATE POLICY "admin_users_select" ON admin_users
   FOR SELECT TO authenticated
@@ -48,7 +43,6 @@ CREATE POLICY "admin_users_select" ON admin_users
       AND user_roles.role IN ('admin', 'super_admin')
     )
   );
-
 -- Only super_admins can insert admin users
 CREATE POLICY "admin_users_insert" ON admin_users
   FOR INSERT TO authenticated
@@ -59,7 +53,6 @@ CREATE POLICY "admin_users_insert" ON admin_users
       AND user_roles.role = 'super_admin'
     )
   );
-
 -- Admins can update their own record; super_admins can update anyone
 CREATE POLICY "admin_users_update" ON admin_users
   FOR UPDATE TO authenticated
@@ -71,7 +64,6 @@ CREATE POLICY "admin_users_update" ON admin_users
       AND user_roles.role = 'super_admin'
     )
   );
-
 -- Only super_admins can delete
 CREATE POLICY "admin_users_delete" ON admin_users
   FOR DELETE TO authenticated
@@ -82,13 +74,11 @@ CREATE POLICY "admin_users_delete" ON admin_users
       AND user_roles.role = 'super_admin'
     )
   );
-
 -- Allow service_role full access (for edge functions)
 CREATE POLICY "admin_users_service_role" ON admin_users
   FOR ALL TO service_role
   USING (true)
   WITH CHECK (true);
-
 -- Seed existing admin/super_admin users from user_roles into admin_users
 -- This pulls email from auth.users and name from advisor_profiles (if available)
 INSERT INTO admin_users (id, email, first_name, last_name, role, status, permissions)

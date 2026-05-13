@@ -19,7 +19,6 @@ ADD COLUMN IF NOT EXISTS reminder_minutes INTEGER DEFAULT 30,
 ADD COLUMN IF NOT EXISTS auto_record BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS notes TEXT,
 ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
-
 -- ============================================================================
 -- Meeting Invitations Table
 -- ============================================================================
@@ -38,7 +37,6 @@ CREATE TABLE IF NOT EXISTS meeting_invitations (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(meeting_id, advisor_id)
 );
-
 -- ============================================================================
 -- Meeting Templates for Quick Scheduling
 -- ============================================================================
@@ -59,7 +57,6 @@ CREATE TABLE IF NOT EXISTS meeting_templates (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- Indexes for Performance
 -- ============================================================================
@@ -70,14 +67,12 @@ CREATE INDEX IF NOT EXISTS idx_meeting_invitations_status ON meeting_invitations
 CREATE INDEX IF NOT EXISTS idx_advisor_meetings_visibility ON advisor_meetings(visibility);
 CREATE INDEX IF NOT EXISTS idx_advisor_meetings_meeting_type ON advisor_meetings(meeting_type);
 CREATE INDEX IF NOT EXISTS idx_advisor_meetings_host ON advisor_meetings(host_id);
-
 -- ============================================================================
 -- RLS Policies
 -- ============================================================================
 
 ALTER TABLE meeting_invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meeting_templates ENABLE ROW LEVEL SECURITY;
-
 -- Meeting invitations policies
 CREATE POLICY "Admins can manage all invitations"
   ON meeting_invitations FOR ALL
@@ -89,7 +84,6 @@ CREATE POLICY "Admins can manage all invitations"
       AND role IN ('admin', 'super_admin')
     )
   );
-
 CREATE POLICY "Advisors can view their own invitations"
   ON meeting_invitations FOR SELECT
   TO authenticated
@@ -98,7 +92,6 @@ CREATE POLICY "Advisors can view their own invitations"
       SELECT id FROM advisor_profiles WHERE id = auth.uid()
     )
   );
-
 CREATE POLICY "Advisors can update their own invitation response"
   ON meeting_invitations FOR UPDATE
   TO authenticated
@@ -112,13 +105,11 @@ CREATE POLICY "Advisors can update their own invitation response"
       SELECT id FROM advisor_profiles WHERE id = auth.uid()
     )
   );
-
 -- Meeting templates policies
 CREATE POLICY "Anyone can view active templates"
   ON meeting_templates FOR SELECT
   TO authenticated
   USING (is_active = true);
-
 CREATE POLICY "Admins can manage templates"
   ON meeting_templates FOR ALL
   TO authenticated
@@ -129,7 +120,6 @@ CREATE POLICY "Admins can manage templates"
       AND role IN ('admin', 'super_admin')
     )
   );
-
 -- ============================================================================
 -- Functions
 -- ============================================================================
@@ -158,7 +148,6 @@ BEGIN
   RETURN v_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to invite ALL advisors to a meeting
 CREATE OR REPLACE FUNCTION invite_all_advisors_to_meeting(p_meeting_id UUID)
 RETURNS INTEGER AS $$
@@ -175,7 +164,6 @@ BEGIN
   RETURN v_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to respond to meeting invitation
 CREATE OR REPLACE FUNCTION respond_to_meeting_invitation(
   p_invitation_id UUID,
@@ -198,7 +186,6 @@ BEGIN
   RETURN v_invitation;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to create instant meeting
 CREATE OR REPLACE FUNCTION create_instant_meeting(
   p_title TEXT,
@@ -251,7 +238,6 @@ BEGIN
   RETURN v_meeting;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get meeting with invitation stats
 CREATE OR REPLACE FUNCTION get_meeting_with_stats(p_meeting_id UUID)
 RETURNS TABLE (
@@ -277,7 +263,6 @@ BEGIN
   GROUP BY m.id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================================
 -- Seed Meeting Templates
 -- ============================================================================
@@ -299,7 +284,6 @@ VALUES
   ('Product Webinar', 'New product or feature presentation', 'webinar', 45, 'all',
    '1. Product Overview\n2. Key Features\n3. Demo\n4. Sales Talking Points\n5. Q&A')
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- Triggers
 -- ============================================================================
@@ -312,13 +296,11 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS meeting_invitation_updated ON meeting_invitations;
 CREATE TRIGGER meeting_invitation_updated
   BEFORE UPDATE ON meeting_invitations
   FOR EACH ROW
   EXECUTE FUNCTION update_meeting_invitation_timestamp();
-
 -- Update timestamp trigger for meeting_templates
 DROP TRIGGER IF EXISTS meeting_template_updated ON meeting_templates;
 CREATE TRIGGER meeting_template_updated

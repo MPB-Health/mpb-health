@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 CREATE TABLE IF NOT EXISTS public.quote_calculator_funnel_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -12,16 +11,12 @@ CREATE TABLE IF NOT EXISTS public.quote_calculator_funnel_events (
   event_type text NOT NULL CHECK (event_type IN ('results_viewed', 'contact_opened', 'lead_submitted')),
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb
 );
-
 CREATE INDEX IF NOT EXISTS idx_quote_funnel_created_at ON public.quote_calculator_funnel_events (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_quote_funnel_session ON public.quote_calculator_funnel_events (session_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_quote_funnel_event_type ON public.quote_calculator_funnel_events (event_type, created_at DESC);
-
 COMMENT ON TABLE public.quote_calculator_funnel_events IS
   'Anonymous hero calculator funnel: results shown vs contact opened vs lead submitted.';
-
 ALTER TABLE public.quote_calculator_funnel_events ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Staff can select quote funnel events" ON public.quote_calculator_funnel_events;
 CREATE POLICY "Staff can select quote funnel events"
   ON public.quote_calculator_funnel_events
@@ -31,10 +26,8 @@ CREATE POLICY "Staff can select quote funnel events"
     OR public.current_user_has_super_admin_access()
     OR public.current_user_has_extended_admin_access()
   );
-
 GRANT SELECT ON public.quote_calculator_funnel_events TO authenticated;
 GRANT ALL ON public.quote_calculator_funnel_events TO service_role;
-
 -- Realtime: staff dashboards subscribe for live inserts
 DO $$
 BEGIN
@@ -48,7 +41,6 @@ EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'Could not add quote_calculator_funnel_events to supabase_realtime: %', SQLERRM;
 END;
 $$;
-
 -- -----------------------------------------------------------------------------
 -- Public insert RPC (anon — only path for website tracking)
 -- -----------------------------------------------------------------------------
@@ -87,13 +79,10 @@ BEGIN
   RETURN v_row;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.record_quote_calculator_event(jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.record_quote_calculator_event(jsonb) TO anon, authenticated, service_role;
-
 COMMENT ON FUNCTION public.record_quote_calculator_event(jsonb) IS
   'Anonymous hero calculator funnel tracking; callable from public website.';
-
 -- -----------------------------------------------------------------------------
 -- Aggregates for dashboards (authenticated staff only)
 -- -----------------------------------------------------------------------------
@@ -197,11 +186,8 @@ BEGIN
   );
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.get_quote_results_analytics(integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_quote_results_analytics(integer) TO authenticated, service_role;
-
 COMMENT ON FUNCTION public.get_quote_results_analytics(integer) IS
   'Rollup for Quote Results Returned dashboards (admin portal, CRM, website admin).';
-
 COMMIT;

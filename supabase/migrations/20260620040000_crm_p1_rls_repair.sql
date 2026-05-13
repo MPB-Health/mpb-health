@@ -22,13 +22,11 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- crm_email_sequences
 -- ----------------------------------------------------------------------------
 
 ALTER TABLE public.crm_email_sequences ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Users can view sequences for their org"   ON public.crm_email_sequences;
 DROP POLICY IF EXISTS "Users can update sequences for their org" ON public.crm_email_sequences;
 DROP POLICY IF EXISTS "Users can delete sequences for their org" ON public.crm_email_sequences;
@@ -37,18 +35,15 @@ DROP POLICY IF EXISTS crm_email_sequences_select ON public.crm_email_sequences;
 DROP POLICY IF EXISTS crm_email_sequences_insert ON public.crm_email_sequences;
 DROP POLICY IF EXISTS crm_email_sequences_update ON public.crm_email_sequences;
 DROP POLICY IF EXISTS crm_email_sequences_delete ON public.crm_email_sequences;
-
 CREATE POLICY crm_email_sequences_select ON public.crm_email_sequences
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY crm_email_sequences_insert ON public.crm_email_sequences
     FOR INSERT TO authenticated
     WITH CHECK (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'email.templates')
     );
-
 CREATE POLICY crm_email_sequences_update ON public.crm_email_sequences
     FOR UPDATE TO authenticated
     USING (
@@ -59,14 +54,12 @@ CREATE POLICY crm_email_sequences_update ON public.crm_email_sequences
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'email.templates')
     );
-
 CREATE POLICY crm_email_sequences_delete ON public.crm_email_sequences
     FOR DELETE TO authenticated
     USING (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'email.templates')
     );
-
 -- Keep the existing service-role full-access policy if it's already there;
 -- create one if not. Drop BOTH the legacy human-readable name AND our new
 -- canonical name to stay idempotent if a parallel-path (e.g. Studio) already
@@ -77,16 +70,13 @@ CREATE POLICY crm_email_sequences_service_all ON public.crm_email_sequences
     FOR ALL TO service_role
     USING (true)
     WITH CHECK (true);
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_email_sequences TO authenticated;
 GRANT ALL ON public.crm_email_sequences TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- message_templates
 -- ----------------------------------------------------------------------------
 
 ALTER TABLE public.message_templates ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Authenticated users can manage message_templates" ON public.message_templates;
 DROP POLICY IF EXISTS message_templates_select ON public.message_templates;
 DROP POLICY IF EXISTS message_templates_insert ON public.message_templates;
@@ -95,18 +85,15 @@ DROP POLICY IF EXISTS message_templates_delete ON public.message_templates;
 -- Idempotency: a parallel-path (Studio) may have created the service-all
 -- policy already; drop here so the CREATE below doesn't 42710.
 DROP POLICY IF EXISTS message_templates_service_all ON public.message_templates;
-
 CREATE POLICY message_templates_select ON public.message_templates
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY message_templates_insert ON public.message_templates
     FOR INSERT TO authenticated
     WITH CHECK (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'email.templates')
     );
-
 CREATE POLICY message_templates_update ON public.message_templates
     FOR UPDATE TO authenticated
     USING (
@@ -117,22 +104,18 @@ CREATE POLICY message_templates_update ON public.message_templates
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'email.templates')
     );
-
 CREATE POLICY message_templates_delete ON public.message_templates
     FOR DELETE TO authenticated
     USING (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'email.templates')
     );
-
 CREATE POLICY message_templates_service_all ON public.message_templates
     FOR ALL TO service_role
     USING (true)
     WITH CHECK (true);
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.message_templates TO authenticated;
 GRANT ALL ON public.message_templates TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- sequences (legacy engagement table)
 -- ----------------------------------------------------------------------------
@@ -185,5 +168,4 @@ BEGIN
     END IF;
 END
 $$;
-
 COMMIT;

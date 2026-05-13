@@ -6,7 +6,6 @@
 
 -- Drop the view if it exists (it won't work from frontend anyway)
 DROP VIEW IF EXISTS public.users_with_roles;
-
 -- Create a security definer function that can access auth.users
 -- This function runs with the privileges of the function owner (postgres)
 CREATE OR REPLACE FUNCTION public.get_all_users_with_roles()
@@ -49,7 +48,6 @@ BEGIN
     ORDER BY u.email;
 END;
 $$;
-
 -- Create a function to search users by email
 CREATE OR REPLACE FUNCTION public.search_users_with_roles(search_email TEXT)
 RETURNS TABLE (
@@ -93,11 +91,9 @@ BEGIN
     LIMIT 50;
 END;
 $$;
-
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION public.get_all_users_with_roles() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.search_users_with_roles(TEXT) TO authenticated;
-
 -- Add helpful comments
 COMMENT ON FUNCTION public.get_all_users_with_roles() IS 
     'Returns all users with their roles. Only accessible by admins.';

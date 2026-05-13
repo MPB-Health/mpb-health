@@ -21,12 +21,10 @@ CREATE TABLE IF NOT EXISTS crm_web_forms (
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
-
 -- Index on slug for public lookup
 CREATE INDEX IF NOT EXISTS idx_crm_web_forms_slug ON crm_web_forms(slug);
 -- Index on org_id for listing
 CREATE INDEX IF NOT EXISTS idx_crm_web_forms_org_id ON crm_web_forms(org_id);
-
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_crm_web_forms_updated_at()
 RETURNS TRIGGER AS $$
@@ -35,12 +33,10 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trg_crm_web_forms_updated_at ON crm_web_forms;
 CREATE TRIGGER trg_crm_web_forms_updated_at
   BEFORE UPDATE ON crm_web_forms
   FOR EACH ROW EXECUTE FUNCTION update_crm_web_forms_updated_at();
-
 -- =============================================================================
 -- crm_web_form_submissions
 -- =============================================================================
@@ -55,53 +51,44 @@ CREATE TABLE IF NOT EXISTS crm_web_form_submissions (
   status      text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'converted', 'duplicate', 'spam')),
   created_at  timestamptz NOT NULL DEFAULT now()
 );
-
 -- Index on form_id for listing submissions
 CREATE INDEX IF NOT EXISTS idx_crm_web_form_submissions_form_id ON crm_web_form_submissions(form_id);
 -- Index on status for filtering
 CREATE INDEX IF NOT EXISTS idx_crm_web_form_submissions_status ON crm_web_form_submissions(status);
-
 -- =============================================================================
 -- RLS Policies
 -- =============================================================================
 ALTER TABLE crm_web_forms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crm_web_form_submissions ENABLE ROW LEVEL SECURITY;
-
 -- Forms: org members can CRUD
 DROP POLICY IF EXISTS crm_web_forms_select ON crm_web_forms;
 CREATE POLICY crm_web_forms_select ON crm_web_forms
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 DROP POLICY IF EXISTS crm_web_forms_insert ON crm_web_forms;
 CREATE POLICY crm_web_forms_insert ON crm_web_forms
   FOR INSERT WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 DROP POLICY IF EXISTS crm_web_forms_update ON crm_web_forms;
 CREATE POLICY crm_web_forms_update ON crm_web_forms
   FOR UPDATE USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 DROP POLICY IF EXISTS crm_web_forms_delete ON crm_web_forms;
 CREATE POLICY crm_web_forms_delete ON crm_web_forms
   FOR DELETE USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 -- Public read for active forms (by slug) — needed for public form renderer
 DROP POLICY IF EXISTS crm_web_forms_public_read ON crm_web_forms;
 CREATE POLICY crm_web_forms_public_read ON crm_web_forms
   FOR SELECT USING (status = 'active');
-
 -- Submissions: publicly insertable (for the public form endpoint)
 DROP POLICY IF EXISTS crm_web_form_submissions_insert ON crm_web_form_submissions;
 CREATE POLICY crm_web_form_submissions_insert ON crm_web_form_submissions
   FOR INSERT WITH CHECK (true);
-
 -- Submissions: readable only by org members (via form's org_id)
 DROP POLICY IF EXISTS crm_web_form_submissions_select ON crm_web_form_submissions;
 CREATE POLICY crm_web_form_submissions_select ON crm_web_form_submissions
@@ -111,7 +98,6 @@ CREATE POLICY crm_web_form_submissions_select ON crm_web_form_submissions
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 -- Submissions: updatable by org members (for status changes)
 DROP POLICY IF EXISTS crm_web_form_submissions_update ON crm_web_form_submissions;
 CREATE POLICY crm_web_form_submissions_update ON crm_web_form_submissions
@@ -121,7 +107,6 @@ CREATE POLICY crm_web_form_submissions_update ON crm_web_form_submissions
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 -- Submissions: deletable by org members
 DROP POLICY IF EXISTS crm_web_form_submissions_delete ON crm_web_form_submissions;
 CREATE POLICY crm_web_form_submissions_delete ON crm_web_form_submissions

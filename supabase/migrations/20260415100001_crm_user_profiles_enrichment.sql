@@ -28,12 +28,10 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS state text,
   ADD COLUMN IF NOT EXISTS postal_code text,
   ADD COLUMN IF NOT EXISTS country text DEFAULT 'US';
-
 -- Ensure org_memberships has suspend columns
 ALTER TABLE public.org_memberships
   ADD COLUMN IF NOT EXISTS suspended_at timestamptz,
   ADD COLUMN IF NOT EXISTS suspended_reason text;
-
 -- Seed team management permissions
 INSERT INTO public.permissions (key, module, description)
 VALUES
@@ -45,7 +43,6 @@ VALUES
   ('product_forms.read', 'products', 'View product configuration forms'),
   ('product_forms.manage', 'products', 'Create and manage product configuration forms')
 ON CONFLICT (key) DO NOTHING;
-
 -- Grant team permissions to admin and owner roles
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT om.org_id, r.role, p.id
@@ -54,7 +51,6 @@ CROSS JOIN public.permissions p
 CROSS JOIN (SELECT DISTINCT org_id FROM public.org_memberships) om
 WHERE p.key IN ('team.view', 'team.manage', 'team.invite', 'quote_templates.read', 'quote_templates.manage', 'product_forms.read', 'product_forms.manage')
 ON CONFLICT DO NOTHING;
-
 -- Grant read-only team permissions to manager role
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT om.org_id, 'manager', p.id
@@ -62,16 +58,13 @@ FROM public.permissions p
 CROSS JOIN (SELECT DISTINCT org_id FROM public.org_memberships) om
 WHERE p.key IN ('team.view', 'quote_templates.read', 'product_forms.read')
 ON CONFLICT DO NOTHING;
-
 -- RLS for profiles (users can read all profiles in their org, update their own)
 DROP POLICY IF EXISTS profiles_select_policy ON public.profiles;
 CREATE POLICY profiles_select_policy ON public.profiles
   FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS profiles_update_own ON public.profiles;
 CREATE POLICY profiles_update_own ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
-
 DROP POLICY IF EXISTS profiles_insert_own ON public.profiles;
 CREATE POLICY profiles_insert_own ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);

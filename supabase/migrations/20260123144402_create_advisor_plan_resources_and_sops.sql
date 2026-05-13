@@ -40,21 +40,17 @@ CREATE TABLE IF NOT EXISTS public.advisor_plan_resources (
   created_by UUID REFERENCES auth.users(id),
   updated_by UUID REFERENCES auth.users(id)
 );
-
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_advisor_plan_resources_slug ON public.advisor_plan_resources(plan_slug);
 CREATE INDEX IF NOT EXISTS idx_advisor_plan_resources_active ON public.advisor_plan_resources(is_active);
 CREATE INDEX IF NOT EXISTS idx_advisor_plan_resources_order ON public.advisor_plan_resources(order_index);
-
 -- Enable RLS
 ALTER TABLE public.advisor_plan_resources ENABLE ROW LEVEL SECURITY;
-
 -- RLS Policies for advisor_plan_resources
 DROP POLICY IF EXISTS "advisor_plan_resources_anon_select" ON public.advisor_plan_resources;
 CREATE POLICY "advisor_plan_resources_anon_select" ON public.advisor_plan_resources
   FOR SELECT TO anon, authenticated
   USING (is_active = true);
-
 DROP POLICY IF EXISTS "advisor_plan_resources_admin_all" ON public.advisor_plan_resources;
 CREATE POLICY "advisor_plan_resources_admin_all" ON public.advisor_plan_resources
   FOR ALL TO authenticated
@@ -72,7 +68,6 @@ CREATE POLICY "advisor_plan_resources_admin_all" ON public.advisor_plan_resource
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 -- Updated_at trigger
 CREATE OR REPLACE FUNCTION public.update_advisor_plan_resources_updated_at()
 RETURNS TRIGGER AS $$
@@ -81,13 +76,11 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
 DROP TRIGGER IF EXISTS trigger_update_advisor_plan_resources_updated_at ON public.advisor_plan_resources;
 CREATE TRIGGER trigger_update_advisor_plan_resources_updated_at
   BEFORE UPDATE ON public.advisor_plan_resources
   FOR EACH ROW
   EXECUTE FUNCTION public.update_advisor_plan_resources_updated_at();
-
 -- ============================================================================
 -- 2. SOP DOCUMENTS TABLE UPDATES
 -- Add missing columns if table exists, or create if not
@@ -105,7 +98,6 @@ BEGIN
     ALTER TABLE public.sop_documents ADD COLUMN order_index INTEGER DEFAULT 0;
   END IF;
 END $$;
-
 -- Add version column if it doesn't exist
 DO $$
 BEGIN
@@ -118,7 +110,6 @@ BEGIN
     ALTER TABLE public.sop_documents ADD COLUMN version TEXT DEFAULT '1.0';
   END IF;
 END $$;
-
 -- Create table if it doesn't exist at all
 CREATE TABLE IF NOT EXISTS public.sop_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -136,7 +127,6 @@ CREATE TABLE IF NOT EXISTS public.sop_documents (
   created_by UUID REFERENCES auth.users(id),
   updated_by UUID REFERENCES auth.users(id)
 );
-
 -- Create indexes (only if column exists)
 DO $$
 BEGIN
@@ -149,16 +139,13 @@ BEGIN
     CREATE INDEX IF NOT EXISTS idx_sop_documents_order ON public.sop_documents(order_index);
   END IF;
 END $$;
-
 -- Enable RLS
 ALTER TABLE public.sop_documents ENABLE ROW LEVEL SECURITY;
-
 -- RLS Policies for sop_documents
 DROP POLICY IF EXISTS "sop_documents_anon_select" ON public.sop_documents;
 CREATE POLICY "sop_documents_anon_select" ON public.sop_documents
   FOR SELECT TO anon, authenticated
   USING (is_active = true);
-
 DROP POLICY IF EXISTS "sop_documents_admin_all" ON public.sop_documents;
 CREATE POLICY "sop_documents_admin_all" ON public.sop_documents
   FOR ALL TO authenticated
@@ -176,7 +163,6 @@ CREATE POLICY "sop_documents_admin_all" ON public.sop_documents
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 -- Updated_at trigger for SOPs
 CREATE OR REPLACE FUNCTION public.update_sop_documents_updated_at()
 RETURNS TRIGGER AS $$
@@ -185,13 +171,11 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
 DROP TRIGGER IF EXISTS trigger_update_sop_documents_updated_at ON public.sop_documents;
 CREATE TRIGGER trigger_update_sop_documents_updated_at
   BEFORE UPDATE ON public.sop_documents
   FOR EACH ROW
   EXECUTE FUNCTION public.update_sop_documents_updated_at();
-
 -- ============================================================================
 -- 3. SEED DEFAULT PLAN RESOURCES
 -- ============================================================================
@@ -235,7 +219,6 @@ ON CONFLICT (plan_slug) DO UPDATE SET
   handbook_title = COALESCE(public.advisor_plan_resources.handbook_title, EXCLUDED.handbook_title),
   flyer_title = COALESCE(public.advisor_plan_resources.flyer_title, EXCLUDED.flyer_title),
   qrg_title = COALESCE(public.advisor_plan_resources.qrg_title, EXCLUDED.qrg_title);
-
 -- ============================================================================
 -- 4. SEED SAMPLE SOP DOCUMENTS
 -- ============================================================================
@@ -257,7 +240,6 @@ VALUES
   ('Commission and Compensation', 'Understanding the commission structure', 'compensation', ARRAY['commission', 'compensation', 'payment'],
    'Detailed breakdown of the advisor commission and compensation structure.', '1.0', 5)
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- 5. CREATE STORAGE BUCKET FOR PLAN DOCUMENTS
 -- ============================================================================
@@ -274,13 +256,11 @@ VALUES (
 ON CONFLICT (id) DO UPDATE SET
   public = true,
   file_size_limit = 52428800;
-
 -- Storage policies for advisor-documents bucket
 DROP POLICY IF EXISTS "advisor_documents_public_read" ON storage.objects;
 CREATE POLICY "advisor_documents_public_read" ON storage.objects
   FOR SELECT TO anon, authenticated
   USING (bucket_id = 'advisor-documents');
-
 DROP POLICY IF EXISTS "advisor_documents_admin_insert" ON storage.objects;
 CREATE POLICY "advisor_documents_admin_insert" ON storage.objects
   FOR INSERT TO authenticated
@@ -292,7 +272,6 @@ CREATE POLICY "advisor_documents_admin_insert" ON storage.objects
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 DROP POLICY IF EXISTS "advisor_documents_admin_update" ON storage.objects;
 CREATE POLICY "advisor_documents_admin_update" ON storage.objects
   FOR UPDATE TO authenticated
@@ -304,7 +283,6 @@ CREATE POLICY "advisor_documents_admin_update" ON storage.objects
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 DROP POLICY IF EXISTS "advisor_documents_admin_delete" ON storage.objects;
 CREATE POLICY "advisor_documents_admin_delete" ON storage.objects
   FOR DELETE TO authenticated
@@ -316,7 +294,6 @@ CREATE POLICY "advisor_documents_admin_delete" ON storage.objects
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 -- ============================================================================
 -- 6. HELPER FUNCTIONS
 -- ============================================================================
@@ -363,7 +340,6 @@ BEGIN
     AND apr.is_active = true;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
 -- Function to get all active SOPs by category
 CREATE OR REPLACE FUNCTION public.get_sops_by_category(p_category TEXT DEFAULT NULL)
 RETURNS TABLE (
@@ -397,11 +373,9 @@ BEGIN
   ORDER BY sd.order_index, sd.title;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION public.get_plan_resource_by_slug(TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_sops_by_category(TEXT) TO anon, authenticated;
-
 -- ============================================================================
 -- MIGRATION COMPLETE
--- ============================================================================
+-- ============================================================================;

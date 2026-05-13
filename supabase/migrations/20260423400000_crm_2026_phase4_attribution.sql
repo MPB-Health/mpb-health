@@ -18,7 +18,6 @@
 -- =============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Product lines lookup + FK on crm_deals
 -- ----------------------------------------------------------------------------
@@ -37,7 +36,6 @@ CREATE TABLE IF NOT EXISTS public.crm_product_lines (
     -- system rows where org_id IS NULL).
     CONSTRAINT crm_product_lines_org_slug_key UNIQUE (org_id, slug)
 );
-
 -- Seed the two lines the deck calls out. These are org-agnostic (`org_id` NULL)
 -- so every tenant picks them up automatically; an org can later insert its own
 -- row with the same slug to override the label/description locally.
@@ -46,14 +44,11 @@ VALUES
     (NULL, 'health_insurance', 'Health Insurance', 'Traditional major-medical / ACA / short-term plans.', 10),
     (NULL, 'medical_cost_sharing', 'Medical Cost Sharing', 'Faith-based or non-insurance cost-sharing memberships.', 20)
 ON CONFLICT (org_id, slug) DO NOTHING;
-
 ALTER TABLE public.crm_deals
     ADD COLUMN IF NOT EXISTS product_line text;
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_product_line
     ON public.crm_deals (org_id, product_line)
     WHERE product_line IS NOT NULL;
-
 -- Soft FK (slug-based, not UUID) — matches how `lead_source` resolves against
 -- `crm_lead_source_types`. Enforced via trigger so an org can use either the
 -- shared system row OR its own override row with the same slug.
@@ -83,16 +78,13 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_deals_validate_product_line ON public.crm_deals;
 CREATE TRIGGER trg_crm_deals_validate_product_line
     BEFORE INSERT OR UPDATE OF product_line ON public.crm_deals
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_validate_deal_product_line();
-
 -- RLS: everyone in the org can read the lookup; only admins/owners manage it.
 ALTER TABLE public.crm_product_lines ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_product_lines_select ON public.crm_product_lines;
 CREATE POLICY crm_product_lines_select ON public.crm_product_lines
     FOR SELECT
@@ -105,7 +97,6 @@ CREATE POLICY crm_product_lines_select ON public.crm_product_lines
                AND m.status = 'active'
         )
     );
-
 DROP POLICY IF EXISTS crm_product_lines_write ON public.crm_product_lines;
 CREATE POLICY crm_product_lines_write ON public.crm_product_lines
     FOR ALL
@@ -129,7 +120,6 @@ CREATE POLICY crm_product_lines_write ON public.crm_product_lines
                AND m.role IN ('owner', 'admin')
         )
     );
-
 -- ----------------------------------------------------------------------------
 -- 2. Community event attribution on lead_submissions
 -- ----------------------------------------------------------------------------
@@ -137,11 +127,9 @@ CREATE POLICY crm_product_lines_write ON public.crm_product_lines
 ALTER TABLE public.lead_submissions
     ADD COLUMN IF NOT EXISTS community_event_id uuid
         REFERENCES public.crm_community_events(id) ON DELETE SET NULL;
-
 CREATE INDEX IF NOT EXISTS idx_lead_submissions_community_event
     ON public.lead_submissions (community_event_id)
     WHERE community_event_id IS NOT NULL;
-
 -- Increment leads_generated on the event whenever a lead points at it.
 -- Decrement on DELETE and on UPDATE-that-nulls so the counter doesn't drift.
 CREATE OR REPLACE FUNCTION public.crm_community_event_bump_counter()
@@ -194,13 +182,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_submissions_community_counter ON public.lead_submissions;
 CREATE TRIGGER trg_lead_submissions_community_counter
     AFTER INSERT OR UPDATE OF community_event_id OR DELETE ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_community_event_bump_counter();
-
 -- ----------------------------------------------------------------------------
 -- 3. Reactivation cohort index
 -- ----------------------------------------------------------------------------

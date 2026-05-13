@@ -96,9 +96,7 @@ BEGIN
   ORDER BY sa.s_order;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_lead_stage_velocity(uuid) TO authenticated;
-
 -- --------------------------------------------------------------------------
 -- 2. crm_get_stuck_leads — leads that haven't progressed or been contacted
 -- --------------------------------------------------------------------------
@@ -157,5 +155,4 @@ BEGIN
   ORDER BY days_in_stage DESC;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_get_stuck_leads(uuid, int) TO authenticated;

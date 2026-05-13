@@ -18,7 +18,6 @@ BEGIN
   WHERE id = template_id;
 END;
 $$;
-
 -- Increment saved_searches.use_count and set last_used_at
 CREATE OR REPLACE FUNCTION public.increment_saved_search_use_count(search_id UUID)
 RETURNS void
@@ -33,7 +32,6 @@ BEGIN
   WHERE id = search_id;
 END;
 $$;
-
 -- Legacy aliases for backward compatibility (if any code calls these)
 CREATE OR REPLACE FUNCTION public.increment_times_used(p_table TEXT, p_id_col TEXT, p_record_id UUID)
 RETURNS void
@@ -52,7 +50,6 @@ BEGIN
   END IF;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.increment_use_count(p_table TEXT, p_id_col TEXT, p_record_id UUID)
 RETURNS void
 LANGUAGE plpgsql
@@ -70,7 +67,6 @@ BEGIN
   END IF;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.increment_message_template_times_used(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.increment_saved_search_use_count(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.increment_times_used(TEXT, TEXT, UUID) TO authenticated;

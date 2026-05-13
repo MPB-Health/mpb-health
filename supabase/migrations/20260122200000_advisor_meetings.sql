@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS advisor_meetings (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Create meeting attendees tracking table
 CREATE TABLE IF NOT EXISTS advisor_meeting_attendees (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -45,7 +44,6 @@ CREATE TABLE IF NOT EXISTS advisor_meeting_attendees (
   duration_seconds INTEGER,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Create meeting reminders table
 CREATE TABLE IF NOT EXISTS advisor_meeting_reminders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -56,7 +54,6 @@ CREATE TABLE IF NOT EXISTS advisor_meeting_reminders (
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_advisor_meetings_scheduled_at ON advisor_meetings(scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_advisor_meetings_status ON advisor_meetings(status);
@@ -65,19 +62,16 @@ CREATE INDEX IF NOT EXISTS idx_advisor_meeting_attendees_meeting ON advisor_meet
 CREATE INDEX IF NOT EXISTS idx_advisor_meeting_attendees_advisor ON advisor_meeting_attendees(advisor_id);
 CREATE INDEX IF NOT EXISTS idx_advisor_meeting_reminders_meeting ON advisor_meeting_reminders(meeting_id);
 CREATE INDEX IF NOT EXISTS idx_advisor_meeting_reminders_send_at ON advisor_meeting_reminders(send_at);
-
 -- Enable RLS
 ALTER TABLE advisor_meetings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE advisor_meeting_attendees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE advisor_meeting_reminders ENABLE ROW LEVEL SECURITY;
-
 -- RLS Policies for advisor_meetings
 -- Advisors can view all meetings
 CREATE POLICY "Advisors can view meetings"
   ON advisor_meetings FOR SELECT
   TO authenticated
   USING (true);
-
 -- Only admins/staff can create/update/delete meetings
 CREATE POLICY "Admins can manage meetings"
   ON advisor_meetings FOR ALL
@@ -96,27 +90,23 @@ CREATE POLICY "Admins can manage meetings"
       AND role IN ('admin', 'staff', 'superadmin')
     )
   );
-
 -- RLS Policies for advisor_meeting_attendees
 -- Advisors can view their own attendance
 CREATE POLICY "Advisors can view attendance"
   ON advisor_meeting_attendees FOR SELECT
   TO authenticated
   USING (true);
-
 -- Advisors can record their own attendance
 CREATE POLICY "Advisors can record attendance"
   ON advisor_meeting_attendees FOR INSERT
   TO authenticated
   WITH CHECK (user_id = auth.uid());
-
 -- Advisors can update their own attendance (e.g., when leaving)
 CREATE POLICY "Advisors can update own attendance"
   ON advisor_meeting_attendees FOR UPDATE
   TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
-
 -- Admins can manage all attendance
 CREATE POLICY "Admins can manage attendance"
   ON advisor_meeting_attendees FOR ALL
@@ -128,7 +118,6 @@ CREATE POLICY "Admins can manage attendance"
       AND role IN ('admin', 'staff', 'superadmin')
     )
   );
-
 -- RLS Policies for advisor_meeting_reminders
 CREATE POLICY "Admins can manage reminders"
   ON advisor_meeting_reminders FOR ALL
@@ -140,7 +129,6 @@ CREATE POLICY "Admins can manage reminders"
       AND role IN ('admin', 'staff', 'superadmin')
     )
   );
-
 -- Function to update meeting status
 CREATE OR REPLACE FUNCTION update_meeting_status()
 RETURNS TRIGGER AS $$
@@ -149,14 +137,12 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 -- Trigger for updated_at
 DROP TRIGGER IF EXISTS advisor_meetings_updated_at ON advisor_meetings;
 CREATE TRIGGER advisor_meetings_updated_at
   BEFORE UPDATE ON advisor_meetings
   FOR EACH ROW
   EXECUTE FUNCTION update_meeting_status();
-
 -- Function to start a meeting
 CREATE OR REPLACE FUNCTION start_advisor_meeting(p_meeting_id UUID)
 RETURNS advisor_meetings AS $$
@@ -173,7 +159,6 @@ BEGIN
   RETURN v_meeting;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to end a meeting
 CREATE OR REPLACE FUNCTION end_advisor_meeting(p_meeting_id UUID)
 RETURNS advisor_meetings AS $$
@@ -204,7 +189,6 @@ BEGIN
   RETURN v_meeting;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get active meeting
 CREATE OR REPLACE FUNCTION get_active_advisor_meeting()
 RETURNS advisor_meetings AS $$
@@ -217,7 +201,6 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get upcoming meetings
 CREATE OR REPLACE FUNCTION get_upcoming_advisor_meetings(p_limit INTEGER DEFAULT 10)
 RETURNS SETOF advisor_meetings AS $$
@@ -230,7 +213,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to generate room name
 CREATE OR REPLACE FUNCTION generate_meeting_room_name()
 RETURNS TEXT AS $$
@@ -238,14 +220,12 @@ BEGIN
   RETURN 'mpb-advisor-' || substr(md5(random()::text), 1, 8);
 END;
 $$ LANGUAGE plpgsql;
-
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION start_advisor_meeting(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION end_advisor_meeting(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_active_advisor_meeting() TO authenticated;
 GRANT EXECUTE ON FUNCTION get_upcoming_advisor_meetings(INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION generate_meeting_room_name() TO authenticated;
-
 -- ============================================================================
 -- Seed initial bi-weekly meeting template
 -- ============================================================================
@@ -282,7 +262,6 @@ INSERT INTO advisor_meetings (
     {"type": "training", "title": "Training University", "url": "/advisor/training-university"}
   ]'::jsonb
 ) ON CONFLICT (room_name) DO NOTHING;
-
 -- ============================================================================
 -- Done
--- ============================================================================
+-- ============================================================================;

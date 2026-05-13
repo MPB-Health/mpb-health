@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: CREATE TABLE
 -- ============================================================================
@@ -49,38 +48,29 @@ CREATE TABLE IF NOT EXISTS public.crm_accounts (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION B: INDEXES
 -- ============================================================================
 
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_org_id
     ON public.crm_accounts (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_owner_id
     ON public.crm_accounts (owner_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_account_type
     ON public.crm_accounts (account_type);
-
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_parent_id
     ON public.crm_accounts (parent_account_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_name
     ON public.crm_accounts (name);
-
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_tags
     ON public.crm_accounts USING gin(tags);
-
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_created_at
     ON public.crm_accounts (created_at DESC);
-
 -- ============================================================================
 -- SECTION C: ROW LEVEL SECURITY
 -- ============================================================================
 
 ALTER TABLE public.crm_accounts ENABLE ROW LEVEL SECURITY;
-
 -- SELECT: org members with accounts.read permission
 CREATE POLICY "crm_accounts_select"
     ON public.crm_accounts
@@ -89,7 +79,6 @@ CREATE POLICY "crm_accounts_select"
     USING (
         public.is_org_member(org_id)
     );
-
 -- INSERT: org members with accounts.write permission
 CREATE POLICY "crm_accounts_insert"
     ON public.crm_accounts
@@ -98,7 +87,6 @@ CREATE POLICY "crm_accounts_insert"
     WITH CHECK (
         public.has_org_permission(org_id, 'accounts.write')
     );
-
 -- UPDATE: org members with accounts.write permission
 CREATE POLICY "crm_accounts_update"
     ON public.crm_accounts
@@ -110,7 +98,6 @@ CREATE POLICY "crm_accounts_update"
     WITH CHECK (
         public.has_org_permission(org_id, 'accounts.write')
     );
-
 -- DELETE: org members with accounts.delete permission
 CREATE POLICY "crm_accounts_delete"
     ON public.crm_accounts
@@ -119,7 +106,6 @@ CREATE POLICY "crm_accounts_delete"
     USING (
         public.has_org_permission(org_id, 'accounts.delete')
     );
-
 -- ============================================================================
 -- SECTION D: UPDATED_AT TRIGGER
 -- ============================================================================
@@ -133,11 +119,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_accounts_updated_at ON public.crm_accounts;
 CREATE TRIGGER trigger_crm_accounts_updated_at
     BEFORE UPDATE ON public.crm_accounts
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_accounts_updated_at();
-
 COMMIT;

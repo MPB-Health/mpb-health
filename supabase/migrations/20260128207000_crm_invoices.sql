@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: CREATE INVOICES TABLE
 -- ============================================================================
@@ -69,7 +68,6 @@ CREATE TABLE IF NOT EXISTS public.crm_invoices (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION B: CREATE INVOICE LINE ITEMS TABLE
 -- ============================================================================
@@ -101,7 +99,6 @@ CREATE TABLE IF NOT EXISTS public.crm_invoice_line_items (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION C: CREATE PAYMENT RECORDS TABLE
 -- ============================================================================
@@ -121,7 +118,6 @@ CREATE TABLE IF NOT EXISTS public.crm_invoice_payments (
     recorded_by uuid REFERENCES auth.users(id),
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION D: INVOICE NUMBER SEQUENCE
 -- ============================================================================
@@ -146,7 +142,6 @@ BEGIN
     RETURN 'INV-' || v_year || '-' || LPAD(v_count::text, 5, '0');
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.handle_invoice_number()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -162,13 +157,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_invoice_number ON public.crm_invoices;
 CREATE TRIGGER trigger_invoice_number
     BEFORE INSERT ON public.crm_invoices
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_invoice_number();
-
 -- ============================================================================
 -- SECTION E: INDEXES
 -- ============================================================================
@@ -176,45 +169,32 @@ CREATE TRIGGER trigger_invoice_number
 -- Invoices indexes
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_org_id
     ON public.crm_invoices (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_deal_id
     ON public.crm_invoices (deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_account_id
     ON public.crm_invoices (account_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_contact_id
     ON public.crm_invoices (contact_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_quote_id
     ON public.crm_invoices (quote_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_status
     ON public.crm_invoices (status);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_due_date
     ON public.crm_invoices (due_date);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_invoice_number
     ON public.crm_invoices (invoice_number);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoices_created_at
     ON public.crm_invoices (created_at DESC);
-
 -- Line items indexes
 CREATE INDEX IF NOT EXISTS idx_crm_invoice_line_items_invoice
     ON public.crm_invoice_line_items (invoice_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoice_line_items_product
     ON public.crm_invoice_line_items (product_id);
-
 -- Payments indexes
 CREATE INDEX IF NOT EXISTS idx_crm_invoice_payments_invoice
     ON public.crm_invoice_payments (invoice_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_invoice_payments_date
     ON public.crm_invoice_payments (payment_date);
-
 -- ============================================================================
 -- SECTION F: ROW LEVEL SECURITY
 -- ============================================================================
@@ -222,7 +202,6 @@ CREATE INDEX IF NOT EXISTS idx_crm_invoice_payments_date
 ALTER TABLE public.crm_invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_invoice_line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_invoice_payments ENABLE ROW LEVEL SECURITY;
-
 -- Invoices policies
 CREATE POLICY "crm_invoices_select"
     ON public.crm_invoices
@@ -231,7 +210,6 @@ CREATE POLICY "crm_invoices_select"
     USING (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_invoices_insert"
     ON public.crm_invoices
     FOR INSERT
@@ -239,7 +217,6 @@ CREATE POLICY "crm_invoices_insert"
     WITH CHECK (
         public.has_org_permission(org_id, 'invoices.write')
     );
-
 CREATE POLICY "crm_invoices_update"
     ON public.crm_invoices
     FOR UPDATE
@@ -250,7 +227,6 @@ CREATE POLICY "crm_invoices_update"
     WITH CHECK (
         public.has_org_permission(org_id, 'invoices.write')
     );
-
 CREATE POLICY "crm_invoices_delete"
     ON public.crm_invoices
     FOR DELETE
@@ -259,7 +235,6 @@ CREATE POLICY "crm_invoices_delete"
         public.has_org_permission(org_id, 'invoices.write')
         AND status = 'draft'  -- Can only delete drafts
     );
-
 -- Line items policies
 CREATE POLICY "crm_invoice_line_items_select"
     ON public.crm_invoice_line_items
@@ -272,7 +247,6 @@ CREATE POLICY "crm_invoice_line_items_select"
             AND public.is_org_member(i.org_id)
         )
     );
-
 CREATE POLICY "crm_invoice_line_items_insert"
     ON public.crm_invoice_line_items
     FOR INSERT
@@ -284,7 +258,6 @@ CREATE POLICY "crm_invoice_line_items_insert"
             AND public.has_org_permission(i.org_id, 'invoices.write')
         )
     );
-
 CREATE POLICY "crm_invoice_line_items_update"
     ON public.crm_invoice_line_items
     FOR UPDATE
@@ -303,7 +276,6 @@ CREATE POLICY "crm_invoice_line_items_update"
             AND public.has_org_permission(i.org_id, 'invoices.write')
         )
     );
-
 CREATE POLICY "crm_invoice_line_items_delete"
     ON public.crm_invoice_line_items
     FOR DELETE
@@ -316,7 +288,6 @@ CREATE POLICY "crm_invoice_line_items_delete"
             AND i.status = 'draft'
         )
     );
-
 -- Payments policies
 CREATE POLICY "crm_invoice_payments_select"
     ON public.crm_invoice_payments
@@ -329,7 +300,6 @@ CREATE POLICY "crm_invoice_payments_select"
             AND public.is_org_member(i.org_id)
         )
     );
-
 CREATE POLICY "crm_invoice_payments_insert"
     ON public.crm_invoice_payments
     FOR INSERT
@@ -341,7 +311,6 @@ CREATE POLICY "crm_invoice_payments_insert"
             AND public.has_org_permission(i.org_id, 'invoices.write')
         )
     );
-
 -- ============================================================================
 -- SECTION G: INVOICE TOTALS CALCULATION TRIGGER
 -- ============================================================================
@@ -386,13 +355,11 @@ BEGIN
     END IF;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_recalculate_invoice_totals ON public.crm_invoice_line_items;
 CREATE TRIGGER trigger_recalculate_invoice_totals
     AFTER INSERT OR UPDATE OR DELETE ON public.crm_invoice_line_items
     FOR EACH ROW
     EXECUTE FUNCTION public.recalculate_invoice_totals();
-
 -- ============================================================================
 -- SECTION H: PAYMENT RECORDING TRIGGER
 -- ============================================================================
@@ -437,13 +404,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_invoice_payment ON public.crm_invoice_payments;
 CREATE TRIGGER trigger_invoice_payment
     AFTER INSERT ON public.crm_invoice_payments
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_invoice_payment();
-
 -- ============================================================================
 -- SECTION I: UPDATED_AT TRIGGERS
 -- ============================================================================
@@ -458,13 +423,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_invoices_updated_at ON public.crm_invoices;
 CREATE TRIGGER trigger_crm_invoices_updated_at
     BEFORE UPDATE ON public.crm_invoices
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_invoices_updated_at();
-
 CREATE OR REPLACE FUNCTION public.handle_crm_invoice_line_items_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -474,11 +437,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_invoice_line_items_updated_at ON public.crm_invoice_line_items;
 CREATE TRIGGER trigger_crm_invoice_line_items_updated_at
     BEFORE UPDATE ON public.crm_invoice_line_items
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_invoice_line_items_updated_at();
-
 COMMIT;

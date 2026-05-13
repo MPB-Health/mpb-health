@@ -10,7 +10,6 @@
 -- ==========================================================================
 
 BEGIN;
-
 -- ==========================================================================
 -- SECTION 1: Deal Win Probability
 -- ==========================================================================
@@ -30,27 +29,21 @@ CREATE TABLE IF NOT EXISTS crm_deal_predictions (
   calculated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE(deal_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_predictions_deal_id
   ON crm_deal_predictions(deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_predictions_org_probability
   ON crm_deal_predictions(org_id, win_probability DESC);
-
 ALTER TABLE crm_deal_predictions ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "crm_deal_predictions_select"
   ON crm_deal_predictions
   FOR SELECT
   TO authenticated
   USING (public.is_org_member(org_id));
-
 CREATE POLICY "crm_deal_predictions_service_role"
   ON crm_deal_predictions
   FOR ALL
   TO service_role
   USING (true);
-
 -- --------------------------------------------------------------------------
 -- RPC: crm_calculate_deal_win_probability
 -- --------------------------------------------------------------------------
@@ -291,7 +284,6 @@ BEGIN
   RETURN v_result;
 END;
 $$;
-
 -- ==========================================================================
 -- SECTION 2: Sequence Auto-Enrollment Triggers
 -- ==========================================================================
@@ -310,49 +302,39 @@ CREATE TABLE IF NOT EXISTS crm_sequence_triggers (
   CONSTRAINT crm_sequence_triggers_type_check
     CHECK (trigger_type IN ('stage_change', 'lead_created', 'score_threshold', 'tag_added'))
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_triggers_org
   ON crm_sequence_triggers(org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_triggers_sequence
   ON crm_sequence_triggers(sequence_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_triggers_active
   ON crm_sequence_triggers(org_id, is_active) WHERE is_active = true;
-
 ALTER TABLE crm_sequence_triggers ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "crm_sequence_triggers_select"
   ON crm_sequence_triggers
   FOR SELECT
   TO authenticated
   USING (public.is_org_member(org_id));
-
 CREATE POLICY "crm_sequence_triggers_insert"
   ON crm_sequence_triggers
   FOR INSERT
   TO authenticated
   WITH CHECK (public.is_org_admin(org_id));
-
 CREATE POLICY "crm_sequence_triggers_update"
   ON crm_sequence_triggers
   FOR UPDATE
   TO authenticated
   USING (public.is_org_admin(org_id))
   WITH CHECK (public.is_org_admin(org_id));
-
 CREATE POLICY "crm_sequence_triggers_delete"
   ON crm_sequence_triggers
   FOR DELETE
   TO authenticated
   USING (public.is_org_admin(org_id));
-
 CREATE POLICY "crm_sequence_triggers_service_role"
   ON crm_sequence_triggers
   FOR ALL
   TO service_role
   USING (true);
-
 -- ==========================================================================
 -- SECTION 3: Server-Side Stage Change Trigger (lead_submissions)
 -- ==========================================================================
@@ -407,19 +389,16 @@ BEGIN
   RETURN NULL; -- AFTER trigger return value is ignored
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_stage_change ON lead_submissions;
 CREATE TRIGGER trg_lead_stage_change
   AFTER UPDATE OF pipeline_stage ON lead_submissions
   FOR EACH ROW
   EXECUTE FUNCTION fn_lead_stage_change_notify();
-
 -- ==========================================================================
 -- SECTION 4: @Mentions Support
 -- ==========================================================================
 
 ALTER TABLE lead_activities ADD COLUMN IF NOT EXISTS mentions jsonb NOT NULL DEFAULT '[]';
-
 CREATE TABLE IF NOT EXISTS crm_mentions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -435,54 +414,43 @@ CREATE TABLE IF NOT EXISTS crm_mentions (
   CONSTRAINT crm_mentions_entity_type_check
     CHECK (entity_type IN ('activity', 'note', 'deal_activity'))
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_mentions_user_unread
   ON crm_mentions(mentioned_user_id, read, created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_crm_mentions_entity
   ON crm_mentions(entity_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_mentions_org
   ON crm_mentions(org_id);
-
 ALTER TABLE crm_mentions ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "crm_mentions_select"
   ON crm_mentions
   FOR SELECT
   TO authenticated
   USING (mentioned_user_id = auth.uid());
-
 CREATE POLICY "crm_mentions_insert"
   ON crm_mentions
   FOR INSERT
   TO authenticated
   WITH CHECK (public.is_org_member(org_id));
-
 CREATE POLICY "crm_mentions_update"
   ON crm_mentions
   FOR UPDATE
   TO authenticated
   USING (mentioned_user_id = auth.uid())
   WITH CHECK (mentioned_user_id = auth.uid());
-
 CREATE POLICY "crm_mentions_service_role"
   ON crm_mentions
   FOR ALL
   TO service_role
   USING (true);
-
 -- ==========================================================================
 -- SECTION 5: Live Presence Enhancement
 -- ==========================================================================
 
 ALTER TABLE user_presence ADD COLUMN IF NOT EXISTS viewing_entity_type text;
 ALTER TABLE user_presence ADD COLUMN IF NOT EXISTS viewing_entity_id uuid;
-
 CREATE INDEX IF NOT EXISTS idx_user_presence_entity
   ON user_presence(viewing_entity_type, viewing_entity_id)
   WHERE viewing_entity_type IS NOT NULL;
-
 CREATE OR REPLACE FUNCTION public.crm_get_entity_viewers(
   p_entity_type text,
   p_entity_id uuid
@@ -507,7 +475,6 @@ BEGIN
     AND up.last_activity_at > now() - interval '5 minutes';
 END;
 $$;
-
 -- ==========================================================================
 -- SECTION 6: Deal Rooms
 -- ==========================================================================
@@ -528,7 +495,6 @@ CREATE TABLE IF NOT EXISTS crm_deal_rooms (
   UNIQUE(deal_id),
   CONSTRAINT crm_deal_rooms_status_check CHECK (status IN ('active', 'archived'))
 );
-
 CREATE TABLE IF NOT EXISTS crm_deal_room_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   room_id uuid NOT NULL REFERENCES crm_deal_rooms(id) ON DELETE CASCADE,
@@ -544,22 +510,16 @@ CREATE TABLE IF NOT EXISTS crm_deal_room_messages (
   CONSTRAINT crm_deal_room_messages_type_check
     CHECK (message_type IN ('text', 'file', 'system', 'action'))
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_rooms_deal
   ON crm_deal_rooms(deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_rooms_org
   ON crm_deal_rooms(org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_room_messages_room_created
   ON crm_deal_room_messages(room_id, created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_room_messages_org
   ON crm_deal_room_messages(org_id);
-
 ALTER TABLE crm_deal_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crm_deal_room_messages ENABLE ROW LEVEL SECURITY;
-
 -- Participants-based access: user_id present in the participants jsonb array
 CREATE POLICY "crm_deal_rooms_select"
   ON crm_deal_rooms
@@ -573,13 +533,11 @@ CREATE POLICY "crm_deal_rooms_select"
       OR public.is_org_admin(org_id)
     )
   );
-
 CREATE POLICY "crm_deal_rooms_insert"
   ON crm_deal_rooms
   FOR INSERT
   TO authenticated
   WITH CHECK (public.is_org_member(org_id));
-
 CREATE POLICY "crm_deal_rooms_update"
   ON crm_deal_rooms
   FOR UPDATE
@@ -595,7 +553,6 @@ CREATE POLICY "crm_deal_rooms_update"
   WITH CHECK (
     public.is_org_member(org_id)
   );
-
 CREATE POLICY "crm_deal_rooms_delete"
   ON crm_deal_rooms
   FOR DELETE
@@ -604,13 +561,11 @@ CREATE POLICY "crm_deal_rooms_delete"
     created_by = auth.uid()
     OR public.is_org_admin(org_id)
   );
-
 CREATE POLICY "crm_deal_rooms_service_role"
   ON crm_deal_rooms
   FOR ALL
   TO service_role
   USING (true);
-
 -- Messages: accessible to room participants
 CREATE POLICY "crm_deal_room_messages_select"
   ON crm_deal_room_messages
@@ -628,7 +583,6 @@ CREATE POLICY "crm_deal_room_messages_select"
         )
     )
   );
-
 CREATE POLICY "crm_deal_room_messages_insert"
   ON crm_deal_room_messages
   FOR INSERT
@@ -645,14 +599,12 @@ CREATE POLICY "crm_deal_room_messages_insert"
         )
     )
   );
-
 CREATE POLICY "crm_deal_room_messages_update"
   ON crm_deal_room_messages
   FOR UPDATE
   TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
-
 CREATE POLICY "crm_deal_room_messages_delete"
   ON crm_deal_room_messages
   FOR DELETE
@@ -664,13 +616,11 @@ CREATE POLICY "crm_deal_room_messages_delete"
       WHERE r.id = room_id AND public.is_org_admin(r.org_id)
     )
   );
-
 CREATE POLICY "crm_deal_room_messages_service_role"
   ON crm_deal_room_messages
   FOR ALL
   TO service_role
   USING (true);
-
 -- Updated_at trigger for deal rooms
 CREATE OR REPLACE FUNCTION public.handle_crm_deal_rooms_updated_at()
 RETURNS trigger
@@ -681,11 +631,9 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_deal_rooms_updated ON crm_deal_rooms;
 CREATE TRIGGER trg_crm_deal_rooms_updated
   BEFORE UPDATE ON crm_deal_rooms
   FOR EACH ROW
   EXECUTE FUNCTION handle_crm_deal_rooms_updated_at();
-
 COMMIT;

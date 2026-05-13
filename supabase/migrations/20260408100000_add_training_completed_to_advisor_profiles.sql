@@ -4,7 +4,6 @@
 ALTER TABLE advisor_profiles
   ADD COLUMN IF NOT EXISTS training_completed boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS training_completed_at timestamptz;
-
 -- Grandfather all existing advisors (they were already active before this gate)
 UPDATE advisor_profiles
 SET training_completed = true,

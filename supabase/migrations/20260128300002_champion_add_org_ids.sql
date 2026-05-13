@@ -84,7 +84,6 @@ BEGIN
     RAISE NOTICE 'MPB Health organization already exists with ID: %', v_mpb_org_id;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO ZOHO_LEAD_SUBMISSIONS (if exists)
 -- ============================================
@@ -111,7 +110,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO ADVISOR_PROFILES (if exists)
 -- ============================================
@@ -136,7 +134,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO TRAINING_MODULES (if exists)
 -- ============================================
@@ -161,7 +158,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO TRAINING_PROGRESS (if exists)
 -- ============================================
@@ -186,7 +182,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO SOP_DOCUMENTS (if exists)
 -- ============================================
@@ -211,7 +206,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO BULLETINS (if exists)
 -- ============================================
@@ -236,7 +230,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO ADVISOR_FORMS (if exists)
 -- ============================================
@@ -261,7 +254,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO FORM_SUBMISSIONS (if exists)
 -- ============================================
@@ -286,7 +278,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO ADVISOR_MEETINGS (if exists)
 -- ============================================
@@ -311,7 +302,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO MEETING_INVITATIONS (if exists)
 -- ============================================
@@ -336,7 +326,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO LEAD_ACTIVITIES (if exists)
 -- ============================================
@@ -361,7 +350,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO LEAD_TASKS (if exists)
 -- ============================================
@@ -386,7 +374,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO CERTIFICATIONS (if exists)
 -- ============================================
@@ -411,7 +398,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO ONBOARDING_STEPS (if exists)
 -- ============================================
@@ -436,7 +422,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- ADD ORG_ID TO ONBOARDING_PROGRESS (if exists)
 -- ============================================
@@ -461,7 +446,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================
 -- CREATE MEMBERSHIPS FOR EXISTING USERS
 -- Add all existing advisor_profiles users to MPB org
@@ -509,7 +493,6 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RAISE NOTICE 'Could not create memberships: %', SQLERRM;
 END $$;
-
 -- ============================================
 -- VERIFY MIGRATION
 -- ============================================

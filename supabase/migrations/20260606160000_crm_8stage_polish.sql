@@ -7,7 +7,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Legacy NULL-org pipeline stages: deactivate the canonical names so the
 --    per-org seeded rows from 20260606140000 are the only active set.
@@ -20,7 +19,6 @@ WHERE org_id IS NULL
       'new', 'working', 'quoted', 'engaged', 'application_in_progress',
       'won', 'nurture', 'lost'
   );
-
 -- ----------------------------------------------------------------------------
 -- 2. workflow_subsection trigger: do not silently flip do_not_contact to false
 --    on nurture inserts (caller intent must be preserved).
@@ -64,7 +62,6 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 -- ----------------------------------------------------------------------------
 -- 3. Auto-start Quote-Response cadence on stage → 'quoted'.
 --    Fires AFTER UPDATE so the stage timestamp trigger has already set
@@ -119,14 +116,12 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_start_quote_cadence ON public.lead_submissions;
 CREATE TRIGGER trg_lead_start_quote_cadence
     AFTER UPDATE OF pipeline_stage ON public.lead_submissions
     FOR EACH ROW
     WHEN (NEW.pipeline_stage = 'quoted' AND OLD.pipeline_stage IS DISTINCT FROM NEW.pipeline_stage)
     EXECUTE FUNCTION public.crm_lead_start_quote_cadence();
-
 -- ----------------------------------------------------------------------------
 -- 4. Stalled-leads alert RPC (default: anything outside terminal stages
 --    sitting longer than `p_threshold_days` since stage_changed_at).
@@ -173,11 +168,8 @@ BEGIN
     ORDER BY COALESCE(ls.stage_changed_at, ls.created_at) ASC;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_report_stalled_leads(uuid, int) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_report_stalled_leads(uuid, int) TO authenticated, service_role;
-
 COMMENT ON FUNCTION public.crm_report_stalled_leads IS
     'Returns active leads whose stage has not progressed within p_threshold_days. Drives stalled-stage alerts panel.';
-
 COMMIT;

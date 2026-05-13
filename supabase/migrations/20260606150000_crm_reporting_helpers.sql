@@ -1,7 +1,6 @@
 -- Reporting helpers for MP 8-stage CRM (dashboards + custom report pages)
 
 BEGIN;
-
 CREATE OR REPLACE FUNCTION public.crm_report_lead_stage_counts(p_org_id uuid)
 RETURNS TABLE (pipeline_stage text, lead_count bigint)
 LANGUAGE plpgsql
@@ -23,10 +22,8 @@ BEGIN
     ORDER BY 1;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_report_lead_stage_counts(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_report_lead_stage_counts(uuid) TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.crm_report_application_dropoff(p_org_id uuid)
 RETURNS TABLE (withdrawn_or_lost bigint, still_in_progress bigint)
 LANGUAGE plpgsql
@@ -50,11 +47,8 @@ BEGIN
     WHERE org_id = p_org_id;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_report_application_dropoff(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_report_application_dropoff(uuid) TO authenticated, service_role;
-
 COMMENT ON FUNCTION public.crm_report_lead_stage_counts IS 'Per-stage lead counts for funnel / stalled-stage reports.';
 COMMENT ON FUNCTION public.crm_report_application_dropoff IS 'Heuristic application funnel drop-off snapshot (tune lost_reason filters over time).';
-
 COMMIT;

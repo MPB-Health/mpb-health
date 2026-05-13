@@ -14,10 +14,8 @@ CREATE TABLE IF NOT EXISTS advisor_contact_directory (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Enable RLS
 ALTER TABLE advisor_contact_directory ENABLE ROW LEVEL SECURITY;
-
 -- Advisors and members can read active contacts
 DROP POLICY IF EXISTS "authenticated_read_active_contacts" ON advisor_contact_directory;
 CREATE POLICY "authenticated_read_active_contacts"
@@ -25,7 +23,6 @@ CREATE POLICY "authenticated_read_active_contacts"
   FOR SELECT
   TO authenticated
   USING (is_active = true);
-
 -- Admins can read all contacts (including inactive)
 DROP POLICY IF EXISTS "admin_read_all_contacts" ON advisor_contact_directory;
 CREATE POLICY "admin_read_all_contacts"
@@ -39,7 +36,6 @@ CREATE POLICY "admin_read_all_contacts"
         AND user_roles.role IN ('admin', 'super_admin')
     )
   );
-
 -- Admins can insert contacts
 DROP POLICY IF EXISTS "admin_insert_contacts" ON advisor_contact_directory;
 CREATE POLICY "admin_insert_contacts"
@@ -53,7 +49,6 @@ CREATE POLICY "admin_insert_contacts"
         AND user_roles.role IN ('admin', 'super_admin')
     )
   );
-
 -- Admins can update contacts
 DROP POLICY IF EXISTS "admin_update_contacts" ON advisor_contact_directory;
 CREATE POLICY "admin_update_contacts"
@@ -67,7 +62,6 @@ CREATE POLICY "admin_update_contacts"
         AND user_roles.role IN ('admin', 'super_admin')
     )
   );
-
 -- Admins can delete contacts
 DROP POLICY IF EXISTS "admin_delete_contacts" ON advisor_contact_directory;
 CREATE POLICY "admin_delete_contacts"
@@ -81,7 +75,6 @@ CREATE POLICY "admin_delete_contacts"
         AND user_roles.role IN ('admin', 'super_admin')
     )
   );
-
 -- Index for ordering
 CREATE INDEX IF NOT EXISTS idx_contact_directory_display_order ON advisor_contact_directory (display_order);
 CREATE INDEX IF NOT EXISTS idx_contact_directory_department ON advisor_contact_directory (department);

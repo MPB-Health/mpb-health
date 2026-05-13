@@ -5,7 +5,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: ADD NEW PERMISSION DEFINITIONS
 -- ============================================================================
@@ -47,8 +46,6 @@ INSERT INTO public.permissions (key, module, description) VALUES
     -- Pipeline delete (was missing)
     ('pipeline.delete',  'pipeline',  'Delete pipeline stages')
 ON CONFLICT (key) DO NOTHING;
-
-
 -- ============================================================================
 -- SECTION B: GRANT NEW PERMISSIONS TO ROLES (DEFAULT ORG)
 -- ============================================================================
@@ -70,7 +67,6 @@ WHERE p.key IN (
     'tasks.delete', 'pipeline.delete'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- admin: ALL new permissions except none (same as owner for these)
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -88,7 +84,6 @@ WHERE p.key IN (
     'tasks.delete', 'pipeline.delete'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- manager: all read/write/export, send quotes/invoices, no delete
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -106,7 +101,6 @@ WHERE p.key IN (
     'tasks.delete'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- agent: read/write only, no delete/export/send
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -123,7 +117,6 @@ WHERE p.key IN (
     'campaigns.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- member: read only
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -140,5 +133,4 @@ WHERE p.key IN (
     'campaigns.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 COMMIT;

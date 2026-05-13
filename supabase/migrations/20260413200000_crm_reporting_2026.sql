@@ -5,7 +5,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- 1. Individual Performance Dashboard (monthly, per-rep)
 -- ============================================================================
@@ -95,7 +94,7 @@ BEGIN
         COUNT(*) FILTER (WHERE la.activity_type = 'referral_requested')::bigint AS referrals_requested,
         COUNT(*) FILTER (WHERE la.activity_type = 'community_outreach')::bigint AS community_activities
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     LEFT JOIN public.lead_activities la
         ON la.created_by = u.id
         AND la.created_at >= v_start AND la.created_at < v_end
@@ -103,9 +102,7 @@ BEGIN
     ORDER BY rep_name;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_individual_performance(uuid, integer, integer) TO authenticated;
-
 -- ============================================================================
 -- 2. Leads: Inhouse vs Self-Generated
 -- ============================================================================
@@ -141,9 +138,7 @@ BEGIN
     ORDER BY lead_count DESC;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_leads_inhouse_vs_selfgen(uuid, integer, integer) TO authenticated;
-
 -- ============================================================================
 -- 3. Lead Source Breakdown (with conversion %)
 -- ============================================================================
@@ -184,9 +179,7 @@ BEGIN
     ORDER BY total_leads DESC;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_lead_source_breakdown_monthly(uuid, integer, integer) TO authenticated;
-
 -- ============================================================================
 -- 4. Revenue & Closed Sales (monthly + YTD)
 -- ============================================================================
@@ -256,14 +249,12 @@ BEGIN
             ELSE 0
         END AS avg_deal_size
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     GROUP BY u.id, u.email, u.raw_user_meta_data
     ORDER BY rep_name;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_revenue_closed_sales(uuid, integer, integer) TO authenticated;
-
 -- ============================================================================
 -- 5. Conversion Rates (Inhouse, Self-Gen, Overall)
 -- ============================================================================
@@ -315,7 +306,7 @@ BEGIN
             THEN ROUND(COUNT(ls.id) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 / COUNT(ls.id), 1)
             ELSE 0 END AS overall_conv_pct
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     LEFT JOIN public.lead_submissions ls
         ON ls.assigned_to = u.id AND ls.org_id = p_org_id
         AND ls.created_at >= v_start AND ls.created_at < v_end
@@ -323,9 +314,7 @@ BEGIN
     ORDER BY rep_name;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_conversion_rates(uuid, integer, integer) TO authenticated;
-
 -- ============================================================================
 -- 6. Activity Log Summary vs Targets
 -- ============================================================================
@@ -368,7 +357,7 @@ BEGIN
             0
         ) AS target
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     INNER JOIN public.lead_activities la
         ON la.created_by = u.id
         AND la.created_at >= v_start AND la.created_at < v_end
@@ -376,9 +365,7 @@ BEGIN
     ORDER BY rep_name, la.activity_type;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_activity_summary_vs_targets(uuid, integer, integer) TO authenticated;
-
 -- ============================================================================
 -- 7. Outside Advisor Production
 -- ============================================================================
@@ -434,9 +421,7 @@ BEGIN
     ORDER BY oa.name;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_outside_advisor_production(uuid, integer, integer) TO authenticated;
-
 -- ============================================================================
 -- 8. Annual Lead Trend (12-month line)
 -- ============================================================================
@@ -466,9 +451,7 @@ BEGIN
     ORDER BY m.n;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_annual_lead_trend(uuid, integer) TO authenticated;
-
 -- ============================================================================
 -- 9. Annual Revenue Trend (per-rep bar)
 -- ============================================================================
@@ -493,7 +476,7 @@ BEGIN
         m.n AS month_num,
         COALESCE(SUM(d.amount), 0)::numeric AS revenue
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     CROSS JOIN generate_series(1, 12) AS m(n)
     LEFT JOIN public.crm_deals d
         ON d.owner_id = u.id AND d.org_id = p_org_id
@@ -504,9 +487,7 @@ BEGIN
     ORDER BY rep_name, m.n;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_annual_revenue_trend(uuid, integer) TO authenticated;
-
 -- ============================================================================
 -- 10. Annual Lead Source Distribution (pie + YTD conv %)
 -- ============================================================================
@@ -546,9 +527,7 @@ BEGIN
     ORDER BY total_leads DESC;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_annual_source_distribution(uuid, integer) TO authenticated;
-
 -- ============================================================================
 -- 11. Annual Conversion Rates by Rep (bar + YTD table)
 -- ============================================================================
@@ -593,7 +572,7 @@ BEGIN
                  NULLIF(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true), 0), 1)
             ELSE 0 END AS selfgen_conv_pct
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     LEFT JOIN public.lead_submissions ls
         ON ls.assigned_to = u.id AND ls.org_id = p_org_id
         AND ls.created_at >= v_start AND ls.created_at < v_end
@@ -601,7 +580,5 @@ BEGIN
     ORDER BY rep_name;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_annual_conversion_by_rep(uuid, integer) TO authenticated;
-
 COMMIT;

@@ -45,7 +45,6 @@ CREATE TABLE IF NOT EXISTS public.crm_vendors (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- -----------------------------------------------------
 -- Purchase Orders Table
 -- -----------------------------------------------------
@@ -101,7 +100,6 @@ CREATE TABLE IF NOT EXISTS public.crm_purchase_orders (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- -----------------------------------------------------
 -- Purchase Order Line Items
 -- -----------------------------------------------------
@@ -135,7 +133,6 @@ CREATE TABLE IF NOT EXISTS public.crm_purchase_order_line_items (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- -----------------------------------------------------
 -- Sales Orders Table
 -- -----------------------------------------------------
@@ -199,7 +196,6 @@ CREATE TABLE IF NOT EXISTS public.crm_sales_orders (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- -----------------------------------------------------
 -- Sales Order Line Items
 -- -----------------------------------------------------
@@ -234,7 +230,6 @@ CREATE TABLE IF NOT EXISTS public.crm_sales_order_line_items (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- -----------------------------------------------------
 -- Auto-generate PO/SO numbers
 -- -----------------------------------------------------
@@ -260,13 +255,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER trigger_generate_po_number
     BEFORE INSERT ON public.crm_purchase_orders
     FOR EACH ROW
     WHEN (NEW.po_number IS NULL OR NEW.po_number = '')
     EXECUTE FUNCTION generate_po_number();
-
 CREATE OR REPLACE FUNCTION generate_so_number()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -289,13 +282,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER trigger_generate_so_number
     BEFORE INSERT ON public.crm_sales_orders
     FOR EACH ROW
     WHEN (NEW.so_number IS NULL OR NEW.so_number = '')
     EXECUTE FUNCTION generate_so_number();
-
 -- -----------------------------------------------------
 -- Updated_at triggers
 -- -----------------------------------------------------
@@ -303,49 +294,39 @@ CREATE TRIGGER set_updated_at_crm_vendors
     BEFORE UPDATE ON public.crm_vendors
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER set_updated_at_crm_purchase_orders
     BEFORE UPDATE ON public.crm_purchase_orders
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER set_updated_at_crm_purchase_order_line_items
     BEFORE UPDATE ON public.crm_purchase_order_line_items
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER set_updated_at_crm_sales_orders
     BEFORE UPDATE ON public.crm_sales_orders
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER set_updated_at_crm_sales_order_line_items
     BEFORE UPDATE ON public.crm_sales_order_line_items
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
 -- -----------------------------------------------------
 -- Indexes
 -- -----------------------------------------------------
 CREATE INDEX idx_crm_vendors_org ON public.crm_vendors(org_id);
 CREATE INDEX idx_crm_vendors_name ON public.crm_vendors(name);
 CREATE INDEX idx_crm_vendors_active ON public.crm_vendors(is_active);
-
 CREATE INDEX idx_crm_purchase_orders_org ON public.crm_purchase_orders(org_id);
 CREATE INDEX idx_crm_purchase_orders_vendor ON public.crm_purchase_orders(vendor_id);
 CREATE INDEX idx_crm_purchase_orders_status ON public.crm_purchase_orders(status);
 CREATE INDEX idx_crm_purchase_orders_number ON public.crm_purchase_orders(po_number);
-
 CREATE INDEX idx_crm_po_line_items_order ON public.crm_purchase_order_line_items(purchase_order_id);
-
 CREATE INDEX idx_crm_sales_orders_org ON public.crm_sales_orders(org_id);
 CREATE INDEX idx_crm_sales_orders_account ON public.crm_sales_orders(account_id);
 CREATE INDEX idx_crm_sales_orders_status ON public.crm_sales_orders(status);
 CREATE INDEX idx_crm_sales_orders_number ON public.crm_sales_orders(so_number);
 CREATE INDEX idx_crm_sales_orders_quote ON public.crm_sales_orders(quote_id);
-
 CREATE INDEX idx_crm_so_line_items_order ON public.crm_sales_order_line_items(sales_order_id);
-
 -- -----------------------------------------------------
 -- RLS Policies
 -- -----------------------------------------------------
@@ -354,72 +335,51 @@ ALTER TABLE public.crm_purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_purchase_order_line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_sales_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_sales_order_line_items ENABLE ROW LEVEL SECURITY;
-
 -- Vendors RLS
 CREATE POLICY vendors_select ON public.crm_vendors FOR SELECT
     USING (is_org_member(org_id));
-
 CREATE POLICY vendors_insert ON public.crm_vendors FOR INSERT
     WITH CHECK (is_org_member(org_id) AND has_org_permission(org_id, 'vendors.write'));
-
 CREATE POLICY vendors_update ON public.crm_vendors FOR UPDATE
     USING (is_org_member(org_id) AND has_org_permission(org_id, 'vendors.write'));
-
 CREATE POLICY vendors_delete ON public.crm_vendors FOR DELETE
     USING (is_org_member(org_id) AND has_org_permission(org_id, 'vendors.delete'));
-
 -- Purchase Orders RLS
 CREATE POLICY po_select ON public.crm_purchase_orders FOR SELECT
     USING (is_org_member(org_id));
-
 CREATE POLICY po_insert ON public.crm_purchase_orders FOR INSERT
     WITH CHECK (is_org_member(org_id) AND has_org_permission(org_id, 'purchase_orders.write'));
-
 CREATE POLICY po_update ON public.crm_purchase_orders FOR UPDATE
     USING (is_org_member(org_id) AND has_org_permission(org_id, 'purchase_orders.write'));
-
 CREATE POLICY po_delete ON public.crm_purchase_orders FOR DELETE
     USING (is_org_member(org_id) AND has_org_permission(org_id, 'purchase_orders.delete'));
-
 -- PO Line Items RLS (via parent)
 CREATE POLICY po_items_select ON public.crm_purchase_order_line_items FOR SELECT
     USING (EXISTS (SELECT 1 FROM public.crm_purchase_orders po WHERE po.id = purchase_order_id AND is_org_member(po.org_id)));
-
 CREATE POLICY po_items_insert ON public.crm_purchase_order_line_items FOR INSERT
     WITH CHECK (EXISTS (SELECT 1 FROM public.crm_purchase_orders po WHERE po.id = purchase_order_id AND is_org_member(po.org_id) AND has_org_permission(po.org_id, 'purchase_orders.write')));
-
 CREATE POLICY po_items_update ON public.crm_purchase_order_line_items FOR UPDATE
     USING (EXISTS (SELECT 1 FROM public.crm_purchase_orders po WHERE po.id = purchase_order_id AND is_org_member(po.org_id) AND has_org_permission(po.org_id, 'purchase_orders.write')));
-
 CREATE POLICY po_items_delete ON public.crm_purchase_order_line_items FOR DELETE
     USING (EXISTS (SELECT 1 FROM public.crm_purchase_orders po WHERE po.id = purchase_order_id AND is_org_member(po.org_id) AND has_org_permission(po.org_id, 'purchase_orders.write')));
-
 -- Sales Orders RLS
 CREATE POLICY so_select ON public.crm_sales_orders FOR SELECT
     USING (is_org_member(org_id));
-
 CREATE POLICY so_insert ON public.crm_sales_orders FOR INSERT
     WITH CHECK (is_org_member(org_id) AND has_org_permission(org_id, 'sales_orders.write'));
-
 CREATE POLICY so_update ON public.crm_sales_orders FOR UPDATE
     USING (is_org_member(org_id) AND has_org_permission(org_id, 'sales_orders.write'));
-
 CREATE POLICY so_delete ON public.crm_sales_orders FOR DELETE
     USING (is_org_member(org_id) AND has_org_permission(org_id, 'sales_orders.delete'));
-
 -- SO Line Items RLS (via parent)
 CREATE POLICY so_items_select ON public.crm_sales_order_line_items FOR SELECT
     USING (EXISTS (SELECT 1 FROM public.crm_sales_orders so WHERE so.id = sales_order_id AND is_org_member(so.org_id)));
-
 CREATE POLICY so_items_insert ON public.crm_sales_order_line_items FOR INSERT
     WITH CHECK (EXISTS (SELECT 1 FROM public.crm_sales_orders so WHERE so.id = sales_order_id AND is_org_member(so.org_id) AND has_org_permission(so.org_id, 'sales_orders.write')));
-
 CREATE POLICY so_items_update ON public.crm_sales_order_line_items FOR UPDATE
     USING (EXISTS (SELECT 1 FROM public.crm_sales_orders so WHERE so.id = sales_order_id AND is_org_member(so.org_id) AND has_org_permission(so.org_id, 'sales_orders.write')));
-
 CREATE POLICY so_items_delete ON public.crm_sales_order_line_items FOR DELETE
     USING (EXISTS (SELECT 1 FROM public.crm_sales_orders so WHERE so.id = sales_order_id AND is_org_member(so.org_id) AND has_org_permission(so.org_id, 'sales_orders.write')));
-
 -- -----------------------------------------------------
 -- Add permissions for new modules
 -- -----------------------------------------------------
@@ -436,7 +396,6 @@ INSERT INTO public.permissions (key, module, description) VALUES
     ('sales_orders.delete', 'sales_orders', 'Delete sales orders'),
     ('sales_orders.approve', 'sales_orders', 'Approve sales orders')
 ON CONFLICT (key) DO NOTHING;
-
 -- Map permissions to roles (DISABLED - requires org_id for multi-tenant)
 /*
 INSERT INTO public.role_permissions (org_id, role, permission_id)
@@ -462,19 +421,16 @@ ALTER TABLE public.crm_quotes
     ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES auth.users(id),
     ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
-
 ALTER TABLE public.crm_invoices
     ADD COLUMN IF NOT EXISTS approval_status TEXT DEFAULT 'not_required' CHECK (approval_status IN ('not_required', 'pending', 'approved', 'rejected')),
     ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES auth.users(id),
     ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
-
 -- Add approval permissions
 INSERT INTO public.permissions (key, module, description) VALUES
     ('quotes.approve', 'quotes', 'Approve quotes'),
     ('invoices.approve', 'invoices', 'Approve invoices')
 ON CONFLICT (key) DO NOTHING;
-
 -- Map approval permissions to owner/admin/manager (DISABLED - requires org_id for multi-tenant)
 /*
 INSERT INTO public.role_permissions (org_id, role, permission_id)
@@ -483,4 +439,4 @@ FROM (VALUES ('owner'), ('admin'), ('manager')) AS r(role)
 CROSS JOIN public.permissions p
 WHERE p.key IN ('quotes.approve', 'invoices.approve')
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-*/
+*/;

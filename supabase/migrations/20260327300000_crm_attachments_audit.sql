@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- 1. CRM Attachments
 -- Polymorphic: any entity type (lead, contact, deal, case, account) can own
@@ -27,16 +26,13 @@ CREATE TABLE IF NOT EXISTS public.crm_attachments (
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_attachments_entity
     ON public.crm_attachments (entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_crm_attachments_org
     ON public.crm_attachments (org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_attachments_uploaded_by
     ON public.crm_attachments (uploaded_by);
-
 ALTER TABLE public.crm_attachments ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "attachments_org_access" ON public.crm_attachments
     FOR ALL
     USING (
@@ -45,7 +41,6 @@ CREATE POLICY "attachments_org_access" ON public.crm_attachments
             WHERE om.user_id = auth.uid()
         )
     );
-
 -- ============================================================================
 -- 2. Centralized Audit Log
 -- Records major CRM actions for compliance and operational review.
@@ -64,7 +59,6 @@ CREATE TABLE IF NOT EXISTS public.crm_audit_log (
     user_agent text,
     created_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_audit_log_entity
     ON public.crm_audit_log (entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_crm_audit_log_org_date
@@ -73,9 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_crm_audit_log_user
     ON public.crm_audit_log (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_crm_audit_log_action
     ON public.crm_audit_log (action);
-
 ALTER TABLE public.crm_audit_log ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "audit_org_read" ON public.crm_audit_log
     FOR SELECT
     USING (
@@ -84,7 +76,6 @@ CREATE POLICY "audit_org_read" ON public.crm_audit_log
             WHERE om.user_id = auth.uid()
         )
     );
-
 CREATE POLICY "audit_org_insert" ON public.crm_audit_log
     FOR INSERT
     WITH CHECK (
@@ -93,7 +84,6 @@ CREATE POLICY "audit_org_insert" ON public.crm_audit_log
             WHERE om.user_id = auth.uid()
         )
     );
-
 -- ============================================================================
 -- 3. Trigger: auto-update updated_at on crm_attachments
 -- ============================================================================
@@ -107,13 +97,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_attachments_updated_at ON public.crm_attachments;
 CREATE TRIGGER trg_crm_attachments_updated_at
     BEFORE UPDATE ON public.crm_attachments
     FOR EACH ROW
     EXECUTE FUNCTION public.trg_crm_attachments_updated_at();
-
 -- ============================================================================
 -- 4. Supabase Storage bucket for CRM attachments (idempotent)
 -- Note: Bucket creation via SQL is Supabase-specific.
@@ -123,17 +111,13 @@ CREATE TRIGGER trg_crm_attachments_updated_at
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('crm-attachments', 'crm-attachments', false)
 ON CONFLICT (id) DO NOTHING;
-
 CREATE POLICY "crm_attachments_bucket_select" ON storage.objects
     FOR SELECT
     USING (bucket_id = 'crm-attachments');
-
 CREATE POLICY "crm_attachments_bucket_insert" ON storage.objects
     FOR INSERT
     WITH CHECK (bucket_id = 'crm-attachments');
-
 CREATE POLICY "crm_attachments_bucket_delete" ON storage.objects
     FOR DELETE
     USING (bucket_id = 'crm-attachments');
-
 COMMIT;

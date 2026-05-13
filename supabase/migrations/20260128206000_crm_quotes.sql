@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: CREATE QUOTES TABLE
 -- ============================================================================
@@ -64,7 +63,6 @@ CREATE TABLE IF NOT EXISTS public.crm_quotes (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION B: CREATE QUOTE LINE ITEMS TABLE
 -- ============================================================================
@@ -96,7 +94,6 @@ CREATE TABLE IF NOT EXISTS public.crm_quote_line_items (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION C: QUOTE NUMBER SEQUENCE
 -- ============================================================================
@@ -122,7 +119,6 @@ BEGIN
     RETURN 'Q-' || v_year || '-' || LPAD(v_count::text, 5, '0');
 END;
 $$;
-
 -- Trigger to auto-generate quote number
 CREATE OR REPLACE FUNCTION public.handle_quote_number()
 RETURNS trigger
@@ -137,13 +133,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_quote_number ON public.crm_quotes;
 CREATE TRIGGER trigger_quote_number
     BEFORE INSERT ON public.crm_quotes
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_quote_number();
-
 -- ============================================================================
 -- SECTION D: INDEXES
 -- ============================================================================
@@ -151,45 +145,33 @@ CREATE TRIGGER trigger_quote_number
 -- Quotes indexes
 CREATE INDEX IF NOT EXISTS idx_crm_quotes_org_id
     ON public.crm_quotes (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quotes_deal_id
     ON public.crm_quotes (deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quotes_account_id
     ON public.crm_quotes (account_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quotes_contact_id
     ON public.crm_quotes (contact_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quotes_status
     ON public.crm_quotes (status);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quotes_valid_until
     ON public.crm_quotes (valid_until);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quotes_quote_number
     ON public.crm_quotes (quote_number);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quotes_created_at
     ON public.crm_quotes (created_at DESC);
-
 -- Quote line items indexes
 CREATE INDEX IF NOT EXISTS idx_crm_quote_line_items_quote
     ON public.crm_quote_line_items (quote_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quote_line_items_product
     ON public.crm_quote_line_items (product_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_quote_line_items_sort
     ON public.crm_quote_line_items (quote_id, sort_order);
-
 -- ============================================================================
 -- SECTION E: ROW LEVEL SECURITY
 -- ============================================================================
 
 ALTER TABLE public.crm_quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_quote_line_items ENABLE ROW LEVEL SECURITY;
-
 -- Quotes policies
 CREATE POLICY "crm_quotes_select"
     ON public.crm_quotes
@@ -198,7 +180,6 @@ CREATE POLICY "crm_quotes_select"
     USING (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_quotes_insert"
     ON public.crm_quotes
     FOR INSERT
@@ -206,7 +187,6 @@ CREATE POLICY "crm_quotes_insert"
     WITH CHECK (
         public.has_org_permission(org_id, 'quotes.write')
     );
-
 CREATE POLICY "crm_quotes_update"
     ON public.crm_quotes
     FOR UPDATE
@@ -217,7 +197,6 @@ CREATE POLICY "crm_quotes_update"
     WITH CHECK (
         public.has_org_permission(org_id, 'quotes.write')
     );
-
 CREATE POLICY "crm_quotes_delete"
     ON public.crm_quotes
     FOR DELETE
@@ -226,7 +205,6 @@ CREATE POLICY "crm_quotes_delete"
         public.has_org_permission(org_id, 'quotes.write')
         AND status = 'draft'  -- Can only delete drafts
     );
-
 -- Quote line items policies
 CREATE POLICY "crm_quote_line_items_select"
     ON public.crm_quote_line_items
@@ -239,7 +217,6 @@ CREATE POLICY "crm_quote_line_items_select"
             AND public.is_org_member(q.org_id)
         )
     );
-
 CREATE POLICY "crm_quote_line_items_insert"
     ON public.crm_quote_line_items
     FOR INSERT
@@ -252,7 +229,6 @@ CREATE POLICY "crm_quote_line_items_insert"
             AND q.status = 'draft'  -- Can only modify drafts
         )
     );
-
 CREATE POLICY "crm_quote_line_items_update"
     ON public.crm_quote_line_items
     FOR UPDATE
@@ -273,7 +249,6 @@ CREATE POLICY "crm_quote_line_items_update"
             AND q.status = 'draft'
         )
     );
-
 CREATE POLICY "crm_quote_line_items_delete"
     ON public.crm_quote_line_items
     FOR DELETE
@@ -286,7 +261,6 @@ CREATE POLICY "crm_quote_line_items_delete"
             AND q.status = 'draft'
         )
     );
-
 -- ============================================================================
 -- SECTION F: QUOTE TOTALS CALCULATION TRIGGER
 -- ============================================================================
@@ -333,13 +307,11 @@ BEGIN
     END IF;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_recalculate_quote_totals ON public.crm_quote_line_items;
 CREATE TRIGGER trigger_recalculate_quote_totals
     AFTER INSERT OR UPDATE OR DELETE ON public.crm_quote_line_items
     FOR EACH ROW
     EXECUTE FUNCTION public.recalculate_quote_totals();
-
 -- ============================================================================
 -- SECTION G: UPDATED_AT TRIGGERS
 -- ============================================================================
@@ -353,13 +325,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_quotes_updated_at ON public.crm_quotes;
 CREATE TRIGGER trigger_crm_quotes_updated_at
     BEFORE UPDATE ON public.crm_quotes
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_quotes_updated_at();
-
 CREATE OR REPLACE FUNCTION public.handle_crm_quote_line_items_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -369,11 +339,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_quote_line_items_updated_at ON public.crm_quote_line_items;
 CREATE TRIGGER trigger_crm_quote_line_items_updated_at
     BEFORE UPDATE ON public.crm_quote_line_items
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_quote_line_items_updated_at();
-
 COMMIT;

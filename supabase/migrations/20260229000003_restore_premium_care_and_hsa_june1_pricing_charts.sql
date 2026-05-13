@@ -36,7 +36,6 @@ SELECT 'Premium Care June 1 Start Date Pricing',
   0,
   '{"thumbnail_title": "Premium Care June 1 Start Date Pricing", "thumbnail_title_top": "100px", "thumbnail_title_font_size": "37px", "thumbnail_title_color": "#ffffff"}'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM public.sop_documents WHERE slug = 'premium-care-may-start-date-pricing');
-
 INSERT INTO public.sop_documents (
   title,
   slug,

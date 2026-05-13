@@ -55,6 +55,14 @@ interface RequestBody {
   thread_id?: string;
   signature_id?: string;
   template_id?: string;
+  /**
+   * CRM rebuild Section 7 (Round 3 Addendum) — when this send is sourced
+   * from the admin-curated Master Template Library, callers stamp the
+   * master template id so the outbound row in `crm_email_log` can be
+   * attributed back to the master library and per-template usage counters
+   * are bumped via crm_master_template_bump_usage().
+   */
+  master_template_id?: string;
   attachment_ids?: string[];
   metadata?: Record<string, unknown>;
 
@@ -146,6 +154,7 @@ serve(async (req) => {
       thread_id,
       signature_id,
       template_id,
+      master_template_id,
       attachment_ids,
       metadata,
       ab_test_id,
@@ -184,6 +193,7 @@ serve(async (req) => {
       { name: 'tracking_id', value: trackingId },
     ];
     if (template_id) resendTags.push({ name: 'template_id', value: template_id });
+    if (master_template_id) resendTags.push({ name: 'master_template_id', value: master_template_id });
     if (lead_id) resendTags.push({ name: 'lead_id', value: lead_id });
     if (org_id) resendTags.push({ name: 'org_id', value: org_id });
     if (tags) {
@@ -255,6 +265,7 @@ serve(async (req) => {
         org_id: org_id || null,
         lead_id: lead_id || null,
         template_id: template_id || null,
+        master_template_id: master_template_id || null,
         thread_id: thread_id || null,
         direction: 'outbound',
         from_address: FROM_EMAIL,
@@ -320,6 +331,15 @@ serve(async (req) => {
           }),
         })
         .eq('id', thread_id);
+    }
+
+    // CRM rebuild Section 7 (Round 3 Addendum) — bump master-template usage
+    // metrics so the Templates → Master Library admin view can rank by use.
+    if (master_template_id && status === 'sent') {
+      const { error: bumpErr } = await supabase.rpc('crm_master_template_bump_usage', {
+        p_template_id: master_template_id,
+      });
+      if (bumpErr) log.error('master template usage bump failed:', bumpErr);
     }
 
     // Sales Plan 2026: bump the running test's per-variant send counter.

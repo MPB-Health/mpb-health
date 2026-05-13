@@ -8,7 +8,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: INSERT NEW PERMISSION DEFINITIONS
 -- ============================================================================
@@ -37,7 +36,6 @@ INSERT INTO public.permissions (key, module, description) VALUES
   ('members.read',          'members',     'View member records')
 
 ON CONFLICT (key) DO NOTHING;
-
 -- ============================================================================
 -- SECTION B: GRANT NEW PERMISSIONS TO ROLES (DEFAULT ORG)
 -- ============================================================================
@@ -59,7 +57,6 @@ WHERE p.key IN (
   'members.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- manager: read + manage support/content, read enrollments, read users, analytics
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -76,7 +73,6 @@ WHERE p.key IN (
   'members.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- agent: read-only across most modules, no user/enrollment management
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -90,7 +86,6 @@ WHERE p.key IN (
   'members.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- member: minimal read access
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -103,5 +98,4 @@ WHERE p.key IN (
   'content.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 COMMIT;

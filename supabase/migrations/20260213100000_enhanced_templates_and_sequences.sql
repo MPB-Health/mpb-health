@@ -21,13 +21,10 @@ CREATE TABLE IF NOT EXISTS crm_template_folders (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_template_folders_org
   ON crm_template_folders(org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_template_folders_parent
   ON crm_template_folders(parent_folder_id);
-
 -- ============================================================================
 -- PART 2: Template Enhancements (ALTER existing crm_templates)
 -- ============================================================================
@@ -41,16 +38,12 @@ ALTER TABLE crm_templates
   ADD COLUMN IF NOT EXISTS total_sent INTEGER DEFAULT 0,
   ADD COLUMN IF NOT EXISTS open_rate NUMERIC(5,2) DEFAULT 0,
   ADD COLUMN IF NOT EXISTS click_rate NUMERIC(5,2) DEFAULT 0;
-
 CREATE INDEX IF NOT EXISTS idx_crm_templates_folder
   ON crm_templates(folder_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_templates_version
   ON crm_templates(parent_version_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_templates_performance
   ON crm_templates(performance_score DESC);
-
 -- ============================================================================
 -- PART 3: Email Sequences
 -- ============================================================================
@@ -75,13 +68,10 @@ CREATE TABLE IF NOT EXISTS crm_email_sequences (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_sequences_org
   ON crm_email_sequences(org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_sequences_status
   ON crm_email_sequences(status);
-
 -- ============================================================================
 -- PART 4: Email Sequence Steps
 -- ============================================================================
@@ -108,13 +98,10 @@ CREATE TABLE IF NOT EXISTS crm_email_sequence_steps (
 
   UNIQUE(sequence_id, step_number)
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_steps_sequence
   ON crm_email_sequence_steps(sequence_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_steps_template
   ON crm_email_sequence_steps(template_id);
-
 -- ============================================================================
 -- PART 5: Email Sequence Enrollments
 -- ============================================================================
@@ -134,23 +121,17 @@ CREATE TABLE IF NOT EXISTS crm_email_sequence_enrollments (
   last_activity_at TIMESTAMPTZ,
   metadata JSONB DEFAULT '{}'
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_enrollments_sequence
   ON crm_email_sequence_enrollments(sequence_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_enrollments_lead
   ON crm_email_sequence_enrollments(lead_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_enrollments_contact
   ON crm_email_sequence_enrollments(contact_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_enrollments_status
   ON crm_email_sequence_enrollments(status);
-
 CREATE INDEX IF NOT EXISTS idx_crm_sequence_enrollments_next_action
   ON crm_email_sequence_enrollments(next_action_at)
   WHERE status = 'active';
-
 -- ============================================================================
 -- PART 6: Calendar Event Enhancements (ALTER existing calendar_events)
 -- ============================================================================
@@ -163,13 +144,10 @@ ALTER TABLE calendar_events
   ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#6366F1',
   ADD COLUMN IF NOT EXISTS attendees JSONB DEFAULT '[]',
   ADD COLUMN IF NOT EXISTS reminders JSONB DEFAULT '[]';
-
 CREATE INDEX IF NOT EXISTS idx_calendar_events_org
   ON calendar_events(org_id);
-
 CREATE INDEX IF NOT EXISTS idx_calendar_events_original
   ON calendar_events(original_event_id);
-
 -- ============================================================================
 -- PART 7: Meeting Schedules
 -- ============================================================================
@@ -194,16 +172,12 @@ CREATE TABLE IF NOT EXISTS crm_meeting_schedules (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_meeting_schedules_org
   ON crm_meeting_schedules(org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_meeting_schedules_user
   ON crm_meeting_schedules(user_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_meeting_schedules_slug
   ON crm_meeting_schedules(slug);
-
 -- ============================================================================
 -- PART 8: Meeting Bookings
 -- ============================================================================
@@ -225,19 +199,14 @@ CREATE TABLE IF NOT EXISTS crm_meeting_bookings (
   cancellation_reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_meeting_bookings_schedule
   ON crm_meeting_bookings(schedule_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_meeting_bookings_lead
   ON crm_meeting_bookings(lead_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_meeting_bookings_time
   ON crm_meeting_bookings(start_time, end_time);
-
 CREATE INDEX IF NOT EXISTS idx_crm_meeting_bookings_status
   ON crm_meeting_bookings(status);
-
 -- ============================================================================
 -- PART 9: Calendar Integrations
 -- ============================================================================
@@ -260,13 +229,10 @@ CREATE TABLE IF NOT EXISTS crm_calendar_integrations (
 
   UNIQUE(user_id, provider)
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_calendar_integrations_org
   ON crm_calendar_integrations(org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_calendar_integrations_user
   ON crm_calendar_integrations(user_id);
-
 -- ============================================================================
 -- PART 10: Row Level Security
 -- ============================================================================
@@ -275,7 +241,6 @@ CREATE INDEX IF NOT EXISTS idx_crm_calendar_integrations_user
 -- crm_template_folders
 -- --------------------------------------------------------------------------
 ALTER TABLE crm_template_folders ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view template folders for their org"
   ON crm_template_folders
   FOR SELECT
@@ -283,7 +248,6 @@ CREATE POLICY "Users can view template folders for their org"
   USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can create template folders for their org"
   ON crm_template_folders
   FOR INSERT
@@ -291,7 +255,6 @@ CREATE POLICY "Users can create template folders for their org"
   WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can update template folders for their org"
   ON crm_template_folders
   FOR UPDATE
@@ -302,7 +265,6 @@ CREATE POLICY "Users can update template folders for their org"
   WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can delete template folders for their org"
   ON crm_template_folders
   FOR DELETE
@@ -310,12 +272,10 @@ CREATE POLICY "Users can delete template folders for their org"
   USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 -- --------------------------------------------------------------------------
 -- crm_email_sequences
 -- --------------------------------------------------------------------------
 ALTER TABLE crm_email_sequences ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view sequences for their org"
   ON crm_email_sequences
   FOR SELECT
@@ -323,7 +283,6 @@ CREATE POLICY "Users can view sequences for their org"
   USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can create sequences for their org"
   ON crm_email_sequences
   FOR INSERT
@@ -331,7 +290,6 @@ CREATE POLICY "Users can create sequences for their org"
   WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can update sequences for their org"
   ON crm_email_sequences
   FOR UPDATE
@@ -342,7 +300,6 @@ CREATE POLICY "Users can update sequences for their org"
   WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can delete sequences for their org"
   ON crm_email_sequences
   FOR DELETE
@@ -350,12 +307,10 @@ CREATE POLICY "Users can delete sequences for their org"
   USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 -- --------------------------------------------------------------------------
 -- crm_email_sequence_steps
 -- --------------------------------------------------------------------------
 ALTER TABLE crm_email_sequence_steps ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view sequence steps for their org"
   ON crm_email_sequence_steps
   FOR SELECT
@@ -366,7 +321,6 @@ CREATE POLICY "Users can view sequence steps for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can create sequence steps for their org"
   ON crm_email_sequence_steps
   FOR INSERT
@@ -377,7 +331,6 @@ CREATE POLICY "Users can create sequence steps for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can update sequence steps for their org"
   ON crm_email_sequence_steps
   FOR UPDATE
@@ -394,7 +347,6 @@ CREATE POLICY "Users can update sequence steps for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can delete sequence steps for their org"
   ON crm_email_sequence_steps
   FOR DELETE
@@ -405,12 +357,10 @@ CREATE POLICY "Users can delete sequence steps for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 -- --------------------------------------------------------------------------
 -- crm_email_sequence_enrollments
 -- --------------------------------------------------------------------------
 ALTER TABLE crm_email_sequence_enrollments ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view enrollments for their org"
   ON crm_email_sequence_enrollments
   FOR SELECT
@@ -421,7 +371,6 @@ CREATE POLICY "Users can view enrollments for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can create enrollments for their org"
   ON crm_email_sequence_enrollments
   FOR INSERT
@@ -432,7 +381,6 @@ CREATE POLICY "Users can create enrollments for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can update enrollments for their org"
   ON crm_email_sequence_enrollments
   FOR UPDATE
@@ -449,7 +397,6 @@ CREATE POLICY "Users can update enrollments for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can delete enrollments for their org"
   ON crm_email_sequence_enrollments
   FOR DELETE
@@ -460,12 +407,10 @@ CREATE POLICY "Users can delete enrollments for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 -- --------------------------------------------------------------------------
 -- crm_meeting_schedules
 -- --------------------------------------------------------------------------
 ALTER TABLE crm_meeting_schedules ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view meeting schedules for their org"
   ON crm_meeting_schedules
   FOR SELECT
@@ -473,7 +418,6 @@ CREATE POLICY "Users can view meeting schedules for their org"
   USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can create meeting schedules for their org"
   ON crm_meeting_schedules
   FOR INSERT
@@ -481,7 +425,6 @@ CREATE POLICY "Users can create meeting schedules for their org"
   WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can update meeting schedules for their org"
   ON crm_meeting_schedules
   FOR UPDATE
@@ -492,7 +435,6 @@ CREATE POLICY "Users can update meeting schedules for their org"
   WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can delete meeting schedules for their org"
   ON crm_meeting_schedules
   FOR DELETE
@@ -500,12 +442,10 @@ CREATE POLICY "Users can delete meeting schedules for their org"
   USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 -- --------------------------------------------------------------------------
 -- crm_meeting_bookings
 -- --------------------------------------------------------------------------
 ALTER TABLE crm_meeting_bookings ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view bookings for their org"
   ON crm_meeting_bookings
   FOR SELECT
@@ -516,7 +456,6 @@ CREATE POLICY "Users can view bookings for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can create bookings for their org"
   ON crm_meeting_bookings
   FOR INSERT
@@ -527,7 +466,6 @@ CREATE POLICY "Users can create bookings for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can update bookings for their org"
   ON crm_meeting_bookings
   FOR UPDATE
@@ -544,7 +482,6 @@ CREATE POLICY "Users can update bookings for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 CREATE POLICY "Users can delete bookings for their org"
   ON crm_meeting_bookings
   FOR DELETE
@@ -555,12 +492,10 @@ CREATE POLICY "Users can delete bookings for their org"
       WHERE org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
     )
   );
-
 -- --------------------------------------------------------------------------
 -- crm_calendar_integrations
 -- --------------------------------------------------------------------------
 ALTER TABLE crm_calendar_integrations ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view calendar integrations for their org"
   ON crm_calendar_integrations
   FOR SELECT
@@ -568,7 +503,6 @@ CREATE POLICY "Users can view calendar integrations for their org"
   USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can create calendar integrations for their org"
   ON crm_calendar_integrations
   FOR INSERT
@@ -576,7 +510,6 @@ CREATE POLICY "Users can create calendar integrations for their org"
   WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can update calendar integrations for their org"
   ON crm_calendar_integrations
   FOR UPDATE
@@ -587,7 +520,6 @@ CREATE POLICY "Users can update calendar integrations for their org"
   WITH CHECK (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can delete calendar integrations for their org"
   ON crm_calendar_integrations
   FOR DELETE
@@ -595,7 +527,6 @@ CREATE POLICY "Users can delete calendar integrations for their org"
   USING (
     org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid())
   );
-
 -- ============================================================================
 -- PART 11: Updated-at Triggers
 -- ============================================================================
@@ -604,43 +535,33 @@ DROP TRIGGER IF EXISTS trg_crm_template_folders_updated ON crm_template_folders;
 CREATE TRIGGER trg_crm_template_folders_updated
   BEFORE UPDATE ON crm_template_folders
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS trg_crm_email_sequences_updated ON crm_email_sequences;
 CREATE TRIGGER trg_crm_email_sequences_updated
   BEFORE UPDATE ON crm_email_sequences
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS trg_crm_meeting_schedules_updated ON crm_meeting_schedules;
 CREATE TRIGGER trg_crm_meeting_schedules_updated
   BEFORE UPDATE ON crm_meeting_schedules
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS trg_crm_calendar_integrations_updated ON crm_calendar_integrations;
 CREATE TRIGGER trg_crm_calendar_integrations_updated
   BEFORE UPDATE ON crm_calendar_integrations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================================================
 -- PART 12: Service Role Bypass Policies
 -- ============================================================================
 
 CREATE POLICY "Service role full access to template_folders"
   ON crm_template_folders FOR ALL TO service_role USING (true);
-
 CREATE POLICY "Service role full access to email_sequences"
   ON crm_email_sequences FOR ALL TO service_role USING (true);
-
 CREATE POLICY "Service role full access to sequence_steps"
   ON crm_email_sequence_steps FOR ALL TO service_role USING (true);
-
 CREATE POLICY "Service role full access to sequence_enrollments"
   ON crm_email_sequence_enrollments FOR ALL TO service_role USING (true);
-
 CREATE POLICY "Service role full access to meeting_schedules"
   ON crm_meeting_schedules FOR ALL TO service_role USING (true);
-
 CREATE POLICY "Service role full access to meeting_bookings"
   ON crm_meeting_bookings FOR ALL TO service_role USING (true);
-
 CREATE POLICY "Service role full access to calendar_integrations"
   ON crm_calendar_integrations FOR ALL TO service_role USING (true);

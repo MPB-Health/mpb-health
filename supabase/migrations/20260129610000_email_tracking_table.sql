@@ -11,9 +11,7 @@
 
 ALTER TABLE crm_email_log
   ADD COLUMN IF NOT EXISTS tracking_id uuid;
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_log_tracking_id ON crm_email_log(tracking_id);
-
 -- ============================================================================
 -- PART 2: Create crm_email_tracking table
 -- ============================================================================
@@ -38,15 +36,12 @@ CREATE TABLE IF NOT EXISTS crm_email_tracking (
   -- Timestamp
   tracked_at timestamptz DEFAULT now()
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_crm_email_tracking_email ON crm_email_tracking(email_log_id);
 CREATE INDEX IF NOT EXISTS idx_crm_email_tracking_type ON crm_email_tracking(tracking_type);
 CREATE INDEX IF NOT EXISTS idx_crm_email_tracking_time ON crm_email_tracking(tracked_at DESC);
-
 -- RLS
 ALTER TABLE crm_email_tracking ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Admins can view email tracking" ON crm_email_tracking
   FOR SELECT TO authenticated
   USING (
@@ -56,12 +51,10 @@ CREATE POLICY "Admins can view email tracking" ON crm_email_tracking
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 -- Service role can insert (from Edge Functions)
 CREATE POLICY "Service role can insert tracking" ON crm_email_tracking
   FOR INSERT TO authenticated
   WITH CHECK (true);
-
 -- ============================================================================
 -- PART 3: Helper function for tracking stats
 -- ============================================================================
@@ -109,9 +102,7 @@ BEGIN
   WHERE email_log_id = p_email_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 GRANT EXECUTE ON FUNCTION get_email_tracking_stats(uuid) TO authenticated;
-
 -- ============================================================================
 -- PART 4: Helper function to append unique values to array
 -- ============================================================================

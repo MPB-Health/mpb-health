@@ -9,7 +9,6 @@ SET content = REPLACE(
 )
 WHERE content_type = 'bulletin'
   AND content LIKE '%Maternity-Flyer-Zion-10.pdf%';
-
 -- 2. Sedera Maternity Flyer
 UPDATE advisor_content
 SET content = REPLACE(

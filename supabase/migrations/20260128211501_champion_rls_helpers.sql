@@ -33,7 +33,6 @@ AS $$
   WHERE user_id = auth.uid()
   AND status = 'active';
 $$;
-
 -- ============================================
 -- GET USER PRIMARY ORG ID
 -- Returns the first/primary org for the current user
@@ -59,7 +58,6 @@ AS $$
     joined_at ASC
   LIMIT 1;
 $$;
-
 -- ============================================
 -- USER HAS ORG ACCESS
 -- Checks if user is an active member of the specified org
@@ -79,7 +77,6 @@ AS $$
     AND status = 'active'
   );
 $$;
-
 -- ============================================
 -- USER HAS ORG ROLE
 -- Checks if user has any of the specified roles in an org
@@ -100,7 +97,6 @@ AS $$
     AND role = ANY(allowed_roles)
   );
 $$;
-
 -- ============================================
 -- USER IS ORG OWNER OR ADMIN
 -- Shorthand for checking owner/admin access
@@ -114,7 +110,6 @@ SET search_path = public
 AS $$
   SELECT user_has_org_role(check_org_id, ARRAY['owner', 'admin']);
 $$;
-
 -- ============================================
 -- USER IS ORG MANAGER OR ABOVE
 -- Shorthand for checking manager+ access
@@ -128,7 +123,6 @@ SET search_path = public
 AS $$
   SELECT user_has_org_role(check_org_id, ARRAY['owner', 'admin', 'manager']);
 $$;
-
 -- ============================================
 -- GET USER ORG ROLE
 -- Returns the user's role in a specific org (or null)
@@ -147,7 +141,6 @@ AS $$
   AND status = 'active'
   LIMIT 1;
 $$;
-
 -- ============================================
 -- CAN USER MANAGE USER IN ORG
 -- Checks if current user can manage another user
@@ -204,7 +197,6 @@ BEGIN
   RETURN false;
 END;
 $$;
-
 -- ============================================
 -- GRANT EXECUTE PERMISSIONS
 -- ============================================
@@ -216,7 +208,6 @@ GRANT EXECUTE ON FUNCTION user_is_org_owner_or_admin(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION user_is_org_manager_or_above(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_user_org_role(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION can_user_manage_user_in_org(uuid, uuid) TO authenticated;
-
 -- ============================================
 -- COMMENTS
 -- ============================================

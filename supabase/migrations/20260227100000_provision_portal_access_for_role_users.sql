@@ -47,7 +47,6 @@ FROM (
 ) sub
 WHERE NOT EXISTS (SELECT 1 FROM admin_users au WHERE au.id = sub.user_id)
 ON CONFLICT (id) DO NOTHING;
-
 -- PART 2: Add org_memberships for admin/crm/super_admin users who have none
 -- -------------------------------------------------------------------------
 -- Add to the first organization in the system (MPB Health default org)
@@ -67,7 +66,6 @@ WHERE ur.role IN ('super_admin', 'admin', 'crm_user')
   )
 ORDER BY ur.user_id
 ON CONFLICT (org_id, user_id) DO NOTHING;
-
 -- PART 3: Create advisor_profiles for users with advisor role who have none
 -- -------------------------------------------------------------------------
 INSERT INTO advisor_profiles (

@@ -14,11 +14,9 @@ ALTER TABLE public.member_notifications
   ADD COLUMN IF NOT EXISTS related_entity_id uuid,
   ADD COLUMN IF NOT EXISTS source_event_id uuid,
   ADD COLUMN IF NOT EXISTS expires_at timestamptz;
-
 -- Drop the restrictive CHECK constraint on notification_type to allow new types
 ALTER TABLE public.member_notifications
   DROP CONSTRAINT IF EXISTS member_notifications_notification_type_check;
-
 ALTER TABLE public.member_notifications
   ADD CONSTRAINT member_notifications_notification_type_check CHECK (
     notification_type = ANY (ARRAY[
@@ -30,7 +28,6 @@ ALTER TABLE public.member_notifications
       'support_update', 'operational_update'
     ]::text[])
   );
-
 -- Add FK to member_profiles (missing from baseline)
 DO $$
 BEGIN
@@ -43,22 +40,17 @@ BEGIN
       FOREIGN KEY (member_id) REFERENCES public.member_profiles(id) ON DELETE CASCADE;
   END IF;
 END $$;
-
 -- Add index on created_at for efficient recent-notifications queries
 CREATE INDEX IF NOT EXISTS idx_member_notifications_created_at
   ON public.member_notifications USING btree (created_at DESC);
-
 -- Composite index for unread-per-member badge count
 CREATE INDEX IF NOT EXISTS idx_member_notifications_unread
   ON public.member_notifications USING btree (member_id, is_read)
   WHERE is_read = false;
-
 -- Index for source_event_id lookups
 CREATE INDEX IF NOT EXISTS idx_member_notifications_source_event
   ON public.member_notifications USING btree (source_event_id)
   WHERE source_event_id IS NOT NULL;
-
-
 -- 2. Create member_account_events table (internal audit trail)
 -- ============================================================================
 
@@ -77,16 +69,12 @@ CREATE TABLE IF NOT EXISTS public.member_account_events (
   notification_generated boolean DEFAULT false,
   created_at timestamptz DEFAULT now() NOT NULL
 );
-
 ALTER TABLE public.member_account_events OWNER TO postgres;
-
-CREATE INDEX IF NOT EXISTS idx_account_events_member ON public.member_account_events USING btree (member_id);
-CREATE INDEX IF NOT EXISTS idx_account_events_actor ON public.member_account_events USING btree (actor_user_id);
-CREATE INDEX IF NOT EXISTS idx_account_events_created ON public.member_account_events USING btree (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_account_events_type ON public.member_account_events USING btree (event_type);
-CREATE INDEX IF NOT EXISTS idx_account_events_department ON public.member_account_events USING btree (actor_department);
-
-
+CREATE INDEX idx_account_events_member ON public.member_account_events USING btree (member_id);
+CREATE INDEX idx_account_events_actor ON public.member_account_events USING btree (actor_user_id);
+CREATE INDEX idx_account_events_created ON public.member_account_events USING btree (created_at DESC);
+CREATE INDEX idx_account_events_type ON public.member_account_events USING btree (event_type);
+CREATE INDEX idx_account_events_department ON public.member_account_events USING btree (actor_department);
 -- 3. Notification rules configuration table
 -- ============================================================================
 
@@ -104,9 +92,7 @@ CREATE TABLE IF NOT EXISTS public.member_notification_rules (
   updated_at timestamptz DEFAULT now() NOT NULL,
   CONSTRAINT notification_rules_unique UNIQUE (event_type, department)
 );
-
 ALTER TABLE public.member_notification_rules OWNER TO postgres;
-
 -- Seed default rules
 INSERT INTO public.member_notification_rules (event_type, department, notification_type, title_template, message_template, priority, category)
 VALUES
@@ -125,8 +111,6 @@ VALUES
   ('contact_info_change', '*', 'profile_update', 'Contact Information Updated', 'Your contact information has been updated by our {{department}} team. Please verify the changes in your Member Portal.', 'normal', 'profile'),
   ('general_update', '*', 'account_update', 'Account Update', 'An update has been made to your account by our {{department}} team. Please review your account in your Member Portal.', 'normal', 'general')
 ON CONFLICT (event_type, department) DO NOTHING;
-
-
 -- 4. Trigger function: auto-generate member notification from account event
 -- ============================================================================
 
@@ -194,19 +178,15 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 CREATE OR REPLACE TRIGGER trg_generate_member_notification
   AFTER INSERT ON public.member_account_events
   FOR EACH ROW
   EXECUTE FUNCTION public.generate_member_notification_from_event();
-
-
 -- 5. RLS Policies
 -- ============================================================================
 
 ALTER TABLE public.member_account_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_notification_rules ENABLE ROW LEVEL SECURITY;
-
 -- member_account_events: only staff can insert/read via service role or admin functions
 -- Members should NEVER see raw events directly.
 CREATE POLICY "Staff can read account events"
@@ -218,7 +198,6 @@ CREATE POLICY "Staff can read account events"
         AND admin_users.status = 'active'
     )
   );
-
 CREATE POLICY "Staff can insert account events"
   ON public.member_account_events FOR INSERT TO authenticated
   WITH CHECK (
@@ -228,7 +207,6 @@ CREATE POLICY "Staff can insert account events"
         AND admin_users.status = 'active'
     )
   );
-
 -- member_notification_rules: only admins can manage
 CREATE POLICY "Admins can manage notification rules"
   ON public.member_notification_rules FOR ALL TO authenticated
@@ -240,17 +218,14 @@ CREATE POLICY "Admins can manage notification rules"
         AND admin_users.role IN ('admin', 'super_admin')
     )
   );
-
 -- Fix existing member_notifications policies:
 -- The baseline has "Members can update own notifications" as FOR SELECT (bug).
 -- Drop and recreate as FOR UPDATE so members can mark-as-read.
 DROP POLICY IF EXISTS "Members can update own notifications" ON public.member_notifications;
-
 CREATE POLICY "Members can update own notifications"
   ON public.member_notifications FOR UPDATE TO authenticated
   USING (member_id = (SELECT auth.uid()))
   WITH CHECK (member_id = (SELECT auth.uid()));
-
 -- Staff can insert notifications (needed for the trigger via service role,
 -- but also for direct admin inserts via authenticated role)
 DROP POLICY IF EXISTS "Staff can insert member notifications" ON public.member_notifications;
@@ -263,7 +238,6 @@ CREATE POLICY "Staff can insert member notifications"
         AND admin_users.status = 'active'
     )
   );
-
 -- Staff can read member notifications (for admin notification center)
 DROP POLICY IF EXISTS "Staff can read member notifications" ON public.member_notifications;
 CREATE POLICY "Staff can read member notifications"
@@ -276,13 +250,10 @@ CREATE POLICY "Staff can read member notifications"
         AND admin_users.status = 'active'
     )
   );
-
-
 -- 6. Grants (no anon access — these tables are staff/member-only)
 -- ============================================================================
 
 GRANT SELECT, INSERT ON TABLE public.member_account_events TO authenticated;
 GRANT ALL ON TABLE public.member_account_events TO service_role;
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.member_notification_rules TO authenticated;
 GRANT ALL ON TABLE public.member_notification_rules TO service_role;

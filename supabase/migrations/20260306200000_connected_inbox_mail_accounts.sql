@@ -8,13 +8,11 @@ DO $$ BEGIN
   CREATE TYPE mail_provider AS ENUM ('microsoft365', 'gmail', 'imap');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 -- Account sync status enum
 DO $$ BEGIN
   CREATE TYPE mail_sync_status AS ENUM ('idle', 'syncing', 'error', 'disabled');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 -- ============================================================================
 -- mail_accounts: Connected email accounts
 -- ============================================================================
@@ -61,16 +59,13 @@ CREATE TABLE IF NOT EXISTS mail_accounts (
 
   CONSTRAINT mail_accounts_unique_email UNIQUE (org_id, email_address)
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_mail_accounts_org ON mail_accounts(org_id);
 CREATE INDEX IF NOT EXISTS idx_mail_accounts_user ON mail_accounts(user_id);
 CREATE INDEX IF NOT EXISTS idx_mail_accounts_sync ON mail_accounts(sync_status) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_mail_accounts_next_sync ON mail_accounts(last_sync_at) WHERE auto_sync = true AND is_active = true;
-
 -- RLS
 ALTER TABLE mail_accounts ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_accounts_select ON mail_accounts;
 CREATE POLICY mail_accounts_select ON mail_accounts
   FOR SELECT USING (
@@ -82,19 +77,15 @@ CREATE POLICY mail_accounts_select ON mail_accounts
       AND mail_shared_access.is_active = true
     )
   );
-
 DROP POLICY IF EXISTS mail_accounts_insert ON mail_accounts;
 CREATE POLICY mail_accounts_insert ON mail_accounts
   FOR INSERT WITH CHECK (user_id = auth.uid());
-
 DROP POLICY IF EXISTS mail_accounts_update ON mail_accounts;
 CREATE POLICY mail_accounts_update ON mail_accounts
   FOR UPDATE USING (user_id = auth.uid());
-
 DROP POLICY IF EXISTS mail_accounts_delete ON mail_accounts;
 CREATE POLICY mail_accounts_delete ON mail_accounts
   FOR DELETE USING (user_id = auth.uid());
-
 -- ============================================================================
 -- mail_shared_access: Shared mailbox / delegated access grants
 -- ============================================================================
@@ -109,9 +100,7 @@ CREATE TABLE IF NOT EXISTS mail_shared_access (
 
   CONSTRAINT mail_shared_access_unique UNIQUE (account_id, grantee_user_id)
 );
-
 ALTER TABLE mail_shared_access ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_shared_access_owner ON mail_shared_access;
 CREATE POLICY mail_shared_access_owner ON mail_shared_access
   FOR ALL USING (
@@ -121,11 +110,9 @@ CREATE POLICY mail_shared_access_owner ON mail_shared_access
       AND mail_accounts.user_id = auth.uid()
     )
   );
-
 DROP POLICY IF EXISTS mail_shared_access_grantee ON mail_shared_access;
 CREATE POLICY mail_shared_access_grantee ON mail_shared_access
   FOR SELECT USING (grantee_user_id = auth.uid());
-
 -- ============================================================================
 -- mail_folders: Synced folders/labels from providers
 -- ============================================================================
@@ -152,12 +139,9 @@ CREATE TABLE IF NOT EXISTS mail_folders (
 
   CONSTRAINT mail_folders_unique UNIQUE (account_id, provider_folder_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_mail_folders_account ON mail_folders(account_id);
 CREATE INDEX IF NOT EXISTS idx_mail_folders_type ON mail_folders(account_id, folder_type);
-
 ALTER TABLE mail_folders ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_folders_access ON mail_folders;
 CREATE POLICY mail_folders_access ON mail_folders
   FOR ALL USING (
@@ -175,7 +159,6 @@ CREATE POLICY mail_folders_access ON mail_folders
       )
     )
   );
-
 -- ============================================================================
 -- mail_messages: Synced messages (metadata + optional cached body)
 -- ============================================================================
@@ -229,7 +212,6 @@ CREATE TABLE IF NOT EXISTS mail_messages (
 
   CONSTRAINT mail_messages_unique UNIQUE (account_id, provider_message_id)
 );
-
 -- Performance indexes
 CREATE INDEX IF NOT EXISTS idx_mail_messages_account ON mail_messages(account_id);
 CREATE INDEX IF NOT EXISTS idx_mail_messages_folder ON mail_messages(folder_id);
@@ -238,13 +220,10 @@ CREATE INDEX IF NOT EXISTS idx_mail_messages_received ON mail_messages(account_i
 CREATE INDEX IF NOT EXISTS idx_mail_messages_unread ON mail_messages(account_id, is_read) WHERE is_read = false;
 CREATE INDEX IF NOT EXISTS idx_mail_messages_flagged ON mail_messages(account_id) WHERE is_flagged = true;
 CREATE INDEX IF NOT EXISTS idx_mail_messages_from ON mail_messages(from_address);
-
 -- Full-text search index
 CREATE INDEX IF NOT EXISTS idx_mail_messages_fts ON mail_messages
   USING gin(to_tsvector('english', coalesce(subject, '') || ' ' || coalesce(snippet, '') || ' ' || coalesce(from_name, '') || ' ' || coalesce(from_address, '')));
-
 ALTER TABLE mail_messages ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_messages_access ON mail_messages;
 CREATE POLICY mail_messages_access ON mail_messages
   FOR ALL USING (
@@ -262,7 +241,6 @@ CREATE POLICY mail_messages_access ON mail_messages
       )
     )
   );
-
 -- ============================================================================
 -- mail_message_attachments: Attachment metadata for synced messages
 -- ============================================================================
@@ -281,11 +259,8 @@ CREATE TABLE IF NOT EXISTS mail_message_attachments (
 
   created_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_mail_message_attachments_msg ON mail_message_attachments(message_id);
-
 ALTER TABLE mail_message_attachments ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_message_attachments_access ON mail_message_attachments;
 CREATE POLICY mail_message_attachments_access ON mail_message_attachments
   FOR ALL USING (
@@ -304,7 +279,6 @@ CREATE POLICY mail_message_attachments_access ON mail_message_attachments
       )
     )
   );
-
 -- ============================================================================
 -- mail_rules: Inbox rules engine
 -- ============================================================================
@@ -316,7 +290,6 @@ DO $$ BEGIN
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 CREATE TABLE IF NOT EXISTS mail_rules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id uuid NOT NULL REFERENCES mail_accounts(id) ON DELETE CASCADE,
@@ -346,12 +319,9 @@ CREATE TABLE IF NOT EXISTS mail_rules (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_mail_rules_account ON mail_rules(account_id);
 CREATE INDEX IF NOT EXISTS idx_mail_rules_active ON mail_rules(account_id, is_active, priority);
-
 ALTER TABLE mail_rules ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_rules_access ON mail_rules;
 CREATE POLICY mail_rules_access ON mail_rules
   FOR ALL USING (
@@ -361,7 +331,6 @@ CREATE POLICY mail_rules_access ON mail_rules
       AND mail_accounts.user_id = auth.uid()
     )
   );
-
 -- ============================================================================
 -- mail_domains: Custom sender domains with SPF/DKIM/DMARC verification
 -- ============================================================================
@@ -369,7 +338,6 @@ DO $$ BEGIN
   CREATE TYPE domain_verification_status AS ENUM ('pending', 'verified', 'failed', 'expired');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 CREATE TABLE IF NOT EXISTS mail_domains (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -413,12 +381,9 @@ CREATE TABLE IF NOT EXISTS mail_domains (
 
   CONSTRAINT mail_domains_unique UNIQUE (org_id, domain)
 );
-
 CREATE INDEX IF NOT EXISTS idx_mail_domains_org ON mail_domains(org_id);
 CREATE INDEX IF NOT EXISTS idx_mail_domains_pending ON mail_domains(next_check_at) WHERE is_active = true;
-
 ALTER TABLE mail_domains ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_domains_select ON mail_domains;
 CREATE POLICY mail_domains_select ON mail_domains
   FOR SELECT USING (
@@ -428,7 +393,6 @@ CREATE POLICY mail_domains_select ON mail_domains
       AND org_memberships.user_id = auth.uid()
     )
   );
-
 DROP POLICY IF EXISTS mail_domains_manage ON mail_domains;
 CREATE POLICY mail_domains_manage ON mail_domains
   FOR ALL USING (
@@ -439,7 +403,6 @@ CREATE POLICY mail_domains_manage ON mail_domains
       AND org_memberships.role IN ('owner', 'admin')
     )
   );
-
 -- ============================================================================
 -- mail_sender_identities: From addresses per verified domain
 -- ============================================================================
@@ -456,9 +419,7 @@ CREATE TABLE IF NOT EXISTS mail_sender_identities (
 
   CONSTRAINT mail_sender_identities_unique UNIQUE (org_id, email_address)
 );
-
 ALTER TABLE mail_sender_identities ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_sender_identities_access ON mail_sender_identities;
 CREATE POLICY mail_sender_identities_access ON mail_sender_identities
   FOR ALL USING (
@@ -468,7 +429,6 @@ CREATE POLICY mail_sender_identities_access ON mail_sender_identities
       AND org_memberships.user_id = auth.uid()
     )
   );
-
 -- ============================================================================
 -- mail_sync_jobs: Queue for sync operations
 -- ============================================================================
@@ -476,12 +436,10 @@ DO $$ BEGIN
   CREATE TYPE mail_job_type AS ENUM ('full_sync', 'delta_sync', 'send', 'fetch_body', 'webhook_process');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 DO $$ BEGIN
   CREATE TYPE mail_job_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 CREATE TABLE IF NOT EXISTS mail_sync_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id uuid NOT NULL REFERENCES mail_accounts(id) ON DELETE CASCADE,
@@ -497,13 +455,10 @@ CREATE TABLE IF NOT EXISTS mail_sync_jobs (
   completed_at timestamptz,
   created_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_mail_sync_jobs_pending ON mail_sync_jobs(status, priority DESC, created_at)
   WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS idx_mail_sync_jobs_account ON mail_sync_jobs(account_id);
-
 ALTER TABLE mail_sync_jobs ENABLE ROW LEVEL SECURITY;
-
 -- Jobs are managed by service role; users can view their own
 DROP POLICY IF EXISTS mail_sync_jobs_select ON mail_sync_jobs;
 CREATE POLICY mail_sync_jobs_select ON mail_sync_jobs
@@ -514,7 +469,6 @@ CREATE POLICY mail_sync_jobs_select ON mail_sync_jobs
       AND mail_accounts.user_id = auth.uid()
     )
   );
-
 -- ============================================================================
 -- mail_audit_log: Audit trail for all mail operations
 -- ============================================================================
@@ -528,17 +482,13 @@ CREATE TABLE IF NOT EXISTS mail_audit_log (
   ip_address text,
   created_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_mail_audit_log_org ON mail_audit_log(org_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_mail_audit_log_account ON mail_audit_log(account_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_mail_audit_log_action ON mail_audit_log(action, created_at DESC);
-
 ALTER TABLE mail_audit_log ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS mail_audit_log_select ON mail_audit_log;
 CREATE POLICY mail_audit_log_select ON mail_audit_log
   FOR SELECT USING (user_id = auth.uid());
-
 -- Service role insert only (no user-facing writes)
 
 -- ============================================================================
@@ -551,7 +501,6 @@ SET search_path = extensions, public
 AS $$
   SELECT pgp_sym_encrypt(token, key)
 $$;
-
 CREATE OR REPLACE FUNCTION decrypt_token(encrypted bytea, key text)
 RETURNS text
 LANGUAGE sql IMMUTABLE SECURITY DEFINER
@@ -559,7 +508,6 @@ SET search_path = extensions, public
 AS $$
   SELECT pgp_sym_decrypt(encrypted, key)
 $$;
-
 -- ============================================================================
 -- Updated_at trigger for all new tables
 -- ============================================================================
@@ -573,37 +521,31 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 DO $$ BEGIN
   CREATE TRIGGER mail_accounts_updated_at BEFORE UPDATE ON mail_accounts
     FOR EACH ROW EXECUTE FUNCTION update_mail_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 DO $$ BEGIN
   CREATE TRIGGER mail_folders_updated_at BEFORE UPDATE ON mail_folders
     FOR EACH ROW EXECUTE FUNCTION update_mail_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 DO $$ BEGIN
   CREATE TRIGGER mail_messages_updated_at BEFORE UPDATE ON mail_messages
     FOR EACH ROW EXECUTE FUNCTION update_mail_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 DO $$ BEGIN
   CREATE TRIGGER mail_rules_updated_at BEFORE UPDATE ON mail_rules
     FOR EACH ROW EXECUTE FUNCTION update_mail_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 DO $$ BEGIN
   CREATE TRIGGER mail_domains_updated_at BEFORE UPDATE ON mail_domains
     FOR EACH ROW EXECUTE FUNCTION update_mail_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 -- ============================================================================
 -- Enable pgcrypto extension (needed for token encryption)
 -- ============================================================================

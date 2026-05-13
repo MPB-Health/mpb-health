@@ -20,11 +20,9 @@ CREATE TABLE IF NOT EXISTS advisors (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_advisors_agent_id ON advisors(agent_id);
 CREATE INDEX IF NOT EXISTS idx_advisors_parent_id ON advisors(parent_id);
 CREATE INDEX IF NOT EXISTS idx_advisors_is_active ON advisors(is_active);
-
 -- ============================================
 -- ADD COMMAND CENTER COLUMNS TO MEMBER_PROFILES
 -- ============================================
@@ -80,11 +78,9 @@ BEGIN
         ALTER TABLE member_profiles ADD COLUMN tags TEXT[];
     END IF;
 END $$;
-
 -- Create index on assigned_advisor_id if not exists
 CREATE INDEX IF NOT EXISTS idx_member_profiles_advisor ON member_profiles(assigned_advisor_id);
 CREATE INDEX IF NOT EXISTS idx_member_profiles_enrollment_date ON member_profiles(enrollment_date);
-
 -- ============================================
 -- MEMBER IMPORT LOGS TABLE
 -- ============================================
@@ -100,11 +96,9 @@ CREATE TABLE IF NOT EXISTS member_import_logs (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     completed_at TIMESTAMPTZ
 );
-
 CREATE INDEX IF NOT EXISTS idx_member_import_logs_advisor ON member_import_logs(advisor_id);
 CREATE INDEX IF NOT EXISTS idx_member_import_logs_status ON member_import_logs(status);
 CREATE INDEX IF NOT EXISTS idx_member_import_logs_created ON member_import_logs(created_at DESC);
-
 -- ============================================
 -- HIERARCHY FUNCTIONS
 -- ============================================
@@ -131,7 +125,6 @@ BEGIN
     SELECT advisor_tree.agent_id FROM advisor_tree;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- Function to get advisor hierarchy tree with levels
 CREATE OR REPLACE FUNCTION get_advisor_hierarchy_tree(root_advisor_id TEXT)
 RETURNS TABLE(
@@ -188,7 +181,6 @@ BEGIN
     SELECT * FROM advisor_tree ORDER BY level, full_name;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- Function to get hierarchy statistics
 CREATE OR REPLACE FUNCTION get_hierarchy_stats(root_advisor_id TEXT)
 RETURNS JSONB AS $$
@@ -246,13 +238,11 @@ BEGIN
     RETURN result;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- ============================================
 -- RLS POLICIES
 -- ============================================
 ALTER TABLE advisors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE member_import_logs ENABLE ROW LEVEL SECURITY;
-
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "advisors_select_policy" ON advisors;
 DROP POLICY IF EXISTS "advisors_insert_policy" ON advisors;
@@ -261,37 +251,29 @@ DROP POLICY IF EXISTS "advisors_delete_policy" ON advisors;
 DROP POLICY IF EXISTS "member_import_logs_select_policy" ON member_import_logs;
 DROP POLICY IF EXISTS "member_import_logs_insert_policy" ON member_import_logs;
 DROP POLICY IF EXISTS "member_import_logs_update_policy" ON member_import_logs;
-
 -- Advisors: Allow authenticated users with admin/staff roles to manage
 CREATE POLICY "advisors_select_policy" ON advisors FOR SELECT USING (
     auth.role() = 'authenticated'
 );
-
 CREATE POLICY "advisors_insert_policy" ON advisors FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'advisor', 'staff'))
 );
-
 CREATE POLICY "advisors_update_policy" ON advisors FOR UPDATE USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'advisor', 'staff'))
 );
-
 CREATE POLICY "advisors_delete_policy" ON advisors FOR DELETE USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin'))
 );
-
 -- Member Import Logs: Advisors can see their own imports, admins can see all
 CREATE POLICY "member_import_logs_select_policy" ON member_import_logs FOR SELECT USING (
     auth.role() = 'authenticated'
 );
-
 CREATE POLICY "member_import_logs_insert_policy" ON member_import_logs FOR INSERT WITH CHECK (
     auth.role() = 'authenticated'
 );
-
 CREATE POLICY "member_import_logs_update_policy" ON member_import_logs FOR UPDATE USING (
     auth.role() = 'authenticated'
 );
-
 -- ============================================
 -- TRIGGERS
 -- ============================================
@@ -304,12 +286,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS update_advisors_updated_at ON advisors;
 CREATE TRIGGER update_advisors_updated_at
     BEFORE UPDATE ON advisors
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================
 -- GRANT PERMISSIONS
 -- ============================================

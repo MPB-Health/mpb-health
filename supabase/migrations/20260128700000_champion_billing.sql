@@ -42,7 +42,6 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- ============================================================================
 -- ORGANIZATION SUBSCRIPTIONS
 -- ============================================================================
@@ -77,7 +76,6 @@ CREATE TABLE IF NOT EXISTS organization_subscriptions (
 
     UNIQUE(org_id) -- One active subscription per org
 );
-
 -- ============================================================================
 -- USAGE RECORDS
 -- ============================================================================
@@ -112,11 +110,9 @@ CREATE TABLE IF NOT EXISTS usage_records (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- Index for current period lookup
 CREATE INDEX IF NOT EXISTS idx_usage_records_org_current ON usage_records(org_id, is_current) WHERE is_current = true;
 CREATE INDEX IF NOT EXISTS idx_usage_records_org_period ON usage_records(org_id, period_start, period_end);
-
 -- ============================================================================
 -- INVOICES
 -- ============================================================================
@@ -163,13 +159,10 @@ CREATE TABLE IF NOT EXISTS invoices (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- Generate invoice number
 CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START WITH 1000;
-
 CREATE INDEX IF NOT EXISTS idx_invoices_org ON invoices(org_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
-
 -- ============================================================================
 -- PAYMENT METHODS
 -- ============================================================================
@@ -206,9 +199,7 @@ CREATE TABLE IF NOT EXISTS payment_methods (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_payment_methods_org ON payment_methods(org_id);
-
 -- ============================================================================
 -- BILLING EVENTS (Audit trail)
 -- ============================================================================
@@ -230,9 +221,7 @@ CREATE TABLE IF NOT EXISTS billing_events (
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_billing_events_org ON billing_events(org_id, created_at DESC);
-
 -- ============================================================================
 -- ROW LEVEL SECURITY
 -- ============================================================================
@@ -243,17 +232,14 @@ ALTER TABLE usage_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE billing_events ENABLE ROW LEVEL SECURITY;
-
 -- Plans are publicly readable
 CREATE POLICY "Plans are readable by all" ON subscription_plans
     FOR SELECT USING (is_active = true AND is_public = true);
-
 -- Subscription access by org members
 CREATE POLICY "Org members can view subscription" ON organization_subscriptions
     FOR SELECT USING (
         org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
     );
-
 -- Only admins can modify subscriptions
 CREATE POLICY "Admins can manage subscriptions" ON organization_subscriptions
     FOR ALL USING (
@@ -262,13 +248,11 @@ CREATE POLICY "Admins can manage subscriptions" ON organization_subscriptions
             WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
         )
     );
-
 -- Usage records access
 CREATE POLICY "Org members can view usage" ON usage_records
     FOR SELECT USING (
         org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
     );
-
 -- Invoices access
 CREATE POLICY "Org admins can view invoices" ON invoices
     FOR SELECT USING (
@@ -277,7 +261,6 @@ CREATE POLICY "Org admins can view invoices" ON invoices
             WHERE user_id = auth.uid() AND role IN ('owner', 'admin', 'billing')
         )
     );
-
 -- Payment methods access
 CREATE POLICY "Org admins can manage payment methods" ON payment_methods
     FOR ALL USING (
@@ -286,7 +269,6 @@ CREATE POLICY "Org admins can manage payment methods" ON payment_methods
             WHERE user_id = auth.uid() AND role IN ('owner', 'admin', 'billing')
         )
     );
-
 -- Billing events access
 CREATE POLICY "Org admins can view billing events" ON billing_events
     FOR SELECT USING (
@@ -295,7 +277,6 @@ CREATE POLICY "Org admins can view billing events" ON billing_events
             WHERE user_id = auth.uid() AND role IN ('owner', 'admin', 'billing')
         )
     );
-
 -- ============================================================================
 -- FUNCTIONS
 -- ============================================================================
@@ -343,7 +324,6 @@ BEGIN
     RETURN v_usage_id;
 END;
 $$;
-
 -- Increment usage metric
 CREATE OR REPLACE FUNCTION increment_usage(
     p_org_id UUID,
@@ -365,7 +345,6 @@ BEGIN
     ) USING p_amount, v_usage_id;
 END;
 $$;
-
 -- Get current usage with limits
 CREATE OR REPLACE FUNCTION get_usage_with_limits(p_org_id UUID)
 RETURNS TABLE (
@@ -453,7 +432,6 @@ BEGIN
     LEFT JOIN current_usage cu ON true;
 END;
 $$;
-
 -- Check if usage limit exceeded
 CREATE OR REPLACE FUNCTION check_usage_limit(
     p_org_id UUID,
@@ -479,7 +457,6 @@ BEGIN
     RETURN v_current >= v_limit;
 END;
 $$;
-
 -- Finalize usage period and create new one
 CREATE OR REPLACE FUNCTION finalize_usage_period(p_org_id UUID)
 RETURNS void
@@ -498,7 +475,6 @@ BEGIN
     PERFORM get_or_create_current_usage(p_org_id);
 END;
 $$;
-
 -- Generate invoice number
 CREATE OR REPLACE FUNCTION generate_invoice_number()
 RETURNS TEXT
@@ -511,7 +487,6 @@ BEGIN
     RETURN 'INV-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(v_num::TEXT, 6, '0');
 END;
 $$;
-
 -- Create invoice from subscription
 CREATE OR REPLACE FUNCTION create_subscription_invoice(
     p_org_id UUID,
@@ -605,7 +580,6 @@ BEGIN
     RETURN v_invoice_id;
 END;
 $$;
-
 -- ============================================================================
 -- SEED DATA: Default Plans
 -- ============================================================================
@@ -688,7 +662,6 @@ ON CONFLICT (slug) DO UPDATE SET
     storage_gb = EXCLUDED.storage_gb,
     features = EXCLUDED.features,
     updated_at = NOW();
-
 -- ============================================================================
 -- TRIGGERS
 -- ============================================================================
@@ -701,27 +674,21 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER update_subscription_plans_updated_at
     BEFORE UPDATE ON subscription_plans
     FOR EACH ROW EXECUTE FUNCTION update_billing_updated_at();
-
 CREATE TRIGGER update_organization_subscriptions_updated_at
     BEFORE UPDATE ON organization_subscriptions
     FOR EACH ROW EXECUTE FUNCTION update_billing_updated_at();
-
 CREATE TRIGGER update_usage_records_updated_at
     BEFORE UPDATE ON usage_records
     FOR EACH ROW EXECUTE FUNCTION update_billing_updated_at();
-
 CREATE TRIGGER update_invoices_updated_at
     BEFORE UPDATE ON invoices
     FOR EACH ROW EXECUTE FUNCTION update_billing_updated_at();
-
 CREATE TRIGGER update_payment_methods_updated_at
     BEFORE UPDATE ON payment_methods
     FOR EACH ROW EXECUTE FUNCTION update_billing_updated_at();
-
 -- Ensure only one default payment method per org
 CREATE OR REPLACE FUNCTION ensure_single_default_payment_method()
 RETURNS TRIGGER AS $$
@@ -734,7 +701,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER ensure_single_default_payment
     BEFORE INSERT OR UPDATE ON payment_methods
     FOR EACH ROW

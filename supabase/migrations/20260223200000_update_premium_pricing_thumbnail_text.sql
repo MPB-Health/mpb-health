@@ -12,7 +12,6 @@ SET title = 'Premium Care June 1 Start Date Pricing',
       '"Premium Care June 1 Start Date Pricing"'
     )
 WHERE slug = 'premium-care-may-start-date-pricing';
-
 UPDATE public.sop_documents
 SET title = 'Premium HSA June 1 Start Date Pricing',
     description = 'Premium HSA plan pricing for June 1 start dates with rates and coverage details.',

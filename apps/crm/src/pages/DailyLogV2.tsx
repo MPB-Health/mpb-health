@@ -17,6 +17,11 @@ import {
   Lock,
   XCircle,
   Layers,
+  Users,
+  Pencil,
+  Trash2,
+  ShieldAlert,
+  Filter,
 } from 'lucide-react';
 import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
@@ -24,6 +29,9 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
+import { useOrgReps } from '../hooks/useOrgReps';
+import { ManualEntryModal, type ManualEntrySection } from '../components/dailyLog/ManualEntryModal';
+import { AdminCorrectionModal } from '../components/dailyLog/AdminCorrectionModal';
 
 // ----------------------------------------------------------------------------
 // CRM rebuild Phase 4 / Section 8 / Section 11 / Section 12
@@ -126,12 +134,31 @@ const SECTIONS: { key: Section; label: string; icon: typeof Mail; description: s
 export default function DailyLogV2() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { activeOrgId } = useOrg();
-  const [searchParams] = useSearchParams();
+  const { activeOrgId, orgRole } = useOrg();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isOrgAdmin = orgRole === 'admin' || orgRole === 'owner';
 
   // Section 9 / Round 5 — End-of-Day collapsed into Sales Daily Logs as
   // "multi mode": rep can backfill several entries in one EOD pass.
   const isMultiMode = searchParams.get('mode') === 'multi';
+
+  // Section 8 (Round 4) — admin filter view. Activated via ?view=admin and
+  // gated by org role. Reps stay on the per-rep "today" view by default.
+  const isAdminView = isOrgAdmin && searchParams.get('view') === 'admin';
+
+  // Admin filter state (rep, date range, source).
+  const [adminRepFilter, setAdminRepFilter] = useState<string>('all'); // user_id or 'all'
+  const [adminDateFrom, setAdminDateFrom] = useState<string>(() =>
+    new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  );
+  const [adminDateTo, setAdminDateTo] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [adminSourceFilter, setAdminSourceFilter] = useState<'all' | 'auto' | 'manual'>('all');
+
+  const { data: orgReps = [] } = useOrgReps();
+
+  const [manualEntryOpen, setManualEntryOpen] = useState(false);
+  const [manualEntrySection, setManualEntrySection] = useState<ManualEntrySection | undefined>();
+  const [correctingEvent, setCorrectingEvent] = useState<DailyLogEvent | null>(null);
 
   // Section 12 / Round 6 Addendum — accordion is multi-expand and the
   // open/closed state persists per user across sessions in
@@ -146,11 +173,14 @@ export default function DailyLogV2() {
     special_projects: false,
   });
 
-  // ── Today's events (Realtime subscription) ──────────────────────────────
+  // ── Events query ────────────────────────────────────────────────────────
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const { data: events = [], isLoading } = useQuery({
-    queryKey: ['dailyLogEvents', activeOrgId, user?.id, today],
-    enabled: !!activeOrgId && !!user?.id,
+
+  // Per-rep "today" view (used by reps + admins on the default view).
+  const repQueryKey = ['dailyLogEvents', activeOrgId, user?.id, today] as const;
+  const { data: repEvents = [], isLoading: repLoading } = useQuery({
+    queryKey: repQueryKey,
+    enabled: !!activeOrgId && !!user?.id && !isAdminView,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('crm_daily_log_events')
@@ -165,30 +195,90 @@ export default function DailyLogV2() {
     staleTime: 5_000,
   });
 
-  // Section 8: Realtime — refetch as soon as a new event lands.
+  // Admin filter view (Section 8): per-rep, date range, auto-vs-manual.
+  const adminQueryKey = [
+    'dailyLogEventsAdmin',
+    activeOrgId,
+    adminRepFilter,
+    adminDateFrom,
+    adminDateTo,
+    adminSourceFilter,
+  ] as const;
+  const { data: adminEvents = [], isLoading: adminLoading } = useQuery({
+    queryKey: adminQueryKey,
+    enabled: !!activeOrgId && isAdminView,
+    queryFn: async () => {
+      let q = supabase
+        .from('crm_daily_log_events')
+        .select('*')
+        .eq('org_id', activeOrgId!)
+        .gte('log_date', adminDateFrom)
+        .lte('log_date', adminDateTo)
+        .order('occurred_at', { ascending: false })
+        .limit(500);
+      if (adminRepFilter !== 'all') q = q.eq('user_id', adminRepFilter);
+      if (adminSourceFilter !== 'all') {
+        q = q.eq('manual', adminSourceFilter === 'manual');
+      }
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as DailyLogEvent[];
+    },
+    staleTime: 5_000,
+  });
+
+  const events = isAdminView ? adminEvents : repEvents;
+  const isLoading = isAdminView ? adminLoading : repLoading;
+
+  // Section 8 — Realtime. In rep view we filter by user_id; in admin view we
+  // listen to all org events and rely on the date-range query to redraw.
   useEffect(() => {
-    if (!activeOrgId || !user?.id) return;
+    if (!activeOrgId) return;
+    const channelName = isAdminView
+      ? `daily-log-admin-${activeOrgId}`
+      : `daily-log-${user?.id ?? 'anon'}`;
+    const filter = isAdminView ? undefined : user?.id ? `user_id=eq.${user.id}` : undefined;
+    if (!isAdminView && !user?.id) return;
+
     const channel = supabase
-      .channel(`daily-log-${user.id}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'crm_daily_log_events',
-          filter: `user_id=eq.${user.id}`,
+          ...(filter ? { filter } : {}),
         },
         () => {
-          queryClient.invalidateQueries({
-            queryKey: ['dailyLogEvents', activeOrgId, user.id, today],
-          });
+          // Invalidate both query shapes; whichever one is currently mounted
+          // refetches. Cheap because react-query short-circuits idle keys.
+          queryClient.invalidateQueries({ queryKey: ['dailyLogEvents'] });
+          queryClient.invalidateQueries({ queryKey: ['dailyLogEventsAdmin'] });
+          queryClient.invalidateQueries({ queryKey: ['leadsWorkedToday'] });
         },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeOrgId, user?.id, today, queryClient]);
+  }, [activeOrgId, user?.id, isAdminView, queryClient]);
+
+  // ── "Leads worked today" derived count (rep view) ───────────────────────
+  const { data: leadsWorked = 0 } = useQuery({
+    queryKey: ['leadsWorkedToday', activeOrgId, user?.id, today],
+    enabled: !!activeOrgId && !!user?.id && !isAdminView,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('crm_count_leads_worked', {
+        p_org_id: activeOrgId,
+        p_user_id: user!.id,
+        p_date: today,
+      });
+      if (error) throw error;
+      return (data as number) ?? 0;
+    },
+    staleTime: 10_000,
+  });
 
   // ── Latest performance lag alert (passive — surfaces existing alerts) ──
   const { data: latestAlert } = useQuery({
@@ -275,6 +365,24 @@ export default function DailyLogV2() {
     };
   }, [activeOrgId, user?.id, today]);
 
+  // ── Manual row delete (own rows only) ─────────────────────────────────
+  const deleteOwnManualEntry = async (eventId: string) => {
+    if (!user?.id) return;
+    if (!confirm('Delete this manual entry? This cannot be undone.')) return;
+    const { error } = await supabase
+      .from('crm_daily_log_events')
+      .delete()
+      .eq('id', eventId)
+      .eq('user_id', user.id)
+      .eq('manual', true);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success('Entry deleted');
+    queryClient.invalidateQueries({ queryKey: repQueryKey });
+  };
+
   // ── Special Projects manual entry ──────────────────────────────────────
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -319,20 +427,45 @@ export default function DailyLogV2() {
 
   // ── Render ────────────────────────────────────────────────────────────
 
+  const headerTitle = isAdminView
+    ? 'Daily Log — Admin View'
+    : isMultiMode
+      ? 'End of Day — Multi Entry'
+      : 'Daily Log';
+  const headerSubtitle = isAdminView
+    ? 'Filter by rep, date range, and activity source. Use admin corrections sparingly — every change writes to crm_daily_log_corrections.'
+    : isMultiMode
+      ? 'Backfill multiple entries in one pass. Auto-captured rows are read-only; new manual rows land below.'
+      : 'Auto-captured per Section 11. Manual entries are flagged.';
+
+  const switchToAdminView = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set('view', 'admin');
+    setSearchParams(next, { replace: false });
+  };
+  const switchToRepView = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('view');
+    setSearchParams(next, { replace: false });
+  };
+
   return (
     <div className="space-y-6">
       <GradientHeader
-        title={isMultiMode ? 'End of Day — Multi Entry' : 'Daily Log'}
-        subtitle={
-          isMultiMode
-            ? 'Backfill multiple entries in one pass. Auto-captured rows are read-only; new manual rows land below.'
-            : 'Auto-captured per Section 11. Manual entries are flagged.'
-        }
+        title={headerTitle}
+        subtitle={headerSubtitle}
         icon={<ClipboardList className="w-5 h-5" />}
         size="sm"
         actions={
           <div className="flex items-center gap-3 text-xs text-th-text-tertiary">
-            {cancellationCount > 0 && (
+            {!isAdminView && (
+              <span className="inline-flex items-center gap-1 bg-th-accent-50 text-th-accent-700 px-2 py-1 rounded-full">
+                <Users className="w-3 h-3" />
+                <span className="font-semibold tabular-nums">{leadsWorked}</span> lead
+                {leadsWorked === 1 ? '' : 's'} worked
+              </span>
+            )}
+            {!isAdminView && cancellationCount > 0 && (
               <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full">
                 <XCircle className="w-3 h-3" />
                 <span className="font-semibold tabular-nums">{cancellationCount}</span> cancellation{' '}
@@ -341,11 +474,100 @@ export default function DailyLogV2() {
             )}
             <span>
               <span className="font-semibold tabular-nums text-th-text-primary">{totalToday}</span>{' '}
-              events today
+              events
+              {isAdminView ? '' : ' today'}
             </span>
+            {!isAdminView && (
+              <button
+                type="button"
+                onClick={() => {
+                  setManualEntrySection(undefined);
+                  setManualEntryOpen(true);
+                }}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-th-accent-700 bg-th-accent-50 hover:bg-th-accent-100 border border-th-accent-200"
+              >
+                <Plus className="w-3 h-3" /> Log activity
+              </button>
+            )}
+            {isOrgAdmin &&
+              (isAdminView ? (
+                <button
+                  type="button"
+                  onClick={switchToRepView}
+                  className="px-2 py-1 rounded-md border border-th-border hover:bg-surface-secondary"
+                >
+                  My day
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={switchToAdminView}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-th-border hover:bg-surface-secondary"
+                >
+                  <Filter className="w-3 h-3" /> Admin view
+                </button>
+              ))}
           </div>
         }
       />
+
+      {isAdminView && (
+        <div className="bg-surface-primary border border-th-border rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+              Rep
+            </label>
+            <select
+              value={adminRepFilter}
+              onChange={(e) => setAdminRepFilter(e.target.value)}
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+            >
+              <option value="all">All reps</option>
+              {orgReps.map((r) => (
+                <option key={r.user_id} value={r.user_id}>
+                  {r.display_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+              From
+            </label>
+            <input
+              type="date"
+              value={adminDateFrom}
+              onChange={(e) => setAdminDateFrom(e.target.value)}
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+              To
+            </label>
+            <input
+              type="date"
+              value={adminDateTo}
+              onChange={(e) => setAdminDateTo(e.target.value)}
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+              Source
+            </label>
+            <select
+              value={adminSourceFilter}
+              onChange={(e) => setAdminSourceFilter(e.target.value as 'all' | 'auto' | 'manual')}
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+            >
+              <option value="all">Auto + manual</option>
+              <option value="auto">Auto-captured only</option>
+              <option value="manual">Manual only</option>
+            </select>
+          </div>
+        </div>
+      )}
 
       {isMultiMode && (
         <div className="bg-th-accent-50 border border-th-accent-200 rounded-2xl p-4 flex items-start gap-3">
@@ -418,6 +640,20 @@ export default function DailyLogV2() {
               </button>
               {open && (
                 <div className="border-t border-th-border-subtle">
+                  {!isAdminView && key !== 'special_projects' && (
+                    <div className="p-3 border-b border-th-border-subtle flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManualEntrySection(key as ManualEntrySection);
+                          setManualEntryOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-th-border rounded-lg hover:bg-surface-secondary text-th-text-secondary"
+                      >
+                        <Plus className="w-3 h-3" /> Log manual {label.toLowerCase()}
+                      </button>
+                    </div>
+                  )}
                   {key === 'special_projects' && (
                     <div className="p-4 border-b border-th-border-subtle">
                       {showProjectForm ? (
@@ -485,8 +721,14 @@ export default function DailyLogV2() {
                     <ul className="divide-y divide-th-border-subtle">
                       {sectionEvents.map((e) => {
                         const isCancellation = e.activity_subtype === 'cancellation';
+                        const repName = isAdminView
+                          ? orgReps.find((r) => r.user_id === e.user_id)?.display_name ??
+                            e.user_id.slice(0, 8)
+                          : null;
+                        const adminCorrected =
+                          (e.metadata as Record<string, unknown> | null)?.admin_corrected === true;
                         return (
-                          <li key={e.id} className="px-5 py-3 flex items-start gap-3">
+                          <li key={e.id} className="px-5 py-3 flex items-start gap-3 group">
                             <span
                               className={`mt-1 inline-block w-2 h-2 rounded-full ${
                                 isCancellation ? 'bg-red-500' : 'bg-th-accent-500'
@@ -511,11 +753,42 @@ export default function DailyLogV2() {
                                     <Lock className="w-2.5 h-2.5" /> auto
                                   </span>
                                 )}
+                                {adminCorrected && (
+                                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 inline-flex items-center gap-0.5">
+                                    <ShieldAlert className="w-2.5 h-2.5" /> corrected
+                                  </span>
+                                )}
                               </div>
                               <p className="text-[11px] text-th-text-tertiary mt-0.5">
                                 {prettyType(e.activity_type)} · {e.source} ·{' '}
                                 {formatTimeAgo(e.occurred_at)}
+                                {repName ? <> · {repName}</> : null}
                               </p>
+                            </div>
+                            {/* Per-row actions */}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {/* Manual + own row → rep can delete */}
+                              {!isAdminView && e.manual && e.user_id === user?.id && (
+                                <button
+                                  type="button"
+                                  title="Delete manual entry"
+                                  onClick={() => void deleteOwnManualEntry(e.id)}
+                                  className="p-1 rounded hover:bg-surface-secondary text-th-text-tertiary hover:text-red-600"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {/* Admin: edit/delete any row with audit trail */}
+                              {isOrgAdmin && (
+                                <button
+                                  type="button"
+                                  title="Admin correct / delete"
+                                  onClick={() => setCorrectingEvent(e)}
+                                  className="p-1 rounded hover:bg-surface-secondary text-th-text-tertiary hover:text-th-accent-700"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </li>
                         );
@@ -528,6 +801,27 @@ export default function DailyLogV2() {
           );
         })}
       </div>
+
+      <ManualEntryModal
+        open={manualEntryOpen}
+        onClose={() => setManualEntryOpen(false)}
+        defaultSection={manualEntrySection}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: repQueryKey });
+          queryClient.invalidateQueries({
+            queryKey: ['leadsWorkedToday', activeOrgId, user?.id, today],
+          });
+        }}
+      />
+
+      <AdminCorrectionModal
+        event={correctingEvent}
+        onClose={() => setCorrectingEvent(null)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: repQueryKey });
+          queryClient.invalidateQueries({ queryKey: adminQueryKey });
+        }}
+      />
     </div>
   );
 }

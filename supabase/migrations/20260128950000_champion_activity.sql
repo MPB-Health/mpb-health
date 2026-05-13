@@ -49,13 +49,10 @@ CREATE TYPE activity_type AS ENUM (
   'milestone_reached',
   'system_alert'
 );
-
 -- Notification priority enum
 CREATE TYPE notification_priority AS ENUM ('low', 'normal', 'high', 'urgent');
-
 -- Notification channel enum
 CREATE TYPE notification_channel AS ENUM ('in_app', 'email', 'sms', 'push');
-
 -- ============================================================================
 -- ACTIVITIES — Activity feed events
 -- ============================================================================
@@ -87,13 +84,11 @@ CREATE TABLE activities (
 
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Indexes for activity queries
 CREATE INDEX idx_activities_org_created ON activities(org_id, created_at DESC);
 CREATE INDEX idx_activities_actor ON activities(actor_id, created_at DESC);
 CREATE INDEX idx_activities_lead ON activities(lead_id, created_at DESC) WHERE lead_id IS NOT NULL;
 CREATE INDEX idx_activities_type ON activities(org_id, activity_type, created_at DESC);
-
 -- ============================================================================
 -- NOTIFICATIONS — User notifications
 -- ============================================================================
@@ -137,13 +132,11 @@ CREATE TABLE notifications (
 
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Indexes for notification queries
 CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read, created_at DESC) WHERE is_read = FALSE AND is_dismissed = FALSE;
 CREATE INDEX idx_notifications_user_all ON notifications(user_id, created_at DESC);
 CREATE INDEX idx_notifications_scheduled ON notifications(scheduled_for) WHERE scheduled_for IS NOT NULL AND scheduled_for > NOW();
 CREATE INDEX idx_notifications_category ON notifications(user_id, category, created_at DESC);
-
 -- ============================================================================
 -- NOTIFICATION PREFERENCES OVERRIDES — Per-category preferences
 -- ============================================================================
@@ -169,7 +162,6 @@ CREATE TABLE notification_preferences_overrides (
 
   CONSTRAINT unique_user_category_override UNIQUE (user_id, org_id, category)
 );
-
 -- ============================================================================
 -- ACTIVITY SUBSCRIPTIONS — Subscribe to specific entities
 -- ============================================================================
@@ -190,10 +182,8 @@ CREATE TABLE activity_subscriptions (
 
   CONSTRAINT unique_user_entity_subscription UNIQUE (user_id, entity_type, entity_id)
 );
-
 CREATE INDEX idx_activity_subscriptions_user ON activity_subscriptions(user_id);
 CREATE INDEX idx_activity_subscriptions_entity ON activity_subscriptions(entity_type, entity_id);
-
 -- ============================================================================
 -- ROW LEVEL SECURITY
 -- ============================================================================
@@ -202,40 +192,32 @@ ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_preferences_overrides ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_subscriptions ENABLE ROW LEVEL SECURITY;
-
 -- Activities policies
 CREATE POLICY "Users can view org activities" ON activities
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
     AND (is_public = TRUE OR auth.uid() = ANY(visible_to) OR actor_id = auth.uid())
   );
-
 CREATE POLICY "Users can create activities" ON activities
   FOR INSERT WITH CHECK (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
   );
-
 -- Notifications policies
 CREATE POLICY "Users can view own notifications" ON notifications
   FOR SELECT USING (user_id = auth.uid());
-
 CREATE POLICY "Users can update own notifications" ON notifications
   FOR UPDATE USING (user_id = auth.uid());
-
 CREATE POLICY "System can create notifications" ON notifications
   FOR INSERT WITH CHECK (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
     OR auth.uid() IS NOT NULL
   );
-
 -- Notification preferences overrides policies
 CREATE POLICY "Users can manage own overrides" ON notification_preferences_overrides
   FOR ALL USING (user_id = auth.uid());
-
 -- Activity subscriptions policies
 CREATE POLICY "Users can manage own subscriptions" ON activity_subscriptions
   FOR ALL USING (user_id = auth.uid());
-
 -- ============================================================================
 -- HELPER FUNCTIONS
 -- ============================================================================
@@ -299,7 +281,6 @@ BEGIN
   RETURN v_activity_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get unread notification count
 CREATE OR REPLACE FUNCTION get_unread_notification_count(p_user_id UUID)
 RETURNS INTEGER AS $$
@@ -314,7 +295,6 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to mark notifications as read
 CREATE OR REPLACE FUNCTION mark_notifications_read(
   p_user_id UUID,
@@ -341,7 +321,6 @@ BEGIN
   RETURN v_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get activity feed with pagination
 CREATE OR REPLACE FUNCTION get_activity_feed(
   p_org_id UUID,
@@ -390,7 +369,6 @@ BEGIN
   OFFSET p_offset;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to subscribe to entity activities
 CREATE OR REPLACE FUNCTION subscribe_to_entity(
   p_user_id UUID,
@@ -410,7 +388,6 @@ BEGIN
   RETURN v_sub_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================================
 -- TRIGGERS
 -- ============================================================================
@@ -419,7 +396,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER update_notification_preferences_overrides_updated_at
   BEFORE UPDATE ON notification_preferences_overrides
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================================================
 -- REALTIME
 -- ============================================================================

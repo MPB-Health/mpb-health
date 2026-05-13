@@ -1,6 +1,5 @@
 -- Enable pg_net extension if not already enabled (needed for HTTP calls from triggers)
 create extension if not exists pg_net with schema extensions;
-
 -- Trigger function: calls the sync-user-to-itsts edge function whenever
 -- a row is inserted or updated in user_roles.
 create or replace function public.sync_user_to_itsts()
@@ -40,10 +39,10 @@ begin
   from user_roles ur
   where ur.user_id = NEW.user_id;
 
-  -- Build the edge function URL (sync-user-to-itsts lives on THIS project)
+  -- Build the edge function URL
   _edge_fn_url := coalesce(
     current_setting('app.settings.supabase_url', true),
-    'https://dtmnkzllidaiqyheguhl.supabase.co'
+    'https://hhikjgrttgnvojtunmla.supabase.co'
   ) || '/functions/v1/sync-user-to-itsts';
 
   _service_key := coalesce(
@@ -75,14 +74,11 @@ exception when others then
   return NEW;
 end;
 $$;
-
 -- Attach trigger to user_roles table
 drop trigger if exists trg_sync_user_to_itsts on public.user_roles;
-
 create trigger trg_sync_user_to_itsts
   after insert or update on public.user_roles
   for each row
   execute function public.sync_user_to_itsts();
-
 comment on function public.sync_user_to_itsts() is
   'Async trigger that syncs users to the ITSTS support ticketing system whenever roles change.';

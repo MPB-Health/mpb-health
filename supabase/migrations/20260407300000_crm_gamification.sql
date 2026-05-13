@@ -28,7 +28,6 @@ create table if not exists crm_user_xp (
   updated_at timestamptz not null default now(),
   unique(user_id, org_id)
 );
-
 -- Achievement Definitions
 create table if not exists crm_achievements (
   id uuid primary key default gen_random_uuid(),
@@ -45,7 +44,6 @@ create table if not exists crm_achievements (
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
-
 -- User Achievement Progress
 create table if not exists crm_user_achievements (
   id uuid primary key default gen_random_uuid(),
@@ -57,7 +55,6 @@ create table if not exists crm_user_achievements (
   notified boolean not null default false,
   unique(user_id, achievement_id)
 );
-
 -- XP Ledger (audit trail for every XP earning event)
 create table if not exists crm_xp_events (
   id uuid primary key default gen_random_uuid(),
@@ -70,7 +67,6 @@ create table if not exists crm_xp_events (
   description text,
   created_at timestamptz not null default now()
 );
-
 -- Win Feed (team celebrations)
 create table if not exists crm_win_feed (
   id uuid primary key default gen_random_uuid(),
@@ -85,7 +81,6 @@ create table if not exists crm_win_feed (
   reactions jsonb not null default '{}',
   created_at timestamptz not null default now()
 );
-
 -- Challenges (daily/weekly competitions)
 create table if not exists crm_challenges (
   id uuid primary key default gen_random_uuid(),
@@ -103,7 +98,6 @@ create table if not exists crm_challenges (
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now()
 );
-
 create table if not exists crm_challenge_entries (
   id uuid primary key default gen_random_uuid(),
   challenge_id uuid not null references crm_challenges(id) on delete cascade,
@@ -114,7 +108,6 @@ create table if not exists crm_challenge_entries (
   completed_at timestamptz,
   unique(challenge_id, user_id)
 );
-
 -- Indexes
 create index if not exists idx_crm_user_xp_org on crm_user_xp(org_id);
 create index if not exists idx_crm_user_xp_total on crm_user_xp(org_id, total_xp desc);
@@ -125,7 +118,6 @@ create index if not exists idx_crm_user_achievements_user on crm_user_achievemen
 create index if not exists idx_crm_win_feed_org on crm_win_feed(org_id, created_at desc);
 create index if not exists idx_crm_challenges_org on crm_challenges(org_id, is_active, ends_at);
 create index if not exists idx_crm_challenge_entries_challenge on crm_challenge_entries(challenge_id);
-
 -- RLS Policies
 alter table crm_user_xp enable row level security;
 alter table crm_achievements enable row level security;
@@ -134,65 +126,50 @@ alter table crm_xp_events enable row level security;
 alter table crm_win_feed enable row level security;
 alter table crm_challenges enable row level security;
 alter table crm_challenge_entries enable row level security;
-
 create policy "Org members can read XP data"
   on crm_user_xp for select using (
     org_id in (select org_id from org_memberships where user_id = auth.uid())
   );
-
 create policy "Users can update their own XP"
   on crm_user_xp for update using (user_id = auth.uid());
-
 create policy "Users can insert their own XP"
   on crm_user_xp for insert with check (user_id = auth.uid());
-
 create policy "Org members can read achievements"
   on crm_achievements for select using (
     org_id is null or org_id in (select org_id from org_memberships where user_id = auth.uid())
   );
-
 create policy "Org members can read user achievements"
   on crm_user_achievements for select using (
     org_id in (select org_id from org_memberships where user_id = auth.uid())
   );
-
 create policy "Users can manage their own achievements"
   on crm_user_achievements for all using (user_id = auth.uid());
-
 create policy "Org members can read XP events"
   on crm_xp_events for select using (
     org_id in (select org_id from org_memberships where user_id = auth.uid())
   );
-
 create policy "Users can insert their own XP events"
   on crm_xp_events for insert with check (user_id = auth.uid());
-
 create policy "Org members can read win feed"
   on crm_win_feed for select using (
     org_id in (select org_id from org_memberships where user_id = auth.uid())
   );
-
 create policy "Users can insert wins"
   on crm_win_feed for insert with check (user_id = auth.uid());
-
 create policy "Org members can update win reactions"
   on crm_win_feed for update using (
     org_id in (select org_id from org_memberships where user_id = auth.uid())
   );
-
 create policy "Org members can read challenges"
   on crm_challenges for select using (
     org_id in (select org_id from org_memberships where user_id = auth.uid())
   );
-
 create policy "Org members can read challenge entries"
   on crm_challenge_entries for select using (
     org_id in (select org_id from org_memberships where user_id = auth.uid())
   );
-
 create policy "Users can manage their own challenge entries"
   on crm_challenge_entries for all using (user_id = auth.uid());
-
 -- Seed default achievements (global, not org-specific)
 insert into crm_achievements (name, description, icon, category, xp_reward, criteria_type, criteria_threshold, rarity, sort_order) values
   ('First Blood', 'Close your first deal', 'target', 'deals', 100, 'deals_closed', 1, 'common', 1),
@@ -216,7 +193,6 @@ insert into crm_achievements (name, description, icon, category, xp_reward, crit
   ('Champion', 'Reach level 10', 'award', 'milestones', 1000, 'level_reached', 10, 'rare', 19),
   ('Legend', 'Reach level 25', 'crown', 'milestones', 5000, 'level_reached', 25, 'legendary', 20)
 on conflict do nothing;
-
 -- RPC: Get leaderboard for an org
 create or replace function crm_get_leaderboard(p_org_id uuid, p_period text default 'weekly')
 returns table (
@@ -259,7 +235,6 @@ returns table (
   where x.org_id = p_org_id
   order by period_xp desc;
 $$;
-
 -- RPC: Award XP and check level-ups
 create or replace function crm_award_xp(
   p_user_id uuid,

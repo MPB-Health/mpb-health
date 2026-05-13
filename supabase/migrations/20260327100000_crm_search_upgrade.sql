@@ -5,7 +5,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- Trigram indexes for family members and phone numbers
 -- ============================================================================
@@ -13,19 +12,15 @@ BEGIN;
 CREATE INDEX IF NOT EXISTS idx_crm_family_members_name_trgm
     ON public.crm_family_members
     USING gin((first_name || ' ' || last_name) extensions.gin_trgm_ops);
-
 CREATE INDEX IF NOT EXISTS idx_crm_phone_numbers_number_trgm
     ON public.crm_phone_numbers
     USING gin(phone_number extensions.gin_trgm_ops);
-
 CREATE INDEX IF NOT EXISTS idx_zoho_lead_submissions_name_trgm
     ON public.zoho_lead_submissions
     USING gin((first_name || ' ' || last_name) extensions.gin_trgm_ops);
-
 CREATE INDEX IF NOT EXISTS idx_zoho_lead_submissions_email_trgm
     ON public.zoho_lead_submissions
     USING gin(email extensions.gin_trgm_ops);
-
 -- ============================================================================
 -- Replace crm_global_search with upgraded version
 -- ============================================================================
@@ -275,5 +270,4 @@ BEGIN
     LIMIT p_limit;
 END;
 $$;
-
 COMMIT;

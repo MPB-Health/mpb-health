@@ -13,7 +13,6 @@ SET
   metadata    = '{"thumbnail_title": "MEC Membership Graphic"}'::jsonb
 WHERE
   slug = 'hsa-compatible-membership';
-
 -- Step 2: Remove any duplicate rows that share the same file_url but have
 --         a different slug (to eliminate the duplicate the user reported).
 DELETE FROM public.sop_documents

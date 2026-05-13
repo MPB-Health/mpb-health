@@ -15,21 +15,17 @@ CREATE TABLE IF NOT EXISTS crm_email_log (
   sent_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Indexes for common lookups
 CREATE INDEX idx_crm_email_log_lead ON crm_email_log(lead_id);
 CREATE INDEX idx_crm_email_log_template ON crm_email_log(template_id);
 CREATE INDEX idx_crm_email_log_org ON crm_email_log(org_id);
 CREATE INDEX idx_crm_email_log_sent_at ON crm_email_log(sent_at DESC);
-
 -- RLS
 ALTER TABLE crm_email_log ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Authenticated users can view email logs"
   ON crm_email_log FOR SELECT
   TO authenticated
   USING (true);
-
 CREATE POLICY "Authenticated users can insert email logs"
   ON crm_email_log FOR INSERT
   TO authenticated

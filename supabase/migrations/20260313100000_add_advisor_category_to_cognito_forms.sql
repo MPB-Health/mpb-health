@@ -6,7 +6,6 @@
 -- Drop the existing check constraint (PostgreSQL auto-names it {table}_{column}_check)
 ALTER TABLE public.cognito_forms
   DROP CONSTRAINT IF EXISTS cognito_forms_category_check;
-
 -- Add new constraint including 'advisor'
 ALTER TABLE public.cognito_forms
   ADD CONSTRAINT cognito_forms_category_check

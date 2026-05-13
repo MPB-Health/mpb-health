@@ -5,7 +5,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- 1. Plan-Type Segmented Stats
 -- Returns lead counts grouped by plan_type for operational dashboards.
@@ -39,9 +38,7 @@ BEGIN
     ORDER BY total_count DESC;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_plan_type_stats(uuid) TO authenticated;
-
 -- ============================================================================
 -- 2. Advisor Performance Stats
 -- Returns per-advisor lead counts, conversion metrics, and activity counts.
@@ -101,15 +98,13 @@ BEGIN
             AND a.created_at >= date_trunc('month', CURRENT_DATE)
         ) AS activities_this_month
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     LEFT JOIN public.zoho_lead_submissions l ON l.owner_id = u.id AND l.org_id = p_org_id
     GROUP BY u.id, u.email, u.raw_user_meta_data
     ORDER BY total_leads DESC;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_advisor_performance(uuid) TO authenticated;
-
 -- ============================================================================
 -- 3. Pipeline Stage Summary with plan-type breakdown
 -- Returns stage-level counts with plan_type sub-counts.
@@ -150,7 +145,5 @@ BEGIN
     ORDER BY ps.sort_order;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_pipeline_breakdown(uuid) TO authenticated;
-
 COMMIT;

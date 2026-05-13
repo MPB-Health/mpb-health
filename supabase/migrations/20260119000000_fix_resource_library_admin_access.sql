@@ -28,7 +28,6 @@
 
 -- Drop the overly restrictive policy from the previous migration
 DROP POLICY IF EXISTS "Public can view published resources" ON resource_library;
-
 -- Recreate with proper logic: public sees published only, authenticated sees all
 CREATE POLICY "resource_library_select_policy"
   ON resource_library
@@ -38,7 +37,6 @@ CREATE POLICY "resource_library_select_policy"
     is_published = true
     OR auth.uid() IS NOT NULL
   );
-
 -- ============================================================================
 -- Ensure write policies exist for authenticated users
 -- ============================================================================
@@ -50,7 +48,6 @@ CREATE POLICY "resource_library_insert_policy"
   FOR INSERT
   TO authenticated
   WITH CHECK (true);
-
 -- Drop and recreate UPDATE policy to ensure it exists
 DROP POLICY IF EXISTS "Authenticated users can update resources" ON resource_library;
 CREATE POLICY "resource_library_update_policy"
@@ -59,7 +56,6 @@ CREATE POLICY "resource_library_update_policy"
   TO authenticated
   USING (true)
   WITH CHECK (true);
-
 -- Drop and recreate DELETE policy to ensure it exists
 DROP POLICY IF EXISTS "Authenticated users can delete resources" ON resource_library;
 CREATE POLICY "resource_library_delete_policy"
@@ -67,20 +63,16 @@ CREATE POLICY "resource_library_delete_policy"
   FOR DELETE
   TO authenticated
   USING (true);
-
 -- ============================================================================
 -- Grant permissions
 -- ============================================================================
 
 -- Ensure RLS is enabled
 ALTER TABLE resource_library ENABLE ROW LEVEL SECURITY;
-
 -- Grant SELECT to anon for public viewing
 GRANT SELECT ON resource_library TO anon;
-
 -- Grant full access to authenticated users
 GRANT SELECT, INSERT, UPDATE, DELETE ON resource_library TO authenticated;
-
 -- Grant schema usage
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT USAGE ON SCHEMA public TO authenticated;

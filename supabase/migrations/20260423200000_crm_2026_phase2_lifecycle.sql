@@ -21,7 +21,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Fix lead_notifications schema
 -- ----------------------------------------------------------------------------
@@ -30,14 +29,11 @@ ALTER TABLE public.lead_notifications
     ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS notification_type text,
     ADD COLUMN IF NOT EXISTS message text;
-
 CREATE INDEX IF NOT EXISTS idx_lead_notifications_user_id
     ON public.lead_notifications(user_id, acknowledged_at)
     WHERE acknowledged_at IS NULL;
-
 CREATE INDEX IF NOT EXISTS idx_lead_notifications_type
     ON public.lead_notifications(notification_type, notified_at DESC);
-
 -- ----------------------------------------------------------------------------
 -- 2. Timezone-aware business hour deadline calculator
 -- ----------------------------------------------------------------------------
@@ -122,10 +118,8 @@ BEGIN
     RETURN v_cursor AT TIME ZONE COALESCE(p_timezone, 'UTC');
 END;
 $$;
-
 COMMENT ON FUNCTION public.crm_calc_business_hour_deadline(timestamptz, numeric, time, time, int[], text) IS
   'Returns the absolute deadline for p_hours of business-hours work starting at p_start, respecting the orgs bh window and business_days in the given timezone. Replaces the naive JS implementation in SLAService.';
-
 -- ----------------------------------------------------------------------------
 -- 3. Default cadence seed for every org missing one
 -- ----------------------------------------------------------------------------
@@ -157,7 +151,6 @@ WHERE NOT EXISTS (
     WHERE c.org_id = o.id AND c.is_default = true
 )
 ON CONFLICT DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 4. Seed SLA config for every org missing one (24 business hours, Mon-Fri)
 -- ----------------------------------------------------------------------------
@@ -179,7 +172,6 @@ SELECT
 FROM public.orgs o
 WHERE NOT EXISTS (SELECT 1 FROM public.crm_sla_config c WHERE c.org_id = o.id)
 ON CONFLICT (org_id) DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 5. Trigger: after insert on lead_submissions → assign + create task + enroll
 -- ----------------------------------------------------------------------------
@@ -318,13 +310,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_submissions_automation ON public.lead_submissions;
 CREATE TRIGGER trg_lead_submissions_automation
     BEFORE INSERT ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_lead_after_insert_automation();
-
 -- Note: BEFORE trigger so the NEW.assigned_to and NEW.next_followup_at writes
 -- are persisted into the row we're inserting (no second UPDATE required).
 -- Audit / task / cadence rows are SECURITY DEFINER inserts that still fire.
@@ -354,13 +344,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_submissions_cadence_pause ON public.lead_submissions;
 CREATE TRIGGER trg_lead_submissions_cadence_pause
     AFTER UPDATE OF pipeline_stage ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_lead_stage_cadence_pause();
-
 -- ----------------------------------------------------------------------------
 -- 6b. Auto-pause cadence on reply / meeting (last_contacted_at transition)
 -- ----------------------------------------------------------------------------
@@ -386,13 +374,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_submissions_contact_cadence_pause ON public.lead_submissions;
 CREATE TRIGGER trg_lead_submissions_contact_cadence_pause
     AFTER UPDATE OF last_contacted_at ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_lead_contact_cadence_pause();
-
 -- When a meeting activity is logged we also pause the cadence. This matches
 -- the Sales Plan 2026 rule "cadence pauses on reply, meeting booked, or
 -- Won/Lost stage change." The caller is whatever service logged the activity
@@ -415,13 +401,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_activities_cadence_pause ON public.lead_activities;
 CREATE TRIGGER trg_lead_activities_cadence_pause
     AFTER INSERT ON public.lead_activities
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_activity_cadence_pause();
-
 -- ----------------------------------------------------------------------------
 -- 7. Best-effort pg_cron job for sla-breach-scan
 -- ----------------------------------------------------------------------------
@@ -450,5 +434,4 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'pg_cron scheduling skipped (extension not enabled or net helper missing): %', SQLERRM;
 END
 $$;
-
 COMMIT;

@@ -10,7 +10,6 @@ SET content = regexp_replace(
 WHERE slug = 'advisor-bulletin-september-09-2025'
   AND content_type = 'bulletin'
   AND content LIKE '%2nd Tuesday Meeting%';
-
 -- Replace the full 4th Tuesday anchor tag with plain text
 UPDATE advisor_content
 SET content = regexp_replace(
@@ -21,7 +20,6 @@ SET content = regexp_replace(
 WHERE slug = 'advisor-bulletin-september-09-2025'
   AND content_type = 'bulletin'
   AND content LIKE '%4th Tuesday Meeting%';
-
 -- Fallback: if previous migration already changed them to linked meeting names, strip the <a> wrapper
 UPDATE advisor_content
 SET content = regexp_replace(
@@ -32,7 +30,6 @@ SET content = regexp_replace(
 WHERE slug = 'advisor-bulletin-september-09-2025'
   AND content_type = 'bulletin'
   AND content LIKE '%2nd Tuesday Meeting%';
-
 UPDATE advisor_content
 SET content = regexp_replace(
   content,

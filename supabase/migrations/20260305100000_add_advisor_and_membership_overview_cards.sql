@@ -37,7 +37,6 @@ SELECT
   0,
   '{"thumbnail_title": "Advisor Overview", "image_position": "-8px center"}'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM public.sop_documents WHERE slug = 'advisor-overview');
-
 -- 2. Membership Overview - Agent Resource
 INSERT INTO public.sop_documents (
   title,

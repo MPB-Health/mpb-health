@@ -69,7 +69,6 @@ CREATE TABLE IF NOT EXISTS white_label_configs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Custom email templates per white-label tenant
 CREATE TABLE IF NOT EXISTS white_label_email_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,14 +83,12 @@ CREATE TABLE IF NOT EXISTS white_label_email_templates (
 
     UNIQUE(org_id, template_type)
 );
-
 -- ============================================================================
 -- RLS Policies
 -- ============================================================================
 
 ALTER TABLE white_label_configs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE white_label_email_templates ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "white_label_configs_read" ON white_label_configs
     FOR SELECT TO authenticated
     USING (
@@ -100,7 +97,6 @@ CREATE POLICY "white_label_configs_read" ON white_label_configs
             WHERE om.user_id = auth.uid() AND om.status = 'active'
         )
     );
-
 CREATE POLICY "white_label_email_templates_read" ON white_label_email_templates
     FOR SELECT TO authenticated
     USING (
@@ -109,7 +105,6 @@ CREATE POLICY "white_label_email_templates_read" ON white_label_email_templates
             WHERE om.user_id = auth.uid() AND om.status = 'active'
         )
     );
-
 -- ============================================================================
 -- Indexes
 -- ============================================================================
@@ -117,7 +112,6 @@ CREATE POLICY "white_label_email_templates_read" ON white_label_email_templates
 CREATE INDEX IF NOT EXISTS idx_white_label_configs_org ON white_label_configs(org_id);
 CREATE INDEX IF NOT EXISTS idx_white_label_configs_domain ON white_label_configs(custom_domain) WHERE custom_domain IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_white_label_email_templates_org ON white_label_email_templates(org_id);
-
 -- ============================================================================
 -- Triggers
 -- ============================================================================

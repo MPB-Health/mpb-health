@@ -21,7 +21,6 @@
 -- ============================================================================
 
 BEGIN;
-
 DO $$
 DECLARE
     fn_base_url constant text := 'https://dtmnkzllidaiqyheguhl.supabase.co/functions/v1';
@@ -96,5 +95,4 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'pg_cron schedule rewrite skipped: %', SQLERRM;
 END
 $$;
-
 COMMIT;

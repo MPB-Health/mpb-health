@@ -8,7 +8,6 @@
 DROP POLICY IF EXISTS "admin_users_update" ON admin_users;
 DROP POLICY IF EXISTS "admin_users_delete" ON admin_users;
 DROP POLICY IF EXISTS "admin_users_insert" ON admin_users;
-
 -- Recreate with the correct operation types
 
 -- Super_admins can insert new admin users
@@ -21,7 +20,6 @@ CREATE POLICY "admin_users_insert" ON admin_users
         AND user_roles.role = 'super_admin'
     )
   );
-
 -- Users can update their own record; super_admins can update anyone
 CREATE POLICY "admin_users_update" ON admin_users
   FOR UPDATE TO authenticated
@@ -33,7 +31,6 @@ CREATE POLICY "admin_users_update" ON admin_users
         AND user_roles.role = 'super_admin'
     )
   );
-
 -- Only super_admins can delete
 CREATE POLICY "admin_users_delete" ON admin_users
   FOR DELETE TO authenticated

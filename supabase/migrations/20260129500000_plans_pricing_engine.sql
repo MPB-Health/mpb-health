@@ -59,16 +59,13 @@ CREATE TABLE IF NOT EXISTS crm_lead_plan_interests (
   -- Prevent duplicate entries for same lead/plan/family_size combo
   CONSTRAINT unique_lead_plan_interest UNIQUE (lead_id, plan_id, family_size)
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_crm_lead_plan_interests_lead_id ON crm_lead_plan_interests(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_lead_plan_interests_plan_id ON crm_lead_plan_interests(plan_id);
 CREATE INDEX IF NOT EXISTS idx_crm_lead_plan_interests_interest_level ON crm_lead_plan_interests(interest_level);
 CREATE INDEX IF NOT EXISTS idx_crm_lead_plan_interests_created_at ON crm_lead_plan_interests(created_at DESC);
-
 -- RLS
 ALTER TABLE crm_lead_plan_interests ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "crm_lead_plan_interests_select" ON crm_lead_plan_interests
   FOR SELECT TO authenticated
   USING (
@@ -78,7 +75,6 @@ CREATE POLICY "crm_lead_plan_interests_select" ON crm_lead_plan_interests
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 CREATE POLICY "crm_lead_plan_interests_insert" ON crm_lead_plan_interests
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -88,7 +84,6 @@ CREATE POLICY "crm_lead_plan_interests_insert" ON crm_lead_plan_interests
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 CREATE POLICY "crm_lead_plan_interests_update" ON crm_lead_plan_interests
   FOR UPDATE TO authenticated
   USING (
@@ -105,7 +100,6 @@ CREATE POLICY "crm_lead_plan_interests_update" ON crm_lead_plan_interests
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 CREATE POLICY "crm_lead_plan_interests_delete" ON crm_lead_plan_interests
   FOR DELETE TO authenticated
   USING (
@@ -115,7 +109,6 @@ CREATE POLICY "crm_lead_plan_interests_delete" ON crm_lead_plan_interests
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 -- ============================================================================
 -- PART 2: Create crm_lead_health_quotes table
 -- ============================================================================
@@ -192,7 +185,6 @@ CREATE TABLE IF NOT EXISTS crm_lead_health_quotes (
   updated_at timestamptz DEFAULT now(),
   created_by uuid REFERENCES auth.users(id)
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_crm_lead_health_quotes_lead_id ON crm_lead_health_quotes(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_lead_health_quotes_quote_number ON crm_lead_health_quotes(quote_number);
@@ -200,13 +192,10 @@ CREATE INDEX IF NOT EXISTS idx_crm_lead_health_quotes_status ON crm_lead_health_
 CREATE INDEX IF NOT EXISTS idx_crm_lead_health_quotes_created_at ON crm_lead_health_quotes(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_crm_lead_health_quotes_valid_until ON crm_lead_health_quotes(valid_until)
   WHERE status NOT IN ('accepted', 'declined', 'expired');
-
 -- Sequence for quote numbers
 CREATE SEQUENCE IF NOT EXISTS crm_health_quote_number_seq START 1;
-
 -- RLS
 ALTER TABLE crm_lead_health_quotes ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "crm_lead_health_quotes_select" ON crm_lead_health_quotes
   FOR SELECT TO authenticated
   USING (
@@ -216,7 +205,6 @@ CREATE POLICY "crm_lead_health_quotes_select" ON crm_lead_health_quotes
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 CREATE POLICY "crm_lead_health_quotes_insert" ON crm_lead_health_quotes
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -226,7 +214,6 @@ CREATE POLICY "crm_lead_health_quotes_insert" ON crm_lead_health_quotes
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 CREATE POLICY "crm_lead_health_quotes_update" ON crm_lead_health_quotes
   FOR UPDATE TO authenticated
   USING (
@@ -243,7 +230,6 @@ CREATE POLICY "crm_lead_health_quotes_update" ON crm_lead_health_quotes
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 CREATE POLICY "crm_lead_health_quotes_delete" ON crm_lead_health_quotes
   FOR DELETE TO authenticated
   USING (
@@ -253,7 +239,6 @@ CREATE POLICY "crm_lead_health_quotes_delete" ON crm_lead_health_quotes
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 -- ============================================================================
 -- PART 3: Create crm_website_quote_sync table
 -- ============================================================================
@@ -297,14 +282,11 @@ CREATE TABLE IF NOT EXISTS crm_website_quote_sync (
 
   CONSTRAINT unique_website_sync UNIQUE (website_submission_id)
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_crm_website_quote_sync_status ON crm_website_quote_sync(sync_status);
 CREATE INDEX IF NOT EXISTS idx_crm_website_quote_sync_created_at ON crm_website_quote_sync(created_at DESC);
-
 -- RLS
 ALTER TABLE crm_website_quote_sync ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "crm_website_quote_sync_select" ON crm_website_quote_sync
   FOR SELECT TO authenticated
   USING (
@@ -314,7 +296,6 @@ CREATE POLICY "crm_website_quote_sync_select" ON crm_website_quote_sync
       AND profiles.role IN ('admin', 'superadmin', 'agent')
     )
   );
-
 CREATE POLICY "crm_website_quote_sync_all" ON crm_website_quote_sync
   FOR ALL TO authenticated
   USING (
@@ -331,7 +312,6 @@ CREATE POLICY "crm_website_quote_sync_all" ON crm_website_quote_sync
       AND profiles.role IN ('admin', 'superadmin')
     )
   );
-
 -- ============================================================================
 -- PART 4: Helper Functions
 -- ============================================================================
@@ -348,7 +328,6 @@ BEGIN
   RETURN 'HQ-' || year_prefix || '-' || lpad(seq_num::text, 5, '0');
 END;
 $$ LANGUAGE plpgsql;
-
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_crm_plan_interest_updated_at()
 RETURNS TRIGGER AS $$
@@ -357,19 +336,16 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trigger_crm_lead_plan_interests_updated ON crm_lead_plan_interests;
 CREATE TRIGGER trigger_crm_lead_plan_interests_updated
   BEFORE UPDATE ON crm_lead_plan_interests
   FOR EACH ROW
   EXECUTE FUNCTION update_crm_plan_interest_updated_at();
-
 DROP TRIGGER IF EXISTS trigger_crm_lead_health_quotes_updated ON crm_lead_health_quotes;
 CREATE TRIGGER trigger_crm_lead_health_quotes_updated
   BEFORE UPDATE ON crm_lead_health_quotes
   FOR EACH ROW
   EXECUTE FUNCTION update_crm_plan_interest_updated_at();
-
 -- Function to get plan interests for a lead
 CREATE OR REPLACE FUNCTION get_lead_plan_interests(p_lead_id uuid)
 RETURNS TABLE (
@@ -412,7 +388,6 @@ BEGIN
   ORDER BY lpi.created_at DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get health quotes for a lead
 CREATE OR REPLACE FUNCTION get_lead_health_quotes(p_lead_id uuid)
 RETURNS TABLE (
@@ -449,7 +424,6 @@ BEGIN
   ORDER BY lhq.created_at DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get available plans for quoting
 CREATE OR REPLACE FUNCTION get_available_health_plans()
 RETURNS TABLE (
@@ -477,7 +451,6 @@ BEGIN
   ORDER BY p.display_order;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================================
 -- PART 5: Add fields to zoho_lead_submissions for plan tracking
 -- ============================================================================
@@ -490,13 +463,11 @@ ALTER TABLE zoho_lead_submissions
   ADD COLUMN IF NOT EXISTS primary_age integer,
   ADD COLUMN IF NOT EXISTS spouse_age integer,
   ADD COLUMN IF NOT EXISTS dependent_count integer DEFAULT 0;
-
 -- Index for plan-related queries
 CREATE INDEX IF NOT EXISTS idx_zoho_lead_submissions_interested_plans
   ON zoho_lead_submissions USING gin(interested_plans);
 CREATE INDEX IF NOT EXISTS idx_zoho_lead_submissions_quoted_plans
   ON zoho_lead_submissions USING gin(quoted_plans);
-
 -- ============================================================================
 -- PART 6: Grant execute permissions on functions
 -- ============================================================================

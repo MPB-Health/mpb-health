@@ -14,12 +14,10 @@ ALTER TABLE crm_email_log
   ADD COLUMN IF NOT EXISTS in_reply_to text,
   ADD COLUMN IF NOT EXISTS references_header text,
   ADD COLUMN IF NOT EXISTS inbound_address text;
-
 COMMENT ON COLUMN crm_email_log.message_id IS 'RFC 2822 Message-ID header for thread matching';
 COMMENT ON COLUMN crm_email_log.in_reply_to IS 'RFC 2822 In-Reply-To header linking to parent message';
 COMMENT ON COLUMN crm_email_log.references_header IS 'RFC 2822 References header for full thread chain';
 COMMENT ON COLUMN crm_email_log.inbound_address IS 'The address that received the inbound email';
-
 -- ============================================================================
 -- PART 2: Indexes for inbound email queries
 -- ============================================================================
@@ -28,16 +26,13 @@ COMMENT ON COLUMN crm_email_log.inbound_address IS 'The address that received th
 CREATE INDEX IF NOT EXISTS idx_crm_email_log_message_id
   ON crm_email_log(message_id)
   WHERE message_id IS NOT NULL;
-
 -- Inbox queries: filter by direction (inbound vs outbound)
 CREATE INDEX IF NOT EXISTS idx_crm_email_log_direction
   ON crm_email_log(direction);
-
 -- Unread count: quickly count unread emails
 CREATE INDEX IF NOT EXISTS idx_crm_email_log_is_read
   ON crm_email_log(is_read)
   WHERE is_read = false;
-
 -- ============================================================================
 -- PART 3: Email Routing Rules
 -- ============================================================================
@@ -61,20 +56,16 @@ CREATE TABLE IF NOT EXISTS crm_email_routing_rules (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_routing_rules_org
   ON crm_email_routing_rules(org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_email_routing_rules_address
   ON crm_email_routing_rules(inbound_address)
   WHERE is_active = true;
-
 -- ============================================================================
 -- PART 4: RLS for crm_email_routing_rules
 -- ============================================================================
 
 ALTER TABLE crm_email_routing_rules ENABLE ROW LEVEL SECURITY;
-
 -- Authenticated users can read routing rules for their org
 CREATE POLICY "Users can view their org routing rules"
   ON crm_email_routing_rules
@@ -85,7 +76,6 @@ CREATE POLICY "Users can view their org routing rules"
       SELECT org_id FROM org_memberships WHERE user_id = auth.uid()
     )
   );
-
 -- Authenticated users can insert routing rules for their org
 CREATE POLICY "Users can create routing rules for their org"
   ON crm_email_routing_rules
@@ -96,7 +86,6 @@ CREATE POLICY "Users can create routing rules for their org"
       SELECT org_id FROM org_memberships WHERE user_id = auth.uid()
     )
   );
-
 -- Authenticated users can update routing rules for their org
 CREATE POLICY "Users can update their org routing rules"
   ON crm_email_routing_rules
@@ -112,7 +101,6 @@ CREATE POLICY "Users can update their org routing rules"
       SELECT org_id FROM org_memberships WHERE user_id = auth.uid()
     )
   );
-
 -- Authenticated users can delete routing rules for their org
 CREATE POLICY "Users can delete their org routing rules"
   ON crm_email_routing_rules
@@ -123,7 +111,6 @@ CREATE POLICY "Users can delete their org routing rules"
       SELECT org_id FROM org_memberships WHERE user_id = auth.uid()
     )
   );
-
 -- ============================================================================
 -- PART 5: Updated timestamp trigger for routing rules
 -- ============================================================================
@@ -135,7 +122,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trigger_routing_rules_updated ON crm_email_routing_rules;
 CREATE TRIGGER trigger_routing_rules_updated
   BEFORE UPDATE ON crm_email_routing_rules

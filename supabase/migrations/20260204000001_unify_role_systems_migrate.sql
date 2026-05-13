@@ -26,7 +26,6 @@ AND NOT EXISTS (
     SELECT 1 FROM user_roles ur WHERE ur.user_id = p.id
 )
 ON CONFLICT (user_id, role) DO NOTHING;
-
 -- Migrate from admin_users.role (ensure admin portal users have correct roles)
 INSERT INTO user_roles (user_id, role)
 SELECT
@@ -41,7 +40,6 @@ AND NOT EXISTS (
     AND ur.role::text = au.role
 )
 ON CONFLICT (user_id, role) DO NOTHING;
-
 -- ============================================================================
 -- CREATE SYNC FUNCTION: user_roles -> profiles & admin_users
 -- ============================================================================
@@ -90,7 +88,6 @@ BEGIN
     RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================================
 -- CREATE TRIGGERS
 -- ============================================================================
@@ -99,23 +96,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS trigger_sync_roles_on_insert ON user_roles;
 DROP TRIGGER IF EXISTS trigger_sync_roles_on_update ON user_roles;
 DROP TRIGGER IF EXISTS trigger_sync_roles_on_delete ON user_roles;
-
 -- Create triggers for INSERT, UPDATE, DELETE
 CREATE TRIGGER trigger_sync_roles_on_insert
     AFTER INSERT ON user_roles
     FOR EACH ROW
     EXECUTE FUNCTION sync_roles_to_legacy();
-
 CREATE TRIGGER trigger_sync_roles_on_update
     AFTER UPDATE ON user_roles
     FOR EACH ROW
     EXECUTE FUNCTION sync_roles_to_legacy();
-
 CREATE TRIGGER trigger_sync_roles_on_delete
     AFTER DELETE ON user_roles
     FOR EACH ROW
     EXECUTE FUNCTION sync_roles_to_legacy();
-
 -- ============================================================================
 -- UPDATE PROFILE CREATION TRIGGER
 -- ============================================================================
@@ -137,7 +130,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================================
 -- CREATE UNIFIED ROLE VIEW
 -- ============================================================================
@@ -183,10 +175,8 @@ SELECT
 FROM auth.users u
 LEFT JOIN profiles p ON p.id = u.id
 LEFT JOIN admin_users au ON au.id = u.id;
-
 -- Grant access to the view
 GRANT SELECT ON public.unified_user_roles TO authenticated;
-
 -- ============================================================================
 -- HELPER FUNCTION: Get user's highest role
 -- ============================================================================
@@ -212,9 +202,7 @@ BEGIN
     RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 GRANT EXECUTE ON FUNCTION public.get_highest_role(UUID) TO authenticated;
-
 -- ============================================================================
 -- SYNC EXISTING DATA (run sync for all existing users)
 -- ============================================================================

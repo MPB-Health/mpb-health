@@ -15,7 +15,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ─── 1. crm_deal_room_participants ─────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS public.crm_deal_room_participants (
@@ -33,14 +32,11 @@ CREATE TABLE IF NOT EXISTS public.crm_deal_room_participants (
     CHECK (role IN ('owner', 'collaborator', 'viewer')),
   UNIQUE (room_id, user_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_room_participants_room
   ON public.crm_deal_room_participants(room_id);
 CREATE INDEX IF NOT EXISTS idx_crm_deal_room_participants_user
   ON public.crm_deal_room_participants(user_id);
-
 ALTER TABLE public.crm_deal_room_participants ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Org members can view deal room participants"
   ON public.crm_deal_room_participants;
 CREATE POLICY "Org members can view deal room participants"
@@ -51,7 +47,6 @@ CREATE POLICY "Org members can view deal room participants"
       WHERE r.id = room_id AND public.is_org_member(r.org_id)
     )
   );
-
 DROP POLICY IF EXISTS "Room owners or first user can add participants"
   ON public.crm_deal_room_participants;
 CREATE POLICY "Room owners or first user can add participants"
@@ -68,14 +63,12 @@ CREATE POLICY "Room owners or first user can add participants"
       WHERE existing.room_id = crm_deal_room_participants.room_id
     )
   );
-
 DROP POLICY IF EXISTS "Users update own presence"
   ON public.crm_deal_room_participants;
 CREATE POLICY "Users update own presence"
   ON public.crm_deal_room_participants FOR UPDATE TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Room owners update participants"
   ON public.crm_deal_room_participants;
 CREATE POLICY "Room owners update participants"
@@ -96,7 +89,6 @@ CREATE POLICY "Room owners update participants"
         AND owner.role = 'owner'
     )
   );
-
 DROP POLICY IF EXISTS "Users can delete deal room participants"
   ON public.crm_deal_room_participants;
 CREATE POLICY "Users can delete deal room participants"
@@ -110,7 +102,6 @@ CREATE POLICY "Users can delete deal room participants"
         AND owner.role = 'owner'
     )
   );
-
 -- ─── 2. crm_deal_room_pinned_items ─────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS public.crm_deal_room_pinned_items (
@@ -125,12 +116,9 @@ CREATE TABLE IF NOT EXISTS public.crm_deal_room_pinned_items (
   CONSTRAINT crm_deal_room_pinned_items_type_check
     CHECK (item_type IN ('document', 'quote', 'email', 'note'))
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_room_pinned_items_room
   ON public.crm_deal_room_pinned_items(room_id, pinned_at DESC);
-
 ALTER TABLE public.crm_deal_room_pinned_items ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Org members can view pinned items"
   ON public.crm_deal_room_pinned_items;
 CREATE POLICY "Org members can view pinned items"
@@ -141,7 +129,6 @@ CREATE POLICY "Org members can view pinned items"
       WHERE r.id = room_id AND public.is_org_member(r.org_id)
     )
   );
-
 DROP POLICY IF EXISTS "Room participants can pin items"
   ON public.crm_deal_room_pinned_items;
 CREATE POLICY "Room participants can pin items"
@@ -154,7 +141,6 @@ CREATE POLICY "Room participants can pin items"
         AND p.user_id = auth.uid()
     )
   );
-
 DROP POLICY IF EXISTS "Pinner or owner can unpin"
   ON public.crm_deal_room_pinned_items;
 CREATE POLICY "Pinner or owner can unpin"
@@ -168,7 +154,6 @@ CREATE POLICY "Pinner or owner can unpin"
         AND owner.role = 'owner'
     )
   );
-
 -- ─── 3. 'avatars' storage bucket ───────────────────────────────────────────
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -178,12 +163,10 @@ VALUES (
   ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 )
 ON CONFLICT (id) DO NOTHING;
-
 DROP POLICY IF EXISTS "Avatars are publicly readable" ON storage.objects;
 CREATE POLICY "Avatars are publicly readable"
   ON storage.objects FOR SELECT TO public
   USING (bucket_id = 'avatars');
-
 DROP POLICY IF EXISTS "Users upload avatars to own folder" ON storage.objects;
 CREATE POLICY "Users upload avatars to own folder"
   ON storage.objects FOR INSERT TO authenticated
@@ -191,7 +174,6 @@ CREATE POLICY "Users upload avatars to own folder"
     bucket_id = 'avatars'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
-
 DROP POLICY IF EXISTS "Users update own avatar files" ON storage.objects;
 CREATE POLICY "Users update own avatar files"
   ON storage.objects FOR UPDATE TO authenticated
@@ -203,7 +185,6 @@ CREATE POLICY "Users update own avatar files"
     bucket_id = 'avatars'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
-
 DROP POLICY IF EXISTS "Users delete own avatar files" ON storage.objects;
 CREATE POLICY "Users delete own avatar files"
   ON storage.objects FOR DELETE TO authenticated
@@ -211,7 +192,6 @@ CREATE POLICY "Users delete own avatar files"
     bucket_id = 'avatars'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
-
 -- ─── 4. org_memberships role-aware RLS ─────────────────────────────────────
 -- The earlier migration (20260211000000) gave any org member full
 -- INSERT/UPDATE/DELETE on org_memberships, allowing self-promotion to
@@ -231,16 +211,13 @@ AS $$
     AND status = 'active'
   LIMIT 1;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.current_user_org_role(uuid) TO authenticated;
-
 DROP POLICY IF EXISTS "Admins can insert memberships" ON public.org_memberships;
 CREATE POLICY "Admins can insert memberships"
   ON public.org_memberships FOR INSERT TO authenticated
   WITH CHECK (
     public.current_user_org_role(org_memberships.org_id) IN ('owner', 'admin')
   );
-
 DROP POLICY IF EXISTS "Admins can update memberships" ON public.org_memberships;
 DROP POLICY IF EXISTS "Owners can update any membership" ON public.org_memberships;
 CREATE POLICY "Owners can update any membership"
@@ -251,7 +228,6 @@ CREATE POLICY "Owners can update any membership"
   WITH CHECK (
     public.current_user_org_role(org_memberships.org_id) = 'owner'
   );
-
 DROP POLICY IF EXISTS "Admins can update non-owner memberships" ON public.org_memberships;
 CREATE POLICY "Admins can update non-owner memberships"
   ON public.org_memberships FOR UPDATE TO authenticated
@@ -263,20 +239,17 @@ CREATE POLICY "Admins can update non-owner memberships"
     public.current_user_org_role(org_memberships.org_id) = 'admin'
     AND role <> 'owner'
   );
-
 DROP POLICY IF EXISTS "Users can delete memberships" ON public.org_memberships;
 DROP POLICY IF EXISTS "Users can leave their own membership" ON public.org_memberships;
 CREATE POLICY "Users can leave their own membership"
   ON public.org_memberships FOR DELETE TO authenticated
   USING (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Owners can delete any membership" ON public.org_memberships;
 CREATE POLICY "Owners can delete any membership"
   ON public.org_memberships FOR DELETE TO authenticated
   USING (
     public.current_user_org_role(org_memberships.org_id) = 'owner'
   );
-
 DROP POLICY IF EXISTS "Admins can delete non-owner memberships" ON public.org_memberships;
 CREATE POLICY "Admins can delete non-owner memberships"
   ON public.org_memberships FOR DELETE TO authenticated
@@ -284,7 +257,6 @@ CREATE POLICY "Admins can delete non-owner memberships"
     public.current_user_org_role(org_memberships.org_id) = 'admin'
     AND role <> 'owner'
   );
-
 -- ─── 5. crm_email_log: close cross-tenant read leak ────────────────────────
 
 DROP POLICY IF EXISTS "Authenticated users can view email logs" ON public.crm_email_log;
@@ -294,7 +266,6 @@ CREATE POLICY "Org members can view email logs"
     org_id IS NOT NULL
     AND public.is_org_member(org_id)
   );
-
 -- ─── 6. calendar_events: close cross-tenant read leak ──────────────────────
 -- Previous policy was `USING (true)` for any authenticated user. Tighten to
 -- org-scoped, with a fallback for legacy rows that lack an org_id (the
@@ -310,12 +281,10 @@ CREATE POLICY "Org members can read calendar events"
          created_by = auth.uid() OR assigned_to = auth.uid()
        ))
   );
-
 -- ─── 7. lead_submissions: close anon read leak ─────────────────────────────
 -- The public lead form INSERTs anonymously — we keep that. We only revoke
 -- anonymous SELECT, which had no business case.
 
 DROP POLICY IF EXISTS "Anon can read lead_submissions" ON public.lead_submissions;
 DROP POLICY IF EXISTS "lead_submissions_anon_select" ON public.lead_submissions;
-
 COMMIT;

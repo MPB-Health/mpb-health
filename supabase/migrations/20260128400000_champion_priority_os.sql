@@ -48,18 +48,15 @@ CREATE TABLE IF NOT EXISTS priority_lanes (
 
   CONSTRAINT unique_org_lane_name UNIQUE (org_id, name)
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_priority_lanes_org_id ON priority_lanes(org_id);
 CREATE INDEX IF NOT EXISTS idx_priority_lanes_order ON priority_lanes(org_id, order_index);
 CREATE INDEX IF NOT EXISTS idx_priority_lanes_active ON priority_lanes(org_id, is_active);
-
 -- Updated_at trigger
 CREATE TRIGGER update_priority_lanes_updated_at
   BEFORE UPDATE ON priority_lanes
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================
 -- PRIORITY ITEMS TABLE
 -- ============================================
@@ -105,7 +102,6 @@ CREATE TABLE IF NOT EXISTS priority_items (
   CONSTRAINT unique_lead_in_lane UNIQUE (org_id, lane_id, lead_id),
   CONSTRAINT unique_contact_in_lane UNIQUE (org_id, lane_id, contact_id)
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_priority_items_org_id ON priority_items(org_id);
 CREATE INDEX IF NOT EXISTS idx_priority_items_lane_id ON priority_items(lane_id);
@@ -116,13 +112,11 @@ CREATE INDEX IF NOT EXISTS idx_priority_items_score ON priority_items(org_id, sc
 CREATE INDEX IF NOT EXISTS idx_priority_items_rank ON priority_items(lane_id, rank);
 CREATE INDEX IF NOT EXISTS idx_priority_items_snoozed ON priority_items(snoozed_until) WHERE snoozed_until IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_priority_items_active ON priority_items(org_id, completed_at) WHERE completed_at IS NULL;
-
 -- Updated_at trigger
 CREATE TRIGGER update_priority_items_updated_at
   BEFORE UPDATE ON priority_items
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================
 -- SCORING RULES TABLE
 -- ============================================
@@ -174,26 +168,22 @@ CREATE TABLE IF NOT EXISTS scoring_rules (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_scoring_rules_org_id ON scoring_rules(org_id);
 CREATE INDEX IF NOT EXISTS idx_scoring_rules_trigger ON scoring_rules(org_id, trigger_type);
 CREATE INDEX IF NOT EXISTS idx_scoring_rules_active ON scoring_rules(org_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_scoring_rules_order ON scoring_rules(org_id, execution_order);
-
 -- Updated_at trigger
 CREATE TRIGGER update_scoring_rules_updated_at
   BEFORE UPDATE ON scoring_rules
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================
 -- ENABLE ROW LEVEL SECURITY
 -- ============================================
 ALTER TABLE priority_lanes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE priority_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scoring_rules ENABLE ROW LEVEL SECURITY;
-
 -- ============================================
 -- RLS POLICIES: PRIORITY LANES
 -- ============================================
@@ -203,26 +193,22 @@ CREATE POLICY "Users can view lanes in their org"
   ON priority_lanes FOR SELECT
   TO authenticated
   USING (user_has_org_access(org_id));
-
 -- Managers+ can create lanes
 CREATE POLICY "Managers can create lanes"
   ON priority_lanes FOR INSERT
   TO authenticated
   WITH CHECK (user_is_org_manager_or_above(org_id));
-
 -- Managers+ can update lanes
 CREATE POLICY "Managers can update lanes"
   ON priority_lanes FOR UPDATE
   TO authenticated
   USING (user_is_org_manager_or_above(org_id))
   WITH CHECK (user_is_org_manager_or_above(org_id));
-
 -- Admins can delete lanes
 CREATE POLICY "Admins can delete lanes"
   ON priority_lanes FOR DELETE
   TO authenticated
   USING (user_is_org_owner_or_admin(org_id));
-
 -- ============================================
 -- RLS POLICIES: PRIORITY ITEMS
 -- ============================================
@@ -242,13 +228,11 @@ CREATE POLICY "Users can view priority items"
       OR owner_user_id IS NULL
     )
   );
-
 -- Users can create items in their org
 CREATE POLICY "Users can create priority items"
   ON priority_items FOR INSERT
   TO authenticated
   WITH CHECK (user_has_org_access(org_id));
-
 -- Users can update their own items, managers can update any
 CREATE POLICY "Users can update priority items"
   ON priority_items FOR UPDATE
@@ -267,7 +251,6 @@ CREATE POLICY "Users can update priority items"
       OR owner_user_id = auth.uid()
     )
   );
-
 -- Users can delete their own items, managers can delete any
 CREATE POLICY "Users can delete priority items"
   ON priority_items FOR DELETE
@@ -279,7 +262,6 @@ CREATE POLICY "Users can delete priority items"
       OR owner_user_id = auth.uid()
     )
   );
-
 -- ============================================
 -- RLS POLICIES: SCORING RULES
 -- ============================================
@@ -289,14 +271,12 @@ CREATE POLICY "Users can view scoring rules"
   ON scoring_rules FOR SELECT
   TO authenticated
   USING (user_has_org_access(org_id));
-
 -- Admins can manage rules
 CREATE POLICY "Admins can manage scoring rules"
   ON scoring_rules FOR ALL
   TO authenticated
   USING (user_is_org_owner_or_admin(org_id))
   WITH CHECK (user_is_org_owner_or_admin(org_id));
-
 -- ============================================
 -- SEED DEFAULT LANES FOR MPB ORG
 -- ============================================
@@ -308,7 +288,6 @@ VALUES
   ('a0000000-0000-0000-0000-000000000001', 'At Risk', 'No recent contact - re-engage', '#DC2626', 'alert-triangle', 3, false),
   ('a0000000-0000-0000-0000-000000000001', 'Snoozed', 'Temporarily paused', '#6B7280', 'clock', 4, false)
 ON CONFLICT (org_id, name) DO NOTHING;
-
 -- ============================================
 -- SEED DEFAULT SCORING RULES
 -- ============================================
@@ -360,7 +339,6 @@ VALUES
     5
   )
 ON CONFLICT DO NOTHING;
-
 -- ============================================
 -- HELPER FUNCTIONS
 -- ============================================
@@ -423,7 +401,6 @@ AS $$
     pi.rank ASC NULLS LAST
   LIMIT p_limit;
 $$;
-
 -- Function to add lead to priority lane
 CREATE OR REPLACE FUNCTION add_to_priority_lane(
   p_org_id uuid,
@@ -484,7 +461,6 @@ BEGIN
   RETURN v_item_id;
 END;
 $$;
-
 -- Function to move item between lanes
 CREATE OR REPLACE FUNCTION move_priority_item(
   p_item_id uuid,
@@ -507,7 +483,6 @@ BEGIN
   RETURN FOUND;
 END;
 $$;
-
 -- Function to snooze an item
 CREATE OR REPLACE FUNCTION snooze_priority_item(
   p_item_id uuid,
@@ -530,7 +505,6 @@ BEGIN
   RETURN FOUND;
 END;
 $$;
-
 -- Function to complete/dismiss an item
 CREATE OR REPLACE FUNCTION complete_priority_item(
   p_item_id uuid,
@@ -552,14 +526,12 @@ BEGIN
   RETURN FOUND;
 END;
 $$;
-
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION get_power_list(uuid, uuid, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION add_to_priority_lane(uuid, uuid, uuid, text, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION move_priority_item(uuid, uuid, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION snooze_priority_item(uuid, timestamptz, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION complete_priority_item(uuid, text) TO authenticated;
-
 -- ============================================
 -- COMMENTS
 -- ============================================

@@ -17,7 +17,6 @@
 UPDATE public.sop_documents
 SET file_url = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/Healthcare-Designed-for-Group-Needs.pptx'
 WHERE slug = 'healthcare-designed-group-needs';
-
 UPDATE public.sop_documents
 SET file_url = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/Healthcare-Designed-for-Individual-Needs.pptx'
 WHERE slug = 'healthcare-designed-individual-needs';

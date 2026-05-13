@@ -11,9 +11,7 @@ CREATE TABLE IF NOT EXISTS public.ticket_categories (
   display_order INTEGER    NOT NULL DEFAULT 0,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 ALTER TABLE public.ticket_categories ENABLE ROW LEVEL SECURITY;
-
 -- All authenticated users can read active categories (needed for ticket creation form)
 DROP POLICY IF EXISTS "Authenticated users can read ticket_categories" ON public.ticket_categories;
 CREATE POLICY "Authenticated users can read ticket_categories"
@@ -21,7 +19,6 @@ CREATE POLICY "Authenticated users can read ticket_categories"
   FOR SELECT
   TO authenticated
   USING (true);
-
 -- Only admins and super_admins can manage categories
 DROP POLICY IF EXISTS "Admins can manage ticket_categories" ON public.ticket_categories;
 CREATE POLICY "Admins can manage ticket_categories"
@@ -42,10 +39,8 @@ CREATE POLICY "Admins can manage ticket_categories"
         AND role IN ('admin', 'super_admin')
     )
   );
-
 CREATE INDEX IF NOT EXISTS idx_ticket_categories_display_order
   ON public.ticket_categories (display_order);
-
 -- Seed common default categories
 INSERT INTO public.ticket_categories (name, slug, description, display_order) VALUES
   ('General Inquiry',  'general-inquiry',  'General questions and information requests',     0),

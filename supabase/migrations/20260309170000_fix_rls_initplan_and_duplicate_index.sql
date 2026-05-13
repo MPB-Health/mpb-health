@@ -10,13 +10,11 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- 1. DUPLICATE INDEX: user_achievements has idx_user_achievements_user and
 --    idx_user_achievements_user_id on the same column - drop the redundant one
 -- ============================================================================
 DROP INDEX IF EXISTS public.idx_user_achievements_user;
-
 -- ============================================================================
 -- 2. AUTH RLS INITPLAN: Wrap auth.uid(), auth.jwt(), auth.role() in (select ...)
 --    so PostgreSQL evaluates them once in the InitPlan instead of per row.
@@ -186,5 +184,4 @@ BEGIN
   END LOOP;
 END;
 $$;
-
 COMMIT;

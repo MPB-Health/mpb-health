@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS public.quick_actions (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 2. USER ACHIEVEMENTS TABLE
 -- ============================================================================
@@ -37,7 +36,6 @@ CREATE TABLE IF NOT EXISTS public.user_achievements (
   metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 3. COMPLIANCE DOCUMENTS & ACKNOWLEDGMENTS
 -- ============================================================================
@@ -56,7 +54,6 @@ CREATE TABLE IF NOT EXISTS public.compliance_documents (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE TABLE IF NOT EXISTS public.compliance_acknowledgments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -70,7 +67,6 @@ CREATE TABLE IF NOT EXISTS public.compliance_acknowledgments (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, document_id)
 );
-
 -- ============================================================================
 -- 4. PERFORMANCE GOALS
 -- ============================================================================
@@ -89,7 +85,6 @@ CREATE TABLE IF NOT EXISTS public.performance_goals (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 5. LEADS TABLE (if missing columns)
 -- ============================================================================
@@ -105,7 +100,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================================================
 -- 6. MESSAGES TABLE
 -- ============================================================================
@@ -124,7 +118,6 @@ CREATE TABLE IF NOT EXISTS public.messages (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 7. TASKS TABLE
 -- ============================================================================
@@ -144,7 +137,6 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 8. ACTIVITIES TABLE
 -- ============================================================================
@@ -159,7 +151,6 @@ CREATE TABLE IF NOT EXISTS public.activities (
   metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 9. CONVERSATIONS TABLE
 -- ============================================================================
@@ -178,7 +169,6 @@ CREATE TABLE IF NOT EXISTS public.conversations (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 10. SEQUENCES (for email/outreach sequences)
 -- ============================================================================
@@ -196,7 +186,6 @@ CREATE TABLE IF NOT EXISTS public.sequences (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 11. AUTOMATION TEMPLATES & RULES
 -- ============================================================================
@@ -212,7 +201,6 @@ CREATE TABLE IF NOT EXISTS public.automation_templates (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE TABLE IF NOT EXISTS public.ai_automation_rules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
@@ -229,7 +217,6 @@ CREATE TABLE IF NOT EXISTS public.ai_automation_rules (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 12. FORM SUBMISSIONS (for advisor forms)
 -- ============================================================================
@@ -245,7 +232,6 @@ CREATE TABLE IF NOT EXISTS public.form_submissions (
   processed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- 13. SOP DOCUMENTS & CATEGORIES
 -- ============================================================================
@@ -260,7 +246,6 @@ CREATE TABLE IF NOT EXISTS public.sop_categories (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 DO $$
 BEGIN
   -- Create sop_documents if it doesn't exist
@@ -295,7 +280,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================================================
 -- 14. FIX ZOHO_LEAD_SUBMISSIONS COLUMNS
 -- ============================================================================
@@ -313,7 +297,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- ============================================================================
 -- 15. CRM PIPELINE STAGES (add missing columns if table exists)
 -- ============================================================================
@@ -344,7 +327,6 @@ BEGIN
     ALTER TABLE public.crm_pipeline_stages ADD COLUMN color TEXT DEFAULT '#3B82F6';
   END IF;
 END $$;
-
 -- Seed default pipeline stages - skip if we can't insert due to schema mismatch
 -- The table may already be seeded or have different required columns
 DO $$ 
@@ -372,7 +354,6 @@ BEGIN
     END;
   END IF;
 END $$;
-
 -- ============================================================================
 -- RPC FUNCTIONS (Drop existing first to allow signature changes)
 -- ============================================================================
@@ -384,7 +365,6 @@ DROP FUNCTION IF EXISTS public.get_leaderboard(UUID, TEXT, INTEGER);
 DROP FUNCTION IF EXISTS public.get_metric_timeseries(TEXT, TIMESTAMPTZ, TIMESTAMPTZ, TEXT);
 DROP FUNCTION IF EXISTS public.get_automation_stats(UUID);
 DROP FUNCTION IF EXISTS public.get_inbox_summary(UUID, UUID);
-
 -- 1. get_user_compliance_status
 CREATE OR REPLACE FUNCTION public.get_user_compliance_status(p_user_id UUID)
 RETURNS TABLE (
@@ -410,7 +390,6 @@ BEGIN
   WHERE cd.is_active = true;
 END;
 $$;
-
 -- 2. get_recent_searches
 CREATE OR REPLACE FUNCTION public.get_recent_searches(p_user_id UUID, p_limit INTEGER DEFAULT 10)
 RETURNS TABLE (
@@ -424,7 +403,6 @@ BEGIN
   RETURN QUERY SELECT NULL::UUID, NULL::TEXT, 0::INTEGER, NULL::TIMESTAMPTZ WHERE FALSE;
 END;
 $$;
-
 -- 3. get_activity_feed
 CREATE OR REPLACE FUNCTION public.get_activity_feed(
   p_user_id UUID,
@@ -459,7 +437,6 @@ BEGIN
   OFFSET p_offset;
 END;
 $$;
-
 -- 4. get_leaderboard
 CREATE OR REPLACE FUNCTION public.get_leaderboard(
   p_org_id UUID DEFAULT NULL,
@@ -492,7 +469,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$;
-
 -- 5. get_metric_timeseries (simplified version)
 CREATE OR REPLACE FUNCTION public.get_metric_timeseries(
   p_metric_name TEXT,
@@ -512,7 +488,6 @@ BEGIN
     (random() * 100)::NUMERIC as value;
 END;
 $$;
-
 -- 6. get_automation_stats
 CREATE OR REPLACE FUNCTION public.get_automation_stats(p_org_id UUID)
 RETURNS TABLE (
@@ -532,7 +507,6 @@ BEGIN
   WHERE org_id = p_org_id OR org_id IS NULL;
 END;
 $$;
-
 -- 7. get_inbox_summary
 CREATE OR REPLACE FUNCTION public.get_inbox_summary(p_user_id UUID, p_org_id UUID)
 RETURNS TABLE (
@@ -553,7 +527,6 @@ BEGIN
     AND (c.assigned_to = p_user_id OR c.assigned_to IS NULL);
 END;
 $$;
-
 -- ============================================================================
 -- ROW LEVEL SECURITY POLICIES
 -- ============================================================================
@@ -575,7 +548,6 @@ DO $$ BEGIN ALTER TABLE public.form_submissions ENABLE ROW LEVEL SECURITY; EXCEP
 DO $$ BEGIN ALTER TABLE public.sop_categories ENABLE ROW LEVEL SECURITY; EXCEPTION WHEN OTHERS THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.sop_documents ENABLE ROW LEVEL SECURITY; EXCEPTION WHEN OTHERS THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.crm_pipeline_stages ENABLE ROW LEVEL SECURITY; EXCEPTION WHEN OTHERS THEN NULL; END $$;
-
 -- Drop and recreate policies to ensure they're correct
 DROP POLICY IF EXISTS "quick_actions_select" ON public.quick_actions;
 DROP POLICY IF EXISTS "user_achievements_select" ON public.user_achievements;
@@ -598,62 +570,45 @@ DROP POLICY IF EXISTS "form_submissions_select" ON public.form_submissions;
 DROP POLICY IF EXISTS "sop_categories_select" ON public.sop_categories;
 DROP POLICY IF EXISTS "sop_documents_select" ON public.sop_documents;
 DROP POLICY IF EXISTS "crm_pipeline_stages_select" ON public.crm_pipeline_stages;
-
 -- Quick Actions - authenticated users can read
 CREATE POLICY "quick_actions_select" ON public.quick_actions FOR SELECT TO authenticated USING (true);
-
 -- User Achievements - authenticated users can read
 CREATE POLICY "user_achievements_select" ON public.user_achievements FOR SELECT TO authenticated USING (true);
-
 -- Compliance Documents - authenticated users can read
 CREATE POLICY "compliance_documents_select" ON public.compliance_documents FOR SELECT TO authenticated USING (true);
-
 -- Compliance Acknowledgments - authenticated users can manage
 CREATE POLICY "compliance_acknowledgments_select" ON public.compliance_acknowledgments FOR SELECT TO authenticated USING (true);
 CREATE POLICY "compliance_acknowledgments_insert" ON public.compliance_acknowledgments FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "compliance_acknowledgments_update" ON public.compliance_acknowledgments FOR UPDATE TO authenticated USING (true);
-
 -- Performance Goals - authenticated users can read
 CREATE POLICY "performance_goals_select" ON public.performance_goals FOR SELECT TO authenticated USING (true);
-
 -- Messages - authenticated users can access (simplified)
 CREATE POLICY "messages_select" ON public.messages FOR SELECT TO authenticated USING (true);
 CREATE POLICY "messages_insert" ON public.messages FOR INSERT TO authenticated WITH CHECK (true);
-
 -- Tasks - users can manage their own (simplified for existing table schema)
 CREATE POLICY "tasks_select" ON public.tasks FOR SELECT TO authenticated 
   USING (assigned_to = auth.uid());
 CREATE POLICY "tasks_insert" ON public.tasks FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "tasks_update" ON public.tasks FOR UPDATE TO authenticated 
   USING (assigned_to = auth.uid());
-
 -- Activities - authenticated users can read
 CREATE POLICY "activities_select" ON public.activities FOR SELECT TO authenticated USING (true);
-
 -- Conversations - authenticated users can read org conversations
 CREATE POLICY "conversations_select" ON public.conversations FOR SELECT TO authenticated USING (true);
-
 -- Sequences - authenticated users can read org sequences
 CREATE POLICY "sequences_select" ON public.sequences FOR SELECT TO authenticated USING (true);
-
 -- Automation Templates - everyone can read
 CREATE POLICY "automation_templates_select" ON public.automation_templates FOR SELECT TO authenticated USING (true);
-
 -- AI Automation Rules - authenticated users can read
 CREATE POLICY "ai_automation_rules_select" ON public.ai_automation_rules FOR SELECT TO authenticated USING (true);
-
 -- Form Submissions - authenticated users can read
 CREATE POLICY "form_submissions_select" ON public.form_submissions FOR SELECT TO authenticated USING (true);
-
 -- SOP Categories - everyone can read
 CREATE POLICY "sop_categories_select" ON public.sop_categories FOR SELECT TO authenticated USING (true);
-
 -- SOP Documents - everyone can read
 CREATE POLICY "sop_documents_select" ON public.sop_documents FOR SELECT TO authenticated USING (true);
-
 -- CRM Pipeline Stages - everyone can read
 CREATE POLICY "crm_pipeline_stages_select" ON public.crm_pipeline_stages FOR SELECT TO authenticated USING (true);
-
 -- ============================================================================
 -- SEED DEFAULT DATA
 -- ============================================================================
@@ -666,7 +621,6 @@ INSERT INTO public.sop_categories (name, slug, description, icon, order_index) V
   ('Compliance', 'compliance', 'Regulatory and compliance procedures', 'Shield', 4),
   ('Product Knowledge', 'product-knowledge', 'Understanding our products and services', 'BookOpen', 5)
 ON CONFLICT (slug) DO NOTHING;
-
 -- Seed Automation Templates
 INSERT INTO public.automation_templates (name, description, category, trigger_type, is_popular) VALUES
   ('Welcome Email Sequence', 'Automatically send welcome emails to new leads', 'onboarding', 'lead_created', true),
@@ -675,7 +629,6 @@ INSERT INTO public.automation_templates (name, description, category, trigger_ty
   ('Birthday Greeting', 'Send birthday greetings to clients', 'engagement', 'date_trigger', false),
   ('Re-engagement Campaign', 'Reach out to inactive leads', 'engagement', 'inactivity', true)
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- INDEXES FOR PERFORMANCE (only create if columns exist)
 -- ============================================================================

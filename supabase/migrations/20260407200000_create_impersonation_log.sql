@@ -10,9 +10,7 @@ CREATE TABLE IF NOT EXISTS public.impersonation_log (
   ip_address  text,
   created_at  timestamptz DEFAULT now()
 );
-
 ALTER TABLE public.impersonation_log ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "super_admins_read_impersonation_logs"
   ON public.impersonation_log FOR SELECT
   USING (
@@ -21,7 +19,6 @@ CREATE POLICY "super_admins_read_impersonation_logs"
       WHERE user_id = auth.uid() AND role = 'super_admin'
     )
   );
-
 CREATE INDEX idx_impersonation_log_admin_id ON public.impersonation_log (admin_id);
 CREATE INDEX idx_impersonation_log_target_user_id ON public.impersonation_log (target_user_id);
 CREATE INDEX idx_impersonation_log_created_at ON public.impersonation_log (created_at DESC);

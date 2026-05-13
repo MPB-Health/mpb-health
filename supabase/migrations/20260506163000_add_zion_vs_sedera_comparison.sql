@@ -46,7 +46,6 @@ WHERE NOT EXISTS (
   SELECT 1 FROM public.sop_documents
   WHERE slug = 'zion-vs-sedera-comparison-2026-toolkit'
 );
-
 -- 2. Sharing Guidelines
 INSERT INTO public.sop_documents (
   title,
@@ -83,7 +82,6 @@ WHERE NOT EXISTS (
   SELECT 1 FROM public.sop_documents
   WHERE slug = 'zion-vs-sedera-comparison-2026-sharing'
 );
-
 -- Backfill image_url for any rows already inserted from a prior run.
 UPDATE public.sop_documents
    SET image_url = 'https://advisor.mpb.health/thumbnails/zion-vs-sedera-comparison-2026.png',

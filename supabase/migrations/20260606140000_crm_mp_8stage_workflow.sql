@@ -9,18 +9,15 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Pipeline stages: allow per-org names (drop unsafe global unique on name)
 -- ----------------------------------------------------------------------------
 
 ALTER TABLE public.crm_pipeline_stages
     DROP CONSTRAINT IF EXISTS crm_pipeline_stages_name_key;
-
 CREATE UNIQUE INDEX IF NOT EXISTS uq_crm_pipeline_stages_org_name
     ON public.crm_pipeline_stages (org_id, name)
     WHERE org_id IS NOT NULL;
-
 -- ----------------------------------------------------------------------------
 -- 2. Per-org 8-stage pipeline: deactivate legacy rows, insert canonical set
 -- ----------------------------------------------------------------------------
@@ -32,7 +29,6 @@ WHERE name IN ('contacted', 'proposal', 'qualified', 'negotiation')
     'new', 'working', 'quoted', 'engaged', 'application_in_progress',
     'won', 'nurture', 'lost'
     );
-
 -- Align sort_order / labels on any pre-existing canonical rows
 UPDATE public.crm_pipeline_stages SET display_name = 'New', sort_order = 1,
     is_won_stage = false, is_lost_stage = false, is_active = true, updated_at = now() WHERE name = 'new';
@@ -40,7 +36,6 @@ UPDATE public.crm_pipeline_stages SET display_name = 'Won — Enrolled', sort_or
     is_won_stage = true, is_lost_stage = false, is_active = true, updated_at = now() WHERE name = 'won';
 UPDATE public.crm_pipeline_stages SET display_name = 'Lost', sort_order = 8,
     is_won_stage = false, is_lost_stage = true, is_active = true, updated_at = now() WHERE name = 'lost';
-
 INSERT INTO public.crm_pipeline_stages (
     org_id, name, display_name, color, sort_order, is_active, is_won_stage, is_lost_stage
 )
@@ -61,7 +56,6 @@ WHERE NOT EXISTS (
     SELECT 1 FROM public.crm_pipeline_stages ps
     WHERE ps.org_id IS NOT DISTINCT FROM o.id AND ps.name = v.name
 );
-
 -- ----------------------------------------------------------------------------
 -- 3. lead_submissions: workflow + automation columns
 -- ----------------------------------------------------------------------------
@@ -79,20 +73,16 @@ ALTER TABLE public.lead_submissions
     ADD COLUMN IF NOT EXISTS concierge_handoff_at timestamptz,
     ADD COLUMN IF NOT EXISTS last_opt_out_signal_at timestamptz,
     ADD COLUMN IF NOT EXISTS enrollment_approved_at timestamptz;
-
 CREATE INDEX IF NOT EXISTS idx_lead_submissions_workflow_subsection
     ON public.lead_submissions (org_id, workflow_subsection)
     WHERE workflow_subsection IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_lead_submissions_dnc
              ON public.lead_submissions (org_id)
              WHERE do_not_contact = true;
-
 COMMENT ON COLUMN public.lead_submissions.workflow_subsection IS
     'Leads module subsection: working | nurture | linkedin | do_not_contact';
 COMMENT ON COLUMN public.lead_submissions.linkedin_workflow_status IS
     'Manual LinkedIn funnel status (Connection Sent, Connected, etc.)';
-
 -- ----------------------------------------------------------------------------
 -- 4. Map existing lead pipeline_stage values → 8-stage slugs
 -- ----------------------------------------------------------------------------
@@ -122,7 +112,6 @@ SET pipeline_stage = CASE pipeline_stage
     END,
     updated_at = now()
 WHERE pipeline_stage IS NOT NULL;
-
 -- ----------------------------------------------------------------------------
 -- 5. Quote history
 -- ----------------------------------------------------------------------------
@@ -139,36 +128,28 @@ CREATE TABLE IF NOT EXISTS public.crm_lead_quote_history (
     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_lead_quote_history_lead
     ON public.crm_lead_quote_history (lead_id, quote_date DESC);
-
 ALTER TABLE public.crm_lead_quote_history ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_lead_quote_history_select ON public.crm_lead_quote_history;
 CREATE POLICY crm_lead_quote_history_select ON public.crm_lead_quote_history
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_lead_quote_history_insert ON public.crm_lead_quote_history;
 CREATE POLICY crm_lead_quote_history_insert ON public.crm_lead_quote_history
     FOR INSERT TO authenticated
     WITH CHECK (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_lead_quote_history_update ON public.crm_lead_quote_history;
 CREATE POLICY crm_lead_quote_history_update ON public.crm_lead_quote_history
     FOR UPDATE TO authenticated
     USING (public.is_org_member(org_id))
     WITH CHECK (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_lead_quote_history_delete ON public.crm_lead_quote_history;
 CREATE POLICY crm_lead_quote_history_delete ON public.crm_lead_quote_history
     FOR DELETE TO authenticated
     USING (public.is_org_member(org_id));
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_lead_quote_history TO authenticated;
 GRANT ALL ON public.crm_lead_quote_history TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 6. Time entries (auto + manual)
 -- ----------------------------------------------------------------------------
@@ -184,30 +165,23 @@ CREATE TABLE IF NOT EXISTS public.crm_lead_time_entries (
     occurred_at timestamptz NOT NULL DEFAULT now(),
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_lead_time_entries_lead
     ON public.crm_lead_time_entries (lead_id, occurred_at DESC);
-
 ALTER TABLE public.crm_lead_time_entries ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_lead_time_entries_select ON public.crm_lead_time_entries;
 CREATE POLICY crm_lead_time_entries_select ON public.crm_lead_time_entries
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_lead_time_entries_insert ON public.crm_lead_time_entries;
 CREATE POLICY crm_lead_time_entries_insert ON public.crm_lead_time_entries
     FOR INSERT TO authenticated
     WITH CHECK (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_lead_time_entries_delete ON public.crm_lead_time_entries;
 CREATE POLICY crm_lead_time_entries_delete ON public.crm_lead_time_entries
     FOR DELETE TO authenticated
     USING (public.is_org_member(org_id));
-
 GRANT SELECT, INSERT, DELETE ON public.crm_lead_time_entries TO authenticated;
 GRANT ALL ON public.crm_lead_time_entries TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 7. Per-rep message templates (email / phone script / SMS)
 -- ----------------------------------------------------------------------------
@@ -223,29 +197,22 @@ CREATE TABLE IF NOT EXISTS public.crm_rep_message_templates (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_rep_templates_org_user
     ON public.crm_rep_message_templates (org_id, user_id, channel);
-
 CREATE UNIQUE INDEX IF NOT EXISTS uq_crm_rep_templates_name
     ON public.crm_rep_message_templates (org_id, user_id, channel, name);
-
 ALTER TABLE public.crm_rep_message_templates ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_rep_templates_select ON public.crm_rep_message_templates;
 CREATE POLICY crm_rep_templates_select ON public.crm_rep_message_templates
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_rep_templates_mutate ON public.crm_rep_message_templates;
 CREATE POLICY crm_rep_templates_mutate ON public.crm_rep_message_templates
     FOR ALL TO authenticated
     USING (public.is_org_member(org_id) AND user_id = auth.uid())
     WITH CHECK (public.is_org_member(org_id) AND user_id = auth.uid());
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_rep_message_templates TO authenticated;
 GRANT ALL ON public.crm_rep_message_templates TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 8. Daily log (rep activity journal)
 -- ----------------------------------------------------------------------------
@@ -265,23 +232,18 @@ CREATE TABLE IF NOT EXISTS public.crm_rep_daily_log_entries (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (org_id, user_id, log_date)
 );
-
 ALTER TABLE public.crm_rep_daily_log_entries ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_rep_daily_log_select ON public.crm_rep_daily_log_entries;
 CREATE POLICY crm_rep_daily_log_select ON public.crm_rep_daily_log_entries
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_rep_daily_log_mutate ON public.crm_rep_daily_log_entries;
 CREATE POLICY crm_rep_daily_log_mutate ON public.crm_rep_daily_log_entries
     FOR ALL TO authenticated
     USING (public.is_org_member(org_id) AND user_id = auth.uid())
     WITH CHECK (public.is_org_member(org_id) AND user_id = auth.uid());
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_rep_daily_log_entries TO authenticated;
 GRANT ALL ON public.crm_rep_daily_log_entries TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 9. OE Reactivation run log (Sep 15 bulk job metadata)
 -- ----------------------------------------------------------------------------
@@ -299,18 +261,14 @@ CREATE TABLE IF NOT EXISTS public.crm_oe_reactivation_runs (
     created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (org_id, run_year)
 );
-
 ALTER TABLE public.crm_oe_reactivation_runs ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_oe_reactivation_runs_all ON public.crm_oe_reactivation_runs;
 CREATE POLICY crm_oe_reactivation_runs_all ON public.crm_oe_reactivation_runs
     FOR ALL TO authenticated
     USING (public.is_org_member(org_id))
     WITH CHECK (public.is_org_member(org_id));
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_oe_reactivation_runs TO authenticated;
 GRANT ALL ON public.crm_oe_reactivation_runs TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 10. Integration connection placeholders (credentials via app settings / vault)
 -- ----------------------------------------------------------------------------
@@ -329,9 +287,7 @@ CREATE TABLE IF NOT EXISTS public.crm_integration_accounts (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (org_id, user_id, provider)
 );
-
 ALTER TABLE public.crm_integration_accounts ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_integration_accounts_mutate ON public.crm_integration_accounts;
 CREATE POLICY crm_integration_accounts_mutate ON public.crm_integration_accounts
     FOR ALL TO authenticated
@@ -343,10 +299,8 @@ CREATE POLICY crm_integration_accounts_mutate ON public.crm_integration_accounts
         public.is_org_member(org_id)
         AND (user_id IS NULL OR user_id = auth.uid())
     );
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_integration_accounts TO authenticated;
 GRANT ALL ON public.crm_integration_accounts TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 11. Stage → subsection sync + DNC defaults
 -- ----------------------------------------------------------------------------
@@ -387,7 +341,6 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_workflow_subsection_sync ON public.lead_submissions;
 DROP TRIGGER IF EXISTS trg_lead_submissions_workflow_subsection_sync ON public.lead_submissions;
 CREATE TRIGGER trg_lead_submissions_workflow_subsection_sync
@@ -395,7 +348,6 @@ CREATE TRIGGER trg_lead_submissions_workflow_subsection_sync
     ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_lead_workflow_subsection_sync();
-
 -- ----------------------------------------------------------------------------
 -- 12. Assignment → New to Working (runs after RR fills assigned_to)
 -- ----------------------------------------------------------------------------
@@ -414,14 +366,12 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_assignment_stage_promote_ins ON public.lead_submissions;
 DROP TRIGGER IF EXISTS trg_lead_assignment_stage_promote_upd ON public.lead_submissions;
 CREATE TRIGGER trg_lead_assignment_stage_promote_upd
     BEFORE UPDATE OF assigned_to ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_lead_assignment_stage_promote();
-
 -- ----------------------------------------------------------------------------
 -- 13. Quoted stage timestamps
 -- ----------------------------------------------------------------------------
@@ -439,13 +389,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_lead_stage_quote_ts ON public.lead_submissions;
 CREATE TRIGGER trg_lead_stage_quote_ts
     BEFORE UPDATE OF pipeline_stage ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_lead_stage_quote_timestamps();
-
 -- ----------------------------------------------------------------------------
 -- 14. Opt-out keyword detector (subset — expand in app config / follow-up migration)
 -- ----------------------------------------------------------------------------
@@ -471,13 +419,10 @@ BEGIN
     RETURN false;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_detect_opt_out_keywords(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_detect_opt_out_keywords(text) TO authenticated, service_role;
-
 COMMENT ON FUNCTION public.crm_detect_opt_out_keywords IS
     'Returns true when inbound text matches spec opt-out / DNC phrases (review at 60 days).';
-
 -- ----------------------------------------------------------------------------
 -- 15. RPCs for automation hooks (callable from Edge Functions + app)
 -- ----------------------------------------------------------------------------
@@ -512,10 +457,8 @@ BEGIN
     WHERE id = p_lead_id;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_mark_preliminary_quote_sent(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_mark_preliminary_quote_sent(uuid) TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.crm_record_lead_engagement(p_lead_id uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -546,10 +489,8 @@ BEGIN
     WHERE id = p_lead_id;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_record_lead_engagement(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_record_lead_engagement(uuid) TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.crm_apply_lead_opt_out(
     p_lead_id uuid,
     p_reason text DEFAULT 'opt_out_signal'
@@ -578,10 +519,8 @@ BEGIN
     WHERE id = p_lead_id;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_apply_lead_opt_out(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_apply_lead_opt_out(uuid, text) TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.crm_apply_enrollment_won(p_lead_id uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -607,10 +546,8 @@ BEGIN
     WHERE id = p_lead_id;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_apply_enrollment_won(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_apply_enrollment_won(uuid) TO authenticated, service_role;
-
 -- Day-30 nurture promotion (quoted/engaged, no engagement, cadence window elapsed)
 CREATE OR REPLACE FUNCTION public.crm_promote_stale_quotes_to_nurture(
     p_org_id uuid,
@@ -648,10 +585,8 @@ BEGIN
     RETURN COALESCE(v_count, 0);
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_promote_stale_quotes_to_nurture(uuid, interval) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_promote_stale_quotes_to_nurture(uuid, interval) TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 16. Seed Quote-Response + OE Reactivation cadence shells (per org, idempotent)
 -- ----------------------------------------------------------------------------
@@ -679,7 +614,6 @@ WHERE NOT EXISTS (
     SELECT 1 FROM public.crm_follow_up_cadences c
     WHERE c.org_id = o.id AND c.name = 'Quote Response — 5-touch (Email)'
 );
-
 INSERT INTO public.crm_follow_up_cadences (
     org_id, pipeline_stage_id, name, steps, is_default, is_active, created_at, updated_at
 )
@@ -700,7 +634,6 @@ WHERE NOT EXISTS (
     SELECT 1 FROM public.crm_follow_up_cadences c
     WHERE c.org_id = o.id AND c.name = 'OE Reactivation — Nurture bulk'
 );
-
 -- ----------------------------------------------------------------------------
 -- 17. Insert automation: promote New → Working after round-robin assignment
 -- ----------------------------------------------------------------------------
@@ -836,7 +769,6 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 -- ----------------------------------------------------------------------------
 -- 18. Cadence auto-pause: existing trigger covers won/lost only (not nurture)
 -- ----------------------------------------------------------------------------

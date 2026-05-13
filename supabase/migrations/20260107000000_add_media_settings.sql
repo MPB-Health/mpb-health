@@ -80,4 +80,3 @@ ON CONFLICT (key) DO UPDATE SET
   value = EXCLUDED.value,
   description = EXCLUDED.description,
   category = EXCLUDED.category;
-

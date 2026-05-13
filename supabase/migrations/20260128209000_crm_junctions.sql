@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: DEAL-CONTACT JUNCTION (Many-to-Many)
 -- ============================================================================
@@ -24,7 +23,6 @@ CREATE TABLE IF NOT EXISTS public.crm_deal_contacts (
     -- Unique contact per deal
     UNIQUE(deal_id, contact_id)
 );
-
 -- ============================================================================
 -- SECTION B: DEAL-PRODUCT JUNCTION (Many-to-Many)
 -- ============================================================================
@@ -47,7 +45,6 @@ CREATE TABLE IF NOT EXISTS public.crm_deal_products (
     -- Unique product per deal
     UNIQUE(deal_id, product_id)
 );
-
 -- ============================================================================
 -- SECTION C: UNIFIED CRM ACTIVITIES
 -- ============================================================================
@@ -111,7 +108,6 @@ CREATE TABLE IF NOT EXISTS public.crm_activities (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION D: INDEXES
 -- ============================================================================
@@ -119,56 +115,40 @@ CREATE TABLE IF NOT EXISTS public.crm_activities (
 -- Deal contacts indexes
 CREATE INDEX IF NOT EXISTS idx_crm_deal_contacts_deal
     ON public.crm_deal_contacts (deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_contacts_contact
     ON public.crm_deal_contacts (contact_id);
-
 -- Deal products indexes
 CREATE INDEX IF NOT EXISTS idx_crm_deal_products_deal
     ON public.crm_deal_products (deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_products_product
     ON public.crm_deal_products (product_id);
-
 -- Activities indexes
 CREATE INDEX IF NOT EXISTS idx_crm_activities_org_id
     ON public.crm_activities (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_type
     ON public.crm_activities (activity_type);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_status
     ON public.crm_activities (status);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_account
     ON public.crm_activities (account_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_contact
     ON public.crm_activities (contact_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_deal
     ON public.crm_activities (deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_lead
     ON public.crm_activities (lead_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_owner
     ON public.crm_activities (owner_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_assigned
     ON public.crm_activities (assigned_to);
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_due
     ON public.crm_activities (due_at)
     WHERE status IN ('pending', 'in_progress');
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_scheduled
     ON public.crm_activities (scheduled_at)
     WHERE status IN ('pending', 'in_progress');
-
 CREATE INDEX IF NOT EXISTS idx_crm_activities_created
     ON public.crm_activities (created_at DESC);
-
 -- ============================================================================
 -- SECTION E: ROW LEVEL SECURITY
 -- ============================================================================
@@ -176,7 +156,6 @@ CREATE INDEX IF NOT EXISTS idx_crm_activities_created
 ALTER TABLE public.crm_deal_contacts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_deal_products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_activities ENABLE ROW LEVEL SECURITY;
-
 -- Deal contacts policies
 CREATE POLICY "crm_deal_contacts_select"
     ON public.crm_deal_contacts
@@ -189,7 +168,6 @@ CREATE POLICY "crm_deal_contacts_select"
             AND public.is_org_member(d.org_id)
         )
     );
-
 CREATE POLICY "crm_deal_contacts_insert"
     ON public.crm_deal_contacts
     FOR INSERT
@@ -201,7 +179,6 @@ CREATE POLICY "crm_deal_contacts_insert"
             AND public.has_org_permission(d.org_id, 'deals.write')
         )
     );
-
 CREATE POLICY "crm_deal_contacts_update"
     ON public.crm_deal_contacts
     FOR UPDATE
@@ -220,7 +197,6 @@ CREATE POLICY "crm_deal_contacts_update"
             AND public.has_org_permission(d.org_id, 'deals.write')
         )
     );
-
 CREATE POLICY "crm_deal_contacts_delete"
     ON public.crm_deal_contacts
     FOR DELETE
@@ -232,7 +208,6 @@ CREATE POLICY "crm_deal_contacts_delete"
             AND public.has_org_permission(d.org_id, 'deals.write')
         )
     );
-
 -- Deal products policies
 CREATE POLICY "crm_deal_products_select"
     ON public.crm_deal_products
@@ -245,7 +220,6 @@ CREATE POLICY "crm_deal_products_select"
             AND public.is_org_member(d.org_id)
         )
     );
-
 CREATE POLICY "crm_deal_products_insert"
     ON public.crm_deal_products
     FOR INSERT
@@ -257,7 +231,6 @@ CREATE POLICY "crm_deal_products_insert"
             AND public.has_org_permission(d.org_id, 'deals.write')
         )
     );
-
 CREATE POLICY "crm_deal_products_update"
     ON public.crm_deal_products
     FOR UPDATE
@@ -276,7 +249,6 @@ CREATE POLICY "crm_deal_products_update"
             AND public.has_org_permission(d.org_id, 'deals.write')
         )
     );
-
 CREATE POLICY "crm_deal_products_delete"
     ON public.crm_deal_products
     FOR DELETE
@@ -288,7 +260,6 @@ CREATE POLICY "crm_deal_products_delete"
             AND public.has_org_permission(d.org_id, 'deals.write')
         )
     );
-
 -- Activities policies
 CREATE POLICY "crm_activities_select"
     ON public.crm_activities
@@ -297,7 +268,6 @@ CREATE POLICY "crm_activities_select"
     USING (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_activities_insert"
     ON public.crm_activities
     FOR INSERT
@@ -305,7 +275,6 @@ CREATE POLICY "crm_activities_insert"
     WITH CHECK (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_activities_update"
     ON public.crm_activities
     FOR UPDATE
@@ -316,7 +285,6 @@ CREATE POLICY "crm_activities_update"
     WITH CHECK (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_activities_delete"
     ON public.crm_activities
     FOR DELETE
@@ -325,7 +293,6 @@ CREATE POLICY "crm_activities_delete"
         public.is_org_member(org_id)
         AND (created_by = auth.uid() OR public.is_org_admin(org_id))
     );
-
 -- ============================================================================
 -- SECTION F: DEAL AMOUNT CALCULATION FROM PRODUCTS
 -- ============================================================================
@@ -364,13 +331,11 @@ BEGIN
     END IF;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_recalculate_deal_amount ON public.crm_deal_products;
 CREATE TRIGGER trigger_recalculate_deal_amount
     AFTER INSERT OR UPDATE OR DELETE ON public.crm_deal_products
     FOR EACH ROW
     EXECUTE FUNCTION public.recalculate_deal_amount();
-
 -- ============================================================================
 -- SECTION G: UPDATED_AT TRIGGERS
 -- ============================================================================
@@ -386,13 +351,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_deal_products_updated_at ON public.crm_deal_products;
 CREATE TRIGGER trigger_crm_deal_products_updated_at
     BEFORE INSERT OR UPDATE ON public.crm_deal_products
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_deal_products_updated_at();
-
 CREATE OR REPLACE FUNCTION public.handle_crm_activities_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -402,11 +365,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_activities_updated_at ON public.crm_activities;
 CREATE TRIGGER trigger_crm_activities_updated_at
     BEFORE UPDATE ON public.crm_activities
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_activities_updated_at();
-
 COMMIT;

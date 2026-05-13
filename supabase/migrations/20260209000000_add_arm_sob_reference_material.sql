@@ -15,10 +15,8 @@ BEGIN
     ALTER TABLE public.sop_documents ADD COLUMN image_url TEXT;
   END IF;
 END $$;
-
 -- Ensure metadata column exists
 ALTER TABLE public.sop_documents ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
-
 -- Ensure content_type column exists
 DO $$
 BEGIN
@@ -31,7 +29,6 @@ BEGIN
     ALTER TABLE public.sop_documents ADD COLUMN content_type TEXT DEFAULT 'markdown';
   END IF;
 END $$;
-
 -- Insert the ARM Summary of Benefits document
 INSERT INTO public.sop_documents (
   title,
@@ -62,7 +59,6 @@ VALUES (
   0
 )
 ON CONFLICT DO NOTHING;
-
 -- Set thumbnail image position offset for this card
 UPDATE public.sop_documents
 SET metadata = jsonb_set(

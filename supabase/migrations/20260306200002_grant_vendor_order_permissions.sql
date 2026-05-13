@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- owner: ALL vendor/PO/SO permissions
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -19,7 +18,6 @@ WHERE p.key IN (
     'quotes.approve', 'invoices.approve'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- admin: ALL vendor/PO/SO permissions
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -34,7 +32,6 @@ WHERE p.key IN (
     'quotes.approve', 'invoices.approve'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- manager: read/write/approve, no delete
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -49,7 +46,6 @@ WHERE p.key IN (
     'quotes.approve', 'invoices.approve'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- agent: read/write only, no delete/approve
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -63,7 +59,6 @@ WHERE p.key IN (
     'sales_orders.read', 'sales_orders.write'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- member: read only
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -77,5 +72,4 @@ WHERE p.key IN (
     'sales_orders.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 COMMIT;

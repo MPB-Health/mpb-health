@@ -32,35 +32,27 @@ CREATE TABLE IF NOT EXISTS public.crm_quote_templates (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_quote_templates_org ON public.crm_quote_templates(org_id);
-
 ALTER TABLE public.crm_quote_templates ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY crm_quote_templates_select ON public.crm_quote_templates
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
   );
-
 CREATE POLICY crm_quote_templates_insert ON public.crm_quote_templates
   FOR INSERT WITH CHECK (
     org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
   );
-
 CREATE POLICY crm_quote_templates_update ON public.crm_quote_templates
   FOR UPDATE USING (
     org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
   );
-
 CREATE POLICY crm_quote_templates_delete ON public.crm_quote_templates
   FOR DELETE USING (
     org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
   );
-
 -- Add template_id reference to crm_quotes
 ALTER TABLE public.crm_quotes
   ADD COLUMN IF NOT EXISTS template_id uuid REFERENCES public.crm_quote_templates(id) ON DELETE SET NULL;
-
 -- Extend crm_web_forms entity_type to support quote_request
 -- Drop the old check constraint and add a new one
 ALTER TABLE public.crm_web_forms DROP CONSTRAINT IF EXISTS crm_web_forms_entity_type_check;

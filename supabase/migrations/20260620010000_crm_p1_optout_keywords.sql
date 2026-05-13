@@ -20,7 +20,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Keywords table
 -- ----------------------------------------------------------------------------
@@ -34,21 +33,16 @@ CREATE TABLE IF NOT EXISTS public.crm_optout_keywords (
     created_at  timestamptz NOT NULL DEFAULT now(),
     updated_at  timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS uq_crm_optout_keywords_org_phrase
     ON public.crm_optout_keywords (COALESCE(org_id, '00000000-0000-0000-0000-000000000000'::uuid), lower(phrase));
-
 CREATE INDEX IF NOT EXISTS idx_crm_optout_keywords_active
     ON public.crm_optout_keywords (org_id, is_active)
     WHERE is_active = true;
-
 ALTER TABLE public.crm_optout_keywords ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_optout_keywords_select ON public.crm_optout_keywords;
 CREATE POLICY crm_optout_keywords_select ON public.crm_optout_keywords
     FOR SELECT TO authenticated
     USING (org_id IS NULL OR public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_optout_keywords_insert ON public.crm_optout_keywords;
 CREATE POLICY crm_optout_keywords_insert ON public.crm_optout_keywords
     FOR INSERT TO authenticated
@@ -57,7 +51,6 @@ CREATE POLICY crm_optout_keywords_insert ON public.crm_optout_keywords
         AND public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'settings.manage')
     );
-
 DROP POLICY IF EXISTS crm_optout_keywords_update ON public.crm_optout_keywords;
 CREATE POLICY crm_optout_keywords_update ON public.crm_optout_keywords
     FOR UPDATE TO authenticated
@@ -71,7 +64,6 @@ CREATE POLICY crm_optout_keywords_update ON public.crm_optout_keywords
         AND public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'settings.manage')
     );
-
 DROP POLICY IF EXISTS crm_optout_keywords_delete ON public.crm_optout_keywords;
 CREATE POLICY crm_optout_keywords_delete ON public.crm_optout_keywords
     FOR DELETE TO authenticated
@@ -80,10 +72,8 @@ CREATE POLICY crm_optout_keywords_delete ON public.crm_optout_keywords
         AND public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'settings.manage')
     );
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_optout_keywords TO authenticated;
 GRANT ALL ON public.crm_optout_keywords TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 2. Seed the global default list (org_id NULL applies to every org)
 -- ----------------------------------------------------------------------------
@@ -102,7 +92,6 @@ VALUES
     (NULL, 'please stop',          true),
     (NULL, 'no longer interested', true)
 ON CONFLICT DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 3. Detector — strips quoted blocks + signature, then phrase-matches
 -- ----------------------------------------------------------------------------
@@ -148,11 +137,9 @@ BEGIN
     RETURN v_acc;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_strip_reply_quoted_and_signature(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_strip_reply_quoted_and_signature(text)
     TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.crm_detect_opt_out(
     p_body text,
     p_org_id uuid DEFAULT NULL
@@ -190,14 +177,11 @@ BEGIN
     RETURN QUERY SELECT false, NULL::text;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_detect_opt_out(text, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_detect_opt_out(text, uuid)
     TO authenticated, service_role;
-
 COMMENT ON FUNCTION public.crm_detect_opt_out IS
     'Section 2g detector: returns (matched, matched_phrase) for the cleaned reply body. Phrase list lives in crm_optout_keywords; review at 60-day post-launch checkpoint.';
-
 -- ----------------------------------------------------------------------------
 -- 4. Track the matched reason on the lead
 -- ----------------------------------------------------------------------------
@@ -206,12 +190,10 @@ ALTER TABLE public.lead_submissions
     ADD COLUMN IF NOT EXISTS opt_out_reason       text,
     ADD COLUMN IF NOT EXISTS opt_out_detected_at  timestamptz,
     ADD COLUMN IF NOT EXISTS opt_out_phrase       text;
-
 COMMENT ON COLUMN public.lead_submissions.opt_out_reason IS
     'Free-form rep entry or auto-detector reason for opt-out (Section 2g + manual Mark as Lost).';
 COMMENT ON COLUMN public.lead_submissions.opt_out_phrase IS
     'Specific phrase from crm_optout_keywords that fired the auto-detection (audit trail).';
-
 -- ----------------------------------------------------------------------------
 -- 5. Replace the legacy crm_apply_lead_opt_out RPC with one that records
 --    detector phrase + reason + a structured opt-out signal timestamp.
@@ -221,7 +203,6 @@ COMMENT ON COLUMN public.lead_submissions.opt_out_phrase IS
 -- ----------------------------------------------------------------------------
 
 DROP FUNCTION IF EXISTS public.crm_apply_lead_opt_out(uuid, text);
-
 CREATE OR REPLACE FUNCTION public.crm_apply_lead_opt_out(
     p_lead_id uuid,
     p_reason  text DEFAULT 'opt_out_signal',
@@ -255,9 +236,7 @@ BEGIN
     WHERE id = p_lead_id;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_apply_lead_opt_out(uuid, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_apply_lead_opt_out(uuid, text, text)
     TO authenticated, service_role;
-
 COMMIT;

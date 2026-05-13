@@ -19,7 +19,6 @@ BEGIN
     END IF;
   END IF;
 END $$;
-
 -- 2. ADVISOR_PROFILES: Add user_id if missing (some queries use or(id.eq, user_id.eq))
 --    advisor_profiles.id = auth.users.id; user_id can mirror id for compatibility.
 -- ----------------------------------------------------------------------------

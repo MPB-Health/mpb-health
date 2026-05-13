@@ -26,13 +26,11 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Fix crm_outside_advisor_production: per-advisor filter
 -- ----------------------------------------------------------------------------
 
 DROP FUNCTION IF EXISTS public.crm_outside_advisor_production(uuid, integer, integer);
-
 CREATE OR REPLACE FUNCTION public.crm_outside_advisor_production(
     p_org_id uuid,
     p_month integer,
@@ -98,12 +96,9 @@ BEGIN
     ORDER BY oa.name;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_outside_advisor_production(uuid, integer, integer) TO authenticated;
-
 COMMENT ON FUNCTION public.crm_outside_advisor_production(uuid, integer, integer) IS
     'Outside Advisor Production — one row per advisor with month + YTD lead / closed counts keyed on lead_submissions.outside_advisor_id. Replaces the pre-Phase-3 version that fanned out aggregate totals to every advisor row.';
-
 -- ----------------------------------------------------------------------------
 -- 2. Spec-accurate Inhouse vs Self-Gen split (crm_leads_split_2026)
 --
@@ -236,9 +231,7 @@ BEGIN
     ORDER BY r.display_order;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_leads_split_2026(uuid, integer, integer, uuid[], boolean) TO authenticated;
-
 -- ----------------------------------------------------------------------------
 -- 3. Per-rep filter support for existing monthly RPCs
 --    (wrapped as new functions so the legacy signatures keep working)
@@ -276,9 +269,7 @@ BEGIN
     WHERE p_rep_ids IS NULL OR r.rep_id = ANY(p_rep_ids);
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_individual_performance_filtered(uuid, integer, integer, uuid[]) TO authenticated;
-
 CREATE OR REPLACE FUNCTION public.crm_revenue_closed_sales_filtered(
     p_org_id  uuid,
     p_month   integer,
@@ -303,9 +294,7 @@ BEGIN
     WHERE p_rep_ids IS NULL OR r.rep_id = ANY(p_rep_ids);
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_revenue_closed_sales_filtered(uuid, integer, integer, uuid[]) TO authenticated;
-
 CREATE OR REPLACE FUNCTION public.crm_conversion_rates_filtered(
     p_org_id  uuid,
     p_month   integer,
@@ -333,9 +322,7 @@ BEGIN
     WHERE p_rep_ids IS NULL OR r.rep_id = ANY(p_rep_ids);
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_conversion_rates_filtered(uuid, integer, integer, uuid[]) TO authenticated;
-
 CREATE OR REPLACE FUNCTION public.crm_activity_summary_filtered(
     p_org_id  uuid,
     p_month   integer,
@@ -358,7 +345,5 @@ BEGIN
     WHERE p_rep_ids IS NULL OR r.rep_id = ANY(p_rep_ids);
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_activity_summary_filtered(uuid, integer, integer, uuid[]) TO authenticated;
-
 COMMIT;

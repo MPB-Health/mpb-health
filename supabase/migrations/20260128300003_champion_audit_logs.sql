@@ -49,7 +49,6 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   -- Timestamp
   created_at timestamptz DEFAULT now()
 );
-
 -- Indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_audit_logs_org_id ON audit_logs(org_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_user_id ON audit_logs(actor_user_id);
@@ -58,19 +57,15 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_object_type ON audit_logs(object_type)
 CREATE INDEX IF NOT EXISTS idx_audit_logs_object_id ON audit_logs(object_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action_category ON audit_logs(action_category);
-
 -- Composite index for common filter patterns
 CREATE INDEX IF NOT EXISTS idx_audit_logs_org_created
 ON audit_logs(org_id, created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_audit_logs_org_object
 ON audit_logs(org_id, object_type, object_id);
-
 -- ============================================
 -- ENABLE ROW LEVEL SECURITY
 -- ============================================
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-
 -- ============================================
 -- RLS POLICIES
 -- ============================================
@@ -82,13 +77,11 @@ CREATE POLICY "Org admins can view audit logs"
   USING (
     user_is_org_owner_or_admin(org_id)
   );
-
 -- System can insert audit logs (via service role or security definer functions)
 CREATE POLICY "System can insert audit logs"
   ON audit_logs FOR INSERT
   TO authenticated
   WITH CHECK (true);
-
 -- No updates or deletes - audit logs are immutable
 -- (handled by not creating UPDATE/DELETE policies)
 
@@ -170,10 +163,8 @@ BEGIN
   RETURN v_audit_id;
 END;
 $$;
-
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION log_audit_event(uuid, text, text, uuid, text, jsonb, jsonb, jsonb) TO authenticated;
-
 -- ============================================
 -- ACTION CONSTANTS (for reference)
 -- ============================================
@@ -207,7 +198,6 @@ Examples:
 - compliance.approval_submit
 - compliance.approve
 ';
-
 -- ============================================
 -- INDEXES FOR COMMON AUDIT QUERIES
 -- ============================================
@@ -215,7 +205,6 @@ Examples:
 -- For "show me all actions by user X"
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_created
 ON audit_logs(actor_user_id, created_at DESC);
-
 -- For "show me all changes to lead Y"
 CREATE INDEX IF NOT EXISTS idx_audit_logs_object_created
 ON audit_logs(object_type, object_id, created_at DESC);

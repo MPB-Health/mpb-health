@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: CREATE DEALS TABLE
 -- ============================================================================
@@ -61,7 +60,6 @@ CREATE TABLE IF NOT EXISTS public.crm_deals (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION B: CREATE DEAL STAGE HISTORY TABLE
 -- ============================================================================
@@ -75,7 +73,6 @@ CREATE TABLE IF NOT EXISTS public.crm_deal_stage_history (
     notes text,
     changed_at timestamptz DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION C: INDEXES
 -- ============================================================================
@@ -83,45 +80,33 @@ CREATE TABLE IF NOT EXISTS public.crm_deal_stage_history (
 -- Deals indexes
 CREATE INDEX IF NOT EXISTS idx_crm_deals_org_id
     ON public.crm_deals (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_account_id
     ON public.crm_deals (account_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_contact_id
     ON public.crm_deals (contact_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_stage_id
     ON public.crm_deals (stage_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_owner_id
     ON public.crm_deals (owner_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_expected_close
     ON public.crm_deals (expected_close_date);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_amount
     ON public.crm_deals (amount DESC);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_tags
     ON public.crm_deals USING gin(tags);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_created_at
     ON public.crm_deals (created_at DESC);
-
 -- Stage history indexes
 CREATE INDEX IF NOT EXISTS idx_crm_deal_stage_history_deal_id
     ON public.crm_deal_stage_history (deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_stage_history_changed_at
     ON public.crm_deal_stage_history (changed_at DESC);
-
 -- ============================================================================
 -- SECTION D: ROW LEVEL SECURITY
 -- ============================================================================
 
 ALTER TABLE public.crm_deals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_deal_stage_history ENABLE ROW LEVEL SECURITY;
-
 -- Deals policies
 CREATE POLICY "crm_deals_select"
     ON public.crm_deals
@@ -130,7 +115,6 @@ CREATE POLICY "crm_deals_select"
     USING (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_deals_insert"
     ON public.crm_deals
     FOR INSERT
@@ -138,7 +122,6 @@ CREATE POLICY "crm_deals_insert"
     WITH CHECK (
         public.has_org_permission(org_id, 'deals.write')
     );
-
 CREATE POLICY "crm_deals_update"
     ON public.crm_deals
     FOR UPDATE
@@ -149,7 +132,6 @@ CREATE POLICY "crm_deals_update"
     WITH CHECK (
         public.has_org_permission(org_id, 'deals.write')
     );
-
 CREATE POLICY "crm_deals_delete"
     ON public.crm_deals
     FOR DELETE
@@ -157,7 +139,6 @@ CREATE POLICY "crm_deals_delete"
     USING (
         public.has_org_permission(org_id, 'deals.delete')
     );
-
 -- Stage history policies (read via deal access)
 CREATE POLICY "crm_deal_stage_history_select"
     ON public.crm_deal_stage_history
@@ -170,7 +151,6 @@ CREATE POLICY "crm_deal_stage_history_select"
             AND public.is_org_member(d.org_id)
         )
     );
-
 CREATE POLICY "crm_deal_stage_history_insert"
     ON public.crm_deal_stage_history
     FOR INSERT
@@ -182,7 +162,6 @@ CREATE POLICY "crm_deal_stage_history_insert"
             AND public.has_org_permission(d.org_id, 'deals.write')
         )
     );
-
 -- ============================================================================
 -- SECTION E: STAGE CHANGE TRIGGER
 -- ============================================================================
@@ -213,13 +192,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_deal_stage_change ON public.crm_deals;
 CREATE TRIGGER trigger_deal_stage_change
     BEFORE UPDATE ON public.crm_deals
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_deal_stage_change();
-
 -- ============================================================================
 -- SECTION F: UPDATED_AT TRIGGER (for inserts)
 -- ============================================================================
@@ -235,11 +212,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_deals_insert ON public.crm_deals;
 CREATE TRIGGER trigger_crm_deals_insert
     AFTER INSERT ON public.crm_deals
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_deals_insert();
-
 COMMIT;

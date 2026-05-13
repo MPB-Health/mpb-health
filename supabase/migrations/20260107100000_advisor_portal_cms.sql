@@ -5,7 +5,6 @@
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- ============================================================================
 -- Table: advisor_categories
 -- Dynamic categories for training, SOPs, and content
@@ -23,12 +22,10 @@ CREATE TABLE IF NOT EXISTS public.advisor_categories (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- RLS Policies
 ALTER TABLE public.advisor_categories ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON public.advisor_categories FOR SELECT USING (TRUE);
 CREATE POLICY "Enable write access for authenticated users" ON public.advisor_categories FOR ALL USING (auth.role() = 'authenticated');
-
 -- Seed default categories from current hardcoded values
 INSERT INTO public.advisor_categories (name, slug, description, type, order_index) VALUES
     ('Onboarding', 'onboarding', 'Essential training for all new advisors', 'training', 1),
@@ -42,7 +39,6 @@ INSERT INTO public.advisor_categories (name, slug, description, type, order_inde
     ('Form', 'form', 'Required forms and templates', 'content', 3),
     ('Resource', 'resource', 'General resources and materials', 'content', 4)
 ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Table: advisor_quick_links
 -- Dashboard sidebar quick links
@@ -61,12 +57,10 @@ CREATE TABLE IF NOT EXISTS public.advisor_quick_links (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- RLS Policies
 ALTER TABLE public.advisor_quick_links ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON public.advisor_quick_links FOR SELECT USING (TRUE);
 CREATE POLICY "Enable write access for authenticated users" ON public.advisor_quick_links FOR ALL USING (auth.role() = 'authenticated');
-
 -- Seed default quick links from current hardcoded values
 INSERT INTO public.advisor_quick_links (label, url, icon, order_index, is_external) VALUES
     ('Employer Forms', '/employer-forms/', 'Briefcase', 1, FALSE),
@@ -77,7 +71,6 @@ INSERT INTO public.advisor_quick_links (label, url, icon, order_index, is_extern
     ('All Training', '/advisor/training', 'BookOpen', 6, FALSE),
     ('Get Support', 'https://support.mpb.health/login/advisor', 'HelpCircle', 7, TRUE)
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- Table: advisor_learning_paths
 -- Training University learning path cards
@@ -98,12 +91,10 @@ CREATE TABLE IF NOT EXISTS public.advisor_learning_paths (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- RLS Policies
 ALTER TABLE public.advisor_learning_paths ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON public.advisor_learning_paths FOR SELECT USING (TRUE);
 CREATE POLICY "Enable write access for authenticated users" ON public.advisor_learning_paths FOR ALL USING (auth.role() = 'authenticated');
-
 -- Seed default learning paths from current hardcoded values
 INSERT INTO public.advisor_learning_paths (title, description, category_slug, icon, gradient, estimated_hours, is_required, unlock_requirements, order_index) VALUES
     (
@@ -162,7 +153,6 @@ INSERT INTO public.advisor_learning_paths (title, description, category_slug, ic
         5
     )
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- Table: advisor_dashboard_widgets
 -- Dashboard widget visibility and ordering
@@ -179,12 +169,10 @@ CREATE TABLE IF NOT EXISTS public.advisor_dashboard_widgets (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- RLS Policies
 ALTER TABLE public.advisor_dashboard_widgets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON public.advisor_dashboard_widgets FOR SELECT USING (TRUE);
 CREATE POLICY "Enable write access for authenticated users" ON public.advisor_dashboard_widgets FOR ALL USING (auth.role() = 'authenticated');
-
 -- Seed default widgets
 INSERT INTO public.advisor_dashboard_widgets (widget_key, label, description, order_index, grid_column) VALUES
     ('stats_cards', 'Statistics Cards', 'Show training progress, certifications, time invested, and quiz scores', 1, 'full'),
@@ -197,7 +185,6 @@ INSERT INTO public.advisor_dashboard_widgets (widget_key, label, description, or
 ON CONFLICT (widget_key) DO UPDATE SET
     label = EXCLUDED.label,
     description = EXCLUDED.description;
-
 -- ============================================================================
 -- Table: advisor_nav_menu
 -- Navigation menu items with hierarchy
@@ -218,12 +205,10 @@ CREATE TABLE IF NOT EXISTS public.advisor_nav_menu (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- RLS Policies
 ALTER TABLE public.advisor_nav_menu ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON public.advisor_nav_menu FOR SELECT USING (TRUE);
 CREATE POLICY "Enable write access for authenticated users" ON public.advisor_nav_menu FOR ALL USING (auth.role() = 'authenticated');
-
 -- Seed default navigation items
 INSERT INTO public.advisor_nav_menu (label, url, icon, order_index) VALUES
     ('Dashboard', '/advisor/dashboard', 'LayoutDashboard', 1),
@@ -233,7 +218,6 @@ INSERT INTO public.advisor_nav_menu (label, url, icon, order_index) VALUES
     ('SOP Library', '/advisor/sops', 'FileText', 5),
     ('My Profile', '/advisor/profile', 'User', 6)
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- Table: advisor_announcements
 -- Banner announcements for the advisor portal
@@ -255,12 +239,10 @@ CREATE TABLE IF NOT EXISTS public.advisor_announcements (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- RLS Policies
 ALTER TABLE public.advisor_announcements ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON public.advisor_announcements FOR SELECT USING (TRUE);
 CREATE POLICY "Enable write access for authenticated users" ON public.advisor_announcements FOR ALL USING (auth.role() = 'authenticated');
-
 -- ============================================================================
 -- Create updated_at trigger function if not exists
 -- ============================================================================
@@ -271,7 +253,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 -- Apply triggers to all new tables
 DO $$
 DECLARE
@@ -288,7 +269,6 @@ BEGIN
         ', tbl, tbl, tbl, tbl);
     END LOOP;
 END $$;
-
 -- ============================================================================
 -- Indexes for performance
 -- ============================================================================
@@ -300,4 +280,3 @@ CREATE INDEX IF NOT EXISTS idx_advisor_learning_paths_order ON public.advisor_le
 CREATE INDEX IF NOT EXISTS idx_advisor_nav_menu_parent ON public.advisor_nav_menu(parent_id);
 CREATE INDEX IF NOT EXISTS idx_advisor_nav_menu_order ON public.advisor_nav_menu(order_index);
 CREATE INDEX IF NOT EXISTS idx_advisor_announcements_dates ON public.advisor_announcements(start_date, end_date);
-

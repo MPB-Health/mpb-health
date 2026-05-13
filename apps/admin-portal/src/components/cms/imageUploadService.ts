@@ -75,10 +75,30 @@ export async function uploadEventImage(
     }
 
     const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(data.path);
+    const publicUrl = urlData.publicUrl;
+
+    // Post-upload sanity check. We've seen cases where the upload POST
+    // returns 200 but the binary never actually lands in storage (request
+    // torn down mid-stream, component unmounted, S3 backend hiccup), and
+    // the user only finds out later when the saved URL renders broken.
+    // HEAD the public URL — if it 404s, treat the upload as failed and
+    // attempt a cleanup so we don't leave an orphaned row in storage.objects.
+    const verified = await verifyPublicUrl(publicUrl);
+    if (!verified.ok) {
+      try {
+        await supabase.storage.from(BUCKET_NAME).remove([data.path]);
+      } catch {
+        // Best-effort cleanup; ignore failures.
+      }
+      return {
+        success: false,
+        error: `Upload didn't complete (file not retrievable: ${verified.status}). Please try again.`,
+      };
+    }
 
     return {
       success: true,
-      url: urlData.publicUrl,
+      url: publicUrl,
       fileName: data.path,
       fileSize: file.size,
     };
@@ -87,5 +107,16 @@ export async function uploadEventImage(
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred',
     };
+  }
+}
+
+async function verifyPublicUrl(url: string): Promise<{ ok: boolean; status: number | string }> {
+  try {
+    // cache: 'no-store' to bypass any intermediate cache that might be
+    // serving a stale negative response from before the upload landed.
+    const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+    return { ok: res.ok, status: res.status };
+  } catch (err) {
+    return { ok: false, status: err instanceof Error ? err.message : 'network error' };
   }
 }

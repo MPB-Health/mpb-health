@@ -21,13 +21,10 @@ CREATE TYPE metric_type AS ENUM (
   'revenue_potential',
   'revenue_closed'
 );
-
 -- Time granularity enum
 CREATE TYPE time_granularity AS ENUM ('hourly', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly');
-
 -- Report status enum
 CREATE TYPE report_status AS ENUM ('draft', 'generating', 'ready', 'failed', 'archived');
-
 -- ============================================================================
 -- METRIC SNAPSHOTS — Time-series metrics data
 -- ============================================================================
@@ -58,12 +55,10 @@ CREATE TABLE metric_snapshots (
   -- Unique constraint for upserts
   CONSTRAINT unique_metric_snapshot UNIQUE (org_id, user_id, metric_type, granularity, period_start)
 );
-
 -- Indexes for metric queries
 CREATE INDEX idx_metric_snapshots_org_type ON metric_snapshots(org_id, metric_type, period_start DESC);
 CREATE INDEX idx_metric_snapshots_user ON metric_snapshots(user_id, metric_type, period_start DESC) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_metric_snapshots_period ON metric_snapshots(period_start, period_end);
-
 -- ============================================================================
 -- PERFORMANCE GOALS — Target metrics for users/teams
 -- ============================================================================
@@ -98,10 +93,8 @@ CREATE TABLE performance_goals (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX idx_performance_goals_org ON performance_goals(org_id, is_active);
 CREATE INDEX idx_performance_goals_user ON performance_goals(user_id, is_active) WHERE user_id IS NOT NULL;
-
 -- ============================================================================
 -- SAVED REPORTS — User-created report configurations
 -- ============================================================================
@@ -130,10 +123,8 @@ CREATE TABLE saved_reports (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX idx_saved_reports_org ON saved_reports(org_id);
 CREATE INDEX idx_saved_reports_creator ON saved_reports(created_by);
-
 -- ============================================================================
 -- REPORT SCHEDULES — Automated report delivery
 -- ============================================================================
@@ -164,9 +155,7 @@ CREATE TABLE report_schedules (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX idx_report_schedules_next ON report_schedules(next_send_at) WHERE is_active = TRUE;
-
 -- ============================================================================
 -- REPORT RUNS — History of generated reports
 -- ============================================================================
@@ -201,10 +190,8 @@ CREATE TABLE report_runs (
   triggered_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX idx_report_runs_org ON report_runs(org_id, created_at DESC);
 CREATE INDEX idx_report_runs_report ON report_runs(report_id, created_at DESC);
-
 -- ============================================================================
 -- DASHBOARD WIDGETS — Custom dashboard configurations
 -- ============================================================================
@@ -233,10 +220,8 @@ CREATE TABLE dashboard_widgets (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX idx_dashboard_widgets_user ON dashboard_widgets(user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_dashboard_widgets_org ON dashboard_widgets(org_id) WHERE user_id IS NULL;
-
 -- ============================================================================
 -- LEADERBOARD ENTRIES — Cached leaderboard rankings
 -- ============================================================================
@@ -277,10 +262,8 @@ CREATE TABLE leaderboard_entries (
 
   CONSTRAINT unique_leaderboard_entry UNIQUE (org_id, user_id, period_type, period_start)
 );
-
 CREATE INDEX idx_leaderboard_entries_org_period ON leaderboard_entries(org_id, period_type, period_start DESC);
 CREATE INDEX idx_leaderboard_entries_user ON leaderboard_entries(user_id, period_start DESC);
-
 -- ============================================================================
 -- ROW LEVEL SECURITY
 -- ============================================================================
@@ -292,13 +275,11 @@ ALTER TABLE report_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE report_runs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dashboard_widgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaderboard_entries ENABLE ROW LEVEL SECURITY;
-
 -- Metric snapshots policies
 CREATE POLICY "Users can view org metrics" ON metric_snapshots
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Admins can manage metrics" ON metric_snapshots
   FOR ALL USING (
     org_id IN (
@@ -306,14 +287,12 @@ CREATE POLICY "Admins can manage metrics" ON metric_snapshots
       WHERE user_id = auth.uid() AND role IN ('admin', 'manager')
     )
   );
-
 -- Performance goals policies
 CREATE POLICY "Users can view their goals" ON performance_goals
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
     AND (user_id = auth.uid() OR user_id IS NULL)
   );
-
 CREATE POLICY "Admins can manage goals" ON performance_goals
   FOR ALL USING (
     org_id IN (
@@ -321,23 +300,19 @@ CREATE POLICY "Admins can manage goals" ON performance_goals
       WHERE user_id = auth.uid() AND role IN ('admin', 'manager')
     )
   );
-
 -- Saved reports policies
 CREATE POLICY "Users can view accessible reports" ON saved_reports
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
     AND (created_by = auth.uid() OR is_public = TRUE OR auth.uid() = ANY(shared_with))
   );
-
 CREATE POLICY "Users can manage own reports" ON saved_reports
   FOR ALL USING (created_by = auth.uid());
-
 -- Report schedules policies
 CREATE POLICY "Users can view org schedules" ON report_schedules
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Admins can manage schedules" ON report_schedules
   FOR ALL USING (
     org_id IN (
@@ -345,34 +320,28 @@ CREATE POLICY "Admins can manage schedules" ON report_schedules
       WHERE user_id = auth.uid() AND role IN ('admin', 'manager')
     )
   );
-
 -- Report runs policies
 CREATE POLICY "Users can view org report runs" ON report_runs
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
   );
-
 CREATE POLICY "Users can create report runs" ON report_runs
   FOR INSERT WITH CHECK (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
   );
-
 -- Dashboard widgets policies
 CREATE POLICY "Users can manage own widgets" ON dashboard_widgets
   FOR ALL USING (user_id = auth.uid());
-
 CREATE POLICY "Users can view org widgets" ON dashboard_widgets
   FOR SELECT USING (
     user_id IS NULL AND
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
   );
-
 -- Leaderboard policies
 CREATE POLICY "Users can view org leaderboard" ON leaderboard_entries
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
   );
-
 -- ============================================================================
 -- HELPER FUNCTIONS
 -- ============================================================================
@@ -420,7 +389,6 @@ BEGIN
   RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get leaderboard for a period
 CREATE OR REPLACE FUNCTION get_leaderboard(
   p_org_id UUID,
@@ -468,7 +436,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get metric time series
 CREATE OR REPLACE FUNCTION get_metric_timeseries(
   p_org_id UUID,
@@ -500,7 +467,6 @@ BEGIN
   ORDER BY ms.period_start ASC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to snapshot daily metrics (to be called by cron)
 CREATE OR REPLACE FUNCTION snapshot_daily_metrics() RETURNS void AS $$
 DECLARE
@@ -537,7 +503,6 @@ BEGIN
   END LOOP;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================================
 -- TRIGGERS
 -- ============================================================================
@@ -546,19 +511,15 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER update_performance_goals_updated_at
   BEFORE UPDATE ON performance_goals
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_saved_reports_updated_at
   BEFORE UPDATE ON saved_reports
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_report_schedules_updated_at
   BEFORE UPDATE ON report_schedules
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_dashboard_widgets_updated_at
   BEFORE UPDATE ON dashboard_widgets
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_leaderboard_entries_updated_at
   BEFORE UPDATE ON leaderboard_entries
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

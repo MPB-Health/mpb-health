@@ -61,6 +61,5 @@ BEGIN
   RETURN COALESCE(NEW, OLD);
 END;
 $$;
-
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION update_goal_progress TO authenticated;

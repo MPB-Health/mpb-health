@@ -90,6 +90,97 @@ export class EmailService {
     }
   }
 
+  /**
+   * CRM rebuild Section 7 (Round 3 Addendum) — admin-driven mass sends use
+   * the Master Template Library (`crm_master_templates`) rather than per-rep
+   * `crm_templates`. This method is the entry point for the bulk-email
+   * modal and any future company-wide campaign tooling.
+   *
+   * Tokens supported (matching the master-library convention used by the
+   * website-intake function):
+   *   #lead name      → "First Last"
+   *   #firstname      → "First"
+   *   #lastname       → "Last"
+   *   #email          → lead email
+   *   #phone          → lead phone
+   *   #yoursignature  → resolved server-side by send-crm-email-v2 from the
+   *                     sender's `email_signatures` row (defaults to a shared
+   *                     MPB Sales sig when no per-user sig exists).
+   *
+   * Plus the legacy {{first_name}}/{{last_name}} doubled-curly tokens so
+   * existing per-rep template content still renders correctly if an admin
+   * pastes a rep template into the master library.
+   */
+  async sendFromMasterTemplate(
+    masterTemplateId: string,
+    leadId: string,
+    customVars?: Record<string, string>,
+  ): Promise<EmailSendResult> {
+    try {
+      const { data: template, error: tErr } = await this.supabase
+        .from('crm_master_templates')
+        .select('id, channel, name, subject, body, version, archived_at')
+        .eq('id', masterTemplateId)
+        .single();
+      if (tErr || !template) return { success: false, error: 'Master template not found' };
+      if (template.channel !== 'email') {
+        return { success: false, error: 'Master template is not an email' };
+      }
+      if (template.archived_at) {
+        return { success: false, error: 'Master template is archived' };
+      }
+
+      const { data: lead, error: lErr } = await this.supabase
+        .from('lead_submissions')
+        .select('first_name, last_name, email, phone, do_not_contact')
+        .eq('id', leadId)
+        .single();
+      if (lErr || !lead) return { success: false, error: 'Lead not found' };
+      if (lead.do_not_contact) return { success: false, error: 'Lead is on Do Not Contact list' };
+      if (!lead.email) return { success: false, error: 'Lead has no email on file' };
+
+      const fullName = [lead.first_name, lead.last_name].filter(Boolean).join(' ').trim();
+      const vars: Record<string, string> = {
+        first_name: lead.first_name || '',
+        last_name: lead.last_name || '',
+        email: lead.email || '',
+        phone: lead.phone || '',
+        ...customVars,
+      };
+
+      const merge = (input: string | null): string => {
+        if (!input) return '';
+        let s = input;
+        // master-library #token style
+        s = s.replace(/#lead\s*name/gi, fullName);
+        s = s.replace(/#firstname/gi, vars.first_name);
+        s = s.replace(/#lastname/gi, vars.last_name);
+        s = s.replace(/#email/gi, vars.email);
+        s = s.replace(/#phone/gi, vars.phone);
+        // {{token}} style fallback for content pasted from per-rep templates
+        for (const [key, value] of Object.entries(vars)) {
+          const re = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+          s = s.replace(re, value);
+        }
+        return s;
+      };
+
+      const subject = merge(template.subject as string | null);
+      const body = merge(template.body as string);
+
+      return this.invokeEdgeFunction({
+        to: lead.email,
+        subject,
+        html: body,
+        master_template_id: masterTemplateId,
+        lead_id: leadId,
+      });
+    } catch (error) {
+      console.error('Error sending from master template:', error);
+      return { success: false, error: 'Unexpected error' };
+    }
+  }
+
   async getEmailLog(leadId?: string): Promise<EmailLogEntry[]> {
     try {
       let query = this.supabase

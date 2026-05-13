@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS public.security_alert_webhooks (
   CONSTRAINT valid_min_severity CHECK (min_severity IN ('low', 'medium', 'high', 'critical')),
   CONSTRAINT valid_url CHECK (url ~ '^https?://')
 );
-
 -- Security Alert Log Table
 -- Tracks sent alerts for rate limiting and audit purposes
 CREATE TABLE IF NOT EXISTS public.security_alert_log (
@@ -38,22 +37,17 @@ CREATE TABLE IF NOT EXISTS public.security_alert_log (
   -- Constraints
   CONSTRAINT valid_event_severity CHECK (event_severity IN ('low', 'medium', 'high', 'critical'))
 );
-
 -- Enable RLS
 ALTER TABLE public.security_alert_webhooks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.security_alert_log ENABLE ROW LEVEL SECURITY;
-
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_security_alert_webhooks_enabled
   ON public.security_alert_webhooks(enabled)
   WHERE enabled = true;
-
 CREATE INDEX IF NOT EXISTS idx_security_alert_log_webhook_sent
   ON public.security_alert_log(webhook_id, sent_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_security_alert_log_sent_at
   ON public.security_alert_log(sent_at DESC);
-
 -- RLS Policies for security_alert_webhooks
 -- Only super_admin and admin can manage webhooks
 CREATE POLICY "Super admins can manage webhooks"
@@ -74,7 +68,6 @@ CREATE POLICY "Super admins can manage webhooks"
       AND role IN ('super_admin', 'admin')
     )
   );
-
 -- Service role can always access (for backend operations)
 CREATE POLICY "Service role can access webhooks"
   ON public.security_alert_webhooks
@@ -82,7 +75,6 @@ CREATE POLICY "Service role can access webhooks"
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 -- RLS Policies for security_alert_log
 -- Only super_admin and admin can view logs
 CREATE POLICY "Super admins can view alert logs"
@@ -96,7 +88,6 @@ CREATE POLICY "Super admins can view alert logs"
       AND role IN ('super_admin', 'admin')
     )
   );
-
 -- Service role can insert logs (for backend operations)
 CREATE POLICY "Service role can manage alert logs"
   ON public.security_alert_log
@@ -104,7 +95,6 @@ CREATE POLICY "Service role can manage alert logs"
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 -- Updated_at trigger for webhooks
 CREATE OR REPLACE FUNCTION public.update_security_webhook_updated_at()
 RETURNS TRIGGER
@@ -117,12 +107,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 CREATE TRIGGER trigger_update_security_webhook_timestamp
   BEFORE UPDATE ON public.security_alert_webhooks
   FOR EACH ROW
   EXECUTE FUNCTION public.update_security_webhook_updated_at();
-
 -- Cleanup function to remove old alert logs (keep 30 days)
 CREATE OR REPLACE FUNCTION public.cleanup_old_security_alert_logs()
 RETURNS INTEGER
@@ -140,10 +128,8 @@ BEGIN
   RETURN deleted_count;
 END;
 $$;
-
 -- Grant execute permission to service role
 GRANT EXECUTE ON FUNCTION public.cleanup_old_security_alert_logs() TO service_role;
-
 -- Add comment for documentation
 COMMENT ON TABLE public.security_alert_webhooks IS
   'Webhook configurations for sending security alerts (HIPAA/SOC 2 compliance)';

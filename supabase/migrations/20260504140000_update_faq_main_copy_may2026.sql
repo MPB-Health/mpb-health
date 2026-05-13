@@ -6,7 +6,6 @@ SET content_html = $c$
 $c$
 WHERE category = 'mpb-faq-main'
   AND title = 'What makes MPB Health different from other healthshares?';
-
 UPDATE public.faq_items
 SET content_html = $c$
 <p>Yes. MPB Health is available to members across most of the United States and Puerto Rico, providing individuals and families access to a nationwide, community-based healthcare model that travels with you.</p>

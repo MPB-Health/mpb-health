@@ -17,32 +17,25 @@ CREATE TABLE IF NOT EXISTS public.crm_product_form_fields (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_product_form_fields_product ON public.crm_product_form_fields(product_id);
 CREATE INDEX IF NOT EXISTS idx_crm_product_form_fields_org ON public.crm_product_form_fields(org_id);
-
 ALTER TABLE public.crm_product_form_fields ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY crm_product_form_fields_select ON public.crm_product_form_fields
   FOR SELECT USING (
     org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
   );
-
 CREATE POLICY crm_product_form_fields_insert ON public.crm_product_form_fields
   FOR INSERT WITH CHECK (
     org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
   );
-
 CREATE POLICY crm_product_form_fields_update ON public.crm_product_form_fields
   FOR UPDATE USING (
     org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
   );
-
 CREATE POLICY crm_product_form_fields_delete ON public.crm_product_form_fields
   FOR DELETE USING (
     org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
   );
-
 -- Quote Line Item Answers
 CREATE TABLE IF NOT EXISTS public.crm_quote_line_item_answers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -51,11 +44,8 @@ CREATE TABLE IF NOT EXISTS public.crm_quote_line_item_answers (
   value jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_quote_line_item_answers_li ON public.crm_quote_line_item_answers(line_item_id);
-
 ALTER TABLE public.crm_quote_line_item_answers ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY crm_quote_line_item_answers_select ON public.crm_quote_line_item_answers
   FOR SELECT USING (
     line_item_id IN (
@@ -64,7 +54,6 @@ CREATE POLICY crm_quote_line_item_answers_select ON public.crm_quote_line_item_a
       WHERE q.org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
     )
   );
-
 CREATE POLICY crm_quote_line_item_answers_insert ON public.crm_quote_line_item_answers
   FOR INSERT WITH CHECK (
     line_item_id IN (
@@ -73,7 +62,6 @@ CREATE POLICY crm_quote_line_item_answers_insert ON public.crm_quote_line_item_a
       WHERE q.org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
     )
   );
-
 CREATE POLICY crm_quote_line_item_answers_update ON public.crm_quote_line_item_answers
   FOR UPDATE USING (
     line_item_id IN (
@@ -82,7 +70,6 @@ CREATE POLICY crm_quote_line_item_answers_update ON public.crm_quote_line_item_a
       WHERE q.org_id IN (SELECT org_id FROM public.org_memberships WHERE user_id = auth.uid() AND status = 'active')
     )
   );
-
 CREATE POLICY crm_quote_line_item_answers_delete ON public.crm_quote_line_item_answers
   FOR DELETE USING (
     line_item_id IN (

@@ -14,6 +14,13 @@ interface RequestBody {
   html: string;
   text?: string;
   template_id?: string;
+  /**
+   * CRM rebuild Section 7 (Round 3 Addendum) — when set, this send is
+   * sourced from the admin-curated Master Template Library and the id is
+   * stamped on the outbound `crm_email_log` row + bumps the per-template
+   * usage counters.
+   */
+  master_template_id?: string;
   lead_id?: string;
 }
 
@@ -58,7 +65,7 @@ serve(async (req) => {
     const sentBy = user.userId || null;
 
     const body: RequestBody = await req.json();
-    const { to, subject, html, text, template_id, lead_id } = body;
+    const { to, subject, html, text, template_id, master_template_id, lead_id } = body;
 
     if (!to || !subject || !html) {
       throw new Error('Missing required fields: to, subject, html');
@@ -88,6 +95,7 @@ serve(async (req) => {
         tags: [
           { name: 'type', value: 'crm_email' },
           ...(template_id ? [{ name: 'template_id', value: template_id }] : []),
+          ...(master_template_id ? [{ name: 'master_template_id', value: master_template_id }] : []),
           ...(lead_id ? [{ name: 'lead_id', value: lead_id }] : []),
         ],
       }),
@@ -110,6 +118,7 @@ serve(async (req) => {
     await supabase.from('crm_email_log').insert({
       lead_id: lead_id || null,
       template_id: template_id || null,
+      master_template_id: master_template_id || null,
       to_email: to,
       subject,
       body_preview: html.replace(/<[^>]*>/g, '').substring(0, 200),
@@ -117,6 +126,15 @@ serve(async (req) => {
       resend_email_id: resendEmailId,
       sent_by: sentBy,
     });
+
+    // CRM rebuild Section 7 (Round 3 Addendum) — bump master-template usage
+    // metrics so the Templates → Master Library admin view can rank by use.
+    if (master_template_id && status === 'sent') {
+      const { error: bumpErr } = await supabase.rpc('crm_master_template_bump_usage', {
+        p_template_id: master_template_id,
+      });
+      if (bumpErr) log.error('master template usage bump failed:', bumpErr);
+    }
 
     if (status === 'failed') {
       return new Response(

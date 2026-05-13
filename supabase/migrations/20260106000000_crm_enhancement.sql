@@ -48,12 +48,10 @@ CREATE TABLE IF NOT EXISTS ai_lead_insights (
   
   UNIQUE(lead_id)
 );
-
 -- Index for fast lookups
 CREATE INDEX IF NOT EXISTS idx_ai_lead_insights_lead_id ON ai_lead_insights(lead_id);
 CREATE INDEX IF NOT EXISTS idx_ai_lead_insights_ai_score ON ai_lead_insights(ai_score DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_lead_insights_urgency ON ai_lead_insights(follow_up_urgency);
-
 -- ----------------------------------------------------------------------------
 -- CRM Templates Table
 -- Email and SMS templates library
@@ -91,12 +89,10 @@ CREATE TABLE IF NOT EXISTS crm_templates (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Index for template lookups
 CREATE INDEX IF NOT EXISTS idx_crm_templates_type ON crm_templates(template_type);
 CREATE INDEX IF NOT EXISTS idx_crm_templates_category ON crm_templates(category);
 CREATE INDEX IF NOT EXISTS idx_crm_templates_active ON crm_templates(is_active);
-
 -- ----------------------------------------------------------------------------
 -- Notification Preferences Table
 -- Staff notification settings per channel
@@ -143,10 +139,8 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
   
   UNIQUE(user_id)
 );
-
 -- Index for user lookups
 CREATE INDEX IF NOT EXISTS idx_notification_preferences_user ON notification_preferences(user_id);
-
 -- ----------------------------------------------------------------------------
 -- Calendar Events Table
 -- Appointment tracking and scheduling
@@ -193,13 +187,11 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Indexes for calendar queries
 CREATE INDEX IF NOT EXISTS idx_calendar_events_start ON calendar_events(start_time);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_lead ON calendar_events(lead_id);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_assigned ON calendar_events(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_status ON calendar_events(status);
-
 -- ----------------------------------------------------------------------------
 -- Notification Log Table
 -- Track all sent notifications
@@ -232,12 +224,10 @@ CREATE TABLE IF NOT EXISTS notification_log (
   
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Index for notification queries
 CREATE INDEX IF NOT EXISTS idx_notification_log_user ON notification_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_notification_log_channel ON notification_log(channel);
 CREATE INDEX IF NOT EXISTS idx_notification_log_created ON notification_log(created_at DESC);
-
 -- ----------------------------------------------------------------------------
 -- AI Task Automation Rules Table
 -- Configure automatic task creation rules
@@ -275,10 +265,8 @@ CREATE TABLE IF NOT EXISTS ai_automation_rules (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Index for active rules
 CREATE INDEX IF NOT EXISTS idx_ai_automation_rules_active ON ai_automation_rules(is_active, trigger_type);
-
 -- ----------------------------------------------------------------------------
 -- Insert Default Templates
 -- ----------------------------------------------------------------------------
@@ -334,7 +322,6 @@ INSERT INTO crm_templates (name, description, template_type, category, subject, 
   true
 )
 ON CONFLICT DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- Insert Default Automation Rules
 -- ----------------------------------------------------------------------------
@@ -372,71 +359,50 @@ INSERT INTO ai_automation_rules (name, description, trigger_type, trigger_condit
   '{"channels": ["email"], "template": "proposal_stage"}'
 )
 ON CONFLICT DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- RLS Policies
 -- ----------------------------------------------------------------------------
 
 -- AI Lead Insights: Allow authenticated users to read
 ALTER TABLE ai_lead_insights ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Allow authenticated read ai_lead_insights" ON ai_lead_insights
   FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Allow service role full access ai_lead_insights" ON ai_lead_insights
   FOR ALL TO service_role USING (true);
-
 -- CRM Templates: Allow authenticated users to manage
 ALTER TABLE crm_templates ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Allow authenticated read crm_templates" ON crm_templates
   FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated insert crm_templates" ON crm_templates
   FOR INSERT TO authenticated WITH CHECK (true);
-
 CREATE POLICY "Allow authenticated update crm_templates" ON crm_templates
   FOR UPDATE TO authenticated USING (true);
-
 -- Notification Preferences: Users can only access their own
 ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users manage own notification_preferences" ON notification_preferences
   FOR ALL TO authenticated USING (auth.uid() = user_id);
-
 -- Calendar Events: Allow authenticated users
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Allow authenticated read calendar_events" ON calendar_events
   FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated insert calendar_events" ON calendar_events
   FOR INSERT TO authenticated WITH CHECK (true);
-
 CREATE POLICY "Allow authenticated update calendar_events" ON calendar_events
   FOR UPDATE TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated delete calendar_events" ON calendar_events
   FOR DELETE TO authenticated USING (assigned_to = auth.uid() OR created_by = auth.uid());
-
 -- Notification Log: Users see their own
 ALTER TABLE notification_log ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users read own notification_log" ON notification_log
   FOR SELECT TO authenticated USING (user_id = auth.uid());
-
 CREATE POLICY "Allow service role full access notification_log" ON notification_log
   FOR ALL TO service_role USING (true);
-
 -- Automation Rules: Authenticated read, service role write
 ALTER TABLE ai_automation_rules ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Allow authenticated read ai_automation_rules" ON ai_automation_rules
   FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Allow service role full access ai_automation_rules" ON ai_automation_rules
   FOR ALL TO service_role USING (true);
-
 -- ----------------------------------------------------------------------------
 -- Functions
 -- ----------------------------------------------------------------------------
@@ -470,7 +436,6 @@ BEGIN
   WHERE l.id = p_lead_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get upcoming calendar events
 CREATE OR REPLACE FUNCTION get_upcoming_events(p_user_id UUID, p_days INTEGER DEFAULT 7)
 RETURNS TABLE (
@@ -503,7 +468,6 @@ BEGIN
   ORDER BY e.start_time ASC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to calculate lead score factors
 CREATE OR REPLACE FUNCTION calculate_lead_score_factors(p_lead_id UUID)
 RETURNS JSONB AS $$
@@ -580,7 +544,6 @@ BEGIN
   RETURN jsonb_build_object('score', v_score, 'factors', v_factors);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Trigger to auto-calculate score on lead insert/update
 CREATE OR REPLACE FUNCTION trigger_calculate_lead_score()
 RETURNS TRIGGER AS $$
@@ -589,13 +552,11 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trg_calculate_lead_score ON zoho_lead_submissions;
 CREATE TRIGGER trg_calculate_lead_score
   AFTER INSERT OR UPDATE ON zoho_lead_submissions
   FOR EACH ROW
   EXECUTE FUNCTION trigger_calculate_lead_score();
-
 -- ----------------------------------------------------------------------------
 -- Update timestamp triggers
 -- ----------------------------------------------------------------------------
@@ -606,24 +567,19 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trg_ai_lead_insights_updated ON ai_lead_insights;
 CREATE TRIGGER trg_ai_lead_insights_updated
   BEFORE UPDATE ON ai_lead_insights
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS trg_crm_templates_updated ON crm_templates;
 CREATE TRIGGER trg_crm_templates_updated
   BEFORE UPDATE ON crm_templates
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS trg_notification_preferences_updated ON notification_preferences;
 CREATE TRIGGER trg_notification_preferences_updated
   BEFORE UPDATE ON notification_preferences
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS trg_calendar_events_updated ON calendar_events;
 CREATE TRIGGER trg_calendar_events_updated
   BEFORE UPDATE ON calendar_events
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-

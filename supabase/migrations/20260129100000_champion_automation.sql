@@ -10,7 +10,6 @@
 -- Add new trigger types
 ALTER TABLE ai_automation_rules
 DROP CONSTRAINT IF EXISTS ai_automation_rules_trigger_type_check;
-
 ALTER TABLE ai_automation_rules
 ADD CONSTRAINT ai_automation_rules_trigger_type_check
 CHECK (trigger_type IN (
@@ -24,11 +23,9 @@ CHECK (trigger_type IN (
   'tag_added', 'tag_removed', 'field_changed', 'priority_changed',
   'lead_assigned', 'compliance_due', 'form_submitted'
 ));
-
 -- Add new action types
 ALTER TABLE ai_automation_rules
 DROP CONSTRAINT IF EXISTS ai_automation_rules_action_type_check;
-
 ALTER TABLE ai_automation_rules
 ADD CONSTRAINT ai_automation_rules_action_type_check
 CHECK (action_type IN (
@@ -41,7 +38,6 @@ CHECK (action_type IN (
   'update_field', 'create_meeting', 'log_activity',
   'send_webhook', 'delay', 'branch'
 ));
-
 -- Add org_id to ai_automation_rules if not exists
 DO $$
 BEGIN
@@ -52,7 +48,6 @@ BEGIN
     ALTER TABLE ai_automation_rules ADD COLUMN org_id UUID;
   END IF;
 END $$;
-
 -- Add priority column
 DO $$
 BEGIN
@@ -63,7 +58,6 @@ BEGIN
     ALTER TABLE ai_automation_rules ADD COLUMN priority INTEGER DEFAULT 10;
   END IF;
 END $$;
-
 -- Add run_once column (only execute once per lead)
 DO $$
 BEGIN
@@ -74,7 +68,6 @@ BEGIN
     ALTER TABLE ai_automation_rules ADD COLUMN run_once BOOLEAN DEFAULT false;
   END IF;
 END $$;
-
 -- ----------------------------------------------------------------------------
 -- 2. Automation Templates — Pre-built automation recipes
 -- ----------------------------------------------------------------------------
@@ -105,10 +98,8 @@ CREATE TABLE IF NOT EXISTS automation_templates (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_automation_templates_category ON automation_templates(category);
 CREATE INDEX IF NOT EXISTS idx_automation_templates_popular ON automation_templates(is_popular, use_count DESC);
-
 -- ----------------------------------------------------------------------------
 -- 3. Automation Conditions — Multi-condition logic for rules
 -- ----------------------------------------------------------------------------
@@ -132,9 +123,7 @@ CREATE TABLE IF NOT EXISTS automation_conditions (
 
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_automation_conditions_rule ON automation_conditions(rule_id);
-
 -- ----------------------------------------------------------------------------
 -- 4. Automation Actions Chain — Multiple actions per rule
 -- ----------------------------------------------------------------------------
@@ -158,9 +147,7 @@ CREATE TABLE IF NOT EXISTS automation_actions (
 
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_automation_actions_rule ON automation_actions(rule_id, action_order);
-
 -- ----------------------------------------------------------------------------
 -- 5. Add org_id to automation_execution_log
 -- ----------------------------------------------------------------------------
@@ -197,9 +184,7 @@ BEGIN
     ALTER TABLE automation_execution_log ADD COLUMN context JSONB DEFAULT '{}'::jsonb;
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_auto_exec_log_org ON automation_execution_log(org_id, executed_at DESC);
-
 -- ----------------------------------------------------------------------------
 -- 6. Automation Run History — Track full execution chains
 -- ----------------------------------------------------------------------------
@@ -232,82 +217,58 @@ CREATE TABLE IF NOT EXISTS automation_runs (
   -- Metadata
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_automation_runs_org ON automation_runs(org_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_automation_runs_rule ON automation_runs(rule_id, status);
 CREATE INDEX IF NOT EXISTS idx_automation_runs_entity ON automation_runs(trigger_entity_type, trigger_entity_id);
-
 -- ----------------------------------------------------------------------------
 -- 7. RLS Policies
 -- ----------------------------------------------------------------------------
 
 -- Automation Templates
 ALTER TABLE automation_templates ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Allow authenticated read automation_templates"
   ON automation_templates FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated insert automation_templates"
   ON automation_templates FOR INSERT TO authenticated WITH CHECK (NOT is_system);
-
 CREATE POLICY "Allow authenticated update own automation_templates"
   ON automation_templates FOR UPDATE TO authenticated
   USING (NOT is_system OR created_by = auth.uid());
-
 CREATE POLICY "Allow service role full access automation_templates"
   ON automation_templates FOR ALL TO service_role USING (true);
-
 -- Automation Conditions
 ALTER TABLE automation_conditions ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Allow authenticated read automation_conditions"
   ON automation_conditions FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated insert automation_conditions"
   ON automation_conditions FOR INSERT TO authenticated WITH CHECK (true);
-
 CREATE POLICY "Allow authenticated update automation_conditions"
   ON automation_conditions FOR UPDATE TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated delete automation_conditions"
   ON automation_conditions FOR DELETE TO authenticated USING (true);
-
 CREATE POLICY "Allow service role full access automation_conditions"
   ON automation_conditions FOR ALL TO service_role USING (true);
-
 -- Automation Actions
 ALTER TABLE automation_actions ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Allow authenticated read automation_actions"
   ON automation_actions FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated insert automation_actions"
   ON automation_actions FOR INSERT TO authenticated WITH CHECK (true);
-
 CREATE POLICY "Allow authenticated update automation_actions"
   ON automation_actions FOR UPDATE TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated delete automation_actions"
   ON automation_actions FOR DELETE TO authenticated USING (true);
-
 CREATE POLICY "Allow service role full access automation_actions"
   ON automation_actions FOR ALL TO service_role USING (true);
-
 -- Automation Runs
 ALTER TABLE automation_runs ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Allow authenticated read automation_runs"
   ON automation_runs FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Allow authenticated insert automation_runs"
   ON automation_runs FOR INSERT TO authenticated WITH CHECK (true);
-
 CREATE POLICY "Allow authenticated update automation_runs"
   ON automation_runs FOR UPDATE TO authenticated USING (true);
-
 CREATE POLICY "Allow service role full access automation_runs"
   ON automation_runs FOR ALL TO service_role USING (true);
-
 -- ----------------------------------------------------------------------------
 -- 8. Helper Functions
 -- ----------------------------------------------------------------------------
@@ -337,7 +298,6 @@ BEGIN
   RETURN v_result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Get active rules for a trigger type
 CREATE OR REPLACE FUNCTION get_active_automation_rules(
   p_org_id UUID,
@@ -354,7 +314,6 @@ BEGIN
   ORDER BY priority DESC, created_at ASC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Log automation execution
 CREATE OR REPLACE FUNCTION log_automation_execution(
   p_org_id UUID,
@@ -392,7 +351,6 @@ BEGIN
   RETURN v_log_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Get automation execution history
 CREATE OR REPLACE FUNCTION get_automation_history(
   p_org_id UUID,
@@ -440,7 +398,6 @@ BEGIN
   OFFSET p_offset;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Get automation statistics
 CREATE OR REPLACE FUNCTION get_automation_stats(p_org_id UUID)
 RETURNS JSONB AS $$
@@ -509,7 +466,6 @@ BEGIN
   RETURN v_result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ----------------------------------------------------------------------------
 -- 9. Seed Automation Templates
 -- ----------------------------------------------------------------------------
@@ -658,7 +614,6 @@ INSERT INTO automation_templates (name, description, category, icon, trigger_typ
   true
 )
 ON CONFLICT DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 10. Update Triggers
 -- ----------------------------------------------------------------------------

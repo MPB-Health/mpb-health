@@ -10,7 +10,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION 1: LEAD SOURCE TYPES (lookup / enforced picklist)
 -- ============================================================================
@@ -24,7 +23,6 @@ CREATE TABLE IF NOT EXISTS public.crm_lead_source_types (
     sort_order integer NOT NULL DEFAULT 0,
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
 INSERT INTO public.crm_lead_source_types (slug, label, is_self_generated, sort_order) VALUES
     ('linkedin',            'LinkedIn',               true,  1),
     ('networking',          'Networking',              true,  2),
@@ -38,13 +36,10 @@ INSERT INTO public.crm_lead_source_types (slug, label, is_self_generated, sort_o
     ('outside_advisors',    'Outside Advisors',         false, 10),
     ('sunbiz_prospect',     'sunbiz.org Prospect',      true,  11)
 ON CONFLICT (slug) DO NOTHING;
-
 ALTER TABLE public.crm_lead_source_types ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_lead_source_types_select ON public.crm_lead_source_types;
 CREATE POLICY crm_lead_source_types_select ON public.crm_lead_source_types
     FOR SELECT TO authenticated USING (true);
-
 -- ============================================================================
 -- SECTION 2: ROUND-ROBIN CONFIG
 -- ============================================================================
@@ -63,23 +58,17 @@ CREATE TABLE IF NOT EXISTS public.crm_round_robin_config (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE(org_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_round_robin_config_org ON public.crm_round_robin_config(org_id);
-
 ALTER TABLE public.crm_round_robin_config ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_rr_config_select ON public.crm_round_robin_config;
 CREATE POLICY crm_rr_config_select ON public.crm_round_robin_config
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_rr_config_insert ON public.crm_round_robin_config;
 CREATE POLICY crm_rr_config_insert ON public.crm_round_robin_config
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'round_robin.manage'));
-
 DROP POLICY IF EXISTS crm_rr_config_update ON public.crm_round_robin_config;
 CREATE POLICY crm_rr_config_update ON public.crm_round_robin_config
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'round_robin.manage'));
-
 -- ============================================================================
 -- SECTION 3: ROUND-ROBIN AUDIT TRAIL
 -- ============================================================================
@@ -95,22 +84,17 @@ CREATE TABLE IF NOT EXISTS public.crm_round_robin_audit (
     override_by uuid REFERENCES auth.users(id),
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_rr_audit_org ON public.crm_round_robin_audit(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_rr_audit_lead ON public.crm_round_robin_audit(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_rr_audit_assigned ON public.crm_round_robin_audit(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_crm_rr_audit_created ON public.crm_round_robin_audit(created_at DESC);
-
 ALTER TABLE public.crm_round_robin_audit ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_rr_audit_select ON public.crm_round_robin_audit;
 CREATE POLICY crm_rr_audit_select ON public.crm_round_robin_audit
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_rr_audit_insert ON public.crm_round_robin_audit;
 CREATE POLICY crm_rr_audit_insert ON public.crm_round_robin_audit
     FOR INSERT WITH CHECK (public.is_org_member(org_id));
-
 -- ============================================================================
 -- SECTION 4: SLA CONFIG
 -- ============================================================================
@@ -130,23 +114,17 @@ CREATE TABLE IF NOT EXISTS public.crm_sla_config (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE(org_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_sla_config_org ON public.crm_sla_config(org_id);
-
 ALTER TABLE public.crm_sla_config ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_sla_config_select ON public.crm_sla_config;
 CREATE POLICY crm_sla_config_select ON public.crm_sla_config
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_sla_config_insert ON public.crm_sla_config;
 CREATE POLICY crm_sla_config_insert ON public.crm_sla_config
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'sla.manage'));
-
 DROP POLICY IF EXISTS crm_sla_config_update ON public.crm_sla_config;
 CREATE POLICY crm_sla_config_update ON public.crm_sla_config
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'sla.manage'));
-
 -- ============================================================================
 -- SECTION 5: FOLLOW-UP CADENCES
 -- ============================================================================
@@ -163,28 +141,21 @@ CREATE TABLE IF NOT EXISTS public.crm_follow_up_cadences (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_cadences_org ON public.crm_follow_up_cadences(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_cadences_default ON public.crm_follow_up_cadences(org_id, is_default) WHERE is_default = true;
-
 ALTER TABLE public.crm_follow_up_cadences ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_cadences_select ON public.crm_follow_up_cadences;
 CREATE POLICY crm_cadences_select ON public.crm_follow_up_cadences
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_cadences_insert ON public.crm_follow_up_cadences;
 CREATE POLICY crm_cadences_insert ON public.crm_follow_up_cadences
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'settings.manage'));
-
 DROP POLICY IF EXISTS crm_cadences_update ON public.crm_follow_up_cadences;
 CREATE POLICY crm_cadences_update ON public.crm_follow_up_cadences
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'settings.manage'));
-
 DROP POLICY IF EXISTS crm_cadences_delete ON public.crm_follow_up_cadences;
 CREATE POLICY crm_cadences_delete ON public.crm_follow_up_cadences
     FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'settings.manage'));
-
 -- ============================================================================
 -- SECTION 6: LEAD CADENCE STATE (per-lead tracking)
 -- ============================================================================
@@ -203,26 +174,20 @@ CREATE TABLE IF NOT EXISTS public.crm_lead_cadence_state (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE(lead_id, cadence_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_lead_cadence_lead ON public.crm_lead_cadence_state(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_lead_cadence_org ON public.crm_lead_cadence_state(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_lead_cadence_next ON public.crm_lead_cadence_state(next_action_at)
     WHERE completed_at IS NULL AND paused = false;
-
 ALTER TABLE public.crm_lead_cadence_state ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_lead_cadence_select ON public.crm_lead_cadence_state;
 CREATE POLICY crm_lead_cadence_select ON public.crm_lead_cadence_state
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_lead_cadence_insert ON public.crm_lead_cadence_state;
 CREATE POLICY crm_lead_cadence_insert ON public.crm_lead_cadence_state
     FOR INSERT WITH CHECK (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_lead_cadence_update ON public.crm_lead_cadence_state;
 CREATE POLICY crm_lead_cadence_update ON public.crm_lead_cadence_state
     FOR UPDATE USING (public.is_org_member(org_id));
-
 -- ============================================================================
 -- SECTION 7: REFERRAL PARTNERS
 -- ============================================================================
@@ -242,29 +207,22 @@ CREATE TABLE IF NOT EXISTS public.crm_referral_partners (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_referral_partners_org ON public.crm_referral_partners(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_referral_partners_type ON public.crm_referral_partners(partner_type);
 CREATE INDEX IF NOT EXISTS idx_crm_referral_partners_active ON public.crm_referral_partners(org_id, is_active);
-
 ALTER TABLE public.crm_referral_partners ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_ref_partners_select ON public.crm_referral_partners;
 CREATE POLICY crm_ref_partners_select ON public.crm_referral_partners
     FOR SELECT USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'referrals.read'));
-
 DROP POLICY IF EXISTS crm_ref_partners_insert ON public.crm_referral_partners;
 CREATE POLICY crm_ref_partners_insert ON public.crm_referral_partners
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'referrals.write'));
-
 DROP POLICY IF EXISTS crm_ref_partners_update ON public.crm_referral_partners;
 CREATE POLICY crm_ref_partners_update ON public.crm_referral_partners
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'referrals.write'));
-
 DROP POLICY IF EXISTS crm_ref_partners_delete ON public.crm_referral_partners;
 CREATE POLICY crm_ref_partners_delete ON public.crm_referral_partners
     FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'referrals.write'));
-
 -- ============================================================================
 -- SECTION 8: REFERRALS (tracking requested/received per rep)
 -- ============================================================================
@@ -283,32 +241,25 @@ CREATE TABLE IF NOT EXISTS public.crm_referrals (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_referrals_org ON public.crm_referrals(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_referrals_partner ON public.crm_referrals(partner_id);
 CREATE INDEX IF NOT EXISTS idx_crm_referrals_lead ON public.crm_referrals(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_referrals_referred_by ON public.crm_referrals(referred_by);
 CREATE INDEX IF NOT EXISTS idx_crm_referrals_direction ON public.crm_referrals(org_id, direction);
 CREATE INDEX IF NOT EXISTS idx_crm_referrals_created ON public.crm_referrals(created_at DESC);
-
 ALTER TABLE public.crm_referrals ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_referrals_select ON public.crm_referrals;
 CREATE POLICY crm_referrals_select ON public.crm_referrals
     FOR SELECT USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'referrals.read'));
-
 DROP POLICY IF EXISTS crm_referrals_insert ON public.crm_referrals;
 CREATE POLICY crm_referrals_insert ON public.crm_referrals
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'referrals.write'));
-
 DROP POLICY IF EXISTS crm_referrals_update ON public.crm_referrals;
 CREATE POLICY crm_referrals_update ON public.crm_referrals
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'referrals.write'));
-
 DROP POLICY IF EXISTS crm_referrals_delete ON public.crm_referrals;
 CREATE POLICY crm_referrals_delete ON public.crm_referrals
     FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'referrals.write'));
-
 -- ============================================================================
 -- SECTION 9: OUTSIDE ADVISORS
 -- ============================================================================
@@ -326,28 +277,21 @@ CREATE TABLE IF NOT EXISTS public.crm_outside_advisors (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_outside_advisors_org ON public.crm_outside_advisors(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_outside_advisors_active ON public.crm_outside_advisors(org_id, is_active);
-
 ALTER TABLE public.crm_outside_advisors ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_oa_select ON public.crm_outside_advisors;
 CREATE POLICY crm_oa_select ON public.crm_outside_advisors
     FOR SELECT USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'outside_advisors.read'));
-
 DROP POLICY IF EXISTS crm_oa_insert ON public.crm_outside_advisors;
 CREATE POLICY crm_oa_insert ON public.crm_outside_advisors
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'outside_advisors.write'));
-
 DROP POLICY IF EXISTS crm_oa_update ON public.crm_outside_advisors;
 CREATE POLICY crm_oa_update ON public.crm_outside_advisors
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'outside_advisors.write'));
-
 DROP POLICY IF EXISTS crm_oa_delete ON public.crm_outside_advisors;
 CREATE POLICY crm_oa_delete ON public.crm_outside_advisors
     FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'outside_advisors.write'));
-
 -- ============================================================================
 -- SECTION 10: COMMUNITY EVENTS
 -- ============================================================================
@@ -368,30 +312,23 @@ CREATE TABLE IF NOT EXISTS public.crm_community_events (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_community_events_org ON public.crm_community_events(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_community_events_date ON public.crm_community_events(org_id, event_date DESC);
 CREATE INDEX IF NOT EXISTS idx_crm_community_events_type ON public.crm_community_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_crm_community_events_rep ON public.crm_community_events(rep_id);
-
 ALTER TABLE public.crm_community_events ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_ce_select ON public.crm_community_events;
 CREATE POLICY crm_ce_select ON public.crm_community_events
     FOR SELECT USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'community_events.read'));
-
 DROP POLICY IF EXISTS crm_ce_insert ON public.crm_community_events;
 CREATE POLICY crm_ce_insert ON public.crm_community_events
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'community_events.write'));
-
 DROP POLICY IF EXISTS crm_ce_update ON public.crm_community_events;
 CREATE POLICY crm_ce_update ON public.crm_community_events
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'community_events.write'));
-
 DROP POLICY IF EXISTS crm_ce_delete ON public.crm_community_events;
 CREATE POLICY crm_ce_delete ON public.crm_community_events
     FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'community_events.write'));
-
 -- ============================================================================
 -- SECTION 11: ACTIVITY TARGETS (monthly per-rep + quarterly team)
 -- ============================================================================
@@ -408,30 +345,23 @@ CREATE TABLE IF NOT EXISTS public.crm_activity_targets (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_activity_targets_org ON public.crm_activity_targets(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_activity_targets_type ON public.crm_activity_targets(org_id, target_type);
 CREATE INDEX IF NOT EXISTS idx_crm_activity_targets_period ON public.crm_activity_targets(period_start, period_end);
 CREATE INDEX IF NOT EXISTS idx_crm_activity_targets_rep ON public.crm_activity_targets(rep_id);
-
 ALTER TABLE public.crm_activity_targets ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_targets_select ON public.crm_activity_targets;
 CREATE POLICY crm_targets_select ON public.crm_activity_targets
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_targets_insert ON public.crm_activity_targets;
 CREATE POLICY crm_targets_insert ON public.crm_activity_targets
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'targets.manage'));
-
 DROP POLICY IF EXISTS crm_targets_update ON public.crm_activity_targets;
 CREATE POLICY crm_targets_update ON public.crm_activity_targets
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'targets.manage'));
-
 DROP POLICY IF EXISTS crm_targets_delete ON public.crm_activity_targets;
 CREATE POLICY crm_targets_delete ON public.crm_activity_targets
     FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'targets.manage'));
-
 -- ============================================================================
 -- SECTION 12: QUARTERLY MILESTONES
 -- ============================================================================
@@ -454,28 +384,21 @@ CREATE TABLE IF NOT EXISTS public.crm_quarterly_milestones (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE(org_id, year, quarter)
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_milestones_org ON public.crm_quarterly_milestones(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_milestones_period ON public.crm_quarterly_milestones(org_id, year, quarter);
-
 ALTER TABLE public.crm_quarterly_milestones ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_milestones_select ON public.crm_quarterly_milestones;
 CREATE POLICY crm_milestones_select ON public.crm_quarterly_milestones
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_milestones_insert ON public.crm_quarterly_milestones;
 CREATE POLICY crm_milestones_insert ON public.crm_quarterly_milestones
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'targets.manage'));
-
 DROP POLICY IF EXISTS crm_milestones_update ON public.crm_quarterly_milestones;
 CREATE POLICY crm_milestones_update ON public.crm_quarterly_milestones
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'targets.manage'));
-
 DROP POLICY IF EXISTS crm_milestones_delete ON public.crm_quarterly_milestones;
 CREATE POLICY crm_milestones_delete ON public.crm_quarterly_milestones
     FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'targets.manage'));
-
 -- Seed default 2026 milestones (will be inserted per-org by the app)
 -- These are the team-level targets from the Sales Plan deck.
 
@@ -488,12 +411,10 @@ ALTER TABLE public.lead_submissions
     ADD COLUMN IF NOT EXISTS lead_source text,
     ADD COLUMN IF NOT EXISTS is_self_generated boolean DEFAULT false,
     ADD COLUMN IF NOT EXISTS reactivation_source_lead_id uuid;
-
 CREATE INDEX IF NOT EXISTS idx_zls_lead_source ON public.lead_submissions(lead_source);
 CREATE INDEX IF NOT EXISTS idx_zls_is_self_generated ON public.lead_submissions(is_self_generated);
 CREATE INDEX IF NOT EXISTS idx_zls_reactivation_source ON public.lead_submissions(reactivation_source_lead_id)
     WHERE reactivation_source_lead_id IS NOT NULL;
-
 -- ============================================================================
 -- SECTION 14: EXPAND ACTIVITY TYPE CHECK CONSTRAINTS
 -- ============================================================================
@@ -501,7 +422,6 @@ CREATE INDEX IF NOT EXISTS idx_zls_reactivation_source ON public.lead_submission
 -- lead_activities: drop old constraint, add expanded one
 ALTER TABLE public.lead_activities
     DROP CONSTRAINT IF EXISTS lead_activities_activity_type_check;
-
 ALTER TABLE public.lead_activities
     ADD CONSTRAINT lead_activities_activity_type_check
     CHECK (activity_type IN (
@@ -514,11 +434,9 @@ ALTER TABLE public.lead_activities
         'referral_requested', 'live_chat', 'crm_lead_entered',
         'proposal_sent'
     ));
-
 -- crm_activities: drop old constraint, add expanded one
 ALTER TABLE public.crm_activities
     DROP CONSTRAINT IF EXISTS crm_activities_activity_type_check;
-
 ALTER TABLE public.crm_activities
     ADD CONSTRAINT crm_activities_activity_type_check
     CHECK (activity_type IN (
@@ -530,7 +448,6 @@ ALTER TABLE public.crm_activities
         'referral_requested', 'live_chat', 'crm_lead_entered',
         'proposal_sent'
     ));
-
 -- ============================================================================
 -- SECTION 15: FIX BROKEN RPCs
 -- ============================================================================
@@ -588,15 +505,13 @@ BEGIN
             AND a.created_at >= date_trunc('month', CURRENT_DATE)
         ) AS activities_this_month
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     LEFT JOIN public.lead_submissions l ON l.assigned_to = u.id AND l.org_id = p_org_id
     GROUP BY u.id, u.email, u.raw_user_meta_data
     ORDER BY total_leads DESC;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_advisor_performance(uuid) TO authenticated;
-
 -- Fix crm_pipeline_breakdown: 'traditional' -> 'traditional_insurance'
 CREATE OR REPLACE FUNCTION public.crm_pipeline_breakdown(
     p_org_id uuid
@@ -633,9 +548,7 @@ BEGIN
     ORDER BY ps.sort_order;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_pipeline_breakdown(uuid) TO authenticated;
-
 -- ============================================================================
 -- SECTION 16: UPDATED_AT TRIGGERS FOR NEW TABLES
 -- ============================================================================
@@ -644,47 +557,36 @@ CREATE OR REPLACE FUNCTION public.handle_crm_sp2026_updated_at()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN NEW.updated_at = now(); RETURN NEW; END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_rr_config_updated ON public.crm_round_robin_config;
 CREATE TRIGGER trg_crm_rr_config_updated BEFORE UPDATE ON public.crm_round_robin_config
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_sla_config_updated ON public.crm_sla_config;
 CREATE TRIGGER trg_crm_sla_config_updated BEFORE UPDATE ON public.crm_sla_config
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_cadences_updated ON public.crm_follow_up_cadences;
 CREATE TRIGGER trg_crm_cadences_updated BEFORE UPDATE ON public.crm_follow_up_cadences
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_lead_cadence_updated ON public.crm_lead_cadence_state;
 CREATE TRIGGER trg_crm_lead_cadence_updated BEFORE UPDATE ON public.crm_lead_cadence_state
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_ref_partners_updated ON public.crm_referral_partners;
 CREATE TRIGGER trg_crm_ref_partners_updated BEFORE UPDATE ON public.crm_referral_partners
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_referrals_updated ON public.crm_referrals;
 CREATE TRIGGER trg_crm_referrals_updated BEFORE UPDATE ON public.crm_referrals
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_outside_advisors_updated ON public.crm_outside_advisors;
 CREATE TRIGGER trg_crm_outside_advisors_updated BEFORE UPDATE ON public.crm_outside_advisors
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_community_events_updated ON public.crm_community_events;
 CREATE TRIGGER trg_crm_community_events_updated BEFORE UPDATE ON public.crm_community_events
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_activity_targets_updated ON public.crm_activity_targets;
 CREATE TRIGGER trg_crm_activity_targets_updated BEFORE UPDATE ON public.crm_activity_targets
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_milestones_updated ON public.crm_quarterly_milestones;
 CREATE TRIGGER trg_crm_milestones_updated BEFORE UPDATE ON public.crm_quarterly_milestones
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 -- ============================================================================
 -- SECTION 17: SEED PERMISSIONS
 -- ============================================================================
@@ -711,7 +613,6 @@ INSERT INTO public.permissions (key, module, description) VALUES
     ('targets.read',          'targets',          'View activity targets'),
     ('targets.manage',        'targets',          'Configure activity targets and milestones')
 ON CONFLICT (key) DO NOTHING;
-
 -- Grant to owner (all)
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT '00000000-0000-4000-a000-000000000001', 'owner', p.id
@@ -726,7 +627,6 @@ WHERE p.key IN (
     'targets.read', 'targets.manage'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- Grant to admin (all)
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT '00000000-0000-4000-a000-000000000001', 'admin', p.id
@@ -741,7 +641,6 @@ WHERE p.key IN (
     'targets.read', 'targets.manage'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- Grant to manager (read + write, manage targets, no round-robin/sla manage)
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT '00000000-0000-4000-a000-000000000001', 'manager', p.id
@@ -756,7 +655,6 @@ WHERE p.key IN (
     'targets.read', 'targets.manage'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- Grant to agent (read/write, limited manage)
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT '00000000-0000-4000-a000-000000000001', 'agent', p.id
@@ -771,7 +669,6 @@ WHERE p.key IN (
     'targets.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- Grant to member (read only)
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT '00000000-0000-4000-a000-000000000001', 'member', p.id
@@ -786,7 +683,6 @@ WHERE p.key IN (
     'targets.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- Propagate to all existing orgs
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT DISTINCT o.id, rp.role, rp.permission_id
@@ -806,5 +702,4 @@ WHERE rp.org_id = '00000000-0000-4000-a000-000000000001'
       )
   )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 COMMIT;

@@ -1,7 +1,6 @@
 -- Plan comparison chart updates (Apr 2026 marketing / legal review)
 -- Removes discontinued rows, consolidates MPB Concierge copy, and aligns preventive-care text.
 
--- Rows to remove from the public comparison table
 DELETE FROM public.plan_features
 WHERE
   feature_name ~* 'debt\s*dismissal|hospital\s*debt\s*relief'
@@ -12,7 +11,6 @@ WHERE
   OR feature_name ~* '^annual mammogram(\s|$)'
   OR feature_name ~* 'qr\s*life\s*code|lifecode|medical records vault';
 
--- Exact duplicate feature rows per plan (same name); keep lowest sort_order then id
 DELETE FROM public.plan_features pf
 WHERE pf.id IN (
   SELECT id FROM (
@@ -27,7 +25,6 @@ WHERE pf.id IN (
   WHERE d.rn > 1
 );
 
--- Canonical MPB Concierge row (one description, “Included”)
 UPDATE public.plan_features
 SET
   feature_name = 'MPB Concierge Services',
@@ -46,7 +43,6 @@ SET
   notes = NULL
 WHERE feature_name = 'MPB Concierge Services';
 
--- MEC+ Essentials: note that the membership satisfies MEC (when notes were empty)
 UPDATE public.plan_features pf
 SET notes = 'Satisfies Minimum Essential Coverage (MEC) requirements.'
 FROM public.plans p
@@ -56,7 +52,6 @@ WHERE
   AND pf.category = 'Minimum Essential Coverage'
   AND (pf.notes IS NULL OR btrim(pf.notes) = '');
 
--- Direct: adult preventive vs women’s screenings (Limited mammography subline)
 UPDATE public.plan_features pf
 SET
   feature_value = 'Routine bloodwork and labs',
@@ -84,7 +79,6 @@ WHERE
   AND pf.category = 'Preventive Care'
   AND pf.feature_name ~* 'women''s health|women';
 
--- MEC+ Essentials & Secure HSA: women’s screening line (DEXA; no separate osteoporosis list item)
 UPDATE public.plan_features pf
 SET feature_value = 'Breast cancer, cervical cancer, & DEXA scan'
 FROM public.plans p
@@ -94,14 +88,12 @@ WHERE
   AND pf.category = 'Preventive Care'
   AND pf.feature_name ~* 'women';
 
--- When the above UPDATE did not match (different feature naming), still strip “osteoporosis” from values
 UPDATE public.plan_features
 SET feature_value = regexp_replace(feature_value, '\s*[,;]?\s*osteoporosis[^.]*\.?', '', 'gi')
 WHERE
   category = 'Preventive Care'
   AND feature_value ~* 'osteoporosis';
 
--- Common preventive rows (wording only if present)
 UPDATE public.plan_features pf
 SET cost = '$0', notes = 'One annual provider visit per member'
 FROM public.plans p
@@ -128,3 +120,4 @@ WHERE
   pf.plan_id = p.id
   AND pf.category = 'Preventive Care'
   AND pf.feature_name ~* 'colonoscopy';
+;

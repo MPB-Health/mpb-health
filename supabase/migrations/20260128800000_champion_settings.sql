@@ -60,7 +60,6 @@ CREATE TABLE IF NOT EXISTS organization_settings (
 
     UNIQUE(org_id)
 );
-
 -- ============================================================================
 -- USER PREFERENCES
 -- ============================================================================
@@ -99,7 +98,6 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 
     UNIQUE(user_id, org_id)
 );
-
 -- ============================================================================
 -- NOTIFICATION SETTINGS
 -- ============================================================================
@@ -150,7 +148,6 @@ CREATE TABLE IF NOT EXISTS notification_settings (
 
     UNIQUE(user_id, org_id)
 );
-
 -- ============================================================================
 -- INTEGRATION CONFIGS
 -- ============================================================================
@@ -194,7 +191,6 @@ CREATE TABLE IF NOT EXISTS integration_configs (
 
     UNIQUE(org_id, provider)
 );
-
 -- ============================================================================
 -- API KEYS
 -- ============================================================================
@@ -228,10 +224,8 @@ CREATE TABLE IF NOT EXISTS api_keys (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_api_keys_org ON api_keys(org_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
-
 -- ============================================================================
 -- ORGANIZATION INVITATIONS
 -- ============================================================================
@@ -258,11 +252,9 @@ CREATE TABLE IF NOT EXISTS organization_invitations (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_org_invitations_org ON organization_invitations(org_id);
 CREATE INDEX IF NOT EXISTS idx_org_invitations_email ON organization_invitations(email);
 CREATE INDEX IF NOT EXISTS idx_org_invitations_token ON organization_invitations(token);
-
 -- ============================================================================
 -- ROW LEVEL SECURITY
 -- ============================================================================
@@ -273,13 +265,11 @@ ALTER TABLE notification_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE integration_configs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organization_invitations ENABLE ROW LEVEL SECURITY;
-
 -- Organization settings: members can read, admins can write
 CREATE POLICY "Org members can view settings" ON organization_settings
     FOR SELECT USING (
         org_id IN (SELECT org_id FROM user_organization_roles WHERE user_id = auth.uid())
     );
-
 CREATE POLICY "Admins can manage settings" ON organization_settings
     FOR ALL USING (
         org_id IN (
@@ -287,15 +277,12 @@ CREATE POLICY "Admins can manage settings" ON organization_settings
             WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
         )
     );
-
 -- User preferences: users can manage their own
 CREATE POLICY "Users can manage their preferences" ON user_preferences
     FOR ALL USING (user_id = auth.uid());
-
 -- Notification settings: users can manage their own
 CREATE POLICY "Users can manage their notifications" ON notification_settings
     FOR ALL USING (user_id = auth.uid());
-
 -- Integration configs: admins only
 CREATE POLICY "Admins can manage integrations" ON integration_configs
     FOR ALL USING (
@@ -304,7 +291,6 @@ CREATE POLICY "Admins can manage integrations" ON integration_configs
             WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
         )
     );
-
 -- API keys: admins can manage
 CREATE POLICY "Admins can manage API keys" ON api_keys
     FOR ALL USING (
@@ -313,7 +299,6 @@ CREATE POLICY "Admins can manage API keys" ON api_keys
             WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
         )
     );
-
 -- Invitations: admins can manage
 CREATE POLICY "Admins can manage invitations" ON organization_invitations
     FOR ALL USING (
@@ -322,7 +307,6 @@ CREATE POLICY "Admins can manage invitations" ON organization_invitations
             WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
         )
     );
-
 -- ============================================================================
 -- FUNCTIONS
 -- ============================================================================
@@ -347,7 +331,6 @@ BEGIN
     RETURN v_settings;
 END;
 $$;
-
 -- Get or create user preferences
 CREATE OR REPLACE FUNCTION get_or_create_user_preferences(p_user_id UUID, p_org_id UUID)
 RETURNS user_preferences
@@ -369,7 +352,6 @@ BEGIN
     RETURN v_prefs;
 END;
 $$;
-
 -- Get or create notification settings
 CREATE OR REPLACE FUNCTION get_or_create_notification_settings(p_user_id UUID, p_org_id UUID)
 RETURNS notification_settings
@@ -391,7 +373,6 @@ BEGIN
     RETURN v_settings;
 END;
 $$;
-
 -- Create organization invitation
 CREATE OR REPLACE FUNCTION create_org_invitation(
     p_org_id UUID,
@@ -438,7 +419,6 @@ BEGIN
     RETURN v_invitation;
 END;
 $$;
-
 -- Accept invitation
 CREATE OR REPLACE FUNCTION accept_org_invitation(p_token TEXT, p_user_id UUID)
 RETURNS BOOLEAN
@@ -474,7 +454,6 @@ BEGIN
     RETURN true;
 END;
 $$;
-
 -- Generate API key
 CREATE OR REPLACE FUNCTION generate_api_key(
     p_org_id UUID,
@@ -513,7 +492,6 @@ BEGIN
     RETURN QUERY SELECT v_key_id, v_full_key;
 END;
 $$;
-
 -- Validate API key
 CREATE OR REPLACE FUNCTION validate_api_key(p_api_key TEXT)
 RETURNS TABLE(org_id UUID, scopes TEXT[], is_valid BOOLEAN)
@@ -549,7 +527,6 @@ BEGIN
     END IF;
 END;
 $$;
-
 -- Get org members with roles
 CREATE OR REPLACE FUNCTION get_org_members(p_org_id UUID)
 RETURNS TABLE (
@@ -583,7 +560,6 @@ BEGIN
     ORDER BY uor.created_at;
 END;
 $$;
-
 -- ============================================================================
 -- TRIGGERS
 -- ============================================================================
@@ -596,31 +572,24 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER update_organization_settings_updated_at
     BEFORE UPDATE ON organization_settings
     FOR EACH ROW EXECUTE FUNCTION update_settings_updated_at();
-
 CREATE TRIGGER update_user_preferences_updated_at
     BEFORE UPDATE ON user_preferences
     FOR EACH ROW EXECUTE FUNCTION update_settings_updated_at();
-
 CREATE TRIGGER update_notification_settings_updated_at
     BEFORE UPDATE ON notification_settings
     FOR EACH ROW EXECUTE FUNCTION update_settings_updated_at();
-
 CREATE TRIGGER update_integration_configs_updated_at
     BEFORE UPDATE ON integration_configs
     FOR EACH ROW EXECUTE FUNCTION update_settings_updated_at();
-
 CREATE TRIGGER update_api_keys_updated_at
     BEFORE UPDATE ON api_keys
     FOR EACH ROW EXECUTE FUNCTION update_settings_updated_at();
-
 CREATE TRIGGER update_org_invitations_updated_at
     BEFORE UPDATE ON organization_invitations
     FOR EACH ROW EXECUTE FUNCTION update_settings_updated_at();
-
 -- Expire old invitations
 CREATE OR REPLACE FUNCTION expire_old_invitations()
 RETURNS void

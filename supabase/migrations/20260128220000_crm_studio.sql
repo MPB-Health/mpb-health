@@ -31,7 +31,6 @@ CREATE TABLE public.crm_studio_modules (
 
     UNIQUE(org_id, api_name)
 );
-
 -- Custom Fields
 CREATE TABLE public.crm_studio_fields (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -81,7 +80,6 @@ CREATE TABLE public.crm_studio_fields (
 
     UNIQUE(module_id, api_name)
 );
-
 -- Layouts (Form configurations)
 CREATE TABLE public.crm_studio_layouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -117,7 +115,6 @@ CREATE TABLE public.crm_studio_layouts (
 
     UNIQUE(module_id, api_name)
 );
-
 -- Saved Views (List configurations)
 CREATE TABLE public.crm_studio_views (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -157,7 +154,6 @@ CREATE TABLE public.crm_studio_views (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Validation Rules
 CREATE TABLE public.crm_studio_validation_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -194,7 +190,6 @@ CREATE TABLE public.crm_studio_validation_rules (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================================================
 -- INDEXES
 -- ============================================================================
@@ -202,26 +197,21 @@ CREATE TABLE public.crm_studio_validation_rules (
 CREATE INDEX idx_studio_modules_org ON crm_studio_modules(org_id);
 CREATE INDEX idx_studio_modules_api_name ON crm_studio_modules(org_id, api_name);
 CREATE INDEX idx_studio_modules_active ON crm_studio_modules(org_id, is_active);
-
 CREATE INDEX idx_studio_fields_module ON crm_studio_fields(module_id);
 CREATE INDEX idx_studio_fields_org ON crm_studio_fields(org_id);
 CREATE INDEX idx_studio_fields_api_name ON crm_studio_fields(module_id, api_name);
 CREATE INDEX idx_studio_fields_sort ON crm_studio_fields(module_id, sort_order);
-
 CREATE INDEX idx_studio_layouts_module ON crm_studio_layouts(module_id);
 CREATE INDEX idx_studio_layouts_org ON crm_studio_layouts(org_id);
 CREATE INDEX idx_studio_layouts_type ON crm_studio_layouts(module_id, layout_type);
 CREATE INDEX idx_studio_layouts_default ON crm_studio_layouts(module_id, layout_type, is_default);
-
 CREATE INDEX idx_studio_views_module ON crm_studio_views(module_id);
 CREATE INDEX idx_studio_views_org ON crm_studio_views(org_id);
 CREATE INDEX idx_studio_views_owner ON crm_studio_views(owner_id);
 CREATE INDEX idx_studio_views_visibility ON crm_studio_views(module_id, visibility);
-
 CREATE INDEX idx_studio_validation_module ON crm_studio_validation_rules(module_id);
 CREATE INDEX idx_studio_validation_org ON crm_studio_validation_rules(org_id);
 CREATE INDEX idx_studio_validation_active ON crm_studio_validation_rules(module_id, is_active);
-
 -- ============================================================================
 -- ROW LEVEL SECURITY
 -- ============================================================================
@@ -231,19 +221,15 @@ ALTER TABLE crm_studio_fields ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crm_studio_layouts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crm_studio_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crm_studio_validation_rules ENABLE ROW LEVEL SECURITY;
-
 -- Org-scoped access for modules
 CREATE POLICY "studio_modules_org_access" ON crm_studio_modules
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 -- Org-scoped access for fields
 CREATE POLICY "studio_fields_org_access" ON crm_studio_fields
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 -- Org-scoped access for layouts
 CREATE POLICY "studio_layouts_org_access" ON crm_studio_layouts
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 -- Views: org-scoped with visibility filtering
 CREATE POLICY "studio_views_org_access" ON crm_studio_views
     FOR ALL USING (
@@ -255,11 +241,9 @@ CREATE POLICY "studio_views_org_access" ON crm_studio_views
             OR created_by = auth.uid()
         )
     );
-
 -- Org-scoped access for validation rules
 CREATE POLICY "studio_validation_org_access" ON crm_studio_validation_rules
     FOR ALL USING (org_id IN (SELECT org_id FROM org_memberships WHERE user_id = auth.uid()));
-
 -- ============================================================================
 -- HELPER FUNCTIONS
 -- ============================================================================
@@ -278,7 +262,6 @@ BEGIN
     ];
 END;
 $$;
-
 -- Function: Create custom module table dynamically
 -- This creates a dedicated table for each custom module with proper RLS
 CREATE OR REPLACE FUNCTION create_custom_module_table(
@@ -373,7 +356,6 @@ BEGIN
         'idx_' || table_name || '_owner', table_name);
 END;
 $$;
-
 -- Function: Add column to existing custom module table
 CREATE OR REPLACE FUNCTION add_custom_module_column(
     p_org_id UUID,
@@ -416,7 +398,6 @@ BEGIN
         table_name, p_field_api_name, column_type);
 END;
 $$;
-
 -- Function: Drop custom module table
 CREATE OR REPLACE FUNCTION drop_custom_module_table(
     p_org_id UUID,
@@ -434,7 +415,6 @@ BEGIN
     EXECUTE format('DROP TABLE IF EXISTS public.%I CASCADE', table_name);
 END;
 $$;
-
 -- Function: Get custom module table name
 CREATE OR REPLACE FUNCTION get_custom_module_table_name(
     p_org_id UUID,
@@ -447,7 +427,6 @@ BEGIN
     RETURN 'crm_custom_' || REPLACE(LEFT(p_org_id::TEXT, 8), '-', '') || '_' || p_api_name;
 END;
 $$;
-
 -- ============================================================================
 -- TRIGGERS
 -- ============================================================================
@@ -460,28 +439,22 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
-
 -- Apply updated_at triggers
 CREATE TRIGGER update_crm_studio_modules_updated_at
     BEFORE UPDATE ON crm_studio_modules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_crm_studio_fields_updated_at
     BEFORE UPDATE ON crm_studio_fields
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_crm_studio_layouts_updated_at
     BEFORE UPDATE ON crm_studio_layouts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_crm_studio_views_updated_at
     BEFORE UPDATE ON crm_studio_views
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_crm_studio_validation_rules_updated_at
     BEFORE UPDATE ON crm_studio_validation_rules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================================================
 -- COMMENTS
 -- ============================================================================
@@ -491,7 +464,6 @@ COMMENT ON TABLE crm_studio_fields IS 'Custom field definitions for Studio modul
 COMMENT ON TABLE crm_studio_layouts IS 'Form layout configurations for Studio modules';
 COMMENT ON TABLE crm_studio_views IS 'Saved list views with filters and column configs';
 COMMENT ON TABLE crm_studio_validation_rules IS 'Server-side validation rules for custom modules';
-
 COMMENT ON FUNCTION create_custom_module_table IS 'Creates a dedicated PostgreSQL table for a custom module with RLS';
 COMMENT ON FUNCTION add_custom_module_column IS 'Adds a new column to an existing custom module table';
 COMMENT ON FUNCTION drop_custom_module_table IS 'Drops a custom module table (use with caution)';

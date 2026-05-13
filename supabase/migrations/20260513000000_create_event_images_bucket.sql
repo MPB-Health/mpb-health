@@ -22,7 +22,6 @@ VALUES (
   ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
 )
 ON CONFLICT (id) DO NOTHING;
-
 -- Authenticated users can upload (admin/staff routes are auth-gated already)
 DROP POLICY IF EXISTS "Authenticated users can upload event images" ON storage.objects;
 CREATE POLICY "Authenticated users can upload event images"
@@ -33,7 +32,6 @@ WITH CHECK (
   bucket_id = 'event-images'
   AND (storage.foldername(name))[1] != '.emptyFolderPlaceholder'
 );
-
 DROP POLICY IF EXISTS "Authenticated users can update event images" ON storage.objects;
 CREATE POLICY "Authenticated users can update event images"
 ON storage.objects
@@ -41,21 +39,18 @@ FOR UPDATE
 TO authenticated
 USING (bucket_id = 'event-images')
 WITH CHECK (bucket_id = 'event-images');
-
 DROP POLICY IF EXISTS "Authenticated users can delete event images" ON storage.objects;
 CREATE POLICY "Authenticated users can delete event images"
 ON storage.objects
 FOR DELETE
 TO authenticated
 USING (bucket_id = 'event-images');
-
 DROP POLICY IF EXISTS "Public can read event images" ON storage.objects;
 CREATE POLICY "Public can read event images"
 ON storage.objects
 FOR SELECT
 TO public
 USING (bucket_id = 'event-images');
-
 -- COMMENT ON POLICY against storage.objects requires the storage-admin role
 -- on hosted Supabase, which the migration runner does not have. Wrap so a
 -- permission error is silently ignored on managed projects.

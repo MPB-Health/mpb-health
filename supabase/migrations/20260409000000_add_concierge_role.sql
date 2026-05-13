@@ -17,7 +17,6 @@ BEGIN
   ALTER TABLE user_roles ADD CONSTRAINT user_roles_role_check
     CHECK (role IN ('super_admin', 'admin', 'advisor', 'member', 'crm_user', 'concierge'));
 END $$;
-
 -- Update the get_all_users_with_roles RPC to include concierge users
 -- (no changes needed — it returns all roles dynamically)
 

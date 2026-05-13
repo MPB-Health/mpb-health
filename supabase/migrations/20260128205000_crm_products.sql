@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: CREATE PRODUCTS TABLE
 -- ============================================================================
@@ -43,7 +42,6 @@ CREATE TABLE IF NOT EXISTS public.crm_products (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION B: CREATE PRICE BOOKS TABLE
 -- ============================================================================
@@ -74,14 +72,11 @@ CREATE TABLE IF NOT EXISTS public.crm_price_books (
         -- This will fail if we try to have multiple defaults
         -- We need a partial unique index instead
 );
-
 -- Drop the constraint and create partial unique index
 ALTER TABLE public.crm_price_books DROP CONSTRAINT IF EXISTS crm_price_books_org_id_is_default_key;
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_price_books_default
     ON public.crm_price_books (org_id)
     WHERE is_default = true;
-
 -- ============================================================================
 -- SECTION C: CREATE PRICE BOOK ITEMS TABLE
 -- ============================================================================
@@ -102,7 +97,6 @@ CREATE TABLE IF NOT EXISTS public.crm_price_book_items (
     -- Unique product per price book
     UNIQUE(price_book_id, product_id)
 );
-
 -- ============================================================================
 -- SECTION D: INDEXES
 -- ============================================================================
@@ -110,33 +104,24 @@ CREATE TABLE IF NOT EXISTS public.crm_price_book_items (
 -- Products indexes
 CREATE INDEX IF NOT EXISTS idx_crm_products_org_id
     ON public.crm_products (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_products_code
     ON public.crm_products (code);
-
 CREATE INDEX IF NOT EXISTS idx_crm_products_category
     ON public.crm_products (category);
-
 CREATE INDEX IF NOT EXISTS idx_crm_products_active
     ON public.crm_products (org_id, is_active);
-
 CREATE INDEX IF NOT EXISTS idx_crm_products_name
     ON public.crm_products (name);
-
 -- Price books indexes
 CREATE INDEX IF NOT EXISTS idx_crm_price_books_org_id
     ON public.crm_price_books (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_price_books_active
     ON public.crm_price_books (org_id, is_active);
-
 -- Price book items indexes
 CREATE INDEX IF NOT EXISTS idx_crm_price_book_items_price_book
     ON public.crm_price_book_items (price_book_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_price_book_items_product
     ON public.crm_price_book_items (product_id);
-
 -- ============================================================================
 -- SECTION E: ROW LEVEL SECURITY
 -- ============================================================================
@@ -144,7 +129,6 @@ CREATE INDEX IF NOT EXISTS idx_crm_price_book_items_product
 ALTER TABLE public.crm_products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_price_books ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_price_book_items ENABLE ROW LEVEL SECURITY;
-
 -- Products policies
 CREATE POLICY "crm_products_select"
     ON public.crm_products
@@ -153,7 +137,6 @@ CREATE POLICY "crm_products_select"
     USING (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_products_insert"
     ON public.crm_products
     FOR INSERT
@@ -161,7 +144,6 @@ CREATE POLICY "crm_products_insert"
     WITH CHECK (
         public.has_org_permission(org_id, 'products.write')
     );
-
 CREATE POLICY "crm_products_update"
     ON public.crm_products
     FOR UPDATE
@@ -172,7 +154,6 @@ CREATE POLICY "crm_products_update"
     WITH CHECK (
         public.has_org_permission(org_id, 'products.write')
     );
-
 CREATE POLICY "crm_products_delete"
     ON public.crm_products
     FOR DELETE
@@ -180,7 +161,6 @@ CREATE POLICY "crm_products_delete"
     USING (
         public.has_org_permission(org_id, 'products.write')
     );
-
 -- Price books policies
 CREATE POLICY "crm_price_books_select"
     ON public.crm_price_books
@@ -189,7 +169,6 @@ CREATE POLICY "crm_price_books_select"
     USING (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_price_books_insert"
     ON public.crm_price_books
     FOR INSERT
@@ -197,7 +176,6 @@ CREATE POLICY "crm_price_books_insert"
     WITH CHECK (
         public.has_org_permission(org_id, 'products.write')
     );
-
 CREATE POLICY "crm_price_books_update"
     ON public.crm_price_books
     FOR UPDATE
@@ -208,7 +186,6 @@ CREATE POLICY "crm_price_books_update"
     WITH CHECK (
         public.has_org_permission(org_id, 'products.write')
     );
-
 CREATE POLICY "crm_price_books_delete"
     ON public.crm_price_books
     FOR DELETE
@@ -216,7 +193,6 @@ CREATE POLICY "crm_price_books_delete"
     USING (
         public.has_org_permission(org_id, 'products.write')
     );
-
 -- Price book items policies (based on price book access)
 CREATE POLICY "crm_price_book_items_select"
     ON public.crm_price_book_items
@@ -229,7 +205,6 @@ CREATE POLICY "crm_price_book_items_select"
             AND public.is_org_member(pb.org_id)
         )
     );
-
 CREATE POLICY "crm_price_book_items_insert"
     ON public.crm_price_book_items
     FOR INSERT
@@ -241,7 +216,6 @@ CREATE POLICY "crm_price_book_items_insert"
             AND public.has_org_permission(pb.org_id, 'products.write')
         )
     );
-
 CREATE POLICY "crm_price_book_items_update"
     ON public.crm_price_book_items
     FOR UPDATE
@@ -260,7 +234,6 @@ CREATE POLICY "crm_price_book_items_update"
             AND public.has_org_permission(pb.org_id, 'products.write')
         )
     );
-
 CREATE POLICY "crm_price_book_items_delete"
     ON public.crm_price_book_items
     FOR DELETE
@@ -272,7 +245,6 @@ CREATE POLICY "crm_price_book_items_delete"
             AND public.has_org_permission(pb.org_id, 'products.write')
         )
     );
-
 -- ============================================================================
 -- SECTION F: SEED DEFAULT PRICE BOOK
 -- ============================================================================
@@ -286,7 +258,6 @@ VALUES (
     true
 )
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- SECTION G: UPDATED_AT TRIGGERS
 -- ============================================================================
@@ -300,13 +271,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_products_updated_at ON public.crm_products;
 CREATE TRIGGER trigger_crm_products_updated_at
     BEFORE UPDATE ON public.crm_products
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_products_updated_at();
-
 CREATE OR REPLACE FUNCTION public.handle_crm_price_books_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -316,13 +285,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_price_books_updated_at ON public.crm_price_books;
 CREATE TRIGGER trigger_crm_price_books_updated_at
     BEFORE UPDATE ON public.crm_price_books
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_price_books_updated_at();
-
 CREATE OR REPLACE FUNCTION public.handle_crm_price_book_items_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -332,11 +299,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_price_book_items_updated_at ON public.crm_price_book_items;
 CREATE TRIGGER trigger_crm_price_book_items_updated_at
     BEFORE UPDATE ON public.crm_price_book_items
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_price_book_items_updated_at();
-
 COMMIT;

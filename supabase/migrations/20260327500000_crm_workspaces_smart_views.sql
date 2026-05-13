@@ -13,7 +13,6 @@ ALTER TABLE public.crm_saved_views
   ADD COLUMN IF NOT EXISTS workspace_id uuid,
   ADD COLUMN IF NOT EXISTS view_type text DEFAULT 'custom'
     CHECK (view_type IN ('custom', 'smart', 'system'));
-
 -- Workspaces: named collections of related views for role-based work surfaces
 CREATE TABLE IF NOT EXISTS public.crm_workspaces (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -30,9 +29,7 @@ CREATE TABLE IF NOT EXISTS public.crm_workspaces (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 ALTER TABLE public.crm_workspaces ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY workspace_org_access ON public.crm_workspaces
   FOR ALL
   USING (
@@ -41,16 +38,13 @@ CREATE POLICY workspace_org_access ON public.crm_workspaces
       WHERE user_id = auth.uid()
     )
   );
-
 CREATE INDEX IF NOT EXISTS idx_workspaces_org ON public.crm_workspaces(org_id, module);
 CREATE INDEX IF NOT EXISTS idx_workspaces_active ON public.crm_workspaces(org_id, is_active, sort_order);
-
 -- FK from saved views to workspaces
 ALTER TABLE public.crm_saved_views
   ADD CONSTRAINT fk_saved_views_workspace
   FOREIGN KEY (workspace_id) REFERENCES public.crm_workspaces(id)
   ON DELETE SET NULL;
-
 -- Activity command center: pinned "today" items for quick access
 CREATE TABLE IF NOT EXISTS public.crm_focus_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -64,17 +58,13 @@ CREATE TABLE IF NOT EXISTS public.crm_focus_items (
   completed_at timestamptz,
   created_at timestamptz DEFAULT now()
 );
-
 ALTER TABLE public.crm_focus_items ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY focus_items_user_access ON public.crm_focus_items
   FOR ALL
   USING (user_id = auth.uid());
-
 CREATE INDEX IF NOT EXISTS idx_focus_items_user ON public.crm_focus_items(user_id, completed_at)
   WHERE completed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_focus_items_entity ON public.crm_focus_items(entity_type, entity_id);
-
 -- Relationship context: quick-access advisor-to-lead summary RPC
 CREATE OR REPLACE FUNCTION public.crm_today_summary(p_org_id uuid)
 RETURNS json
@@ -141,7 +131,6 @@ BEGIN
   RETURN v_result;
 END;
 $$;
-
 -- Updated at trigger function for workspaces
 CREATE OR REPLACE FUNCTION public.handle_crm_workspaces_updated_at()
 RETURNS trigger
@@ -152,7 +141,6 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 CREATE OR REPLACE TRIGGER trg_crm_workspaces_updated_at
   BEFORE UPDATE ON public.crm_workspaces
   FOR EACH ROW

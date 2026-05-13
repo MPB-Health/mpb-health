@@ -31,7 +31,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Engagement signal — drop the last_touched_at bump (Section 7 fix)
 -- ----------------------------------------------------------------------------
@@ -97,7 +96,6 @@ BEGIN
     END IF;
 END;
 $$;
-
 -- ----------------------------------------------------------------------------
 -- 2. Cancellation Calls — distinct subtype on the daily-log event
 -- ----------------------------------------------------------------------------
@@ -177,7 +175,6 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 -- ----------------------------------------------------------------------------
 -- 3. Performance Lag scan — Mon–Fri window + Special Projects exclusion +
 --    new-hire exclusion (Section 12)
@@ -203,7 +200,6 @@ BEGIN
     RETURN d;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.crm_scan_performance_lag(p_org_id uuid)
 RETURNS TABLE(
     user_id uuid,
@@ -336,7 +332,6 @@ BEGIN
     RETURN;
 END;
 $$;
-
 -- ----------------------------------------------------------------------------
 -- 4. Day-30 Nurture aging (Section 5 / Round 2)
 -- ----------------------------------------------------------------------------
@@ -374,10 +369,8 @@ BEGIN
     SELECT u.id, u.prior_stage FROM updated u;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_age_to_nurture(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.crm_age_to_nurture(uuid) TO authenticated;
-
 -- ----------------------------------------------------------------------------
 -- 5. Concierge handoff log (Section 1)
 -- ----------------------------------------------------------------------------
@@ -391,17 +384,13 @@ CREATE TABLE IF NOT EXISTS public.crm_concierge_handoff_log (
     notes text,
     payload jsonb NOT NULL DEFAULT '{}'::jsonb
 );
-
 CREATE INDEX IF NOT EXISTS idx_concierge_handoff_org ON public.crm_concierge_handoff_log(org_id, handoff_at DESC);
 CREATE INDEX IF NOT EXISTS idx_concierge_handoff_lead ON public.crm_concierge_handoff_log(lead_id);
-
 ALTER TABLE public.crm_concierge_handoff_log ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS concierge_handoff_select ON public.crm_concierge_handoff_log;
 DROP POLICY IF EXISTS concierge_handoff_insert ON public.crm_concierge_handoff_log;
 DROP POLICY IF EXISTS concierge_handoff_update ON public.crm_concierge_handoff_log;
 DROP POLICY IF EXISTS concierge_handoff_service ON public.crm_concierge_handoff_log;
-
 CREATE POLICY concierge_handoff_select ON public.crm_concierge_handoff_log
     FOR SELECT TO authenticated USING (public.is_org_member(org_id));
 CREATE POLICY concierge_handoff_insert ON public.crm_concierge_handoff_log
@@ -413,10 +402,8 @@ CREATE POLICY concierge_handoff_update ON public.crm_concierge_handoff_log
     WITH CHECK (public.is_org_member(org_id));
 CREATE POLICY concierge_handoff_service ON public.crm_concierge_handoff_log
     FOR ALL TO service_role USING (true) WITH CHECK (true);
-
 GRANT SELECT, INSERT, UPDATE ON public.crm_concierge_handoff_log TO authenticated;
 GRANT ALL ON public.crm_concierge_handoff_log TO service_role;
-
 -- Trigger: every transition into 'won' inserts a concierge handoff row.
 CREATE OR REPLACE FUNCTION public.crm_concierge_handoff_emit()
 RETURNS trigger
@@ -442,13 +429,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_concierge_handoff ON public.lead_submissions;
 CREATE TRIGGER trg_crm_concierge_handoff
     AFTER UPDATE OF pipeline_stage ON public.lead_submissions
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_concierge_handoff_emit();
-
 -- ----------------------------------------------------------------------------
 -- 6. Reports skeleton — Pipeline movement view + stalled-in-stage RPC
 -- ----------------------------------------------------------------------------
@@ -467,9 +452,7 @@ SELECT
     COUNT(*) FILTER (WHERE ls.pipeline_stage = 'nurture' AND ls.stage_changed_at >= now() - interval '7 days') AS nurtured_last_7d
 FROM public.lead_submissions ls
 GROUP BY ls.org_id, ls.pipeline_stage;
-
 GRANT SELECT ON public.crm_v_pipeline_movement TO authenticated, service_role;
-
 -- Stalled-in-stage alerts: leads that have been in a non-terminal stage
 -- longer than the per-stage SLA hours.
 CREATE OR REPLACE FUNCTION public.crm_scan_stalled_in_stage(p_org_id uuid)
@@ -505,23 +488,19 @@ AS $$
        AND COALESCE(ls.do_not_contact, false) = false
        AND COALESCE(ls.stage_changed_at, ls.created_at) < (now() - (ss.hours || ' hours')::interval)
 $$;
-
 -- Application started tracking — needed for the Application drop-off
 -- report (Section 2e). Stamped on entry into 'application_in_progress'.
 ALTER TABLE public.lead_submissions
     ADD COLUMN IF NOT EXISTS application_started_at timestamptz;
-
 CREATE INDEX IF NOT EXISTS idx_lead_submissions_app_started
     ON public.lead_submissions(application_started_at)
     WHERE application_started_at IS NOT NULL;
-
 -- Backfill: any lead currently / previously in app stage gets stamped
 -- with stage_changed_at as a best-effort starting point.
 UPDATE public.lead_submissions
    SET application_started_at = COALESCE(stage_changed_at, created_at)
  WHERE pipeline_stage = 'application_in_progress'
    AND application_started_at IS NULL;
-
 -- Trigger: stamp on first entry into application_in_progress.
 CREATE OR REPLACE FUNCTION public.crm_lead_app_started_stamp()
 RETURNS trigger
@@ -536,12 +515,10 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_lead_app_started ON public.lead_submissions;
 CREATE TRIGGER trg_crm_lead_app_started
     BEFORE UPDATE OF pipeline_stage ON public.lead_submissions
     FOR EACH ROW EXECUTE FUNCTION public.crm_lead_app_started_stamp();
-
 -- Application drop-off helper — Stage 5 → withdrawn with no Won transition.
 CREATE OR REPLACE VIEW public.crm_v_application_dropoff AS
 SELECT
@@ -554,9 +531,7 @@ SELECT
 FROM public.lead_submissions ls
 WHERE ls.application_started_at IS NOT NULL
 GROUP BY ls.org_id, DATE_TRUNC('week', ls.application_started_at);
-
 GRANT SELECT ON public.crm_v_application_dropoff TO authenticated, service_role;
-
 -- Conversion-by-source view.
 CREATE OR REPLACE VIEW public.crm_v_conversion_by_source AS
 SELECT
@@ -573,9 +548,7 @@ SELECT
     ) AS win_rate_pct
 FROM public.lead_submissions ls
 GROUP BY ls.org_id, ls.lead_source;
-
 GRANT SELECT ON public.crm_v_conversion_by_source TO authenticated, service_role;
-
 -- ----------------------------------------------------------------------------
 -- 7. Section 2g — backfill missing global opt-out keyword "don't contact"
 -- ----------------------------------------------------------------------------
@@ -593,5 +566,4 @@ WHERE NOT EXISTS (
     WHERE org_id IS NULL
       AND lower(phrase) = lower('don''t contact')
 );
-
 COMMIT;

@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS bulletin_email_notifications (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Create bulletin_email_recipients table (tracks individual sends)
 CREATE TABLE IF NOT EXISTS bulletin_email_recipients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -30,32 +29,24 @@ CREATE TABLE IF NOT EXISTS bulletin_email_recipients (
   error_message TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Add notify_sent field to advisor_content to track if notification was sent
 ALTER TABLE advisor_content
 ADD COLUMN IF NOT EXISTS notification_sent_at TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS notification_count INTEGER DEFAULT 0;
-
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_bulletin_email_notifications_bulletin_id
 ON bulletin_email_notifications(bulletin_id);
-
 CREATE INDEX IF NOT EXISTS idx_bulletin_email_notifications_status
 ON bulletin_email_notifications(status);
-
 CREATE INDEX IF NOT EXISTS idx_bulletin_email_recipients_notification_id
 ON bulletin_email_recipients(notification_id);
-
 CREATE INDEX IF NOT EXISTS idx_bulletin_email_recipients_advisor_id
 ON bulletin_email_recipients(advisor_id);
-
 CREATE INDEX IF NOT EXISTS idx_advisor_content_notification_sent
 ON advisor_content(notification_sent_at) WHERE content_type = 'bulletin';
-
 -- Enable RLS
 ALTER TABLE bulletin_email_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bulletin_email_recipients ENABLE ROW LEVEL SECURITY;
-
 -- RLS Policies for admin access
 CREATE POLICY "Admins can manage bulletin notifications"
 ON bulletin_email_notifications
@@ -67,7 +58,6 @@ USING (
     AND profiles.role IN ('admin', 'superadmin')
   )
 );
-
 CREATE POLICY "Admins can manage bulletin recipients"
 ON bulletin_email_recipients
 FOR ALL
@@ -78,7 +68,6 @@ USING (
     AND profiles.role IN ('admin', 'superadmin')
   )
 );
-
 -- Function to get active advisor emails for bulletin notifications
 CREATE OR REPLACE FUNCTION get_active_advisor_emails()
 RETURNS TABLE (
@@ -104,7 +93,6 @@ BEGIN
     AND (ap.email IS NOT NULL OR u.email IS NOT NULL);
 END;
 $$;
-
 -- Function to record bulletin notification send
 CREATE OR REPLACE FUNCTION start_bulletin_notification(
   p_bulletin_id UUID,
@@ -154,7 +142,6 @@ BEGIN
   RETURN v_notification_id;
 END;
 $$;
-
 -- Function to update notification status
 CREATE OR REPLACE FUNCTION update_bulletin_notification_status(
   p_notification_id UUID,
@@ -194,12 +181,10 @@ BEGIN
   END IF;
 END;
 $$;
-
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION get_active_advisor_emails() TO authenticated;
 GRANT EXECUTE ON FUNCTION start_bulletin_notification(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION update_bulletin_notification_status(UUID, TEXT, INTEGER, INTEGER, TEXT, TEXT) TO authenticated;
-
 -- Add comment
 COMMENT ON TABLE bulletin_email_notifications IS 'Tracks bulletin email notification campaigns sent to advisors';
 COMMENT ON TABLE bulletin_email_recipients IS 'Tracks individual email sends to advisors for bulletin notifications';

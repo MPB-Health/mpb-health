@@ -20,7 +20,6 @@ DROP POLICY IF EXISTS "Users can view memberships in their orgs" ON org_membersh
 DROP POLICY IF EXISTS "Owners and admins can manage memberships" ON org_memberships;
 DROP POLICY IF EXISTS "Owners and admins can update memberships" ON org_memberships;
 DROP POLICY IF EXISTS "Users can leave organizations" ON org_memberships;
-
 -- Simple non-recursive SELECT policy:
 -- Users can see all memberships in orgs where they are an active member.
 -- Uses a direct user_id check to avoid recursion.
@@ -28,7 +27,6 @@ CREATE POLICY "Users can view own memberships"
   ON org_memberships FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
-
 -- Allow users to also see other members in their orgs (non-recursive approach)
 -- Uses a SECURITY DEFINER function to bypass RLS when checking membership
 CREATE OR REPLACE FUNCTION public.get_user_org_ids(p_user_id uuid)
@@ -41,16 +39,13 @@ AS $$
   SELECT org_id FROM org_memberships
   WHERE user_id = p_user_id AND status = 'active';
 $$;
-
 GRANT EXECUTE ON FUNCTION public.get_user_org_ids(uuid) TO authenticated;
-
 CREATE POLICY "Users can view org co-members"
   ON org_memberships FOR SELECT
   TO authenticated
   USING (
     org_id IN (SELECT public.get_user_org_ids(auth.uid()))
   );
-
 -- INSERT: org admins/owners can add members
 CREATE POLICY "Admins can insert memberships"
   ON org_memberships FOR INSERT
@@ -61,7 +56,6 @@ CREATE POLICY "Admins can insert memberships"
       WHERE my_org_id = org_memberships.org_id
     )
   );
-
 -- UPDATE: org admins can update memberships
 CREATE POLICY "Admins can update memberships"
   ON org_memberships FOR UPDATE
@@ -72,7 +66,6 @@ CREATE POLICY "Admins can update memberships"
   WITH CHECK (
     org_id IN (SELECT public.get_user_org_ids(auth.uid()))
   );
-
 -- DELETE: users can leave, admins can remove others
 CREATE POLICY "Users can delete memberships"
   ON org_memberships FOR DELETE
@@ -81,7 +74,6 @@ CREATE POLICY "Users can delete memberships"
     user_id = auth.uid()
     OR org_id IN (SELECT public.get_user_org_ids(auth.uid()))
   );
-
 -- Also fix is_org_member to use SECURITY DEFINER properly
 -- (it already is SECURITY DEFINER, but let's make sure it's correct)
 CREATE OR REPLACE FUNCTION public.is_org_member(p_org_id uuid)

@@ -11,11 +11,9 @@ WHERE id NOT IN (
   FROM public.advisor_quick_links
   ORDER BY label, category, order_index ASC, created_at ASC
 );
-
 -- Step 2: Add a unique constraint on (label, category) to prevent future duplicates
 ALTER TABLE public.advisor_quick_links
   DROP CONSTRAINT IF EXISTS advisor_quick_links_label_category_unique;
-
 ALTER TABLE public.advisor_quick_links
   ADD CONSTRAINT advisor_quick_links_label_category_unique
   UNIQUE (label, category);

@@ -78,7 +78,6 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_lead_quoted_to_working ON public.crm_activities;
 CREATE TRIGGER trg_crm_lead_quoted_to_working
     AFTER INSERT ON public.crm_activities

@@ -1,6 +1,5 @@
 -- Enable required extension
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 /*
   # Champion Phase 0: Organizations & Multi-Tenancy Foundation
 
@@ -57,18 +56,15 @@ CREATE TABLE IF NOT EXISTS organizations (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_organizations_slug ON organizations(slug);
 CREATE INDEX IF NOT EXISTS idx_organizations_subscription_tier ON organizations(subscription_tier);
 CREATE INDEX IF NOT EXISTS idx_organizations_subscription_status ON organizations(subscription_status);
-
 -- Updated_at trigger
 CREATE TRIGGER update_organizations_updated_at
   BEFORE UPDATE ON organizations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================
 -- ORG MEMBERSHIPS TABLE
 -- ============================================
@@ -97,20 +93,17 @@ CREATE TABLE IF NOT EXISTS org_memberships (
 
   CONSTRAINT unique_org_user UNIQUE (org_id, user_id)
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_org_memberships_org_id ON org_memberships(org_id);
 CREATE INDEX IF NOT EXISTS idx_org_memberships_user_id ON org_memberships(user_id);
 CREATE INDEX IF NOT EXISTS idx_org_memberships_role ON org_memberships(role);
 CREATE INDEX IF NOT EXISTS idx_org_memberships_status ON org_memberships(status);
 CREATE INDEX IF NOT EXISTS idx_org_memberships_org_user_status ON org_memberships(org_id, user_id, status);
-
 -- Updated_at trigger
 CREATE TRIGGER update_org_memberships_updated_at
   BEFORE UPDATE ON org_memberships
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================
 -- ORG INVITES TABLE
 -- ============================================
@@ -140,21 +133,18 @@ CREATE TABLE IF NOT EXISTS org_invites (
   CONSTRAINT unique_pending_invite UNIQUE (org_id, email, status)
     DEFERRABLE INITIALLY DEFERRED
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_org_invites_org_id ON org_invites(org_id);
 CREATE INDEX IF NOT EXISTS idx_org_invites_email ON org_invites(email);
 CREATE INDEX IF NOT EXISTS idx_org_invites_token ON org_invites(token);
 CREATE INDEX IF NOT EXISTS idx_org_invites_status ON org_invites(status);
 CREATE INDEX IF NOT EXISTS idx_org_invites_expires_at ON org_invites(expires_at);
-
 -- ============================================
 -- ENABLE ROW LEVEL SECURITY
 -- ============================================
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE org_memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE org_invites ENABLE ROW LEVEL SECURITY;
-
 -- ============================================
 -- RLS POLICIES: ORGANIZATIONS
 -- ============================================
@@ -171,7 +161,6 @@ CREATE POLICY "Users can view their organizations"
       AND org_memberships.status = 'active'
     )
   );
-
 -- Only owners/admins can update org settings
 CREATE POLICY "Owners and admins can update organizations"
   ON organizations FOR UPDATE
@@ -194,7 +183,6 @@ CREATE POLICY "Owners and admins can update organizations"
       AND org_memberships.role IN ('owner', 'admin')
     )
   );
-
 -- Only owners can delete orgs
 CREATE POLICY "Only owners can delete organizations"
   ON organizations FOR DELETE
@@ -208,13 +196,11 @@ CREATE POLICY "Only owners can delete organizations"
       AND org_memberships.role = 'owner'
     )
   );
-
 -- Authenticated users can create orgs (they become owner)
 CREATE POLICY "Authenticated users can create organizations"
   ON organizations FOR INSERT
   TO authenticated
   WITH CHECK (true);
-
 -- ============================================
 -- RLS POLICIES: ORG MEMBERSHIPS
 -- ============================================
@@ -231,7 +217,6 @@ CREATE POLICY "Users can view memberships in their orgs"
       AND my_membership.status = 'active'
     )
   );
-
 -- Owners/admins can manage memberships
 CREATE POLICY "Owners and admins can manage memberships"
   ON org_memberships FOR INSERT
@@ -245,7 +230,6 @@ CREATE POLICY "Owners and admins can manage memberships"
       AND my_membership.role IN ('owner', 'admin')
     )
   );
-
 CREATE POLICY "Owners and admins can update memberships"
   ON org_memberships FOR UPDATE
   TO authenticated
@@ -267,7 +251,6 @@ CREATE POLICY "Owners and admins can update memberships"
       AND my_membership.role IN ('owner', 'admin')
     )
   );
-
 -- Users can leave orgs (delete their own membership)
 CREATE POLICY "Users can leave organizations"
   ON org_memberships FOR DELETE
@@ -282,7 +265,6 @@ CREATE POLICY "Users can leave organizations"
       AND my_membership.role IN ('owner', 'admin')
     )
   );
-
 -- ============================================
 -- RLS POLICIES: ORG INVITES
 -- ============================================
@@ -300,7 +282,6 @@ CREATE POLICY "Users can view invites for their orgs"
     )
     OR email = (SELECT email FROM auth.users WHERE id = auth.uid())
   );
-
 -- Owners/admins can create invites
 CREATE POLICY "Owners and admins can create invites"
   ON org_invites FOR INSERT
@@ -314,7 +295,6 @@ CREATE POLICY "Owners and admins can create invites"
       AND org_memberships.role IN ('owner', 'admin')
     )
   );
-
 -- Owners/admins can update/cancel invites
 CREATE POLICY "Owners and admins can update invites"
   ON org_invites FOR UPDATE
@@ -337,7 +317,6 @@ CREATE POLICY "Owners and admins can update invites"
       AND org_memberships.role IN ('owner', 'admin')
     )
   );
-
 -- ============================================
 -- HELPER FUNCTIONS
 -- ============================================
@@ -368,7 +347,6 @@ BEGIN
   RETURN new_org_id;
 END;
 $$;
-
 -- Function to accept an invite
 CREATE OR REPLACE FUNCTION accept_org_invite(invite_token text)
 RETURNS jsonb
@@ -427,11 +405,9 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'org_id', v_invite.org_id, 'role', v_invite.role);
 END;
 $$;
-
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION create_organization_with_owner(text, text, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION accept_org_invite(text) TO authenticated;
-
 -- ============================================
 -- COMMENTS
 -- ============================================

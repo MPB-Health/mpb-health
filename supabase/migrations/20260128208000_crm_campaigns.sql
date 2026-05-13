@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: CREATE CAMPAIGNS TABLE
 -- ============================================================================
@@ -54,7 +53,6 @@ CREATE TABLE IF NOT EXISTS public.crm_campaigns (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 -- ============================================================================
 -- SECTION B: CREATE CAMPAIGN MEMBERS TABLE
 -- ============================================================================
@@ -92,7 +90,6 @@ CREATE TABLE IF NOT EXISTS public.crm_campaign_members (
     UNIQUE(campaign_id, contact_id),
     UNIQUE(campaign_id, lead_id)
 );
-
 -- ============================================================================
 -- SECTION C: INDEXES
 -- ============================================================================
@@ -100,48 +97,35 @@ CREATE TABLE IF NOT EXISTS public.crm_campaign_members (
 -- Campaigns indexes
 CREATE INDEX IF NOT EXISTS idx_crm_campaigns_org_id
     ON public.crm_campaigns (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaigns_status
     ON public.crm_campaigns (status);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaigns_type
     ON public.crm_campaigns (type);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaigns_start_date
     ON public.crm_campaigns (start_date);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaigns_end_date
     ON public.crm_campaigns (end_date);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaigns_owner_id
     ON public.crm_campaigns (owner_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaigns_parent
     ON public.crm_campaigns (parent_campaign_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaigns_created_at
     ON public.crm_campaigns (created_at DESC);
-
 -- Campaign members indexes
 CREATE INDEX IF NOT EXISTS idx_crm_campaign_members_campaign
     ON public.crm_campaign_members (campaign_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaign_members_contact
     ON public.crm_campaign_members (contact_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaign_members_lead
     ON public.crm_campaign_members (lead_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_campaign_members_status
     ON public.crm_campaign_members (status);
-
 -- ============================================================================
 -- SECTION D: ROW LEVEL SECURITY
 -- ============================================================================
 
 ALTER TABLE public.crm_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_campaign_members ENABLE ROW LEVEL SECURITY;
-
 -- Campaigns policies
 CREATE POLICY "crm_campaigns_select"
     ON public.crm_campaigns
@@ -150,7 +134,6 @@ CREATE POLICY "crm_campaigns_select"
     USING (
         public.is_org_member(org_id)
     );
-
 CREATE POLICY "crm_campaigns_insert"
     ON public.crm_campaigns
     FOR INSERT
@@ -158,7 +141,6 @@ CREATE POLICY "crm_campaigns_insert"
     WITH CHECK (
         public.has_org_permission(org_id, 'campaigns.write')
     );
-
 CREATE POLICY "crm_campaigns_update"
     ON public.crm_campaigns
     FOR UPDATE
@@ -169,7 +151,6 @@ CREATE POLICY "crm_campaigns_update"
     WITH CHECK (
         public.has_org_permission(org_id, 'campaigns.write')
     );
-
 CREATE POLICY "crm_campaigns_delete"
     ON public.crm_campaigns
     FOR DELETE
@@ -178,7 +159,6 @@ CREATE POLICY "crm_campaigns_delete"
         public.has_org_permission(org_id, 'campaigns.write')
         AND status IN ('planning', 'cancelled')  -- Can only delete planning/cancelled
     );
-
 -- Campaign members policies
 CREATE POLICY "crm_campaign_members_select"
     ON public.crm_campaign_members
@@ -191,7 +171,6 @@ CREATE POLICY "crm_campaign_members_select"
             AND public.is_org_member(c.org_id)
         )
     );
-
 CREATE POLICY "crm_campaign_members_insert"
     ON public.crm_campaign_members
     FOR INSERT
@@ -203,7 +182,6 @@ CREATE POLICY "crm_campaign_members_insert"
             AND public.has_org_permission(c.org_id, 'campaigns.write')
         )
     );
-
 CREATE POLICY "crm_campaign_members_update"
     ON public.crm_campaign_members
     FOR UPDATE
@@ -222,7 +200,6 @@ CREATE POLICY "crm_campaign_members_update"
             AND public.has_org_permission(c.org_id, 'campaigns.write')
         )
     );
-
 CREATE POLICY "crm_campaign_members_delete"
     ON public.crm_campaign_members
     FOR DELETE
@@ -234,7 +211,6 @@ CREATE POLICY "crm_campaign_members_delete"
             AND public.has_org_permission(c.org_id, 'campaigns.write')
         )
     );
-
 -- ============================================================================
 -- SECTION E: CAMPAIGN STATS TRIGGER
 -- ============================================================================
@@ -269,13 +245,11 @@ BEGIN
     END IF;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_update_campaign_stats ON public.crm_campaign_members;
 CREATE TRIGGER trigger_update_campaign_stats
     AFTER INSERT OR UPDATE OR DELETE ON public.crm_campaign_members
     FOR EACH ROW
     EXECUTE FUNCTION public.update_campaign_stats();
-
 -- ============================================================================
 -- SECTION F: UPDATED_AT TRIGGER
 -- ============================================================================
@@ -289,11 +263,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_campaigns_updated_at ON public.crm_campaigns;
 CREATE TRIGGER trigger_crm_campaigns_updated_at
     BEFORE UPDATE ON public.crm_campaigns
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_campaigns_updated_at();
-
 COMMIT;

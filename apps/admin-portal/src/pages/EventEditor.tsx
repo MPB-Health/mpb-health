@@ -87,11 +87,13 @@ export default function EventEditor() {
 
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
-  // Lifted out of EventGallerySection so the Save/Publish buttons can block
-  // while gallery uploads are still in flight — otherwise clicking Save
-  // mid-upload writes a payload with the old gallery_images and the freshly
-  // uploaded photos are silently dropped on the next reload.
+  // Lifted out of the gallery + featured-image components so the Save/Publish
+  // buttons can block while any image upload is still in flight — otherwise
+  // clicking Save mid-upload writes a payload with the old URLs and the
+  // freshly uploaded media is silently dropped on the next reload.
   const [galleryUploading, setGalleryUploading] = useState(false);
+  const [featuredUploading, setFeaturedUploading] = useState(false);
+  const mediaUploading = galleryUploading || featuredUploading;
   const [isPublished, setIsPublished] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -186,8 +188,8 @@ export default function EventEditor() {
 
   const handleSave = async (publish?: boolean) => {
     if (saving) return;
-    if (galleryUploading) {
-      toast.error('Photos are still uploading — wait for the gallery to finish, then save.');
+    if (mediaUploading) {
+      toast.error('Photos are still uploading — wait for them to finish, then save.');
       return;
     }
 
@@ -316,22 +318,22 @@ export default function EventEditor() {
               <button
                 type="button"
                 onClick={() => handleSave(false)}
-                disabled={saving || galleryUploading}
-                title={galleryUploading ? 'Waiting for gallery uploads to finish…' : undefined}
+                disabled={saving || mediaUploading}
+                title={mediaUploading ? 'Waiting for image uploads to finish…' : undefined}
                 className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <EyeOff className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : galleryUploading ? 'Uploading…' : 'Unpublish'}</span>
+                <span>{saving ? 'Saving…' : mediaUploading ? 'Uploading…' : 'Unpublish'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSave(true)}
-                disabled={saving || galleryUploading}
-                title={galleryUploading ? 'Waiting for gallery uploads to finish…' : undefined}
+                disabled={saving || mediaUploading}
+                title={mediaUploading ? 'Waiting for image uploads to finish…' : undefined}
                 className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : galleryUploading ? 'Uploading…' : 'Save'}</span>
+                <span>{saving ? 'Saving…' : mediaUploading ? 'Uploading…' : 'Save'}</span>
               </button>
             </>
           ) : (
@@ -339,22 +341,22 @@ export default function EventEditor() {
               <button
                 type="button"
                 onClick={() => handleSave(false)}
-                disabled={saving || galleryUploading}
-                title={galleryUploading ? 'Waiting for gallery uploads to finish…' : undefined}
+                disabled={saving || mediaUploading}
+                title={mediaUploading ? 'Waiting for image uploads to finish…' : undefined}
                 className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : galleryUploading ? 'Uploading…' : 'Save Draft'}</span>
+                <span>{saving ? 'Saving…' : mediaUploading ? 'Uploading…' : 'Save Draft'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSave(true)}
-                disabled={saving || galleryUploading}
-                title={galleryUploading ? 'Waiting for gallery uploads to finish…' : undefined}
+                disabled={saving || mediaUploading}
+                title={mediaUploading ? 'Waiting for image uploads to finish…' : undefined}
                 className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
-                <span>{saving ? 'Publishing…' : galleryUploading ? 'Uploading…' : 'Publish'}</span>
+                <span>{saving ? 'Publishing…' : mediaUploading ? 'Uploading…' : 'Publish'}</span>
               </button>
             </>
           )}
@@ -455,6 +457,7 @@ export default function EventEditor() {
               value={formData.featured_image_url}
               onChange={(url) => setFormData((prev) => ({ ...prev, featured_image_url: url }))}
               slug={formData.slug}
+              onUploadingChange={setFeaturedUploading}
             />
           </div>
 

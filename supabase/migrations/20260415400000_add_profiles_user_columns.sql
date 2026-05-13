@@ -5,7 +5,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- 1. Add missing columns (IF NOT EXISTS not supported for ADD COLUMN in all PG versions,
 --    so use a DO block)
 DO $$
@@ -31,7 +30,6 @@ BEGIN
         ALTER TABLE public.profiles ADD COLUMN avatar_url text;
     END IF;
 END $$;
-
 -- 2. Backfill from auth.users
 UPDATE public.profiles p
 SET
@@ -41,7 +39,6 @@ SET
 FROM auth.users u
 WHERE p.id = u.id
   AND (p.email IS NULL OR p.full_name IS NULL);
-
 -- 3. Update trigger to populate these on new user creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
@@ -74,7 +71,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- 4. RLS: let authenticated users read profiles
 DO $$
 BEGIN
@@ -86,5 +82,4 @@ BEGIN
             FOR SELECT TO authenticated USING (true);
     END IF;
 END $$;
-
 COMMIT;

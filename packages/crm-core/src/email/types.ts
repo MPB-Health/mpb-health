@@ -4,6 +4,13 @@ export interface EmailSendInput {
   html: string;
   text?: string;
   template_id?: string;
+  /**
+   * Section 7 (Round 3 Addendum) — admin-driven mass sends pull from the
+   * Master Template Library and stamp the master id so the outbound row in
+   * `crm_email_log` can be attributed back to the master template (and so
+   * the master template's usage / version metrics can be rolled up).
+   */
+  master_template_id?: string;
   lead_id?: string;
   // Sales Plan 2026 A/B harness — callers stamp these so send-crm-email +
   // email-tracking can attribute opens/clicks/replies to the right variant.

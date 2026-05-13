@@ -23,7 +23,6 @@ SELECT
   0,
   '{"thumbnail_title": "Health Savings Accounts"}'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM public.sop_documents WHERE slug = 'health-savings-accounts');
-
 -- 2. How to Use RX Valet guide → RX
 INSERT INTO public.sop_documents (
   title, slug, description, category, tags, content, content_type,
@@ -44,7 +43,6 @@ SELECT
   0,
   '{"thumbnail_title": "How to Use RX Valet"}'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM public.sop_documents WHERE slug = 'how-to-use-rx-valet');
-
 -- 3. MyRxValet portal link → RX
 INSERT INTO public.sop_documents (
   title, slug, description, category, tags, content, content_type,

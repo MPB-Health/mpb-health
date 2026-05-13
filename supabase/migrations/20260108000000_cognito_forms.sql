@@ -19,15 +19,12 @@ CREATE TABLE IF NOT EXISTS public.cognito_forms (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_cognito_forms_slug ON public.cognito_forms(slug);
 CREATE INDEX IF NOT EXISTS idx_cognito_forms_category ON public.cognito_forms(category);
 CREATE INDEX IF NOT EXISTS idx_cognito_forms_active ON public.cognito_forms(is_active);
-
 -- Enable RLS
 ALTER TABLE public.cognito_forms ENABLE ROW LEVEL SECURITY;
-
 -- RLS Policies
 -- Allow anyone to read active forms (for public form pages)
 DROP POLICY IF EXISTS "Allow public read active cognito_forms" ON public.cognito_forms;
@@ -35,7 +32,6 @@ CREATE POLICY "Allow public read active cognito_forms"
     ON public.cognito_forms 
     FOR SELECT 
     USING (is_active = true);
-
 -- Allow authenticated users to read all forms (for admin)
 DROP POLICY IF EXISTS "Allow authenticated read all cognito_forms" ON public.cognito_forms;
 CREATE POLICY "Allow authenticated read all cognito_forms" 
@@ -43,7 +39,6 @@ CREATE POLICY "Allow authenticated read all cognito_forms"
     FOR SELECT 
     TO authenticated 
     USING (true);
-
 -- Allow authenticated users to insert forms
 DROP POLICY IF EXISTS "Allow authenticated insert cognito_forms" ON public.cognito_forms;
 CREATE POLICY "Allow authenticated insert cognito_forms" 
@@ -51,7 +46,6 @@ CREATE POLICY "Allow authenticated insert cognito_forms"
     FOR INSERT 
     TO authenticated 
     WITH CHECK (true);
-
 -- Allow authenticated users to update forms
 DROP POLICY IF EXISTS "Allow authenticated update cognito_forms" ON public.cognito_forms;
 CREATE POLICY "Allow authenticated update cognito_forms" 
@@ -59,7 +53,6 @@ CREATE POLICY "Allow authenticated update cognito_forms"
     FOR UPDATE 
     TO authenticated 
     USING (true);
-
 -- Allow authenticated users to delete forms
 DROP POLICY IF EXISTS "Allow authenticated delete cognito_forms" ON public.cognito_forms;
 CREATE POLICY "Allow authenticated delete cognito_forms" 
@@ -67,7 +60,6 @@ CREATE POLICY "Allow authenticated delete cognito_forms"
     FOR DELETE 
     TO authenticated 
     USING (true);
-
 -- Create trigger for updated_at
 CREATE OR REPLACE FUNCTION update_cognito_forms_updated_at()
 RETURNS TRIGGER AS $$
@@ -76,13 +68,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trigger_cognito_forms_updated_at ON public.cognito_forms;
 CREATE TRIGGER trigger_cognito_forms_updated_at
     BEFORE UPDATE ON public.cognito_forms
     FOR EACH ROW
     EXECUTE FUNCTION update_cognito_forms_updated_at();
-
 -- Seed with existing forms from config
 INSERT INTO public.cognito_forms (slug, label, category, description, icon, estimated_minutes, cognito_embed, is_active, requires_auth, sort_order) VALUES
     ('/list-bill-setup/', 'List-Bill Setup', 'employer', 'Set up list-billing for your organization', 'Briefcase', 10, '<iframe src="https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/343" allow="payment" style="border:0;width:100%" height="1540"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>', true, false, 1),
@@ -109,8 +99,6 @@ ON CONFLICT (slug) DO UPDATE SET
     estimated_minutes = EXCLUDED.estimated_minutes,
     cognito_embed = COALESCE(NULLIF(public.cognito_forms.cognito_embed, ''), EXCLUDED.cognito_embed),
     updated_at = NOW();
-
 -- Grant permissions
 GRANT SELECT ON public.cognito_forms TO anon;
 GRANT ALL ON public.cognito_forms TO authenticated;
-

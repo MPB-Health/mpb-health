@@ -37,29 +37,23 @@ CREATE TABLE IF NOT EXISTS conversations (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Indexes for conversations
 CREATE INDEX IF NOT EXISTS idx_conversations_org_id ON conversations(org_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_lead_id ON conversations(lead_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_assigned_to ON conversations(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_conversations_last_message_at ON conversations(last_message_at DESC);
 CREATE INDEX IF NOT EXISTS idx_conversations_unread ON conversations(org_id, unread_count) WHERE unread_count > 0;
-
 -- RLS for conversations
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view conversations in their org"
   ON conversations FOR SELECT
   USING (user_has_org_access(org_id));
-
 CREATE POLICY "Users can insert conversations in their org"
   ON conversations FOR INSERT
   WITH CHECK (user_has_org_access(org_id));
-
 CREATE POLICY "Users can update conversations in their org"
   ON conversations FOR UPDATE
   USING (user_has_org_access(org_id));
-
 -- ============================================================================
 -- MESSAGES
 -- ============================================================================
@@ -114,29 +108,23 @@ CREATE TABLE IF NOT EXISTS messages (
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Indexes for messages
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_org_id ON messages(org_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_external_id ON messages(external_id) WHERE external_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status) WHERE status IN ('pending', 'queued');
-
 -- RLS for messages
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view messages in their org"
   ON messages FOR SELECT
   USING (user_has_org_access(org_id));
-
 CREATE POLICY "Users can insert messages in their org"
   ON messages FOR INSERT
   WITH CHECK (user_has_org_access(org_id));
-
 CREATE POLICY "Users can update messages in their org"
   ON messages FOR UPDATE
   USING (user_has_org_access(org_id));
-
 -- ============================================================================
 -- MESSAGE TEMPLATES
 -- ============================================================================
@@ -174,37 +162,30 @@ CREATE TABLE IF NOT EXISTS message_templates (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Indexes for templates
 CREATE INDEX IF NOT EXISTS idx_message_templates_org_id ON message_templates(org_id);
 CREATE INDEX IF NOT EXISTS idx_message_templates_channel ON message_templates(org_id, channel);
 CREATE INDEX IF NOT EXISTS idx_message_templates_category ON message_templates(org_id, category);
-
 -- RLS for templates
 ALTER TABLE message_templates ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view templates in their org"
   ON message_templates FOR SELECT
   USING (user_has_org_access(org_id) AND (is_shared OR created_by = auth.uid()));
-
 CREATE POLICY "Users can insert templates in their org"
   ON message_templates FOR INSERT
   WITH CHECK (user_has_org_access(org_id));
-
 CREATE POLICY "Users can update their own templates or shared ones as admin"
   ON message_templates FOR UPDATE
   USING (
     user_has_org_access(org_id) AND
     (created_by = auth.uid() OR user_is_org_manager_or_above(org_id))
   );
-
 CREATE POLICY "Users can delete their own templates or as admin"
   ON message_templates FOR DELETE
   USING (
     user_has_org_access(org_id) AND
     (created_by = auth.uid() OR user_is_org_manager_or_above(org_id))
   );
-
 -- ============================================================================
 -- SEQUENCES (Automated outreach campaigns)
 -- ============================================================================
@@ -253,31 +234,24 @@ CREATE TABLE IF NOT EXISTS sequences (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Indexes for sequences
 CREATE INDEX IF NOT EXISTS idx_sequences_org_id ON sequences(org_id);
 CREATE INDEX IF NOT EXISTS idx_sequences_status ON sequences(org_id, status);
 CREATE INDEX IF NOT EXISTS idx_sequences_trigger_type ON sequences(trigger_type) WHERE status = 'active';
-
 -- RLS for sequences
 ALTER TABLE sequences ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view sequences in their org"
   ON sequences FOR SELECT
   USING (user_has_org_access(org_id));
-
 CREATE POLICY "Managers can insert sequences"
   ON sequences FOR INSERT
   WITH CHECK (user_is_org_manager_or_above(org_id));
-
 CREATE POLICY "Managers can update sequences"
   ON sequences FOR UPDATE
   USING (user_is_org_manager_or_above(org_id));
-
 CREATE POLICY "Managers can delete sequences"
   ON sequences FOR DELETE
   USING (user_is_org_manager_or_above(org_id));
-
 -- ============================================================================
 -- SEQUENCE STEPS
 -- ============================================================================
@@ -336,27 +310,22 @@ CREATE TABLE IF NOT EXISTS sequence_steps (
 
   UNIQUE(sequence_id, step_number)
 );
-
 -- Indexes for sequence_steps
 CREATE INDEX IF NOT EXISTS idx_sequence_steps_sequence_id ON sequence_steps(sequence_id);
-
 -- RLS for sequence_steps (inherits from sequence)
 ALTER TABLE sequence_steps ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view steps for sequences they can see"
   ON sequence_steps FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM sequences WHERE sequences.id = sequence_steps.sequence_id
     AND user_has_org_access(sequences.org_id)
   ));
-
 CREATE POLICY "Managers can manage steps"
   ON sequence_steps FOR ALL
   USING (EXISTS (
     SELECT 1 FROM sequences WHERE sequences.id = sequence_steps.sequence_id
     AND user_is_org_manager_or_above(sequences.org_id)
   ));
-
 -- ============================================================================
 -- SEQUENCE ENROLLMENTS
 -- ============================================================================
@@ -404,29 +373,23 @@ CREATE TABLE IF NOT EXISTS sequence_enrollments (
   UNIQUE(sequence_id, lead_id) WHERE lead_id IS NOT NULL,
   UNIQUE(sequence_id, contact_id) WHERE contact_id IS NOT NULL
 );
-
 -- Indexes for enrollments
 CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_sequence_id ON sequence_enrollments(sequence_id);
 CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_lead_id ON sequence_enrollments(lead_id);
 CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_status ON sequence_enrollments(status) WHERE status = 'active';
 CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_next_step ON sequence_enrollments(next_step_at)
   WHERE status = 'active' AND next_step_at IS NOT NULL;
-
 -- RLS for enrollments
 ALTER TABLE sequence_enrollments ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view enrollments in their org"
   ON sequence_enrollments FOR SELECT
   USING (user_has_org_access(org_id));
-
 CREATE POLICY "Users can insert enrollments in their org"
   ON sequence_enrollments FOR INSERT
   WITH CHECK (user_has_org_access(org_id));
-
 CREATE POLICY "Users can update enrollments in their org"
   ON sequence_enrollments FOR UPDATE
   USING (user_has_org_access(org_id));
-
 -- ============================================================================
 -- FUNCTIONS
 -- ============================================================================
@@ -502,7 +465,6 @@ BEGIN
   RETURN v_conversation_id;
 END;
 $$;
-
 -- Function to send a message
 CREATE OR REPLACE FUNCTION send_message(
   p_org_id UUID,
@@ -562,7 +524,6 @@ BEGIN
   RETURN v_message_id;
 END;
 $$;
-
 -- Function to mark messages as read
 CREATE OR REPLACE FUNCTION mark_conversation_read(
   p_conversation_id UUID
@@ -587,7 +548,6 @@ BEGIN
   WHERE id = p_conversation_id;
 END;
 $$;
-
 -- Function to enroll in a sequence
 CREATE OR REPLACE FUNCTION enroll_in_sequence(
   p_org_id UUID,
@@ -647,7 +607,6 @@ BEGIN
   RETURN v_enrollment_id;
 END;
 $$;
-
 -- Function to get inbox summary
 CREATE OR REPLACE FUNCTION get_inbox_summary(
   p_org_id UUID,
@@ -671,7 +630,6 @@ BEGIN
     (SELECT COUNT(*) FROM messages WHERE org_id = p_org_id AND status = 'pending')::BIGINT;
 END;
 $$;
-
 -- ============================================================================
 -- SEED DATA: Sample templates
 -- ============================================================================
@@ -729,28 +687,22 @@ FROM (VALUES
   )
 ) AS t(name, description, channel, category, subject, body_text, variables)
 ON CONFLICT DO NOTHING;
-
 -- Add updated_at trigger for all new tables
 CREATE TRIGGER update_conversations_updated_at
   BEFORE UPDATE ON conversations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_message_templates_updated_at
   BEFORE UPDATE ON message_templates
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_sequences_updated_at
   BEFORE UPDATE ON sequences
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_sequence_steps_updated_at
   BEFORE UPDATE ON sequence_steps
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_sequence_enrollments_updated_at
   BEFORE UPDATE ON sequence_enrollments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================================================
 -- REALTIME SUBSCRIPTIONS
 -- ============================================================================

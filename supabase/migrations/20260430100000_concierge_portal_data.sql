@@ -17,12 +17,9 @@ AS $$
       AND ur.role::text IN ('concierge', 'super_admin', 'admin')
   );
 $$;
-
 COMMENT ON FUNCTION public.current_user_has_concierge_portal_access() IS
   'True when the current user may read/write Concierge Portal shared tables.';
-
 GRANT EXECUTE ON FUNCTION public.current_user_has_concierge_portal_access() TO authenticated;
-
 -- ---------------------------------------------------------------------------
 -- Team roster
 -- ---------------------------------------------------------------------------
@@ -38,16 +35,13 @@ CREATE TABLE IF NOT EXISTS public.concierge_team_members (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT concierge_team_members_name_key UNIQUE (name)
 );
-
 CREATE INDEX IF NOT EXISTS idx_concierge_team_members_display_order
   ON public.concierge_team_members (display_order);
-
 DROP TRIGGER IF EXISTS set_updated_at_concierge_team_members ON public.concierge_team_members;
 CREATE TRIGGER set_updated_at_concierge_team_members
   BEFORE UPDATE ON public.concierge_team_members
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ---------------------------------------------------------------------------
 -- Daily log entries
 -- ---------------------------------------------------------------------------
@@ -73,22 +67,17 @@ CREATE TABLE IF NOT EXISTS public.concierge_daily_log_entries (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_concierge_daily_log_entries_log_date
   ON public.concierge_daily_log_entries (log_date DESC);
-
 CREATE INDEX IF NOT EXISTS idx_concierge_daily_log_entries_team_member
   ON public.concierge_daily_log_entries (team_member_name);
-
 CREATE INDEX IF NOT EXISTS idx_concierge_daily_log_entries_created_at
   ON public.concierge_daily_log_entries (created_at DESC);
-
 DROP TRIGGER IF EXISTS set_updated_at_concierge_daily_log_entries ON public.concierge_daily_log_entries;
 CREATE TRIGGER set_updated_at_concierge_daily_log_entries
   BEFORE UPDATE ON public.concierge_daily_log_entries
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ---------------------------------------------------------------------------
 -- Member off-days (per roster member)
 -- ---------------------------------------------------------------------------
@@ -100,10 +89,8 @@ CREATE TABLE IF NOT EXISTS public.concierge_member_off_days (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT concierge_member_off_days_unique_day UNIQUE (team_member_id, off_date)
 );
-
 CREATE INDEX IF NOT EXISTS idx_concierge_member_off_days_member
   ON public.concierge_member_off_days (team_member_id);
-
 -- ---------------------------------------------------------------------------
 -- Escalated member issues
 -- ---------------------------------------------------------------------------
@@ -119,16 +106,13 @@ CREATE TABLE IF NOT EXISTS public.concierge_escalations (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_concierge_escalations_status
   ON public.concierge_escalations (status);
-
 DROP TRIGGER IF EXISTS set_updated_at_concierge_escalations ON public.concierge_escalations;
 CREATE TRIGGER set_updated_at_concierge_escalations
   BEFORE UPDATE ON public.concierge_escalations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ---------------------------------------------------------------------------
 -- Weekly report manual fields (phone times, etc.) keyed by iso:YYYY-Www
 -- ---------------------------------------------------------------------------
@@ -139,13 +123,11 @@ CREATE TABLE IF NOT EXISTS public.concierge_weekly_report_extras (
   team_members_helped text NOT NULL DEFAULT '',
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 DROP TRIGGER IF EXISTS set_updated_at_concierge_weekly_report_extras ON public.concierge_weekly_report_extras;
 CREATE TRIGGER set_updated_at_concierge_weekly_report_extras
   BEFORE UPDATE ON public.concierge_weekly_report_extras
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ---------------------------------------------------------------------------
 -- RLS
 -- ---------------------------------------------------------------------------
@@ -155,7 +137,6 @@ ALTER TABLE public.concierge_daily_log_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.concierge_member_off_days ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.concierge_escalations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.concierge_weekly_report_extras ENABLE ROW LEVEL SECURITY;
-
 -- concierge_team_members
 DROP POLICY IF EXISTS concierge_team_members_rw ON public.concierge_team_members;
 CREATE POLICY concierge_team_members_rw
@@ -164,7 +145,6 @@ CREATE POLICY concierge_team_members_rw
   TO authenticated
   USING (public.current_user_has_concierge_portal_access())
   WITH CHECK (public.current_user_has_concierge_portal_access());
-
 -- concierge_daily_log_entries
 DROP POLICY IF EXISTS concierge_daily_log_entries_rw ON public.concierge_daily_log_entries;
 CREATE POLICY concierge_daily_log_entries_rw
@@ -173,7 +153,6 @@ CREATE POLICY concierge_daily_log_entries_rw
   TO authenticated
   USING (public.current_user_has_concierge_portal_access())
   WITH CHECK (public.current_user_has_concierge_portal_access());
-
 -- concierge_member_off_days
 DROP POLICY IF EXISTS concierge_member_off_days_rw ON public.concierge_member_off_days;
 CREATE POLICY concierge_member_off_days_rw
@@ -182,7 +161,6 @@ CREATE POLICY concierge_member_off_days_rw
   TO authenticated
   USING (public.current_user_has_concierge_portal_access())
   WITH CHECK (public.current_user_has_concierge_portal_access());
-
 -- concierge_escalations
 DROP POLICY IF EXISTS concierge_escalations_rw ON public.concierge_escalations;
 CREATE POLICY concierge_escalations_rw
@@ -191,7 +169,6 @@ CREATE POLICY concierge_escalations_rw
   TO authenticated
   USING (public.current_user_has_concierge_portal_access())
   WITH CHECK (public.current_user_has_concierge_portal_access());
-
 -- concierge_weekly_report_extras
 DROP POLICY IF EXISTS concierge_weekly_report_extras_rw ON public.concierge_weekly_report_extras;
 CREATE POLICY concierge_weekly_report_extras_rw
@@ -200,7 +177,6 @@ CREATE POLICY concierge_weekly_report_extras_rw
   TO authenticated
   USING (public.current_user_has_concierge_portal_access())
   WITH CHECK (public.current_user_has_concierge_portal_access());
-
 -- ---------------------------------------------------------------------------
 -- Grants
 -- ---------------------------------------------------------------------------
@@ -210,7 +186,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.concierge_daily_log_entries TO au
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.concierge_member_off_days TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.concierge_escalations TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.concierge_weekly_report_extras TO authenticated;
-
 -- ---------------------------------------------------------------------------
 -- Optional seed: default roster (idempotent). Logs / extras stay empty until
 -- users add data; the app also skips seeding if this insert already ran.

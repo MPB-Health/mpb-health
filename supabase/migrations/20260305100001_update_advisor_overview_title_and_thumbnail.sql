@@ -11,7 +11,6 @@ SET
   metadata = COALESCE(metadata, '{}'::jsonb)
     || '{"thumbnail_title": "Advisor Overview", "image_position": "-8px center"}'::jsonb
 WHERE slug = 'advisor-overview';
-
 UPDATE public.sop_documents
 SET metadata = COALESCE(metadata, '{}'::jsonb)
   || '{"image_position": "-8px center"}'::jsonb

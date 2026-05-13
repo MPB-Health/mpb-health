@@ -12,7 +12,6 @@ VALUES (
   15728640 -- 15MB
 )
 ON CONFLICT (id) DO NOTHING;
-
 -- Advisors can insert files only into their own top-level folder: {auth.uid()}/...
 DROP POLICY IF EXISTS "Advisors can upload own ticket attachments" ON storage.objects;
 CREATE POLICY "Advisors can upload own ticket attachments"
@@ -23,7 +22,6 @@ WITH CHECK (
   bucket_id = 'ticket-attachments'
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
-
 -- Advisors can read only their own files (needed for signed URL creation).
 DROP POLICY IF EXISTS "Advisors can read own ticket attachments" ON storage.objects;
 CREATE POLICY "Advisors can read own ticket attachments"
@@ -34,7 +32,6 @@ USING (
   bucket_id = 'ticket-attachments'
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
-
 DROP POLICY IF EXISTS "Advisors can update own ticket attachments" ON storage.objects;
 CREATE POLICY "Advisors can update own ticket attachments"
 ON storage.objects
@@ -48,7 +45,6 @@ WITH CHECK (
   bucket_id = 'ticket-attachments'
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
-
 DROP POLICY IF EXISTS "Advisors can delete own ticket attachments" ON storage.objects;
 CREATE POLICY "Advisors can delete own ticket attachments"
 ON storage.objects
@@ -58,7 +54,6 @@ USING (
   bucket_id = 'ticket-attachments'
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
-
 -- Admins and super admins can manage all support ticket attachments.
 DROP POLICY IF EXISTS "Admins can manage all ticket attachments" ON storage.objects;
 CREATE POLICY "Admins can manage all ticket attachments"

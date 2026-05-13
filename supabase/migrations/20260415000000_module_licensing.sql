@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS product_modules (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Which modules each organization has access to
 CREATE TABLE IF NOT EXISTS org_module_licenses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -76,7 +75,6 @@ CREATE TABLE IF NOT EXISTS org_module_licenses (
 
     UNIQUE(org_id, module_id)
 );
-
 -- Granular feature flags per module or plan
 CREATE TABLE IF NOT EXISTS feature_flags (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -100,7 +98,6 @@ CREATE TABLE IF NOT EXISTS feature_flags (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Per-org feature flag overrides
 CREATE TABLE IF NOT EXISTS org_feature_overrides (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -114,7 +111,6 @@ CREATE TABLE IF NOT EXISTS org_feature_overrides (
 
     UNIQUE(org_id, feature_id)
 );
-
 -- ============================================================================
 -- Seed default product modules
 -- ============================================================================
@@ -130,7 +126,6 @@ VALUES
     ('white-label-mobile', 'White-Label Mobile App', 'Custom-branded mobile app with member portal, push notifications, SSO, and App Store publishing', 'addon', false, false, 399.00, 3990.00, 'Smartphone', '#b8860b', 7),
     ('app-admin', 'App Admin Dashboard', 'Member and app management with analytics, push notifications, content management, and white-label configuration', 'addon', false, false, 99.00, 990.00, 'LayoutDashboard', '#1a5c5c', 8)
 ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Seed default feature flags
 -- ============================================================================
@@ -156,7 +151,6 @@ VALUES
     ('platform.audit_logs', 'Advanced Audit Logs', 'Detailed audit logging with export and retention', NULL, false, 'professional', 'compliance'),
     ('platform.white_label_branding', 'White-Label Branding', 'Remove MPB branding, custom logos and colors', NULL, false, 'enterprise', 'branding')
 ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Helper functions
 -- ============================================================================
@@ -180,7 +174,6 @@ BEGIN
     );
 END;
 $$;
-
 -- Check if an org has a specific feature enabled
 CREATE OR REPLACE FUNCTION org_has_feature(p_org_id UUID, p_feature_slug TEXT)
 RETURNS BOOLEAN
@@ -250,7 +243,6 @@ BEGIN
     RETURN v_feature.enabled_by_default;
 END;
 $$;
-
 -- Get all active modules for an org
 CREATE OR REPLACE FUNCTION get_org_modules(p_org_id UUID)
 RETURNS TABLE (
@@ -284,7 +276,6 @@ BEGIN
     ORDER BY pm.sort_order;
 END;
 $$;
-
 -- Get all enabled features for an org
 CREATE OR REPLACE FUNCTION get_org_features(p_org_id UUID)
 RETURNS TABLE (
@@ -314,7 +305,6 @@ BEGIN
     ORDER BY ff.slug;
 END;
 $$;
-
 -- Activate a module for an org
 CREATE OR REPLACE FUNCTION activate_module_for_org(
     p_org_id UUID,
@@ -358,7 +348,6 @@ BEGIN
     RETURN v_license_id;
 END;
 $$;
-
 -- ============================================================================
 -- RLS Policies
 -- ============================================================================
@@ -367,12 +356,10 @@ ALTER TABLE product_modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE org_module_licenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE org_feature_overrides ENABLE ROW LEVEL SECURITY;
-
 -- Product modules are readable by all authenticated users
 CREATE POLICY "product_modules_read" ON product_modules
     FOR SELECT TO authenticated
     USING (is_active = true AND is_public = true);
-
 -- Org module licenses visible to org members
 CREATE POLICY "org_module_licenses_read" ON org_module_licenses
     FOR SELECT TO authenticated
@@ -382,12 +369,10 @@ CREATE POLICY "org_module_licenses_read" ON org_module_licenses
             WHERE om.user_id = auth.uid() AND om.status = 'active'
         )
     );
-
 -- Feature flags readable by all authenticated users
 CREATE POLICY "feature_flags_read" ON feature_flags
     FOR SELECT TO authenticated
     USING (true);
-
 -- Org feature overrides visible to org members
 CREATE POLICY "org_feature_overrides_read" ON org_feature_overrides
     FOR SELECT TO authenticated
@@ -397,7 +382,6 @@ CREATE POLICY "org_feature_overrides_read" ON org_feature_overrides
             WHERE om.user_id = auth.uid() AND om.status = 'active'
         )
     );
-
 -- ============================================================================
 -- Indexes
 -- ============================================================================
@@ -408,7 +392,6 @@ CREATE INDEX IF NOT EXISTS idx_org_module_licenses_status ON org_module_licenses
 CREATE INDEX IF NOT EXISTS idx_feature_flags_module ON feature_flags(module_id);
 CREATE INDEX IF NOT EXISTS idx_feature_flags_slug ON feature_flags(slug);
 CREATE INDEX IF NOT EXISTS idx_org_feature_overrides_org ON org_feature_overrides(org_id);
-
 -- ============================================================================
 -- Updated-at triggers
 -- ============================================================================
@@ -420,7 +403,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_product_modules_updated') THEN

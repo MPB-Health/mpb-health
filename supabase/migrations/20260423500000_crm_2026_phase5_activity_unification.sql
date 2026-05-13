@@ -15,7 +15,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. lead_activities: add optional contact/account/deal context
 -- ----------------------------------------------------------------------------
@@ -24,7 +23,6 @@ ALTER TABLE public.lead_activities
     ADD COLUMN IF NOT EXISTS contact_id uuid,
     ADD COLUMN IF NOT EXISTS account_id uuid,
     ADD COLUMN IF NOT EXISTS deal_id    uuid;
-
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -38,29 +36,23 @@ BEGIN
         ALTER TABLE public.lead_activities ADD COLUMN subject text;
     END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_lead_activities_contact
     ON public.lead_activities(contact_id)
     WHERE contact_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_lead_activities_account
     ON public.lead_activities(account_id)
     WHERE account_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_lead_activities_deal
     ON public.lead_activities(deal_id)
     WHERE deal_id IS NOT NULL;
-
 -- The baseline `lead_id NOT NULL` is loosened so contact-only or deal-only
 -- activity rows can exist. NULL `lead_id` stays rare: most records still come
 -- in through a lead. The CHECK below guarantees at least one linkage so we
 -- never store truly orphaned rows.
 ALTER TABLE public.lead_activities
     ALTER COLUMN lead_id DROP NOT NULL;
-
 ALTER TABLE public.lead_activities
     DROP CONSTRAINT IF EXISTS lead_activities_target_not_null;
-
 ALTER TABLE public.lead_activities
     ADD CONSTRAINT lead_activities_target_not_null CHECK (
         lead_id    IS NOT NULL
@@ -68,14 +60,12 @@ ALTER TABLE public.lead_activities
         OR account_id IS NOT NULL
         OR deal_id    IS NOT NULL
     );
-
 -- ----------------------------------------------------------------------------
 -- 2. Expand activity_type CHECK to add LinkedIn shorts + text quick-log
 -- ----------------------------------------------------------------------------
 
 ALTER TABLE public.lead_activities
     DROP CONSTRAINT IF EXISTS lead_activities_activity_type_check;
-
 ALTER TABLE public.lead_activities
     ADD CONSTRAINT lead_activities_activity_type_check
     CHECK (activity_type IN (
@@ -89,7 +79,6 @@ ALTER TABLE public.lead_activities
         'referral_requested', 'live_chat', 'crm_lead_entered',
         'proposal_sent'
     ));
-
 -- Mirror the expansion on crm_activities so existing writers don't break
 -- while we migrate callsites to lead_activities.
 DO $$
@@ -115,7 +104,6 @@ BEGIN
             ));
     END IF;
 END $$;
-
 -- ----------------------------------------------------------------------------
 -- 3. Stamp outbound email rows with A/B test context
 -- ----------------------------------------------------------------------------
@@ -139,7 +127,6 @@ BEGIN
             WHERE ab_test_id IS NOT NULL;
     END IF;
 END $$;
-
 -- ----------------------------------------------------------------------------
 -- 4. Primary shared inbox flag on mail_accounts
 -- ----------------------------------------------------------------------------
@@ -160,7 +147,6 @@ BEGIN
             WHERE is_primary_shared_inbox = true;
     END IF;
 END $$;
-
 -- ----------------------------------------------------------------------------
 -- 5. Helper RPC: log a lead activity from any entity context
 -- ----------------------------------------------------------------------------
@@ -223,13 +209,10 @@ BEGIN
     RETURN v_id;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_log_activity(
     text, text, text, uuid, uuid, uuid, uuid, jsonb, text, uuid
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.crm_log_activity(
     text, text, text, uuid, uuid, uuid, uuid, jsonb, text, uuid
 ) TO authenticated;
-
 COMMIT;

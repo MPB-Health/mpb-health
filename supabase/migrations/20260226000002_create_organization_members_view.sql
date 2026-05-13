@@ -15,5 +15,4 @@ SELECT
   updated_at
 FROM org_memberships
 WHERE status = 'active';
-
 GRANT SELECT ON public.organization_members TO authenticated;

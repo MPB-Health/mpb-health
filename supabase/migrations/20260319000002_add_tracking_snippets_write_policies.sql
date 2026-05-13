@@ -13,7 +13,6 @@ CREATE POLICY "Admin can insert tracking snippets"
         AND profiles.role = 'admin'
     )
   );
-
 -- tracking_snippets: admin can update
 CREATE POLICY "Admin can update tracking snippets"
   ON public.tracking_snippets
@@ -33,7 +32,6 @@ CREATE POLICY "Admin can update tracking snippets"
         AND profiles.role = 'admin'
     )
   );
-
 -- tracking_snippets: admin can delete
 CREATE POLICY "Admin can delete tracking snippets"
   ON public.tracking_snippets
@@ -46,7 +44,6 @@ CREATE POLICY "Admin can delete tracking snippets"
         AND profiles.role = 'admin'
     )
   );
-
 -- tracking_platforms: admin can update
 CREATE POLICY "Admin can update tracking platforms"
   ON public.tracking_platforms

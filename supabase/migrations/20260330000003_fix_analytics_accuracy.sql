@@ -7,14 +7,11 @@
 --    starting at 1 + 1 = 2 after the first real page view.
 ALTER TABLE public.analytics_sessions
   ALTER COLUMN page_count SET DEFAULT 0;
-
 -- 2. Add visitor_id column so we can deduplicate users across sessions.
 ALTER TABLE public.analytics_sessions
   ADD COLUMN IF NOT EXISTS visitor_id TEXT;
-
 CREATE INDEX IF NOT EXISTS idx_analytics_sessions_visitor_id
   ON public.analytics_sessions (visitor_id);
-
 -- 3. Replace the trigger function to fix is_bounce logic.
 --    Old version always set is_bounce = false on the first page view,
 --    meaning bounce rate was always 0%.
@@ -40,7 +37,6 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 -- 4. Backfill: fix existing sessions that have inflated page_count.
 --    Recalculate page_count from actual page_views rows.
 UPDATE public.analytics_sessions s

@@ -16,13 +16,11 @@ CREATE POLICY "Anon can view non-sensitive settings"
   FOR SELECT
   TO anon
   USING (is_sensitive = false);
-
 -- ============================================================================
 -- PART 1: system_settings - Allow user_roles super_admin to manage
 -- ============================================================================
 
 DROP POLICY IF EXISTS "Admins can manage settings" ON public.system_settings;
-
 CREATE POLICY "Admins can manage settings"
   ON public.system_settings
   FOR ALL
@@ -51,10 +49,8 @@ CREATE POLICY "Admins can manage settings"
       AND user_roles.role IN ('super_admin', 'admin')
     )
   );
-
 -- Also update the "Admins can view all settings" policy for consistency
 DROP POLICY IF EXISTS "Admins can view all settings" ON public.system_settings;
-
 CREATE POLICY "Admins can view all settings"
   ON public.system_settings
   FOR SELECT
@@ -71,13 +67,11 @@ CREATE POLICY "Admins can view all settings"
       AND user_roles.role IN ('super_admin', 'admin')
     )
   );
-
 -- ============================================================================
 -- PART 2: advisor_videos - Add super_admin to management policy
 -- ============================================================================
 
 DROP POLICY IF EXISTS "Admins can manage videos" ON public.advisor_videos;
-
 CREATE POLICY "Admins can manage videos"
   ON public.advisor_videos
   FOR ALL

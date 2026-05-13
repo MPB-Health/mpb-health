@@ -17,7 +17,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Section taxonomy classifier
 -- ----------------------------------------------------------------------------
@@ -78,9 +77,7 @@ BEGIN
     RETURN 'activities';
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_classify_log_section(text, text) TO authenticated, service_role;
-
 -- ----------------------------------------------------------------------------
 -- 2. Roll-up trigger on crm_daily_log_events
 -- ----------------------------------------------------------------------------
@@ -152,12 +149,10 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_daily_log_rollup ON public.crm_daily_log_events;
 CREATE TRIGGER trg_daily_log_rollup
     AFTER INSERT ON public.crm_daily_log_events
     FOR EACH ROW EXECUTE FUNCTION public.crm_daily_log_rollup();
-
 -- ----------------------------------------------------------------------------
 -- 3. Auto-capture trigger from crm_activities
 -- ----------------------------------------------------------------------------
@@ -218,12 +213,10 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_dl_emit_from_activity ON public.crm_activities;
 CREATE TRIGGER trg_dl_emit_from_activity
     AFTER INSERT ON public.crm_activities
     FOR EACH ROW EXECUTE FUNCTION public.crm_dl_emit_from_activity();
-
 -- ----------------------------------------------------------------------------
 -- 4. Auto-capture trigger from crm_email_log
 -- ----------------------------------------------------------------------------
@@ -267,12 +260,10 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_dl_emit_from_email_log ON public.crm_email_log;
 CREATE TRIGGER trg_dl_emit_from_email_log
     AFTER INSERT ON public.crm_email_log
     FOR EACH ROW EXECUTE FUNCTION public.crm_dl_emit_from_email_log();
-
 -- ----------------------------------------------------------------------------
 -- 5. Auto-capture trigger from crm_special_projects
 -- ----------------------------------------------------------------------------
@@ -301,12 +292,10 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_dl_emit_from_special_project ON public.crm_special_projects;
 CREATE TRIGGER trg_dl_emit_from_special_project
     AFTER INSERT ON public.crm_special_projects
     FOR EACH ROW EXECUTE FUNCTION public.crm_dl_emit_from_special_project();
-
 -- ----------------------------------------------------------------------------
 -- 6. Performance Lag Alert state
 -- ----------------------------------------------------------------------------
@@ -324,24 +313,17 @@ CREATE TABLE IF NOT EXISTS public.crm_performance_alert_log (
     quiet_until timestamptz NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}'::jsonb
 );
-
 CREATE INDEX IF NOT EXISTS idx_perf_alert_user ON public.crm_performance_alert_log (user_id, fired_at DESC);
 CREATE INDEX IF NOT EXISTS idx_perf_alert_org ON public.crm_performance_alert_log (org_id, fired_at DESC);
-
 ALTER TABLE public.crm_performance_alert_log ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS perf_alert_select ON public.crm_performance_alert_log;
 DROP POLICY IF EXISTS perf_alert_service ON public.crm_performance_alert_log;
-
 CREATE POLICY perf_alert_select ON public.crm_performance_alert_log
     FOR SELECT TO authenticated USING (public.is_org_member(org_id));
-
 CREATE POLICY perf_alert_service ON public.crm_performance_alert_log
     FOR ALL TO service_role USING (true) WITH CHECK (true);
-
 GRANT SELECT ON public.crm_performance_alert_log TO authenticated;
 GRANT ALL ON public.crm_performance_alert_log TO service_role;
-
 -- ----------------------------------------------------------------------------
 -- 7. Performance Lag scan RPC
 -- ----------------------------------------------------------------------------
@@ -458,7 +440,5 @@ BEGIN
     RETURN;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_scan_performance_lag(uuid) TO authenticated, service_role;
-
 COMMIT;

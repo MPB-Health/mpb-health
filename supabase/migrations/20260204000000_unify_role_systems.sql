@@ -13,13 +13,11 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-
 DO $$ BEGIN
     ALTER TYPE user_role_type ADD VALUE 'staff';
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-
 DO $$ BEGIN
     ALTER TYPE user_role_type ADD VALUE 'guest';
 EXCEPTION

@@ -20,7 +20,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Cadence v2 columns
 -- ----------------------------------------------------------------------------
@@ -30,14 +29,12 @@ ALTER TABLE public.crm_follow_up_cadences
     ADD COLUMN IF NOT EXISTS halt_on_optout boolean NOT NULL DEFAULT true,
     ADD COLUMN IF NOT EXISTS description text,
     ADD COLUMN IF NOT EXISTS schema_version integer NOT NULL DEFAULT 1;
-
 COMMENT ON COLUMN public.crm_follow_up_cadences.halt_on_engagement IS
     'CRM rebuild P3 — when true, any engagement signal pauses the cadence and routes Working/Quoted → Engaged.';
 COMMENT ON COLUMN public.crm_follow_up_cadences.halt_on_optout IS
     'CRM rebuild P3 — when true, any opt-out keyword in a reply pauses the cadence and routes the lead to Lost / DNC.';
 COMMENT ON COLUMN public.crm_follow_up_cadences.schema_version IS
     'Cadence steps schema version. v1 = legacy {step,delay_hours,channel,label}. v2 = adds template_id, send_window, halt_on_engagement.';
-
 -- ----------------------------------------------------------------------------
 -- 2. Quote Response cadence v2 placeholder
 -- ----------------------------------------------------------------------------
@@ -71,7 +68,6 @@ WHERE NOT EXISTS (
     SELECT 1 FROM public.crm_follow_up_cadences c
     WHERE c.org_id = o.id AND c.name = 'Quote Response'
 );
-
 -- ----------------------------------------------------------------------------
 -- 3. Engagement signal RPC
 -- ----------------------------------------------------------------------------
@@ -137,9 +133,7 @@ BEGIN
     END IF;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_register_engagement_signal(uuid, text) TO authenticated, service_role;
-
 -- ----------------------------------------------------------------------------
 -- 4. Cadence enrollment helper RPC
 -- ----------------------------------------------------------------------------
@@ -194,7 +188,5 @@ BEGIN
     RETURN v_state_id;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_enroll_lead_in_cadence(uuid, uuid) TO authenticated, service_role;
-
 COMMIT;

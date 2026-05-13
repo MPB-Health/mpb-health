@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: CREATE TABLE
 -- ============================================================================
@@ -38,26 +37,21 @@ CREATE TABLE IF NOT EXISTS public.crm_deal_stages (
     -- Unique stage name per org
     UNIQUE(org_id, name)
 );
-
 -- ============================================================================
 -- SECTION B: INDEXES
 -- ============================================================================
 
 CREATE INDEX IF NOT EXISTS idx_crm_deal_stages_org_id
     ON public.crm_deal_stages (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_stages_sort_order
     ON public.crm_deal_stages (org_id, sort_order);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deal_stages_active
     ON public.crm_deal_stages (org_id, is_active);
-
 -- ============================================================================
 -- SECTION C: ROW LEVEL SECURITY
 -- ============================================================================
 
 ALTER TABLE public.crm_deal_stages ENABLE ROW LEVEL SECURITY;
-
 -- SELECT: org members
 CREATE POLICY "crm_deal_stages_select"
     ON public.crm_deal_stages
@@ -66,7 +60,6 @@ CREATE POLICY "crm_deal_stages_select"
     USING (
         public.is_org_member(org_id)
     );
-
 -- INSERT: org admins only
 CREATE POLICY "crm_deal_stages_insert"
     ON public.crm_deal_stages
@@ -75,7 +68,6 @@ CREATE POLICY "crm_deal_stages_insert"
     WITH CHECK (
         public.is_org_admin(org_id)
     );
-
 -- UPDATE: org admins only
 CREATE POLICY "crm_deal_stages_update"
     ON public.crm_deal_stages
@@ -87,7 +79,6 @@ CREATE POLICY "crm_deal_stages_update"
     WITH CHECK (
         public.is_org_admin(org_id)
     );
-
 -- DELETE: org admins only
 CREATE POLICY "crm_deal_stages_delete"
     ON public.crm_deal_stages
@@ -96,7 +87,6 @@ CREATE POLICY "crm_deal_stages_delete"
     USING (
         public.is_org_admin(org_id)
     );
-
 -- ============================================================================
 -- SECTION D: SEED DEFAULT STAGES
 -- ============================================================================
@@ -111,7 +101,6 @@ INSERT INTO public.crm_deal_stages (org_id, name, display_name, color, probabili
     ('00000000-0000-4000-a000-000000000001', 'closed_won',        'Closed Won',            '#10B981', 100, 7, true,  false),
     ('00000000-0000-4000-a000-000000000001', 'closed_lost',       'Closed Lost',           '#DC2626', 0,   8, false, true)
 ON CONFLICT (org_id, name) DO NOTHING;
-
 -- ============================================================================
 -- SECTION E: UPDATED_AT TRIGGER
 -- ============================================================================
@@ -125,11 +114,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_crm_deal_stages_updated_at ON public.crm_deal_stages;
 CREATE TRIGGER trigger_crm_deal_stages_updated_at
     BEFORE UPDATE ON public.crm_deal_stages
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_crm_deal_stages_updated_at();
-
 COMMIT;

@@ -4,7 +4,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION 1: LINKEDIN CONFIG
 -- ============================================================================
@@ -19,21 +18,16 @@ CREATE TABLE IF NOT EXISTS public.crm_linkedin_config (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE(org_id)
 );
-
 ALTER TABLE public.crm_linkedin_config ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_linkedin_config_select ON public.crm_linkedin_config;
 CREATE POLICY crm_linkedin_config_select ON public.crm_linkedin_config
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_linkedin_config_insert ON public.crm_linkedin_config;
 CREATE POLICY crm_linkedin_config_insert ON public.crm_linkedin_config
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'settings.manage'));
-
 DROP POLICY IF EXISTS crm_linkedin_config_update ON public.crm_linkedin_config;
 CREATE POLICY crm_linkedin_config_update ON public.crm_linkedin_config
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'settings.manage'));
-
 -- ============================================================================
 -- SECTION 2: EMAIL A/B TESTING
 -- ============================================================================
@@ -61,37 +55,28 @@ CREATE TABLE IF NOT EXISTS public.crm_email_ab_tests (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_ab_tests_org ON public.crm_email_ab_tests(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_ab_tests_status ON public.crm_email_ab_tests(status);
-
 ALTER TABLE public.crm_email_ab_tests ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_ab_tests_select ON public.crm_email_ab_tests;
 CREATE POLICY crm_ab_tests_select ON public.crm_email_ab_tests
     FOR SELECT USING (public.is_org_member(org_id));
-
 DROP POLICY IF EXISTS crm_ab_tests_insert ON public.crm_email_ab_tests;
 CREATE POLICY crm_ab_tests_insert ON public.crm_email_ab_tests
     FOR INSERT WITH CHECK (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'email.templates'));
-
 DROP POLICY IF EXISTS crm_ab_tests_update ON public.crm_email_ab_tests;
 CREATE POLICY crm_ab_tests_update ON public.crm_email_ab_tests
     FOR UPDATE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'email.templates'));
-
 DROP POLICY IF EXISTS crm_ab_tests_delete ON public.crm_email_ab_tests;
 CREATE POLICY crm_ab_tests_delete ON public.crm_email_ab_tests
     FOR DELETE USING (public.is_org_member(org_id) AND public.has_org_permission(org_id, 'email.templates'));
-
 -- updated_at triggers
 DROP TRIGGER IF EXISTS trg_crm_linkedin_config_updated ON public.crm_linkedin_config;
 CREATE TRIGGER trg_crm_linkedin_config_updated BEFORE UPDATE ON public.crm_linkedin_config
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 DROP TRIGGER IF EXISTS trg_crm_ab_tests_updated ON public.crm_email_ab_tests;
 CREATE TRIGGER trg_crm_ab_tests_updated BEFORE UPDATE ON public.crm_email_ab_tests
     FOR EACH ROW EXECUTE FUNCTION public.handle_crm_sp2026_updated_at();
-
 -- ============================================================================
 -- SECTION 3: FIX AUTOMATION CHECK CONSTRAINTS
 -- Expand ai_automation_rules trigger_type and action_type to match WorkflowBuilder
@@ -132,5 +117,4 @@ BEGIN
             ));
     END IF;
 END $$;
-
 COMMIT;

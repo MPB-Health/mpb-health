@@ -9,7 +9,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: INSURANCE CARRIERS REFERENCE TABLE
 -- Admin-managed lookup for carrier dropdowns, reporting, competitive tracking.
@@ -34,16 +33,13 @@ CREATE TABLE IF NOT EXISTS public.insurance_carriers (
     ),
     CONSTRAINT insurance_carriers_org_name_unique UNIQUE (org_id, name)
 );
-
 COMMENT ON TABLE public.insurance_carriers IS 'Admin-managed reference table of insurance carriers and healthshare organizations';
-
 CREATE INDEX IF NOT EXISTS idx_insurance_carriers_org_active
     ON public.insurance_carriers(org_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_insurance_carriers_type
     ON public.insurance_carriers(carrier_type);
 CREATE INDEX IF NOT EXISTS idx_insurance_carriers_slug
     ON public.insurance_carriers(slug);
-
 -- ============================================================================
 -- SECTION B: CRM FAMILY MEMBERS TABLE
 -- Links family members (spouse, dependents) to leads and contacts.
@@ -82,13 +78,10 @@ CREATE TABLE IF NOT EXISTS public.crm_family_members (
         lead_id IS NOT NULL OR contact_id IS NOT NULL
     )
 );
-
 COMMENT ON TABLE public.crm_family_members IS 'Family members linked to CRM leads and contacts for family-aware workflows';
-
 CREATE INDEX IF NOT EXISTS idx_crm_family_members_lead ON public.crm_family_members(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_family_members_contact ON public.crm_family_members(contact_id);
 CREATE INDEX IF NOT EXISTS idx_crm_family_members_org ON public.crm_family_members(org_id);
-
 -- ============================================================================
 -- SECTION C: CRM PHONE NUMBERS TABLE
 -- Normalized phone numbers with type, ownership, and family attribution.
@@ -112,13 +105,10 @@ CREATE TABLE IF NOT EXISTS public.crm_phone_numbers (
         phone_type = ANY (ARRAY['mobile', 'home', 'work', 'fax', 'other'])
     )
 );
-
 COMMENT ON TABLE public.crm_phone_numbers IS 'Normalized phone numbers with family-member attribution for CRM records';
-
 CREATE INDEX IF NOT EXISTS idx_crm_phone_numbers_owner ON public.crm_phone_numbers(owner_type, owner_id);
 CREATE INDEX IF NOT EXISTS idx_crm_phone_numbers_org ON public.crm_phone_numbers(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_phone_numbers_number ON public.crm_phone_numbers(phone_number);
-
 -- ============================================================================
 -- SECTION D: COMMISSION TABLES
 -- Schedules (rate configs), records (per-enrollment), payouts (disbursements).
@@ -148,7 +138,6 @@ CREATE TABLE IF NOT EXISTS public.commission_schedules (
         rate_type = ANY (ARRAY['percentage', 'flat', 'per_member'])
     )
 );
-
 CREATE TABLE IF NOT EXISTS public.commission_records (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id uuid NOT NULL REFERENCES public.orgs(id) ON DELETE CASCADE,
@@ -177,7 +166,6 @@ CREATE TABLE IF NOT EXISTS public.commission_records (
         plan_type IS NULL OR plan_type = ANY (ARRAY['healthshare', 'traditional_insurance'])
     )
 );
-
 CREATE TABLE IF NOT EXISTS public.commission_payouts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id uuid NOT NULL REFERENCES public.orgs(id) ON DELETE CASCADE,
@@ -190,11 +178,9 @@ CREATE TABLE IF NOT EXISTS public.commission_payouts (
     notes text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
 COMMENT ON TABLE public.commission_schedules IS 'Commission rate configurations per plan, carrier, and advisor tier';
 COMMENT ON TABLE public.commission_records IS 'Individual commission records per enrollment/sale';
 COMMENT ON TABLE public.commission_payouts IS 'Aggregated commission disbursements to advisors';
-
 CREATE INDEX IF NOT EXISTS idx_commission_schedules_org ON public.commission_schedules(org_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_commission_schedules_plan ON public.commission_schedules(plan_id);
 CREATE INDEX IF NOT EXISTS idx_commission_records_advisor ON public.commission_records(advisor_id);
@@ -206,7 +192,6 @@ CREATE INDEX IF NOT EXISTS idx_commission_records_period ON public.commission_re
 CREATE INDEX IF NOT EXISTS idx_commission_payouts_advisor ON public.commission_payouts(advisor_id);
 CREATE INDEX IF NOT EXISTS idx_commission_payouts_org ON public.commission_payouts(org_id);
 CREATE INDEX IF NOT EXISTS idx_commission_payouts_date ON public.commission_payouts(payout_date);
-
 -- ============================================================================
 -- SECTION E: COLUMN ADDITIONS TO zoho_lead_submissions (leads)
 -- ============================================================================
@@ -222,7 +207,6 @@ ALTER TABLE public.zoho_lead_submissions
     ADD COLUMN IF NOT EXISTS member_responsibility numeric(10,2),
     ADD COLUMN IF NOT EXISTS state text,
     ADD COLUMN IF NOT EXISTS city text;
-
 -- FK for carrier on leads
 DO $$
 BEGIN
@@ -236,7 +220,6 @@ BEGIN
             ON DELETE SET NULL;
     END IF;
 END $$;
-
 -- Constraints
 ALTER TABLE public.zoho_lead_submissions
     DROP CONSTRAINT IF EXISTS zoho_lead_submissions_plan_type_check;
@@ -244,27 +227,23 @@ ALTER TABLE public.zoho_lead_submissions
     ADD CONSTRAINT zoho_lead_submissions_plan_type_check CHECK (
         plan_type IS NULL OR plan_type = ANY (ARRAY['healthshare', 'traditional_insurance'])
     );
-
 ALTER TABLE public.zoho_lead_submissions
     DROP CONSTRAINT IF EXISTS zoho_lead_submissions_tobacco_status_check;
 ALTER TABLE public.zoho_lead_submissions
     ADD CONSTRAINT zoho_lead_submissions_tobacco_status_check CHECK (
         tobacco_status IS NULL OR tobacco_status = ANY (ARRAY['none', 'tobacco_user', 'vape_user', 'former_user'])
     );
-
 ALTER TABLE public.zoho_lead_submissions
     DROP CONSTRAINT IF EXISTS zoho_lead_submissions_group_type_check;
 ALTER TABLE public.zoho_lead_submissions
     ADD CONSTRAINT zoho_lead_submissions_group_type_check CHECK (
         group_type IS NULL OR group_type = ANY (ARRAY['individual', 'small_group', 'large_group', 'association'])
     );
-
 CREATE INDEX IF NOT EXISTS idx_leads_plan_type ON public.zoho_lead_submissions(plan_type);
 CREATE INDEX IF NOT EXISTS idx_leads_carrier ON public.zoho_lead_submissions(carrier_id);
 CREATE INDEX IF NOT EXISTS idx_leads_state ON public.zoho_lead_submissions(state);
 CREATE INDEX IF NOT EXISTS idx_leads_assigned ON public.zoho_lead_submissions(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_leads_effective_date ON public.zoho_lead_submissions(original_effective_date);
-
 -- ============================================================================
 -- SECTION F: COLUMN ADDITIONS TO crm_contacts
 -- ============================================================================
@@ -279,7 +258,6 @@ ALTER TABLE public.crm_contacts
     ADD COLUMN IF NOT EXISTS tobacco_status text,
     ADD COLUMN IF NOT EXISTS state text,
     ADD COLUMN IF NOT EXISTS city text;
-
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -292,25 +270,21 @@ BEGIN
             ON DELETE SET NULL;
     END IF;
 END $$;
-
 ALTER TABLE public.crm_contacts
     DROP CONSTRAINT IF EXISTS crm_contacts_plan_type_check;
 ALTER TABLE public.crm_contacts
     ADD CONSTRAINT crm_contacts_plan_type_check CHECK (
         plan_type IS NULL OR plan_type = ANY (ARRAY['healthshare', 'traditional_insurance'])
     );
-
 ALTER TABLE public.crm_contacts
     DROP CONSTRAINT IF EXISTS crm_contacts_tobacco_status_check;
 ALTER TABLE public.crm_contacts
     ADD CONSTRAINT crm_contacts_tobacco_status_check CHECK (
         tobacco_status IS NULL OR tobacco_status = ANY (ARRAY['none', 'tobacco_user', 'vape_user', 'former_user'])
     );
-
 CREATE INDEX IF NOT EXISTS idx_contacts_plan_type ON public.crm_contacts(plan_type);
 CREATE INDEX IF NOT EXISTS idx_contacts_carrier ON public.crm_contacts(carrier_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_state ON public.crm_contacts(state);
-
 -- ============================================================================
 -- SECTION G: RLS POLICIES FOR NEW TABLES
 -- ============================================================================
@@ -322,130 +296,102 @@ ALTER TABLE public.crm_phone_numbers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.commission_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.commission_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.commission_payouts ENABLE ROW LEVEL SECURITY;
-
 -- Insurance Carriers: org members can read; write requires settings.manage
 CREATE POLICY insurance_carriers_select ON public.insurance_carriers
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY insurance_carriers_insert ON public.insurance_carriers
     FOR INSERT TO authenticated
     WITH CHECK (public.has_org_permission(org_id, 'settings.manage'));
-
 CREATE POLICY insurance_carriers_update ON public.insurance_carriers
     FOR UPDATE TO authenticated
     USING (public.has_org_permission(org_id, 'settings.manage'))
     WITH CHECK (public.has_org_permission(org_id, 'settings.manage'));
-
 CREATE POLICY insurance_carriers_delete ON public.insurance_carriers
     FOR DELETE TO authenticated
     USING (public.has_org_permission(org_id, 'settings.manage'));
-
 -- Family Members: org members can read; contacts.write to modify
 CREATE POLICY crm_family_members_select ON public.crm_family_members
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY crm_family_members_insert ON public.crm_family_members
     FOR INSERT TO authenticated
     WITH CHECK (public.has_org_permission(org_id, 'contacts.write'));
-
 CREATE POLICY crm_family_members_update ON public.crm_family_members
     FOR UPDATE TO authenticated
     USING (public.has_org_permission(org_id, 'contacts.write'))
     WITH CHECK (public.has_org_permission(org_id, 'contacts.write'));
-
 CREATE POLICY crm_family_members_delete ON public.crm_family_members
     FOR DELETE TO authenticated
     USING (public.has_org_permission(org_id, 'contacts.delete'));
-
 -- Phone Numbers: org members can read; contacts.write to modify
 CREATE POLICY crm_phone_numbers_select ON public.crm_phone_numbers
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY crm_phone_numbers_insert ON public.crm_phone_numbers
     FOR INSERT TO authenticated
     WITH CHECK (public.has_org_permission(org_id, 'contacts.write'));
-
 CREATE POLICY crm_phone_numbers_update ON public.crm_phone_numbers
     FOR UPDATE TO authenticated
     USING (public.has_org_permission(org_id, 'contacts.write'))
     WITH CHECK (public.has_org_permission(org_id, 'contacts.write'));
-
 CREATE POLICY crm_phone_numbers_delete ON public.crm_phone_numbers
     FOR DELETE TO authenticated
     USING (public.has_org_permission(org_id, 'contacts.delete'));
-
 -- Commission Schedules: org members read; settings.manage to modify
 CREATE POLICY commission_schedules_select ON public.commission_schedules
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY commission_schedules_insert ON public.commission_schedules
     FOR INSERT TO authenticated
     WITH CHECK (public.has_org_permission(org_id, 'settings.manage'));
-
 CREATE POLICY commission_schedules_update ON public.commission_schedules
     FOR UPDATE TO authenticated
     USING (public.has_org_permission(org_id, 'settings.manage'))
     WITH CHECK (public.has_org_permission(org_id, 'settings.manage'));
-
 CREATE POLICY commission_schedules_delete ON public.commission_schedules
     FOR DELETE TO authenticated
     USING (public.has_org_permission(org_id, 'settings.manage'));
-
 -- Commission Records: org members read; leads.write to modify
 CREATE POLICY commission_records_select ON public.commission_records
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY commission_records_insert ON public.commission_records
     FOR INSERT TO authenticated
     WITH CHECK (public.has_org_permission(org_id, 'leads.write'));
-
 CREATE POLICY commission_records_update ON public.commission_records
     FOR UPDATE TO authenticated
     USING (public.has_org_permission(org_id, 'leads.write'))
     WITH CHECK (public.has_org_permission(org_id, 'leads.write'));
-
 CREATE POLICY commission_records_delete ON public.commission_records
     FOR DELETE TO authenticated
     USING (public.has_org_permission(org_id, 'leads.delete'));
-
 -- Commission Payouts: org members read; settings.manage to modify
 CREATE POLICY commission_payouts_select ON public.commission_payouts
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY commission_payouts_insert ON public.commission_payouts
     FOR INSERT TO authenticated
     WITH CHECK (public.has_org_permission(org_id, 'settings.manage'));
-
 CREATE POLICY commission_payouts_update ON public.commission_payouts
     FOR UPDATE TO authenticated
     USING (public.has_org_permission(org_id, 'settings.manage'))
     WITH CHECK (public.has_org_permission(org_id, 'settings.manage'));
-
 CREATE POLICY commission_payouts_delete ON public.commission_payouts
     FOR DELETE TO authenticated
     USING (public.has_org_permission(org_id, 'settings.manage'));
-
 -- ============================================================================
 -- SECTION H: SEARCH VECTOR FOR FAMILY MEMBERS
 -- ============================================================================
 
 ALTER TABLE public.crm_family_members
     ADD COLUMN IF NOT EXISTS search_vector tsvector;
-
 CREATE INDEX IF NOT EXISTS idx_crm_family_members_search
     ON public.crm_family_members USING gin(search_vector);
-
 CREATE INDEX IF NOT EXISTS idx_crm_family_members_name_trgm
     ON public.crm_family_members USING gin(
         (first_name || ' ' || last_name) extensions.gin_trgm_ops
     );
-
 CREATE OR REPLACE FUNCTION public.update_crm_family_members_search()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -461,13 +407,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_update_crm_family_members_search ON public.crm_family_members;
 CREATE TRIGGER trigger_update_crm_family_members_search
     BEFORE INSERT OR UPDATE ON public.crm_family_members
     FOR EACH ROW
     EXECUTE FUNCTION public.update_crm_family_members_search();
-
 -- ============================================================================
 -- SECTION I: EXTENDED crm_global_search TO INCLUDE FAMILY MEMBERS
 -- ============================================================================
@@ -622,9 +566,7 @@ BEGIN
     LIMIT p_limit;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_global_search(uuid, text, integer) TO authenticated;
-
 -- ============================================================================
 -- SECTION J: UPDATED TIMESTAMP TRIGGERS FOR NEW TABLES
 -- ============================================================================
@@ -638,23 +580,19 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_insurance_carriers_updated_at ON public.insurance_carriers;
 CREATE TRIGGER trigger_insurance_carriers_updated_at
     BEFORE UPDATE ON public.insurance_carriers
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
-
 DROP TRIGGER IF EXISTS trigger_commission_schedules_updated_at ON public.commission_schedules;
 CREATE TRIGGER trigger_commission_schedules_updated_at
     BEFORE UPDATE ON public.commission_schedules
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
-
 DROP TRIGGER IF EXISTS trigger_commission_records_updated_at ON public.commission_records;
 CREATE TRIGGER trigger_commission_records_updated_at
     BEFORE UPDATE ON public.commission_records
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
-
 COMMIT;

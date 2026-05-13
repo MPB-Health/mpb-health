@@ -14,11 +14,9 @@ BEGIN
   WHERE id = content_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Grant execute on the function
 GRANT EXECUTE ON FUNCTION increment_advisor_content_view_count(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION increment_advisor_content_view_count(UUID) TO anon;
-
 -- ============================================================================
 -- PART 2: Add dashboard_actions category to advisor_quick_links
 -- ============================================================================
@@ -26,11 +24,9 @@ GRANT EXECUTE ON FUNCTION increment_advisor_content_view_count(UUID) TO anon;
 -- First update the check constraint to allow dashboard_actions category
 ALTER TABLE public.advisor_quick_links
 DROP CONSTRAINT IF EXISTS advisor_quick_links_category_check;
-
 ALTER TABLE public.advisor_quick_links
 ADD CONSTRAINT advisor_quick_links_category_check
 CHECK (category IN ('resources', 'advisor_forms', 'employer_forms', 'member_forms', 'bulletins', 'dashboard_actions'));
-
 -- Seed dashboard actions if they don't exist
 INSERT INTO public.advisor_quick_links (label, url, icon, category, description, order_index, is_external, is_active) 
 VALUES
@@ -42,7 +38,6 @@ VALUES
     ('Compliance', '/compliance', 'Shield', 'dashboard_actions', 'Check compliance status', 6, FALSE, TRUE),
     ('Profile', '/profile', 'User', 'dashboard_actions', 'View your profile', 7, FALSE, TRUE)
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- PART 3: Seed advisor_nav_menu with current navigation if empty
 -- ============================================================================
@@ -69,7 +64,6 @@ SELECT * FROM (VALUES
 WHERE NOT EXISTS (
     SELECT 1 FROM public.advisor_nav_menu WHERE url = v.url
 );
-
 -- ============================================================================
 -- PART 4: Seed default bulletin categories if empty
 -- ============================================================================
@@ -82,7 +76,6 @@ VALUES
     ('Training', 'training', 'Training-related bulletins', 5),
     ('Compliance', 'compliance', 'Compliance and regulatory updates', 6)
 ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- PART 5: Ensure RLS policies allow advisors to read content
 -- ============================================================================
@@ -102,7 +95,6 @@ BEGIN
         USING (is_published = TRUE);
     END IF;
 END $$;
-
 -- Allow authenticated users to read categories
 DO $$
 BEGIN
@@ -118,7 +110,6 @@ BEGIN
         USING (TRUE);
     END IF;
 END $$;
-
 -- Allow authenticated users to manage their own views
 DO $$
 BEGIN
@@ -135,7 +126,6 @@ BEGIN
         WITH CHECK (advisor_id = auth.uid());
     END IF;
 END $$;
-
 -- Allow authenticated users to manage their own bookmarks
 DO $$
 BEGIN
@@ -152,21 +142,17 @@ BEGIN
         WITH CHECK (advisor_id = auth.uid());
     END IF;
 END $$;
-
 -- ============================================================================
 -- PART 6: Add indexes for performance
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_advisor_content_published_bulletins
 ON public.advisor_content(published_date DESC)
 WHERE content_type = 'bulletin' AND is_published = TRUE;
-
 CREATE INDEX IF NOT EXISTS idx_advisor_content_category_published
 ON public.advisor_content(category_id, is_published);
-
 CREATE INDEX IF NOT EXISTS idx_advisor_quick_links_dashboard_actions
 ON public.advisor_quick_links(order_index)
 WHERE category = 'dashboard_actions' AND is_active = TRUE;
-
 -- ============================================================================
 -- Done
 -- ============================================================================

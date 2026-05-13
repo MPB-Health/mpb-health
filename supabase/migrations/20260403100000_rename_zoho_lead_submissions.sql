@@ -8,7 +8,6 @@
 
 DROP VIEW IF EXISTS public.admin_lead_submissions_view CASCADE;
 DROP TABLE IF EXISTS public.lead_submissions CASCADE;
-
 -- ============================================================================
 -- STEP 2: Update dependent functions BEFORE renaming (return signature changes
 -- require DROP + CREATE, not CREATE OR REPLACE).
@@ -99,7 +98,6 @@ BEGIN
   OFFSET p_offset;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION update_goal_progress()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -150,7 +148,6 @@ BEGIN
   RETURN COALESCE(NEW, OLD);
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.update_lead_submission_updated_at()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -158,13 +155,11 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 -- ============================================================================
 -- STEP 3: Rename the table (safe — old lead_submissions was dropped in step 1)
 -- ============================================================================
 
 ALTER TABLE public.zoho_lead_submissions RENAME TO lead_submissions;
-
 -- ============================================================================
 -- STEP 4: Swap the trigger to use the new function name
 -- ============================================================================
@@ -173,9 +168,7 @@ DROP TRIGGER IF EXISTS update_zoho_lead_submissions_updated_at ON public.lead_su
 CREATE TRIGGER update_lead_submissions_updated_at
   BEFORE UPDATE ON public.lead_submissions
   FOR EACH ROW EXECUTE FUNCTION public.update_lead_submission_updated_at();
-
 DROP FUNCTION IF EXISTS public.update_zoho_lead_submission_updated_at();
-
 -- ============================================================================
 -- STEP 5: Rename constraints, indexes, and policies
 -- ============================================================================
@@ -193,7 +186,6 @@ BEGIN
       replace(r.conname, 'zoho_lead_submissions', 'lead_submissions'));
   END LOOP;
 END $$;
-
 DO $$
 DECLARE r RECORD;
 BEGIN
@@ -206,7 +198,6 @@ BEGIN
       r.conname, replace(r.conname, 'zoho_lead_submissions', 'lead_submissions'));
   END LOOP;
 END $$;
-
 DO $$
 DECLARE r RECORD;
 BEGIN
@@ -218,7 +209,6 @@ BEGIN
       r.indexname, replace(r.indexname, 'zoho_lead_submissions', 'lead_submissions'));
   END LOOP;
 END $$;
-
 DO $$
 DECLARE r RECORD;
 BEGIN
@@ -231,7 +221,6 @@ BEGIN
       r.policyname, replace(r.policyname, 'zoho_lead_submissions', 'lead_submissions'));
   END LOOP;
 END $$;
-
 -- ============================================================================
 -- STEP 6: Drop the Zoho-specific sync columns
 -- ============================================================================
@@ -242,7 +231,6 @@ ALTER TABLE public.lead_submissions
   DROP COLUMN IF EXISTS zoho_sync_attempts,
   DROP COLUMN IF EXISTS zoho_last_sync_at,
   DROP COLUMN IF EXISTS zoho_error_message;
-
 -- ============================================================================
 -- STEP 7: Update the integrations type CHECK to remove 'zoho'
 -- ============================================================================

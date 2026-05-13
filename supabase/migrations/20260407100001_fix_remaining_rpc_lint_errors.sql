@@ -7,7 +7,6 @@ DROP FUNCTION IF EXISTS public.share_note_with_role(uuid, text, text, text);
 DROP FUNCTION IF EXISTS public.get_advisor_hierarchy_tree(text);
 DROP FUNCTION IF EXISTS public.get_hierarchy_stats(text);
 DROP FUNCTION IF EXISTS public.get_active_advisor_meeting();
-
 -- 2. Fix crm_advisor_performance: l.owner_id → l.assigned_to
 CREATE OR REPLACE FUNCTION public.crm_advisor_performance(p_org_id uuid)
 RETURNS TABLE(
@@ -60,7 +59,6 @@ BEGIN
     ORDER BY total_leads DESC;
 END;
 $$;
-
 -- 3. Fix get_activity_feed: cast activity_type enum to text
 DROP FUNCTION IF EXISTS public.get_activity_feed(uuid, uuid, integer, integer);
 CREATE FUNCTION public.get_activity_feed(

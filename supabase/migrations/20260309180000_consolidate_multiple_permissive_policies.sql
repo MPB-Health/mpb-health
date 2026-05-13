@@ -10,17 +10,14 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- 1. ADVISOR LMS TABLES: Drop redundant "view" policies (manage covers SELECT)
 -- ============================================================================
 
 -- advisor_external_training_progress: "Advisors can view" redundant with "Advisors can manage"
 DROP POLICY IF EXISTS "Advisors can view own external progress" ON public.advisor_external_training_progress;
-
 -- advisor_lesson_completions: "Advisors can view" redundant with "Advisors can manage"
 DROP POLICY IF EXISTS "Advisors can view own lesson completions" ON public.advisor_lesson_completions;
-
 -- advisor_lms_enrollments: Consolidate 3 SELECT policies into 1
 -- Drop "Advisors can view" (redundant with manage) and "Admins can view"
 -- Replace "Advisors can manage" (FOR ALL) with FOR INSERT,UPDATE,DELETE only
@@ -28,27 +25,22 @@ DROP POLICY IF EXISTS "Advisors can view own lesson completions" ON public.advis
 DROP POLICY IF EXISTS "Advisors can view own enrollments" ON public.advisor_lms_enrollments;
 DROP POLICY IF EXISTS "Admins can view all enrollments" ON public.advisor_lms_enrollments;
 DROP POLICY IF EXISTS "Advisors can manage own enrollments" ON public.advisor_lms_enrollments;
-
 CREATE POLICY "Advisors and admins can view enrollments" ON public.advisor_lms_enrollments
   FOR SELECT
   USING (
     (advisor_id IN (SELECT id FROM advisor_profiles WHERE id = (SELECT auth.uid())))
     OR (public.current_user_has_admin_access())
   );
-
 CREATE POLICY "Advisors can manage own enrollments" ON public.advisor_lms_enrollments
   FOR INSERT
   WITH CHECK (advisor_id IN (SELECT id FROM advisor_profiles WHERE id = (SELECT auth.uid())));
-
 CREATE POLICY "Advisors can update own enrollments" ON public.advisor_lms_enrollments
   FOR UPDATE
   USING (advisor_id IN (SELECT id FROM advisor_profiles WHERE id = (SELECT auth.uid())))
   WITH CHECK (advisor_id IN (SELECT id FROM advisor_profiles WHERE id = (SELECT auth.uid())));
-
 CREATE POLICY "Advisors can delete own enrollments" ON public.advisor_lms_enrollments
   FOR DELETE
   USING (advisor_id IN (SELECT id FROM advisor_profiles WHERE id = (SELECT auth.uid())));
-
 -- ============================================================================
 -- 2. ADVISOR PORTAL CMS: Consolidate read + write into single SELECT, keep write
 --    advisor_announcements, advisor_categories, advisor_dashboard_widgets,
@@ -77,7 +69,6 @@ CREATE POLICY "Advisor CMS update" ON public.advisor_announcements FOR UPDATE TO
   WITH CHECK (public.current_user_has_advisor_command_access());
 CREATE POLICY "Advisor CMS delete" ON public.advisor_announcements FOR DELETE TO authenticated
   USING (public.current_user_has_advisor_command_access());
-
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.advisor_categories;
 DROP POLICY IF EXISTS "Enable write access for advisor command users" ON public.advisor_categories;
 CREATE POLICY "Advisor CMS read" ON public.advisor_categories FOR SELECT USING (true);
@@ -88,7 +79,6 @@ CREATE POLICY "Advisor CMS update" ON public.advisor_categories FOR UPDATE TO au
   WITH CHECK (public.current_user_has_advisor_command_access());
 CREATE POLICY "Advisor CMS delete" ON public.advisor_categories FOR DELETE TO authenticated
   USING (public.current_user_has_advisor_command_access());
-
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.advisor_dashboard_widgets;
 DROP POLICY IF EXISTS "Enable write access for advisor command users" ON public.advisor_dashboard_widgets;
 CREATE POLICY "Advisor CMS read" ON public.advisor_dashboard_widgets FOR SELECT USING (true);
@@ -99,7 +89,6 @@ CREATE POLICY "Advisor CMS update" ON public.advisor_dashboard_widgets FOR UPDAT
   WITH CHECK (public.current_user_has_advisor_command_access());
 CREATE POLICY "Advisor CMS delete" ON public.advisor_dashboard_widgets FOR DELETE TO authenticated
   USING (public.current_user_has_advisor_command_access());
-
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.advisor_learning_paths;
 DROP POLICY IF EXISTS "Enable write access for advisor command users" ON public.advisor_learning_paths;
 CREATE POLICY "Advisor CMS read" ON public.advisor_learning_paths FOR SELECT USING (true);
@@ -110,7 +99,6 @@ CREATE POLICY "Advisor CMS update" ON public.advisor_learning_paths FOR UPDATE T
   WITH CHECK (public.current_user_has_advisor_command_access());
 CREATE POLICY "Advisor CMS delete" ON public.advisor_learning_paths FOR DELETE TO authenticated
   USING (public.current_user_has_advisor_command_access());
-
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.advisor_nav_menu;
 DROP POLICY IF EXISTS "Enable write access for advisor command users" ON public.advisor_nav_menu;
 CREATE POLICY "Advisor CMS read" ON public.advisor_nav_menu FOR SELECT USING (true);
@@ -121,7 +109,6 @@ CREATE POLICY "Advisor CMS update" ON public.advisor_nav_menu FOR UPDATE TO auth
   WITH CHECK (public.current_user_has_advisor_command_access());
 CREATE POLICY "Advisor CMS delete" ON public.advisor_nav_menu FOR DELETE TO authenticated
   USING (public.current_user_has_advisor_command_access());
-
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.advisor_quick_links;
 DROP POLICY IF EXISTS "Enable write access for advisor command users" ON public.advisor_quick_links;
 CREATE POLICY "Advisor CMS read" ON public.advisor_quick_links FOR SELECT USING (true);
@@ -132,7 +119,6 @@ CREATE POLICY "Advisor CMS update" ON public.advisor_quick_links FOR UPDATE TO a
   WITH CHECK (public.current_user_has_advisor_command_access());
 CREATE POLICY "Advisor CMS delete" ON public.advisor_quick_links FOR DELETE TO authenticated
   USING (public.current_user_has_advisor_command_access());
-
 -- ============================================================================
 -- 3. NOTIFICATION / USER PREFERENCE TABLES: view + update -> single SELECT, single UPDATE
 -- ============================================================================
@@ -146,28 +132,24 @@ CREATE POLICY "Users can view and update own notification events" ON public.noti
   FOR ALL TO authenticated
   USING (user_id = (SELECT auth.uid()))
   WITH CHECK (user_id = (SELECT auth.uid()));
-
 DROP POLICY IF EXISTS "Users can view own notification settings" ON public.notification_settings;
 DROP POLICY IF EXISTS "Users can update own notification settings" ON public.notification_settings;
 CREATE POLICY "Users can manage own notification settings" ON public.notification_settings
   FOR ALL TO authenticated
   USING (user_id = (SELECT auth.uid()))
   WITH CHECK (user_id = (SELECT auth.uid()));
-
 DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
 CREATE POLICY "Users can manage own notifications" ON public.notifications
   FOR ALL TO authenticated
   USING (user_id = (SELECT auth.uid()))
   WITH CHECK (user_id = (SELECT auth.uid()));
-
 DROP POLICY IF EXISTS "Users can view own preferences" ON public.user_preferences;
 DROP POLICY IF EXISTS "Users can update own preferences" ON public.user_preferences;
 CREATE POLICY "Users can manage own preferences" ON public.user_preferences
   FOR ALL TO authenticated
   USING (user_id = (SELECT auth.uid()))
   WITH CHECK (user_id = (SELECT auth.uid()));
-
 -- ============================================================================
 -- 4. DEVICE PUSH SUBSCRIPTIONS: 3 policies (delete, manage, update) -> 1
 -- ============================================================================
@@ -179,7 +161,6 @@ CREATE POLICY "Users can manage own push subscriptions" ON public.device_push_su
   FOR ALL TO authenticated
   USING (user_id = (SELECT auth.uid()))
   WITH CHECK (user_id = (SELECT auth.uid()));
-
 -- ============================================================================
 -- 5. MATERNITY COVERAGE: "Anyone can view" + "Public can view" -> 1
 -- ============================================================================
@@ -188,12 +169,10 @@ DROP POLICY IF EXISTS "Anyone can view maternity coverage" ON public.maternity_c
 DROP POLICY IF EXISTS "Public can view maternity coverage" ON public.maternity_coverage;
 CREATE POLICY "Public can view maternity coverage" ON public.maternity_coverage
   FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Anyone can view maternity stages" ON public.maternity_coverage_stages;
 DROP POLICY IF EXISTS "Public can view maternity stages" ON public.maternity_coverage_stages;
 CREATE POLICY "Public can view maternity stages" ON public.maternity_coverage_stages
   FOR SELECT USING (true);
-
 -- ============================================================================
 -- 6. ADVISORS: 4+ SELECT policies -> 1 SELECT + admin write-only
 --    Policies: Allow public read, Anon can read, Anyone can view, advisors_select_policy, Admins can manage
@@ -208,23 +187,18 @@ DROP POLICY IF EXISTS "Admins can manage advisors" ON public.advisors;
 DROP POLICY IF EXISTS "advisors_insert_policy" ON public.advisors;
 DROP POLICY IF EXISTS "advisors_update_policy" ON public.advisors;
 DROP POLICY IF EXISTS "advisors_delete_policy" ON public.advisors;
-
 CREATE POLICY "advisors_select" ON public.advisors FOR SELECT
   USING (
     (is_active = true AND status LIKE '%Active%')
     OR public.current_user_has_admin_access()
   );
-
 CREATE POLICY "advisors_admin_insert" ON public.advisors FOR INSERT TO authenticated
   WITH CHECK (public.current_user_has_admin_access());
-
 CREATE POLICY "advisors_admin_update" ON public.advisors FOR UPDATE TO authenticated
   USING (public.current_user_has_admin_access())
   WITH CHECK (public.current_user_has_admin_access());
-
 CREATE POLICY "advisors_admin_delete" ON public.advisors FOR DELETE TO authenticated
   USING (public.current_user_has_admin_access());
-
 -- ============================================================================
 -- 7. BENEFITS: Multiple SELECT policies -> 1 SELECT + admin write-only
 -- ============================================================================
@@ -233,13 +207,11 @@ DROP POLICY IF EXISTS "Anyone can view active benefits" ON public.benefits;
 DROP POLICY IF EXISTS "Public can view active benefits, admins can manage" ON public.benefits;
 DROP POLICY IF EXISTS "benefits_public_read" ON public.benefits;
 DROP POLICY IF EXISTS "Admins can manage benefits" ON public.benefits;
-
 CREATE POLICY "benefits_select" ON public.benefits FOR SELECT
   USING (
     (is_active = true)
     OR public.current_user_has_admin_access()
   );
-
 CREATE POLICY "benefits_admin_manage" ON public.benefits FOR INSERT TO authenticated
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "benefits_admin_update" ON public.benefits FOR UPDATE TO authenticated
@@ -247,7 +219,6 @@ CREATE POLICY "benefits_admin_update" ON public.benefits FOR UPDATE TO authentic
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "benefits_admin_delete" ON public.benefits FOR DELETE TO authenticated
   USING (public.current_user_has_admin_access());
-
 -- ============================================================================
 -- 8. BLOG_ARTICLES: Multiple SELECT policies -> 1 SELECT + admin write-only
 -- ============================================================================
@@ -259,14 +230,12 @@ DROP POLICY IF EXISTS "Public can view published, authenticated can view all" ON
 DROP POLICY IF EXISTS "Admins can delete articles" ON public.blog_articles;
 DROP POLICY IF EXISTS "Admins can insert articles" ON public.blog_articles;
 DROP POLICY IF EXISTS "Admins can update articles" ON public.blog_articles;
-
 CREATE POLICY "blog_articles_select" ON public.blog_articles FOR SELECT
   USING (
     (is_published = true)
     OR (auth.role() = 'authenticated')
     OR public.current_user_has_admin_access()
   );
-
 CREATE POLICY "blog_articles_admin_insert" ON public.blog_articles FOR INSERT TO authenticated
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "blog_articles_admin_update" ON public.blog_articles FOR UPDATE TO authenticated
@@ -274,7 +243,6 @@ CREATE POLICY "blog_articles_admin_update" ON public.blog_articles FOR UPDATE TO
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "blog_articles_admin_delete" ON public.blog_articles FOR DELETE TO authenticated
   USING (public.current_user_has_admin_access());
-
 -- ============================================================================
 -- 9. RATE_CONFIGURATION, EDUCATIONAL_CONTENT: Multiple SELECT -> 1 each
 -- ============================================================================
@@ -283,13 +251,11 @@ DROP POLICY IF EXISTS "Anyone can view active rate configuration" ON public.rate
 DROP POLICY IF EXISTS "Public can view active rates, admins can manage" ON public.rate_configuration;
 DROP POLICY IF EXISTS "rate_config_public_read" ON public.rate_configuration;
 DROP POLICY IF EXISTS "Admins can manage rate configuration" ON public.rate_configuration;
-
 CREATE POLICY "rate_configuration_select" ON public.rate_configuration FOR SELECT
   USING (
     (is_active = true)
     OR public.current_user_has_admin_access()
   );
-
 CREATE POLICY "rate_configuration_admin_manage" ON public.rate_configuration FOR INSERT TO authenticated
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "rate_configuration_admin_update" ON public.rate_configuration FOR UPDATE TO authenticated
@@ -297,18 +263,15 @@ CREATE POLICY "rate_configuration_admin_update" ON public.rate_configuration FOR
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "rate_configuration_admin_delete" ON public.rate_configuration FOR DELETE TO authenticated
   USING (public.current_user_has_admin_access());
-
 DROP POLICY IF EXISTS "Anyone can view active educational content" ON public.educational_content;
 DROP POLICY IF EXISTS "Public can view active content, admins can manage" ON public.educational_content;
 DROP POLICY IF EXISTS "educational_content_public_read" ON public.educational_content;
 DROP POLICY IF EXISTS "Admins can manage educational content" ON public.educational_content;
-
 CREATE POLICY "educational_content_select" ON public.educational_content FOR SELECT
   USING (
     (is_active = true)
     OR public.current_user_has_admin_access()
   );
-
 CREATE POLICY "educational_content_admin_manage" ON public.educational_content FOR INSERT TO authenticated
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "educational_content_admin_update" ON public.educational_content FOR UPDATE TO authenticated
@@ -316,20 +279,17 @@ CREATE POLICY "educational_content_admin_update" ON public.educational_content F
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "educational_content_admin_delete" ON public.educational_content FOR DELETE TO authenticated
   USING (public.current_user_has_admin_access());
-
 -- ============================================================================
 -- 10. EXTERNAL_LMS: Multiple SELECT -> 1 each
 -- ============================================================================
 
 DROP POLICY IF EXISTS "Admins can manage LMS courses" ON public.external_lms_courses;
 DROP POLICY IF EXISTS "Anyone can view active LMS courses" ON public.external_lms_courses;
-
 CREATE POLICY "external_lms_courses_select" ON public.external_lms_courses FOR SELECT
   USING (
     (is_active = true)
     OR public.current_user_has_admin_access()
   );
-
 CREATE POLICY "external_lms_courses_admin_manage" ON public.external_lms_courses FOR INSERT TO authenticated
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "external_lms_courses_admin_update" ON public.external_lms_courses FOR UPDATE TO authenticated
@@ -337,17 +297,14 @@ CREATE POLICY "external_lms_courses_admin_update" ON public.external_lms_courses
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "external_lms_courses_admin_delete" ON public.external_lms_courses FOR DELETE TO authenticated
   USING (public.current_user_has_admin_access());
-
 --
 
 DROP POLICY IF EXISTS "Admins can manage LMS lessons" ON public.external_lms_lessons;
 DROP POLICY IF EXISTS "Anyone can view LMS lessons" ON public.external_lms_lessons;
-
 CREATE POLICY "external_lms_lessons_select" ON public.external_lms_lessons FOR SELECT
   USING (
     true
   );
-
 CREATE POLICY "external_lms_lessons_admin_manage" ON public.external_lms_lessons FOR INSERT TO authenticated
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "external_lms_lessons_admin_update" ON public.external_lms_lessons FOR UPDATE TO authenticated
@@ -355,27 +312,22 @@ CREATE POLICY "external_lms_lessons_admin_update" ON public.external_lms_lessons
   WITH CHECK (public.current_user_has_admin_access());
 CREATE POLICY "external_lms_lessons_admin_delete" ON public.external_lms_lessons FOR DELETE TO authenticated
   USING (public.current_user_has_admin_access());
-
 -- ============================================================================
 -- 11. ZOHO_LEAD_SUBMISSIONS (anon): 2 SELECT -> 1
 -- ============================================================================
 
 DROP POLICY IF EXISTS "Anon can read zoho_lead_submissions" ON public.zoho_lead_submissions;
 DROP POLICY IF EXISTS "Anonymous users can view just-inserted submissions" ON public.zoho_lead_submissions;
-
 -- Anon: only just-inserted (for .insert().select() after form submit)
 CREATE POLICY "zoho_lead_submissions_anon_select" ON public.zoho_lead_submissions
   FOR SELECT TO anon
   USING (created_at > (now() - interval '5 seconds'));
-
 -- ============================================================================
 -- 12. TRACKING_PLATFORMS: 2 SELECT -> 1
 -- ============================================================================
 
 DROP POLICY IF EXISTS "Anon can read tracking_platforms" ON public.tracking_platforms;
 DROP POLICY IF EXISTS "Public can view active tracking platforms" ON public.tracking_platforms;
-
 CREATE POLICY "tracking_platforms_select" ON public.tracking_platforms FOR SELECT
   USING (true);
-
 COMMIT;

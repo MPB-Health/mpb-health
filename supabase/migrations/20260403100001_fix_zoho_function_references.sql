@@ -80,9 +80,7 @@ BEGIN
   
   RETURN jsonb_build_object('score', v_score, 'factors', v_factors);
 END;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.check_repeat_lead(p_email text, p_phone text)
  RETURNS TABLE(is_repeat boolean, previous_count integer)
  LANGUAGE plpgsql
@@ -114,9 +112,7 @@ BEGIN
   
   RETURN NEXT;
 END;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.crm_advisor_performance(p_org_id uuid)
  RETURNS TABLE(advisor_id uuid, advisor_email text, advisor_name text, total_leads bigint, new_leads_this_month bigint, converted_leads bigint, open_tasks bigint, overdue_tasks bigint, activities_this_month bigint)
  LANGUAGE plpgsql
@@ -159,14 +155,12 @@ BEGIN
             AND a.created_at >= date_trunc('month', CURRENT_DATE)
         ) AS activities_this_month
     FROM auth.users u
-    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.org_members om ON om.user_id = u.id AND om.org_id = p_org_id
     LEFT JOIN public.lead_submissions l ON l.owner_id = u.id AND l.org_id = p_org_id
     GROUP BY u.id, u.email, u.raw_user_meta_data
     ORDER BY total_leads DESC;
 END;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.crm_pipeline_breakdown(p_org_id uuid)
  RETURNS TABLE(stage_name text, stage_display_name text, stage_color text, total_in_stage bigint, healthshare_count bigint, traditional_count bigint, unspecified_count bigint)
  LANGUAGE plpgsql
@@ -191,9 +185,7 @@ BEGIN
     AND ps.is_active = true
     ORDER BY ps.sort_order;
 END;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.crm_plan_type_stats(p_org_id uuid)
  RETURNS TABLE(plan_type text, total_count bigint, new_today bigint, new_this_week bigint, new_this_month bigint)
  LANGUAGE plpgsql
@@ -213,9 +205,7 @@ BEGIN
     GROUP BY COALESCE(l.plan_type, 'unspecified')
     ORDER BY total_count DESC;
 END;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.crm_today_summary(p_org_id uuid)
  RETURNS json
  LANGUAGE plpgsql
@@ -280,9 +270,7 @@ BEGIN
 
   RETURN v_result;
 END;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_crm_dashboard_stats()
  RETURNS TABLE(total_leads bigint, new_leads bigint, leads_by_stage jsonb, leads_by_priority jsonb, overdue_tasks bigint, tasks_due_today bigint, conversion_rate numeric, avg_days_to_close numeric)
  LANGUAGE plpgsql
@@ -337,9 +325,7 @@ BEGIN
     )::numeric AS avg_days_to_close
   FROM lead_submissions;
 END;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_lead_with_insights(p_lead_id uuid)
  RETURNS TABLE(lead jsonb, insights jsonb, activities jsonb, tasks jsonb)
  LANGUAGE plpgsql
@@ -366,9 +352,7 @@ BEGIN
   LEFT JOIN ai_lead_insights i ON i.lead_id = l.id
   WHERE l.id = p_lead_id;
 END;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_power_list(p_org_id uuid, p_user_id uuid DEFAULT NULL::uuid, p_limit integer DEFAULT 20)
  RETURNS TABLE(item_id uuid, lane_id uuid, lane_name text, lane_color text, lead_id uuid, contact_id uuid, person_name text, person_email text, reason text, score integer, rank integer, last_action_at timestamp with time zone, next_action_at timestamp with time zone, snoozed_until timestamp with time zone)
  LANGUAGE sql
@@ -405,9 +389,7 @@ AS $function$
     pi.score DESC,
     pi.rank ASC NULLS LAST
   LIMIT p_limit;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_upcoming_events(p_user_id uuid, p_days integer DEFAULT 7)
  RETURNS TABLE(id uuid, title text, event_type text, start_time timestamp with time zone, end_time timestamp with time zone, lead_id uuid, lead_name text, status text)
  LANGUAGE plpgsql
@@ -433,10 +415,7 @@ BEGIN
     AND e.status NOT IN ('cancelled')
   ORDER BY e.start_time ASC;
 END;
-$function$
-;
-
-
+$function$;
 CREATE OR REPLACE FUNCTION public.crm_global_search(p_org_id uuid, p_query text, p_limit integer DEFAULT 50)
  RETURNS TABLE(entity_type text, entity_id uuid, title text, subtitle text, extra_info text, rank real)
  LANGUAGE plpgsql
@@ -670,5 +649,4 @@ BEGIN
     ORDER BY rank DESC
     LIMIT p_limit;
 END;
-$function$
-;
+$function$;

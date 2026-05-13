@@ -44,10 +44,10 @@ begin
     _roles := ARRAY['advisor'];
   end if;
 
-  -- Build the edge function URL (sync-user-to-itsts lives on THIS project)
+  -- Build the edge function URL
   _edge_fn_url := coalesce(
     current_setting('app.settings.supabase_url', true),
-    'https://dtmnkzllidaiqyheguhl.supabase.co'
+    'https://hhikjgrttgnvojtunmla.supabase.co'
   ) || '/functions/v1/sync-user-to-itsts';
 
   _service_key := coalesce(
@@ -83,14 +83,11 @@ exception when others then
   return NEW;
 end;
 $$;
-
 -- Attach trigger to advisor_profiles table
 drop trigger if exists trg_sync_advisor_profile_to_itsts on public.advisor_profiles;
-
 create trigger trg_sync_advisor_profile_to_itsts
   after insert or update on public.advisor_profiles
   for each row
   execute function public.sync_advisor_profile_to_itsts();
-
 comment on function public.sync_advisor_profile_to_itsts() is
   'Async trigger that syncs advisor profile data to the ITSTS support ticketing system.';

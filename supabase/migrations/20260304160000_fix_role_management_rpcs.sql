@@ -56,9 +56,7 @@ BEGIN
     );
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.assign_user_role(UUID, TEXT) TO authenticated;
-
 -- ============================================================================
 -- 2. SECURITY DEFINER RPC: remove_user_role
 -- ============================================================================
@@ -98,9 +96,7 @@ BEGIN
     );
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.remove_user_role(UUID, TEXT) TO authenticated;
-
 -- ============================================================================
 -- 3. One-time sync: admin_users super_admins → user_roles
 --    Ensures every admin_users.role = 'super_admin' has a user_roles row
@@ -114,7 +110,6 @@ WHERE au.role = 'super_admin'
       WHERE ur.user_id = au.id AND ur.role = 'super_admin'
   )
 ON CONFLICT (user_id, role) DO NOTHING;
-
 -- Also sync admin role
 INSERT INTO user_roles (user_id, role)
 SELECT au.id, 'admin'::user_role_type
@@ -125,7 +120,6 @@ WHERE au.role = 'admin'
       WHERE ur.user_id = au.id AND ur.role = 'admin'
   )
 ON CONFLICT (user_id, role) DO NOTHING;
-
 -- ============================================================================
 -- 4. Trigger: admin_users.role changes → sync to user_roles
 --    (The existing sync_roles_to_legacy trigger only goes user_roles → admin_users.
@@ -144,13 +138,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 DROP TRIGGER IF EXISTS trigger_sync_admin_role_to_user_roles ON admin_users;
 CREATE TRIGGER trigger_sync_admin_role_to_user_roles
     AFTER UPDATE OF role ON admin_users
     FOR EACH ROW
     EXECUTE FUNCTION sync_admin_users_role_to_user_roles();
-
 -- Also sync on insert
 DROP TRIGGER IF EXISTS trigger_sync_admin_role_to_user_roles_insert ON admin_users;
 CREATE TRIGGER trigger_sync_admin_role_to_user_roles_insert

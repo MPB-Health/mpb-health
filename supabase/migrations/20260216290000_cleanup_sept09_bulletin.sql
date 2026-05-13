@@ -12,7 +12,6 @@ SET content = TRIM(regexp_replace(
 WHERE slug = 'advisor-bulletin-september-09-2025'
   AND content_type = 'bulletin'
   AND content LIKE '%MGM Grand Las Vegas Contest%';
-
 -- Step 2: Replace "2nd Tuesday Meeting – Click on the link" pattern
 UPDATE advisor_content
 SET content = REPLACE(
@@ -22,7 +21,6 @@ SET content = REPLACE(
 )
 WHERE slug = 'advisor-bulletin-september-09-2025'
   AND content_type = 'bulletin';
-
 UPDATE advisor_content
 SET content = REPLACE(
   content,
@@ -31,7 +29,6 @@ SET content = REPLACE(
 )
 WHERE slug = 'advisor-bulletin-september-09-2025'
   AND content_type = 'bulletin';
-
 -- Update the link text from "Click on the link" to the meeting name
 UPDATE advisor_content
 SET content = REPLACE(
@@ -44,7 +41,6 @@ SET content = REPLACE(
 WHERE slug = 'advisor-bulletin-september-09-2025'
   AND content_type = 'bulletin'
   AND content LIKE '%OThlYThjZmUtNzA1YS00NDIy%';
-
 -- For 4th Tuesday (different Teams link ID)
 UPDATE advisor_content
 SET content = REPLACE(

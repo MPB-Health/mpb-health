@@ -13,7 +13,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. crm_master_templates — admin-only template library
 -- ----------------------------------------------------------------------------
@@ -36,35 +35,29 @@ CREATE TABLE IF NOT EXISTS public.crm_master_templates (
     -- Loose tags for filtering inside the admin library; not used by RLS.
     tags text[] NOT NULL DEFAULT '{}'::text[]
 );
-
 CREATE INDEX IF NOT EXISTS idx_crm_master_templates_org ON public.crm_master_templates(org_id);
 CREATE INDEX IF NOT EXISTS idx_crm_master_templates_channel ON public.crm_master_templates(org_id, channel) WHERE archived_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_crm_master_templates_name_version
     ON public.crm_master_templates(org_id, channel, name, version)
     WHERE archived_at IS NULL;
-
 ALTER TABLE public.crm_master_templates ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS crm_master_templates_select ON public.crm_master_templates;
 DROP POLICY IF EXISTS crm_master_templates_insert ON public.crm_master_templates;
 DROP POLICY IF EXISTS crm_master_templates_update ON public.crm_master_templates;
 DROP POLICY IF EXISTS crm_master_templates_delete ON public.crm_master_templates;
 DROP POLICY IF EXISTS crm_master_templates_service ON public.crm_master_templates;
-
 -- All org members can READ master templates so cadence step UI can render
 -- the linked subject preview without exposing the editable surface. The
 -- templates.master.manage permission gates writes only.
 CREATE POLICY crm_master_templates_select ON public.crm_master_templates
     FOR SELECT TO authenticated
     USING (public.is_org_member(org_id));
-
 CREATE POLICY crm_master_templates_insert ON public.crm_master_templates
     FOR INSERT TO authenticated
     WITH CHECK (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'templates.master.manage')
     );
-
 CREATE POLICY crm_master_templates_update ON public.crm_master_templates
     FOR UPDATE TO authenticated
     USING (
@@ -75,22 +68,18 @@ CREATE POLICY crm_master_templates_update ON public.crm_master_templates
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'templates.master.manage')
     );
-
 CREATE POLICY crm_master_templates_delete ON public.crm_master_templates
     FOR DELETE TO authenticated
     USING (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'templates.master.manage')
     );
-
 CREATE POLICY crm_master_templates_service ON public.crm_master_templates
     FOR ALL TO service_role
     USING (true)
     WITH CHECK (true);
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_master_templates TO authenticated;
 GRANT ALL ON public.crm_master_templates TO service_role;
-
 -- updated_at trigger — local helper so we don't depend on a global one.
 CREATE OR REPLACE FUNCTION public.crm_master_templates_touch_updated_at()
 RETURNS trigger
@@ -101,10 +90,8 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_master_templates_touch ON public.crm_master_templates;
 CREATE TRIGGER trg_crm_master_templates_touch
     BEFORE UPDATE ON public.crm_master_templates
     FOR EACH ROW EXECUTE FUNCTION public.crm_master_templates_touch_updated_at();
-
 COMMIT;

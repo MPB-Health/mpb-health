@@ -102,10 +102,8 @@ BEGIN
   RAISE NOTICE 'Test advisor profile created/updated for %', user_email;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION setup_test_advisor_profile(text, uuid) TO authenticated, service_role;
-
 -- Add helpful comment
 COMMENT ON FUNCTION setup_test_advisor_profile IS 
 'Sets up a test advisor account. Call with email and user_id after creating the auth user.';

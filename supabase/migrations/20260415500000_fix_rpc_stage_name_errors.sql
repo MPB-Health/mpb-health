@@ -79,7 +79,6 @@ BEGIN
     ORDER BY rep_name;
 END;
 $$;
-
 -- 2. crm_annual_revenue_trend
 CREATE OR REPLACE FUNCTION public.crm_annual_revenue_trend(
     p_org_id uuid,
@@ -114,7 +113,6 @@ BEGIN
     ORDER BY rep_name, m.n;
 END;
 $$;
-
 -- 3. crm_individual_performance
 CREATE OR REPLACE FUNCTION public.crm_individual_performance(
     p_org_id uuid,

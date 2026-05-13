@@ -13,10 +13,8 @@ SELECT
   joined_at AS created_at
 FROM org_memberships
 WHERE status = 'active';
-
 -- Grant select to authenticated
 GRANT SELECT ON public.user_organization_roles TO authenticated;
-
 -- INSTEAD OF INSERT trigger
 CREATE OR REPLACE FUNCTION user_organization_roles_insert_trigger()
 RETURNS TRIGGER
@@ -34,12 +32,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 CREATE TRIGGER user_organization_roles_instead_of_insert
   INSTEAD OF INSERT ON public.user_organization_roles
   FOR EACH ROW
   EXECUTE FUNCTION user_organization_roles_insert_trigger();
-
 -- INSTEAD OF UPDATE trigger
 CREATE OR REPLACE FUNCTION user_organization_roles_update_trigger()
 RETURNS TRIGGER
@@ -54,12 +50,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 CREATE TRIGGER user_organization_roles_instead_of_update
   INSTEAD OF UPDATE ON public.user_organization_roles
   FOR EACH ROW
   EXECUTE FUNCTION user_organization_roles_update_trigger();
-
 -- INSTEAD OF DELETE trigger (soft delete: set status = 'left')
 CREATE OR REPLACE FUNCTION user_organization_roles_delete_trigger()
 RETURNS TRIGGER
@@ -74,7 +68,6 @@ BEGIN
   RETURN OLD;
 END;
 $$;
-
 CREATE TRIGGER user_organization_roles_instead_of_delete
   INSTEAD OF DELETE ON public.user_organization_roles
   FOR EACH ROW

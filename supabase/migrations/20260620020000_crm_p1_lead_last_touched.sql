@@ -16,25 +16,20 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. last_touched_at column on lead_submissions (rep-initiated only)
 -- ----------------------------------------------------------------------------
 
 ALTER TABLE public.lead_submissions
     ADD COLUMN IF NOT EXISTS last_touched_at timestamptz;
-
 COMMENT ON COLUMN public.lead_submissions.last_touched_at IS
     'Bumped on rep-initiated activity only (Section 6 + Round 3 Addendum). Inbound events (replies, link clicks) do NOT bump this.';
-
 CREATE INDEX IF NOT EXISTS idx_lead_submissions_last_touched
     ON public.lead_submissions (org_id, last_touched_at DESC NULLS LAST);
-
 -- Backfill: best-effort, use last_contacted_at if available
 UPDATE public.lead_submissions
 SET last_touched_at = COALESCE(last_touched_at, last_contacted_at, updated_at)
 WHERE last_touched_at IS NULL;
-
 -- ----------------------------------------------------------------------------
 -- 2. Function + trigger: bump last_touched_at when rep-initiated crm_activity
 --    is inserted (call_complete / email_send / sms_send / note / task_complete
@@ -87,15 +82,12 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_crm_activities_bump_last_touched ON public.crm_activities;
 CREATE TRIGGER trg_crm_activities_bump_last_touched
     AFTER INSERT ON public.crm_activities
     FOR EACH ROW
     EXECUTE FUNCTION public.crm_lead_bump_last_touched();
-
 REVOKE ALL ON FUNCTION public.crm_lead_bump_last_touched() FROM PUBLIC;
-
 -- ----------------------------------------------------------------------------
 -- 3. SLA scan — Quoted >24h with no rep pickup → flag for alert
 --
@@ -133,14 +125,11 @@ AS $$
        AND ls.quote_cadence_started_at <= now() - (p_sla_hours || ' hours')::interval
        AND COALESCE(ls.do_not_contact, false) = false
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_check_quoted_sla(uuid, integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_check_quoted_sla(uuid, integer)
     TO authenticated, service_role;
-
 COMMENT ON FUNCTION public.crm_check_quoted_sla IS
     'Round 2 24-hour SLA scan: returns leads stuck in Quoted past the SLA. Edge Function fans out alerts.';
-
 -- ----------------------------------------------------------------------------
 -- 4. Mark-as-Lost RPC (manual rep override per Section 6)
 -- ----------------------------------------------------------------------------
@@ -189,9 +178,7 @@ BEGIN
     );
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_mark_lead_lost(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_mark_lead_lost(uuid, text)
     TO authenticated, service_role;
-
 COMMIT;

@@ -7,10 +7,8 @@ ALTER TABLE public.crm_social_platform_connections
   ADD COLUMN IF NOT EXISTS refresh_token_encrypted bytea,
   ADD COLUMN IF NOT EXISTS token_expires_at timestamptz,
   ADD COLUMN IF NOT EXISTS oauth_scope text;
-
 -- Tighten privileges: CRM browser must not read/write encrypted token columns.
 REVOKE ALL ON public.crm_social_platform_connections FROM authenticated;
-
 GRANT SELECT (
   id,
   org_id,
@@ -26,7 +24,6 @@ GRANT SELECT (
   token_expires_at,
   oauth_scope
 ) ON public.crm_social_platform_connections TO authenticated;
-
 GRANT INSERT (
   org_id,
   provider,
@@ -37,7 +34,6 @@ GRANT INSERT (
   last_synced_at,
   connected_by
 ) ON public.crm_social_platform_connections TO authenticated;
-
 GRANT UPDATE (
   connection_status,
   display_name,
@@ -46,5 +42,4 @@ GRANT UPDATE (
   last_synced_at,
   connected_by
 ) ON public.crm_social_platform_connections TO authenticated;
-
 GRANT DELETE ON public.crm_social_platform_connections TO authenticated;

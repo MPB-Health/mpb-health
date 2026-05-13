@@ -20,7 +20,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Pipeline stages — exactly 7 rows per org, locked sort order
 -- ----------------------------------------------------------------------------
@@ -39,23 +38,18 @@ CREATE TABLE IF NOT EXISTS public.crm_recruiting_pipeline_stages (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (org_id, name)
 );
-
 CREATE INDEX IF NOT EXISTS idx_recruiting_stages_org_sort
     ON public.crm_recruiting_pipeline_stages (org_id, sort_order);
-
 ALTER TABLE public.crm_recruiting_pipeline_stages ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS recruiting_stages_select ON public.crm_recruiting_pipeline_stages;
 DROP POLICY IF EXISTS recruiting_stages_write ON public.crm_recruiting_pipeline_stages;
 DROP POLICY IF EXISTS recruiting_stages_service ON public.crm_recruiting_pipeline_stages;
-
 CREATE POLICY recruiting_stages_select ON public.crm_recruiting_pipeline_stages
     FOR SELECT TO authenticated
     USING (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'recruiting.read')
     );
-
 CREATE POLICY recruiting_stages_write ON public.crm_recruiting_pipeline_stages
     FOR ALL TO authenticated
     USING (
@@ -66,13 +60,10 @@ CREATE POLICY recruiting_stages_write ON public.crm_recruiting_pipeline_stages
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'recruiting.write')
     );
-
 CREATE POLICY recruiting_stages_service ON public.crm_recruiting_pipeline_stages
     FOR ALL TO service_role USING (true) WITH CHECK (true);
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_recruiting_pipeline_stages TO authenticated;
 GRANT ALL ON public.crm_recruiting_pipeline_stages TO service_role;
-
 -- Seed exactly the 7 locked stages per org.
 INSERT INTO public.crm_recruiting_pipeline_stages (org_id, name, display_name, color, sort_order, is_terminal)
 SELECT o.id, s.name, s.display_name, s.color, s.sort_order, s.is_terminal
@@ -87,7 +78,6 @@ CROSS JOIN (VALUES
     ('inactive',     'Inactive',     '#EF4444', 7, true)
 ) AS s(name, display_name, color, sort_order, is_terminal)
 ON CONFLICT (org_id, name) DO NOTHING;
-
 -- ----------------------------------------------------------------------------
 -- 2. Recruiting records — analogous to lead_submissions
 -- ----------------------------------------------------------------------------
@@ -125,35 +115,29 @@ CREATE TABLE IF NOT EXISTS public.crm_recruiting_records (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_recruiting_records_org ON public.crm_recruiting_records(org_id);
 CREATE INDEX IF NOT EXISTS idx_recruiting_records_stage ON public.crm_recruiting_records(org_id, pipeline_stage);
 CREATE INDEX IF NOT EXISTS idx_recruiting_records_subsection ON public.crm_recruiting_records(org_id, workflow_subsection);
 CREATE INDEX IF NOT EXISTS idx_recruiting_records_assigned ON public.crm_recruiting_records(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_recruiting_records_last_touched ON public.crm_recruiting_records(last_touched_at);
-
 ALTER TABLE public.crm_recruiting_records ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS recruiting_records_select ON public.crm_recruiting_records;
 DROP POLICY IF EXISTS recruiting_records_insert ON public.crm_recruiting_records;
 DROP POLICY IF EXISTS recruiting_records_update ON public.crm_recruiting_records;
 DROP POLICY IF EXISTS recruiting_records_delete ON public.crm_recruiting_records;
 DROP POLICY IF EXISTS recruiting_records_service ON public.crm_recruiting_records;
-
 CREATE POLICY recruiting_records_select ON public.crm_recruiting_records
     FOR SELECT TO authenticated
     USING (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'recruiting.read')
     );
-
 CREATE POLICY recruiting_records_insert ON public.crm_recruiting_records
     FOR INSERT TO authenticated
     WITH CHECK (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'recruiting.write')
     );
-
 CREATE POLICY recruiting_records_update ON public.crm_recruiting_records
     FOR UPDATE TO authenticated
     USING (
@@ -164,20 +148,16 @@ CREATE POLICY recruiting_records_update ON public.crm_recruiting_records
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'recruiting.write')
     );
-
 CREATE POLICY recruiting_records_delete ON public.crm_recruiting_records
     FOR DELETE TO authenticated
     USING (
         public.is_org_member(org_id)
         AND public.has_org_permission(org_id, 'recruiting.write')
     );
-
 CREATE POLICY recruiting_records_service ON public.crm_recruiting_records
     FOR ALL TO service_role USING (true) WITH CHECK (true);
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_recruiting_records TO authenticated;
 GRANT ALL ON public.crm_recruiting_records TO service_role;
-
 -- updated_at + last_touched_at + stage_changed_at trigger.
 CREATE OR REPLACE FUNCTION public.crm_recruiting_records_touch()
 RETURNS trigger
@@ -191,10 +171,8 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_recruiting_records_touch ON public.crm_recruiting_records;
 CREATE TRIGGER trg_recruiting_records_touch
     BEFORE UPDATE ON public.crm_recruiting_records
     FOR EACH ROW EXECUTE FUNCTION public.crm_recruiting_records_touch();
-
 COMMIT;

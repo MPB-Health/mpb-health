@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { uploadEventImage, validateImageFile } from './imageUploadService';
 
@@ -6,12 +6,19 @@ interface ImageUploaderProps {
   value: string;
   onChange: (url: string) => void;
   slug?: string;
+  // Surfaces upload state to the parent so Save/Publish can block until the
+  // file is verifiably in storage. Same pattern as EventGallerySection.
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
-export function ImageUploader({ value, onChange, slug }: ImageUploaderProps) {
+export function ImageUploader({ value, onChange, slug, onUploadingChange }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    onUploadingChange?.(uploading);
+  }, [uploading, onUploadingChange]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

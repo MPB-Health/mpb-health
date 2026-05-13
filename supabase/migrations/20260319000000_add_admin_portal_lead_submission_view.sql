@@ -50,7 +50,6 @@ SELECT
 FROM public.lead_submissions ls
 LEFT JOIN public.zoho_lead_submissions zls
   ON lower(trim(ls.email)) = lower(trim(zls.email));
-
 -- Grant read access to authenticated users (admin portal uses service role,
 -- but anon/auth reads from the view respect underlying table RLS)
 GRANT SELECT ON admin_lead_submissions_view TO authenticated;

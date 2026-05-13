@@ -16,13 +16,10 @@ CREATE TABLE IF NOT EXISTS "public"."integrations" (
 
     CONSTRAINT "integrations_pkey" PRIMARY KEY ("id")
 );
-
 ALTER TABLE "public"."integrations" OWNER TO "postgres";
-
 -- Indexes
 CREATE INDEX "idx_integrations_type"   ON "public"."integrations" USING btree ("type");
 CREATE INDEX "idx_integrations_status" ON "public"."integrations" USING btree ("status");
-
 -- Auto-update updated_at on row changes
 CREATE OR REPLACE FUNCTION public.update_integrations_updated_at()
 RETURNS trigger LANGUAGE plpgsql AS $$
@@ -31,17 +28,14 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 CREATE TRIGGER trg_integrations_updated_at
     BEFORE UPDATE ON "public"."integrations"
     FOR EACH ROW
     EXECUTE FUNCTION public.update_integrations_updated_at();
-
 -- ==========================================================================
 -- RLS — follows the same admin-only pattern as system_settings
 -- ==========================================================================
 ALTER TABLE "public"."integrations" ENABLE ROW LEVEL SECURITY;
-
 -- Admins / superadmins / staff can read all integrations
 CREATE POLICY "Admins can view integrations"
     ON "public"."integrations"
@@ -59,7 +53,6 @@ CREATE POLICY "Admins can view integrations"
               AND user_roles.role IN ('super_admin', 'admin')
         )
     );
-
 -- Only admins / superadmins can insert
 CREATE POLICY "Admins can create integrations"
     ON "public"."integrations"
@@ -77,7 +70,6 @@ CREATE POLICY "Admins can create integrations"
               AND user_roles.role IN ('super_admin', 'admin')
         )
     );
-
 -- Only admins / superadmins can update
 CREATE POLICY "Admins can update integrations"
     ON "public"."integrations"
@@ -107,7 +99,6 @@ CREATE POLICY "Admins can update integrations"
               AND user_roles.role IN ('super_admin', 'admin')
         )
     );
-
 -- Only admins / superadmins can delete
 CREATE POLICY "Admins can delete integrations"
     ON "public"."integrations"
@@ -125,7 +116,6 @@ CREATE POLICY "Admins can delete integrations"
               AND user_roles.role IN ('super_admin', 'admin')
         )
     );
-
 -- Service role gets full access (edge functions, cron, etc.)
 GRANT ALL ON TABLE "public"."integrations" TO "service_role";
 GRANT ALL ON TABLE "public"."integrations" TO "authenticated";

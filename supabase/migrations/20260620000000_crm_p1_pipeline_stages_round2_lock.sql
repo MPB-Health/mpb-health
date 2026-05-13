@@ -24,7 +24,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ----------------------------------------------------------------------------
 -- 1. Schema additions
 -- ----------------------------------------------------------------------------
@@ -35,12 +34,10 @@ ALTER TABLE public.crm_pipeline_stages
         CHECK (routes_to_subsection IS NULL OR routes_to_subsection IN (
             'working', 'nurture', 'linkedin', 'do_not_contact', 'concierge_handoff'
         ));
-
 COMMENT ON COLUMN public.crm_pipeline_stages.is_terminal IS
     'true when the stage ends the active sales motion (won/nurture/lost). Drives reporting + cadence halts.';
 COMMENT ON COLUMN public.crm_pipeline_stages.routes_to_subsection IS
     'Lead workflow subsection a lead is auto-routed to when entering this stage. Read by crm_lead_workflow_subsection_sync().';
-
 -- ----------------------------------------------------------------------------
 -- 2. Round 2 order — swap working ↔ quoted, lock the remaining 6
 -- ----------------------------------------------------------------------------
@@ -55,7 +52,6 @@ UPDATE public.crm_pipeline_stages SET
     routes_to_subsection = 'working',
     updated_at          = now()
 WHERE name = 'new';
-
 UPDATE public.crm_pipeline_stages SET
     display_name        = 'Quoted',
     sort_order          = 2,
@@ -66,7 +62,6 @@ UPDATE public.crm_pipeline_stages SET
     routes_to_subsection = 'working',
     updated_at          = now()
 WHERE name = 'quoted';
-
 UPDATE public.crm_pipeline_stages SET
     display_name        = 'Working',
     sort_order          = 3,
@@ -77,7 +72,6 @@ UPDATE public.crm_pipeline_stages SET
     routes_to_subsection = 'working',
     updated_at          = now()
 WHERE name = 'working';
-
 UPDATE public.crm_pipeline_stages SET
     display_name        = 'Engaged / Qualifying',
     sort_order          = 4,
@@ -88,7 +82,6 @@ UPDATE public.crm_pipeline_stages SET
     routes_to_subsection = 'working',
     updated_at          = now()
 WHERE name = 'engaged';
-
 UPDATE public.crm_pipeline_stages SET
     display_name        = 'Application in Progress',
     sort_order          = 5,
@@ -99,7 +92,6 @@ UPDATE public.crm_pipeline_stages SET
     routes_to_subsection = 'working',
     updated_at          = now()
 WHERE name = 'application_in_progress';
-
 UPDATE public.crm_pipeline_stages SET
     display_name        = 'Won — Enrolled',
     sort_order          = 6,
@@ -110,7 +102,6 @@ UPDATE public.crm_pipeline_stages SET
     routes_to_subsection = 'concierge_handoff',
     updated_at          = now()
 WHERE name = 'won';
-
 UPDATE public.crm_pipeline_stages SET
     display_name        = 'Nurture',
     sort_order          = 7,
@@ -121,7 +112,6 @@ UPDATE public.crm_pipeline_stages SET
     routes_to_subsection = 'nurture',
     updated_at          = now()
 WHERE name = 'nurture';
-
 UPDATE public.crm_pipeline_stages SET
     display_name        = 'Lost',
     sort_order          = 8,
@@ -132,7 +122,6 @@ UPDATE public.crm_pipeline_stages SET
     routes_to_subsection = 'do_not_contact',
     updated_at          = now()
 WHERE name = 'lost';
-
 -- ----------------------------------------------------------------------------
 -- 3. Force-deactivate any legacy stages that drifted in
 -- ----------------------------------------------------------------------------
@@ -144,7 +133,6 @@ WHERE name NOT IN (
     'new', 'quoted', 'working', 'engaged',
     'application_in_progress', 'won', 'nurture', 'lost'
 );
-
 -- ----------------------------------------------------------------------------
 -- 4. Backfill any orphan lead_submissions.pipeline_stage to a canonical slug
 --    (defensive — 8stage_workflow already mapped; this catches drift since.)
@@ -168,7 +156,6 @@ WHERE pipeline_stage IS NOT NULL
     'new', 'quoted', 'working', 'engaged',
     'application_in_progress', 'won', 'nurture', 'lost'
   );
-
 -- ----------------------------------------------------------------------------
 -- 5. Replace the stage→subsection sync function with a data-driven version
 --    that reads from crm_pipeline_stages.routes_to_subsection
@@ -231,7 +218,6 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 -- Trigger already exists from 20260606140000 — just make sure it's pointed at
 -- the updated function (no DROP needed, CREATE OR REPLACE handles it).
 
@@ -260,9 +246,7 @@ AS $$
        AND (org_id IS NULL OR org_id = p_org_id)
      ORDER BY sort_order ASC, name ASC
 $$;
-
 REVOKE ALL ON FUNCTION public.crm_active_pipeline_stages(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.crm_active_pipeline_stages(uuid)
     TO authenticated, service_role;
-
 COMMIT;

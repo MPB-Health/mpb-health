@@ -13,7 +13,6 @@
 
 -- 1a. Drop unified_user_roles view and replace with RPC
 DROP VIEW IF EXISTS public.unified_user_roles;
-
 CREATE OR REPLACE FUNCTION public.get_unified_user_roles()
 RETURNS TABLE (
     user_id UUID,
@@ -84,15 +83,11 @@ BEGIN
     ORDER BY u.email;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.get_unified_user_roles() TO authenticated;
-
 COMMENT ON FUNCTION public.get_unified_user_roles() IS
     'Returns unified user roles (replaces unified_user_roles view). Only accessible by admins. Does not expose auth.users to API.';
-
 -- 1b. Ensure users_with_roles view is dropped (may have been re-created elsewhere)
 DROP VIEW IF EXISTS public.users_with_roles;
-
 -- ============================================================================
 -- PART 2: FIX security_definer_view — Use security_invoker on views
 -- ============================================================================
@@ -100,7 +95,6 @@ DROP VIEW IF EXISTS public.users_with_roles;
 -- 2a. crm_deal_stage_metrics — no auth.users, use security_invoker
 -- Use CTE for window function (aggregates cannot contain window functions)
 DROP VIEW IF EXISTS public.crm_deal_stage_metrics;
-
 CREATE VIEW public.crm_deal_stage_metrics
 WITH (security_invoker = true)
 AS
@@ -144,25 +138,19 @@ LEFT JOIN stage_durations sd ON sd.deal_id = d.id AND sd.to_stage_id = s.id
 WHERE s.is_active = true
 GROUP BY d.org_id, s.id, s.name, s.display_name, s.sort_order, s.is_won_stage, s.is_lost_stage
 ORDER BY s.sort_order;
-
 -- 2b. meeting_attendees — alias for advisor_meeting_attendees
 DROP VIEW IF EXISTS public.meeting_attendees;
-
 CREATE VIEW public.meeting_attendees
 WITH (security_invoker = true)
 AS
 SELECT * FROM public.advisor_meeting_attendees;
-
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.meeting_attendees TO authenticated;
 GRANT SELECT ON public.meeting_attendees TO anon;
 GRANT ALL ON public.meeting_attendees TO service_role;
-
 COMMENT ON VIEW public.meeting_attendees IS
     'Compatibility view for advisor_meeting_attendees. Code references meeting_attendees; physical table is advisor_meeting_attendees.';
-
 -- 2c. organization_members — alias for org_memberships
 DROP VIEW IF EXISTS public.organization_members;
-
 CREATE VIEW public.organization_members
 WITH (security_invoker = true)
 AS
@@ -176,13 +164,10 @@ SELECT
     updated_at
 FROM org_memberships
 WHERE status = 'active';
-
 GRANT SELECT ON public.organization_members TO authenticated;
-
 -- 2d. user_organization_roles — alias for org_memberships (has INSTEAD OF triggers)
 -- Triggers remain SECURITY DEFINER (required for INSERT/UPDATE/DELETE)
 DROP VIEW IF EXISTS public.user_organization_roles;
-
 CREATE VIEW public.user_organization_roles
 WITH (security_invoker = true)
 AS
@@ -193,9 +178,7 @@ SELECT
     joined_at AS created_at
 FROM org_memberships
 WHERE status = 'active';
-
 GRANT SELECT ON public.user_organization_roles TO authenticated;
-
 -- Re-create INSTEAD OF triggers (they were dropped with the view)
 CREATE OR REPLACE FUNCTION user_organization_roles_insert_trigger()
 RETURNS TRIGGER
@@ -213,7 +196,6 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION user_organization_roles_update_trigger()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -227,7 +209,6 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION user_organization_roles_delete_trigger()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -241,19 +222,16 @@ BEGIN
     RETURN OLD;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS user_organization_roles_instead_of_insert ON public.user_organization_roles;
 CREATE TRIGGER user_organization_roles_instead_of_insert
     INSTEAD OF INSERT ON public.user_organization_roles
     FOR EACH ROW
     EXECUTE FUNCTION user_organization_roles_insert_trigger();
-
 DROP TRIGGER IF EXISTS user_organization_roles_instead_of_update ON public.user_organization_roles;
 CREATE TRIGGER user_organization_roles_instead_of_update
     INSTEAD OF UPDATE ON public.user_organization_roles
     FOR EACH ROW
     EXECUTE FUNCTION user_organization_roles_update_trigger();
-
 DROP TRIGGER IF EXISTS user_organization_roles_instead_of_delete ON public.user_organization_roles;
 CREATE TRIGGER user_organization_roles_instead_of_delete
     INSTEAD OF DELETE ON public.user_organization_roles

@@ -35,10 +35,8 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 
     UNIQUE(user_id, org_id)
 );
-
 -- RLS
 ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_preferences' AND policyname = 'Users can view own preferences') THEN
     CREATE POLICY "Users can view own preferences" ON user_preferences FOR SELECT USING (auth.uid() = user_id);
@@ -50,7 +48,6 @@ DO $$ BEGIN
     CREATE POLICY "Users can insert own preferences" ON user_preferences FOR INSERT WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- RPC function
 CREATE OR REPLACE FUNCTION get_or_create_user_preferences(p_user_id UUID, p_org_id UUID)
 RETURNS user_preferences
@@ -72,7 +69,6 @@ BEGIN
     RETURN v_prefs;
 END;
 $$;
-
 -- Updated_at trigger
 CREATE OR REPLACE TRIGGER update_user_preferences_updated_at
     BEFORE UPDATE ON user_preferences

@@ -52,8 +52,6 @@ BEGIN
   );
 END;
 $$;
-
 COMMENT ON FUNCTION public.get_my_org_permissions_snapshot(uuid) IS
   'Returns membership role + effective permission keys for auth.uid() in one call (CRM OrgContext).';
-
 GRANT EXECUTE ON FUNCTION public.get_my_org_permissions_snapshot(uuid) TO authenticated;

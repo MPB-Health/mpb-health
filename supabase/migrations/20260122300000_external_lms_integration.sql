@@ -9,7 +9,6 @@ ADD COLUMN IF NOT EXISTS external_lms_lesson_id TEXT,
 ADD COLUMN IF NOT EXISTS lms_provider TEXT DEFAULT 'internal' CHECK (lms_provider IN ('internal', 'tutor_lms', 'external')),
 ADD COLUMN IF NOT EXISTS requires_external_completion BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS external_course_name TEXT;
-
 -- Create table for tracking external LMS completion
 CREATE TABLE IF NOT EXISTS advisor_external_training_progress (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,7 +31,6 @@ CREATE TABLE IF NOT EXISTS advisor_external_training_progress (
   UNIQUE(advisor_id, module_id),
   UNIQUE(advisor_id, external_course_id, external_lesson_id)
 );
-
 -- Create table for LMS course catalog (mirrors external LMS structure)
 CREATE TABLE IF NOT EXISTS external_lms_courses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -51,7 +49,6 @@ CREATE TABLE IF NOT EXISTS external_lms_courses (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(lms_provider, external_id)
 );
-
 -- Create table for LMS lessons within courses
 CREATE TABLE IF NOT EXISTS external_lms_lessons (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -68,7 +65,6 @@ CREATE TABLE IF NOT EXISTS external_lms_lessons (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Create table for advisor course enrollments
 CREATE TABLE IF NOT EXISTS advisor_lms_enrollments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,7 +83,6 @@ CREATE TABLE IF NOT EXISTS advisor_lms_enrollments (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(advisor_id, course_id)
 );
-
 -- Create table for lesson completion tracking
 CREATE TABLE IF NOT EXISTS advisor_lesson_completions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -104,19 +99,16 @@ CREATE TABLE IF NOT EXISTS advisor_lesson_completions (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(advisor_id, lesson_id)
 );
-
 -- Enable RLS
 ALTER TABLE advisor_external_training_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE external_lms_courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE external_lms_lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE advisor_lms_enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE advisor_lesson_completions ENABLE ROW LEVEL SECURITY;
-
 -- RLS Policies for external_lms_courses (public read)
 CREATE POLICY "Anyone can view active LMS courses"
   ON external_lms_courses FOR SELECT
   USING (is_active = true);
-
 CREATE POLICY "Admins can manage LMS courses"
   ON external_lms_courses FOR ALL
   USING (
@@ -126,12 +118,10 @@ CREATE POLICY "Admins can manage LMS courses"
       AND u.raw_user_meta_data->>'role' IN ('admin', 'super_admin')
     )
   );
-
 -- RLS Policies for external_lms_lessons (public read)
 CREATE POLICY "Anyone can view LMS lessons"
   ON external_lms_lessons FOR SELECT
   USING (true);
-
 CREATE POLICY "Admins can manage LMS lessons"
   ON external_lms_lessons FOR ALL
   USING (
@@ -141,7 +131,6 @@ CREATE POLICY "Admins can manage LMS lessons"
       AND u.raw_user_meta_data->>'role' IN ('admin', 'super_admin')
     )
   );
-
 -- RLS Policies for advisor_lms_enrollments
 CREATE POLICY "Advisors can view own enrollments"
   ON advisor_lms_enrollments FOR SELECT
@@ -150,7 +139,6 @@ CREATE POLICY "Advisors can view own enrollments"
       SELECT id FROM advisor_profiles WHERE id = auth.uid()
     )
   );
-
 CREATE POLICY "Advisors can manage own enrollments"
   ON advisor_lms_enrollments FOR ALL
   USING (
@@ -158,7 +146,6 @@ CREATE POLICY "Advisors can manage own enrollments"
       SELECT id FROM advisor_profiles WHERE id = auth.uid()
     )
   );
-
 CREATE POLICY "Admins can view all enrollments"
   ON advisor_lms_enrollments FOR SELECT
   USING (
@@ -168,7 +155,6 @@ CREATE POLICY "Admins can view all enrollments"
       AND u.raw_user_meta_data->>'role' IN ('admin', 'super_admin')
     )
   );
-
 -- RLS Policies for advisor_lesson_completions
 CREATE POLICY "Advisors can view own lesson completions"
   ON advisor_lesson_completions FOR SELECT
@@ -177,7 +163,6 @@ CREATE POLICY "Advisors can view own lesson completions"
       SELECT id FROM advisor_profiles WHERE id = auth.uid()
     )
   );
-
 CREATE POLICY "Advisors can manage own lesson completions"
   ON advisor_lesson_completions FOR ALL
   USING (
@@ -185,7 +170,6 @@ CREATE POLICY "Advisors can manage own lesson completions"
       SELECT id FROM advisor_profiles WHERE id = auth.uid()
     )
   );
-
 -- RLS Policies for advisor_external_training_progress
 CREATE POLICY "Advisors can view own external progress"
   ON advisor_external_training_progress FOR SELECT
@@ -194,7 +178,6 @@ CREATE POLICY "Advisors can view own external progress"
       SELECT id FROM advisor_profiles WHERE id = auth.uid()
     )
   );
-
 CREATE POLICY "Advisors can manage own external progress"
   ON advisor_external_training_progress FOR ALL
   USING (
@@ -202,7 +185,6 @@ CREATE POLICY "Advisors can manage own external progress"
       SELECT id FROM advisor_profiles WHERE id = auth.uid()
     )
   );
-
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_external_progress_advisor ON advisor_external_training_progress(advisor_id);
 CREATE INDEX IF NOT EXISTS idx_external_progress_module ON advisor_external_training_progress(module_id);
@@ -212,7 +194,6 @@ CREATE INDEX IF NOT EXISTS idx_enrollments_advisor ON advisor_lms_enrollments(ad
 CREATE INDEX IF NOT EXISTS idx_enrollments_course ON advisor_lms_enrollments(course_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_completions_advisor ON advisor_lesson_completions(advisor_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_completions_enrollment ON advisor_lesson_completions(enrollment_id);
-
 -- ============================================================================
 -- Seed MPB Training Course Data
 -- ============================================================================
@@ -267,7 +248,6 @@ INSERT INTO external_lms_courses (
   description = EXCLUDED.description,
   course_url = EXCLUDED.course_url,
   updated_at = NOW();
-
 -- Insert lessons for "Become an MPB Healthcare Advisor" course
 WITH course AS (
   SELECT id FROM external_lms_courses WHERE external_id = '15' AND lms_provider = 'tutor_lms'
@@ -325,12 +305,10 @@ FROM course, (VALUES
   ('required-forms', 'Complete Your Required Forms', 'https://training.mpb.health/courses/become-an-mpb-healthcare-advisor/lessons/complete-your-required-forms/', 27, 15, false, true)
 ) AS lesson(external_id, title, lesson_url, order_index, duration_minutes, has_video, is_required)
 ON CONFLICT DO NOTHING;
-
 -- Update total lessons count for the Healthcare Advisor course
 UPDATE external_lms_courses
 SET updated_at = NOW()
 WHERE external_id = '15' AND lms_provider = 'tutor_lms';
-
 -- Function to calculate enrollment progress
 CREATE OR REPLACE FUNCTION calculate_enrollment_progress()
 RETURNS TRIGGER AS $$
@@ -379,14 +357,12 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Trigger to update enrollment progress on lesson completion
 DROP TRIGGER IF EXISTS update_enrollment_progress ON advisor_lesson_completions;
 CREATE TRIGGER update_enrollment_progress
   AFTER INSERT OR UPDATE ON advisor_lesson_completions
   FOR EACH ROW
   EXECUTE FUNCTION calculate_enrollment_progress();
-
 -- Function to auto-enroll advisor and create lesson completion records
 CREATE OR REPLACE FUNCTION enroll_advisor_in_course(
   p_advisor_id UUID,
@@ -422,6 +398,5 @@ BEGIN
   RETURN v_enrollment_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION enroll_advisor_in_course(UUID, UUID) TO authenticated;

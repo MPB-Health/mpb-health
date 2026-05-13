@@ -48,23 +48,18 @@ CREATE TABLE IF NOT EXISTS compliance_documents (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Indexes
 CREATE INDEX idx_compliance_documents_org_id ON compliance_documents(org_id);
 CREATE INDEX idx_compliance_documents_category ON compliance_documents(org_id, category);
 CREATE INDEX idx_compliance_documents_active ON compliance_documents(org_id, is_active) WHERE is_active = true;
-
 -- RLS
 ALTER TABLE compliance_documents ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view compliance documents in their org"
   ON compliance_documents FOR SELECT
   USING (user_has_org_access(org_id));
-
 CREATE POLICY "Admins can manage compliance documents"
   ON compliance_documents FOR ALL
   USING (user_is_org_owner_or_admin(org_id));
-
 -- ============================================================================
 -- COMPLIANCE ACKNOWLEDGMENTS
 -- ============================================================================
@@ -102,29 +97,23 @@ CREATE TABLE IF NOT EXISTS compliance_acknowledgments (
 
   UNIQUE(document_id, user_id)
 );
-
 -- Indexes
 CREATE INDEX idx_compliance_acks_user_id ON compliance_acknowledgments(user_id);
 CREATE INDEX idx_compliance_acks_document_id ON compliance_acknowledgments(document_id);
 CREATE INDEX idx_compliance_acks_status ON compliance_acknowledgments(status) WHERE status IN ('pending', 'expired');
 CREATE INDEX idx_compliance_acks_due ON compliance_acknowledgments(due_date) WHERE status = 'pending';
-
 -- RLS
 ALTER TABLE compliance_acknowledgments ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view their own acknowledgments"
   ON compliance_acknowledgments FOR SELECT
   USING (user_id = auth.uid() OR user_is_org_manager_or_above(org_id));
-
 CREATE POLICY "Users can complete their own acknowledgments"
   ON compliance_acknowledgments FOR UPDATE
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
-
 CREATE POLICY "Admins can manage all acknowledgments"
   ON compliance_acknowledgments FOR ALL
   USING (user_is_org_owner_or_admin(org_id));
-
 -- ============================================================================
 -- COMPLIANCE VIOLATIONS
 -- ============================================================================
@@ -159,24 +148,19 @@ CREATE TABLE IF NOT EXISTS compliance_violations (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Indexes
 CREATE INDEX idx_compliance_violations_org_id ON compliance_violations(org_id);
 CREATE INDEX idx_compliance_violations_user_id ON compliance_violations(user_id);
 CREATE INDEX idx_compliance_violations_status ON compliance_violations(status) WHERE status IN ('open', 'investigating');
 CREATE INDEX idx_compliance_violations_severity ON compliance_violations(severity) WHERE status = 'open';
-
 -- RLS
 ALTER TABLE compliance_violations ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Managers can view violations in their org"
   ON compliance_violations FOR SELECT
   USING (user_is_org_manager_or_above(org_id));
-
 CREATE POLICY "Admins can manage violations"
   ON compliance_violations FOR ALL
   USING (user_is_org_owner_or_admin(org_id));
-
 -- ============================================================================
 -- AI SUGGESTIONS
 -- ============================================================================
@@ -219,28 +203,22 @@ CREATE TABLE IF NOT EXISTS ai_suggestions (
   acted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Indexes
 CREATE INDEX idx_ai_suggestions_user_id ON ai_suggestions(user_id);
 CREATE INDEX idx_ai_suggestions_lead_id ON ai_suggestions(lead_id);
 CREATE INDEX idx_ai_suggestions_type ON ai_suggestions(suggestion_type);
 CREATE INDEX idx_ai_suggestions_status ON ai_suggestions(status) WHERE status = 'pending';
-
 -- RLS
 ALTER TABLE ai_suggestions ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view their own suggestions"
   ON ai_suggestions FOR SELECT
   USING (user_id = auth.uid());
-
 CREATE POLICY "System can create suggestions"
   ON ai_suggestions FOR INSERT
   WITH CHECK (user_has_org_access(org_id));
-
 CREATE POLICY "Users can update their own suggestions"
   ON ai_suggestions FOR UPDATE
   USING (user_id = auth.uid());
-
 -- ============================================================================
 -- AI SCORING FACTORS
 -- ============================================================================
@@ -270,18 +248,14 @@ CREATE TABLE IF NOT EXISTS ai_scoring_factors (
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 -- Indexes
 CREATE INDEX idx_ai_scoring_factors_lead ON ai_scoring_factors(lead_id) WHERE is_active = true;
 CREATE INDEX idx_ai_scoring_factors_item ON ai_scoring_factors(priority_item_id) WHERE is_active = true;
-
 -- RLS
 ALTER TABLE ai_scoring_factors ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view scoring factors in their org"
   ON ai_scoring_factors FOR SELECT
   USING (user_has_org_access(org_id));
-
 -- ============================================================================
 -- FUNCTIONS
 -- ============================================================================
@@ -338,7 +312,6 @@ BEGIN
     CASE WHEN v_required > 0 THEN (v_completed::DECIMAL / v_required * 100) ELSE 100 END;
 END;
 $$;
-
 -- Create acknowledgments for a user when they join
 CREATE OR REPLACE FUNCTION create_user_compliance_requirements(
   p_org_id UUID,
@@ -364,7 +337,6 @@ BEGIN
   ON CONFLICT (document_id, user_id) DO NOTHING;
 END;
 $$;
-
 -- Complete a compliance acknowledgment
 CREATE OR REPLACE FUNCTION complete_compliance_acknowledgment(
   p_acknowledgment_id UUID,
@@ -438,7 +410,6 @@ BEGIN
   RETURN v_passed;
 END;
 $$;
-
 -- Log AI suggestion feedback
 CREATE OR REPLACE FUNCTION record_ai_suggestion_feedback(
   p_suggestion_id UUID,
@@ -459,7 +430,6 @@ BEGIN
   WHERE id = p_suggestion_id AND user_id = auth.uid();
 END;
 $$;
-
 -- Calculate AI-based lead score adjustments
 CREATE OR REPLACE FUNCTION calculate_ai_score_adjustment(
   p_lead_id UUID
@@ -484,7 +454,6 @@ BEGIN
   RETURN v_adjustment;
 END;
 $$;
-
 -- Get org compliance summary
 CREATE OR REPLACE FUNCTION get_org_compliance_summary(
   p_org_id UUID
@@ -522,7 +491,6 @@ BEGIN
   FROM user_scores;
 END;
 $$;
-
 -- ============================================================================
 -- SEED DATA
 -- ============================================================================
@@ -575,7 +543,6 @@ FROM (VALUES
   )
 ) AS t(title, description, category, document_type, content_html, is_required, required_for_roles, due_within_days)
 ON CONFLICT DO NOTHING;
-
 -- ============================================================================
 -- TRIGGERS
 -- ============================================================================
@@ -583,15 +550,12 @@ ON CONFLICT DO NOTHING;
 CREATE TRIGGER update_compliance_documents_updated_at
   BEFORE UPDATE ON compliance_documents
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_compliance_acknowledgments_updated_at
   BEFORE UPDATE ON compliance_acknowledgments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_compliance_violations_updated_at
   BEFORE UPDATE ON compliance_violations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================================================
 -- VIEWS
 -- ============================================================================

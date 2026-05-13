@@ -141,26 +141,43 @@ reads `quote_cadence_started_at` (matches Round 2 spec).
 ## Section 6 — Leads Module (Round 3)
 
 All Round 3 items shipped. See Phase 2 in `section9-removals.md` for the
-complete list. Round 3 Addendum (Section 7):
+complete list.
 
-- Last Touched updates only on rep-initiated activity — confirmed by
-  `crm_lead_bump_last_touched` trigger (excludes inbound + engagement
-  signals). **Phase 6**: also removed the explicit
-  `last_touched_at = now()` write inside
-  `crm_register_engagement_signal`.
-- Master Template Library: shipped, admin-only.
+## Section 7 — Round 3 Addendum (Last Touched + Master Template Library)
+
+| Section 7 bullet | Status | Implementation |
+|---|---|---|
+| Last Touched updates only on rep-initiated activity | ✅ | `crm_lead_bump_last_touched` trigger filters out inbound + engagement signals; **Phase 6** removed the explicit `last_touched_at = now()` write from `crm_register_engagement_signal` |
+| Inbound events (lead reply, calendar booking, link click) do not bump Last Touched, but are captured separately on the activity timeline | ✅ | Inbound rows still flow through `crm_activities`/`crm_email_log` and surface in `UnifiedTimeline`; the bump trigger short-circuits on `direction='inbound'`, `engagement_signal`, `reply_received`, `link_click`, `calendar_booking` |
+| Build a master template library inside the Templates section | ✅ | `crm_master_templates` table + `MasterTemplates.tsx` page wired under `/templates/master` |
+| Master library is admin-view-only — reps do not see it in their Templates view | ✅ | Sidebar entry gated by `templates.master.manage`; `MasterTemplates` page wrapped in `PermissionGate` with the same key |
+| Admin can create, edit, archive, and version master templates (email, phone script, SMS) | ✅ | Channel CHECK constraint covers all three; `version` integer + `parent_template_id` enable in-place revisioning; archive/restore via `archived_at` toggle |
+| Master library coexists with per-rep template libraries — per-rep libraries remain private | ✅ | `crm_templates` (per-rep) untouched; SELECT RLS on `message_templates` is unchanged from Phase 1 RLS repair |
+| Master templates are the source of truth for admin-driven mass sends (mass email from Leads list and future company-wide campaigns) | ✅ | `BulkEmailModal` defaults the picker to Master templates and routes via `EmailService.sendFromMasterTemplate` (`packages/crm-core/src/email/emailService.ts`) — token-merges `#leadname`/`#firstname`/`#lastname`/`{{first_name}}`-style and stamps `master_template_id` on the outbound `crm_email_log` row |
+| Per-template usage / "last used" metrics rolled up to the admin view | ✅ | **Phase 7** migration `20260620420000_crm_p7_master_template_send_attribution.sql` adds `crm_email_log.master_template_id`, `crm_master_templates.usage_count` + `last_used_at`, and `crm_master_template_bump_usage(uuid)` RPC. Both `send-crm-email` and `send-crm-email-v2` edge functions accept `master_template_id` and call the bump RPC after a successful Resend dispatch |
+| Open question — should reps be able to "pull" a master template into their personal library as a starting point? | ✅ Resolved: **No** | Default assumption confirmed. Reps do not get a copy/import action; the Master Library is admin-edit-only via RLS, and rep-side cadence steps reference master templates by id (not by clone). If reps want a personal version of a master template they can compose a new per-rep template from scratch |
 
 ## Section 8 — Daily Log Auto-Population (Round 4)
 
-Triggers in place:
-
-- `crm_dl_emit_from_activity` — `crm_activities` (skips inbound calls).
-  **Phase 6**: also classifies cancellation calls into
-  `activity_subtype = 'cancellation'`.
-- `crm_dl_emit_from_email_log` — outbound only.
-- `crm_dl_emit_from_special_project` — manual special projects.
-
-Manual rows are flagged via `manual = true`.
+| Round 4 bullet | Status | Implementation |
+|---|---|---|
+| GoTo Connect call → logged on call completion (duration captured) | ✅ | `crm_dl_emit_from_activity` on `crm_activities` insert with `activity_type='call'`; `call_duration_seconds` persisted to `metadata`. GoTo provider sync writes the activity row (Phase 5 webhook) |
+| CRM-sent email → logged on send | ✅ | `crm_dl_emit_from_email_log` on outbound `crm_email_log` insert |
+| GoTo Connect SMS → logged on send | ✅ | Same activity-trigger path; `activity_type='sms'`/`'text'` classified to `lead_communication` |
+| Note → logged on save | ✅ | `crm_dl_emit_from_activity`, `activity_type='note'` |
+| Task complete → logged on completion | ✅ **Phase 7** | `crm_dl_emit_from_task_complete` AFTER UPDATE on `lead_tasks` — fires when `status` transitions to `'completed'` or `completed_at` flips from null to set |
+| Lead profile edit → logged on save | ✅ **Phase 7** | `crm_dl_emit_from_lead_profile_edit` AFTER UPDATE on `lead_submissions` — emits when an authenticated rep changes a business field; skips cascaded trigger writes via `pg_trigger_depth()` and skips system writes via `auth.uid() IS NULL` short-circuit |
+| Outlook-synced meeting → logged on calendar event start | ✅ (framework) | Path runs through `crm_dl_emit_from_activity` with `activity_type='meeting'`. Outlook integration in Phase 5 writes the activity row on calendar webhook |
+| LinkedIn touch → manual until LinkedIn integration is live | ✅ | Surface present in Daily Log; rep adds via the new "Log manual LinkedIn Activity" button. Auto-capture wires in once Phase 5 LinkedIn integration ships |
+| Each auto-logged row feeds Activity Detail and rolls into Daily Log totals | ✅ | `trg_daily_log_rollup` on `crm_daily_log_events` keeps the per-day counters on `crm_rep_daily_log_entries` in sync (`calls_made`, `emails_sent`, `linkedin_touches`, `meetings_held`, plus the Section 11 sub-section counters) |
+| "Leads worked" derived from distinct lead IDs touched that day | ✅ **Phase 7** | `crm_count_leads_worked(p_org_id, p_user_id, p_date)` RPC. Daily Log header tile reads it for the current rep / current day |
+| Manual entry available for off-CRM activity (in-person meetings, personal-cell calls, networking events, any touch not captured by an integration) | ✅ **Phase 7** | `crm_daily_log_add_manual(p_org_id, p_section, p_activity_type, p_description, p_occurred_at, p_metadata)` RPC + `ManualEntryModal` reachable from the page header and from each non-special-projects section header |
+| Manually-entered rows visually flagged (icon, color, "Manual" tag) | ✅ | Amber `manual` chip + dot accent. Auto rows show emerald `auto` chip with lock icon |
+| Manual rows: editable by the rep who logged them | ✅ **Phase 7** | RLS: rep can `UPDATE` / `DELETE` only their own rows where `manual = true`. The Daily Log page shows a delete affordance on hover for own manual rows |
+| Auto rows: read-only for reps; admin can correct/delete with audit trail | ✅ **Phase 7** | RLS denies UPDATE/DELETE on `manual = false` rows from `authenticated`. Admins use `crm_daily_log_admin_edit(event_id, patch jsonb, reason)` and `crm_daily_log_admin_delete(event_id, reason)`; both write a before/after image to `crm_daily_log_corrections` (admin-only SELECT) |
+| Rep's Daily Log view: per-rep, per-day, auto-populated as activity occurs | ✅ | Default route. Realtime subscription on `crm_daily_log_events` filtered by `user_id` redraws on insert/update/delete |
+| Today's row updates in real time (push or short-poll) | ✅ | Supabase Realtime channel; counts re-derive from fresh events automatically |
+| Admin view: filter by rep, date range, and activity source (auto vs manual) | ✅ **Phase 7** | `?view=admin` query param (gated by `orgRole = 'admin' \| 'owner'`). Filter bar with rep dropdown (powered by `useOrgReps`), from/to date pickers, and source filter (`all` / `auto` / `manual`). Realtime subscription widens to org-wide events |
 
 ## Section 9 + Section 10 — Navigation & Recruiting
 

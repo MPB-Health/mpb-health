@@ -5,7 +5,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: ADD MISSING PERMISSION DEFINITIONS
 -- ============================================================================
@@ -49,8 +48,6 @@ INSERT INTO public.permissions (key, module, description) VALUES
     ('studio.access',   'studio',   'Access CRM Studio'),
     ('studio.manage',   'studio',   'Create and edit custom modules')
 ON CONFLICT (key) DO NOTHING;
-
-
 -- ============================================================================
 -- SECTION B: GRANT NEW PERMISSIONS TO ROLES (DEFAULT ORG)
 -- ============================================================================
@@ -73,7 +70,6 @@ WHERE p.key IN (
     'studio.access', 'studio.manage'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- admin: ALL new permissions
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -92,7 +88,6 @@ WHERE p.key IN (
     'studio.access', 'studio.manage'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- manager: most read/write, no delete/export, limited settings
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -110,7 +105,6 @@ WHERE p.key IN (
     'settings.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- agent: read/write only, limited email/settings
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -128,7 +122,6 @@ WHERE p.key IN (
     'settings.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- member: read only
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -146,8 +139,6 @@ WHERE p.key IN (
     'settings.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
-
 -- ============================================================================
 -- SECTION C: GRANT PERMISSIONS FOR ALL EXISTING ORGS
 -- This ensures any organization created before this migration gets the permissions
@@ -177,5 +168,4 @@ WHERE rp.org_id = '00000000-0000-4000-a000-000000000001'
       )
   )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 COMMIT;

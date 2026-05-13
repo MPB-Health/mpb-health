@@ -35,20 +35,16 @@ CREATE TABLE IF NOT EXISTS crm_dashboard_layouts (
   -- Unique constraint: one layout name per user per org
   UNIQUE(user_id, org_id, name)
 );
-
 -- Indexes for fast lookups
 CREATE INDEX IF NOT EXISTS idx_dashboard_layouts_user ON crm_dashboard_layouts(user_id);
 CREATE INDEX IF NOT EXISTS idx_dashboard_layouts_org ON crm_dashboard_layouts(org_id);
 CREATE INDEX IF NOT EXISTS idx_dashboard_layouts_default ON crm_dashboard_layouts(user_id, org_id, is_default) WHERE is_default = true;
-
 -- Enable RLS
 ALTER TABLE crm_dashboard_layouts ENABLE ROW LEVEL SECURITY;
-
 -- Users can manage their own layouts
 CREATE POLICY "Users manage own dashboard layouts" ON crm_dashboard_layouts
   FOR ALL TO authenticated
   USING (auth.uid() = user_id);
-
 -- ----------------------------------------------------------------------------
 -- Dashboard Notes Table
 -- Quick notes for the Notes widget
@@ -77,21 +73,17 @@ CREATE TABLE IF NOT EXISTS crm_dashboard_notes (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_dashboard_notes_user ON crm_dashboard_notes(user_id);
 CREATE INDEX IF NOT EXISTS idx_dashboard_notes_org ON crm_dashboard_notes(org_id);
 CREATE INDEX IF NOT EXISTS idx_dashboard_notes_pinned ON crm_dashboard_notes(user_id, is_pinned) WHERE is_pinned = true;
 CREATE INDEX IF NOT EXISTS idx_dashboard_notes_entity ON crm_dashboard_notes(linked_entity_type, linked_entity_id) WHERE linked_entity_id IS NOT NULL;
-
 -- Enable RLS
 ALTER TABLE crm_dashboard_notes ENABLE ROW LEVEL SECURITY;
-
 -- Users can manage their own notes
 CREATE POLICY "Users manage own dashboard notes" ON crm_dashboard_notes
   FOR ALL TO authenticated
   USING (auth.uid() = user_id);
-
 -- ----------------------------------------------------------------------------
 -- User Goals Table
 -- Goals tracking for the Goals widget
@@ -141,31 +133,25 @@ CREATE TABLE IF NOT EXISTS crm_user_goals (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_user_goals_user ON crm_user_goals(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_goals_org ON crm_user_goals(org_id);
 CREATE INDEX IF NOT EXISTS idx_user_goals_active ON crm_user_goals(user_id, status) WHERE status = 'active';
 CREATE INDEX IF NOT EXISTS idx_user_goals_period ON crm_user_goals(start_date, end_date);
-
 -- Enable RLS
 ALTER TABLE crm_user_goals ENABLE ROW LEVEL SECURITY;
-
 -- Users can view their own goals and goals assigned to them
 CREATE POLICY "Users view own and assigned goals" ON crm_user_goals
   FOR SELECT TO authenticated
   USING (auth.uid() = user_id OR auth.uid() = assigned_by);
-
 -- Users can manage their own personal goals
 CREATE POLICY "Users manage own personal goals" ON crm_user_goals
   FOR ALL TO authenticated
   USING (auth.uid() = user_id AND is_personal = true);
-
 -- Admins can assign goals (we'll check role in application layer)
 CREATE POLICY "Admins assign team goals" ON crm_user_goals
   FOR INSERT TO authenticated
   WITH CHECK (is_personal = false AND auth.uid() = assigned_by);
-
 -- ----------------------------------------------------------------------------
 -- Default Layout Templates Table
 -- Organization-wide default layouts for new users
@@ -195,19 +181,15 @@ CREATE TABLE IF NOT EXISTS crm_default_layout_templates (
 
   UNIQUE(org_id, name)
 );
-
 -- Index
 CREATE INDEX IF NOT EXISTS idx_default_layouts_org ON crm_default_layout_templates(org_id);
 CREATE INDEX IF NOT EXISTS idx_default_layouts_active ON crm_default_layout_templates(is_active) WHERE is_active = true;
-
 -- Enable RLS
 ALTER TABLE crm_default_layout_templates ENABLE ROW LEVEL SECURITY;
-
 -- Anyone authenticated can read default templates
 CREATE POLICY "Read default layout templates" ON crm_default_layout_templates
   FOR SELECT TO authenticated
   USING (true);
-
 -- ----------------------------------------------------------------------------
 -- Insert system default layout template
 -- ----------------------------------------------------------------------------
@@ -223,7 +205,6 @@ INSERT INTO crm_default_layout_templates (org_id, name, description, widgets) VA
   {"instanceId": "activity-1", "widgetId": "activity", "size": "md", "position": {"x": 6, "y": 2}, "collapsed": false, "config": {"limit": 5}},
   {"instanceId": "quick-actions-1", "widgetId": "quick-actions", "size": "full", "position": {"x": 0, "y": 3}, "collapsed": false, "config": {}}
 ]'::jsonb);
-
 -- ----------------------------------------------------------------------------
 -- Function: Get or create user dashboard layout
 -- ----------------------------------------------------------------------------
@@ -272,7 +253,6 @@ BEGIN
   RETURN v_layout;
 END;
 $$;
-
 -- ----------------------------------------------------------------------------
 -- Function: Save dashboard layout
 -- ----------------------------------------------------------------------------
@@ -301,7 +281,6 @@ BEGIN
   RETURN v_layout;
 END;
 $$;
-
 -- ----------------------------------------------------------------------------
 -- Function: Update goal progress automatically
 -- Called by triggers when relevant actions occur
@@ -358,7 +337,6 @@ BEGIN
   RETURN COALESCE(NEW, OLD);
 END;
 $$;
-
 -- Create triggers for automatic goal updates (only if source tables exist)
 DO $$
 BEGIN
@@ -379,7 +357,6 @@ BEGIN
   END IF;
 END;
 $$;
-
 -- ----------------------------------------------------------------------------
 -- Grant execute permissions
 -- ----------------------------------------------------------------------------

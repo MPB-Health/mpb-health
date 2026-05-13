@@ -16,7 +16,6 @@ DROP FUNCTION IF EXISTS public.get_advisor_hierarchy_tree(uuid);
 DROP FUNCTION IF EXISTS public.get_hierarchy_stats(uuid);
 DROP FUNCTION IF EXISTS public.get_active_advisor_meeting(uuid);
 DROP FUNCTION IF EXISTS public.get_meeting_with_stats(uuid);
-
 -- ============================
 -- 2. FIX ACTIVE FUNCTIONS
 -- ============================
@@ -74,7 +73,6 @@ BEGIN
     ORDER BY total_leads DESC;
 END;
 $$;
-
 -- 2b. get_active_advisor_emails: is_active → status = 'active'
 CREATE OR REPLACE FUNCTION public.get_active_advisor_emails()
 RETURNS TABLE(advisor_id uuid, email text, first_name text, last_name text)
@@ -94,7 +92,6 @@ BEGIN
     AND (ap.email IS NOT NULL OR u.email IS NOT NULL);
 END;
 $$;
-
 -- 2c. crm_pipeline_breakdown: add GROUP BY clause
 CREATE OR REPLACE FUNCTION public.crm_pipeline_breakdown(p_org_id uuid)
 RETURNS TABLE(
@@ -125,7 +122,6 @@ BEGIN
     ORDER BY ps.sort_order;
 END;
 $$;
-
 -- 2d. crm_today_summary: remove ::text cast on uuid comparisons
 CREATE OR REPLACE FUNCTION public.crm_today_summary(p_org_id uuid)
 RETURNS json
@@ -192,7 +188,6 @@ BEGIN
   RETURN v_result;
 END;
 $$;
-
 -- 2e. increment_message_template_times_used: create table if missing, then fix
 CREATE TABLE IF NOT EXISTS public.message_templates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -207,9 +202,7 @@ CREATE TABLE IF NOT EXISTS public.message_templates (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 ALTER TABLE public.message_templates ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE tablename = 'message_templates' AND policyname = 'Authenticated users can manage message_templates'
@@ -218,7 +211,6 @@ DO $$ BEGIN
       ON public.message_templates FOR ALL TO authenticated USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 -- 2f. increment_saved_search_use_count: create table if missing, then fix
 CREATE TABLE IF NOT EXISTS public.saved_searches (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -232,9 +224,7 @@ CREATE TABLE IF NOT EXISTS public.saved_searches (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
 ALTER TABLE public.saved_searches ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE tablename = 'saved_searches' AND policyname = 'Authenticated users can manage saved_searches'
@@ -243,7 +233,6 @@ DO $$ BEGIN
       ON public.saved_searches FOR ALL TO authenticated USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 -- 2g. get_available_health_plans: tier → plan_type, features removed, display_order → sort_order
 DROP FUNCTION IF EXISTS public.get_available_health_plans();
 CREATE FUNCTION public.get_available_health_plans()
@@ -268,7 +257,6 @@ BEGIN
   ORDER BY p.sort_order;
 END;
 $$;
-
 -- 2h. get_activity_feed: entity_type/entity_id don't exist in activities,
 --     user_id → actor_id
 DROP FUNCTION IF EXISTS public.get_activity_feed(uuid, uuid, integer, integer);
@@ -300,7 +288,6 @@ BEGIN
   OFFSET p_offset;
 END;
 $$;
-
 -- 2i. get_automation_stats: run_count → execution_count, org_id doesn't exist
 CREATE OR REPLACE FUNCTION public.get_automation_stats(p_org_id uuid)
 RETURNS TABLE(total_rules integer, active_rules integer, total_runs integer, success_rate numeric)
@@ -317,7 +304,6 @@ BEGIN
   FROM public.ai_automation_rules;
 END;
 $$;
-
 -- 2j. create_instant_meeting: jitsi_room_name → room_name
 CREATE OR REPLACE FUNCTION public.create_instant_meeting(
   p_title text,
@@ -369,7 +355,6 @@ BEGIN
   RETURN v_meeting;
 END;
 $$;
-
 -- 2k. get_leaderboard (overloaded – two signatures)
 --     Version 1 (3 args): profiles.full_name doesn't exist, ua.points doesn't exist
 --     user_achievements has progress/target/is_earned but no points column.
@@ -404,7 +389,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$;
-
 --     Version 2 (4 args): ap.points doesn't exist, org_memberships not org_members
 DROP FUNCTION IF EXISTS public.get_leaderboard(uuid, text, text, integer);
 CREATE FUNCTION public.get_leaderboard(

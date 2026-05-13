@@ -6,7 +6,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- SECTION A: CREATE NEW TABLES
 -- ============================================================================
@@ -25,9 +24,7 @@ CREATE TABLE IF NOT EXISTS public.orgs (
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
-
 ALTER TABLE public.orgs ENABLE ROW LEVEL SECURITY;
-
 -- A2: org_memberships - Links users to orgs with roles
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.org_memberships (
@@ -45,9 +42,7 @@ CREATE TABLE IF NOT EXISTS public.org_memberships (
     updated_at timestamptz DEFAULT now(),
     UNIQUE(user_id, org_id)
 );
-
 ALTER TABLE public.org_memberships ENABLE ROW LEVEL SECURITY;
-
 -- A3: permissions - Permission definitions
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.permissions (
@@ -57,9 +52,7 @@ CREATE TABLE IF NOT EXISTS public.permissions (
     description text,
     created_at timestamptz DEFAULT now()
 );
-
 ALTER TABLE public.permissions ENABLE ROW LEVEL SECURITY;
-
 -- A4: role_permissions - Which org roles get which permissions
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.role_permissions (
@@ -72,9 +65,7 @@ CREATE TABLE IF NOT EXISTS public.role_permissions (
     created_at timestamptz DEFAULT now(),
     UNIQUE(org_id, role, permission_id)
 );
-
 ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
-
 -- A5: audit_events - Comprehensive audit trail
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.audit_events (
@@ -91,30 +82,21 @@ CREATE TABLE IF NOT EXISTS public.audit_events (
     user_agent text,
     created_at timestamptz DEFAULT now()
 );
-
 ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
-
-
 -- ============================================================================
 -- SECTION B: ADD org_id TO CRM TABLES
 -- ============================================================================
 
 ALTER TABLE public.zoho_lead_submissions
     ADD COLUMN IF NOT EXISTS org_id uuid REFERENCES public.orgs(id) ON DELETE CASCADE;
-
 ALTER TABLE public.lead_activities
     ADD COLUMN IF NOT EXISTS org_id uuid REFERENCES public.orgs(id) ON DELETE CASCADE;
-
 ALTER TABLE public.lead_tasks
     ADD COLUMN IF NOT EXISTS org_id uuid REFERENCES public.orgs(id) ON DELETE CASCADE;
-
 ALTER TABLE public.crm_pipeline_stages
     ADD COLUMN IF NOT EXISTS org_id uuid REFERENCES public.orgs(id) ON DELETE CASCADE;
-
 ALTER TABLE public.lead_notifications
     ADD COLUMN IF NOT EXISTS org_id uuid REFERENCES public.orgs(id) ON DELETE CASCADE;
-
-
 -- ============================================================================
 -- SECTION C: HELPER FUNCTIONS (SECURITY DEFINER)
 -- ============================================================================
@@ -130,9 +112,7 @@ SET search_path = public
 AS $$
     SELECT auth.uid();
 $$;
-
 GRANT EXECUTE ON FUNCTION public.auth_uid() TO authenticated;
-
 -- C2: current_user_org_ids() - array of org_ids with active membership
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.current_user_org_ids()
@@ -150,9 +130,7 @@ AS $$
     WHERE om.user_id = auth.uid()
       AND om.status = 'active';
 $$;
-
 GRANT EXECUTE ON FUNCTION public.current_user_org_ids() TO authenticated;
-
 -- C3: is_org_member(p_org_id) - boolean membership check
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.is_org_member(p_org_id uuid)
@@ -170,9 +148,7 @@ AS $$
           AND om.status = 'active'
     );
 $$;
-
 GRANT EXECUTE ON FUNCTION public.is_org_member(uuid) TO authenticated;
-
 -- C4: is_org_admin(p_org_id) - owner or admin in org
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.is_org_admin(p_org_id uuid)
@@ -191,9 +167,7 @@ AS $$
           AND om.role IN ('owner', 'admin')
     );
 $$;
-
 GRANT EXECUTE ON FUNCTION public.is_org_admin(uuid) TO authenticated;
-
 -- C5: is_org_role(p_org_id, p_role) - checks specific org role
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.is_org_role(p_org_id uuid, p_role text)
@@ -212,9 +186,7 @@ AS $$
           AND om.role = p_role
     );
 $$;
-
 GRANT EXECUTE ON FUNCTION public.is_org_role(uuid, text) TO authenticated;
-
 -- C6: has_org_permission(p_org_id, p_permission_key) - permission check
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.has_org_permission(p_org_id uuid, p_permission_key text)
@@ -235,9 +207,7 @@ AS $$
           AND p.key = p_permission_key
     );
 $$;
-
 GRANT EXECUTE ON FUNCTION public.has_org_permission(uuid, text) TO authenticated;
-
 -- C7: user_org_role(p_org_id) - returns role text or NULL
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.user_org_role(p_org_id uuid)
@@ -254,10 +224,7 @@ AS $$
       AND om.status = 'active'
     LIMIT 1;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.user_org_role(uuid) TO authenticated;
-
-
 -- ============================================================================
 -- SECTION D: RLS POLICIES ON NEW TABLES
 -- ============================================================================
@@ -273,14 +240,12 @@ CREATE POLICY "org_select_member"
     USING (
         public.is_org_member(id)
     );
-
 -- INSERT: any authenticated user can create an org
 CREATE POLICY "org_insert_authenticated"
     ON public.orgs
     FOR INSERT
     TO authenticated
     WITH CHECK (true);
-
 -- UPDATE: org admins only
 CREATE POLICY "org_update_admin"
     ON public.orgs
@@ -292,7 +257,6 @@ CREATE POLICY "org_update_admin"
     WITH CHECK (
         public.is_org_admin(id)
     );
-
 -- DELETE: owner only
 CREATE POLICY "org_delete_owner"
     ON public.orgs
@@ -301,7 +265,6 @@ CREATE POLICY "org_delete_owner"
     USING (
         public.is_org_role(id, 'owner')
     );
-
 -- D2: org_memberships
 -- ----------------------------------------------------------------------------
 
@@ -313,7 +276,6 @@ CREATE POLICY "orgmem_select_member"
     USING (
         public.is_org_member(org_id)
     );
-
 -- INSERT: org admins or owners can add members
 CREATE POLICY "orgmem_insert_admin"
     ON public.org_memberships
@@ -322,7 +284,6 @@ CREATE POLICY "orgmem_insert_admin"
     WITH CHECK (
         public.is_org_admin(org_id) OR public.is_org_role(org_id, 'owner')
     );
-
 -- UPDATE: org admins can update memberships
 CREATE POLICY "orgmem_update_admin"
     ON public.org_memberships
@@ -334,7 +295,6 @@ CREATE POLICY "orgmem_update_admin"
     WITH CHECK (
         public.is_org_admin(org_id)
     );
-
 -- DELETE: org admins can remove members, but not themselves
 CREATE POLICY "orgmem_delete_admin"
     ON public.org_memberships
@@ -343,7 +303,6 @@ CREATE POLICY "orgmem_delete_admin"
     USING (
         public.is_org_admin(org_id) AND user_id != auth.uid()
     );
-
 -- D3: permissions (read-only for authenticated users)
 -- ----------------------------------------------------------------------------
 
@@ -352,7 +311,6 @@ CREATE POLICY "permissions_select_authenticated"
     FOR SELECT
     TO authenticated
     USING (true);
-
 -- No INSERT / UPDATE / DELETE policies -- managed by migrations only.
 
 -- D4: role_permissions
@@ -366,7 +324,6 @@ CREATE POLICY "roleperm_select_member"
     USING (
         public.is_org_member(org_id)
     );
-
 -- INSERT: org owner only
 CREATE POLICY "roleperm_insert_owner"
     ON public.role_permissions
@@ -375,7 +332,6 @@ CREATE POLICY "roleperm_insert_owner"
     WITH CHECK (
         public.is_org_role(org_id, 'owner')
     );
-
 -- UPDATE: org owner only
 CREATE POLICY "roleperm_update_owner"
     ON public.role_permissions
@@ -387,7 +343,6 @@ CREATE POLICY "roleperm_update_owner"
     WITH CHECK (
         public.is_org_role(org_id, 'owner')
     );
-
 -- DELETE: org owner only
 CREATE POLICY "roleperm_delete_owner"
     ON public.role_permissions
@@ -396,7 +351,6 @@ CREATE POLICY "roleperm_delete_owner"
     USING (
         public.is_org_role(org_id, 'owner')
     );
-
 -- D5: audit_events
 -- ----------------------------------------------------------------------------
 
@@ -408,14 +362,12 @@ CREATE POLICY "audit_select_permission"
     USING (
         public.has_org_permission(org_id, 'audit.read')
     );
-
 -- INSERT: authenticated (service layer inserts)
 CREATE POLICY "audit_insert_authenticated"
     ON public.audit_events
     FOR INSERT
     TO authenticated
     WITH CHECK (true);
-
 -- No UPDATE / DELETE -- immutable audit trail.
 
 
@@ -434,7 +386,6 @@ CREATE POLICY "org_leads_select"
     USING (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_leads_insert"
     ON public.zoho_lead_submissions
     FOR INSERT
@@ -442,7 +393,6 @@ CREATE POLICY "org_leads_insert"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_leads_update"
     ON public.zoho_lead_submissions
     FOR UPDATE
@@ -453,7 +403,6 @@ CREATE POLICY "org_leads_update"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_leads_delete"
     ON public.zoho_lead_submissions
     FOR DELETE
@@ -461,7 +410,6 @@ CREATE POLICY "org_leads_delete"
     USING (
         org_id IS NOT NULL AND public.has_org_permission(org_id, 'leads.delete')
     );
-
 -- E2: lead_activities
 -- ----------------------------------------------------------------------------
 
@@ -472,7 +420,6 @@ CREATE POLICY "org_lead_activities_select"
     USING (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_activities_insert"
     ON public.lead_activities
     FOR INSERT
@@ -480,7 +427,6 @@ CREATE POLICY "org_lead_activities_insert"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_activities_update"
     ON public.lead_activities
     FOR UPDATE
@@ -491,7 +437,6 @@ CREATE POLICY "org_lead_activities_update"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_activities_delete"
     ON public.lead_activities
     FOR DELETE
@@ -499,7 +444,6 @@ CREATE POLICY "org_lead_activities_delete"
     USING (
         org_id IS NOT NULL AND public.has_org_permission(org_id, 'leads.delete')
     );
-
 -- E3: lead_tasks
 -- ----------------------------------------------------------------------------
 
@@ -510,7 +454,6 @@ CREATE POLICY "org_lead_tasks_select"
     USING (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_tasks_insert"
     ON public.lead_tasks
     FOR INSERT
@@ -518,7 +461,6 @@ CREATE POLICY "org_lead_tasks_insert"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_tasks_update"
     ON public.lead_tasks
     FOR UPDATE
@@ -529,7 +471,6 @@ CREATE POLICY "org_lead_tasks_update"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_tasks_delete"
     ON public.lead_tasks
     FOR DELETE
@@ -537,7 +478,6 @@ CREATE POLICY "org_lead_tasks_delete"
     USING (
         org_id IS NOT NULL AND public.has_org_permission(org_id, 'tasks.delete')
     );
-
 -- E4: crm_pipeline_stages
 -- ----------------------------------------------------------------------------
 
@@ -548,7 +488,6 @@ CREATE POLICY "org_pipeline_stages_select"
     USING (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_pipeline_stages_insert"
     ON public.crm_pipeline_stages
     FOR INSERT
@@ -556,7 +495,6 @@ CREATE POLICY "org_pipeline_stages_insert"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_pipeline_stages_update"
     ON public.crm_pipeline_stages
     FOR UPDATE
@@ -567,7 +505,6 @@ CREATE POLICY "org_pipeline_stages_update"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_pipeline_stages_delete"
     ON public.crm_pipeline_stages
     FOR DELETE
@@ -575,7 +512,6 @@ CREATE POLICY "org_pipeline_stages_delete"
     USING (
         org_id IS NOT NULL AND public.has_org_permission(org_id, 'pipeline.delete')
     );
-
 -- E5: lead_notifications
 -- ----------------------------------------------------------------------------
 
@@ -586,7 +522,6 @@ CREATE POLICY "org_lead_notifications_select"
     USING (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_notifications_insert"
     ON public.lead_notifications
     FOR INSERT
@@ -594,7 +529,6 @@ CREATE POLICY "org_lead_notifications_insert"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_notifications_update"
     ON public.lead_notifications
     FOR UPDATE
@@ -605,7 +539,6 @@ CREATE POLICY "org_lead_notifications_update"
     WITH CHECK (
         org_id IS NOT NULL AND public.is_org_member(org_id)
     );
-
 CREATE POLICY "org_lead_notifications_delete"
     ON public.lead_notifications
     FOR DELETE
@@ -613,8 +546,6 @@ CREATE POLICY "org_lead_notifications_delete"
     USING (
         org_id IS NOT NULL AND public.has_org_permission(org_id, 'leads.delete')
     );
-
-
 -- ============================================================================
 -- SECTION F: SEED DATA
 -- ============================================================================
@@ -629,7 +560,6 @@ VALUES (
     'active'
 )
 ON CONFLICT (slug) DO NOTHING;
-
 -- F2: Seed ALL permission definitions
 -- ----------------------------------------------------------------------------
 INSERT INTO public.permissions (key, module, description) VALUES
@@ -655,7 +585,6 @@ INSERT INTO public.permissions (key, module, description) VALUES
     ('members.manage',   'members',  'Manage org members'),
     ('roles.manage',     'roles',    'Manage roles and permissions')
 ON CONFLICT (key) DO NOTHING;
-
 -- F3: Seed default role_permissions for the default org
 -- ----------------------------------------------------------------------------
 
@@ -667,7 +596,6 @@ SELECT
     p.id
 FROM public.permissions p
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- admin: ALL except org.manage and roles.manage
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -677,7 +605,6 @@ SELECT
 FROM public.permissions p
 WHERE p.key NOT IN ('org.manage', 'roles.manage')
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- manager: leads.*, pipeline.*, tasks.*, reports.*, contacts.*, members.invite
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -694,7 +621,6 @@ WHERE p.key IN (
     'members.invite'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- agent: leads.read, leads.write, pipeline.read, pipeline.write,
 --        tasks.read, tasks.write, contacts.read, contacts.write, reports.read
 INSERT INTO public.role_permissions (org_id, role, permission_id)
@@ -711,7 +637,6 @@ WHERE p.key IN (
     'reports.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- member: leads.read, contacts.read, reports.read
 INSERT INTO public.role_permissions (org_id, role, permission_id)
 SELECT
@@ -725,29 +650,23 @@ WHERE p.key IN (
     'reports.read'
 )
 ON CONFLICT (org_id, role, permission_id) DO NOTHING;
-
 -- F4: Backfill org_id on existing CRM tables to the default org
 -- ----------------------------------------------------------------------------
 UPDATE public.zoho_lead_submissions
    SET org_id = '00000000-0000-4000-a000-000000000001'
  WHERE org_id IS NULL;
-
 UPDATE public.lead_activities
    SET org_id = '00000000-0000-4000-a000-000000000001'
  WHERE org_id IS NULL;
-
 UPDATE public.lead_tasks
    SET org_id = '00000000-0000-4000-a000-000000000001'
  WHERE org_id IS NULL;
-
 UPDATE public.crm_pipeline_stages
    SET org_id = '00000000-0000-4000-a000-000000000001'
  WHERE org_id IS NULL;
-
 UPDATE public.lead_notifications
    SET org_id = '00000000-0000-4000-a000-000000000001'
  WHERE org_id IS NULL;
-
 -- F5: Create org_memberships for existing users in user_roles
 -- Map: super_admin -> owner, admin -> admin, advisor -> agent, member -> member
 -- ----------------------------------------------------------------------------
@@ -766,8 +685,6 @@ SELECT
     COALESCE(ur.created_at, now())
 FROM public.user_roles ur
 ON CONFLICT (user_id, org_id) DO NOTHING;
-
-
 -- ============================================================================
 -- SECTION F6: INDEXES
 -- ============================================================================
@@ -775,37 +692,26 @@ ON CONFLICT (user_id, org_id) DO NOTHING;
 -- org_memberships indexes
 CREATE INDEX IF NOT EXISTS idx_org_memberships_user_org
     ON public.org_memberships (user_id, org_id);
-
 CREATE INDEX IF NOT EXISTS idx_org_memberships_org_role
     ON public.org_memberships (org_id, role);
-
 -- audit_events indexes
 CREATE INDEX IF NOT EXISTS idx_audit_events_org_created
     ON public.audit_events (org_id, created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_audit_events_actor_created
     ON public.audit_events (actor_user_id, created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_audit_events_entity
     ON public.audit_events (entity_type, entity_id);
-
 -- CRM tables org_id indexes
 CREATE INDEX IF NOT EXISTS idx_zoho_lead_submissions_org_id
     ON public.zoho_lead_submissions (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_lead_activities_org_id
     ON public.lead_activities (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_lead_tasks_org_id
     ON public.lead_tasks (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_crm_pipeline_stages_org_id
     ON public.crm_pipeline_stages (org_id);
-
 CREATE INDEX IF NOT EXISTS idx_lead_notifications_org_id
     ON public.lead_notifications (org_id);
-
-
 -- ============================================================================
 -- SECTION F7: UPDATED_AT TRIGGERS
 -- ============================================================================
@@ -820,13 +726,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_orgs_updated_at ON public.orgs;
 CREATE TRIGGER trigger_orgs_updated_at
     BEFORE UPDATE ON public.orgs
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_orgs_updated_at();
-
 -- Trigger function for org_memberships
 CREATE OR REPLACE FUNCTION public.handle_org_memberships_updated_at()
 RETURNS trigger
@@ -837,11 +741,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_org_memberships_updated_at ON public.org_memberships;
 CREATE TRIGGER trigger_org_memberships_updated_at
     BEFORE UPDATE ON public.org_memberships
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_org_memberships_updated_at();
-
 COMMIT;

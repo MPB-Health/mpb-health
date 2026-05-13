@@ -4,7 +4,6 @@
 
 ALTER TABLE public.advisor_profiles
   ADD COLUMN IF NOT EXISTS avatar_url text;
-
 CREATE OR REPLACE FUNCTION public.sync_advisor_profile_to_itsts()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -72,9 +71,7 @@ EXCEPTION WHEN others THEN
   RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_sync_advisor_profile_to_itsts ON public.advisor_profiles;
-
 CREATE TRIGGER trg_sync_advisor_profile_to_itsts
   AFTER INSERT OR UPDATE ON public.advisor_profiles
   FOR EACH ROW

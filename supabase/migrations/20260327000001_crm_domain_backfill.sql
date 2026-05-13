@@ -16,7 +16,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- STEP 1: SEED COMMON INSURANCE CARRIERS (org_id = NULL = global defaults)
 -- ============================================================================
@@ -46,14 +45,12 @@ INSERT INTO public.insurance_carriers (id, org_id, name, slug, carrier_type, sor
     (gen_random_uuid(), NULL, 'Aflac', 'aflac', 'supplemental', 52),
     (gen_random_uuid(), NULL, 'VSP Vision', 'vsp-vision', 'vision', 60)
 ON CONFLICT DO NOTHING;
-
 -- Allow global carriers (org_id IS NULL) to be read by anyone authenticated
 -- Drop first to avoid duplicate policy errors on re-run
 DROP POLICY IF EXISTS insurance_carriers_global_select ON public.insurance_carriers;
 CREATE POLICY insurance_carriers_global_select ON public.insurance_carriers
     FOR SELECT TO authenticated
     USING (org_id IS NULL);
-
 -- ============================================================================
 -- STEP 2: BACKFILL PHONE NUMBERS FROM LEADS
 -- Migrates the flat phone column into the normalized crm_phone_numbers table.
@@ -75,7 +72,6 @@ WHERE l.phone IS NOT NULL
       SELECT 1 FROM public.crm_phone_numbers pn
       WHERE pn.owner_type = 'lead' AND pn.owner_id = l.id
   );
-
 -- ============================================================================
 -- STEP 3: BACKFILL PHONE NUMBERS FROM CONTACTS
 -- Migrates phone + mobile into separate normalized rows.
@@ -96,7 +92,6 @@ WHERE c.phone IS NOT NULL
       SELECT 1 FROM public.crm_phone_numbers pn
       WHERE pn.owner_type = 'contact' AND pn.owner_id = c.id AND pn.phone_number = c.phone
   );
-
 INSERT INTO public.crm_phone_numbers (org_id, owner_type, owner_id, phone_number, phone_type, is_primary)
 SELECT
     c.org_id,
@@ -112,7 +107,6 @@ WHERE c.mobile IS NOT NULL
       SELECT 1 FROM public.crm_phone_numbers pn
       WHERE pn.owner_type = 'contact' AND pn.owner_id = c.id AND pn.phone_number = c.mobile
   );
-
 -- ============================================================================
 -- STEP 4: INFER plan_type FROM current_insurance WHERE POSSIBLE
 -- Best-effort: known healthshare keywords → healthshare; known carrier keywords → traditional
@@ -137,7 +131,6 @@ WHERE plan_type IS NULL
       OR lower(current_insurance) LIKE '%health share%'
       OR lower(current_insurance) LIKE '%sharing%'
   );
-
 UPDATE public.zoho_lead_submissions
 SET plan_type = 'traditional_insurance'
 WHERE plan_type IS NULL
@@ -159,7 +152,6 @@ WHERE plan_type IS NULL
       OR lower(current_insurance) LIKE '%medicaid%'
       OR lower(current_insurance) LIKE '%medicare%'
   );
-
 -- ============================================================================
 -- STEP 5: BACKFILL STATE FROM ZIP CODE (mailing_address) ON CONTACTS
 -- Pulls state from the mailing_address JSONB if present and state column is NULL.
@@ -170,13 +162,11 @@ SET state = mailing_address->>'state'
 WHERE state IS NULL
   AND mailing_address->>'state' IS NOT NULL
   AND mailing_address->>'state' != '';
-
 UPDATE public.crm_contacts
 SET city = mailing_address->>'city'
 WHERE city IS NULL
   AND mailing_address->>'city' IS NOT NULL
   AND mailing_address->>'city' != '';
-
 -- ============================================================================
 -- STEP 6: BACKFILL SEARCH VECTORS FOR FAMILY MEMBERS (in case any were
 -- inserted before the trigger was created — defensive no-op if empty)
@@ -185,5 +175,4 @@ WHERE city IS NULL
 UPDATE public.crm_family_members
 SET first_name = first_name
 WHERE search_vector IS NULL;
-
 COMMIT;

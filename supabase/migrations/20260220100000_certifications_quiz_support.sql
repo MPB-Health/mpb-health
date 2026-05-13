@@ -43,7 +43,6 @@ BEGIN
     ALTER TABLE certifications ADD COLUMN certificate_url text;
   END IF;
 END $$;
-
 -- Allow advisors to insert their own certifications (for quiz pass)
 DO $$
 BEGIN

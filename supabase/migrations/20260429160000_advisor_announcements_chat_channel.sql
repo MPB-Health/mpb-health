@@ -1,15 +1,3 @@
--- ============================================================================
--- Advisor Announcements — org-wide chat channel + membership sync
---
--- Wires advisor portal messaging to canonical tables:
---   chat_conversations (type=channel, slug=advisor-announcements),
---   chat_members (many-to-many enrollment),
---   chat_messages (admin posts via existing chat-service fan-out triggers).
---
--- New active advisors join via advisor_profiles triggers; org members via
--- org_memberships. Backfill adds existing users.
--- ============================================================================
-
 BEGIN;
 
 -- MPB Health default org UUID (consistent with chat-service ORG_ID)
@@ -119,7 +107,7 @@ COMMENT ON FUNCTION public.ensure_user_in_advisor_announcements_channel(uuid)
   IS 'Ensures the user can see the Advisor Announcements chat channel — chat_members + chat_conversations.slug=advisor-announcements.';
 
 REVOKE ALL ON FUNCTION public.ensure_user_in_advisor_announcements_channel(uuid) FROM PUBLIC;
--- Active advisor profile ⇒ membership
+
 CREATE OR REPLACE FUNCTION public.trg_advisor_profiles_sync_announcements_channel()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -142,7 +130,6 @@ CREATE TRIGGER trg_advisor_profiles_sync_announcements_channel
   WHEN (NEW.status IS NOT DISTINCT FROM 'active'::text)
   EXECUTE FUNCTION public.trg_advisor_profiles_sync_announcements_channel();
 
--- Org membership in MPB org ⇒ membership (elevates admins)
 CREATE OR REPLACE FUNCTION public.trg_org_memberships_sync_announcements_channel()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -170,7 +157,6 @@ CREATE TRIGGER trg_org_memberships_sync_announcements_channel
   )
   EXECUTE FUNCTION public.trg_org_memberships_sync_announcements_channel();
 
--- Backfill existing active advisors + org members + privileged roles
 DO $$
 BEGIN
   PERFORM public.ensure_user_in_advisor_announcements_channel(ap.id)
@@ -187,4 +173,4 @@ BEGIN
   WHERE ur.role IN ('super_admin', 'admin');
 END $$;
 
-COMMIT;
+COMMIT;;

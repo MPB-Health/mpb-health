@@ -4,14 +4,11 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
--- SECTION A: ENABLE pg_trgm EXTENSION (in extensions schema per security best practice)
+-- SECTION A: ENABLE pg_trgm EXTENSION
 -- ============================================================================
 
-CREATE SCHEMA IF NOT EXISTS extensions;
-CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
-
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- ============================================================================
 -- SECTION B: ADD SEARCH VECTORS TO TABLES
 -- ============================================================================
@@ -19,51 +16,38 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
 -- Accounts search vector
 ALTER TABLE public.crm_accounts
     ADD COLUMN IF NOT EXISTS search_vector tsvector;
-
 -- Contacts search vector
 ALTER TABLE public.crm_contacts
     ADD COLUMN IF NOT EXISTS search_vector tsvector;
-
 -- Deals search vector
 ALTER TABLE public.crm_deals
     ADD COLUMN IF NOT EXISTS search_vector tsvector;
-
 -- Products search vector
 ALTER TABLE public.crm_products
     ADD COLUMN IF NOT EXISTS search_vector tsvector;
-
 -- ============================================================================
 -- SECTION C: SEARCH VECTOR INDEXES
 -- ============================================================================
 
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_search
     ON public.crm_accounts USING gin(search_vector);
-
 CREATE INDEX IF NOT EXISTS idx_crm_contacts_search
     ON public.crm_contacts USING gin(search_vector);
-
 CREATE INDEX IF NOT EXISTS idx_crm_deals_search
     ON public.crm_deals USING gin(search_vector);
-
 CREATE INDEX IF NOT EXISTS idx_crm_products_search
     ON public.crm_products USING gin(search_vector);
-
--- Trigram indexes for fuzzy matching (pg_trgm in extensions schema)
+-- Trigram indexes for fuzzy matching
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_name_trgm
-    ON public.crm_accounts USING gin(name extensions.gin_trgm_ops);
-
+    ON public.crm_accounts USING gin(name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_crm_contacts_name_trgm
-    ON public.crm_contacts USING gin((first_name || ' ' || last_name) extensions.gin_trgm_ops);
-
+    ON public.crm_contacts USING gin((first_name || ' ' || last_name) gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_crm_contacts_email_trgm
-    ON public.crm_contacts USING gin(email extensions.gin_trgm_ops);
-
+    ON public.crm_contacts USING gin(email gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_crm_deals_name_trgm
-    ON public.crm_deals USING gin(name extensions.gin_trgm_ops);
-
+    ON public.crm_deals USING gin(name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_crm_products_name_trgm
-    ON public.crm_products USING gin(name extensions.gin_trgm_ops);
-
+    ON public.crm_products USING gin(name gin_trgm_ops);
 -- ============================================================================
 -- SECTION D: SEARCH VECTOR UPDATE FUNCTIONS
 -- ============================================================================
@@ -85,13 +69,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_update_crm_accounts_search ON public.crm_accounts;
 CREATE TRIGGER trigger_update_crm_accounts_search
     BEFORE INSERT OR UPDATE ON public.crm_accounts
     FOR EACH ROW
     EXECUTE FUNCTION public.update_crm_accounts_search();
-
 -- Contacts search vector update
 CREATE OR REPLACE FUNCTION public.update_crm_contacts_search()
 RETURNS trigger
@@ -112,13 +94,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_update_crm_contacts_search ON public.crm_contacts;
 CREATE TRIGGER trigger_update_crm_contacts_search
     BEFORE INSERT OR UPDATE ON public.crm_contacts
     FOR EACH ROW
     EXECUTE FUNCTION public.update_crm_contacts_search();
-
 -- Deals search vector update
 CREATE OR REPLACE FUNCTION public.update_crm_deals_search()
 RETURNS trigger
@@ -134,13 +114,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_update_crm_deals_search ON public.crm_deals;
 CREATE TRIGGER trigger_update_crm_deals_search
     BEFORE INSERT OR UPDATE ON public.crm_deals
     FOR EACH ROW
     EXECUTE FUNCTION public.update_crm_deals_search();
-
 -- Products search vector update
 CREATE OR REPLACE FUNCTION public.update_crm_products_search()
 RETURNS trigger
@@ -156,13 +134,11 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trigger_update_crm_products_search ON public.crm_products;
 CREATE TRIGGER trigger_update_crm_products_search
     BEFORE INSERT OR UPDATE ON public.crm_products
     FOR EACH ROW
     EXECUTE FUNCTION public.update_crm_products_search();
-
 -- ============================================================================
 -- SECTION E: GLOBAL SEARCH FUNCTION
 -- ============================================================================
@@ -291,9 +267,7 @@ BEGIN
     LIMIT p_limit;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.crm_global_search(uuid, text, integer) TO authenticated;
-
 -- ============================================================================
 -- SECTION F: SEARCH WITHIN MODULE FUNCTIONS
 -- ============================================================================
@@ -325,9 +299,7 @@ BEGIN
     LIMIT p_limit;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.search_crm_accounts(uuid, text, integer) TO authenticated;
-
 -- Search contacts
 CREATE OR REPLACE FUNCTION public.search_crm_contacts(
     p_org_id uuid,
@@ -356,9 +328,7 @@ BEGIN
     LIMIT p_limit;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.search_crm_contacts(uuid, text, integer) TO authenticated;
-
 -- Search deals
 CREATE OR REPLACE FUNCTION public.search_crm_deals(
     p_org_id uuid,
@@ -386,9 +356,7 @@ BEGIN
     LIMIT p_limit;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.search_crm_deals(uuid, text, integer) TO authenticated;
-
 -- ============================================================================
 -- SECTION G: BACKFILL EXISTING RECORDS (one-time)
 -- ============================================================================
@@ -398,5 +366,4 @@ UPDATE public.crm_accounts SET name = name WHERE search_vector IS NULL;
 UPDATE public.crm_contacts SET first_name = first_name WHERE search_vector IS NULL;
 UPDATE public.crm_deals SET name = name WHERE search_vector IS NULL;
 UPDATE public.crm_products SET name = name WHERE search_vector IS NULL;
-
 COMMIT;

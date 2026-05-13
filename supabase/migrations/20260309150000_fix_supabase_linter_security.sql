@@ -10,7 +10,6 @@
 -- ============================================================================
 
 BEGIN;
-
 -- ============================================================================
 -- PART 1: Set search_path on all public schema functions
 -- ============================================================================
@@ -56,7 +55,6 @@ BEGIN
   END LOOP;
 END;
 $$;
-
 -- ============================================================================
 -- PART 2: Move pg_trgm extension from public to extensions schema
 -- ============================================================================
@@ -64,14 +62,12 @@ $$;
 
 -- Ensure extensions schema exists (Supabase creates it by default)
 CREATE SCHEMA IF NOT EXISTS extensions;
-
 -- Drop from public and recreate in extensions
 -- Note: pg_trgm may be used by objects - we need to recreate any dependent objects
 -- The typical approach: drop, create in extensions. Trigram indexes use the
 -- extension's operators; they should work with extensions in search_path.
 DROP EXTENSION IF EXISTS pg_trgm CASCADE;
 CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
-
 -- Recreate trigram indexes that were dropped by CASCADE
 -- (From crm_global_search - use extensions.gin_trgm_ops since pg_trgm is now in extensions schema)
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_name_trgm
@@ -84,14 +80,15 @@ CREATE INDEX IF NOT EXISTS idx_crm_deals_name_trgm
   ON public.crm_deals USING gin (name extensions.gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_crm_products_name_trgm
   ON public.crm_products USING gin (name extensions.gin_trgm_ops);
-
 COMMIT;
-
 -- ============================================================================
 -- REMAINING LINTER ITEMS (require manual/dashboard action)
 -- ============================================================================
--- rls_policy_always_true: Fixed in 20260309160000_fix_rls_permissive_policies.sql
+-- rls_policy_always_true: Many RLS policies use USING (true) or WITH CHECK (true).
+--   Some are intentional (e.g. public lead submission forms). Review each policy
+--   at https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy
+--   and tighten where appropriate.
 --
 -- password_requirements_min_length: Set in Supabase Dashboard:
 --   Authentication > Settings > Password minimum length (recommend 12)
---   https://supabase.com/docs/guides/platform/going-into-prod#security
+--   https://supabase.com/docs/guides/platform/going-into-prod#security;

@@ -9,7 +9,6 @@ SET content = TRIM(regexp_replace(
   ''
 ))
 WHERE content_type = 'bulletin' AND content LIKE '%Rewards in Motion%';
-
 -- Pass 2: Fallback for articles without <hr> before the section (raw WordPress HTML)
 UPDATE advisor_content
 SET content = TRIM(regexp_replace(
@@ -18,7 +17,6 @@ SET content = TRIM(regexp_replace(
   ''
 ))
 WHERE content_type = 'bulletin' AND content LIKE '%Rewards in Motion%';
-
 -- Pass 3: Also handle cases where "Rewards in Motion" appears inside an <h2> or <h4> tag
 UPDATE advisor_content
 SET content = TRIM(regexp_replace(
@@ -27,7 +25,6 @@ SET content = TRIM(regexp_replace(
   ''
 ))
 WHERE content_type = 'bulletin' AND content LIKE '%Rewards in Motion%';
-
 -- Pass 4: Clean up any trailing empty <p>, <table>, or whitespace tags left behind
 UPDATE advisor_content
 SET content = TRIM(regexp_replace(

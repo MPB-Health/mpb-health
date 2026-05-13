@@ -9,5 +9,7 @@ UPDATE public.sop_documents
 SET file_url = 'https://dtmnkzllidaiqyheguhl.supabase.co/storage/v1/object/public/advisor-documents/Member-Guidelines_01.2026.pdf',
     title = 'Member Guidelines (January 2026)',
     updated_at = NOW()
-WHERE title ILIKE '%Member Guidelines%'
-  AND title ILIKE '%April 2025%';
+WHERE (
+  title ILIKE '%Member Guidelines (April 2025)%'
+  OR (title ILIKE '%Member Guidelines%' AND category ILIKE '%Sharing Guidelines%')
+);

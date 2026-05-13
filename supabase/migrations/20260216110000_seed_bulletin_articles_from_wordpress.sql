@@ -5,12 +5,10 @@
 INSERT INTO advisor_content_categories (name, slug, description, display_order)
 VALUES ('Bulletin', 'bulletin', 'Regular advisor bulletins', 1)
 ON CONFLICT (slug) DO NOTHING;
-
 -- Ensure we have an "Important Messages" category
 INSERT INTO advisor_content_categories (name, slug, description, display_order)
 VALUES ('Important Messages', 'important-messages', 'Critical advisor updates', 2)
 ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 1: Advisor Bulletin: December 24, 2025
 -- ============================================================================
@@ -95,7 +93,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 2: Advisor Bulletin: December 10, 2025
 -- ============================================================================
@@ -163,7 +160,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 3: Advisor Bulletin: November 26, 2025
 -- ============================================================================
@@ -235,7 +231,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 4: Advisor Bulletin: November 12, 2025
 -- ============================================================================
@@ -316,7 +311,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 5: Advisor Bulletin: October 28, 2025
 -- ============================================================================
@@ -381,7 +375,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 6: Advisor Bulletin: October 15, 2025
 -- ============================================================================
@@ -461,7 +454,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 7: Note to Advisors: 2026 Rates & e123 Update in Progress
 -- ============================================================================
@@ -492,7 +484,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 8: Important Update Regarding Price Increase 2026
 -- ============================================================================
@@ -537,7 +528,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 9: Important Update Regarding Sedera Plans in Florida
 -- ============================================================================
@@ -573,7 +563,6 @@ VALUES (
   0,
   '{}'
 ) ON CONFLICT (slug) DO NOTHING;
-
 -- ============================================================================
 -- Article 10: Advisor Bulletin: September 24, 2025
 -- ============================================================================

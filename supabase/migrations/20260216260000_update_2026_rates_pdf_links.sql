@@ -10,7 +10,6 @@ SET content = REPLACE(
 )
 WHERE content_type = 'bulletin'
   AND content LIKE '%2026-prices-Care-Direct-Secure-HSA-2.pdf%';
-
 -- 2. Comparison sheet link
 UPDATE advisor_content
 SET content = REPLACE(

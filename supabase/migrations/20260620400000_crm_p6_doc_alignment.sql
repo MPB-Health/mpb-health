@@ -576,4 +576,22 @@ GROUP BY ls.org_id, ls.lead_source;
 
 GRANT SELECT ON public.crm_v_conversion_by_source TO authenticated, service_role;
 
+-- ----------------------------------------------------------------------------
+-- 7. Section 2g — backfill missing global opt-out keyword "don't contact"
+-- ----------------------------------------------------------------------------
+-- The Phase-1 seed (`20260620010000_crm_p1_optout_keywords.sql`) inserted
+-- 'do not contact' but the spec (page 7) lists BOTH variants:
+--   "do not contact" / "don't contact"
+-- Replies like "please don't contact me again" must auto-route to Lost.
+-- Idempotent: the WHERE NOT EXISTS guard matches the functional unique
+-- index `uq_crm_optout_keywords_org_phrase` (coalesced org_id + lower(phrase)),
+-- so re-running this migration is a no-op.
+INSERT INTO public.crm_optout_keywords (org_id, phrase, is_active)
+SELECT NULL, 'don''t contact', true
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.crm_optout_keywords
+    WHERE org_id IS NULL
+      AND lower(phrase) = lower('don''t contact')
+);
+
 COMMIT;

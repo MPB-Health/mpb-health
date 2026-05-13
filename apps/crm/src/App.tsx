@@ -465,8 +465,14 @@ export default function App() {
                 <Route path="/referral-partners/:id" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartnerDetail /></Suspense></Guarded>} />
                 <Route path="/outside-advisors" element={<Guarded permission="outside_advisors.read"><Suspense fallback={<PageLoader />}><OutsideAdvisors /></Suspense></Guarded>} />
                 <Route path="/outside-advisors/:id" element={<Guarded permission="outside_advisors.read"><Suspense fallback={<PageLoader />}><OutsideAdvisorDetail /></Suspense></Guarded>} />
-                <Route path="/community-events" element={<Guarded permission="community_events.read"><Suspense fallback={<PageLoader />}><CommunityEvents /></Suspense></Guarded>} />
-                <Route path="/community-events/:id" element={<Guarded permission="community_events.read"><Suspense fallback={<PageLoader />}><CommunityEventDetail /></Suspense></Guarded>} />
+                {/* Section 9: Community Events removed from sidebar AND the
+                    primary route. Legacy detail/list still accessible at the
+                    /legacy suffix during cutover so any deep-link audit can
+                    surface them. Apply the same redirect pattern Cursor used
+                    for /reactivation and /dashboard above. */}
+                <Route path="/community-events" element={<Navigate to="/today" replace />} />
+                <Route path="/community-events/legacy" element={<Guarded permission="community_events.read"><Suspense fallback={<PageLoader />}><CommunityEvents /></Suspense></Guarded>} />
+                <Route path="/community-events/legacy/:id" element={<Guarded permission="community_events.read"><Suspense fallback={<PageLoader />}><CommunityEventDetail /></Suspense></Guarded>} />
                 {/* Section 9: Reactivation removed from sidebar; OE
                     Reactivation lives as a master Cadence under Templates
                     (P3 wires it in). Old route stays accessible during

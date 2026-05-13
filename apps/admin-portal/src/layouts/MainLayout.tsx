@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
-import { getBrandLogo } from '../lib/brand';
+import { getBrandLogo } from '@mpbhealth/ui';
 import {
   LayoutDashboard,
   Users,

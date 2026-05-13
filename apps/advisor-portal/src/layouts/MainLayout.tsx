@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback, useTransition } from 'react';
-import { getBrandLogo } from '../lib/brand';
+import { getBrandLogo } from '@mpbhealth/ui';
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';

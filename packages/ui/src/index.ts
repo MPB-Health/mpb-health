@@ -1,3 +1,7 @@
+// Brand (hostname-aware ARYX/MPB switching — Phase 1.5)
+export { detectBrand, applyBrandClass, initBrand, getBrandLogo } from './brand';
+export type { Brand, InitBrandOptions } from './brand';
+
 // UI Components
 export { Button } from './components/Button';
 export type { ButtonProps } from './components/Button';

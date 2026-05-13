@@ -3,17 +3,15 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@mpbhealth/ui';
+import { ThemeProvider, initBrand } from '@mpbhealth/ui';
 import App from './App';
-import { applyBrandClass } from './lib/brand';
 import './index.css';
-import './styles/aryx-brand.css';
+import '@mpbhealth/ui/brand/aryx-brand.css';
 import '@mpbhealth/ui/login-animations.css';
 
-// Set <html class="brand-mpb"> or "brand-aryx" before first render so the
-// overlay CSS in aryx-brand.css applies on first paint (no flash of mpb-blue
-// when visiting admin.aryxcloud.com). Hostname check lives in src/lib/brand.ts.
-applyBrandClass();
+// Stamp <html class="brand-mpb"> or "brand-aryx" before first render so the
+// overlay CSS applies on first paint (no flash of mpb-blue on admin.aryxcloud.com).
+initBrand({ mpbLogo: '/logo.png' });
 
 function isAuthError(error: unknown): boolean {
   if (error && typeof error === 'object') {

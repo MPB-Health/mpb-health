@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { CheckCircle, XCircle, Loader2, Mail, Lock, User } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
-import { getBrandLogo } from '../lib/brand';
+import { getBrandLogo } from '@mpbhealth/ui';
 
 type InviteStatus = 'loading' | 'valid' | 'expired' | 'invalid' | 'accepted' | 'error';
 

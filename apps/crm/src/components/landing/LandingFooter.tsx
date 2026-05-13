@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Shield, Lock } from 'lucide-react';
-import { getBrandLogo } from '../../lib/brand';
+import { getBrandLogo } from '@mpbhealth/ui';
 
 interface FooterLink {
   label: string;

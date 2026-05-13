@@ -13,7 +13,8 @@
     },
     "./styles.css": "./dist/styles.css",
     "./login-animations.css": "./src/components/login-animations.css",
-    "./theme-tokens.css": "./src/theme/theme-tokens.css"
+    "./theme-tokens.css": "./src/theme/theme-tokens.css",
+    "./brand/aryx-brand.css": "./src/brand/aryx-brand.css"
   },
   "files": [
     "dist"

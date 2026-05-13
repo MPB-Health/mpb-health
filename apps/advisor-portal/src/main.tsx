@@ -3,9 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { ThemeProvider } from '@mpbhealth/ui';
+import { ThemeProvider, initBrand } from '@mpbhealth/ui';
 import App from './App';
-import { applyBrandClass } from './lib/brand';
 
 function isAuthError(error: unknown): boolean {
   if (error && typeof error === 'object') {
@@ -36,13 +35,12 @@ const queryClient = new QueryClient({
   },
 });
 import './index.css';
-import './styles/aryx-brand.css';
+import '@mpbhealth/ui/brand/aryx-brand.css';
 import '@mpbhealth/ui/login-animations.css';
 
-// Set <html class="brand-mpb"> or "brand-aryx" before first render so the
-// overlay CSS in aryx-brand.css applies on first paint (no flash of mpb-blue
-// when visiting advisor.aryxcloud.com). Hostname check lives in src/lib/brand.ts.
-applyBrandClass();
+// Stamp <html class="brand-mpb"> or "brand-aryx" before first render so the
+// overlay CSS applies on first paint (no flash of mpb-blue on advisor.aryxcloud.com).
+initBrand({ mpbLogo: '/assets/MPB-Health-No-background.png' });
 
 const SW_RELOAD_GUARD_KEY = 'advisor-sw-reload-ts';
 

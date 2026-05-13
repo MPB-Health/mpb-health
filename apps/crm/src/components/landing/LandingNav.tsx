@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import { getBrandLogo } from '../../lib/brand';
+import { getBrandLogo } from '@mpbhealth/ui';
 
 const navLinks = [
   { label: 'Features', href: '#features' },

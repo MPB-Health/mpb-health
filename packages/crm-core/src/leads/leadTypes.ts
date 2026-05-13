@@ -109,6 +109,12 @@ export interface Lead {
   concierge_handoff_at?: string | null;
   last_opt_out_signal_at?: string | null;
   enrollment_approved_at?: string | null;
+  /** CRM rebuild Phase 1: Last Touched (rep-initiated activity timestamp). */
+  last_touched_at?: string | null;
+  /** CRM rebuild Phase 1: opt-out audit trail. */
+  opt_out_reason?: string | null;
+  opt_out_phrase?: string | null;
+  opt_out_detected_at?: string | null;
   // Joined relations (not persisted)
   carrier?: { id: string; name: string; carrier_type: string } | null;
   assigned_user?: { id: string; email: string; full_name?: string } | null;
@@ -135,7 +141,7 @@ export interface LeadFilters {
   referralPartnerId?: string;
   /** Filter Leads module subsection tab */
   workflowSubsection?: 'working' | 'nurture' | 'linkedin' | 'do_not_contact';
-  sortBy?: 'created_at' | 'last_contacted_at' | 'pipeline_stage' | 'assigned_to';
+  sortBy?: 'created_at' | 'last_contacted_at' | 'last_touched_at' | 'pipeline_stage' | 'assigned_to';
   sortDir?: 'asc' | 'desc';
 }
 

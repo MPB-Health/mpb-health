@@ -21,6 +21,8 @@ const Reports = lazyRetry(() => import('./pages/Reports'));
 const Settings = lazyRetry(() => import('./pages/Settings'));
 const Today = lazyRetry(() => import('./pages/Today'));
 const Templates = lazyRetry(() => import('./pages/Templates'));
+const MasterTemplates = lazyRetry(() => import('./pages/MasterTemplates'));
+const Cadences = lazyRetry(() => import('./pages/Cadences'));
 const Automation = lazyRetry(() => import('./pages/Automation'));
 const SentEmails = lazyRetry(() => import('./pages/SentEmails'));
 const EmailSchedules = lazyRetry(() => import('./pages/EmailSchedules'));
@@ -140,6 +142,7 @@ const QuoteTemplateEditor = lazyRetry(() => import('./pages/QuoteTemplateEditor'
 
 // Sales Daily Logs
 const SalesDailyLogs = lazyRetry(() => import('./pages/SalesDailyLogs'));
+const DailyLogV2 = lazyRetry(() => import('./pages/DailyLogV2'));
 
 // Learning Center
 const LearningCenter = lazyRetry(() => import('./pages/LearningCenter'));
@@ -213,13 +216,18 @@ function Guarded({ permission, children }: { permission: string; children: React
   );
 }
 
-/** Public landing page -- redirects to /dashboard if already logged in */
+/** Public landing page -- redirects to /today if already logged in (Section 9
+ *  Round 5 merged Today + Dashboard tabs into a single "Today" tab). */
 function LandingRoute() {
   const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to="/today" replace />;
   return <Suspense fallback={<PageLoader />}><LandingPage /></Suspense>;
 }
+
+// Phase 5 / Section 9 + Round 5 Addendum — Recruiting clone module.
+const RecruitingList = lazyRetry(() => import('./pages/recruiting/RecruitingList'));
+const RecruitingDetail = lazyRetry(() => import('./pages/recruiting/RecruitingDetail'));
 
 export default function App() {
   return (
@@ -279,8 +287,34 @@ export default function App() {
           <ProtectedRoute>
             <MainLayout>
               <Routes>
-                <Route path="/dashboard" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
+                {/* Section 9 Round 5: Today + Dashboard merged. /dashboard
+                    now redirects to /today; the legacy Dashboard component
+                    stays mounted so deep links from old emails still work
+                    until P2 lands the merged page. */}
+                <Route path="/dashboard" element={<Navigate to="/today" replace />} />
+                <Route path="/dashboard/legacy" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
                 <Route path="/today" element={<Suspense fallback={<PageLoader />}><Today /></Suspense>} />
+                {/* Recruiting (placeholder — P5 will swap in the clone) */}
+                <Route
+                  path="/recruiting"
+                  element={
+                    <Guarded permission="recruiting.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <RecruitingList />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/recruiting/:id"
+                  element={
+                    <Guarded permission="recruiting.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <RecruitingDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
                 <Route path="/learning-center" element={<Suspense fallback={<PageLoader />}><LearningCenter /></Suspense>} />
                 <Route path="/learning-center/:articleId" element={<Suspense fallback={<PageLoader />}><LearningCenter /></Suspense>} />
                 <Route
@@ -353,8 +387,14 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                {/* End of Day: Section 9 folds this into Sales Daily Logs as
+                    a Multi-entry tab (P4 builds the tab UI). The standalone
+                    /end-of-day route now redirects so existing bookmarks land
+                    on the new home. /end-of-day/legacy keeps the old page
+                    mounted for any rep mid-session during cutover. */}
+                <Route path="/end-of-day" element={<Navigate to="/sales-daily-logs?mode=multi" replace />} />
                 <Route
-                  path="/end-of-day"
+                  path="/end-of-day/legacy"
                   element={
                     <Guarded permission="leads.write">
                       <Suspense fallback={<PageLoader />}>
@@ -363,8 +403,23 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                {/* CRM rebuild Phase 4 — Daily Log v2 (auto-capture +
+                    Section 11 accordion) replaces the localStorage page.
+                    The original is preserved at /sales-daily-logs/legacy
+                    for one cycle of cutover so reps can compare before
+                    Excel retirement. */}
                 <Route
                   path="/sales-daily-logs"
+                  element={
+                    <Guarded permission="reports.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <DailyLogV2 />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/sales-daily-logs/legacy"
                   element={
                     <Guarded permission="reports.read">
                       <Suspense fallback={<PageLoader />}>
@@ -410,7 +465,12 @@ export default function App() {
                 <Route path="/outside-advisors/:id" element={<Guarded permission="outside_advisors.read"><Suspense fallback={<PageLoader />}><OutsideAdvisorDetail /></Suspense></Guarded>} />
                 <Route path="/community-events" element={<Guarded permission="community_events.read"><Suspense fallback={<PageLoader />}><CommunityEvents /></Suspense></Guarded>} />
                 <Route path="/community-events/:id" element={<Guarded permission="community_events.read"><Suspense fallback={<PageLoader />}><CommunityEventDetail /></Suspense></Guarded>} />
-                <Route path="/reactivation" element={<Guarded permission="leads.read"><Suspense fallback={<PageLoader />}><Reactivation /></Suspense></Guarded>} />
+                {/* Section 9: Reactivation removed from sidebar; OE
+                    Reactivation lives as a master Cadence under Templates
+                    (P3 wires it in). Old route stays accessible during
+                    cutover at /reactivation/legacy. */}
+                <Route path="/reactivation" element={<Navigate to="/templates" replace />} />
+                <Route path="/reactivation/legacy" element={<Guarded permission="leads.read"><Suspense fallback={<PageLoader />}><Reactivation /></Suspense></Guarded>} />
                 <Route path="/milestones" element={<Guarded permission="targets.read"><Suspense fallback={<PageLoader />}><Milestones /></Suspense></Guarded>} />
 
                 <Route
@@ -439,6 +499,31 @@ export default function App() {
                     <Guarded permission="settings.manage">
                       <Suspense fallback={<PageLoader />}>
                         <Templates />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* CRM rebuild Phase 3 / Section 7 — admin-only Master
+                    Template Library. Reps reference these via cadence steps
+                    and "Push to all reps" actions; only admins can edit. */}
+                <Route
+                  path="/templates/master"
+                  element={
+                    <Guarded permission="templates.master.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <MasterTemplates />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                {/* CRM rebuild Phase 3 / Section 13 — multi-channel cadence
+                    builder. Lives under Settings → Automation. */}
+                <Route
+                  path="/cadences"
+                  element={
+                    <Guarded permission="settings.manage">
+                      <Suspense fallback={<PageLoader />}>
+                        <Cadences />
                       </Suspense>
                     </Guarded>
                   }
@@ -584,8 +669,12 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                {/* Section 9: Meetings absorbed into Calendar. Old route
+                    redirects; /meetings/legacy keeps MeetingScheduler around
+                    for a cycle of cutover. */}
+                <Route path="/meetings" element={<Navigate to="/calendar" replace />} />
                 <Route
-                  path="/meetings"
+                  path="/meetings/legacy"
                   element={
                     <Guarded permission="tasks.read">
                       <Suspense fallback={<PageLoader />}>
@@ -625,7 +714,10 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* Contacts */}
+                {/* Contacts (renamed to "Members" in Section 9 nav).
+                    Both /contacts and /members render the same components so
+                    deep links keep working during the rename rollout. The
+                    sidebar exposes /members only. */}
                 <Route
                   path="/contacts"
                   element={
@@ -638,6 +730,26 @@ export default function App() {
                 />
                 <Route
                   path="/contacts/:id"
+                  element={
+                    <Guarded permission="contacts.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <ContactDetail />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/members"
+                  element={
+                    <Guarded permission="contacts.read">
+                      <Suspense fallback={<PageLoader />}>
+                        <Contacts />
+                      </Suspense>
+                    </Guarded>
+                  }
+                />
+                <Route
+                  path="/members/:id"
                   element={
                     <Guarded permission="contacts.read">
                       <Suspense fallback={<PageLoader />}>
@@ -1093,8 +1205,9 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* Catch-all: redirect unknown paths to dashboard */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                {/* Catch-all: redirect unknown paths to Today (Section 9
+                    Round 5 makes Today the merged primary home). */}
+                <Route path="*" element={<Navigate to="/today" replace />} />
               </Routes>
             </MainLayout>
           </ProtectedRoute>

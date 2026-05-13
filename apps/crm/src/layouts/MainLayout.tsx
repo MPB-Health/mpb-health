@@ -8,12 +8,10 @@ import { buildPortalSSOUrl } from '@mpbhealth/auth';
 import { supabase } from '../lib/supabase';
 import { getBrandLogo } from '@mpbhealth/ui';
 import {
-  LayoutDashboard,
   Users,
   Kanban,
   CheckSquare,
   CalendarDays,
-  Sunset,
   BarChart3,
   Settings,
   LogOut,
@@ -21,35 +19,20 @@ import {
   FileText,
   Zap,
   Mail,
-  Inbox,
-  Send,
-  Clock,
-  PenTool,
-  ListOrdered,
-  Activity,
   ShieldCheck,
-  Video,
   Building2,
   UserCircle,
   DollarSign,
   GitBranch,
   Package,
-  FileCheck,
-  Receipt,
   Megaphone,
-  Settings2,
-  Calculator,
   Command,
-  Download,
   Sparkles,
   Handshake,
   UserCheck,
-  Heart,
-  Share2,
-  LayoutGrid,
   BookOpen,
   ClipboardList,
-  Plug,
+  Briefcase,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -115,12 +98,25 @@ interface NavSection {
   items: ExtendedNavItem[];
 }
 
+// ============================================================================
+// CRM Rebuild — Section 9 IA cleanup (2026-05-12)
+//
+// Removed from sidebar: Quick Rate Leads, Reactivation, Quotes, Invoices,
+//   Social Media, Ad Campaigns, Community Events, Sales Activity, Studio,
+//   End of Day (folded into Sales Daily Logs as Multi-entry tab),
+//   Meetings (folded into Calendar).
+// Renamed: Contacts → Members.
+// Consolidated: Email parent now holds Inbox/Sent/Schedules/Sequences/
+//   Deliverability/My templates/Signatures. Settings hosts Automation +
+//   Integrations as subsections.
+// New section: Recruiting (Section 9 + Round 5 Addendum).
+// Merged: Today + Dashboard → single "Today" tab. /dashboard redirects.
+// ============================================================================
 const navigationSections: NavSection[] = [
   {
     id: 'main',
     items: [
       { name: 'Today', href: '/today', icon: Zap },
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     ],
   },
   {
@@ -128,9 +124,14 @@ const navigationSections: NavSection[] = [
     label: 'Lead Management',
     items: [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
-      { name: 'Quick Rate Leads', href: '/leads/quick-rate-estimate', icon: Calculator, permission: 'leads.read' },
-      { name: 'Reactivation', href: '/reactivation', icon: Clock, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
+    ],
+  },
+  {
+    id: 'recruiting',
+    label: 'Agent Recruiting',
+    items: [
+      { name: 'Recruiting', href: '/recruiting', icon: Briefcase, permission: 'recruiting.read' },
     ],
   },
   {
@@ -138,27 +139,30 @@ const navigationSections: NavSection[] = [
     label: 'CRM',
     items: [
       { name: 'Accounts', href: '/accounts', icon: Building2, permission: 'accounts.read' },
-      { name: 'Contacts', href: '/contacts', icon: UserCircle, permission: 'contacts.read' },
+      // Renamed: Contacts → Members. Underlying route /members ships in P1
+      // as a redirect alias of /contacts so deep links survive.
+      { name: 'Members', href: '/members', icon: UserCircle, permission: 'contacts.read' },
       { name: 'Deals', href: '/deals', icon: DollarSign, permission: 'deals.read' },
       { name: 'Deal Pipeline', href: '/deal-pipeline', icon: GitBranch, permission: 'deals.read' },
     ],
   },
   {
     id: 'sales',
-    label: 'Sales & Billing',
+    label: 'Sales',
     items: [
+      // Quotes survive as quote_history on the Lead Profile (Section 9).
+      // Invoices deferred to a future Members → Payment Profile (Round 5
+      // Addendum).
       { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
-      { name: 'Quotes', href: '/quotes', icon: FileCheck, permission: 'quotes.read' },
-      { name: 'Invoices', href: '/invoices', icon: Receipt, permission: 'invoices.read' },
     ],
   },
   {
     id: 'marketing',
     label: 'Marketing',
     items: [
+      // Social Media + Ad Campaigns + Community Events removed from sidebar
+      // per Section 9. Routes still resolve via deep link until P5 retires.
       { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
-      { name: 'Social Media', href: '/social-media', icon: Share2, permission: 'campaigns.read' },
-      { name: 'Ad Campaigns', href: '/social-media/ads', icon: LayoutGrid, permission: 'campaigns.read' },
     ],
   },
   {
@@ -167,7 +171,6 @@ const navigationSections: NavSection[] = [
     items: [
       { name: 'Referral Partners', href: '/referral-partners', icon: Handshake, permission: 'referrals.read' },
       { name: 'Outside Advisors', href: '/outside-advisors', icon: UserCheck, permission: 'outside_advisors.read' },
-      { name: 'Community Events', href: '/community-events', icon: Heart, permission: 'community_events.read' },
     ],
   },
   {
@@ -175,10 +178,10 @@ const navigationSections: NavSection[] = [
     label: 'Productivity',
     items: [
       { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks.read' },
+      // Calendar absorbs Meetings (Section 9 — Calendar subsection).
       { name: 'Calendar', href: '/calendar', icon: CalendarDays, permission: 'tasks.read' },
-      { name: 'End of Day', href: '/end-of-day', icon: Sunset, permission: 'leads.write' },
+      // End of Day moved into Sales Daily Logs as Multi-entry tab (Section 9).
       { name: 'Sales Daily Logs', href: '/sales-daily-logs', icon: ClipboardList, permission: 'reports.read' },
-      { name: 'Meetings', href: '/meetings', icon: Video, permission: 'tasks.read' },
     ],
   },
   {
@@ -203,29 +206,31 @@ const navigationSections: NavSection[] = [
           { name: 'Milestones', href: '/milestones', permission: 'targets.read' },
         ],
       },
-      { name: 'Sales Activity', href: '/sales-activity', icon: Activity, permission: 'reports.read' },
+      // Sales Activity tab removed per Section 9 — activity tracking lives
+      // in Daily Log + Activity Detail.
     ],
   },
   {
     id: 'email',
     label: 'Email',
     items: [
-      { name: 'Inbox', href: '/email/inbox', icon: Inbox, permission: 'email.read' },
+      // Section 9: Inbox, Email, Signatures merged into one Email parent
+      // with sub-views.
       {
         name: 'Email',
         href: '#',
         icon: Mail,
         permission: 'email.read',
         children: [
+          { name: 'Inbox', href: '/email/inbox', permission: 'email.read' },
           { name: 'Sent Emails', href: '/email/sent', permission: 'email.read' },
           { name: 'Schedules', href: '/email/schedules', permission: 'email.templates' },
           { name: 'Sequences', href: '/email/sequences', permission: 'email.read' },
           { name: 'Deliverability', href: '/email/deliverability', permission: 'email.read' },
           { name: 'My templates', href: '/email/my-templates', permission: 'email.read' },
+          { name: 'Signatures', href: '/email/signatures', permission: 'email.read' },
         ],
       },
-      { name: 'Signatures', href: '/email/signatures', icon: PenTool, permission: 'email.read' },
-      { name: 'Integrations', href: '/integrations', icon: Plug, permission: 'email.read' },
     ],
   },
   {
@@ -233,10 +238,40 @@ const navigationSections: NavSection[] = [
     label: 'Administration',
     items: [
       { name: 'Team', href: '/team', icon: ShieldCheck, permission: 'team.view' },
-      { name: 'Templates', href: '/templates', icon: FileText, permission: 'settings.manage' },
-      { name: 'Automation', href: '/automation', icon: Zap, permission: 'settings.manage' },
-      { name: 'Studio', href: '/studio', icon: Settings2, permission: 'settings.manage' },
-      { name: 'Settings', href: '/settings', icon: Settings, permission: 'settings.manage' },
+      // CRM rebuild Phase 3 / Section 7 — Templates split into per-rep "My
+      // Templates" (the existing page) and the admin-only "Master Library".
+      // The Master Library is permission-gated by templates.master.manage so
+      // reps don't see it in the sidebar; admins get a parent + sub-item.
+      {
+        name: 'Templates',
+        href: '/templates',
+        icon: FileText,
+        permission: 'settings.manage',
+        children: [
+          { name: 'My Templates', href: '/templates', permission: 'settings.manage' },
+          {
+            name: 'Master Library',
+            href: '/templates/master',
+            permission: 'templates.master.manage',
+          },
+        ],
+      },
+      // Section 9: Automation + Integrations are now Settings subsections.
+      // The standalone /automation + /integrations routes still resolve so
+      // deep links survive; the sidebar exposes them via Settings only.
+      {
+        name: 'Settings',
+        href: '/settings',
+        icon: Settings,
+        permission: 'settings.manage',
+        children: [
+          { name: 'General', href: '/settings', permission: 'settings.manage' },
+          { name: 'Automation', href: '/automation', permission: 'settings.manage' },
+          // CRM rebuild Phase 3 / Section 13 — multi-channel cadence builder.
+          { name: 'Cadences', href: '/cadences', permission: 'settings.manage' },
+          { name: 'Integrations', href: '/integrations', permission: 'email.read' },
+        ],
+      },
     ],
   },
   {

@@ -65,7 +65,20 @@ export default function Today() {
   const { activeOrgId } = useOrg();
   const navigate = useNavigate();
 
-  const [sortBySalesperson, setSortBySalesperson] = useState(false);
+  // CRM rebuild Section 5 + Round 5: Today + Dashboard merged, with a
+  // salesperson FILTER dropdown (Adam / Leo / Tupac / All). Default = 'all',
+  // selection persists per-rep in localStorage.
+  const SALESPERSON_FILTER_KEY = 'crm.today.salespersonFilter';
+  const [salespersonFilter, setSalespersonFilter] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'all';
+    return window.localStorage.getItem(SALESPERSON_FILTER_KEY) || 'all';
+  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SALESPERSON_FILTER_KEY, salespersonFilter);
+    }
+  }, [salespersonFilter]);
+
   const [summary, setSummary] = useState<TodaySummary | null>(null);
 
   const { data: teamMembers = [] } = useQuery({
@@ -93,23 +106,14 @@ export default function Today() {
     return m;
   }, [teamMembers]);
 
-  const byOwner = <T extends { assigned_to?: string }>(items: T[]) => {
-    if (!sortBySalesperson) return items;
-    return [...items].sort((a, b) =>
-      (ownerLabel.get(a.assigned_to || '') || '').localeCompare(ownerLabel.get(b.assigned_to || '') || '', undefined, {
-        sensitivity: 'base',
-      }),
-    );
+  // Filter (not sort) — applies to all per-rep widgets, lead lists, task
+  // lists. 'all' is a passthrough.
+  const filterByOwner = <T extends { assigned_to?: string | null }>(items: T[]) => {
+    if (salespersonFilter === 'all') return items;
+    return items.filter((i) => (i.assigned_to ?? '') === salespersonFilter);
   };
-
-  const sortLeadsByOwner = (items: Lead[]) => {
-    if (!sortBySalesperson) return items;
-    return [...items].sort((a, b) =>
-      (ownerLabel.get(a.assigned_to || '') || '').localeCompare(ownerLabel.get(b.assigned_to || '') || '', undefined, {
-        sensitivity: 'base',
-      }),
-    );
-  };
+  const byOwner = filterByOwner;
+  const sortLeadsByOwner = (items: Lead[]) => filterByOwner(items);
   const [todayTasks, setTodayTasks] = useState<LeadTask[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<LeadTask[]>([]);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
@@ -198,11 +202,14 @@ export default function Today() {
             </p>
           </div>
         </div>
+        {/* Section 9 + Round 5 merged Today + Dashboard. The legacy widget
+            dashboard is still reachable for one cycle of cutover at
+            /dashboard/legacy. */}
         <Link
-          to="/dashboard"
+          to="/dashboard/legacy"
           className="text-sm text-th-accent-600 hover:text-th-accent-700 flex items-center gap-1"
         >
-          Full Dashboard <ArrowUpRight className="w-3.5 h-3.5" />
+          Widget Dashboard (legacy) <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
@@ -244,14 +251,24 @@ export default function Today() {
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setSortBySalesperson((v) => !v)}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-th-border text-th-text-secondary hover:bg-surface-secondary"
+          {/* Section 5 / Round 5 merged page — salesperson filter (default
+              All). Applies to every per-rep widget, lead list, and task
+              list on this page. Persists per-user. */}
+          <div className="flex items-center justify-end gap-2">
+            <label htmlFor="salesperson-filter" className="text-xs font-medium text-th-text-tertiary">
+              Salesperson
+            </label>
+            <select
+              id="salesperson-filter"
+              value={salespersonFilter}
+              onChange={(e) => setSalespersonFilter(e.target.value)}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-th-border bg-surface-primary text-th-text-secondary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
             >
-              {sortBySalesperson ? 'Clear salesperson sort' : 'Sort tasks & leads by salesperson'}
-            </button>
+              <option value="all">All</option>
+              {teamMembers.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
           </div>
           {/* Overdue tasks — urgent */}
           {overdueTasks.length > 0 && (

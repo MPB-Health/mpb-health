@@ -65,13 +65,28 @@ export default function LeadsList() {
   const [showFilters, setShowFilters] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
   const pageSize = 20;
+  // CRM rebuild Section 6 — subsection default is now 'all' (was 'working');
+  // user's last selection persists per-rep via localStorage key.
   const [workflowTab, setWorkflowTab] = useState<
     'all' | 'working' | 'nurture' | 'linkedin' | 'do_not_contact'
-  >('working');
+  >(() => {
+    if (typeof window === 'undefined') return 'all';
+    const stored = window.localStorage.getItem('crm.leads.workflowTab');
+    if (stored === 'all' || stored === 'working' || stored === 'nurture'
+        || stored === 'linkedin' || stored === 'do_not_contact') {
+      return stored;
+    }
+    return 'all';
+  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('crm.leads.workflowTab', workflowTab);
+    }
+  }, [workflowTab]);
   const [listSort, setListSort] = useState<{
     by: NonNullable<LeadFilters['sortBy']>;
     dir: 'asc' | 'desc';
-  }>({ by: 'created_at', dir: 'desc' });
+  }>({ by: 'last_touched_at', dir: 'desc' });
 
   const listFilters = useMemo(
     (): LeadFilters => ({
@@ -290,6 +305,31 @@ export default function LeadsList() {
     }
   };
 
+  // Section 6 — bulk Mark Lost. Calls the new RPC for each selected lead so
+  // do_not_contact, stage, subsection, lost_reason, and last_touched_at all
+  // move atomically and the activity log records the action.
+  const [showBulkMarkLost, setShowBulkMarkLost] = useState(false);
+  const [bulkMarkLostReason, setBulkMarkLostReason] = useState('rep_marked_lost_bulk');
+  const [bulkMarkingLost, setBulkMarkingLost] = useState(false);
+
+  const handleBulkMarkLost = async () => {
+    const ids = Array.from(selectedLeads);
+    if (ids.length === 0) return;
+    setBulkMarkingLost(true);
+    let ok = 0;
+    let fail = 0;
+    for (const id of ids) {
+      const result = await leadService.markLeadLost(id, bulkMarkLostReason || 'rep_marked_lost_bulk');
+      if (result.success) ok++;
+      else fail++;
+    }
+    setBulkMarkingLost(false);
+    setShowBulkMarkLost(false);
+    if (ok > 0) toast.success(`Marked ${ok} lead${ok !== 1 ? 's' : ''} as Lost`);
+    if (fail > 0) toast.error(`Failed to mark ${fail} lead${fail !== 1 ? 's' : ''}`);
+    handleBulkSuccess();
+  };
+
   const handleBulkTagApply = async (addTags: string[], removeTags: string[]) => {
     const ids = Array.from(selectedLeads);
     let ok = 0;
@@ -419,6 +459,7 @@ export default function LeadsList() {
         onMassTransfer={() => setShowMassTransfer(true)}
         onMerge={() => setShowMerge(true)}
         onTagManager={() => setShowBulkTags(true)}
+        onMarkLost={() => setShowBulkMarkLost(true)}
         onExport={handleExportSelected}
         onDelete={() => setShowDeleteConfirm(true)}
         onClear={() => setSelectedLeads(new Set())}
@@ -549,33 +590,40 @@ export default function LeadsList() {
         </div>
       </div>
 
-      {/* ─── Workflow subsection tabs ─── */}
-      <div className="flex flex-wrap gap-2 px-1">
+      {/* ─── Workflow subsection bar ───
+          CRM rebuild Section 6: evenly-spaced button row, default = All,
+          active = filled, inactive = outline. Order locked: All / Working
+          Leads / Nurture Leads / LinkedIn / Do Not Contact. */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 px-1">
         {(
           [
             ['all', 'All'],
-            ['working', 'Working leads'],
-            ['nurture', 'Nurture'],
+            ['working', 'Working Leads'],
+            ['nurture', 'Nurture Leads'],
             ['linkedin', 'LinkedIn'],
-            ['do_not_contact', 'Do not contact'],
+            ['do_not_contact', 'Do Not Contact'],
           ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => {
-              setWorkflowTab(key);
-              setPage(0);
-            }}
-            className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
-              workflowTab === key
-                ? 'border-th-accent-500 bg-th-accent-50 text-th-accent-800'
-                : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+        ).map(([key, label]) => {
+          const active = workflowTab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                setWorkflowTab(key);
+                setPage(0);
+              }}
+              aria-pressed={active}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors text-center ${
+                active
+                  ? 'bg-th-accent-600 border-th-accent-600 text-white shadow-sm'
+                  : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {showFilters && (
@@ -645,12 +693,12 @@ export default function LeadsList() {
                     <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">
                       <button
                         type="button"
-                        onClick={() => cycleListSort('last_contacted_at')}
+                        onClick={() => cycleListSort('last_touched_at')}
                         className="inline-flex items-center gap-1 hover:text-th-text-secondary"
                       >
                         Last touched
-                        {listSort.by === 'last_contacted_at' ? (listSort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
-                        <HelpTooltip text="Most recent activity timestamp." size="sm" />
+                        {listSort.by === 'last_touched_at' ? (listSort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                        <HelpTooltip text="Last rep-initiated activity (call/email/SMS/note/task complete/profile edit). Inbound replies and link clicks do NOT bump this — see Section 7 Round 3 Addendum." size="sm" />
                       </button>
                     </th>
                     <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">
@@ -766,7 +814,14 @@ export default function LeadsList() {
                           {formatLeadDue(lead.next_followup_at)}
                         </td>
                         <td className="px-6 py-4 text-sm text-th-text-tertiary whitespace-nowrap">
-                          {lead.last_contacted_at ? formatTimeAgo(lead.last_contacted_at) : '—'}
+                          {/* Section 6: rep-initiated activity timestamp.
+                              Falls back to last_contacted_at for legacy rows
+                              that haven't been bumped by a new activity yet. */}
+                          {lead.last_touched_at
+                            ? formatTimeAgo(lead.last_touched_at)
+                            : lead.last_contacted_at
+                              ? formatTimeAgo(lead.last_contacted_at)
+                              : '—'}
                         </td>
                         <td className="px-6 py-4 text-sm text-th-text-tertiary whitespace-nowrap">
                           {formatTimeAgo(lead.created_at)}
@@ -899,6 +954,48 @@ export default function LeadsList() {
         rules={scoringRulesForModal}
         onSave={handleScoringRulesSave}
       />
+
+      {/* Bulk Mark as Lost — Section 6 / Round 5 */}
+      {showBulkMarkLost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-semibold text-th-text-primary mb-2">
+              Mark {selectedLeads.size} Lead{selectedLeads.size !== 1 ? 's' : ''} as Lost?
+            </h3>
+            <p className="text-sm text-th-text-secondary mb-4">
+              Each lead moves to Lost / Do Not Contact, is excluded from cadences, and the
+              reason is logged in the audit trail.
+            </p>
+            <label htmlFor="bulk-mark-lost-reason" className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">
+              Reason (logged on every lead)
+            </label>
+            <input
+              id="bulk-mark-lost-reason"
+              type="text"
+              value={bulkMarkLostReason}
+              onChange={(e) => setBulkMarkLostReason(e.target.value)}
+              className="mt-1 w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary mb-6"
+              placeholder="rep_marked_lost_bulk"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowBulkMarkLost(false)}
+                disabled={bulkMarkingLost}
+                className="px-4 py-2 text-sm font-medium border border-th-border rounded-lg hover:bg-surface-primary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkMarkLost}
+                disabled={bulkMarkingLost}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {bulkMarkingLost ? 'Marking…' : `Mark ${selectedLeads.size} Lost`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (

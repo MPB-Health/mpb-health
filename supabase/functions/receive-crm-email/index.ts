@@ -271,26 +271,42 @@ serve(async (req) => {
       .trim()
       .substring(0, 200);
 
-    // Opt-out keyword detection (MP CRM spec 2g — tune list in DB function).
-    // If not opted out, treat the inbound message as engagement so a 'quoted'
-    // lead promotes to 'engaged' (RPC is a no-op for other stages).
+    // CRM rebuild Phase 1 + 3 — opt-out detection + engagement signal.
+    //
+    //   `crm_detect_opt_out(p_body, p_org_id)` — data-driven keyword match
+    //   from `public.crm_optout_keywords`; returns (is_match, match_phrase).
+    //   `crm_apply_lead_opt_out(p_lead_id, p_reason, p_phrase)` — routes the
+    //   lead to Lost / DNC, records the matched phrase, halts cadences.
+    //   `crm_register_engagement_signal(p_lead_id, p_signal_type)` —
+    //   advances Working/Quoted → Engaged and pauses halt_on_engagement
+    //   cadences so the rep takes over.
     if (leadId && (payload.text || payload.html)) {
       const cleanText = (payload.text || payload.html || '').replace(/<[^>]*>/g, ' ');
-      const { data: optOutHit } = await supabase.rpc('crm_detect_opt_out_keywords', {
+      const { data: optOut, error: optOutErr } = await supabase.rpc('crm_detect_opt_out', {
         p_body: cleanText,
+        p_org_id: orgId,
       });
-      if (optOutHit === true) {
+      if (optOutErr) {
+        log.warn('crm_detect_opt_out failed', { leadId, error: optOutErr.message });
+      }
+      const optOutRow = Array.isArray(optOut) ? optOut[0] : optOut;
+      if (optOutRow?.is_match === true) {
         await supabase.rpc('crm_apply_lead_opt_out', {
           p_lead_id: leadId,
           p_reason: 'inbound_opt_out_keywords',
+          p_phrase: optOutRow.match_phrase ?? null,
         });
-        log.info('Applied DNC from inbound opt-out phrases', { leadId });
+        log.info('Applied DNC from inbound opt-out phrase', {
+          leadId,
+          phrase: optOutRow.match_phrase ?? null,
+        });
       } else {
-        const { error: engageErr } = await supabase.rpc('crm_record_lead_engagement', {
+        const { error: engageErr } = await supabase.rpc('crm_register_engagement_signal', {
           p_lead_id: leadId,
+          p_signal_type: 'reply',
         });
         if (engageErr) {
-          log.warn('Failed to record inbound engagement', { leadId, error: engageErr.message });
+          log.warn('Failed to register engagement signal', { leadId, error: engageErr.message });
         }
       }
     }

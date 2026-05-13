@@ -143,5 +143,33 @@ serve(async (req) => {
     );
   }
 
+  // CRM rebuild Phase 4 / Section 12 / Round 6 — Performance Lag scan.
+  //
+  // Body: { "job": "performance_lag_scan", "org_id"?: "<uuid>" }
+  //
+  // Calls `crm_scan_performance_lag(p_org_id)` for each target org. The RPC
+  // handles the rolling 5-business-day window, 80% of team-avg threshold,
+  // 7-day quiet period, and inserts a row into `crm_performance_alert_log`
+  // for every fired alert. The frontend Daily Log v2 page reads the latest
+  // alert per rep and renders the banner.
+  if (job === 'performance_lag_scan') {
+    const fired: Record<string, number> = {};
+    for (const o of targetOrgs as { id: string }[]) {
+      const { data, error } = await supabase.rpc('crm_scan_performance_lag', {
+        p_org_id: o.id,
+      });
+      if (error) {
+        fired[o.id] = -1;
+        continue;
+      }
+      const rows = (data ?? []) as Array<{ alert_fired: boolean }>;
+      fired[o.id] = rows.filter((r) => r.alert_fired).length;
+    }
+    return new Response(
+      JSON.stringify({ ok: true, job, fired_by_org: fired }),
+      { headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
   return new Response(JSON.stringify({ ok: false, error: 'unknown_job' }), { status: 400 });
 });

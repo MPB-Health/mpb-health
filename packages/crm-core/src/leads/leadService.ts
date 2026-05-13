@@ -11,8 +11,9 @@ import { sanitizeSearchInput } from '../utils/sanitize';
 /** Columns for list/detail fetches (PostgREST select) */
 export const LEAD_ROW_SELECT = `
   id, org_id, first_name, last_name, email, phone, household_size, zip_code, city, state, contact_preference, primary_concern, source_page, source_cta, created_at, updated_at,
-  pipeline_stage, priority, plan_type, assigned_to, lead_score, tags, lead_source, next_followup_at, last_contacted_at, stage_changed_at,
+  pipeline_stage, priority, plan_type, assigned_to, lead_score, tags, lead_source, next_followup_at, last_contacted_at, last_touched_at, stage_changed_at,
   workflow_subsection, linkedin_workflow_status, do_not_contact,
+  opt_out_reason, opt_out_phrase, opt_out_detected_at,
   carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
 `;
 
@@ -301,6 +302,29 @@ export class LeadService {
     } catch (error) {
       console.error('Remove tag error:', error);
       return { success: false, error: 'Failed to remove tag' };
+    }
+  }
+
+  /**
+   * CRM rebuild Section 6 — manual "Mark as Lost" button on Lead Profile.
+   * Wraps the `crm_mark_lead_lost` RPC which sets stage=lost, subsection=
+   * do_not_contact, do_not_contact=true, logs an activity row, and bumps
+   * last_touched_at — all in one transaction.
+   */
+  async markLeadLost(
+    leadId: string,
+    reason: string = 'rep_marked_lost'
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await this.supabase.rpc('crm_mark_lead_lost', {
+        p_lead_id: leadId,
+        p_reason: reason,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (err) {
+      console.error('markLeadLost error:', err);
+      return { success: false, error: 'Failed to mark lead as lost' };
     }
   }
 

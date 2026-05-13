@@ -12,7 +12,9 @@ import {
   Plus,
   MessageSquare,
   PhoneCall,
-  Video,
+  Send,
+  CheckSquare,
+  XCircle,
   User,
   Users,
   Shield,
@@ -62,7 +64,9 @@ import { AttachmentList } from '../components/AttachmentList';
 import { RelationshipSidebar } from '../components/RelationshipSidebar';
 import { SunbizLookup } from '../components/SunbizLookup';
 import { LeadMpWorkflowPanel } from '../components/leads/LeadMpWorkflowPanel';
+import { LeadProfileEmailTab } from '../components/leads/LeadProfileEmailTab';
 import { useFocusItems } from '../hooks/useFocusItems';
+import { useProfileTimeTracker } from '../hooks/useProfileTimeTracker';
 import { useOrg } from '../contexts/OrgContext';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type { Lead, LeadActivity, LeadTask, FamilyMember, PhoneNumber } from '@mpbhealth/crm-core';
@@ -92,6 +96,14 @@ const MORE_ACTIONS: { id: DetailAction; icon: typeof Copy; label: string }[] = [
 ];
 
 const familyService = createFamilyService(supabase);
+
+const SUBSECTION_LABELS: Record<string, string> = {
+  working: 'Working',
+  nurture: 'Nurture',
+  linkedin: 'LinkedIn',
+  do_not_contact: 'Do Not Contact',
+  concierge_handoff: 'Concierge Handoff',
+};
 
 function SectionHeader({ icon: Icon, title, count, action }: {
   icon: typeof Users;
@@ -190,12 +202,22 @@ export default function LeadDetail() {
   const phoneNumbers = leadData?.phoneNumbers ?? [];
 
   const refreshLead = () => queryClient.invalidateQueries({ queryKey: ['crmLeadDetail', id] });
-  const [activeTab, setActiveTab] = useState<'tasks' | 'timeline' | 'attachments'>('timeline');
+  // Section 6 / Round 5: profile gains an in-profile Email composer tab so
+  // reps stop bouncing to Outlook. We default to Timeline; the top-row Email
+  // button switches to this tab and pre-fills the To: field.
+  const [activeTab, setActiveTab] = useState<'tasks' | 'timeline' | 'attachments' | 'email'>('timeline');
   const [showEditLead, setShowEditLead] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
   const [showLogCall, setShowLogCall] = useState(false);
   const [showLogMeeting, setShowLogMeeting] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
+  // CRM rebuild Section 6: Mark as Lost manual override + opt-out reason capture.
+  const [showMarkLost, setShowMarkLost] = useState(false);
+  const [markLostReason, setMarkLostReason] = useState('');
+  const [markingLost, setMarkingLost] = useState(false);
+
+  // CRM rebuild Section 6: auto time-on-profile tracker (30s ping while focused).
+  useProfileTimeTracker(lead?.id ?? null, lead?.org_id ?? activeOrgId ?? null);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -468,6 +490,18 @@ export default function LeadDetail() {
                   {getPriorityLabel(lead.priority as any || 'normal')}
                 </span>
               </div>
+              {/* CRM rebuild Section 6: Lead Owner directly below the lead
+                  name. Click cycles through the Assign dropdown so reps can
+                  reassign without scrolling. */}
+              <div className="flex items-center gap-1.5 mb-1.5 text-sm">
+                <UserPlus className="w-3.5 h-3.5 text-th-text-tertiary" />
+                <span className="text-th-text-tertiary">Lead Owner:</span>
+                <span className="font-medium text-th-text-primary">
+                  {lead.assigned_user?.full_name
+                    || lead.assigned_user?.email
+                    || (lead.assigned_to ? lead.assigned_to.slice(0, 8) : 'Unassigned')}
+                </span>
+              </div>
               <div className="flex items-center gap-4 text-sm text-th-text-secondary flex-wrap">
                 <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 hover:text-th-accent-600 transition-colors">
                   <Mail className="w-3.5 h-3.5" />
@@ -486,7 +520,7 @@ export default function LeadDetail() {
                   </span>
                 )}
               </div>
-              {/* Advisor / Carrier / Created */}
+              {/* Advisor / Carrier / Created → Last Touched (Section 6 order) */}
               <div className="flex items-center gap-4 mt-2 text-xs text-th-text-tertiary flex-wrap">
                 {lead.carrier && (
                   <span className="flex items-center gap-1">
@@ -498,6 +532,15 @@ export default function LeadDetail() {
                   <Calendar className="w-3 h-3" />
                   Created {formatTimeAgo(lead.created_at)}
                 </span>
+                <span
+                  className="flex items-center gap-1"
+                  title={lead.last_touched_at
+                    ? `Last rep-initiated touch: ${new Date(lead.last_touched_at).toLocaleString()}`
+                    : 'No rep activity logged yet'}
+                >
+                  <Activity className="w-3 h-3" />
+                  Last touched {lead.last_touched_at ? formatTimeAgo(lead.last_touched_at) : '—'}
+                </span>
                 {lead.original_effective_date && (
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
@@ -508,37 +551,105 @@ export default function LeadDetail() {
             </div>
           </div>
 
-          {/* Right: Actions */}
+          {/* Right: Actions
+              CRM rebuild Section 6 — top action button row is now Note / Call /
+              Email / Text / Task. Meeting moved into Calendar (Section 9).
+              Email + Text compose-and-send via the rep's CRM identity (P3
+              wires up `crm-send-email` + GoTo Connect SMS), never Outlook. */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="hidden sm:flex items-center bg-surface-secondary rounded-xl p-1 gap-1">
-              <button onClick={() => setShowAddNote(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all">
+              <button
+                onClick={() => setShowAddNote(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all"
+                title="Add note"
+              >
                 <MessageSquare className="w-3.5 h-3.5" /> Note
               </button>
-              <button onClick={() => setShowLogCall(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all">
+              <button
+                onClick={() => setShowLogCall(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all"
+                title="Log call"
+              >
                 <PhoneCall className="w-3.5 h-3.5" /> Call
               </button>
-              <button onClick={() => setShowLogMeeting(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all">
-                <Video className="w-3.5 h-3.5" /> Meeting
+              <button
+                onClick={() => {
+                  // Section 6 / Round 5 — switch to the in-profile Email
+                  // composer tab. Reps never leave the lead. Templates load
+                  // from the master library (P3); the rep's CRM identity is
+                  // the sender (never Outlook).
+                  if (!lead?.email) {
+                    toast.error('Lead has no email on file');
+                    return;
+                  }
+                  setActiveTab('email');
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all"
+                title="Send email from your CRM"
+              >
+                <Mail className="w-3.5 h-3.5" /> Email
+              </button>
+              <button
+                onClick={() => {
+                  // SMS composer wires up in P5 (GoTo Connect). For now, log
+                  // a placeholder note so reps know the action is captured.
+                  toast('SMS composer ships with GoTo Connect (P5).', { icon: '📱' });
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all"
+                title="Send text"
+              >
+                <Send className="w-3.5 h-3.5" /> Text
+              </button>
+              <button
+                onClick={() => setShowAddTask(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all"
+                title="Create task"
+              >
+                <CheckSquare className="w-3.5 h-3.5" /> Task
               </button>
             </div>
-            <button
-              onClick={() => {
-                if (id && !focusItems.isPinned('lead', id)) {
-                  focusItems.pinItem('lead', id);
-                  toast.success('Pinned to Today');
-                }
-              }}
-              disabled={!id || focusItems.isPinned('lead', id!)}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
-                id && focusItems.isPinned('lead', id)
-                  ? 'bg-amber-50 border-amber-200 text-amber-700 cursor-default'
-                  : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
-              }`}
-              title="Pin to Today"
-            >
-              <Zap className="w-4 h-4" />
-              {id && focusItems.isPinned('lead', id) ? 'Pinned' : 'Pin to Today'}
-            </button>
+            {/* Mark as Lost — Section 6 manual override. Opens the mini
+                modal below so reps capture a reason before downgrading. */}
+            <PermissionGate permission="leads.update">
+              <button
+                onClick={() => setShowMarkLost(true)}
+                className="hidden md:flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                title="Mark as Lost (DNC)"
+              >
+                <XCircle className="w-4 h-4" /> Mark Lost
+              </button>
+            </PermissionGate>
+            {/* CRM rebuild Section 6: Pin/Unpin is now a true toggle. Click
+                while pinned removes the item from Today. */}
+            {(() => {
+              const focusItem = id
+                ? focusItems.items.find((i) => i.entity_type === 'lead' && i.entity_id === id)
+                : undefined;
+              const pinned = !!focusItem;
+              return (
+                <button
+                  onClick={async () => {
+                    if (!id) return;
+                    if (pinned && focusItem) {
+                      await focusItems.unpinItem(focusItem.id);
+                      toast.success('Unpinned from Today');
+                    } else {
+                      await focusItems.pinItem('lead', id);
+                      toast.success('Pinned to Today');
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                    pinned
+                      ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                      : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
+                  }`}
+                  title={pinned ? 'Unpin from Today' : 'Pin to Today'}
+                >
+                  <Zap className="w-4 h-4" />
+                  {pinned ? 'Unpin' : 'Pin to Today'}
+                </button>
+              );
+            })()}
             {/* More Actions dropdown */}
             <div className="relative" ref={moreMenuRef}>
               <button
@@ -623,7 +734,11 @@ export default function LeadDetail() {
           </div>
         </div>
 
-        {/* Status bar */}
+        {/* Status bar — Section 6: Stage and Subsection are now paired
+            visually so reps see them together. The full subsection editor
+            (with concierge / DNC routing) lives in LeadMpWorkflowPanel
+            below; the chip here is a read-only quick reference that mirrors
+            it. */}
         <div className="mt-6 pt-6 border-t border-th-border flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">Stage</label>
@@ -637,6 +752,14 @@ export default function LeadDetail() {
                 <option key={s.id} value={s.name}>{s.display_name}</option>
               ))}
             </select>
+            {lead.workflow_subsection && (
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-th-accent-200 bg-th-accent-50 text-th-accent-800"
+                title="Lead's current workflow subsection. Edit below."
+              >
+                {SUBSECTION_LABELS[lead.workflow_subsection] || lead.workflow_subsection}
+              </span>
+            )}
           </div>
           {lead.lead_score > 0 && (
             <div className="flex items-center gap-2">
@@ -836,6 +959,7 @@ export default function LeadDetail() {
             <div className="flex border-b border-th-border">
               {([
                 { key: 'timeline' as const, label: 'Timeline', count: undefined as number | undefined },
+                { key: 'email' as const, label: 'Email', count: undefined as number | undefined },
                 { key: 'tasks' as const, label: 'Tasks', count: pendingTaskCount },
                 { key: 'attachments' as const, label: 'Files', count: undefined as number | undefined },
               ]).map((tab) => (
@@ -878,6 +1002,8 @@ export default function LeadDetail() {
             <div className="p-6">
               {activeTab === 'timeline' ? (
                 <UnifiedTimeline leadId={id} />
+              ) : activeTab === 'email' ? (
+                <LeadProfileEmailTab lead={lead} />
               ) : activeTab === 'attachments' ? (
                 <AttachmentList entityType="lead" entityId={id!} />
               ) : (
@@ -1072,6 +1198,80 @@ export default function LeadDetail() {
           </table>
         </div>
       </PrintPreviewModal>
+
+      {/* CRM rebuild Section 6 — Mark as Lost confirmation modal. Captures
+          a free-form reason and routes via the crm_mark_lead_lost RPC which
+          atomically sets stage=lost + subsection=do_not_contact + DNC, then
+          logs an activity row + bumps last_touched_at. */}
+      {showMarkLost && (
+        <div
+          className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4"
+          onClick={() => !markingLost && setShowMarkLost(false)}
+        >
+          <div
+            className="bg-surface-primary rounded-2xl border border-th-border shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-th-text-primary">Mark Lead as Lost</h3>
+                <p className="text-sm text-th-text-tertiary">Sets stage to Lost + Do Not Contact</p>
+              </div>
+            </div>
+            <p className="text-sm text-th-text-secondary mb-3">
+              <strong>{lead.first_name} {lead.last_name}</strong> will move to the Lost stage,
+              be routed to the Do Not Contact subsection, and any active cadences will halt.
+            </p>
+            <label className="block text-xs font-medium text-th-text-tertiary mb-1">
+              Reason (recorded in activity log)
+            </label>
+            <textarea
+              value={markLostReason}
+              onChange={(e) => setMarkLostReason(e.target.value)}
+              placeholder="e.g., Lead found another carrier, no decision after 30 days, opt-out on call"
+              rows={3}
+              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500 mb-4"
+              disabled={markingLost}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowMarkLost(false)}
+                disabled={markingLost}
+                className="px-4 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-secondary rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!lead) return;
+                  setMarkingLost(true);
+                  const reason = markLostReason.trim() || 'rep_marked_lost';
+                  const result = await leadService.markLeadLost(lead.id, reason);
+                  if (result.success) {
+                    toast.success('Lead marked as Lost');
+                    setShowMarkLost(false);
+                    setMarkLostReason('');
+                    refreshLead();
+                  } else {
+                    toast.error(result.error || 'Failed to mark lead as Lost');
+                  }
+                  setMarkingLost(false);
+                }}
+                disabled={markingLost}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {markingLost ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                Mark as Lost
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (

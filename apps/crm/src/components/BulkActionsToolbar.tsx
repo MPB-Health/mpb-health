@@ -1,4 +1,4 @@
-import { Users, GitBranch, Mail, Download, Trash2, X, RefreshCw, UserCheck, GitMerge, Tag } from 'lucide-react';
+import { Users, GitBranch, Mail, Download, Trash2, X, RefreshCw, UserCheck, GitMerge, Tag, XCircle } from 'lucide-react';
 
 interface Props {
   selectedCount: number;
@@ -11,6 +11,8 @@ interface Props {
   onMassTransfer?: () => void;
   onMerge?: () => void;
   onTagManager?: () => void;
+  /** Section 6: bulk-mark selected leads as Lost (DNC). */
+  onMarkLost?: () => void;
   onClear: () => void;
 }
 
@@ -25,6 +27,7 @@ export function BulkActionsToolbar({
   onMassTransfer,
   onMerge,
   onTagManager,
+  onMarkLost,
   onClear,
 }: Props) {
   if (selectedCount === 0) return null;
@@ -89,6 +92,16 @@ export function BulkActionsToolbar({
           >
             <Tag className="w-4 h-4" />
             <span>Tags</span>
+          </button>
+        )}
+        {onMarkLost && (
+          <button
+            onClick={onMarkLost}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-500/80 transition-colors"
+            title="Mark selected leads as Lost (DNC)"
+          >
+            <XCircle className="w-4 h-4" />
+            <span>Mark Lost</span>
           </button>
         )}
         <button

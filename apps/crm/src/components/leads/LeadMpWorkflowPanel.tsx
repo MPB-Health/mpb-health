@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, CheckCircle2, Clock, FileSpreadsheet, Plus, Send } from 'lucide-react';
+import { Ban, CheckCircle2, Clock, FileSpreadsheet, Plus, Send, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCRM } from '../../contexts/CRMContext';
@@ -119,6 +119,38 @@ export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh
     lead.pipeline_stage === 'engaged' ||
     lead.pipeline_stage === 'quoted';
 
+  // CRM rebuild Phase 3 / Section 13 — manual cadence enrollment from the
+  // lead profile. Available cadences come from the same org; the RPC is
+  // idempotent so re-enrolling a lead resumes a paused cadence.
+  const cadencesForOrg = useQuery({
+    queryKey: ['crmLeadProfileCadences', lead.org_id],
+    enabled: !!lead.org_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_follow_up_cadences')
+        .select('id, name, schema_version, is_active')
+        .eq('org_id', lead.org_id!)
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+
+  const handleEnrollInCadence = async (cadenceId: string) => {
+    const { error } = await supabase.rpc('crm_enroll_lead_in_cadence', {
+      p_lead_id: lead.id,
+      p_cadence_id: cadenceId,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success('Enrolled in cadence');
+    onRefresh();
+  };
+
   const handleSubsection = async (v: string) => {
     const r = await leadService.updateLead(lead.id, {
       workflow_subsection: v as Lead['workflow_subsection'],
@@ -233,6 +265,32 @@ export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh
               <Ban className="w-4 h-4" />
               Mark as lost
             </button>
+            {/* CRM rebuild Phase 3 / Section 13 — manual cadence enrollment */}
+            {(cadencesForOrg.data ?? []).length > 0 && (
+              <div className="relative">
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleEnrollInCadence(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border border-th-accent-200 text-th-accent-700 bg-th-accent-50 hover:bg-th-accent-100 cursor-pointer"
+                  aria-label="Enroll in cadence"
+                  title="Enroll lead in a cadence"
+                >
+                  <option value="" disabled>
+                    Enroll in cadence…
+                  </option>
+                  {(cadencesForOrg.data ?? []).map((c: { id: string; name: string }) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </PermissionGate>
       </div>

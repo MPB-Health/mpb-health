@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   RefreshCw, Filter, GitBranch, BarChart3, ArrowDown, Clock,
   Camera, Users, AlertTriangle, Zap, MapPin, Target, ArrowLeftRight,
@@ -32,7 +33,40 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
 
 export default function Pipeline() {
   const navigate = useNavigate();
-  const { leadService, activityService, pipelineStages, refreshDashboard } = useCRM();
+  const { leadService, activityService, pipelineStages, refreshDashboard, supabase } = useCRM();
+
+  // CRM rebuild Round 5 / Section 5: salesperson filter applies to the
+  // pipeline board too. Default = all, persisted per logged-in rep in
+  // localStorage.
+  const SALESPERSON_FILTER_KEY = 'crm.pipeline.salespersonFilter';
+  const [salespersonFilter, setSalespersonFilter] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'all';
+    return window.localStorage.getItem(SALESPERSON_FILTER_KEY) || 'all';
+  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SALESPERSON_FILTER_KEY, salespersonFilter);
+    }
+  }, [salespersonFilter]);
+
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['crmTeamMembers'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('org_memberships')
+        .select('user_id, role, profiles!inner(id, email, full_name, avatar_url)')
+        .eq('status', 'active')
+        .limit(100);
+      return (data || []).map((m: Record<string, unknown>) => {
+        const p = m.profiles as Record<string, unknown>;
+        return {
+          id: (p?.id || m.user_id) as string,
+          name: (p?.full_name || p?.email || 'Unknown') as string,
+        };
+      });
+    },
+    staleTime: 5 * 60_000,
+  });
   const [leadsByStage, setLeadsByStage] = useState<Record<string, Lead[]>>({});
   const [loading, setLoading] = useState(true);
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
@@ -153,6 +187,23 @@ export default function Pipeline() {
         size="sm"
         actions={
           <div className="flex items-center space-x-3">
+            {/* Salesperson filter (Round 5 — applies across the board) */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="pipeline-salesperson" className="text-xs font-medium text-th-text-tertiary">
+                Salesperson
+              </label>
+              <select
+                id="pipeline-salesperson"
+                value={salespersonFilter}
+                onChange={(e) => setSalespersonFilter(e.target.value)}
+                className="text-sm px-3 py-2 rounded-xl border border-th-border bg-surface-primary text-th-text-secondary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+              >
+                <option value="all">All</option>
+                {teamMembers.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="relative">
               <button
                 onClick={() => setShowFilters(!showFilters)}
@@ -201,7 +252,10 @@ export default function Pipeline() {
       <div className="flex space-x-4 overflow-x-auto pb-4">
         {pipelineStages.map((stage) => {
           const rawStageLeads = leadsByStage[stage.name] || [];
-          const stageLeads = filterFn ? rawStageLeads.filter(filterFn) : rawStageLeads;
+          const ownerFiltered = salespersonFilter === 'all'
+            ? rawStageLeads
+            : rawStageLeads.filter((l) => (l.assigned_to ?? '') === salespersonFilter);
+          const stageLeads = filterFn ? ownerFiltered.filter(filterFn) : ownerFiltered;
 
           return (
             <div

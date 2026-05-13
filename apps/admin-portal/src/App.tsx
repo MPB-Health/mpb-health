@@ -45,6 +45,9 @@ const WidgetManager = lazyRetry(() => import('./pages/WidgetManager'));
 const HandbookManager = lazyRetry(() => import('./pages/HandbookManager'));
 const EventsAdmin = lazyRetry(() => import('./pages/EventsAdmin'));
 const EventEditor = lazyRetry(() => import('./pages/EventEditor'));
+const CmsHub = lazyRetry(() => import('./pages/CmsHub'));
+const PagesList = lazyRetry(() => import('./pages/PagesList'));
+const PageEditor = lazyRetry(() => import('./pages/PageEditor'));
 // Operations / Marketing pages
 const LeadSubmissions = lazyRetry(() => import('./pages/LeadSubmissions'));
 const NewsletterAdmin = lazyRetry(() => import('./pages/NewsletterAdmin'));
@@ -305,6 +308,10 @@ export default function App() {
               <Route path="plans" element={<PlansList />} />
               <Route path="plans/new" element={<PlanEditor />} />
               <Route path="plans/:id" element={<PlanEditor />} />
+              <Route path="cms" element={<CmsHub />} />
+              <Route path="cms/pages" element={<PagesList />} />
+              <Route path="cms/pages/new" element={<PageEditor />} />
+              <Route path="cms/pages/:pageId" element={<PageEditor />} />
               <Route path="content/blog" element={<BlogPosts />} />
               <Route path="content/blog/new" element={<BlogEditor />} />
               <Route path="content/blog/:postId" element={<BlogEditor />} />

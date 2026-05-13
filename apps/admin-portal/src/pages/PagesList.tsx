@@ -1,0 +1,301 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import {
+  Plus,
+  Search,
+  Globe,
+  EyeOff,
+  ExternalLink,
+  Copy,
+  Trash2,
+  FileText,
+  Loader2,
+} from 'lucide-react';
+import { pagesAdminService } from '@mpbhealth/admin-core';
+import { supabase, safeRemoveChannel } from '@mpbhealth/database';
+import type { CmsPage } from '@mpbhealth/database';
+
+type Filter = 'all' | 'published' | 'drafts';
+
+const PUBLIC_SITE_URL =
+  (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) ||
+  'https://mpb.health';
+
+function formatRelative(iso: string | null): string {
+  if (!iso) return '—';
+  const then = new Date(iso).getTime();
+  const diffSec = Math.max(0, Math.round((Date.now() - then) / 1000));
+  if (diffSec < 60) return 'just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  if (diffSec < 86400 * 7) return `${Math.floor(diffSec / 86400)}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+export default function PagesList() {
+  const navigate = useNavigate();
+  const [pages, setPages] = useState<CmsPage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+
+  const fetchPages = useMemo(
+    () => async () => {
+      try {
+        const data = await pagesAdminService.getPages({
+          is_published:
+            filter === 'published' ? true : filter === 'drafts' ? false : undefined,
+          search: search.trim() || undefined,
+        });
+        setPages(data);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Unknown error';
+        // Migration not run yet? Show empty state instead of a scary error.
+        if (msg.includes('schema cache') || msg.includes('does not exist')) {
+          setPages([]);
+        } else {
+          toast.error(`Failed to load pages: ${msg}`);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filter, search]
+  );
+
+  useEffect(() => {
+    setLoading(true);
+    fetchPages();
+  }, [fetchPages]);
+
+  // Realtime: keep the list fresh as other admins (or this admin from another
+  // tab) make changes.
+  useEffect(() => {
+    const channel = supabase
+      .channel('cms-pages-admin-list')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cms_pages' },
+        () => {
+          fetchPages();
+        }
+      )
+      .subscribe();
+
+    return () => safeRemoveChannel(channel);
+  }, [fetchPages]);
+
+  const handleTogglePublish = async (page: CmsPage) => {
+    setPendingAction(page.id);
+    const toastId = toast.loading(
+      page.is_published ? 'Unpublishing…' : 'Publishing…'
+    );
+    try {
+      if (page.is_published) await pagesAdminService.unpublishPage(page.id);
+      else await pagesAdminService.publishPage(page.id);
+      toast.success(page.is_published ? 'Unpublished' : 'Published', { id: toastId });
+    } catch (e) {
+      toast.error(`Failed: ${e instanceof Error ? e.message : 'Unknown error'}`, {
+        id: toastId,
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const handleDuplicate = async (page: CmsPage) => {
+    setPendingAction(page.id);
+    const toastId = toast.loading('Duplicating page…');
+    try {
+      const copy = await pagesAdminService.duplicatePage(page.id);
+      toast.success('Page duplicated', { id: toastId });
+      navigate(`/cms/pages/${copy.id}`);
+    } catch (e) {
+      toast.error(`Failed: ${e instanceof Error ? e.message : 'Unknown error'}`, {
+        id: toastId,
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const handleDelete = async (page: CmsPage) => {
+    if (!window.confirm(`Delete "${page.title}"? This cannot be undone.`)) return;
+    setPendingAction(page.id);
+    const toastId = toast.loading('Deleting page…');
+    try {
+      await pagesAdminService.deletePage(page.id);
+      toast.success('Page deleted', { id: toastId });
+    } catch (e) {
+      toast.error(`Failed: ${e instanceof Error ? e.message : 'Unknown error'}`, {
+        id: toastId,
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-th-text-primary">Pages</h1>
+          <p className="text-sm text-th-text-secondary mt-1">
+            Build admin-driven pages for the public website. Each page renders at{' '}
+            <code className="px-1.5 py-0.5 bg-surface-tertiary rounded text-xs">/p/&lt;slug&gt;</code>
+            {' '}— changes go live within ~1 second of publishing.
+          </p>
+        </div>
+        <Link
+          to="/cms/pages/new"
+          className="inline-flex items-center gap-2 bg-th-accent-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          New Page
+        </Link>
+      </header>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title, path, or slug…"
+            className="w-full pl-9 pr-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
+          />
+        </div>
+        <div className="inline-flex rounded-lg border border-th-border bg-surface-primary p-0.5">
+          {(['all', 'published', 'drafts'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors capitalize ${
+                filter === f
+                  ? 'bg-th-accent-600 text-white'
+                  : 'text-th-text-secondary hover:bg-surface-tertiary'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-surface-primary border border-th-border rounded-xl overflow-hidden">
+        {loading ? (
+          <div className="p-12 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-th-accent-600" />
+          </div>
+        ) : pages.length === 0 ? (
+          <div className="p-12 text-center">
+            <FileText className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
+            <p className="text-th-text-secondary">
+              {search.trim()
+                ? 'No pages match your search.'
+                : 'No pages yet. Create your first one.'}
+            </p>
+            {!search.trim() && (
+              <Link
+                to="/cms/pages/new"
+                className="inline-flex items-center gap-2 mt-4 bg-th-accent-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                New Page
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="divide-y divide-th-border/60">
+            {pages.map((page) => (
+              <div
+                key={page.id}
+                className="p-4 sm:p-5 hover:bg-surface-secondary/40 transition-colors flex flex-col sm:flex-row sm:items-center gap-4"
+              >
+                <Link
+                  to={`/cms/pages/${page.id}`}
+                  className="flex-1 min-w-0"
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-th-text-primary truncate">
+                      {page.title}
+                    </span>
+                    {page.is_published ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                        <Globe className="w-3 h-3" />
+                        Published
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                        <EyeOff className="w-3 h-3" />
+                        Draft
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 flex items-center gap-3 text-xs text-th-text-tertiary">
+                    <code className="bg-surface-tertiary px-1.5 py-0.5 rounded">
+                      {page.path}
+                    </code>
+                    <span>{page.sections.length} sections</span>
+                    <span>Updated {formatRelative(page.updated_at)}</span>
+                  </div>
+                </Link>
+
+                <div className="flex items-center gap-1">
+                  {page.is_published && (
+                    <a
+                      href={`${PUBLIC_SITE_URL}${page.path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="View on site"
+                      className="p-2 rounded-md text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePublish(page)}
+                    disabled={pendingAction === page.id}
+                    title={page.is_published ? 'Unpublish' : 'Publish'}
+                    className="p-2 rounded-md text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary transition-colors disabled:opacity-50"
+                  >
+                    {pendingAction === page.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : page.is_published ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Globe className="w-4 h-4" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicate(page)}
+                    disabled={pendingAction === page.id}
+                    title="Duplicate"
+                    className="p-2 rounded-md text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary transition-colors disabled:opacity-50"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(page)}
+                    disabled={pendingAction === page.id}
+                    title="Delete"
+                    className="p-2 rounded-md text-th-text-tertiary hover:bg-rose-500/10 hover:text-rose-600 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

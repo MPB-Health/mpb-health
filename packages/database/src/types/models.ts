@@ -165,6 +165,127 @@ export interface CmsEvent {
   updated_at: string;
 }
 
+// ----------------------------------------------------------------------------
+// CMS Pages (page-builder)
+//
+// Each row is a public-facing page identified by its URL path. The block
+// layout is a JSONB array stored under `sections`. See
+// apps/website/src/components/cms-blocks/index.ts for the supported `kind`
+// values and the props each accepts.
+// ----------------------------------------------------------------------------
+
+export type CmsBlockKind =
+  | 'hero'
+  | 'rich_text'
+  | 'image'
+  | 'image_grid'
+  | 'cta_band'
+  | 'stats'
+  | 'two_column'
+  | 'faq'
+  | 'embed'
+  | 'spacer';
+
+export interface CmsBlockBase<K extends CmsBlockKind, P> {
+  id: string;
+  kind: K;
+  props: P;
+}
+
+export interface CmsHeroProps {
+  title: string;
+  subtitle?: string;
+  background_image?: string;
+  primary_cta?: { label: string; href: string };
+  secondary_cta?: { label: string; href: string };
+  alignment?: 'left' | 'center';
+}
+
+export interface CmsRichTextProps {
+  html: string;
+  max_width?: 'prose' | 'wide';
+}
+
+export interface CmsImageProps {
+  src: string;
+  alt: string;
+  caption?: string;
+  aspect_ratio?: '16:9' | '4:3' | '1:1' | 'auto';
+}
+
+export interface CmsImageGridProps {
+  columns?: 2 | 3 | 4;
+  items: Array<{ src: string; alt: string; caption?: string }>;
+}
+
+export interface CmsCtaBandProps {
+  title: string;
+  subtitle?: string;
+  cta: { label: string; href: string };
+  variant?: 'primary' | 'subtle';
+}
+
+export interface CmsStatsProps {
+  items: Array<{ value: string; label: string }>;
+}
+
+export interface CmsTwoColumnProps {
+  title?: string;
+  body_html: string;
+  image_src: string;
+  image_alt: string;
+  image_position?: 'left' | 'right';
+}
+
+export interface CmsFaqProps {
+  title?: string;
+  items: Array<{ question: string; answer_html: string }>;
+}
+
+export interface CmsEmbedProps {
+  url: string;
+  title?: string;
+  aspect_ratio?: '16:9' | '4:3' | '1:1';
+}
+
+export interface CmsSpacerProps {
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+}
+
+export type CmsBlock =
+  | CmsBlockBase<'hero', CmsHeroProps>
+  | CmsBlockBase<'rich_text', CmsRichTextProps>
+  | CmsBlockBase<'image', CmsImageProps>
+  | CmsBlockBase<'image_grid', CmsImageGridProps>
+  | CmsBlockBase<'cta_band', CmsCtaBandProps>
+  | CmsBlockBase<'stats', CmsStatsProps>
+  | CmsBlockBase<'two_column', CmsTwoColumnProps>
+  | CmsBlockBase<'faq', CmsFaqProps>
+  | CmsBlockBase<'embed', CmsEmbedProps>
+  | CmsBlockBase<'spacer', CmsSpacerProps>;
+
+export interface CmsPageMeta {
+  og_image?: string;
+  og_description?: string;
+  twitter_card?: 'summary' | 'summary_large_image';
+  canonical_url?: string;
+  noindex?: boolean;
+}
+
+export interface CmsPage {
+  id: string;
+  path: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  sections: CmsBlock[];
+  is_published: boolean;
+  meta: CmsPageMeta;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Profile Types
 export interface Profile {
   id: string;

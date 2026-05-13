@@ -1,48 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, TrendingUp, Heart, Calendar, Clock, ArrowRight } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
-import { supabase, isSupabaseConfigured, BlogArticle } from '../lib/supabase';
+import { supabase, BlogArticle } from '../lib/supabase';
+import { useCmsLive } from '../hooks/useCmsLive';
 import { NewsletterSubscribe } from '../components/blocks/NewsletterSubscribe';
 
 const Blog: React.FC = () => {
-  const [blogPosts, setBlogPosts] = useState<BlogArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Live data: Realtime + focus refetch so newly published posts appear
+  // without a manual refresh.
+  const { data: blogPosts, loading } = useCmsLive<BlogArticle>({
+    table: 'blog_articles',
+    realtimeFilter: 'is_published=eq.true',
+    buildQuery: async () => {
+      const result = await supabase
+        .from('blog_articles')
+        .select('id, title, slug, excerpt, featured_image_url, category, published_date, read_time')
+        .eq('is_published', true)
+        .neq('category', 'Event')
+        .order('published_date', { ascending: false });
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchBlogPosts = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('blog_articles')
-          .select('id, title, slug, excerpt, featured_image_url, category, published_date, read_time')
-          .eq('is_published', true)
-          .neq('category', 'Event')
-          .order('published_date', { ascending: false });
-
-        // Silently handle missing table
-        if (error?.message?.includes('schema cache') || 
-            error?.code === 'PGRST204' ||
-            error?.code === 'PGRST205') {
-          setBlogPosts([]);
-          return;
-        }
-        if (error) throw error;
-        if (data) setBlogPosts(data);
-      } catch (error) {
-        console.error('Error fetching blog posts:', error);
-      } finally {
-        setLoading(false);
+      // Treat "table not in schema cache" as empty list rather than an error
+      // so the page renders gracefully before migrations run.
+      if (
+        result.error?.message?.includes('schema cache') ||
+        result.error?.code === 'PGRST204' ||
+        result.error?.code === 'PGRST205'
+      ) {
+        return { data: [], error: null };
       }
-    };
-
-    fetchBlogPosts();
-  }, []);
+      return result;
+    },
+  });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

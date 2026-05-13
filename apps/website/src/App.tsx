@@ -49,6 +49,7 @@ const Blog = lazyAuto(() => import('./pages/Blog'));
 const BlogArticle = lazyAuto(() => import('./pages/BlogArticle'));
 const Events = lazyAuto(() => import('./pages/Events'));
 const EventArticle = lazyAuto(() => import('./pages/EventArticle'));
+const CmsPage = lazyAuto(() => import('./pages/CmsPage'));
 const MemberStories = lazyAuto(() => import('./pages/MemberStories'));
 const HealthyCarePodcast = lazyAuto(() => import('./pages/HealthyCarePodcast'));
 
@@ -465,6 +466,11 @@ const App = () => {
                   <Route path="/blog/:slug" element={<BlogArticle />} />
                   <Route path="/events" element={<Events />} />
                   <Route path="/events/:slug" element={<EventArticle />} />
+                  {/* WordPress-style admin-driven pages. The slug maps to a row
+                      in `cms_pages` and is rendered with the block library at
+                      apps/website/src/components/cms-blocks/. Resolves live via
+                      Supabase Realtime — published changes appear within ~1s. */}
+                  <Route path="/p/:slug" element={<CmsPage />} />
                   <Route path="/member-stories" element={<MemberStories />} />
                   <Route path="/podcast" element={<HealthyCarePodcast />} />
                   <Route path="/logout" element={<Logout />} />

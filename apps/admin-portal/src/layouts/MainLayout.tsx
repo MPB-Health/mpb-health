@@ -81,6 +81,8 @@ const navigation: NavItem[] = [
     href: '#',
     icon: FileText,
     children: [
+      { name: 'CMS Hub', href: '/cms' },
+      { name: 'Pages', href: '/cms/pages' },
       { name: 'Bulletins', href: '/content/bulletins' },
       { name: 'Blog Posts', href: '/content/blog' },
       { name: 'Announcements', href: '/content/announcements' },

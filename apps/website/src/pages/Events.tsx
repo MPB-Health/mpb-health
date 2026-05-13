@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Calendar, Users, Award, MapPin } from 'lucide-react';
-import { supabase, isSupabaseConfigured, CmsEvent } from '../lib/supabase';
+import { supabase, CmsEvent } from '../lib/supabase';
+import { useCmsLive } from '../hooks/useCmsLive';
 
 const LOCATION_TYPE_LABEL: Record<string, string> = {
   in_person: 'In Person',
@@ -10,35 +11,32 @@ const LOCATION_TYPE_LABEL: Record<string, string> = {
   hybrid: 'Hybrid',
 };
 
+// event_date is stored as a `timestamptz` with the admin's chosen day at
+// 00:00 UTC. In any negative-offset timezone (e.g. Eastern), naively
+// passing that to toLocaleDateString rolls it back one calendar day.
+// Forcing UTC keeps the displayed day equal to the day the admin entered.
+function formatEventDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 const Events: React.FC = () => {
-  const [events, setEvents] = useState<CmsEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchEvents = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('events')
-          .select('id, title, slug, excerpt, featured_image_url, event_date, location, location_type')
-          .eq('is_published', true)
-          .order('event_date', { ascending: false });
-
-        if (error) throw error;
-        if (data) setEvents(data);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, []);
+  // Live data: Realtime subscription + refetch on tab focus so edits made
+  // in the admin appear here within ~1s without a manual page refresh.
+  const { data: events, loading } = useCmsLive<CmsEvent>({
+    table: 'events',
+    realtimeFilter: 'is_published=eq.true',
+    buildQuery: () =>
+      supabase
+        .from('events')
+        .select('id, title, slug, excerpt, featured_image_url, event_date, location, location_type')
+        .eq('is_published', true)
+        .order('event_date', { ascending: false }),
+  });
 
   return (
     <>
@@ -172,7 +170,7 @@ const Events: React.FC = () => {
                       <div className="flex items-center gap-3 text-sm text-neutral-500 mb-3">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="h-4 w-4" />
-                          <span>{new Date(event.event_date).toLocaleDateString()}</span>
+                          <span>{formatEventDate(event.event_date)}</span>
                         </div>
                         {event.location && (
                           <div className="flex items-center gap-1.5">

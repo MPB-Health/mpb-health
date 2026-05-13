@@ -265,6 +265,15 @@ export {
   type EventType,
 } from './content/EventsAdminService';
 
+// CMS Pages (WordPress-style page builder)
+export {
+  PagesAdminService,
+  pagesAdminService,
+  type PageCreateInput,
+  type PageUpdateInput,
+  type PageFilters,
+} from './content/PagesAdminService';
+
 // Newsletter management
 export {
   NewsletterAdminService,

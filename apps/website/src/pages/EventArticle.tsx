@@ -167,6 +167,22 @@ const LOCATION_TYPE_LABEL: Record<string, string> = {
   hybrid: 'Hybrid',
 };
 
+// Render the date in UTC so the day matches what the admin entered. The
+// underlying column is `timestamptz` stored at 00:00 UTC for the chosen day,
+// which would otherwise roll back to the prior day for negative-offset TZs.
+const EVENT_DATE_OPTS_LONG: Intl.DateTimeFormatOptions = {
+  timeZone: 'UTC',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+};
+const EVENT_DATE_OPTS_SHORT: Intl.DateTimeFormatOptions = {
+  timeZone: 'UTC',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+};
+
 export const EventArticle: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [event, setEvent] = useState<CmsEvent | null>(null);
@@ -174,49 +190,81 @@ export const EventArticle: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [relatedEvents, setRelatedEvents] = useState<CmsEvent[]>([]);
 
-  useEffect(() => {
-    const fetchEvent = async () => {
-      if (!slug) return;
+  const fetchEvent = useCallback(async () => {
+    if (!slug) return;
 
-      setLoading(true);
-      setError(null);
+    setError(null);
 
-      try {
-        const { data, error: fetchError } = await supabase
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('events')
+        .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, is_published, video_url, gallery_images')
+        .eq('slug', slug)
+        .eq('is_published', true)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (!data) {
+        setError('Event not found');
+        setEvent(null);
+      } else {
+        setEvent(data);
+
+        const { data: related } = await supabase
           .from('events')
-          .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, is_published, video_url, gallery_images')
-          .eq('slug', slug)
+          .select('id, title, slug, excerpt, featured_image_url, event_date')
           .eq('is_published', true)
-          .maybeSingle();
+          .neq('id', data.id)
+          .order('event_date', { ascending: false })
+          .limit(3);
 
-        if (fetchError) throw fetchError;
+        if (related) setRelatedEvents(related);
+      }
+    } catch (err) {
+      console.error('Error fetching event:', err);
+      setError('Failed to load event');
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
 
-        if (!data) {
-          setError('Event not found');
-          setEvent(null);
-        } else {
-          setEvent(data);
+  useEffect(() => {
+    setLoading(true);
+    fetchEvent();
+  }, [fetchEvent]);
 
-          const { data: related } = await supabase
-            .from('events')
-            .select('id, title, slug, excerpt, featured_image_url, event_date')
-            .eq('is_published', true)
-            .neq('id', data.id)
-            .order('event_date', { ascending: false })
-            .limit(3);
-
-          if (related) setRelatedEvents(related);
+  // Live updates: subscribe to changes to *this* event row and refetch on
+  // tab focus, so edits made in the admin appear without a manual refresh.
+  useEffect(() => {
+    if (!slug) return;
+    const channel = supabase
+      .channel(`event-detail:${slug}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'events', filter: `slug=eq.${slug}` },
+        () => {
+          fetchEvent();
         }
-      } catch (err) {
-        console.error('Error fetching event:', err);
-        setError('Failed to load event');
-      } finally {
-        setLoading(false);
+      )
+      .subscribe();
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchEvent();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', fetchEvent);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', fetchEvent);
+      try {
+        supabase.removeChannel(channel);
+      } catch {
+        // ignore close-during-connect errors
       }
     };
-
-    fetchEvent();
-  }, [slug]);
+  }, [slug, fetchEvent]);
 
   const handleShare = async () => {
     if (navigator.share && event) {
@@ -325,16 +373,8 @@ export const EventArticle: React.FC = () => {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <time dateTime={event.event_date}>
-                {eventDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-                {endDate && ` - ${endDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}`}
+                {eventDate.toLocaleDateString('en-US', EVENT_DATE_OPTS_LONG)}
+                {endDate && ` - ${endDate.toLocaleDateString('en-US', EVENT_DATE_OPTS_LONG)}`}
               </time>
             </div>
             {event.location && (
@@ -481,7 +521,7 @@ export const EventArticle: React.FC = () => {
                     <div className="p-5">
                       <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(related.event_date).toLocaleDateString()}</span>
+                        <span>{new Date(related.event_date).toLocaleDateString('en-US', EVENT_DATE_OPTS_SHORT)}</span>
                       </div>
                       <h3 className="text-lg font-bold text-neutral-900 mb-2 group-hover:text-primary transition-colors line-clamp-2">
                         {related.title}

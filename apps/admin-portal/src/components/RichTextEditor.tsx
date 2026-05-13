@@ -51,6 +51,11 @@ function MenuButton({ onClick, isActive = false, disabled = false, title, childr
     <button
       type="button"
       onClick={onClick}
+      // Tiptap toolbar bug: mousedown on the button blurs the editor and
+      // collapses the selection BEFORE the click handler runs, so toggleBold
+      // / toggleItalic / etc. look like they "do nothing". Preventing the
+      // default mousedown keeps the editor's selection intact.
+      onMouseDown={(e) => e.preventDefault()}
       disabled={disabled}
       title={title}
       className={`p-1.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -92,7 +97,11 @@ function MenuBar({ editor }: { editor: Editor | null }) {
   if (!editor) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 p-2 border-b border-th-border bg-surface-secondary rounded-t-xl">
+    // Sticky so the toolbar stays reachable while typing in long content.
+    // top-24 ≈ 96px sits just below the page-level sticky header (top-11 +
+    // its ~52px button row). z-10 keeps it below z-20 page headers, so any
+    // accidental overlap during scroll favors page navigation buttons.
+    <div className="sticky top-24 z-10 flex flex-wrap items-center gap-0.5 p-2 border-b border-th-border bg-surface-secondary rounded-t-xl">
       <MenuButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
         <Undo className="w-4 h-4" />
       </MenuButton>
@@ -231,7 +240,10 @@ export default function RichTextEditor({
   });
 
   return (
-    <div className={`border border-th-border rounded-xl overflow-hidden bg-surface-primary ${className}`}>
+    // overflow-clip (not overflow-hidden) preserves the rounded look without
+    // breaking position:sticky on the inner toolbar. Several browsers refuse
+    // to honor `position: sticky` on a descendant of `overflow: hidden`.
+    <div className={`border border-th-border rounded-xl overflow-clip bg-surface-primary ${className}`}>
       {editable && <MenuBar editor={editor} />}
       <EditorContent editor={editor} />
     </div>

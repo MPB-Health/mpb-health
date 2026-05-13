@@ -87,6 +87,11 @@ export default function EventEditor() {
 
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  // Lifted out of EventGallerySection so the Save/Publish buttons can block
+  // while gallery uploads are still in flight — otherwise clicking Save
+  // mid-upload writes a payload with the old gallery_images and the freshly
+  // uploaded photos are silently dropped on the next reload.
+  const [galleryUploading, setGalleryUploading] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -181,6 +186,10 @@ export default function EventEditor() {
 
   const handleSave = async (publish?: boolean) => {
     if (saving) return;
+    if (galleryUploading) {
+      toast.error('Photos are still uploading — wait for the gallery to finish, then save.');
+      return;
+    }
 
     // Organizer has a DB default of 'MPB Health' (NOT NULL), so we don't
     // require it on the client — we just fall back to the default if blank.
@@ -307,20 +316,22 @@ export default function EventEditor() {
               <button
                 type="button"
                 onClick={() => handleSave(false)}
-                disabled={saving}
+                disabled={saving || galleryUploading}
+                title={galleryUploading ? 'Waiting for gallery uploads to finish…' : undefined}
                 className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <EyeOff className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : 'Unpublish'}</span>
+                <span>{saving ? 'Saving…' : galleryUploading ? 'Uploading…' : 'Unpublish'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSave(true)}
-                disabled={saving}
+                disabled={saving || galleryUploading}
+                title={galleryUploading ? 'Waiting for gallery uploads to finish…' : undefined}
                 className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : 'Save'}</span>
+                <span>{saving ? 'Saving…' : galleryUploading ? 'Uploading…' : 'Save'}</span>
               </button>
             </>
           ) : (
@@ -328,20 +339,22 @@ export default function EventEditor() {
               <button
                 type="button"
                 onClick={() => handleSave(false)}
-                disabled={saving}
+                disabled={saving || galleryUploading}
+                title={galleryUploading ? 'Waiting for gallery uploads to finish…' : undefined}
                 className="flex items-center space-x-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : 'Save Draft'}</span>
+                <span>{saving ? 'Saving…' : galleryUploading ? 'Uploading…' : 'Save Draft'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSave(true)}
-                disabled={saving}
+                disabled={saving || galleryUploading}
+                title={galleryUploading ? 'Waiting for gallery uploads to finish…' : undefined}
                 className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
-                <span>{saving ? 'Publishing…' : 'Publish'}</span>
+                <span>{saving ? 'Publishing…' : galleryUploading ? 'Uploading…' : 'Publish'}</span>
               </button>
             </>
           )}
@@ -486,6 +499,7 @@ export default function EventEditor() {
             images={formData.gallery_images}
             onChange={(images) => setFormData((prev) => ({ ...prev, gallery_images: images }))}
             slug={formData.slug}
+            onUploadingChange={setGalleryUploading}
           />
         </div>
 
@@ -691,35 +705,61 @@ function EventGallerySection({
   images,
   onChange,
   slug,
+  onUploadingChange,
 }: {
   images: string[];
   onChange: (images: string[]) => void;
   slug: string;
+  onUploadingChange?: (uploading: boolean) => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [urlInput, setUrlInput] = useState('');
+
+  // Mirror local upload state up to the parent so Save/Publish can block
+  // until every file has either landed in storage or failed loudly.
+  useEffect(() => {
+    onUploadingChange?.(uploading);
+  }, [uploading, onUploadingChange]);
 
   const handleFilesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
     setUploading(true);
-    const newUrls: string[] = [];
 
+    // Validate first so we can skip the network call entirely for bad files.
+    const validFiles: File[] = [];
     for (const file of files) {
       const validation = validateImageFile(file);
       if (!validation.valid) {
         toast.error(`${file.name}: ${validation.error}`);
         continue;
       }
-      const result = await uploadEventImage(file, { slug: `${slug}-gallery` });
-      if (result.success && result.url) {
-        newUrls.push(result.url);
-      } else {
-        toast.error(`${file.name}: ${result.error || 'Upload failed'}`);
-      }
+      validFiles.push(file);
     }
+
+    // Parallel uploads with allSettled: one failure no longer blocks the
+    // others, and we still surface per-file errors to the user.
+    const results = await Promise.allSettled(
+      validFiles.map((file) => uploadEventImage(file, { slug: `${slug}-gallery` }))
+    );
+
+    const newUrls: string[] = [];
+    results.forEach((res, i) => {
+      const name = validFiles[i].name;
+      if (res.status === 'fulfilled' && res.value.success && res.value.url) {
+        newUrls.push(res.value.url);
+      } else {
+        const reason =
+          res.status === 'rejected'
+            ? res.reason instanceof Error
+              ? res.reason.message
+              : 'Upload failed'
+            : res.value.error || 'Upload failed';
+        toast.error(`${name}: ${reason}`);
+      }
+    });
 
     if (newUrls.length > 0) {
       onChange([...images, ...newUrls]);

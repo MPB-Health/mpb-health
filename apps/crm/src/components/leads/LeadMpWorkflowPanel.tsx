@@ -24,12 +24,18 @@ type TimeRow = {
   occurred_at: string;
 };
 
+// Section 2 (LinkedIn subsection) + Round 3 — funnel-status values. Spec
+// says "etc." so the list is open-ended; these are the canonical states.
 const LI_STATUSES = [
   'Connection Request Sent',
   'Connected',
+  'Profile Viewed',
   'Message Sent',
   'Replied',
+  'Followed Up',
+  'InMail Sent',
   'Booked Call',
+  'No Response',
 ];
 
 export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh: () => void }) {
@@ -301,7 +307,17 @@ export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh
         </p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Section 6 / Round 3 — Workflow subsection picker. The LinkedIn
+          funnel status field below is conditional: shown only when the
+          subsection is 'linkedin' and hidden entirely for every other
+          subsection. */}
+      <div
+        className={`grid gap-4 ${
+          lead.workflow_subsection === 'linkedin'
+            ? 'grid-cols-1 sm:grid-cols-2'
+            : 'grid-cols-1'
+        }`}
+      >
         <div>
           <label className="text-xs font-medium text-th-text-tertiary">Workflow subsection</label>
           <select
@@ -315,21 +331,25 @@ export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh
             <option value="do_not_contact">Do not contact</option>
           </select>
         </div>
-        <div>
-          <label className="text-xs font-medium text-th-text-tertiary">LinkedIn funnel status</label>
-          <select
-            value={lead.linkedin_workflow_status || ''}
-            onChange={(e) => handleLiStatus(e.target.value)}
-            className="mt-1 w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
-          >
-            <option value="">—</option>
-            {LI_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
+        {lead.workflow_subsection === 'linkedin' && (
+          <div>
+            <label className="text-xs font-medium text-th-text-tertiary">
+              LinkedIn funnel status
+            </label>
+            <select
+              value={lead.linkedin_workflow_status || ''}
+              onChange={(e) => handleLiStatus(e.target.value)}
+              className="mt-1 w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+            >
+              <option value="">—</option>
+              {LI_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div>

@@ -141,7 +141,12 @@ export interface LeadFilters {
   referralPartnerId?: string;
   /** Filter Leads module subsection tab */
   workflowSubsection?: 'working' | 'nurture' | 'linkedin' | 'do_not_contact';
-  sortBy?: 'created_at' | 'last_contacted_at' | 'last_touched_at' | 'pipeline_stage' | 'assigned_to';
+  sortBy?:
+    | 'created_at'
+    | 'last_contacted_at'
+    | 'last_touched_at'
+    | 'pipeline_stage'
+    | 'assigned_to';
   sortDir?: 'asc' | 'desc';
 }
 
@@ -247,7 +252,9 @@ export interface LeadUpdateInput {
   contact_preference?: string;
   pipeline_stage?: string;
   priority?: LeadPriority;
-  assigned_to?: string;
+  // Section 6 / Round 3 — bulk-assign supports an Unassigned option that
+  // returns the lead to the round-robin pool.
+  assigned_to?: string | null;
   lead_score?: number;
   tags?: string[];
   next_followup_at?: string;

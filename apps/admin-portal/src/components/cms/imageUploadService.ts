@@ -1,7 +1,12 @@
 import { supabase } from '@mpbhealth/database';
 
-const BUCKET_NAME = 'blog-images';
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+// `event-images` is the bucket codified in active migrations
+// (20260513000000_create_event_images_bucket.sql). The earlier `blog-images`
+// bucket only exists in archive/, so on any environment that ran a clean
+// migration apply it was missing entirely — uploads silently 400'd with
+// "Bucket not found". event-images is public, 10MB, authenticated-write.
+const BUCKET_NAME = 'event-images';
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (client cap; bucket allows 10)
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 export interface UploadResult {
@@ -41,23 +46,32 @@ export async function uploadEventImage(
       return { success: false, error: validation.error };
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    // Refresh the session before uploading. Storage requests fail with
+    // "InvalidJWT" if the access token expired while the tab sat idle, and
+    // the user sees a confusing "Upload failed" with no recourse. A proactive
+    // refresh costs one extra round-trip and avoids that whole class of bug.
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
       return { success: false, error: 'You must be logged in to upload images' };
     }
 
     const fileName = generateFileName(file.name, options?.slug);
-    const filePath = `events/${fileName}`;
 
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
-      .upload(filePath, file, {
+      .upload(fileName, file, {
         cacheControl: '31536000',
         upsert: false,
       });
 
     if (error) {
-      return { success: false, error: error.message || 'Failed to upload image' };
+      // Surface Supabase's structured error fields when present — generic
+      // "new row violates row-level security policy" is otherwise opaque.
+      const msg =
+        (error as { message?: string; error?: string }).message ||
+        (error as { error?: string }).error ||
+        'Failed to upload image';
+      return { success: false, error: msg };
     }
 
     const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(data.path);

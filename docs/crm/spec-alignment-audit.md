@@ -126,15 +126,17 @@ reads `quote_cadence_started_at` (matches Round 2 spec).
 
 ## Section 5 — Round 2 Stage Order
 
-- Pipeline reordered to New → Quoted → Working → Engaged → App in
-  Progress → Won → Nurture → Lost (verified live in
-  `crm_pipeline_stages`).
-- 24h SLA clock starts at **Quoted** entry — see
-  `crm_check_quoted_sla`.
-- Day-30 Nurture rule applies to **Working or Engaged** (Phase 6 fix —
-  `crm_age_to_nurture` excludes Quoted explicitly).
-- Lost-routing rule: applies from Quoted, Working, or Engaged on
-  opt-out. The opt-out apply RPC handles all three.
+| Round 2 bullet | Status | Implementation |
+|---|---|---|
+| Reorder stages to New → Quoted → Working → Engaged → App in Progress → Won → Nurture → Lost | ✅ | `crm_pipeline_stages` seeded + sort_order verified live |
+| Auto-advance New → Quoted on quote generation / Email #1 delivery | ✅ | `crm-website-lead-intake` advances on Email #1 send |
+| Auto-advance Quoted → Working on first rep-initiated touch | ✅ | `trg_crm_lead_quoted_to_working` AFTER INSERT trigger on `crm_activities` (Phase 6 follow-up) |
+| Auto-advance Working → Engaged on engagement signal | ✅ | `crm_register_engagement_signal` RPC — covers both quoted and working starting stages |
+| 24-hour SLA clock starts at entry into Quoted | ✅ | `crm_check_quoted_sla` reads `quote_cadence_started_at` |
+| Day-30 Nurture rule applies to Working or Engaged with no engagement signal AND no opt-out signal | ✅ | `crm_age_to_nurture(p_org_id)` (Phase 6) — explicitly excludes Quoted |
+| Lost-routing rule applies from Quoted, Working, or Engaged on opt-out signal | ✅ | `crm_apply_lead_opt_out` unconditionally sets `pipeline_stage = 'lost'` regardless of starting stage |
+| Engaged → Application in Progress remains rep-manual | ✅ | No automation; rep flips stage in the profile |
+| Application → Won automatic with manual fallback | ✅ | `crm_apply_enrollment_won` + manual stage select |
 
 ## Section 6 — Leads Module (Round 3)
 

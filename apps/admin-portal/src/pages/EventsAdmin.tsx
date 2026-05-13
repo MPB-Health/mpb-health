@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
 import {
   CalendarDays,
   Search,
@@ -34,6 +33,12 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
   community: 'Community',
   other: 'Other',
 };
+
+// Display the date in UTC so the listed day matches the day the admin
+// entered via the <input type="date"> (stored at 00:00 UTC in `timestamptz`).
+function formatEventDate(iso: string, opts: Intl.DateTimeFormatOptions): string {
+  return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
+}
 
 function LocationTypeIcon({ type }: { type: AdminEvent['location_type'] }) {
   if (type === 'virtual') return <Video className="w-3.5 h-3.5" />;
@@ -274,11 +279,11 @@ export default function EventsAdmin() {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-th-text-secondary whitespace-nowrap">
-                    {format(new Date(event.event_date), 'MMM d, yyyy')}
+                    {formatEventDate(event.event_date, { month: 'short', day: 'numeric', year: 'numeric' })}
                     {event.event_end_date &&
                       event.event_end_date !== event.event_date && (
                         <span className="text-th-text-tertiary">
-                          {' '}– {format(new Date(event.event_end_date), 'MMM d')}
+                          {' '}– {formatEventDate(event.event_end_date, { month: 'short', day: 'numeric' })}
                         </span>
                       )}
                   </td>

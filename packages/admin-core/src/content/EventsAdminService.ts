@@ -14,12 +14,14 @@ export interface AdminEvent {
   id: string;
   title: string;
   slug: string;
-  excerpt: string | null;
+  // The following four columns are NOT NULL in the database (default '').
+  // Typed as plain string so editor code doesn't need null-checks.
+  excerpt: string;
   content: string;
-  featured_image_url: string | null;
+  featured_image_url: string;
+  location: string;
   event_date: string;
   event_end_date: string | null;
-  location: string | null;
   location_type: EventLocationType;
   registration_url: string | null;
   event_type: EventType;

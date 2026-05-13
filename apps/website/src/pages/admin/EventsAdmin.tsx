@@ -38,12 +38,13 @@ interface AdminEvent {
   id: string;
   title: string;
   slug: string;
-  excerpt: string | null;
+  // NOT NULL columns (default '') — typed as plain string to match the DB.
+  excerpt: string;
   content: string;
-  featured_image_url: string | null;
+  featured_image_url: string;
+  location: string;
   event_date: string;
   event_end_date: string | null;
-  location: string | null;
   location_type: EventLocationType;
   registration_url: string | null;
   event_type: EventType;
@@ -74,8 +75,26 @@ const LOCATION_TYPE_OPTIONS: { value: EventLocationType; label: string }[] = [
 ];
 
 function formatDate(dateStr: string, includeYear = true) {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(includeYear ? { year: 'numeric' } : {}) });
+  // Render in UTC so the day matches what the admin entered. The column is
+  // `timestamptz` and gets stored at 00:00 UTC; Local-TZ formatting in
+  // negative-offset zones would otherwise roll back to the prior day.
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    month: 'short',
+    day: 'numeric',
+    ...(includeYear ? { year: 'numeric' } : {}),
+  });
+}
+
+// <input type="date"> only accepts YYYY-MM-DD. The API returns full ISO
+// strings — strip the time portion (in UTC) so editing an existing event
+// pre-populates the date field instead of silently leaving it blank.
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
 }
 
 function generateSlug(title: string) {
@@ -91,6 +110,8 @@ function LocationIcon({ type }: { type: EventLocationType }) {
   return <MapPin className="w-3.5 h-3.5" />;
 }
 
+const DEFAULT_ORGANIZER = 'MPB Health';
+
 const emptyForm = {
   title: '',
   slug: '',
@@ -101,7 +122,7 @@ const emptyForm = {
   event_type: 'other' as EventType,
   location_type: 'in_person' as EventLocationType,
   location: '',
-  organizer: '',
+  organizer: DEFAULT_ORGANIZER,
   registration_url: '',
   max_attendees: '',
   featured_image_url: '',
@@ -112,7 +133,13 @@ const emptyForm = {
   is_published: false,
 };
 
+// `event-images` is a 10MB public bucket configured live in Supabase with
+// authenticated-insert / public-read policies. It's also the bucket this
+// page has shipped against since launch — see
+// supabase/migrations/20260513000000_create_event_images_bucket.sql.
 const BUCKET = 'event-images';
+const STORAGE_PREFIX_FEATURED = 'featured';
+const STORAGE_PREFIX_GALLERY = 'gallery';
 
 async function uploadImageToStorage(file: File, folder: string): Promise<string> {
   const ext = file.name.split('.').pop() ?? 'jpg';
@@ -181,12 +208,12 @@ const EventsAdmin: React.FC = () => {
       slug: event.slug,
       excerpt: event.excerpt || '',
       content: event.content,
-      event_date: event.event_date,
-      event_end_date: event.event_end_date || '',
+      event_date: toDateInputValue(event.event_date),
+      event_end_date: toDateInputValue(event.event_end_date),
       event_type: event.event_type,
       location_type: event.location_type,
       location: event.location || '',
-      organizer: event.organizer,
+      organizer: event.organizer || DEFAULT_ORGANIZER,
       registration_url: event.registration_url || '',
       max_attendees: event.max_attendees != null ? String(event.max_attendees) : '',
       featured_image_url: event.featured_image_url || '',
@@ -236,7 +263,7 @@ const EventsAdmin: React.FC = () => {
     if (!file) return;
     setFeaturedUploading(true);
     try {
-      const url = await uploadImageToStorage(file, 'featured');
+      const url = await uploadImageToStorage(file, STORAGE_PREFIX_FEATURED);
       setFormData(prev => ({ ...prev, featured_image_url: url }));
     } catch {
       setNotification({ type: 'error', message: 'Failed to upload image' });
@@ -251,7 +278,7 @@ const EventsAdmin: React.FC = () => {
     if (!files.length) return;
     setGalleryUploading(true);
     try {
-      const results = await Promise.allSettled(files.map(f => uploadImageToStorage(f, 'gallery')));
+      const results = await Promise.allSettled(files.map(f => uploadImageToStorage(f, STORAGE_PREFIX_GALLERY)));
       const succeeded = results
         .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
         .map(r => r.value);
@@ -275,8 +302,14 @@ const EventsAdmin: React.FC = () => {
   };
 
   const handleSave = async (publish?: boolean) => {
-    if (!formData.title || !formData.content || !formData.event_date || !formData.organizer) {
-      setNotification({ type: 'error', message: 'Title, content, event date, and organizer are required' });
+    // Organizer has a DB default of 'MPB Health' (NOT NULL), so we don't
+    // require it on the client — we just fall back to the default if blank.
+    const missing: string[] = [];
+    if (!formData.title.trim()) missing.push('Title');
+    if (!formData.content.trim()) missing.push('Content');
+    if (!formData.event_date) missing.push('Start date');
+    if (missing.length > 0) {
+      setNotification({ type: 'error', message: `Please fill in: ${missing.join(', ')}` });
       return;
     }
 
@@ -285,8 +318,8 @@ const EventsAdmin: React.FC = () => {
 
     try {
       const payload = {
-        title: formData.title,
-        slug: formData.slug || generateSlug(formData.title),
+        title: formData.title.trim(),
+        slug: formData.slug.trim() || generateSlug(formData.title),
         excerpt: formData.excerpt || '',
         content: formData.content,
         event_date: formData.event_date,
@@ -294,7 +327,7 @@ const EventsAdmin: React.FC = () => {
         event_type: formData.event_type,
         location_type: formData.location_type,
         location: formData.location || '',
-        organizer: formData.organizer,
+        organizer: formData.organizer.trim() || DEFAULT_ORGANIZER,
         registration_url: formData.registration_url || null,
         max_attendees: formData.max_attendees ? Number(formData.max_attendees) : null,
         featured_image_url: formData.featured_image_url || '',
@@ -370,7 +403,7 @@ const EventsAdmin: React.FC = () => {
         <title>Events Management | MPB Admin</title>
       </Helmet>
 
-      <MigratedToAdminPortal adminPath="/content/events" sectionName="Events Management" />
+      <MigratedToAdminPortal adminPath="/events" sectionName="Events Management" />
 
       {/* Notification */}
       {notification && (
@@ -648,14 +681,15 @@ const EventsAdmin: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Organizer *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Organizer</label>
                   <input
                     type="text"
                     value={formData.organizer}
                     onChange={e => setFormData(p => ({ ...p, organizer: e.target.value }))}
-                    placeholder="e.g. MPB Health"
+                    placeholder={DEFAULT_ORGANIZER}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
+                  <p className="text-xs text-slate-400 mt-1">Defaults to {DEFAULT_ORGANIZER} if left blank.</p>
                 </div>
               </div>
 

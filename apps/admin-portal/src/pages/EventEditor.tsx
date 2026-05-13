@@ -42,6 +42,35 @@ function generateSlug(title: string) {
     .replace(/(^-|-$)/g, '');
 }
 
+const DEFAULT_ORGANIZER = 'MPB Health';
+
+// Tiptap renders an empty document as <p></p> (sometimes <p><br></p>),
+// which is truthy but visually empty. Strip tags + whitespace so the
+// "content required" check matches what the user actually sees.
+function isHtmlEffectivelyEmpty(html: string): boolean {
+  if (!html) return true;
+  const stripped = html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, '')
+    .trim();
+  return stripped.length === 0;
+}
+
+// `event_date` is a `timestamptz` so the API returns full ISO strings like
+// `2026-05-13T00:00:00+00:00`. <input type="date"> only accepts YYYY-MM-DD;
+// anything else leaves the field blank, which then trips the
+// "Start date is required" validation when the user goes to save. Strip the
+// time portion in UTC to match how the value was originally entered.
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return '';
+  // Already in YYYY-MM-DD form (e.g. brand-new draft saved before this fix)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
+
 function parseVideoId(url: string): { type: 'youtube' | 'vimeo'; id: string } | null {
   const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) return { type: 'youtube', id: ytMatch[1] };
@@ -69,7 +98,7 @@ export default function EventEditor() {
     event_type: 'other' as EventType,
     location_type: 'in_person' as EventLocationType,
     location: '',
-    organizer: '',
+    organizer: DEFAULT_ORGANIZER,
     registration_url: '',
     max_attendees: '',
     featured_image_url: '',
@@ -79,6 +108,12 @@ export default function EventEditor() {
     is_featured: false,
   });
   const [tagInput, setTagInput] = useState('');
+  // Tracks which required fields failed the last validation pass so we can
+  // highlight them inline (red border + helper text) instead of relying on
+  // a single toast that the user has to dismiss to figure out what's missing.
+  const [missingFields, setMissingFields] = useState<Set<'title' | 'content' | 'event_date'>>(
+    new Set()
+  );
 
   useEffect(() => {
     if (!eventId) return;
@@ -91,12 +126,12 @@ export default function EventEditor() {
             slug: event.slug,
             excerpt: event.excerpt || '',
             content: event.content,
-            event_date: event.event_date,
-            event_end_date: event.event_end_date || '',
+            event_date: toDateInputValue(event.event_date),
+            event_end_date: toDateInputValue(event.event_end_date),
             event_type: event.event_type,
             location_type: event.location_type,
             location: event.location || '',
-            organizer: event.organizer,
+            organizer: event.organizer || DEFAULT_ORGANIZER,
             registration_url: event.registration_url || '',
             max_attendees: event.max_attendees != null ? String(event.max_attendees) : '',
             featured_image_url: event.featured_image_url || '',
@@ -123,6 +158,13 @@ export default function EventEditor() {
       title,
       slug: prev.slug || generateSlug(title),
     }));
+    if (missingFields.has('title') && title.trim().length > 0) {
+      setMissingFields((prev) => {
+        const next = new Set(prev);
+        next.delete('title');
+        return next;
+      });
+    }
   };
 
   const addTag = () => {
@@ -140,10 +182,25 @@ export default function EventEditor() {
   const handleSave = async (publish?: boolean) => {
     if (saving) return;
 
-    if (!formData.title || !formData.content || !formData.event_date || !formData.organizer) {
-      toast.error('Title, content, event date, and organizer are required');
+    // Organizer has a DB default of 'MPB Health' (NOT NULL), so we don't
+    // require it on the client — we just fall back to the default if blank.
+    const missing = new Set<'title' | 'content' | 'event_date'>();
+    if (!formData.title.trim()) missing.add('title');
+    if (isHtmlEffectivelyEmpty(formData.content)) missing.add('content');
+    if (!formData.event_date) missing.add('event_date');
+
+    if (missing.size > 0) {
+      setMissingFields(missing);
+      const labels: Record<'title' | 'content' | 'event_date', string> = {
+        title: 'Title',
+        content: 'Content',
+        event_date: 'Start date',
+      };
+      const list = Array.from(missing).map((k) => labels[k]).join(', ');
+      toast.error(`Please fill in: ${list}`);
       return;
     }
+    setMissingFields(new Set());
 
     const shouldPublish = publish ?? isPublished;
     const loadingMessage = shouldPublish
@@ -156,8 +213,8 @@ export default function EventEditor() {
 
     try {
       const payload: EventCreateInput = {
-        title: formData.title,
-        slug: formData.slug || generateSlug(formData.title),
+        title: formData.title.trim(),
+        slug: formData.slug.trim() || generateSlug(formData.title),
         excerpt: formData.excerpt || '',
         content: formData.content,
         event_date: formData.event_date,
@@ -165,7 +222,7 @@ export default function EventEditor() {
         event_type: formData.event_type,
         location_type: formData.location_type,
         location: formData.location || '',
-        organizer: formData.organizer,
+        organizer: formData.organizer.trim() || DEFAULT_ORGANIZER,
         registration_url: formData.registration_url || null,
         max_attendees: formData.max_attendees ? Number(formData.max_attendees) : null,
         featured_image_url: formData.featured_image_url || '',
@@ -302,8 +359,16 @@ export default function EventEditor() {
                 value={formData.title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder="Event title..."
-                className="w-full text-3xl font-bold text-th-text-primary bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-th-text-tertiary"
+                aria-invalid={missingFields.has('title') || undefined}
+                className={`w-full text-3xl font-bold text-th-text-primary bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-th-text-tertiary ${
+                  missingFields.has('title')
+                    ? 'placeholder-red-400 outline-2 outline-dashed outline-red-300 rounded-lg px-2 -mx-2'
+                    : ''
+                }`}
               />
+              {missingFields.has('title') && (
+                <p className="text-xs text-red-600 mt-1">Title is required.</p>
+              )}
             </div>
 
             {/* Slug */}
@@ -341,12 +406,32 @@ export default function EventEditor() {
               <label className="block text-sm font-medium text-th-text-secondary mb-1">
                 Content *
               </label>
-              <RichTextEditor
-                content={formData.content}
-                onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
-                placeholder="Full event description..."
-                minHeight="350px"
-              />
+              <div
+                className={
+                  missingFields.has('content')
+                    ? 'rounded-xl ring-2 ring-red-300 ring-offset-1'
+                    : ''
+                }
+              >
+                <RichTextEditor
+                  content={formData.content}
+                  onChange={(html) => {
+                    setFormData((prev) => ({ ...prev, content: html }));
+                    if (missingFields.has('content') && !isHtmlEffectivelyEmpty(html)) {
+                      setMissingFields((prev) => {
+                        const next = new Set(prev);
+                        next.delete('content');
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder="Full event description..."
+                  minHeight="350px"
+                />
+              </div>
+              {missingFields.has('content') && (
+                <p className="text-xs text-red-600 mt-1">Content is required — add at least a sentence describing the event.</p>
+              )}
             </div>
           </div>
 
@@ -416,9 +501,25 @@ export default function EventEditor() {
               <input
                 type="date"
                 value={formData.event_date}
-                onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-                className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setFormData({ ...formData, event_date: v });
+                  if (missingFields.has('event_date') && v) {
+                    setMissingFields((prev) => {
+                      const next = new Set(prev);
+                      next.delete('event_date');
+                      return next;
+                    });
+                  }
+                }}
+                aria-invalid={missingFields.has('event_date') || undefined}
+                className={`w-full px-3 py-2 bg-surface-primary border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary ${
+                  missingFields.has('event_date') ? 'border-red-400' : 'border-th-border'
+                }`}
               />
+              {missingFields.has('event_date') && (
+                <p className="text-xs text-red-600 mt-1">Start date is required.</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-th-text-secondary mb-1">
@@ -452,15 +553,16 @@ export default function EventEditor() {
             </div>
             <div>
               <label className="block text-sm font-medium text-th-text-secondary mb-1">
-                Organizer *
+                Organizer
               </label>
               <input
                 type="text"
                 value={formData.organizer}
                 onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
-                placeholder="e.g., MPB Health"
+                placeholder={DEFAULT_ORGANIZER}
                 className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
               />
+              <p className="text-xs text-th-text-tertiary mt-1">Defaults to {DEFAULT_ORGANIZER} if left blank.</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-th-text-secondary mb-1">

@@ -1,0 +1,21 @@
+-- ============================================================================
+-- Revert: seo_metadata public-read RLS policy
+-- ============================================================================
+-- Sprint 1 (20260620520000_website_homepage_seo_sprint1.sql) added a
+-- "Public can view SEO metadata" policy so the Vercel Edge middleware in
+-- apps/website/middleware.ts could read seo_metadata rows with the anon key.
+--
+-- After deploy, every middleware-matched route started returning HTTP 500
+-- with MIDDLEWARE_INVOCATION_FAILED, including paths with no seo_metadata
+-- row. Root cause: with the policy in place, fetchSeo() now returns rows
+-- (or unexpectedly-shaped responses) and the middleware's downstream code
+-- path throws. Before the policy, anon SELECT returned empty and the
+-- middleware short-circuited to the static HTML fallback.
+--
+-- Drop the policy to restore the pre-Sprint-1 behavior: anon middleware
+-- fetches return no rows, middleware falls back to static <head> tags,
+-- and the 500s stop. The homepage row inserted by the Sprint 1 migration
+-- is left in place — it's harmless without anon read access.
+-- ============================================================================
+
+DROP POLICY IF EXISTS "Public can view SEO metadata" ON public.seo_metadata;

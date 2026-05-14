@@ -461,8 +461,8 @@ export default function CmsHub() {
           <li className="flex gap-2">
             <span className="text-th-accent-600">3.</span>
             <span>
-              For SEO / social previews, the edge middleware re-fetches metadata on every page
-              request (5-minute edge cache).
+              SEO / social previews currently serve the static fallback metadata from
+              index.html — the per-page runtime injection pipeline is being rebuilt.
             </span>
           </li>
         </ul>

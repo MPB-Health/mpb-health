@@ -31,10 +31,20 @@
     <meta http-equiv="Permissions-Policy" content="payment=(self), geolocation=(self)">
 
     <!-- ──────────────────────────────────────────────────────────────────
-         Default page metadata.
-         Per-route values are injected at runtime by Vercel Edge Middleware
-         from the `seo_metadata` table; these are the static fallback used
-         when middleware is unavailable or no row matches the path.
+         Default page metadata (homepage / SPA fallback).
+
+         Per-route metadata is generated at BUILD time by
+         apps/website/scripts/prerender-seo.mjs, which writes
+         dist/<route>/index.html for every entry in src/lib/page-seo-data.json.
+
+         Vercel's static-file matching serves dist/<route>/index.html before
+         the SPA-fallback rewrite, so crawlers and social cards see correct
+         per-route metadata. JS-enabled visitors hydrate and react-helmet-async
+         re-syncs the head from the React tree.
+
+         To edit homepage SEO: change the "/" entry in page-seo-data.json AND
+         keep the tags below in sync (the prerender script also rewrites
+         dist/index.html from the JSON to guarantee they stay aligned).
          ────────────────────────────────────────────────────────────────── -->
     <title>Affordable HealthShare Memberships | MPB Health</title>
     <meta name="description" content="MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions." />

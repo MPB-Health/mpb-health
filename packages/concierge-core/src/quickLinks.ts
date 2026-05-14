@@ -37,7 +37,7 @@ export const QUICK_LINKS: QuickLink[] = [
       { name: 'PHCS Nominate Provider', url: 'https://www.multiplan.com/providernominations/patient?siteid=84559' },
       { name: 'Preventive Task Force', url: 'https://www.uspreventiveservicestaskforce.org/uspstf/' },
       {
-        name: 'USPSTF A & B recommendations',
+        name: 'Preventive Task Force',
         url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation-topics/uspstf-a-and-b-recommendations',
       },
     ],

@@ -417,7 +417,7 @@ export default function Invoices() {
   }, []);
 
   const handleRowClick = (invoiceId: string) => {
-    navigate(`/invoices/${invoiceId}`);
+    navigate(`/invoices/legacy/${invoiceId}`);
   };
 
   const totalPages = Math.ceil(total / pageSize);

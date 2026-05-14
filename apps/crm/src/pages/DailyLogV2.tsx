@@ -32,6 +32,8 @@ import { formatTimeAgo } from '@mpbhealth/crm-core';
 import { useOrgReps } from '../hooks/useOrgReps';
 import { ManualEntryModal, type ManualEntrySection } from '../components/dailyLog/ManualEntryModal';
 import { AdminCorrectionModal } from '../components/dailyLog/AdminCorrectionModal';
+import { SpecialProjectsBreakdown } from '../components/dailyLog/SpecialProjectsBreakdown';
+import { CallBreakdownPanel } from '../components/dailyLog/CallBreakdownPanel';
 
 // ----------------------------------------------------------------------------
 // CRM rebuild Phase 4 / Section 8 / Section 11 / Section 12
@@ -85,49 +87,56 @@ interface PerformanceAlert {
   quiet_until: string;
 }
 
+// Section 11 / Round 6 — accordion section list. Order is fixed by spec
+// (top to bottom): Lead Communication → LinkedIn Activity → Pipeline →
+// Deals Closed → Activities → Content Creation → Special Projects.
+// Descriptions track the spec verbatim so reps see exactly the bucket
+// definitions in the document.
 const SECTIONS: { key: Section; label: string; icon: typeof Mail; description: string }[] = [
   {
     key: 'lead_communication',
     label: 'Lead Communication',
     icon: Mail,
-    description:
-      'Calls (incl. cancellation), emails, SMS, notes — auto-captured from CRM activity',
+    description: 'Calls, Texts, Emails, Cancellation Calls.',
   },
   {
     key: 'linkedin_activity',
     label: 'LinkedIn Activity',
     icon: Linkedin,
-    description: 'Connection requests, DMs, post engagement — auto-captured',
+    description:
+      'Connection requests sent, messages sent, replies, profile views (per Section 2 LinkedIn subsection statuses).',
   },
   {
     key: 'pipeline',
     label: 'Pipeline',
     icon: Briefcase,
-    description: 'Stage changes, meetings, proposals, demos',
+    description:
+      'Stage advances, manual stage overrides, "Mark as Lost," transfers between subsections.',
   },
   {
     key: 'deals_closed',
     label: 'Deals Closed',
     icon: Trophy,
-    description: 'Quote sent → Won — Enrolled transitions',
+    description: 'Leads moved into Won — Enrolled for the day.',
   },
   {
     key: 'activities',
     label: 'Activities',
     icon: Activity,
-    description: 'Networking events, community outreach, referrals asked',
+    description: 'Rep actions not captured by the other sections (catch-all bucket).',
   },
   {
     key: 'content_creation',
     label: 'Content Creation',
     icon: Sparkles,
-    description: 'Webinars, posts, social, content drafted',
+    description:
+      'Content the rep drafted or published — emails / templates created, LinkedIn posts, etc.',
   },
   {
     key: 'special_projects',
     label: 'Special Projects',
     icon: ClipboardList,
-    description: 'Manual entries — projects outside the standard pipeline',
+    description: 'Non-pipeline work with time capture (manual entry).',
   },
 ];
 
@@ -160,18 +169,50 @@ export default function DailyLogV2() {
   const [manualEntrySection, setManualEntrySection] = useState<ManualEntrySection | undefined>();
   const [correctingEvent, setCorrectingEvent] = useState<DailyLogEvent | null>(null);
 
-  // Section 12 / Round 6 Addendum — accordion is multi-expand and the
-  // open/closed state persists per user across sessions in
-  // `crm_rep_daily_log_entries.section_open_state` (jsonb).
+  // Section 11 / Round 6 — accordion starts FULLY COLLAPSED on every
+  // load per spec ("all sections collapsed by default"). The open/closed
+  // state then persists per user across sessions in
+  // `crm_rep_daily_log_entries.section_open_state` (jsonb) so a rep who
+  // deliberately re-opens a section keeps it open through the day; the
+  // next day still starts collapsed because that row is keyed by log_date.
+  //
+  // Round 9 — open-question #1: single-expand vs multi-expand. Default is
+  // multi (matches the implementer assumption); admins can flip to
+  // single via crm_daily_log_ui_config.accordion_mode and the toggle
+  // logic below collapses peers when one section opens.
   const [openSections, setOpenSections] = useState<Record<Section, boolean>>({
-    lead_communication: true,
+    lead_communication: false,
     linkedin_activity: false,
-    pipeline: true,
+    pipeline: false,
     deals_closed: false,
     activities: false,
     content_creation: false,
     special_projects: false,
   });
+
+  const { data: dailyLogUiConfig } = useQuery({
+    queryKey: ['dailyLogUiConfig', activeOrgId] as const,
+    enabled: !!activeOrgId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('crm_daily_log_ui_config')
+        .select('accordion_mode, default_collapsed, spec_locked')
+        .eq('org_id', activeOrgId!)
+        .maybeSingle();
+      return (data ?? { accordion_mode: 'multi', default_collapsed: true, spec_locked: true }) as {
+        accordion_mode: 'single' | 'multi';
+        default_collapsed: boolean;
+        spec_locked: boolean;
+      };
+    },
+    staleTime: 60_000,
+  });
+  // Section 12 / Round 6 Addendum lock: when spec_locked is true (default),
+  // accordion is forced to multi-expand regardless of the column value so
+  // rep behaviour always matches the spec.
+  const accordionMode: 'single' | 'multi' = dailyLogUiConfig?.spec_locked
+    ? 'multi'
+    : (dailyLogUiConfig?.accordion_mode ?? 'multi');
 
   // ── Events query ────────────────────────────────────────────────────────
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -323,7 +364,18 @@ export default function DailyLogV2() {
 
   const toggleSection = (key: Section) => {
     setOpenSections((s) => {
-      const next = { ...s, [key]: !s[key] };
+      let next: Record<Section, boolean>;
+      if (accordionMode === 'single') {
+        // One-section-at-a-time: opening a closed section collapses
+        // every other section; toggling an open section just closes it.
+        const willOpen = !s[key];
+        next = SECTIONS.reduce((acc, sec) => {
+          acc[sec.key] = sec.key === key ? willOpen : false;
+          return acc;
+        }, {} as Record<Section, boolean>);
+      } else {
+        next = { ...s, [key]: !s[key] };
+      }
       void persistOpenState(next);
       return next;
     });
@@ -384,21 +436,55 @@ export default function DailyLogV2() {
   };
 
   // ── Special Projects manual entry ──────────────────────────────────────
+  // Round 7 spec: project name (free text OR pick-list), time spent
+  // (minutes OR HH:MM), optional notes. We support both time formats by
+  // accepting any string and parsing it leniently.
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [projectTypeId, setProjectTypeId] = useState<string>('');
   const [projectName, setProjectName] = useState('');
-  const [projectMinutes, setProjectMinutes] = useState('');
+  const [projectTime, setProjectTime] = useState('');
   const [projectNotes, setProjectNotes] = useState('');
   const [savingProject, setSavingProject] = useState(false);
 
+  // Pick-list options for the active org. Empty list = admins haven't
+  // seeded any types yet, so the form falls back to free-text only.
+  const { data: projectTypes = [] } = useQuery({
+    queryKey: ['specialProjectTypes', activeOrgId],
+    enabled: !!activeOrgId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_special_project_types')
+        .select('id,name,description,sort_order')
+        .eq('org_id', activeOrgId!)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as { id: string; name: string; description: string | null; sort_order: number }[];
+    },
+    staleTime: 60_000,
+  });
+
   const handleSaveProject = async () => {
     if (!activeOrgId || !user?.id) return;
-    if (!projectName.trim()) {
-      toast.error('Project name is required');
+    const minutes = parseTimeToMinutes(projectTime);
+    if (minutes === null || minutes <= 0) {
+      toast.error('Enter time as minutes (e.g. 45) or HH:MM (e.g. 1:30)');
       return;
     }
-    const minutes = parseInt(projectMinutes, 10);
-    if (!Number.isFinite(minutes) || minutes < 0) {
-      toast.error('Enter minutes (positive number)');
+    const trimmedName = projectName.trim();
+    const pickedType = projectTypes.find((t) => t.id === projectTypeId);
+    const finalName = pickedType?.name ?? trimmedName;
+    if (!finalName) {
+      toast.error('Pick a project type or enter a name');
+      return;
+    }
+    // Section 12 / Round 6 Addendum lock — notes are a required field
+    // on every Special Projects entry. The DB enforces this with a
+    // CHECK constraint; we surface a friendlier client-side message.
+    const trimmedNotes = projectNotes.trim();
+    if (!trimmedNotes) {
+      toast.error('Notes are required for Special Projects (per spec)');
       return;
     }
     setSavingProject(true);
@@ -406,9 +492,10 @@ export default function DailyLogV2() {
       org_id: activeOrgId,
       user_id: user.id,
       log_date: today,
-      project_name: projectName.trim(),
+      project_type_id: pickedType?.id ?? null,
+      project_name: finalName,
       time_minutes: minutes,
-      notes: projectNotes.trim() || null,
+      notes: trimmedNotes,
     });
     setSavingProject(false);
     if (error) {
@@ -416,8 +503,9 @@ export default function DailyLogV2() {
       return;
     }
     toast.success('Special project logged');
+    setProjectTypeId('');
     setProjectName('');
-    setProjectMinutes('');
+    setProjectTime('');
     setProjectNotes('');
     setShowProjectForm(false);
     queryClient.invalidateQueries({
@@ -510,6 +598,23 @@ export default function DailyLogV2() {
           </div>
         }
       />
+
+      {isAdminView && activeOrgId && (
+        <>
+          <CallBreakdownPanel
+            orgId={activeOrgId}
+            dateFrom={adminDateFrom}
+            dateTo={adminDateTo}
+            repFilter={adminRepFilter}
+          />
+          <SpecialProjectsBreakdown
+            orgId={activeOrgId}
+            dateFrom={adminDateFrom}
+            dateTo={adminDateTo}
+            repFilter={adminRepFilter}
+          />
+        </>
+      )}
 
       {isAdminView && (
         <div className="bg-surface-primary border border-th-border rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -654,34 +759,64 @@ export default function DailyLogV2() {
                       </button>
                     </div>
                   )}
-                  {key === 'special_projects' && (
+                  {key === 'special_projects' && !isAdminView && (
                     <div className="p-4 border-b border-th-border-subtle">
                       {showProjectForm ? (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                          {projectTypes.length > 0 ? (
+                            <select
+                              value={projectTypeId}
+                              onChange={(e) => {
+                                setProjectTypeId(e.target.value);
+                                if (e.target.value) setProjectName('');
+                              }}
+                              className="border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+                            >
+                              <option value="">Custom — type name below</option>
+                              {projectTypes.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <div className="text-[11px] text-th-text-tertiary px-1 self-center">
+                              No project types yet — type a name on the right.
+                            </div>
+                          )}
                           <input
                             type="text"
                             value={projectName}
-                            onChange={(e) => setProjectName(e.target.value)}
-                            placeholder="Project name"
-                            className="border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+                            onChange={(e) => {
+                              setProjectName(e.target.value);
+                              if (e.target.value) setProjectTypeId('');
+                            }}
+                            placeholder={projectTypeId ? '(using picked type)' : 'Project name (free text)'}
+                            disabled={!!projectTypeId}
+                            className="border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary disabled:bg-surface-secondary disabled:text-th-text-tertiary"
                           />
                           <input
-                            type="number"
-                            min={0}
-                            value={projectMinutes}
-                            onChange={(e) => setProjectMinutes(e.target.value)}
-                            placeholder="Minutes"
+                            type="text"
+                            inputMode="numeric"
+                            value={projectTime}
+                            onChange={(e) => setProjectTime(e.target.value)}
+                            placeholder="Time — minutes or HH:MM"
                             className="border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
                           />
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={handleSaveProject}
-                              disabled={savingProject}
-                              className="flex-1 px-3 py-2 text-xs font-medium text-white bg-th-accent-600 rounded-lg hover:bg-th-accent-700 disabled:opacity-50"
-                            >
-                              {savingProject ? 'Saving…' : 'Save'}
-                            </button>
+                          <textarea
+                            value={projectNotes}
+                            onChange={(e) => setProjectNotes(e.target.value)}
+                            placeholder="Notes (required) — what did you work on?"
+                            rows={2}
+                            required
+                            className="sm:col-span-3 border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+                          />
+                          <p className="sm:col-span-3 text-[11px] text-th-text-tertiary -mt-1">
+                            All three fields — project name, time spent, and notes — are required
+                            per Section 12 (Round 6 Addendum). Time feeds the per-rep and
+                            per-project rollups in Reports.
+                          </p>
+                          <div className="sm:col-span-3 flex justify-end gap-2">
                             <button
                               type="button"
                               onClick={() => setShowProjectForm(false)}
@@ -689,14 +824,15 @@ export default function DailyLogV2() {
                             >
                               Cancel
                             </button>
+                            <button
+                              type="button"
+                              onClick={handleSaveProject}
+                              disabled={savingProject}
+                              className="px-3 py-2 text-xs font-medium text-white bg-th-accent-600 rounded-lg hover:bg-th-accent-700 disabled:opacity-50"
+                            >
+                              {savingProject ? 'Saving…' : 'Save'}
+                            </button>
                           </div>
-                          <textarea
-                            value={projectNotes}
-                            onChange={(e) => setProjectNotes(e.target.value)}
-                            placeholder="Notes (optional)"
-                            rows={2}
-                            className="sm:col-span-3 border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
-                          />
                         </div>
                       ) : (
                         <button
@@ -721,19 +857,23 @@ export default function DailyLogV2() {
                     <ul className="divide-y divide-th-border-subtle">
                       {sectionEvents.map((e) => {
                         const isCancellation = e.activity_subtype === 'cancellation';
+                        const isMarkLost = e.activity_type === 'mark_lost';
+                        const isStageChange = e.activity_type === 'stage_change';
+                        const isSubsectionTransfer = e.activity_type === 'subsection_transfer';
                         const repName = isAdminView
                           ? orgReps.find((r) => r.user_id === e.user_id)?.display_name ??
                             e.user_id.slice(0, 8)
                           : null;
-                        const adminCorrected =
-                          (e.metadata as Record<string, unknown> | null)?.admin_corrected === true;
+                        const meta = (e.metadata as Record<string, unknown> | null) ?? null;
+                        const adminCorrected = meta?.admin_corrected === true;
+                        const dotClass = isCancellation || isMarkLost
+                          ? 'bg-red-500'
+                          : isStageChange || isSubsectionTransfer
+                            ? 'bg-blue-500'
+                            : 'bg-th-accent-500';
                         return (
                           <li key={e.id} className="px-5 py-3 flex items-start gap-3 group">
-                            <span
-                              className={`mt-1 inline-block w-2 h-2 rounded-full ${
-                                isCancellation ? 'bg-red-500' : 'bg-th-accent-500'
-                              }`}
-                            />
+                            <span className={`mt-1 inline-block w-2 h-2 rounded-full ${dotClass}`} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-sm font-medium text-th-text-primary truncate">
@@ -742,6 +882,21 @@ export default function DailyLogV2() {
                                 {isCancellation && (
                                   <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-50 text-red-700 inline-flex items-center gap-0.5">
                                     <XCircle className="w-2.5 h-2.5" /> cancellation
+                                  </span>
+                                )}
+                                {isMarkLost && (
+                                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-50 text-red-700 inline-flex items-center gap-0.5">
+                                    <XCircle className="w-2.5 h-2.5" /> marked lost
+                                  </span>
+                                )}
+                                {isStageChange && (
+                                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
+                                    stage advance
+                                  </span>
+                                )}
+                                {isSubsectionTransfer && (
+                                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
+                                    transfer
                                   </span>
                                 )}
                                 {e.manual ? (
@@ -828,4 +983,24 @@ export default function DailyLogV2() {
 
 function prettyType(type: string): string {
   return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Round 7 spec: Special Projects time entry accepts minutes (e.g. "45")
+// or HH:MM (e.g. "1:30"). Returns the integer minute count, or null when
+// the value is unparseable / negative.
+function parseTimeToMinutes(raw: string): number | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes(':')) {
+    const [h, m] = trimmed.split(':').map((p) => p.trim());
+    const hours = Number.parseInt(h, 10);
+    const minutes = Number.parseInt(m, 10);
+    if (!Number.isFinite(hours) || hours < 0) return null;
+    if (!Number.isFinite(minutes) || minutes < 0 || minutes >= 60) return null;
+    return hours * 60 + minutes;
+  }
+  const minutes = Number.parseInt(trimmed, 10);
+  if (!Number.isFinite(minutes) || minutes < 0) return null;
+  return minutes;
 }

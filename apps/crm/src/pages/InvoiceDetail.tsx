@@ -765,7 +765,7 @@ export default function InvoiceDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-th-text-tertiary">Invoice not found</p>
-        <Link to="/invoices" className="text-th-accent-600 hover:underline mt-2 inline-block">
+        <Link to="/invoices/legacy" className="text-th-accent-600 hover:underline mt-2 inline-block">
           Back to invoices
         </Link>
       </div>
@@ -793,7 +793,7 @@ export default function InvoiceDetail() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/invoices')}
+            onClick={() => navigate('/invoices/legacy')}
             className="p-2 hover:bg-surface-tertiary rounded-lg"
           >
             <ArrowLeft className="w-5 h-5 text-th-text-tertiary" />
@@ -1160,7 +1160,7 @@ export default function InvoiceDetail() {
             <h2 className="text-lg font-semibold text-th-text-primary mb-4">Contact</h2>
             {invoice.contact ? (
               <Link
-                to={`/contacts/${invoice.contact.id}`}
+                to={`/members/${invoice.contact.id}`}
                 className="flex items-center gap-3 p-3 bg-surface-secondary rounded-lg hover:bg-surface-tertiary"
               >
                 <div className="w-10 h-10 bg-th-accent-100 rounded-full flex items-center justify-center">

@@ -1,5 +1,10 @@
 import type { PageHelp, HelpArticle } from '../types';
 
+// Section 9 / Round 5: "Contacts" was renamed to "Members" in the sidebar
+// and across the UI. The Contacts module continues to back the page; only
+// the user-visible label changed. The /contacts route now redirects to
+// /members, with /contacts/legacy preserved for admin auditing.
+
 export const accountsPageHelp: PageHelp = {
   pageKey: 'accounts',
   title: 'Accounts',
@@ -71,9 +76,9 @@ export const accountsPageHelp: PageHelp = {
 
 export const contactsPageHelp: PageHelp = {
   pageKey: 'contacts',
-  title: 'Contacts',
+  title: 'Members',
   description:
-    'Contacts are individual people—Medicare beneficiaries, plan members, HR decision-makers, or referral partners. Each contact record stores demographics, communication preferences, policy history, and a full activity timeline.',
+    'Members (formerly "Contacts") are individual people — Medicare beneficiaries, plan members, HR decision-makers, or referral partners. Each Member record stores demographics, communication preferences, policy history, and a full activity timeline. The Section 9 rebrand renamed this section; the legacy /contacts paths continue to redirect to /members.',
   quickTips: [
     {
       id: 'con-tip-1',

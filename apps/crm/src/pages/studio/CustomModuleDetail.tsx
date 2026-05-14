@@ -46,7 +46,7 @@ export default function CustomModuleDetail() {
       const moduleData = await moduleService.getModuleByApiName(moduleApiName);
       if (!moduleData) {
         toast.error('Module not found');
-        navigate('/studio');
+        navigate('/studio/legacy');
         return;
       }
       setModule(moduleData);
@@ -196,7 +196,7 @@ export default function CustomModuleDetail() {
       <div className="text-center py-12">
         <p className="text-th-text-tertiary">Module not found</p>
         <button
-          onClick={() => navigate('/studio')}
+          onClick={() => navigate('/studio/legacy')}
           className="text-th-accent-600 hover:underline mt-2 inline-block"
         >
           Back to Studio

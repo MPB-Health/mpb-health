@@ -224,7 +224,7 @@ export default function Contacts() {
     });
   }, []);
 
-  const handleRowClick = (contactId: string) => navigate(`/contacts/${contactId}`);
+  const handleRowClick = (contactId: string) => navigate(`/members/${contactId}`);
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -264,8 +264,8 @@ export default function Contacts() {
 
       {/* Page Header */}
       <GradientHeader
-        title="Contacts"
-        subtitle={`${total.toLocaleString()} total contacts`}
+        title="Members"
+        subtitle={`${total.toLocaleString()} total members`}
         icon={<Users className="w-5 h-5" />}
         size="sm"
         actions={
@@ -292,7 +292,7 @@ export default function Contacts() {
                 className="flex items-center gap-2 px-4 py-2.5 bg-th-accent-600 rounded-xl text-sm font-semibold text-white hover:bg-th-accent-700 transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4" />
-                <span>New Contact</span>
+                <span>New Member</span>
               </button>
             </PermissionGate>
           </div>
@@ -671,12 +671,12 @@ export default function Contacts() {
       <ContactEnrichmentModal open={showEnrichment} onClose={() => setShowEnrichment(false)} totalContacts={total || 1} />
       <ContactSegmentModal open={showSegments} onClose={() => setShowSegments(false)} />
       <ContactScoreModal open={showScores} onClose={() => setShowScores(false)}
-        onNavigateToContact={(id) => { setShowScores(false); navigate(`/contacts/${id}`); }} />
+        onNavigateToContact={(id) => { setShowScores(false); navigate(`/members/${id}`); }} />
       <BulkEmailModal open={showBulkEmail} onClose={() => setShowBulkEmail(false)} selectedCount={selectedContacts.size || total} />
       <ContactActivityModal open={showActivity} onClose={() => setShowActivity(false)} />
       <ContactDuplicateModal open={showDuplicates} onClose={() => setShowDuplicates(false)} />
       <ContactRelationshipModal open={showRelationships} onClose={() => setShowRelationships(false)}
-        onNavigateToContact={(id) => { setShowRelationships(false); navigate(`/contacts/${id}`); }} />
+        onNavigateToContact={(id) => { setShowRelationships(false); navigate(`/members/${id}`); }} />
       <BulkContactUpdateModal open={showBulkUpdate} onClose={() => setShowBulkUpdate(false)} selectedCount={selectedContacts.size || total} />
       <ContactLifecycleModal open={showLifecycle} onClose={() => setShowLifecycle(false)} />
       <ContactComplianceModal open={showCompliance} onClose={() => setShowCompliance(false)} />

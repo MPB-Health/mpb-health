@@ -44,6 +44,8 @@ interface CadenceStep {
   send_window?: { start_hour: number; end_hour: number; tz: string } | null;
 }
 
+type ModuleScope = 'leads' | 'recruiting';
+
 interface Cadence {
   id: string;
   org_id: string;
@@ -55,9 +57,21 @@ interface Cadence {
   halt_on_engagement: boolean;
   halt_on_optout: boolean;
   schema_version: number;
+  /**
+   * Section 9 / Round 5: which CRM module the cadence belongs to. Reps see
+   * Leads cadences on /leads + Lead Profile; Recruiting cadences ship with
+   * the future recruit-side enrollment plumbing. Existing rows backfill
+   * to 'leads' via the 20260620440000 migration.
+   */
+  module_scope: ModuleScope;
   created_at: string;
   updated_at: string;
 }
+
+const MODULE_SCOPE_LABEL: Record<ModuleScope, string> = {
+  leads: 'Leads',
+  recruiting: 'Recruiting',
+};
 
 interface MasterTemplateLite {
   id: string;
@@ -82,6 +96,7 @@ export default function Cadences() {
   const queryClient = useQueryClient();
   const { activeOrgId } = useOrg();
   const [editing, setEditing] = useState<Cadence | null>(null);
+  const [scopeFilter, setScopeFilter] = useState<ModuleScope | 'all'>('all');
 
   const { data: cadences = [], isLoading } = useQuery({
     queryKey: ['crmCadences', activeOrgId],
@@ -96,6 +111,7 @@ export default function Cadences() {
       return ((data ?? []) as Cadence[]).map((c) => ({
         ...c,
         steps: Array.isArray(c.steps) ? c.steps : [],
+        module_scope: (c.module_scope ?? 'leads') as ModuleScope,
       }));
     },
     staleTime: 30_000,
@@ -151,19 +167,20 @@ export default function Cadences() {
     queryClient.invalidateQueries({ queryKey: ['crmCadences', activeOrgId] });
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (scope: ModuleScope = 'leads') => {
     if (!activeOrgId) return;
     const { data, error } = await supabase
       .from('crm_follow_up_cadences')
       .insert({
         org_id: activeOrgId,
-        name: 'New Cadence',
+        name: scope === 'recruiting' ? 'New Recruiting Cadence' : 'New Cadence',
         description: '',
         steps: [],
         is_active: false,
         halt_on_engagement: true,
         halt_on_optout: true,
         schema_version: 2,
+        module_scope: scope,
       })
       .select('*')
       .single();
@@ -172,51 +189,106 @@ export default function Cadences() {
       return;
     }
     queryClient.invalidateQueries({ queryKey: ['crmCadences', activeOrgId] });
-    setEditing(data as Cadence);
+    setEditing({ ...(data as Cadence), module_scope: scope });
   };
+
+  const filteredCadences = useMemo(() => {
+    if (scopeFilter === 'all') return cadences;
+    return cadences.filter((c) => c.module_scope === scopeFilter);
+  }, [cadences, scopeFilter]);
 
   return (
     <PermissionGate permission="settings.manage">
       <div className="space-y-6">
         <GradientHeader
           title="Cadences"
-          subtitle="Multi-channel sequences (email + SMS + phone). Halt on engagement or opt-out signals."
+          subtitle="Multi-channel sequences (email + SMS + phone). Halt on engagement or opt-out signals. Recruiting cadences are scoped separately from Leads — no commingling."
           icon={<Activity className="w-5 h-5" />}
           size="sm"
           actions={
-            <button
-              type="button"
-              onClick={handleCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-xl text-sm font-medium hover:bg-th-accent-700"
-            >
-              <Plus className="w-4 h-4" /> New Cadence
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleCreate('leads')}
+                className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-xl text-sm font-medium hover:bg-th-accent-700"
+              >
+                <Plus className="w-4 h-4" /> New Leads Cadence
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCreate('recruiting')}
+                className="flex items-center gap-2 px-4 py-2 bg-surface-primary border border-th-border text-th-text-secondary rounded-xl text-sm font-medium hover:bg-surface-secondary"
+              >
+                <Plus className="w-4 h-4" /> New Recruiting Cadence
+              </button>
+            </div>
           }
         />
+
+        {/* Module scope filter */}
+        <div className="flex items-center gap-2">
+          {(['all', 'leads', 'recruiting'] as const).map((scope) => {
+            const active = scopeFilter === scope;
+            const count =
+              scope === 'all'
+                ? cadences.length
+                : cadences.filter((c) => c.module_scope === scope).length;
+            return (
+              <button
+                key={scope}
+                type="button"
+                onClick={() => setScopeFilter(scope)}
+                aria-pressed={active}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  active
+                    ? 'bg-th-accent-600 border-th-accent-600 text-white shadow-sm'
+                    : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
+                }`}
+              >
+                {scope === 'all' ? 'All' : MODULE_SCOPE_LABEL[scope]}{' '}
+                <span className="opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12 text-th-text-tertiary">
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading cadences…
           </div>
-        ) : cadences.length === 0 ? (
+        ) : filteredCadences.length === 0 ? (
           <div className="bg-surface-primary border border-th-border rounded-2xl p-12 text-center">
             <Activity className="w-10 h-10 text-th-text-tertiary mx-auto mb-3 opacity-40" />
-            <p className="text-sm font-medium text-th-text-primary">No cadences yet</p>
+            <p className="text-sm font-medium text-th-text-primary">
+              {scopeFilter === 'all'
+                ? 'No cadences yet'
+                : `No ${MODULE_SCOPE_LABEL[scopeFilter]} cadences yet`}
+            </p>
             <p className="text-xs text-th-text-tertiary mt-1">
-              The Quote Response cadence ships with the platform — phase-3 migration adds it once
-              your org is created.
+              {scopeFilter === 'recruiting'
+                ? 'Recruiting cadences are scoped separately from Leads. Use “New Recruiting Cadence” above to author one.'
+                : 'The Quote Response cadence ships with the platform — phase-3 migration adds it once your org is created.'}
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {cadences.map((c) => (
+            {filteredCadences.map((c) => (
               <div
                 key={c.id}
                 className="bg-surface-primary border border-th-border rounded-2xl p-5 flex items-center gap-4"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-semibold text-th-text-primary truncate">{c.name}</p>
+                    <span
+                      className={`text-[11px] px-1.5 py-0.5 rounded ${
+                        c.module_scope === 'recruiting'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-blue-50 text-blue-700 border border-blue-200'
+                      }`}
+                    >
+                      {MODULE_SCOPE_LABEL[c.module_scope]}
+                    </span>
                     {c.is_default && (
                       <span className="text-[11px] px-1.5 py-0.5 rounded bg-th-accent-50 text-th-accent-700">
                         Default

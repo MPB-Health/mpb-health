@@ -149,7 +149,7 @@ export default function StudioHome() {
             <span>Refresh</span>
           </button>
           <Link
-            to="/studio/modules/new"
+            to="/studio/legacy/modules/new"
             className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
           >
             <Plus className="w-4 h-4" />
@@ -205,7 +205,7 @@ export default function StudioHome() {
               Create your first custom module to extend your CRM
             </p>
             <Link
-              to="/studio/modules/new"
+              to="/studio/legacy/modules/new"
               className="inline-flex items-center space-x-2 px-4 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
             >
               <Plus className="w-4 h-4" />

@@ -2,9 +2,9 @@ import type { PageHelp, HelpArticle } from '../types';
 
 export const studioPageHelp: PageHelp = {
   pageKey: 'studio',
-  title: 'CRM Studio',
+  title: 'CRM Studio (Legacy)',
   description:
-    'Customize your CRM by creating custom modules, adding custom fields, and designing record layouts tailored to your agency\'s unique workflows.',
+    'Section 9 / Round 5: Studio was retired from the sidebar. /studio* now redirects into Settings, with the legacy admin module preserved at /studio/legacy. Existing custom modules continue to resolve at /custom/:moduleApiName so the schemas you authored here still work — only the entry point moved.',
   quickTips: [
     {
       id: 'studio-tip-1',

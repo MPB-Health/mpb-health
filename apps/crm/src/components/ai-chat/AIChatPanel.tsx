@@ -40,7 +40,8 @@ function derivePageContext(pathname: string): string {
   if (pathname === '/deals' || pathname === '/deal-pipeline') return 'On Deals/Pipeline';
   if (pathname === '/tasks') return 'On Tasks page';
   if (pathname === '/calendar') return 'On Calendar';
-  if (pathname.startsWith('/contacts/')) return `Viewing contact (${pathname.split('/').pop()})`;
+  if (pathname.startsWith('/members/') || pathname.startsWith('/contacts/'))
+    return `Viewing member (${pathname.split('/').pop()})`;
   if (pathname.startsWith('/accounts/')) return `Viewing account (${pathname.split('/').pop()})`;
   return `On page: ${pathname}`;
 }

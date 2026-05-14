@@ -107,7 +107,54 @@ export class NotificationCenterService {
       console.error('Error fetching overdue tasks:', error);
     }
 
-    // 3. Upcoming calendar events (next 24h)
+    // 3. Performance Lag alerts (Round 8) — read from the generic
+    // `notifications` table filtered by category. RLS scopes by
+    // user_id automatically.
+    try {
+      const { data: lagNotifs, error } = await this.supabase
+        .from('notifications')
+        .select('id, title, body, priority, action_url, is_read, created_at, metadata')
+        .eq('category', 'performance_lag')
+        .eq('is_dismissed', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      if (lagNotifs) {
+        for (const n of lagNotifs as Array<{
+          id: string;
+          title: string;
+          body: string | null;
+          priority: 'low' | 'normal' | 'high' | 'urgent' | null;
+          action_url: string | null;
+          is_read: boolean | null;
+          created_at: string;
+          metadata: unknown;
+        }>) {
+          const priority: 'normal' | 'high' | 'critical' =
+            n.priority === 'urgent' ? 'critical' : n.priority === 'high' ? 'high' : 'normal';
+          notifications.push({
+            id: `perf-${n.id}`,
+            type: 'performance_lag',
+            title: n.title,
+            body: n.body,
+            priority,
+            lead_id: null,
+            action_url: n.action_url,
+            created_at: n.created_at,
+            read: !!n.is_read,
+          });
+        }
+      }
+    } catch (error: unknown) {
+      const pgErr = error instanceof Object ? (error as { code?: string; message?: string }) : null;
+      if (pgErr?.code !== '42P01' && !pgErr?.message?.includes('does not exist')) {
+        console.error('Error fetching performance lag notifications:', error);
+      }
+    }
+
+    // 4. Upcoming calendar events (next 24h)
     try {
       const now = new Date();
       const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -181,6 +228,18 @@ export class NotificationCenterService {
         total += taskCount || 0;
       }
 
+      // Round 8 — Performance Lag alerts in the generic notifications
+      // table count toward the unread badge.
+      const { count: perfCount, error: perfError } = await this.supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('category', 'performance_lag')
+        .eq('is_dismissed', false)
+        .eq('is_read', false);
+      if (!perfError) {
+        total += perfCount || 0;
+      }
+
       return total;
     } catch {
       return 0;
@@ -189,7 +248,6 @@ export class NotificationCenterService {
 
   async markAsRead(notificationId: string): Promise<void> {
     try {
-      // Only lead notifications can be acknowledged
       if (notificationId.startsWith('lead-')) {
         const dbId = notificationId.replace('lead-', '');
         const { data: { user } } = await this.supabase.auth.getUser();
@@ -200,9 +258,18 @@ export class NotificationCenterService {
             acknowledged_by: user?.id,
           })
           .eq('id', dbId);
+        return;
+      }
+      // Round 8 — Performance Lag alerts live in `notifications`.
+      if (notificationId.startsWith('perf-')) {
+        const dbId = notificationId.replace('perf-', '');
+        await this.supabase
+          .from('notifications')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .eq('id', dbId);
       }
     } catch (error) {
-      console.error('Error marking notification as unknown as read:', error);
+      console.error('Error marking notification as read:', error);
     }
   }
 
@@ -216,8 +283,14 @@ export class NotificationCenterService {
           acknowledged_by: user?.id,
         })
         .is('acknowledged_at', null);
+      // Round 8 — also clear unread Performance Lag rows.
+      await this.supabase
+        .from('notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('category', 'performance_lag')
+        .eq('is_read', false);
     } catch (error) {
-      console.error('Error marking all as unknown as read:', error);
+      console.error('Error marking all as read:', error);
     }
   }
 }

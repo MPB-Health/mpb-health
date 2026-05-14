@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Download, Clock, Users as UsersIcon, TrendingUp, Shield, UserCheck, AlertTriangle } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Download, Clock, Users as UsersIcon, TrendingUp, Shield, UserCheck, AlertTriangle, Phone, XCircle, Briefcase } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -68,6 +68,26 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [planTypeStats, setPlanTypeStats] = useState<PlanTypeStat[]>([]);
   const [advisorStats, setAdvisorStats] = useState<AdvisorStat[]>([]);
+  const [callBreakdown, setCallBreakdown] = useState<{ regular: number; cancel: number }>({
+    regular: 0,
+    cancel: 0,
+  });
+  // Section 12 / Round 6 Addendum lock: Special Projects time feeds
+  // per-rep AND per-project rollups in Reports. The view
+  // crm_v_special_project_rollup (Round 7) aggregates by (org_id, user_id,
+  // project_label, project_type_id, log_date) so we can do both rollups
+  // on the client.
+  const [projectRollupRows, setProjectRollupRows] = useState<
+    Array<{
+      user_id: string;
+      project_label: string;
+      project_type_id: string | null;
+      log_date: string;
+      total_minutes: number;
+      entry_count: number;
+    }>
+  >([]);
+  const [repNameLookup, setRepNameLookup] = useState<Map<string, string>>(new Map());
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -90,9 +110,107 @@ export default function Reports() {
       ]);
       if (planRes.data) setPlanTypeStats(planRes.data as unknown as PlanTypeStat[]);
       if (advisorRes.data) setAdvisorStats(advisorRes.data as unknown as AdvisorStat[]);
+
+      // Round 7 — Cancellation Calls counted separately in every report
+      // (Daily Log, Weekly, Monthly, Activity Analytics — Sec 2/3/4).
+      // Pull from crm_v_call_breakdown so the figure stays in lockstep
+      // with the Daily Log Admin View.
+      const fromDate = dateRange?.from ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const toDate = dateRange?.to ?? new Date().toISOString().slice(0, 10);
+      const callRes = await supabase
+        .from('crm_v_call_breakdown')
+        .select('regular_calls,cancellation_calls')
+        .eq('org_id', activeOrgId)
+        .gte('log_date', fromDate)
+        .lte('log_date', toDate);
+      if (callRes.data) {
+        let regular = 0;
+        let cancel = 0;
+        for (const r of callRes.data as Array<{
+          regular_calls: number;
+          cancellation_calls: number;
+        }>) {
+          regular += r.regular_calls ?? 0;
+          cancel += r.cancellation_calls ?? 0;
+        }
+        setCallBreakdown({ regular, cancel });
+      }
+
+      // Section 12 / Round 10: Special Projects rollups (per-rep + per-project).
+      // Pulls every row in the date range; the per-rep and per-project tiles
+      // are derived from this set with useMemo below so we only hit the DB
+      // once per date-range change.
+      const projRes = await supabase
+        .from('crm_v_special_project_rollup')
+        .select('user_id,project_label,project_type_id,log_date,total_minutes,entry_count')
+        .eq('org_id', activeOrgId)
+        .gte('log_date', fromDate)
+        .lte('log_date', toDate);
+      if (projRes.data) {
+        const rows = projRes.data as Array<{
+          user_id: string;
+          project_label: string;
+          project_type_id: string | null;
+          log_date: string;
+          total_minutes: number;
+          entry_count: number;
+        }>;
+        setProjectRollupRows(rows);
+
+        // Hydrate a quick id → display-name map for the per-rep tile so
+        // we can show "Jane Doe — 2h 15m" rather than a raw UUID.
+        const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+        if (ids.length) {
+          const profRes = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', ids);
+          if (profRes.data) {
+            const map = new Map<string, string>();
+            for (const p of profRes.data as Array<{ id: string; full_name: string | null; email: string | null }>) {
+              map.set(p.id, p.full_name?.trim() || p.email || p.id);
+            }
+            setRepNameLookup(map);
+          }
+        } else {
+          setRepNameLookup(new Map());
+        }
+      } else {
+        setProjectRollupRows([]);
+        setRepNameLookup(new Map());
+      }
     }
     setLoading(false);
   }, [reportingService, dateRange, activeOrgId]);
+
+  // Per-rep and per-project rollups derived from crm_v_special_project_rollup.
+  const projectByRep = useMemo(() => {
+    const m = new Map<string, { user_id: string; minutes: number; entries: number }>();
+    for (const r of projectRollupRows) {
+      const cur = m.get(r.user_id) ?? { user_id: r.user_id, minutes: 0, entries: 0 };
+      cur.minutes += r.total_minutes ?? 0;
+      cur.entries += r.entry_count ?? 0;
+      m.set(r.user_id, cur);
+    }
+    return Array.from(m.values()).sort((a, b) => b.minutes - a.minutes);
+  }, [projectRollupRows]);
+
+  const projectByLabel = useMemo(() => {
+    const m = new Map<string, { label: string; minutes: number; entries: number }>();
+    for (const r of projectRollupRows) {
+      const key = r.project_label || 'Untitled';
+      const cur = m.get(key) ?? { label: key, minutes: 0, entries: 0 };
+      cur.minutes += r.total_minutes ?? 0;
+      cur.entries += r.entry_count ?? 0;
+      m.set(key, cur);
+    }
+    return Array.from(m.values()).sort((a, b) => b.minutes - a.minutes);
+  }, [projectRollupRows]);
+
+  const totalProjectMinutes = useMemo(
+    () => projectRollupRows.reduce((sum, r) => sum + (r.total_minutes ?? 0), 0),
+    [projectRollupRows],
+  );
 
   useEffect(() => {
     loadReports();
@@ -172,6 +290,130 @@ export default function Reports() {
           <p className="text-3xl font-bold text-blue-600 mt-2">
             {dashboardStats?.new_leads || 0}
           </p>
+        </div>
+      </div>
+
+      {/* Round 10 / Section 12 — Special Projects rollup (per-rep + per-project) */}
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <div>
+            <p className="text-sm font-semibold text-th-text-primary flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-th-text-tertiary" />
+              Special Projects — time rollup
+            </p>
+            <p className="text-xs text-th-text-tertiary mt-0.5">
+              Per-rep and per-project breakdown of Special Projects time logged in the Daily Log.
+              Spec lock (Section 12 / Round 6 Addendum): project work is non-pipeline and does NOT
+              count toward the Performance Lag activity score.
+            </p>
+          </div>
+          <div className="bg-surface-secondary border border-th-border rounded-lg px-3 py-2 text-center min-w-[120px]">
+            <p className="text-[10px] uppercase tracking-wider text-th-text-tertiary">Total time</p>
+            <p className="text-lg font-bold text-th-text-primary tabular-nums">
+              {formatMinutes(totalProjectMinutes)}
+            </p>
+          </div>
+        </div>
+        {projectRollupRows.length === 0 ? (
+          <p className="text-sm text-th-text-tertiary py-4">
+            No Special Projects logged in this date range yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-th-text-tertiary mb-2">
+                Per-rep
+              </p>
+              <div className="border border-th-border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-surface-secondary">
+                    <tr className="text-left text-th-text-tertiary">
+                      <th className="px-3 py-2 font-medium">Rep</th>
+                      <th className="px-3 py-2 font-medium text-right">Entries</th>
+                      <th className="px-3 py-2 font-medium text-right">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-th-border-subtle">
+                    {projectByRep.map((row) => (
+                      <tr key={row.user_id}>
+                        <td className="px-3 py-2 text-th-text-primary">
+                          {repNameLookup.get(row.user_id) ?? row.user_id.slice(0, 8) + '…'}
+                        </td>
+                        <td className="px-3 py-2 text-th-text-secondary text-right tabular-nums">
+                          {row.entries}
+                        </td>
+                        <td className="px-3 py-2 text-th-text-primary text-right tabular-nums font-medium">
+                          {formatMinutes(row.minutes)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-th-text-tertiary mb-2">
+                Per-project
+              </p>
+              <div className="border border-th-border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-surface-secondary">
+                    <tr className="text-left text-th-text-tertiary">
+                      <th className="px-3 py-2 font-medium">Project</th>
+                      <th className="px-3 py-2 font-medium text-right">Entries</th>
+                      <th className="px-3 py-2 font-medium text-right">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-th-border-subtle">
+                    {projectByLabel.map((row) => (
+                      <tr key={row.label}>
+                        <td className="px-3 py-2 text-th-text-primary">{row.label}</td>
+                        <td className="px-3 py-2 text-th-text-secondary text-right tabular-nums">
+                          {row.entries}
+                        </td>
+                        <td className="px-3 py-2 text-th-text-primary text-right tabular-nums font-medium">
+                          {formatMinutes(row.minutes)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Round 7 — Calls breakdown (regular vs cancellation) */}
+      <div className="bg-surface-primary rounded-xl border border-th-border p-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold text-th-text-primary">Calls — regular vs cancellation</p>
+            <p className="text-xs text-th-text-tertiary mt-0.5">
+              Cancellation calls count separately from regular calls in every report. Range
+              follows the date filter above (defaults to last 30 days).
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-3 min-w-[280px]">
+            <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-center">
+              <Phone className="w-4 h-4 text-emerald-600 mx-auto" />
+              <p className="text-[10px] uppercase tracking-wider text-emerald-700 mt-1">Regular</p>
+              <p className="text-xl font-bold text-emerald-700 tabular-nums">
+                {callBreakdown.regular}
+              </p>
+            </div>
+            <div className="bg-red-50 border border-red-100 rounded-lg p-3 text-center">
+              <XCircle className="w-4 h-4 text-red-600 mx-auto" />
+              <p className="text-[10px] uppercase tracking-wider text-red-700 mt-1">Cancellation</p>
+              <p className="text-xl font-bold text-red-700 tabular-nums">{callBreakdown.cancel}</p>
+            </div>
+            <div className="bg-surface-secondary border border-th-border rounded-lg p-3 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-th-text-tertiary mt-5">Total</p>
+              <p className="text-xl font-bold text-th-text-primary tabular-nums">
+                {callBreakdown.regular + callBreakdown.cancel}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -540,4 +782,16 @@ export default function Reports() {
       </div>
     </div>
   );
+}
+
+// Section 12 / Round 10 — shared minute formatter for the Special
+// Projects rollup tiles. Renders 0–59 as "Nm", everything else as
+// "Hh Mm" so admins can read totals at a glance.
+function formatMinutes(total: number): string {
+  if (!total || total <= 0) return '—';
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 }

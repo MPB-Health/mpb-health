@@ -50,6 +50,12 @@ interface RequestBody {
   // CRM context
   org_id?: string;
   lead_id?: string;
+  /**
+   * CRM rebuild Section 9 Round 5 — recruiting clone parity. Sends sourced
+   * from the Recruit Profile composer or recruiting bulk-send stamp this
+   * id on `crm_email_log.recruit_id`.
+   */
+  recruit_id?: string;
   contact_id?: string;
   account_id?: string;
   thread_id?: string;
@@ -149,6 +155,7 @@ serve(async (req) => {
       tags,
       org_id,
       lead_id,
+      recruit_id,
       contact_id,
       account_id,
       thread_id,
@@ -195,6 +202,7 @@ serve(async (req) => {
     if (template_id) resendTags.push({ name: 'template_id', value: template_id });
     if (master_template_id) resendTags.push({ name: 'master_template_id', value: master_template_id });
     if (lead_id) resendTags.push({ name: 'lead_id', value: lead_id });
+    if (recruit_id) resendTags.push({ name: 'recruit_id', value: recruit_id });
     if (org_id) resendTags.push({ name: 'org_id', value: org_id });
     if (tags) {
       tags.forEach((tag, i) => resendTags.push({ name: `custom_${i}`, value: tag }));
@@ -264,6 +272,7 @@ serve(async (req) => {
       .insert({
         org_id: org_id || null,
         lead_id: lead_id || null,
+        recruit_id: recruit_id || null,
         template_id: template_id || null,
         master_template_id: master_template_id || null,
         thread_id: thread_id || null,

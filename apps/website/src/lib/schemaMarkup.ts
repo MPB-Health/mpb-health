@@ -232,13 +232,24 @@ export interface SpeakableSchema {
 
 export interface LocalBusinessSchema {
   '@context': 'https://schema.org';
-  '@type': 'LocalBusiness';
+  /**
+   * Dual @type: `MedicalOrganization` (more specific medical category that AI
+   * crawlers and Google understand for healthcare entities) combined with
+   * `LocalBusiness` (so we keep the GEO/Local SEO properties: geo,
+   * openingHoursSpecification, priceRange, aggregateRating). Schema.org and
+   * Google both support an array of types on a single node.
+   */
+  '@type': ['MedicalOrganization', 'LocalBusiness'];
   '@id': string;
   name: string;
   description: string;
   url: string;
   telephone: string;
   email?: string;
+  /** Indicates whether the org accepts new clients (helpful for medical org SEO). */
+  isAcceptingNewPatients?: boolean;
+  /** schema.org medicalSpecialty enum value (e.g., "PrimaryCare", "Generic"). */
+  medicalSpecialty?: string;
   address: {
     '@type': 'PostalAddress';
     streetAddress: string;
@@ -259,6 +270,10 @@ export interface LocalBusinessSchema {
     closes: string;
   }>;
   priceRange?: string;
+  areaServed?: {
+    '@type': 'Country';
+    name: string;
+  };
   aggregateRating?: {
     '@type': 'AggregateRating';
     ratingValue: string;
@@ -683,17 +698,25 @@ export const generateSpeakableSchema = (
 });
 
 /**
- * Generate LocalBusiness schema for local SEO
+ * Generate the LocalBusiness / MedicalOrganization schema for local + GEO SEO.
+ *
+ * Uses a dual @type so the node is simultaneously a `MedicalOrganization`
+ * (semantic medical category — boosts AI / Google understanding of the
+ * business) and a `LocalBusiness` (unlocks geo, openingHoursSpecification,
+ * priceRange, aggregateRating for Local SEO scoring).
  */
 export const generateLocalBusinessSchema = (): LocalBusinessSchema => ({
   '@context': 'https://schema.org',
-  '@type': 'LocalBusiness',
+  '@type': ['MedicalOrganization', 'LocalBusiness'],
   '@id': 'https://mpb.health/#localbusiness',
   name: 'MPB Health',
-  description: 'Health sharing organization offering affordable healthcare alternatives for individuals, families, and businesses across the United States.',
-  url: 'https://mpb.health',
+  description:
+    'MPB Health offers flexible, affordable HealthShare memberships for individuals, families, and businesses across the United States — a community-driven alternative to traditional health insurance.',
+  url: 'https://mpb.health/',
   telephone: '+1-855-816-4650',
-  email: 'info@mpb.health',
+  email: 'info@mympb.com',
+  isAcceptingNewPatients: true,
+  medicalSpecialty: 'PrimaryCare',
   address: {
     '@type': 'PostalAddress',
     streetAddress: '5301 N Federal Hwy, Suite 155',
@@ -716,6 +739,10 @@ export const generateLocalBusinessSchema = (): LocalBusinessSchema => ({
     },
   ],
   priceRange: '$$',
+  areaServed: {
+    '@type': 'Country',
+    name: 'United States',
+  },
   aggregateRating: {
     '@type': 'AggregateRating',
     ratingValue: '4.9',

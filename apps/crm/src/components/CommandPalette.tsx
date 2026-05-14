@@ -100,11 +100,14 @@ function getEntityPath(entityType: string, entityId: string): string {
   const pathMap: Record<string, string> = {
     lead: `/leads/${entityId}`,
     account: `/accounts/${entityId}`,
-    contact: `/contacts/${entityId}`,
+    // Section 9 rename: Contacts → Members.
+    contact: `/members/${entityId}`,
     deal: `/deals/${entityId}`,
     product: `/products/${entityId}`,
-    quote: `/quotes/${entityId}`,
-    invoice: `/invoices/${entityId}`,
+    // Section 9: Quotes / Invoices removed from sidebar; admin audit
+    // paths are /quotes/legacy/:id and /invoices/legacy/:id.
+    quote: `/quotes/legacy/${entityId}`,
+    invoice: `/invoices/legacy/${entityId}`,
     campaign: `/campaigns/${entityId}`,
     task: `/tasks`,
   };
@@ -334,11 +337,11 @@ export default function CommandPalette({ onCreateEntity }: CommandPaletteProps) 
             const entityPaths: Record<string, string> = {
               lead: '/leads?action=create',
               account: '/accounts?action=create',
-              contact: '/contacts?action=create',
+              contact: '/members?action=create',
               deal: '/deals?action=create',
               task: '/tasks?action=create',
-              quote: '/quotes?action=create',
-              invoice: '/invoices?action=create',
+              quote: '/quotes/legacy?action=create',
+              invoice: '/invoices/legacy?action=create',
             };
             const path = entityPaths[action.action_data.entity];
             if (path) {

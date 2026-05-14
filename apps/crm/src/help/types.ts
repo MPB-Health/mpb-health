@@ -55,7 +55,11 @@ export type HelpModule =
   | 'templates-automation'
   | 'crm-studio'
   | 'settings'
-  | 'web-forms';
+  | 'web-forms'
+  // Section 9 / Round 5 — Recruiting clone parity. New top-level
+  // workspace dedicated to agent recruiting, structurally a clone of
+  // Leads but with its own pipeline + cadences + email log attribution.
+  | 'recruiting';
 
 export interface ModuleMeta {
   key: HelpModule;

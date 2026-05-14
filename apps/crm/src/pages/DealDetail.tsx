@@ -655,7 +655,7 @@ export default function DealDetail() {
             <h2 className="text-lg font-semibold text-th-text-primary mb-4">Primary Contact</h2>
             {deal.contact ? (
               <Link
-                to={`/contacts/${deal.contact.id}`}
+                to={`/members/${deal.contact.id}`}
                 className="flex items-center gap-3 p-3 bg-surface-secondary rounded-lg hover:bg-surface-tertiary"
               >
                 <div className="w-10 h-10 bg-th-accent-100 rounded-full flex items-center justify-center">

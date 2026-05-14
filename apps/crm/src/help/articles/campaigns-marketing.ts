@@ -73,9 +73,9 @@ export const campaignsPageHelp: PageHelp = {
 
 export const socialMediaPageHelp: PageHelp = {
   pageKey: 'social-media',
-  title: 'Social Media',
+  title: 'Social Media (Legacy)',
   description:
-    `Schedule posts, monitor engagement, and manage your agency's social media presence across platforms.`,
+    `Section 9 / Round 5: Social Media and Ad Campaigns were consolidated into Campaigns. /social-media and /social-media/ads both redirect to /campaigns; the legacy admin views live at /social-media/legacy and /social-media/legacy/ads. Use Campaigns for all new social and paid-media tracking going forward.`,
   quickTips: [
     {
       id: 'social-tip-1',

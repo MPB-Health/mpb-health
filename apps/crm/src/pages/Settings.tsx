@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   RefreshCw, Upload, FileText, CheckCircle2, XCircle, BarChart3,
   GitBranch, Bell, Settings2, Database, Plus, Trash2, GripVertical,
-  Users, Timer, Workflow, Target, Pause, Play,
+  Users, Timer, Workflow, Target, Pause, Play, AlertTriangle, ListChecks,
 } from 'lucide-react';
+import { PerformanceLagSettings } from '../components/settings/PerformanceLagSettings';
+import { DailyLogUiSettings } from '../components/settings/DailyLogUiSettings';
 import toast from 'react-hot-toast';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -33,7 +35,9 @@ type SettingsTab =
   | 'roundRobin'
   | 'sla'
   | 'cadence'
-  | 'targets';
+  | 'targets'
+  | 'performanceLag'
+  | 'dailyLogUi';
 
 export default function Settings() {
   const { pipelineStages, pipelineService, preferencesService, leadService, scoringService, refreshLeads, refreshDashboard } = useCRM();
@@ -272,6 +276,8 @@ export default function Settings() {
       ...(canSla ? [{ key: 'sla' as const, label: 'SLA', icon: Timer }] : []),
       ...(canCadence ? [{ key: 'cadence' as const, label: 'Cadence', icon: Workflow }] : []),
       ...(canTargets ? [{ key: 'targets' as const, label: 'Targets', icon: Target }] : []),
+      { key: 'performanceLag' as const, label: 'Performance Lag', icon: AlertTriangle },
+      { key: 'dailyLogUi' as const, label: 'Daily Log UI', icon: ListChecks },
     ],
     [canRoundRobin, canSla, canCadence, canTargets],
   );
@@ -379,6 +385,9 @@ export default function Settings() {
           {activeTab === 'targets' && canTargets && (
             <TargetsSettings orgReady={orgReady} activeOrgId={activeOrgId} />
           )}
+
+          {activeTab === 'performanceLag' && <PerformanceLagSettings />}
+          {activeTab === 'dailyLogUi' && <DailyLogUiSettings />}
         </div>
       </div>
     </div>

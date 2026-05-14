@@ -65,4 +65,30 @@ Inline editing saves you from constantly opening and closing detail views. On mo
     tags: ['shortcuts', 'keyboard', 'bulk-actions', 'saved-filters', 'inline-editing', 'productivity'],
     difficulty: 'intermediate',
   },
+  {
+    id: 'gs-round5-rebrand',
+    module: 'getting-started',
+    title: "What's new — Section 9 navigation refresh",
+    summary:
+      'The recent IA cleanup renamed Contacts to Members, retired several legacy sections, and added a Recruiting workspace that mirrors Leads. Use this article to find where things moved.',
+    content: `MPB CRM just shipped the Section 9 / Round 5 navigation refresh. Here is the cheat-sheet so you don't lose time hunting for things.
+
+Renames you'll see immediately:
+• "Contacts" is now "Members." Every record, button, and breadcrumb that used to say "Contact" or "New Contact" now says "Member" or "New Member." Old /contacts links automatically redirect to /members, and the previous Contacts page is preserved at /contacts/legacy for admin auditing only.
+• The Sales Daily Logs view you already know gained an admin filter, manual entry, and corrections audit. The standalone "Sales Activity" tile is gone — its primary URL now redirects to /sales-daily-logs (legacy variant kept at /sales-activity/legacy for admins).
+
+Sections that are now retired from the sidebar (legacy variants kept for admin audit only):
+• Quick Rate Leads — primary URL goes to /leads. Legacy admin view at /leads/quick-rate-estimate/legacy.
+• Quotes & Invoices — there is no longer a top-level entry. /quotes redirects to /today and /invoices redirects to /members. Legacy admin views remain at /quotes/legacy and /invoices/legacy. Print routes (/quotes/:id/print, /invoices/:id/print) are unchanged so existing PDFs still work.
+• Social Media + Ad Campaigns — both consolidated under /campaigns. Legacy views at /social-media/legacy and /social-media/legacy/ads.
+• Studio — folded into /settings. Legacy admin module at /studio/legacy. Existing custom modules still resolve at /custom/:moduleApiName.
+• Reactivation, Community Events, End of Day, Meetings, and the old Dashboard are merged into Today, Calendar, or Sales Daily Logs depending on the record type. See the in-app banner on each old URL for the new home.
+
+Brand-new section:
+• Recruiting — a top-level workspace dedicated to health insurance agent and agency recruiting. It is a structural clone of Leads (subsection bar, profile layout, top-row Note/Call/Email/Text/Task buttons, Pin to Today, in-profile email composer, bulk-assign, and bulk mass-email). Recruiting data lives in its own pipeline and never commingles with consumer Members or Leads — the cadence builder under /cadences now exposes a Leads vs Recruiting filter so you can author messaging for each side without crosstalk.
+
+If a deep link sends you to a legacy view, that's expected — the redirect rule kicks in for admins explicitly visiting the legacy path. For day-to-day work you should always use the new canonical URLs above. Anything you've bookmarked under the old URLs continues to work and forwards you to the new home automatically.`,
+    tags: ['release-notes', 'navigation', 'members', 'recruiting', 'cadences', 'studio', 'quotes', 'invoices'],
+    difficulty: 'beginner',
+  },
 ];

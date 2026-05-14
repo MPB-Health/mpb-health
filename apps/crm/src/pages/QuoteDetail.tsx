@@ -246,7 +246,7 @@ export default function QuoteDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-th-text-tertiary">Quote not found</p>
-        <Link to="/quotes" className="text-th-accent-600 hover:underline mt-2 inline-block">
+        <Link to="/quotes/legacy" className="text-th-accent-600 hover:underline mt-2 inline-block">
           Back to quotes
         </Link>
       </div>
@@ -266,7 +266,7 @@ export default function QuoteDetail() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/quotes')}
+            onClick={() => navigate('/quotes/legacy')}
             className="p-2 hover:bg-surface-tertiary rounded-lg"
           >
             <ArrowLeft className="w-5 h-5 text-th-text-tertiary" />
@@ -629,7 +629,7 @@ export default function QuoteDetail() {
             <h2 className="text-lg font-semibold text-th-text-primary mb-4">Contact</h2>
             {quote.contact ? (
               <Link
-                to={`/contacts/${quote.contact.id}`}
+                to={`/members/${quote.contact.id}`}
                 className="flex items-center gap-3 p-3 bg-surface-secondary rounded-lg hover:bg-surface-tertiary"
               >
                 <div className="w-10 h-10 bg-th-accent-100 rounded-full flex items-center justify-center">

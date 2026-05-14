@@ -16,6 +16,9 @@ import { PermissionGate } from '../../components/PermissionGate';
 import { supabase } from '../../lib/supabase';
 import { useOrg } from '../../contexts/OrgContext';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
+import { BulkActionsToolbar } from '../../components/BulkActionsToolbar';
+import { BulkAssignRecruitsModal } from '../../components/recruiting/BulkAssignRecruitsModal';
+import { BulkEmailRecruitsModal } from '../../components/recruiting/BulkEmailRecruitsModal';
 
 // ----------------------------------------------------------------------------
 // CRM rebuild Phase 5 / Section 9 + Round 5 Addendum
@@ -87,6 +90,11 @@ export default function RecruitingList() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  // Section 6 / Round 5 — bulk-select parity with Leads list.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [showBulkAssign, setShowBulkAssign] = useState(false);
+  const [showBulkEmail, setShowBulkEmail] = useState(false);
+  const [bulkMarkInactiveBusy, setBulkMarkInactiveBusy] = useState(false);
 
   const { data: stages = [] } = useQuery({
     queryKey: ['recruitingStages', activeOrgId],
@@ -146,6 +154,100 @@ export default function RecruitingList() {
     return m;
   }, [stages]);
 
+  const toggleRow = (recruitId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(recruitId)) next.delete(recruitId);
+      else next.add(recruitId);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelected((prev) =>
+      prev.size === filtered.length && filtered.length > 0
+        ? new Set()
+        : new Set(filtered.map((r) => r.id)),
+    );
+  };
+  const clearSelection = () => setSelected(new Set());
+
+  const handleBulkMarkInactive = async () => {
+    if (bulkMarkInactiveBusy || selected.size === 0) return;
+    if (!window.confirm(`Mark ${selected.size} recruit${selected.size !== 1 ? 's' : ''} inactive (DNC)?`)) {
+      return;
+    }
+    setBulkMarkInactiveBusy(true);
+    try {
+      const ids = Array.from(selected);
+      const { error } = await supabase
+        .from('crm_recruiting_records')
+        .update({
+          pipeline_stage: 'inactive',
+          workflow_subsection: 'do_not_contact',
+          do_not_contact: true,
+          last_touched_at: new Date().toISOString(),
+        })
+        .in('id', ids);
+      if (error) throw error;
+      toast.success(`Marked ${ids.length} recruit${ids.length !== 1 ? 's' : ''} inactive`);
+      clearSelection();
+      queryClient.invalidateQueries({ queryKey: ['recruitingRecords', activeOrgId] });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Bulk mark inactive failed';
+      toast.error(message);
+    } finally {
+      setBulkMarkInactiveBusy(false);
+    }
+  };
+
+  const handleBulkExport = () => {
+    const rows = filtered.filter((r) => selected.has(r.id));
+    if (rows.length === 0) {
+      toast.error('Select at least one recruit to export');
+      return;
+    }
+    const headers = [
+      'first_name',
+      'last_name',
+      'email',
+      'phone',
+      'pipeline_stage',
+      'workflow_subsection',
+      'agency',
+      'license_number',
+      'npn',
+      'last_touched_at',
+    ];
+    const csv = [headers.join(',')]
+      .concat(
+        rows.map((r) =>
+          [
+            r.first_name,
+            r.last_name,
+            r.email ?? '',
+            r.phone ?? '',
+            r.pipeline_stage,
+            r.workflow_subsection,
+            r.agency_affiliation ?? '',
+            r.license_number ?? '',
+            r.npn ?? '',
+            r.last_touched_at ?? '',
+          ]
+            .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+            .join(','),
+        ),
+      )
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recruiting-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} recruit${rows.length !== 1 ? 's' : ''}`);
+  };
+
   return (
     <PermissionGate permission="recruiting.read">
       <div className="space-y-6">
@@ -189,6 +291,21 @@ export default function RecruitingList() {
           })}
         </div>
 
+        {/* Bulk Actions Toolbar — visible only when at least one recruit
+            is selected. Mirrors the LeadsList toolbar (Section 6 spec
+            "bulk-assign and mass-email"). */}
+        <BulkActionsToolbar
+          selectedCount={selected.size}
+          onAssign={() => setShowBulkAssign(true)}
+          onChangeStage={() =>
+            toast('Bulk stage change ships next iteration', { icon: 'ℹ️' })
+          }
+          onSendEmail={() => setShowBulkEmail(true)}
+          onExport={handleBulkExport}
+          onMarkLost={handleBulkMarkInactive}
+          onClear={clearSelection}
+        />
+
         {/* Search */}
         <div className="flex gap-3">
           <div className="flex-1 max-w-md relative">
@@ -220,6 +337,22 @@ export default function RecruitingList() {
             <table className="w-full text-sm">
               <thead className="bg-surface-secondary text-th-text-tertiary">
                 <tr>
+                  <th className="text-left px-3 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filtered.length > 0 && selected.size === filtered.length
+                      }
+                      ref={(el) => {
+                        if (el)
+                          el.indeterminate =
+                            selected.size > 0 && selected.size < filtered.length;
+                      }}
+                      onChange={toggleAll}
+                      className="h-4 w-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
+                      aria-label="Select all recruits"
+                    />
+                  </th>
                   <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-wider">Name</th>
                   <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-wider">Stage</th>
                   <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-wider">Contact</th>
@@ -231,8 +364,23 @@ export default function RecruitingList() {
               <tbody className="divide-y divide-th-border-subtle">
                 {filtered.map((r) => {
                   const s = stageLabel.get(r.pipeline_stage);
+                  const isSelected = selected.has(r.id);
                   return (
-                    <tr key={r.id} className="hover:bg-surface-secondary/40">
+                    <tr
+                      key={r.id}
+                      className={`hover:bg-surface-secondary/40 ${
+                        isSelected ? 'bg-th-accent-50/40' : ''
+                      }`}
+                    >
+                      <td className="px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleRow(r.id)}
+                          className="h-4 w-4 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
+                          aria-label={`Select ${r.first_name} ${r.last_name}`}
+                        />
+                      </td>
                       <td className="px-6 py-3">
                         <Link
                           to={`/recruiting/${r.id}`}
@@ -302,6 +450,25 @@ export default function RecruitingList() {
             }}
           />
         )}
+
+        <BulkAssignRecruitsModal
+          open={showBulkAssign}
+          onClose={() => setShowBulkAssign(false)}
+          recruitIds={Array.from(selected)}
+          onSuccess={() => {
+            clearSelection();
+            queryClient.invalidateQueries({ queryKey: ['recruitingRecords', activeOrgId] });
+          }}
+        />
+        <BulkEmailRecruitsModal
+          open={showBulkEmail}
+          onClose={() => setShowBulkEmail(false)}
+          recruitIds={Array.from(selected)}
+          onSuccess={() => {
+            clearSelection();
+            queryClient.invalidateQueries({ queryKey: ['recruitingRecords', activeOrgId] });
+          }}
+        />
       </div>
     </PermissionGate>
   );

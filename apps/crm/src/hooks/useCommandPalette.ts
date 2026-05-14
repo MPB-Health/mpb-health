@@ -45,13 +45,11 @@ const CRM_QUICK_ACTIONS: QuickAction[] = [
   { id: 'nav-dashboard', name: 'Go to Dashboard', icon: 'layout-dashboard', category: 'navigation', action_type: 'navigate', action_data: { url: '/' } },
   { id: 'nav-leads', name: 'Go to Leads', icon: 'users', category: 'navigation', action_type: 'navigate', action_data: { url: '/leads' } },
   { id: 'nav-accounts', name: 'Go to Accounts', icon: 'building-2', category: 'navigation', action_type: 'navigate', action_data: { url: '/accounts' } },
-  { id: 'nav-contacts', name: 'Go to Contacts', icon: 'user-circle', category: 'navigation', action_type: 'navigate', action_data: { url: '/contacts' } },
+  { id: 'nav-members', name: 'Go to Members', icon: 'user-circle', category: 'navigation', action_type: 'navigate', action_data: { url: '/members' } },
   { id: 'nav-deals', name: 'Go to Deals', icon: 'dollar-sign', category: 'navigation', action_type: 'navigate', action_data: { url: '/deals' } },
   { id: 'nav-deal-pipeline', name: 'Go to Deal Pipeline', icon: 'git-branch', category: 'navigation', action_type: 'navigate', action_data: { url: '/deal-pipeline' } },
   { id: 'nav-tasks', name: 'Go to Tasks', icon: 'check-square', category: 'navigation', action_type: 'navigate', action_data: { url: '/tasks' } },
   { id: 'nav-calendar', name: 'Go to Calendar', icon: 'calendar-days', category: 'navigation', action_type: 'navigate', action_data: { url: '/calendar' } },
-  { id: 'nav-quotes', name: 'Go to Quotes', icon: 'file-check', category: 'navigation', action_type: 'navigate', action_data: { url: '/quotes' } },
-  { id: 'nav-invoices', name: 'Go to Invoices', icon: 'receipt', category: 'navigation', action_type: 'navigate', action_data: { url: '/invoices' } },
   { id: 'nav-campaigns', name: 'Go to Campaigns', icon: 'megaphone', category: 'navigation', action_type: 'navigate', action_data: { url: '/campaigns' } },
   { id: 'nav-reports', name: 'Go to Reports', icon: 'bar-chart-3', category: 'navigation', action_type: 'navigate', action_data: { url: '/reports' } },
   { id: 'nav-settings', name: 'Go to Settings', icon: 'settings', category: 'navigation', action_type: 'navigate', action_data: { url: '/settings' } },
@@ -59,17 +57,16 @@ const CRM_QUICK_ACTIONS: QuickAction[] = [
   // Create
   { id: 'create-lead', name: 'Create Lead', description: 'Add a new lead', icon: 'user-plus', shortcut: 'L', category: 'create', action_type: 'create', action_data: { entity: 'lead' } },
   { id: 'create-account', name: 'Create Account', description: 'Add a new account', icon: 'building-2', category: 'create', action_type: 'create', action_data: { entity: 'account' } },
-  { id: 'create-contact', name: 'Create Contact', description: 'Add a new contact', icon: 'user-circle', category: 'create', action_type: 'create', action_data: { entity: 'contact' } },
+  { id: 'create-member', name: 'Create Member', description: 'Add a new member', icon: 'user-circle', category: 'create', action_type: 'create', action_data: { entity: 'contact' } },
   { id: 'create-deal', name: 'Create Deal', description: 'Add a new deal', icon: 'dollar-sign', category: 'create', action_type: 'create', action_data: { entity: 'deal' } },
   { id: 'create-task', name: 'Create Task', description: 'Add a new task', icon: 'check-square', shortcut: 'T', category: 'create', action_type: 'create', action_data: { entity: 'task' } },
-  { id: 'create-quote', name: 'Create Quote', description: 'Add a new quote', icon: 'file-check', category: 'create', action_type: 'create', action_data: { entity: 'quote' } },
-  { id: 'create-invoice', name: 'Create Invoice', description: 'Add a new invoice', icon: 'receipt', category: 'create', action_type: 'create', action_data: { entity: 'invoice' } },
 
-  // Navigation — Workspaces
+  // Navigation — Workspaces (Section 9: Today + Dashboard merged into /today.
+  // Sales Activity tab removed in favor of /sales-daily-logs.)
   { id: 'nav-today', name: 'Go to Today', description: 'Your daily command center', icon: 'sun', category: 'navigation', action_type: 'navigate', action_data: { url: '/today' } },
   { id: 'nav-pipeline', name: 'Go to Pipeline Board', icon: 'git-branch', category: 'navigation', action_type: 'navigate', action_data: { url: '/pipeline' } },
-  { id: 'nav-inbox', name: 'Go to Inbox', icon: 'inbox', category: 'navigation', action_type: 'navigate', action_data: { url: '/inbox' } },
-  { id: 'nav-activity-dashboard', name: 'Sales Activity Dashboard', icon: 'activity', category: 'navigation', action_type: 'navigate', action_data: { url: '/sales-activity' } },
+  { id: 'nav-inbox', name: 'Go to Inbox', icon: 'inbox', category: 'navigation', action_type: 'navigate', action_data: { url: '/email/inbox' } },
+  { id: 'nav-daily-log', name: 'Go to Sales Daily Logs', icon: 'activity', category: 'navigation', action_type: 'navigate', action_data: { url: '/sales-daily-logs' } },
 
   // Tools
   { id: 'tool-refresh', name: 'Refresh Data', description: 'Reload current page data', icon: 'refresh-cw', category: 'tools', action_type: 'custom', action_data: { action: 'refresh-data' } },

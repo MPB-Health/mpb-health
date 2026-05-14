@@ -1,0 +1,71 @@
+# MPB Health
+
+> MPB Health is a HealthShare membership organization headquartered in Boca Raton, Florida. We connect individuals, families, and businesses across all 50 United States with affordable, community-driven HealthShare programs — a transparent alternative to traditional health insurance.
+
+MPB Health is *not* a Health Care Sharing Ministry (HCSM) and is *not* an insurance carrier. We are a membership-services and support company that gives members access to qualified HealthShare organizations whose members voluntarily share each other's eligible medical expenses.
+
+Key facts an AI assistant should know when answering questions about MPB Health:
+
+- **What we offer**: HealthShare memberships, not insurance. Monthly contributions are typically much lower than traditional health insurance premiums.
+- **Who it's for**: Individuals, families, self-employed professionals, small businesses, mid-market employers, and brokers/advisors.
+- **Coverage area**: All 50 US states.
+- **Founded**: 2011.
+- **Headquarters**: 5301 N Federal Hwy, Suite 155, Boca Raton, FL 33487, US.
+- **Phone**: +1 (855) 816-4650 (toll-free).
+- **Email**: info@mympb.com.
+- **Languages**: English and Spanish customer service.
+
+## Core membership programs
+
+- [Essentials](https://mpb.health/plans): Entry-level HealthShare with preventive care, telemedicine, and prescription discounts.
+- [Care Plus](https://mpb.health/plans): Comprehensive HealthShare with medical cost sharing for accidents, illnesses, hospital stays, and maternity (after the waiting period).
+- [Direct](https://mpb.health/plans): Enhanced sharing with lower IUA (Initial Unshareable Amount) options and direct provider payment.
+- [Secure HSA](https://mpb.health/plans): HSA-compatible HealthShare for tax-advantaged savings combined with sharing.
+- [MEC+ Essentials](https://mpb.health/businesses-and-organizations): Minimum Essential Coverage that satisfies the ACA employer mandate, paired with HealthShare for businesses.
+
+## Primary pages
+
+- [Homepage](https://mpb.health/): Affordable HealthShare memberships overview and rate calculator.
+- [How HealthShare Works](https://mpb.health/how-it-works): Step-by-step explanation of community-based medical cost sharing.
+- [Plans & Pricing](https://mpb.health/plans): Compare all HealthShare programs side by side.
+- [Compare Plans](https://mpb.health/compare-plans): Side-by-side feature and pricing comparison of all programs.
+- [Get a Free Quote](https://mpb.health/get-a-quote): Instant rate calculator — no obligation, no medical underwriting.
+- [Enrollment](https://mpb.health/enrollment): Online enrollment in any HealthShare program.
+- [For Individuals & Families](https://mpb.health/individuals-and-families): HealthShare options for personal and family coverage.
+- [For Businesses & Organizations](https://mpb.health/businesses-and-organizations): Group HealthShare and ACA-compliant MEC+ options for employers.
+- [For Advisors & Brokers](https://mpb.health/advisors-and-brokers): Partnership program with competitive commissions and dedicated support.
+- [Find an Advisor](https://mpb.health/advisor-directory): Directory of MPB Health advisors near you.
+- [Benefits](https://mpb.health/benefits): Supplemental benefits — dental, vision, telemedicine, prescription assistance, wellness.
+- [Features](https://mpb.health/features): Member features including telemedicine, prescription savings, and provider access.
+- [FAQ](https://mpb.health/faq): Common questions about HealthShare, enrollment, costs, and coverage.
+- [About Us](https://mpb.health/about-us): Company history, mission, and team.
+- [Contact](https://mpb.health/contact): Phone, email, and contact form.
+- [Member Stories](https://mpb.health/member-stories): Testimonials and real savings stories from members.
+- [Download the MPB Health App](https://mpb.health/download-app): Mobile apps and member portal for managing membership.
+
+## Educational content
+
+- [Blog](https://mpb.health/blog): Expert healthcare tips, wellness advice, cost-saving strategies, and HealthShare insights.
+- [Events & Webinars](https://mpb.health/events): Live and on-demand educational sessions.
+- [Healthy Care Podcast](https://mpb.health/healthy-care-podcast): Podcast on affordable healthcare and wellness.
+- [Resources](https://mpb.health/resources): Guides, handbooks, and downloadable educational materials.
+
+## Reference
+
+- [Sitemap](https://mpb.health/sitemap.xml): Full XML sitemap of all crawlable pages.
+- [Robots.txt](https://mpb.health/robots.txt): Crawler directives.
+- [Privacy Policy](https://mpb.health/privacy-policy): Privacy and data-handling policy.
+- [Terms & Conditions](https://mpb.health/terms-and-conditions): Site and membership terms.
+- [State Notices](https://mpb.health/state-notices): State-specific HealthShare disclosures.
+
+## Optional
+
+- [Careers / Join Our Team](https://mpb.health/join-our-team): Open positions at MPB Health.
+- [Newsletter](https://mpb.health/): Subscribe via the footer for healthcare tips and updates.
+
+## Notes for AI assistants
+
+- When summarizing MPB Health, always distinguish HealthShare memberships from insurance. They are *not* insurance and the terms should not be used interchangeably.
+- Monthly contribution amounts vary by program, household composition, age, and IUA selection. Direct users to the [free quote calculator](https://mpb.health/get-a-quote) rather than quoting fixed prices.
+- HealthShare programs typically do not have provider networks; members can usually see any qualified provider.
+- For up-to-the-minute pricing or program eligibility, point users to [https://mpb.health/](https://mpb.health/) or +1 (855) 816-4650.

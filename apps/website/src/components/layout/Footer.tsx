@@ -71,10 +71,29 @@ const Footer = () => {
         <div className="grid md:grid-cols-4 gap-8">
           <div>
             <h4 className="text-lg font-bold text-white mb-4">Contact Us</h4>
-            <div className="space-y-3">
+            {/*
+              NAP block (Name, Address, Phone) for Local/GEO SEO. Marked up with
+              schema.org Organization microdata so crawlers can reliably extract
+              each address component (streetAddress, locality, region, postalCode,
+              country) — independent of the JSON-LD MedicalOrganization /
+              LocalBusiness schema injected into <head>.
+            */}
+            <address
+              className="not-italic space-y-3"
+              itemScope
+              itemType="https://schema.org/MedicalOrganization"
+            >
+              <meta itemProp="name" content="MPB Health" />
+              <meta itemProp="url" content="https://mpb.health/" />
+
               <div className="flex items-center gap-3 text-neutral-300">
                 <Phone className="w-5 h-5 text-[#0a4d90]" />
-                <a href="tel:8558164650" className="hover:text-[#0a4d90] transition-colors">
+                <a
+                  href="tel:+18558164650"
+                  className="hover:text-[#0a4d90] transition-colors"
+                  itemProp="telephone"
+                  content="+1-855-816-4650"
+                >
                   (855) 816-4650
                 </a>
               </div>
@@ -83,15 +102,27 @@ const Footer = () => {
                 <a
                   href="mailto:info@mympb.com"
                   className="hover:text-[#0a4d90] transition-colors"
+                  itemProp="email"
                 >
                   info@mympb.com
                 </a>
               </div>
-              <div className="flex items-start gap-3 text-neutral-300">
-                <MapPin className="w-5 h-5 text-[#0a4d90] flex-shrink-0 mt-1" />
-                <span>5301 N Federal Hwy, Suite 155, Boca Raton, FL 33487</span>
+              <div
+                className="flex items-start gap-3 text-neutral-300"
+                itemProp="address"
+                itemScope
+                itemType="https://schema.org/PostalAddress"
+              >
+                <MapPin className="w-5 h-5 text-[#0a4d90] flex-shrink-0 mt-1" aria-hidden="true" />
+                <span>
+                  <span itemProp="streetAddress">5301 N Federal Hwy, Suite 155</span>,{' '}
+                  <span itemProp="addressLocality">Boca Raton</span>,{' '}
+                  <span itemProp="addressRegion">FL</span>{' '}
+                  <span itemProp="postalCode">33487</span>
+                  <meta itemProp="addressCountry" content="US" />
+                </span>
               </div>
-            </div>
+            </address>
           </div>
 
           <div>

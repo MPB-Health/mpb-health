@@ -16,6 +16,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   lead: Users,
   task: CheckSquare,
   event: Calendar,
+  performance_lag: AlertTriangle,
 };
 
 const PRIORITY_COLORS = {
@@ -120,12 +121,16 @@ export function NotificationCenter() {
       await notificationCenterService.markAsRead(notification.id);
       loadUnreadCount();
     }
-    if (notification.lead_id) {
+    if (notification.action_url) {
+      navigate(notification.action_url);
+    } else if (notification.lead_id) {
       navigate(`/leads/${notification.lead_id}`);
     } else if (notification.type === 'task') {
       navigate('/tasks');
     } else if (notification.type === 'event') {
       navigate('/calendar');
+    } else if (notification.type === 'performance_lag') {
+      navigate('/sales-daily-logs');
     }
     setOpen(false);
   };

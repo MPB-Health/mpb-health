@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -10,15 +10,17 @@ import {
   Send,
   CheckSquare,
   XCircle,
+  Zap,
   Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { GradientHeader } from '@mpbhealth/ui';
 import { PermissionGate } from '../../components/PermissionGate';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOrg } from '../../contexts/OrgContext';
+import { useFocusItems } from '../../hooks/useFocusItems';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
+import { RecruitingProfileEmailTab } from '../../components/recruiting/RecruitingProfileEmailTab';
 
 // ----------------------------------------------------------------------------
 // CRM rebuild Phase 5 / Section 9
@@ -70,10 +72,11 @@ const SUBSECTION_LABELS: Record<string, string> = {
 
 export default function RecruitingDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeOrgId } = useOrg();
+  const focusItems = useFocusItems();
+  const [activeTab, setActiveTab] = useState<'overview' | 'email' | 'activity'>('overview');
 
   const { data: record, isLoading } = useQuery({
     queryKey: ['recruitingRecord', id],
@@ -209,7 +212,7 @@ export default function RecruitingDetail() {
                       toast.error('No email on file');
                       return;
                     }
-                    toast('Recruiting in-profile composer ships next iteration');
+                    setActiveTab('email');
                   }}
                 />
                 <ActionButton
@@ -222,6 +225,39 @@ export default function RecruitingDetail() {
                   label="Task"
                   onClick={() => toast('Task quick-add for recruits ships next iteration')}
                 />
+                {/* Section 6 / Round 5 — Pin↔Unpin toggle, parity with
+                    Lead Profile. Recruit-pinned items use entity_type
+                    'recruiting' (added to crm_focus_items by the
+                    20260620440000 migration). */}
+                {(() => {
+                  const focusItem = focusItems.items.find(
+                    (i) => i.entity_type === 'recruiting' && i.entity_id === record.id,
+                  );
+                  const pinned = !!focusItem;
+                  return (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (pinned && focusItem) {
+                          await focusItems.unpinItem(focusItem.id);
+                          toast.success('Unpinned from Today');
+                        } else {
+                          await focusItems.pinItem('recruiting', record.id);
+                          toast.success('Pinned to Today');
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                        pinned
+                          ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                          : 'border-th-border text-th-text-secondary hover:bg-surface-secondary'
+                      }`}
+                      title={pinned ? 'Unpin from Today' : 'Pin to Today'}
+                    >
+                      <Zap className="w-4 h-4" />
+                      {pinned ? 'Unpin' : 'Pin to Today'}
+                    </button>
+                  );
+                })()}
                 <button
                   type="button"
                   onClick={() => setShowMarkInactive(true)}
@@ -273,6 +309,89 @@ export default function RecruitingDetail() {
               <div className="text-th-text-tertiary text-xs">
                 {[record.license_number, record.npn].filter(Boolean).join(' / ')}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Section 6 / 7 Round 5 — Profile tab bar (mirrors Lead Profile) */}
+        <div className="bg-surface-primary border border-th-border rounded-2xl">
+          <div className="flex items-center gap-1 border-b border-th-border px-3">
+            {(['overview', 'email', 'activity'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-3 text-sm font-medium capitalize transition-colors ${
+                  activeTab === tab
+                    ? 'text-th-accent-700 border-b-2 border-th-accent-600 -mb-px'
+                    : 'text-th-text-tertiary hover:text-th-text-secondary'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div className="p-4">
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-th-text-tertiary mb-0.5">
+                    Email
+                  </div>
+                  <div className="text-th-text-primary">{record.email || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-th-text-tertiary mb-0.5">
+                    Phone
+                  </div>
+                  <div className="text-th-text-primary">{record.phone || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-th-text-tertiary mb-0.5">
+                    City / State
+                  </div>
+                  <div className="text-th-text-primary">
+                    {[record.city, record.state].filter(Boolean).join(', ') || '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-th-text-tertiary mb-0.5">
+                    Appointed Carriers
+                  </div>
+                  <div className="text-th-text-primary">
+                    {record.appointed_carriers?.length
+                      ? record.appointed_carriers.join(', ')
+                      : '—'}
+                  </div>
+                </div>
+                {record.notes && (
+                  <div className="md:col-span-2">
+                    <div className="text-xs uppercase tracking-wider text-th-text-tertiary mb-0.5">
+                      Notes
+                    </div>
+                    <div className="text-th-text-secondary whitespace-pre-wrap">
+                      {record.notes}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {activeTab === 'email' && (
+              <RecruitingProfileEmailTab
+                recruit={{
+                  id: record.id,
+                  org_id: record.org_id,
+                  first_name: record.first_name,
+                  last_name: record.last_name,
+                  email: record.email,
+                }}
+              />
+            )}
+            {activeTab === 'activity' && (
+              <p className="text-xs text-th-text-tertiary">
+                Activity feed and Daily Log auto-capture for recruiting events ship next iteration.
+                Until then, reps can review activity in <Link to="/sales-daily-logs" className="underline">Sales Daily Logs</Link> — recruiting calls, notes, and emails surface there automatically.
+              </p>
             )}
           </div>
         </div>

@@ -10,25 +10,25 @@ export interface SEOMetadata {
 }
 
 export const defaultSEO: SEOMetadata = {
-  title: 'MPB Health - Affordable Health Sharing Plans | Save Up to 60%',
-  description: 'Join 50,000+ families saving up to 60% on healthcare with MPB Health\'s community health sharing. No network restrictions, transparent pricing, nationwide coverage.',
-  keywords: 'health sharing, healthcare costs, insurance alternative, medical cost sharing, affordable healthcare, community health',
-  ogTitle: 'MPB Health - Affordable Health Sharing Plans',
-  ogDescription: 'Save up to 60% on healthcare costs with trusted community health sharing. No network restrictions, transparent pricing.',
+  title: 'Affordable HealthShare Memberships | MPB Health',
+  description: 'MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions.',
+  keywords: 'healthshare memberships, health sharing, healthcare costs, insurance alternative, medical cost sharing, affordable healthcare, community health',
+  ogTitle: 'Affordable HealthShare Memberships | MPB Health',
+  ogDescription: 'MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions.',
   ogImage: 'https://mpb.health/assets/MPB-Health-No-background.png?v=2',
-  canonicalUrl: 'https://mpb.health',
+  canonicalUrl: 'https://mpb.health/',
   robots: 'index, follow'
 };
 
 export const pageSEO: Record<string, SEOMetadata> = {
   '/': {
-    title: 'MPB Health - Affordable Health Sharing Plans | Save Up to 60%',
-    description: 'Join 50,000+ families saving up to 60% on healthcare with MPB Health\'s community health sharing. No network restrictions, transparent pricing.',
-    keywords: 'health sharing, healthcare costs, insurance alternative, affordable healthcare, medical cost sharing',
-    ogTitle: 'MPB Health - Affordable Health Sharing Plans',
-    ogDescription: 'Save up to 60% on healthcare with trusted community health sharing.',
+    title: 'Affordable HealthShare Memberships | MPB Health',
+    description: 'MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions.',
+    keywords: 'healthshare memberships, health sharing, healthcare costs, insurance alternative, affordable healthcare, medical cost sharing, community health',
+    ogTitle: 'Affordable HealthShare Memberships | MPB Health',
+    ogDescription: 'MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions.',
     ogImage: 'https://mpb.health/assets/MPB-Health-No-background.png?v=2',
-    canonicalUrl: 'https://mpb.health',
+    canonicalUrl: 'https://mpb.health/',
     robots: 'index, follow'
   },
   '/enrollment': {

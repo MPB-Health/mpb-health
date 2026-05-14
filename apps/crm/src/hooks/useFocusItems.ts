@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useOrg } from '../contexts/OrgContext';
 
+// Section 9 Round 5 — recruiting clone parity: Pin↔Unpin from a Recruit
+// Profile reuses crm_focus_items. The check constraint accepts 'recruiting'
+// per the 20260620440000_crm_p7_recruiting_clone_parity migration.
 export interface FocusItem {
   id: string;
   org_id: string;
   user_id: string;
-  entity_type: 'lead' | 'contact' | 'deal' | 'task' | 'case';
+  entity_type: 'lead' | 'contact' | 'deal' | 'task' | 'case' | 'recruiting';
   entity_id: string;
   priority: number;
   notes: string | null;

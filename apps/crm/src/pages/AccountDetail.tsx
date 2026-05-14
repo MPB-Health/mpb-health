@@ -528,7 +528,7 @@ export default function AccountDetail() {
                 </h3>
                 <PermissionGate permission="contacts.write">
                   <button
-                    onClick={() => navigate(`/contacts/new?account_id=${account.id}`)}
+                    onClick={() => navigate(`/members/new?account_id=${account.id}`)}
                     className="flex items-center space-x-2 px-3 py-2 bg-th-accent-600 rounded-lg text-sm font-medium text-white hover:bg-th-accent-700"
                   >
                     <Plus className="w-4 h-4" />
@@ -550,7 +550,7 @@ export default function AccountDetail() {
                     <div
                       key={contact.id}
                       className="py-4 flex items-center justify-between hover:bg-surface-secondary px-4 -mx-4 rounded-lg cursor-pointer"
-                      onClick={() => navigate(`/contacts/${contact.id}`)}
+                      onClick={() => navigate(`/members/${contact.id}`)}
                     >
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-th-accent-100 rounded-full flex items-center justify-center">

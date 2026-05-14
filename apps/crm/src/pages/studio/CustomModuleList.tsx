@@ -52,7 +52,7 @@ export default function CustomModuleList() {
       const moduleData = await moduleService.getModuleByApiName(moduleApiName);
       if (!moduleData) {
         toast.error('Module not found');
-        navigate('/studio');
+        navigate('/studio/legacy');
         return null;
       }
       setModule(moduleData);
@@ -249,7 +249,7 @@ export default function CustomModuleList() {
       <div className="text-center py-12">
         <p className="text-th-text-tertiary">Module not found</p>
         <Link
-          to="/studio"
+          to="/studio/legacy"
           className="text-th-accent-600 hover:underline mt-2 inline-block"
         >
           Back to Studio
@@ -264,7 +264,7 @@ export default function CustomModuleList() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/studio')}
+            onClick={() => navigate('/studio/legacy')}
             className="p-2 hover:bg-surface-tertiary rounded-lg"
           >
             <ArrowLeft className="w-5 h-5 text-th-text-tertiary" />

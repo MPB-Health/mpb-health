@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useOrg } from './contexts/OrgContext';
 import { PermissionGate, AccessDenied } from './components/PermissionGate';
@@ -217,6 +217,33 @@ function Guarded({ permission, children }: { permission: string; children: React
   );
 }
 
+/**
+ * Section 9 rename: Contacts → Members. Forwards an old `/contacts/:id`
+ * deep link to its `/members/:id` equivalent so id-bearing bookmarks stay
+ * navigable after the IA cleanup.
+ */
+function NavigateContactToMember() {
+  const { id } = useParams();
+  return <Navigate to={`/members/${id}`} replace />;
+}
+
+/**
+ * Section 9 cutover for `/quotes/:id` and `/invoices/:id` — redirect
+ * specific deep links to the `/legacy/:id` audit-only view so old emails
+ * and saved bookmarks resolve while admins audit the data before final
+ * removal in P5. Print routes (`/quotes/:id/print`,
+ * `/invoices/:id/print`) live outside MainLayout and stay reachable.
+ */
+function NavigateQuoteToLegacy() {
+  const { id } = useParams();
+  return <Navigate to={`/quotes/legacy/${id}`} replace />;
+}
+
+function NavigateInvoiceToLegacy() {
+  const { id } = useParams();
+  return <Navigate to={`/invoices/legacy/${id}`} replace />;
+}
+
 /** Public landing page -- redirects to /today if already logged in (Section 9
  *  Round 5 merged Today + Dashboard tabs into a single "Today" tab). */
 function LandingRoute() {
@@ -348,8 +375,15 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                {/* Section 9: Quick Rate Leads removed. The public-website
+                    rate calculator is now the single source of these leads;
+                    they land in `lead_submissions` with
+                    lead_source='website_quote' and surface in /leads. The
+                    standalone CRM page is preserved at /legacy for one
+                    cycle of cutover so admins can audit historical state. */}
+                <Route path="/leads/quick-rate-estimate" element={<Navigate to="/leads" replace />} />
                 <Route
-                  path="/leads/quick-rate-estimate"
+                  path="/leads/quick-rate-estimate/legacy"
                   element={
                     <Guarded permission="leads.read">
                       <Suspense fallback={<PageLoader />}>
@@ -691,8 +725,13 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                {/* Section 9: Sales Activity tab removed. Activity tracking
+                    now lives in Daily Log (`/sales-daily-logs`) + Activity
+                    Detail per Section 2/3/4/8. Standalone dashboard kept
+                    accessible at /legacy during cutover. */}
+                <Route path="/sales-activity" element={<Navigate to="/sales-daily-logs" replace />} />
                 <Route
-                  path="/sales-activity"
+                  path="/sales-activity/legacy"
                   element={
                     <Guarded permission="reports.read">
                       <Suspense fallback={<PageLoader />}>
@@ -722,12 +761,15 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* Contacts (renamed to "Members" in Section 9 nav).
-                    Both /contacts and /members render the same components so
-                    deep links keep working during the rename rollout. The
-                    sidebar exposes /members only. */}
+                {/* Contacts → Members (Section 9 rename, canonical).
+                    /members is the canonical route; /contacts redirects so
+                    deep links from older pages / saved bookmarks land in the
+                    new IA. /contacts/legacy keeps the legacy view available
+                    for one cutover cycle. */}
+                <Route path="/contacts" element={<Navigate to="/members" replace />} />
+                <Route path="/contacts/:id" element={<NavigateContactToMember />} />
                 <Route
-                  path="/contacts"
+                  path="/contacts/legacy"
                   element={
                     <Guarded permission="contacts.read">
                       <Suspense fallback={<PageLoader />}>
@@ -737,7 +779,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/contacts/:id"
+                  path="/contacts/legacy/:id"
                   element={
                     <Guarded permission="contacts.read">
                       <Suspense fallback={<PageLoader />}>
@@ -923,9 +965,18 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* Quotes */}
+                {/* Section 9: Quotes removed from sidebar. The Lead Profile
+                    "Quote History" panel (rendered by `LeadMpWorkflowPanel`,
+                    backed by `crm_lead_quote_history`) is the canonical
+                    surface. /quotes lands on /today; /quotes/legacy keeps
+                    the standalone admin audit view; /quotes/:id forwards
+                    to /quotes/legacy/:id so historical id-bearing links
+                    still resolve. Print routes are unchanged (registered
+                    above MainLayout). */}
+                <Route path="/quotes" element={<Navigate to="/today" replace />} />
+                <Route path="/quotes/:id" element={<NavigateQuoteToLegacy />} />
                 <Route
-                  path="/quotes"
+                  path="/quotes/legacy"
                   element={
                     <Guarded permission="quotes.read">
                       <Suspense fallback={<PageLoader />}>
@@ -935,7 +986,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/quotes/:id"
+                  path="/quotes/legacy/:id"
                   element={
                     <Guarded permission="quotes.read">
                       <Suspense fallback={<PageLoader />}>
@@ -944,9 +995,14 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* Invoices */}
+                {/* Section 9 / Round 5 Addendum: Invoices removed; deferred
+                    to a future Members → Payment Profile subsection. /invoices
+                    redirects to /members; /:id forwards to /invoices/legacy/:id
+                    for admin audit. Print routes are unchanged. */}
+                <Route path="/invoices" element={<Navigate to="/members" replace />} />
+                <Route path="/invoices/:id" element={<NavigateInvoiceToLegacy />} />
                 <Route
-                  path="/invoices"
+                  path="/invoices/legacy"
                   element={
                     <Guarded permission="invoices.read">
                       <Suspense fallback={<PageLoader />}>
@@ -956,7 +1012,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/invoices/:id"
+                  path="/invoices/legacy/:id"
                   element={
                     <Guarded permission="invoices.read">
                       <Suspense fallback={<PageLoader />}>
@@ -986,8 +1042,15 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                {/* Section 9: Social Media + Ad Campaigns removed.
+                    /campaigns is the single channel surface going forward.
+                    Legacy variants kept for one cutover cycle; backing
+                    tables (`crm_social_posts`, etc.) are empty so there
+                    is no orphaned data to migrate. */}
+                <Route path="/social-media/ads" element={<Navigate to="/campaigns" replace />} />
+                <Route path="/social-media" element={<Navigate to="/campaigns" replace />} />
                 <Route
-                  path="/social-media/ads"
+                  path="/social-media/legacy/ads"
                   element={
                     <Guarded permission="campaigns.read">
                       <Suspense fallback={<PageLoader />}>
@@ -997,7 +1060,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/social-media"
+                  path="/social-media/legacy"
                   element={
                     <Guarded permission="campaigns.read">
                       <Suspense fallback={<PageLoader />}>
@@ -1049,9 +1112,21 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* CRM Studio */}
+                {/* Section 9: Studio removed. Custom modules (data tables)
+                    are paused until further notice — the dynamic route
+                    `/custom/:moduleApiName` still resolves so existing
+                    module data isn't orphaned, but the module-builder
+                    surface is hidden from the sidebar. The legacy Studio
+                    pages stay reachable at /studio/legacy* for admin
+                    audit during the cutover; backing tables
+                    (`crm_studio_modules`, `crm_studio_fields`) are empty.
+                    Final retirement happens in P5 once we confirm no
+                    /custom/* deep links are in use. */}
+                <Route path="/studio" element={<Navigate to="/settings" replace />} />
+                <Route path="/studio/modules/new" element={<Navigate to="/settings" replace />} />
+                <Route path="/studio/modules/:id/*" element={<Navigate to="/settings" replace />} />
                 <Route
-                  path="/studio"
+                  path="/studio/legacy"
                   element={
                     <Guarded permission="settings.manage">
                       <Suspense fallback={<PageLoader />}>
@@ -1061,7 +1136,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/studio/modules/new"
+                  path="/studio/legacy/modules/new"
                   element={
                     <Guarded permission="settings.manage">
                       <Suspense fallback={<PageLoader />}>
@@ -1071,7 +1146,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/studio/modules/:id/*"
+                  path="/studio/legacy/modules/:id/*"
                   element={
                     <Guarded permission="settings.manage">
                       <Suspense fallback={<PageLoader />}>

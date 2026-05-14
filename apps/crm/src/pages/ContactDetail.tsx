@@ -244,11 +244,11 @@ export default function ContactDetail() {
         <h2 className="text-lg font-semibold text-th-text-primary mb-1">Contact not found</h2>
         <p className="text-sm text-th-text-tertiary mb-4">This contact may have been deleted or you don't have access.</p>
         <Link
-          to="/contacts"
+          to="/members"
           className="inline-flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg text-sm font-medium hover:bg-th-accent-700"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to contacts
+          Back to members
         </Link>
       </div>
     );
@@ -263,7 +263,7 @@ export default function ContactDetail() {
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
-          { label: 'Contacts', href: '/contacts' },
+          { label: 'Members', href: '/members' },
           { label: `${contact.first_name} ${contact.last_name}` },
         ]}
       />
@@ -273,8 +273,8 @@ export default function ContactDetail() {
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div className="flex items-start gap-5">
             <button
-              onClick={() => navigate('/contacts')}
-              aria-label="Back to contacts"
+              onClick={() => navigate('/members')}
+              aria-label="Back to members"
               className="p-2 -ml-2 hover:bg-surface-tertiary rounded-lg shrink-0"
             >
               <ArrowLeft className="w-5 h-5 text-th-text-tertiary" />

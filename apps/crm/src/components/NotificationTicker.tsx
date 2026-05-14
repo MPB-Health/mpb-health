@@ -234,7 +234,7 @@ export function NotificationTicker() {
       lead: `/leads/${item.entityId}`,
       task: `/tasks`,
       deal: `/deals/${item.entityId}`,
-      contact: `/contacts/${item.entityId}`,
+      contact: `/members/${item.entityId}`,
       account: `/accounts/${item.entityId}`,
       calendar_event: `/calendar`,
       activity: `/leads/${item.metadata?.leadId || ''}`,

@@ -61,11 +61,11 @@ const ENTITY_CONFIG: Record<
 > = {
   lead: { icon: Users, label: 'Lead', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10', path: (id) => `/leads/${id}` },
   account: { icon: Building2, label: 'Account', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10', path: (id) => `/accounts/${id}` },
-  contact: { icon: UserCircle, label: 'Contact', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', path: (id) => `/contacts/${id}` },
+  contact: { icon: UserCircle, label: 'Member', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', path: (id) => `/members/${id}` },
   deal: { icon: DollarSign, label: 'Deal', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10', path: (id) => `/deals/${id}` },
   product: { icon: Package, label: 'Product', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-500/10', path: (id) => `/products/${id}` },
-  quote: { icon: FileCheck, label: 'Quote', color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-500/10', path: (id) => `/quotes/${id}` },
-  invoice: { icon: Receipt, label: 'Invoice', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10', path: (id) => `/invoices/${id}` },
+  quote: { icon: FileCheck, label: 'Quote', color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-500/10', path: (id) => `/quotes/legacy/${id}` },
+  invoice: { icon: Receipt, label: 'Invoice', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10', path: (id) => `/invoices/legacy/${id}` },
   campaign: { icon: Megaphone, label: 'Campaign', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10', path: (id) => `/campaigns/${id}` },
   task: { icon: CheckSquare, label: 'Task', color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-500/10', path: () => '/tasks' },
 };

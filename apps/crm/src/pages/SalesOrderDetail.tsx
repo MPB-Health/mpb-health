@@ -507,7 +507,7 @@ export default function SalesOrderDetail() {
                       </label>
                       {salesOrder.quote ? (
                         <Link
-                          to={`/quotes/${salesOrder.quote.id}`}
+                          to={`/quotes/legacy/${salesOrder.quote.id}`}
                           className="text-sm text-th-accent-600 hover:underline"
                         >
                           {salesOrder.quote.quote_number || salesOrder.quote.name || 'View Quote'}

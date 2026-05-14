@@ -139,9 +139,9 @@ export const outsideAdvisorsPageHelp: PageHelp = {
 
 export const communityEventsPageHelp: PageHelp = {
   pageKey: 'community-events',
-  title: 'Community Events',
+  title: 'Community Events (Legacy)',
   description:
-    'Plan and manage Medicare educational seminars, health fairs, and community outreach events.',
+    'Section 9 / Round 5: Community Events was retired from the sidebar. The legacy admin view is preserved at /community-events/legacy for audit only. Use Campaigns for outreach planning going forward; the public-facing events listing remains on the marketing website.',
   quickTips: [
     {
       id: 'events-tip-1',

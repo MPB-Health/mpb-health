@@ -22,6 +22,13 @@ interface RequestBody {
    */
   master_template_id?: string;
   lead_id?: string;
+  /**
+   * CRM rebuild Section 9 Round 5 — recruiting clone parity. When a rep
+   * sends from the Recruit Profile in-profile composer (or a recruiting
+   * bulk-send), this attributes the outbound on `crm_email_log.recruit_id`
+   * so the timeline + Templates usage metrics work end-to-end.
+   */
+  recruit_id?: string;
 }
 
 serve(async (req) => {
@@ -65,7 +72,7 @@ serve(async (req) => {
     const sentBy = user.userId || null;
 
     const body: RequestBody = await req.json();
-    const { to, subject, html, text, template_id, master_template_id, lead_id } = body;
+    const { to, subject, html, text, template_id, master_template_id, lead_id, recruit_id } = body;
 
     if (!to || !subject || !html) {
       throw new Error('Missing required fields: to, subject, html');
@@ -97,6 +104,7 @@ serve(async (req) => {
           ...(template_id ? [{ name: 'template_id', value: template_id }] : []),
           ...(master_template_id ? [{ name: 'master_template_id', value: master_template_id }] : []),
           ...(lead_id ? [{ name: 'lead_id', value: lead_id }] : []),
+          ...(recruit_id ? [{ name: 'recruit_id', value: recruit_id }] : []),
         ],
       }),
     });
@@ -117,6 +125,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     await supabase.from('crm_email_log').insert({
       lead_id: lead_id || null,
+      recruit_id: recruit_id || null,
       template_id: template_id || null,
       master_template_id: master_template_id || null,
       to_email: to,

@@ -68,9 +68,9 @@ export const productsPageHelp: PageHelp = {
 
 export const quotesPageHelp: PageHelp = {
   pageKey: 'quotes',
-  title: 'Quotes',
+  title: 'Quotes (Legacy)',
   description:
-    'Create, customize, and send professional quotes to prospects comparing plan options, premiums, and benefits side-by-side.',
+    'Section 9 / Round 5: Quotes was retired from the sidebar. The /quotes route now redirects to Today and /quotes/:id redirects to /quotes/legacy/:id. This page is preserved at /quotes/legacy for admin audit only — for active outreach, use Members and the Lead Profile in-profile composer instead.',
   quickTips: [
     {
       id: 'quotes-tip-1',
@@ -134,9 +134,9 @@ export const quotesPageHelp: PageHelp = {
 
 export const invoicesPageHelp: PageHelp = {
   pageKey: 'invoices',
-  title: 'Invoices',
+  title: 'Invoices (Legacy)',
   description:
-    'Track billing, payments, and commission receivables across your book of business.',
+    'Section 9 / Round 5: Invoices was retired from the sidebar. The /invoices route now redirects to Members and /invoices/:id redirects to /invoices/legacy/:id. The Members → Payment Profile rebuild ships in a future round; until then, this page is preserved at /invoices/legacy for admin audit only.',
   quickTips: [
     {
       id: 'invoices-tip-1',

@@ -36,16 +36,16 @@
          from the `seo_metadata` table; these are the static fallback used
          when middleware is unavailable or no row matches the path.
          ────────────────────────────────────────────────────────────────── -->
-    <title>MPB Health — Affordable Health Sharing for Families & Individuals</title>
-    <meta name="description" content="MPB Health offers flexible, affordable health share programs that put you in control of your healthcare costs. Join a community of members helping each other with medical expenses." />
+    <title>Affordable HealthShare Memberships | MPB Health</title>
+    <meta name="description" content="MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions." />
     <link rel="canonical" href="https://mpb.health/" />
 
     <!-- Open Graph -->
     <meta property="og:site_name" content="MPB Health" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://mpb.health/" />
-    <meta property="og:title" content="MPB Health — Affordable Health Sharing for Families & Individuals" />
-    <meta property="og:description" content="Flexible, affordable health share programs that put you in control of your healthcare costs." />
+    <meta property="og:title" content="Affordable HealthShare Memberships | MPB Health" />
+    <meta property="og:description" content="MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions." />
     <meta property="og:image" content="https://mpb.health/assets/MPB-Health-No-background.png?v=2" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -53,9 +53,140 @@
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="MPB Health — Affordable Health Sharing for Families & Individuals" />
-    <meta name="twitter:description" content="Flexible, affordable health share programs that put you in control of your healthcare costs." />
+    <meta name="twitter:title" content="Affordable HealthShare Memberships | MPB Health" />
+    <meta name="twitter:description" content="MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions." />
     <meta name="twitter:image" content="https://mpb.health/assets/MPB-Health-No-background.png?v=2" />
+
+    <!-- ──────────────────────────────────────────────────────────────────
+         Site-wide JSON-LD structured data (Sprint 2 — GEO / Local SEO)
+
+         These three nodes are referenced by @id so Google can merge them
+         into a single knowledge graph:
+           • Organization      — corporate identity
+           • MedicalOrganization+LocalBusiness — Local SEO + medical category
+           • WebSite           — sitelinks + sitelinks searchbox
+
+         Kept STATIC (not in Helmet) so non-JS SEO crawlers see them. The
+         per-page Article/FAQ/HowTo schemas remain in their pages' Helmet
+         blocks via lib/schemaMarkup.ts. The single source of truth for
+         these schemas is apps/website/src/lib/schemaMarkup.ts — keep this
+         block in sync when editing those functions.
+         ────────────────────────────────────────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": "https://mpb.health/#organization",
+      "name": "MPB Health",
+      "url": "https://mpb.health/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://mpb.health/assets/MPB-Health-No-background.png?v=2",
+        "width": 400,
+        "height": 100
+      },
+      "description": "MPB Health offers affordable HealthShare memberships for individuals, families, and businesses. Not insurance — a smarter, more affordable alternative with transparent pricing and no network restrictions.",
+      "foundingDate": "2011",
+      "slogan": "Not Insurance — The Smarter, More Affordable Way to Pay for Healthcare Costs",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "5301 N Federal Hwy, Suite 155",
+        "addressLocality": "Boca Raton",
+        "addressRegion": "FL",
+        "postalCode": "33487",
+        "addressCountry": "US"
+      },
+      "contactPoint": [
+        {
+          "@type": "ContactPoint",
+          "telephone": "+1-855-816-4650",
+          "contactType": "Customer Service",
+          "areaServed": "US",
+          "availableLanguage": ["English", "Spanish"],
+          "contactOption": ["TollFree"]
+        },
+        {
+          "@type": "ContactPoint",
+          "telephone": "+1-855-816-4650",
+          "contactType": "Sales",
+          "areaServed": "US",
+          "availableLanguage": ["English", "Spanish"],
+          "contactOption": ["TollFree"]
+        }
+      ],
+      "sameAs": [
+        "https://www.facebook.com/mpbhealth",
+        "https://twitter.com/mpbhealth",
+        "https://www.linkedin.com/company/mpb-health",
+        "https://www.youtube.com/@mpbhealth"
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": ["MedicalOrganization", "LocalBusiness"],
+      "@id": "https://mpb.health/#localbusiness",
+      "name": "MPB Health",
+      "description": "MPB Health offers flexible, affordable HealthShare memberships for individuals, families, and businesses across the United States — a community-driven alternative to traditional health insurance.",
+      "url": "https://mpb.health/",
+      "telephone": "+1-855-816-4650",
+      "email": "info@mympb.com",
+      "isAcceptingNewPatients": true,
+      "medicalSpecialty": "PrimaryCare",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "5301 N Federal Hwy, Suite 155",
+        "addressLocality": "Boca Raton",
+        "addressRegion": "FL",
+        "postalCode": "33487",
+        "addressCountry": "US"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 26.3683,
+        "longitude": -80.0811
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "08:00",
+          "closes": "18:00"
+        }
+      ],
+      "priceRange": "$$",
+      "areaServed": { "@type": "Country", "name": "United States" },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "3500"
+      },
+      "sameAs": [
+        "https://www.facebook.com/mpbhealth",
+        "https://twitter.com/mpbhealth",
+        "https://www.linkedin.com/company/mpb-health",
+        "https://www.youtube.com/@mpbhealth"
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://mpb.health/#website",
+      "name": "MPB Health",
+      "url": "https://mpb.health/",
+      "description": "Affordable HealthShare memberships for individuals, families, and businesses. A community-driven alternative to traditional health insurance.",
+      "publisher": { "@id": "https://mpb.health/#organization" },
+      "inLanguage": "en-US",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": { "@type": "EntryPoint", "urlTemplate": "https://mpb.health/search?q={search_term_string}" },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <!--
@@ -66,11 +197,11 @@
     -->
     <noscript>
       <header style="padding:1.5rem;max-width:64rem;margin:0 auto;font-family:system-ui,-apple-system,sans-serif;">
-        <h1 style="font-size:2rem;margin:0 0 .5rem;color:#0f172a;">MPB Health — Affordable Health Sharing</h1>
+        <h1 style="font-size:2rem;margin:0 0 .5rem;color:#0f172a;">Affordable HealthShare Memberships | MPB Health</h1>
         <p style="font-size:1.125rem;color:#475569;margin:0 0 1rem;">
-          Flexible, affordable health share programs that put you in control of
-          your healthcare costs. Join a community of members helping each other
-          with medical expenses.
+          MPB Health offers flexible, affordable HealthShare memberships for
+          individuals and families. Save on healthcare costs with our
+          community-driven solutions.
         </p>
         <nav aria-label="Primary" style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;">
           <a href="/plans">Plans</a>

@@ -132,11 +132,16 @@ export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh
     queryKey: ['crmLeadProfileCadences', lead.org_id],
     enabled: !!lead.org_id,
     queryFn: async () => {
+      // Section 9 / Round 5 — Lead Profile only enrolls into Leads-scoped
+      // cadences. Recruiting cadences are filtered out here so reps can't
+      // accidentally enroll a consumer lead in an agent-recruitment
+      // sequence. The RPC also enforces this server-side.
       const { data, error } = await supabase
         .from('crm_follow_up_cadences')
-        .select('id, name, schema_version, is_active')
+        .select('id, name, schema_version, is_active, module_scope')
         .eq('org_id', lead.org_id!)
         .eq('is_active', true)
+        .eq('module_scope', 'leads')
         .order('name');
       if (error) throw error;
       return data ?? [];

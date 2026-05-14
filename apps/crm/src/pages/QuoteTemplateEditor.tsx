@@ -747,7 +747,7 @@ export default function QuoteTemplateEditor() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-th-border bg-surface-primary shrink-0">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/quotes')}
+            onClick={() => navigate('/quotes/legacy')}
             className="p-1.5 rounded-lg hover:bg-surface-secondary text-th-text-tertiary"
             aria-label="Back to quotes"
           >

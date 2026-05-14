@@ -437,7 +437,7 @@ export default function CaseDetail() {
                       </label>
                       {caseData.contact ? (
                         <Link
-                          to={`/contacts/${caseData.contact.id}`}
+                          to={`/members/${caseData.contact.id}`}
                           className="text-sm text-th-accent-600 hover:underline"
                         >
                           {caseData.contact.first_name} {caseData.contact.last_name}

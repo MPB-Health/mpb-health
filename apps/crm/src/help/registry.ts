@@ -17,6 +17,7 @@ import { templatesPageHelp, automationPageHelp } from './articles/templates-auto
 import { studioPageHelp } from './articles/crm-studio';
 import { settingsPageHelp } from './articles/settings';
 import { webFormsPageHelp } from './articles/web-forms';
+import { recruitingPageHelp, recruitingArticles } from './articles/recruiting';
 
 import { dashboardArticles } from './articles/dashboard';
 import { leadsPipelineArticles } from './articles/leads-pipeline';
@@ -51,15 +52,21 @@ register('/today', dashboardPageHelp);
 register('/leads', leadsPageHelp);
 register('/leads/:id', leadsPageHelp);
 register('/leads/workspace/:id', leadsPageHelp);
-register('/leads/quick-rate-estimate', leadsPageHelp);
+// Section 9: Quick Rate Leads removed; legacy variant kept for admin audit.
+register('/leads/quick-rate-estimate/legacy', leadsPageHelp);
 register('/pipeline', pipelinePageHelp);
-register('/reactivation', reactivationPageHelp);
+// Section 9: Reactivation legacy variant.
+register('/reactivation/legacy', reactivationPageHelp);
 
 // CRM core
 register('/accounts', accountsPageHelp);
 register('/accounts/:id', accountsPageHelp);
-register('/contacts', contactsPageHelp);
-register('/contacts/:id', contactsPageHelp);
+// Section 9 rename: Contacts → Members. Legacy /contacts/legacy paths
+// kept so admins auditing the old IA still get help content.
+register('/members', contactsPageHelp);
+register('/members/:id', contactsPageHelp);
+register('/contacts/legacy', contactsPageHelp);
+register('/contacts/legacy/:id', contactsPageHelp);
 register('/deals', dealsPageHelp);
 register('/deals/:id', dealsPageHelp);
 register('/deal-pipeline', dealPipelinePageHelp);
@@ -71,16 +78,19 @@ register('/forecasting/velocity', forecastingPageHelp);
 // Products / billing
 register('/products', productsPageHelp);
 register('/products/:id', productsPageHelp);
-register('/quotes', quotesPageHelp);
-register('/quotes/:id', quotesPageHelp);
-register('/invoices', invoicesPageHelp);
-register('/invoices/:id', invoicesPageHelp);
+// Section 9: Quotes / Invoices removed from sidebar; help only registered
+// on the legacy admin-audit variants.
+register('/quotes/legacy', quotesPageHelp);
+register('/quotes/legacy/:id', quotesPageHelp);
+register('/invoices/legacy', invoicesPageHelp);
+register('/invoices/legacy/:id', invoicesPageHelp);
 
 // Marketing
 register('/campaigns', campaignsPageHelp);
 register('/campaigns/:id', campaignsPageHelp);
-register('/social-media', socialMediaPageHelp);
-register('/social-media/ads', socialMediaPageHelp);
+// Section 9: Social Media + Ad Campaigns removed; legacy variants only.
+register('/social-media/legacy', socialMediaPageHelp);
+register('/social-media/legacy/ads', socialMediaPageHelp);
 
 // Email
 register('/email/inbox', inboxPageHelp);
@@ -97,8 +107,12 @@ register('/email/domains', inboxPageHelp);
 // Productivity
 register('/tasks', tasksPageHelp);
 register('/calendar', calendarPageHelp);
-register('/end-of-day', tasksPageHelp);
-register('/meetings', calendarPageHelp);
+// Section 9: End of Day folded into Sales Daily Logs; Meetings folded
+// into Calendar. Legacy variants only for admin audit.
+register('/sales-daily-logs', tasksPageHelp);
+register('/sales-daily-logs/legacy', tasksPageHelp);
+register('/end-of-day/legacy', tasksPageHelp);
+register('/meetings/legacy', calendarPageHelp);
 
 // Analytics
 register('/reports', reportsPageHelp);
@@ -110,7 +124,9 @@ register('/reports/conversion', reportsPageHelp);
 register('/reports/activity-targets', reportsPageHelp);
 register('/reports/advisor-production', reportsPageHelp);
 register('/reports/annual', reportsPageHelp);
-register('/sales-activity', reportsPageHelp);
+// Section 9: Sales Activity tab removed; Daily Log / Activity Detail are
+// the surviving surfaces. Legacy variant for admin audit only.
+register('/sales-activity/legacy', reportsPageHelp);
 register('/milestones', reportsPageHelp);
 
 // Network
@@ -118,8 +134,9 @@ register('/referral-partners', referralPartnersPageHelp);
 register('/referral-partners/:id', referralPartnersPageHelp);
 register('/outside-advisors', outsideAdvisorsPageHelp);
 register('/outside-advisors/:id', outsideAdvisorsPageHelp);
-register('/community-events', communityEventsPageHelp);
-register('/community-events/:id', communityEventsPageHelp);
+// Section 9: Community Events removed from sidebar; legacy variant only.
+register('/community-events/legacy', communityEventsPageHelp);
+register('/community-events/legacy/:id', communityEventsPageHelp);
 
 // Support
 register('/cases', casesPageHelp);
@@ -134,12 +151,19 @@ register('/templates', templatesPageHelp);
 register('/automation', automationPageHelp);
 register('/automation/builder', automationPageHelp);
 register('/automation/builder/:ruleId', automationPageHelp);
-register('/studio', studioPageHelp);
-register('/studio/modules/new', studioPageHelp);
-register('/studio/modules/:id', studioPageHelp);
+// Section 9: Studio removed from sidebar; legacy variant only.
+register('/studio/legacy', studioPageHelp);
+register('/studio/legacy/modules/new', studioPageHelp);
+register('/studio/legacy/modules/:id', studioPageHelp);
 register('/settings', settingsPageHelp);
 register('/settings/approval-processes', settingsPageHelp);
 register('/approvals', settingsPageHelp);
+
+// Section 9 / Round 5 — Recruiting clone parity (new top-level workspace).
+// The pipeline mirrors Leads but data, sends, and cadences are kept fully
+// separate per spec. Same help registration pattern as Leads.
+register('/recruiting', recruitingPageHelp);
+register('/recruiting/:id', recruitingPageHelp);
 
 // Web forms
 register('/web-forms', webFormsPageHelp);
@@ -188,6 +212,7 @@ const allArticles: HelpArticle[] = [
   ...crmStudioArticles,
   ...settingsArticles,
   ...webFormsArticles,
+  ...recruitingArticles,
 ];
 
 export function getAllArticles(): HelpArticle[] {

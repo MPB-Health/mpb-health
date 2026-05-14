@@ -103,7 +103,7 @@ export default function SocialMedia() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            to="/social-media/ads"
+            to="/social-media/legacy/ads"
             className="inline-flex items-center gap-2 rounded-lg border border-th-border px-4 py-2 text-sm font-medium text-th-text-secondary hover:bg-surface-tertiary"
           >
             <LayoutGrid className="w-4 h-4" />

@@ -505,7 +505,7 @@ export default function Quotes() {
                     <tr key={quote.id} className="hover:bg-surface-secondary">
                       <td className="px-6 py-4">
                         <Link
-                          to={`/quotes/${quote.id}`}
+                          to={`/quotes/legacy/${quote.id}`}
                           className="block"
                         >
                           <p className="text-sm font-medium text-th-text-primary hover:text-th-accent-600">

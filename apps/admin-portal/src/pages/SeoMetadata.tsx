@@ -189,7 +189,9 @@ export default function SeoMetadata() {
           </h1>
           <p className="text-sm text-gray-600 mt-1">
             Edit per-page meta tags (title, description, OG, Twitter) for the public website.
-            Changes propagate within 5 minutes via Vercel Edge Middleware — no redeploy needed.
+            Edits are saved to the database. The runtime injection pipeline is being rebuilt —
+            until then, the public site serves the static fallback metadata from index.html and
+            these rows are not yet read by visitors.
           </p>
         </div>
         <div className="flex gap-2 flex-shrink-0">

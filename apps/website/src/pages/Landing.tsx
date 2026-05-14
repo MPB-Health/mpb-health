@@ -24,12 +24,11 @@ const Loading = () => (
 
 const Landing: React.FC = () => {
   // Canonical is intentionally NOT set inside <Helmet> below. The static
-  // fallback in apps/website/index.html already provides
-  //   <link rel="canonical" href="https://mpb.health/" />
-  // and the Vercel Edge middleware overrides it from `seo_metadata` at runtime.
-  // Setting another canonical here would result in two <link rel="canonical">
-  // tags in the DOM after hydration (react-helmet-async appends — it does not
-  // remove static head tags), which SEO auditors flag as duplicates.
+  // <link rel="canonical" href="https://mpb.health/" /> in
+  // apps/website/index.html is the source of truth. Setting another canonical
+  // here would result in two <link rel="canonical"> tags in the DOM after
+  // hydration (react-helmet-async appends — it does not remove static head
+  // tags), which SEO auditors flag as duplicates.
   return (
     <>
       <Helmet>

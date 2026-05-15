@@ -1,4 +1,4 @@
-import { useOrgReps } from '../../hooks/useOrgReps';
+import { useTrackedReps } from '../../hooks/useTrackedReps';
 import { useIsLeadManager } from '../../hooks/useIsLeadManager';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -16,11 +16,17 @@ interface ReportRepFilterProps {
  * clamping `value` to `[currentUser.id]` when the viewer lacks the
  * `lead_manager` permission.
  *
- * Lead Managers see every active org member plus a "Team Total" option
+ * 2026-05-15 — the dropdown now only lists inside-sales reps tracked in
+ * reports (users with a `crm_user_conversation_goal_overrides` row).
+ * Per the Round 12 Addendum that's currently Adam + Tupac. When no
+ * overrides exist yet (fresh org), we fall back to every active org
+ * member so the dropdown isn't empty.
+ *
+ * Lead Managers see those tracked reps plus a "Team Total" option
  * (represented by `value = null`).
  */
 export function ReportRepFilter({ value, onChange, label = 'Rep' }: ReportRepFilterProps) {
-  const { data: reps = [], isLoading } = useOrgReps();
+  const { reps, isLoading, isFallback } = useTrackedReps();
   const isLeadManager = useIsLeadManager();
   const { user } = useAuth();
   const currentUser = user ? { id: user.id } : null;
@@ -50,7 +56,7 @@ export function ReportRepFilter({ value, onChange, label = 'Rep' }: ReportRepFil
         }}
         className="border border-th-border rounded-lg px-3 py-1.5 bg-surface-primary text-sm"
       >
-        <option value="all">Team total (all reps)</option>
+        <option value="all">Team total (tracked reps)</option>
         {currentUser?.id && <option value="mine">My data only</option>}
         {reps.map((r) => (
           <option key={r.user_id} value={r.user_id}>
@@ -58,6 +64,14 @@ export function ReportRepFilter({ value, onChange, label = 'Rep' }: ReportRepFil
           </option>
         ))}
       </select>
+      {isFallback && (
+        <span
+          className="text-[11px] text-th-text-tertiary"
+          title="No inside-sales reps configured yet. Seed Adam + Tupac in Settings → Daily Log → Conversation goals to scope reports to the tracked roster."
+        >
+          (showing all org members — seed tracked roster in Settings)
+        </span>
+      )}
     </label>
   );
 }

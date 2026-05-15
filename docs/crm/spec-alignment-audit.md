@@ -646,6 +646,77 @@ Spec source: Round 13 Adjustments image (2026-05-15):
 - Per-rep totals breakdown — the spec's per-rep filter switches the totals to that rep. A future iteration can render *all* reps as a stacked rows table for direct comparison without flipping the filter.
 - Cancellations by source — the Section 11 cancellation-call capture writes the call against the rep + lead; once the lead row carries a corroborated source link from the touch (Round 12 corroboration view extension), we can attribute cancellations back to the lead's source bucket. Until then the spec only asks for source attribution on New Leads and Sales.
 
+### Round 13 follow-up — Daily Log feeds Sales Reports & Dashboards 2026 (2026-05-15)
+
+Direction: *"In reports, lets make sure the daily logs are feeding into this report created with the sales plan Sales Reports & Dashboards 2026.pptx"*
+
+**Problem found.** The two RPCs that power the deck-driven dashboards —
+`crm_individual_performance` (Performance) and
+`crm_activity_summary_vs_targets` (Activity vs Targets) — were reading
+activity counts from `public.lead_activities`, the legacy per-lead log.
+That table is fed by the rep-side quick-action modals (LogCallModal,
+AddNoteModal, LogMeetingModal) and a few lead-detail writes, but it
+never receives:
+
+- Manual Daily Log entries (`crm_daily_log_add_manual_v2`) — off-CRM
+  rows like personal-cell calls, networking events, content drafted,
+  special projects with time capture.
+- Auto-captured rows that the Phase 4 / Section 8 triggers emit on
+  `crm_activities`, `crm_email_log`, and `crm_lead_quote_history`.
+- LinkedIn replies / profile views, template / signature creation
+  rows, and the GoTo-call cancellation subtype that only land on
+  `crm_daily_log_events`.
+
+Net result: a rep who logged ten calls via the Daily Log accordion was
+showing zero on the Performance + Activity dashboards. Same for
+manual-only days.
+
+**Fix.** Migration
+`20260620570000_crm_p7_round13_reports_use_daily_log.sql` rewrites both
+RPCs to count from `crm_daily_log_events` (the spec source of truth per
+Phase 4 / Section 8). The Daily Log classifier already uses the spec's
+exact `activity_type` values (`call`, `email`, `linkedin_message`,
+`meeting`, `presentation`, `proposal_sent`, `referral_requested`,
+`community_outreach`), so the FILTER clauses translate 1:1.
+
+Side effects:
+
+- `crm_individual_performance` gains a first-class
+  `cancellation_calls` column (Section 11 separates them from regular
+  calls). The `calls_made` count now excludes cancellations so the
+  dashboard doesn't double-count them. PerformanceReport surfaces the
+  new column in the table, the bar chart, and the XLSX export.
+- `new_leads_entered` previously matched
+  `activity_type='crm_lead_entered'` rows that no producer ever
+  emitted (column always read 0). It now counts `lead_submissions`
+  rows in the period attributed to the rep via `assigned_to` —
+  round-robin always resolves to one owner per lead.
+- The `_filtered` wrappers (`crm_individual_performance_filtered`,
+  `crm_activity_summary_filtered`) didn't change; they pass through to
+  the underlying RPCs and inherit the new behaviour automatically.
+- Lead-side fields (`closed_sales`, `revenue`, `close_rate`,
+  `avg_deal_size`) still read from `lead_submissions` + `crm_deals`
+  — those weren't broken.
+
+Page subtitles on `PerformanceReport` and `ActivityTargetsReport`
+updated so reps know the actuals now reflect the full Daily Log stream
+(auto + manual). The Round 13 snapshot built earlier in the day
+(`SalesCancellationsLeadsSnapshot`) was already correctly reading
+cancellations from `crm_daily_log_events`; no change needed there.
+
+### Round 13 follow-up — Reports tracked-rep roster (2026-05-15)
+
+Direction: *"In reports, the reps that need to be tracked are only Adam and Tupac"* (Round 12 Addendum roster).
+
+Approach:
+
+- New hook `apps/crm/src/hooks/useTrackedReps.ts` — returns `OrgRep[]` filtered to users with a row in `crm_user_conversation_goal_overrides` for the current org. That table is already the source of truth for who's tracked (Adam + Tupac per Round 12 Addendum), so admins manage the reports roster from the same place they manage daily conversation goals — no second admin surface required.
+- Falls back to the full org roster when no overrides exist (fresh org), with `isFallback=true` so consumers can render a "seed Settings → Daily Log → Conversation goals" hint instead of an empty dropdown.
+- `apps/crm/src/components/reports/ReportRepFilter.tsx` switched from `useOrgReps` to `useTrackedReps`. The dropdown now reads "Team total (tracked reps)" and surfaces the fallback hint inline.
+- `apps/crm/src/pages/reports/SalesCancellationsLeadsSnapshot.tsx` switched to `useTrackedReps` and matches the same UX.
+
+Other rep-driven views (Daily Log Admin View, Bulk Assign, recruiting bulk-assign, special-projects breakdown) intentionally still use `useOrgReps` — those are operational tools that need to reach every org member (e.g. assigning a lead to a non-tracked rep is still legitimate), not just the inside-sales subset.
+
 ## Round 12 Addendum — Roster, Adam goal lock, pro-rated SP exemption (2026-05-14)
 
 Spec source: Round 12 Addendum image (2026-05-14):

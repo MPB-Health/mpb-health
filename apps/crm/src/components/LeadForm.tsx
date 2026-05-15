@@ -328,6 +328,10 @@ export function LeadForm({
   const [outsideAdvisors, setOutsideAdvisors] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
+    // Round 13 follow-up (2026-05-15): the global carrier seed is narrowed
+    // to Sedera + Zion Health by `20260620560000_crm_p7_carriers_zion_sedera_only.sql`.
+    // Per-org carriers (org_id IS NOT NULL) are still surfaced if an admin
+    // added them; this fetch just relays the active set.
     carrierService.getCarriers({ is_active: true }).then((data: InsuranceCarrier[]) => {
       setCarriers(data);
       setLoadingCarriers(false);

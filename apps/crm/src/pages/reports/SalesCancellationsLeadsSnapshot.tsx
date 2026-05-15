@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useCRMService } from '../../contexts/CRMServiceContext';
 import { useOrg } from '../../contexts/OrgContext';
-import { useOrgReps } from '../../hooks/useOrgReps';
+import { useTrackedReps } from '../../hooks/useTrackedReps';
 import { useIsLeadManager } from '../../hooks/useIsLeadManager';
 import { useAuth } from '../../contexts/AuthContext';
 import { crmQueryKeys } from '../../query/crmQueryKeys';
@@ -150,7 +150,10 @@ export default function SalesCancellationsLeadsSnapshot() {
   const { orgLoading } = useOrg();
   const { user } = useAuth();
   const isLeadManager = useIsLeadManager();
-  const { data: orgReps = [] } = useOrgReps();
+  // 2026-05-15 — Reports rep roster is restricted to inside-sales reps
+  // tracked in reports (users with a `crm_user_conversation_goal_overrides`
+  // row). Per the Round 12 Addendum that's Adam + Tupac.
+  const { reps: orgReps, isFallback: trackedIsFallback } = useTrackedReps();
 
   const [mode, setMode] = useState<PeriodMode>('week');
   // RBAC: a non-Lead-Manager only sees themselves (matches the existing
@@ -280,13 +283,21 @@ export default function SalesCancellationsLeadsSnapshot() {
               onChange={(e) => setRepFilter(e.target.value === 'all' ? null : e.target.value)}
               className="border border-th-border rounded-lg px-3 py-1.5 bg-surface-primary text-sm"
             >
-              <option value="all">All reps (team total)</option>
+              <option value="all">All tracked reps (team total)</option>
               {orgReps.map((r) => (
                 <option key={r.user_id} value={r.user_id}>
                   {r.display_name}
                 </option>
               ))}
             </select>
+            {trackedIsFallback && (
+              <span
+                className="text-[11px] text-th-text-tertiary"
+                title="No inside-sales reps configured yet. Seed Adam + Tupac in Settings → Daily Log → Conversation goals to scope reports to the tracked roster."
+              >
+                (showing all org members)
+              </span>
+            )}
           </label>
         )}
       </div>

@@ -116,7 +116,7 @@ export default function ActivityTargetsReport() {
   return (
     <ReportLayout
       title="Activity vs targets"
-      description="Actual activity counts compared to monthly targets; bars turn red when behind expected pace for the month."
+      description="Actual activity counts compared to monthly targets. Sourced from the Daily Log (Section 8 auto-capture + manual entries); bars turn red when behind expected pace for the month."
       month={month}
       year={year}
       onMonthChange={setMonth}

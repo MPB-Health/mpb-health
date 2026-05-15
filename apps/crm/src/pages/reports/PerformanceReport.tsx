@@ -26,6 +26,12 @@ export interface IndividualPerformanceRow {
   rep_id: string;
   rep_name: string;
   calls_made: number;
+  /**
+   * Round 13 follow-up (2026-05-15): Section 11 separates cancellation
+   * calls from regular calls. Optional so older RPC builds that only
+   * return the legacy column shape still type-check.
+   */
+  cancellation_calls?: number;
   emails_sent: number;
   linkedin_messages: number;
   presentations_given: number;
@@ -51,6 +57,7 @@ function mapPerformanceRow(r: Record<string, unknown>): IndividualPerformanceRow
     rep_id: String(r.rep_id ?? ''),
     rep_name: String(r.rep_name ?? ''),
     calls_made: num(r.calls_made),
+    cancellation_calls: num(r.cancellation_calls),
     emails_sent: num(r.emails_sent),
     linkedin_messages: num(r.linkedin_messages),
     presentations_given: num(r.presentations_given),
@@ -105,6 +112,10 @@ export default function PerformanceReport() {
       data.map((r) => ({
         name: r.rep_name,
         Calls: r.calls_made,
+        // Round 13 follow-up — Section 11 keeps cancellation calls
+        // separate from regular calls so the chart isn't polluted by
+        // churn activity.
+        Cancellations: r.cancellation_calls ?? 0,
         Emails: r.emails_sent,
         'LinkedIn': r.linkedin_messages,
         Presentations: r.presentations_given,
@@ -121,6 +132,7 @@ export default function PerformanceReport() {
       [
         { header: 'Rep Name', key: 'rep_name', width: 28 },
         { header: 'Calls', key: 'calls_made' },
+        { header: 'Cancellation Calls', key: 'cancellation_calls' },
         { header: 'Emails', key: 'emails_sent' },
         { header: 'LinkedIn Messages', key: 'linkedin_messages' },
         { header: 'Presentations', key: 'presentations_given' },
@@ -143,7 +155,7 @@ export default function PerformanceReport() {
   return (
     <ReportLayout
       title="Individual performance"
-      description="Per-rep activity and outcomes for the selected month."
+      description="Per-rep activity and outcomes for the selected month. Activity counts are sourced from the Daily Log (Section 8 auto-capture + manual entries), so off-CRM rows count too."
       month={month}
       year={year}
       onMonthChange={setMonth}
@@ -175,12 +187,13 @@ export default function PerformanceReport() {
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="Calls" stackId="act" fill={COLORS[0]} />
+                <Bar dataKey="Cancellations" stackId="act" fill={COLORS[6]} />
                 <Bar dataKey="Emails" stackId="act" fill={COLORS[1]} />
                 <Bar dataKey="LinkedIn" stackId="act" fill={COLORS[2]} />
                 <Bar dataKey="Presentations" stackId="act" fill={COLORS[3]} />
                 <Bar dataKey="Proposals" stackId="act" fill={COLORS[4]} />
                 <Bar dataKey="Meetings" stackId="act" fill={COLORS[5]} />
-                <Bar dataKey="Community" stackId="act" fill={COLORS[6]} />
+                <Bar dataKey="Community" stackId="act" fill={COLORS[7]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -193,6 +206,12 @@ export default function PerformanceReport() {
             <tr className="border-b border-th-border bg-surface-secondary text-left text-th-text-secondary">
               <th className="px-3 py-2 font-medium">Rep Name</th>
               <th className="px-3 py-2 font-medium text-right">Calls</th>
+              <th
+                className="px-3 py-2 font-medium text-right"
+                title="Section 11 cancellation calls — counted separately from regular calls."
+              >
+                Cancellations
+              </th>
               <th className="px-3 py-2 font-medium text-right">Emails</th>
               <th className="px-3 py-2 font-medium text-right">LinkedIn</th>
               <th className="px-3 py-2 font-medium text-right">Presentations</th>
@@ -210,7 +229,7 @@ export default function PerformanceReport() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={14} className="px-3 py-8 text-center text-th-text-tertiary">
+                <td colSpan={15} className="px-3 py-8 text-center text-th-text-tertiary">
                   Loading…
                 </td>
               </tr>
@@ -219,6 +238,9 @@ export default function PerformanceReport() {
                 <tr key={r.rep_id} className="border-b border-th-border">
                   <td className="px-3 py-2 text-th-text-primary">{r.rep_name}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.calls_made}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-red-700">
+                    {r.cancellation_calls ?? 0}
+                  </td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.emails_sent}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.linkedin_messages}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.presentations_given}</td>

@@ -341,13 +341,49 @@ Settings UI: `Settings → Performance Lag` tab
 `supabase/functions/crm-website-lead-intake/index.ts`:
 
 - `FROM_ADDRESS = 'sales@mympb.com'`
-- `FROM_NAME    = 'MPB.Health Sales'` (Round 7 Addendum locked)
+- `FROM_NAME    = 'MPB.Health Sales'` (Round 7 Addendum 2026-05-13 locked)
 - `REPLY_TO     = 'sales@mympb.com'`
+- The intake function now passes `from_email: FROM_ADDRESS` through to
+  `send-crm-email-v2`, which honors per-send sender overrides (added
+  Section 13 Round 7 final wiring, 2026-05-15). Without this, every
+  outbound forced the global `CRM_FROM_EMAIL` env value — which would
+  have either broken Email #1 (`crm@mpb.health`) or broken every
+  rep-driven send if we changed the env var to `sales@mympb.com`.
+- `#yoursignature` resolves to the shared MPB Sales signature
+  (`'— MPB.Health Sales\\nsales@mympb.com\\nhttps://www.mympb.com'`),
+  not a personal rep signature — round-robin assignment may have stamped
+  an `assigned_to` synchronously inside the lead-insert trigger, but the
+  spec is explicit that Email #1 uses the shared signature regardless.
 - Email #1 send fires the New → Quoted transition.
 - Cadence enrollment uses the seeded "Quote Response" cadence with
   `halt_on_engagement = true` + `halt_on_optout = true`.
 - Lead is tagged `lead_source_attribution = 'website_auto_response'`
   for source attribution per Section 13.
+- `apps/website/src/lib/leadSubmissionService.ts` now invokes the edge
+  function instead of calling `submit_public_lead` directly. The legacy
+  plan-comparison welcome email is reserved as a transitional fallback
+  that only fires when the edge function reports
+  `auto_response_pending=true` (i.e., the admin has not yet pasted Email
+  #1 content from the OneDrive doc). Once the master template is filled
+  in, the fallback never triggers and the customer sees exactly Email #1.
+
+**Channel distinction (Section 13 bullet 7).** Only the website
+Get-a-Quote form path traverses `crm-website-lead-intake`. Manual rep
+entry (`leadService.create` from inside the CRM app), referral imports,
+and LinkedIn imports never call this function and therefore never
+auto-fire Email #1 — reps enroll those leads into the Quote Response
+cadence manually from the lead detail page. The
+`lead_source_attribution = 'website_auto_response'` tag is the
+queryable separator for lead-source reporting; rep-enrolled cadence
+sends are not tagged.
+
+**Touch-point identity (Section 13 bullet 6).** TP#1–#5 are sent by
+reps working the cadence task queue from the CRM UI. The composer pulls
+the rep's display name and signature; `send-crm-email-v2` falls back to
+the env-level `CRM_FROM_EMAIL` for the envelope-from. Reps may override
+the per-touch send identity if they have manually claimed the lead
+before TP#1 is due — this is the default behavior of the composer, no
+extra code path required.
 
 ### Round 7 Adjustment — Cadence Import & Website Auto-Response (2026-05-13)
 
@@ -472,7 +508,11 @@ engagement. This is treated as a feature, not a bug.
 - Quote-Response cadence verbatim content paste — admin task before
   going live with the website auto-response. See Round 7 Adjustment
   block in Section 13 / 14 for the step-by-step paste-and-wire
-  checklist.
+  checklist. **Until the paste lands**, the website returns
+  `auto_response_pending: true` and the legacy plan-comparison welcome
+  email fires as a transitional fallback so leads are never met with
+  silence; the fallback short-circuits the moment Email #1 is
+  configured.
 - ~~Engagement-signal callers for `link_click` and `calendar_booking`~~
   ✅ shipped Phase 7 / Round 7. Three calendar producers cover the
   spec: Calendly webhook (`crm-calendar-booking-webhook`), Outlook

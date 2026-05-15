@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   addDays,
   format,
@@ -219,6 +219,19 @@ const REPORTS_URL_TAB_IDS = ['weekly', 'performance', 'analytics', 'trends'] as 
 
 function isReportsUrlTab(tab: TabId): tab is (typeof REPORTS_URL_TAB_IDS)[number] {
   return (REPORTS_URL_TAB_IDS as readonly string[]).includes(tab);
+}
+
+function tabIdFromLocation(pathname: string, search: string): TabId {
+  const q = new URLSearchParams(search).get('tab');
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (path === '/reports') {
+    if (q === 'performance' || q === 'analytics' || q === 'trends') return q;
+    return 'weekly';
+  }
+  if (path === '/daily-logs') {
+    return q === 'team' ? 'team' : 'log';
+  }
+  return 'log';
 }
 
 const DEFAULT_TEAM: TeamMember[] = [
@@ -3240,7 +3253,10 @@ function TeamTab({
 export default function DailyLogs() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<TabId>('log');
+  const activeTab = useMemo(
+    () => tabIdFromLocation(location.pathname, location.search),
+    [location.pathname, location.search],
+  );
   const [showShare, setShowShare] = useState(false);
   const [weekNumber, setWeekNumber] = useState(() => getISOWeek(new Date()));
   const [hydrated, setHydrated] = useState(false);
@@ -3253,25 +3269,8 @@ export default function DailyLogs() {
   const [weeklyReportExtrasMap, setWeeklyReportExtrasMapRaw] = useState<Record<string, WeeklyReportExtras>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  useLayoutEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const q = params.get('tab');
-
-    if (location.pathname === '/reports') {
-      const nextTab: TabId =
-        q === 'performance' || q === 'analytics' || q === 'trends' ? q : 'weekly';
-      setActiveTab(nextTab);
-      return;
-    }
-
-    if (location.pathname === '/daily-logs') {
-      setActiveTab(q === 'team' ? 'team' : 'log');
-    }
-  }, [location.pathname, location.search]);
-
   const onSelectTab = useCallback(
     (tab: TabId) => {
-      setActiveTab(tab);
       if (tab === 'log') {
         navigate('/daily-logs', { replace: true });
         return;

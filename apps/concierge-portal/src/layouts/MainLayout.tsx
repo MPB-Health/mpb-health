@@ -12,12 +12,14 @@ import {
   ExternalLink,
   ChevronDown,
   Globe,
+  BarChart3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { QUICK_LINKS } from '@mpbhealth/concierge-core';
 
 const NAV_ITEMS = [
   { name: 'Daily Logs', href: '/daily-logs', icon: ClipboardList },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Resources', href: '/', icon: LayoutDashboard },
   { name: 'Tickets', href: '/tickets', icon: Headphones },
   { name: 'Member Portal', href: 'https://app.mpb.health/', icon: Globe, external: true },

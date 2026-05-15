@@ -3,14 +3,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from '@mpbhealth/database';
 import { Loader2 } from 'lucide-react';
 import MainLayout from './layouts/MainLayout';
+import ConciergeDailyLogsShell from './layouts/ConciergeDailyLogsShell';
 
 const Login = lazy(() => import('./pages/Login'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const DailyLogs = lazy(() => import('./pages/DailyLogs'));
-const Tickets = lazy(() => import('./pages/Tickets'));
-const NewTicket = lazy(() => import('./pages/NewTicket'));
 const Profile = lazy(() => import('./pages/Profile'));
 
 // Prefetch common routes when the browser is idle
@@ -162,7 +160,10 @@ export default function App() {
 
       <Route path="/" element={<AuthGuard><MainLayout /></AuthGuard>}>
         <Route index element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
-        <Route path="daily-logs" element={<Suspense fallback={<PageLoader />}><DailyLogs /></Suspense>} />
+        <Route element={<ConciergeDailyLogsShell fallback={<PageLoader />} />}>
+          <Route path="daily-logs" element={null} />
+          <Route path="reports" element={null} />
+        </Route>
         <Route path="tickets" element={<Suspense fallback={<PageLoader />}><Tickets /></Suspense>} />
         <Route path="tickets/new" element={<Suspense fallback={<PageLoader />}><NewTicket /></Suspense>} />
         <Route path="profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />

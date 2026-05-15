@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   addDays,
   format,
@@ -34,6 +34,7 @@ import {
   Upload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { safeRemoveChannel } from '@mpbhealth/database';
 import {
   loadConciergeWorkspace,
@@ -213,6 +214,12 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
+
+const REPORTS_URL_TAB_IDS = ['weekly', 'performance', 'analytics', 'trends'] as const;
+
+function isReportsUrlTab(tab: TabId): tab is (typeof REPORTS_URL_TAB_IDS)[number] {
+  return (REPORTS_URL_TAB_IDS as readonly string[]).includes(tab);
+}
 
 const DEFAULT_TEAM: TeamMember[] = [
   { id: '1', name: 'Acelyn Calderon', status: 'Active', role: 'Concierge' },
@@ -3231,6 +3238,8 @@ function TeamTab({
 // ── Main Page ──────────────────────────────────────────────────────────
 
 export default function DailyLogs() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<TabId>('log');
   const [showShare, setShowShare] = useState(false);
   const [weekNumber, setWeekNumber] = useState(() => getISOWeek(new Date()));
@@ -3243,6 +3252,40 @@ export default function DailyLogs() {
   const [escalations, setEscalationsRaw] = useState<EscalationItem[]>([]);
   const [weeklyReportExtrasMap, setWeeklyReportExtrasMapRaw] = useState<Record<string, WeeklyReportExtras>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get('tab');
+
+    if (location.pathname === '/reports') {
+      const nextTab: TabId =
+        q === 'performance' || q === 'analytics' || q === 'trends' ? q : 'weekly';
+      setActiveTab(nextTab);
+      return;
+    }
+
+    if (location.pathname === '/daily-logs') {
+      setActiveTab(q === 'team' ? 'team' : 'log');
+    }
+  }, [location.pathname, location.search]);
+
+  const onSelectTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      if (tab === 'log') {
+        navigate('/daily-logs', { replace: true });
+        return;
+      }
+      if (tab === 'team') {
+        navigate('/daily-logs?tab=team', { replace: true });
+        return;
+      }
+      if (isReportsUrlTab(tab)) {
+        navigate(tab === 'weekly' ? '/reports' : `/reports?tab=${tab}`, { replace: true });
+      }
+    },
+    [navigate],
+  );
 
   const teamRef = useRef(team);
   teamRef.current = team;
@@ -3628,7 +3671,7 @@ export default function DailyLogs() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => onSelectTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 isActive
                   ? 'border-[#4A7C8A] text-[#4A7C8A]'

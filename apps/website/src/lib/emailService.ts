@@ -105,7 +105,8 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<EmailRe
     to: email,
     subject: 'Welcome to MPB Health Newsletter!',
     html,
-    text: `Welcome to MPB Health Newsletter!\n\nThank you for subscribing. You'll receive expert healthcare tips, wellness advice, and updates on our health sharing programs.\n\nVisit our blog: https://mpb.health/blog\n\nQuestions? Contact us at info@mympb.com or call (855) 816-4650`
+    text: `Welcome to MPB Health Newsletter!\n\nThank you for subscribing. You'll receive expert healthcare tips, wellness advice, and updates on our health sharing programs.\n\nVisit our blog: https://mpb.health/blog\n\nQuestions? Contact us at info@mympb.com or call (855) 816-4650`,
+    emailType: 'newsletter-welcome',
   });
 }
 
@@ -422,6 +423,7 @@ Questions? ${SALES_PHONE_DISPLAY} · ${SALES_EMAIL}`;
     html,
     text: textContent,
     replyTo: SALES_EMAIL,
+    emailType: 'lead-welcome',
   });
 }
 
@@ -1054,5 +1056,6 @@ This invitation will expire in 7 days. If you didn't expect this invitation, you
     subject: `You've been invited to join ${data.orgName} on MPB Health`,
     html,
     text: textContent,
+    emailType: 'user-invitation',
   });
 }

@@ -596,6 +596,100 @@ fire_alert :=
 
 ---
 
+## Round 13 — Sales vs. Cancellations vs. Leads snapshot (2026-05-15)
+
+Spec source: Round 13 Adjustments image (2026-05-15):
+
+> Adds a single comparative report to the Reports module that surfaces
+> Sales (deals closed), Cancellations, and Number of New Leads side by
+> side for both the week and the month. Inputs are already captured by
+> the system (Sections 2e, 5, 11) — this section wires them into one
+> snapshot so admin sees net growth and top-of-funnel volume at a glance.
+
+### Scope
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| Build a "Sales vs. Cancellations vs. Leads" snapshot inside Reports (Section 2e), distinct from the other reports. | ✅ | New page `apps/crm/src/pages/reports/SalesCancellationsLeadsSnapshot.tsx`; route `/reports/sales-cancellations-leads`; sidebar entry under Analytics → Reports. |
+| Period selector exposes both Week and Month views — current-to-date side-by-side with the trailing window (7 / 30 days). | ✅ | Page `mode` toggle (`week` / `month`) drives two parallel queries (`current`, `trailing`) computed by `rangesFor(mode)`. The week current is ISO-Monday → now; the month current is `month-start → now`. Trailing windows are exclusive end-of-day so "today's" data still shows in both views. |
+| Three primary metrics displayed side-by-side for the selected period — Sales, Cancellations, New Leads. Plus a Net column. | ✅ | Four `MetricTile` cards on top: New Leads, Sales, Cancellations, Net (Sales − Cancellations). Each card shows current value + trailing comparison + delta arrow. |
+
+### Metric definitions & source inputs
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| Sales: count of leads transitioned into Won — Enrolled in the period (Section 5). | ✅ | Migration `20260620550000_crm_p7_round13_sales_cancellations_leads_snapshot.sql` → `crm_sales_cancellations_leads_snapshot` reads `lead_submissions.enrollment_approved_at BETWEEN p_period_start AND p_period_end`. Same timestamp `crm_apply_enrollment_won` writes; same source the Daily Log "Deals Closed" section consumes. |
+| Cancellations: count of Cancellation Calls / cancellation events in the period (per Section 11 auto-capture). | ✅ | Reads `crm_daily_log_events WHERE section='lead_communication' AND activity_type='call' AND activity_subtype='cancellation' AND occurred_at BETWEEN range`. The classifier already separates cancellation calls from regular calls (Round 7). |
+| Number of New Leads: count of leads created in the period — top-of-funnel across all sources. | ✅ | Reads `lead_submissions.created_at BETWEEN range`. Covers website auto-response, manual entry, LinkedIn import, referral, etc. — every capture path lands on `lead_submissions`. |
+| All three inputs roll up automatically; if any returns zero by default, treat as a wiring failure. | ✅ | All three counts ride on existing capture paths; no manual entry surfaced on this report. The footer note tells admins to treat unexpected zeros as a source-pipeline issue and points them at the relevant table. |
+
+### Display & cuts
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| Default view: all-team totals for the selected period. | ✅ | `repFilter = null` (= "All reps") on first render for Lead Managers; non-managers are clamped to themselves per the existing Reports RBAC. |
+| Per-rep filter: Adam / Tupac / All (Section 21 roster, matches Section 5 salesperson filter). | ✅ | Standard `useOrgReps` dropdown wrapped in `useIsLeadManager`. Roster reflects the Round 12 Addendum sweep (Leo removed). |
+| Per-source cut: segment New Leads + Sales by Section 13 lead source. | ✅ | Migration emits a row per non-zero `crm_lead_source_types.label` bucket; the page merges current + trailing into a single source breakdown table with paired columns. Cancellations are intentionally not segmented by source — they live on the Daily Log event row, not on a lead, so a per-call source attribution would be a fabricated number. The page footer documents this. |
+| Net column: Sales − Cancellations for the period. | ✅ | The totals row in the RPC sets `net = sales − cancellations`; the Net `MetricTile` swaps its icon (`TrendingUp` / `TrendingDown`) and color depending on sign. |
+
+### Files touched (Round 13)
+
+- `supabase/migrations/20260620550000_crm_p7_round13_sales_cancellations_leads_snapshot.sql` — `crm_sales_cancellations_leads_snapshot(uuid, timestamptz, timestamptz, uuid)` RPC.
+- `apps/crm/src/pages/reports/SalesCancellationsLeadsSnapshot.tsx` — new report page (period toggle, 4 metric tiles, source breakdown table, rep filter, footer source notes).
+- `apps/crm/src/App.tsx` — lazy import + `/reports/sales-cancellations-leads` route under the Reports section.
+- `apps/crm/src/layouts/MainLayout.tsx` — sidebar entry under Analytics → Reports children, between "Quote Results Returned" and "Daily activity log".
+- `apps/crm/src/query/crmQueryKeys.ts` — `reportSalesCancellationsLeads` cache key.
+
+### Outstanding / follow-ups
+
+- XLSX export — the `ReportLayout` shell wraps every other 2026 report and surfaces `Export XLSX`. The new snapshot uses a leaner shell (no month/year picker — period is week/month-relative) so an export wrapper landed in the page itself. Adding the same `exportToXLSX` button is a small follow-up.
+- Per-rep totals breakdown — the spec's per-rep filter switches the totals to that rep. A future iteration can render *all* reps as a stacked rows table for direct comparison without flipping the filter.
+- Cancellations by source — the Section 11 cancellation-call capture writes the call against the rep + lead; once the lead row carries a corroborated source link from the touch (Round 12 corroboration view extension), we can attribute cancellations back to the lead's source bucket. Until then the spec only asks for source attribution on New Leads and Sales.
+
+## Round 12 Addendum — Roster, Adam goal lock, pro-rated SP exemption (2026-05-14)
+
+Spec source: Round 12 Addendum image (2026-05-14):
+
+> Removes Leo from the sales roster, locks Adam's minimum / ideal targets,
+> and converts the Special Projects exemption from binary to pro-rated so
+> reps cannot hide behind project time.
+
+### Sales Team Roster — Leo departed
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| Remove Leo from all CRM references; sweep Sections 5/6/17/20 + the rest of the doc. | ✅ | Code-side references swept: `apps/crm/src/components/BulkAssignModal.tsx` comment ("Adam / Leo / Tupac" → generic "select leads → choose owner"), `apps/crm/src/pages/Today.tsx` Section 5 comment, and the lookalike `Leo Test` mock lead in `apps/crm/src/components/pipeline/BatchStageChangeModal.tsx` (renamed to `Sample Prospect`). The active inside-sales roster is now `Adam (part-time)` + `Tupac (full-time)`. The CRM is org-driven via `auth.users` + `useOrgReps`, so there is no other hardcoded roster to sweep. |
+| Reassign any leads, tasks, or open cadence enrollments owned by Leo before disabling his account. | 🟡 admin-operational | Not enforced in code — admin task in production. The Round 11 build-blocker note already documents the bulk-assign flow as the surface for this (`apps/crm/src/components/BulkAssignModal.tsx`). |
+| Preserve Leo's historical Daily Log / Activity Detail entries for reporting continuity. | ✅ by construction | The Round 12 changes never delete `crm_daily_log_events` or `crm_activities` rows; disabling the user account leaves the rows intact and indexed by `user_id`. |
+
+### Daily Conversation Goal — Adam (locked) + Tupac
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| Adam (PT): minimum 10/day, ideal 13/day. Header chip shows toward IDEAL ("8 / 13 today"). End-of-day alert threshold = MINIMUM (10). Hitting 10–12 fires no alert but is visible in goal progress. | ✅ | Migration `20260620540000_crm_p7_round12_addendum_goals_proration.sql` extends `crm_user_conversation_goal_overrides` with `minimum_target`, `ideal_target`, `work_day_hours`. `crm_count_conversations` v2 returns `effective_minimum / effective_ideal` plus `is_below_minimum / is_at_minimum / is_at_ideal` flags. The Daily Log header chip shows `count / effective_ideal` and switches color: emerald ≥ ideal, blue ≥ minimum < ideal, amber < minimum, slate when exempt. A min/ideal split renders inline (`min N`) when they differ. |
+| Tupac (FT): 25/day. Treat as both minimum and ideal — single threshold (alert fires if < 25). Schema-level support for a future split. | ✅ | Org config `full_time_minimum_target` + `full_time_ideal_target` both default to 25, so a single threshold "just works." Future per-user override can break them apart without another migration. |
+| End-of-day alert when below MINIMUM. | ✅ | Inline amber banner on `DailyLogV2`'s rep view appears after 14:00 local when `is_below_minimum=true`. Wording explicitly distinguishes minimum from ideal and notes pro-ration when it applied. The scheduled email/notification fan-out is a future cron worker (the inline banner is the immediate UX). |
+
+### Special Projects — pro-rated exemption (replaces Section 20 binary)
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| REPLACE the binary "any SP entry suppresses the alert" rule with a pro-rated reduction. | ✅ | `crm_conversation_goal_config.prorate_special_projects_hours boolean DEFAULT true`. The legacy `exempt_special_projects_days` knob remains callable for orgs that opt back, but the spec default is pro-rate-on. Round 12's binary exemption code path is now the fallback branch. |
+| Each rep has a standard work-day length (Tupac = 8h, Adam = 4h — confirm with admin). | ✅ | Schema: org defaults `full_time_work_day_hours = 8.0`, `part_time_default_work_day_hours = 4.0`; per-user override `work_day_hours` for sub-day rep schedules. |
+| Effective goal = base goal × (work_day_hours – SP hours today) ÷ work_day_hours. Apply to both minimum and ideal. | ✅ | RPC body computes `v_factor = max(0, work_hours − sp_hours) / work_hours`, then `v_eff_min = floor(v_base_min × v_factor)` and same for ideal. Floor (not round) so a rep can't accidentally have an effective goal one above their base when the math rounds up. The header chip surfaces `pro-rated` and the tooltip shows the formula breakdown. |
+
+### Files touched (Round 12 Addendum)
+
+- `supabase/migrations/20260620540000_crm_p7_round12_addendum_goals_proration.sql` — schema extensions + new `crm_count_conversations` v2.
+- `apps/crm/src/pages/DailyLogV2.tsx` — header chip rewritten for min/ideal + pro-ration; new end-of-day alert banner when `is_below_minimum=true` after 14:00.
+- `apps/crm/src/components/BulkAssignModal.tsx`, `apps/crm/src/pages/Today.tsx`, `apps/crm/src/components/pipeline/BatchStageChangeModal.tsx` — Leo-roster sweep.
+
+### Outstanding / follow-ups
+
+- Settings → Daily Log UI: surface the new min/ideal/work-day knobs so admins can edit Adam's targets without dropping into SQL.
+- Cron worker that fires the actual end-of-day alert (email + in-app notification) at the rep's local 17:00 when `is_below_minimum=true`. The DB has the data; the worker just needs to iterate `crm_count_conversations` for each active rep at the trigger time and write a `notifications` row.
+- Confirm Adam's actual shift length with admin (defaulted to 4h per spec; easy override via `crm_user_conversation_goal_overrides.work_day_hours`).
+
 ## Round 12 — Daily Log backend, prospect tracking, conversation goals (2026-05-14)
 
 Spec source: Round 12 Adjustments image (2026-05-14):

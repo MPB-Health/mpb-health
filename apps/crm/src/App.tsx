@@ -108,6 +108,9 @@ const ActivityTargetsReport = lazyRetry(() => import('./pages/reports/ActivityTa
 const AdvisorProductionReport = lazyRetry(() => import('./pages/reports/AdvisorProductionReport'));
 const AnnualOverview = lazyRetry(() => import('./pages/reports/AnnualOverview'));
 const QuoteResultsReturnedPage = lazyRetry(() => import('./pages/reports/QuoteResultsReturnedPage'));
+const SalesCancellationsLeadsSnapshot = lazyRetry(
+  () => import('./pages/reports/SalesCancellationsLeadsSnapshot'),
+);
 const DailyLogReport = lazyRetry(() => import('./pages/reports/DailyLogReport'));
 const PipelineReports = lazyRetry(() => import('./pages/reports/PipelineReports'));
 const MessageTemplatesPage = lazyRetry(() => import('./pages/MessageTemplatesPage'));
@@ -511,6 +514,7 @@ export default function App() {
                 <Route path="/reports/advisor-production" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AdvisorProductionReport /></Suspense></Guarded>} />
                 <Route path="/reports/annual" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AnnualOverview /></Suspense></Guarded>} />
                 <Route path="/reports/quote-results-returned" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><QuoteResultsReturnedPage /></Suspense></Guarded>} />
+                <Route path="/reports/sales-cancellations-leads" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><SalesCancellationsLeadsSnapshot /></Suspense></Guarded>} />
                 <Route
                   path="/reports/daily-log"
                   element={

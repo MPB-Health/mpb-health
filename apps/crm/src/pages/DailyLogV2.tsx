@@ -86,9 +86,20 @@ interface DailyLogEvent {
 
 interface ConversationGoalRow {
   conversation_count: number;
-  target: number;
+  // Round 12 Addendum (2026-05-14): min/ideal split + pro-rated SP exemption.
+  effective_minimum: number;
+  effective_ideal: number;
+  base_minimum: number;
+  base_ideal: number;
+  sp_hours_today: number | string;
+  work_day_hours: number | string;
   is_special_projects_day: boolean;
   is_exempt: boolean;
+  is_below_minimum: boolean;
+  is_at_minimum: boolean;
+  is_at_ideal: boolean;
+  /** Legacy alias = effective_ideal. Kept for any caller still on v1. */
+  target: number;
 }
 
 interface CorroborationRow {
@@ -661,37 +672,85 @@ export default function DailyLogV2() {
                 {leadsWorked === 1 ? '' : 's'} worked
               </span>
             )}
-            {/* Round 12 — Daily conversation goal badge.
-                Spec: 25/day full-time, scaled for part-time, exempt on
-                Special Projects days. SP-day exemption shows the badge
-                in slate ("exempt"); below-target shows amber; at/above
-                shows emerald. */}
+            {/* Round 12 + Round 12 Addendum (2026-05-14) — Daily
+                conversation goal badge.
+                  • Tupac (FT): minimum = ideal = 25 → single threshold.
+                  • Adam (PT): min 10, ideal 13. Header shows progress
+                    toward IDEAL ("8 / 13 today"); end-of-day alert fires
+                    if conversation_count < MINIMUM.
+                  • Special Projects: pro-rated reduction replaces the
+                    binary exemption. effective_ideal already accounts
+                    for today's SP hours.
+                  • Color: emerald when ≥ effective_ideal, blue when
+                    ≥ effective_minimum but < ideal (hit min not ideal —
+                    no alert), amber when < effective_minimum (alert),
+                    slate when fully exempt. */}
             {!isAdminView && conversationGoal && (
               <span
                 className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${
                   conversationGoal.is_exempt
                     ? 'bg-slate-100 text-slate-700'
-                    : conversationGoal.conversation_count >= conversationGoal.target
+                    : conversationGoal.is_at_ideal
                       ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-amber-50 text-amber-700'
+                      : conversationGoal.is_at_minimum
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'bg-amber-50 text-amber-700'
                 }`}
                 title={
                   conversationGoal.is_exempt
-                    ? conversationGoal.is_special_projects_day
-                      ? 'Special Projects day — conversation goal is exempt'
-                      : 'Conversation goal exempt for this rep'
-                    : `Daily conversation goal: ${conversationGoal.target}`
+                    ? 'Conversation goal exempt for this rep (admin override).'
+                    : (() => {
+                        const sp = Number(conversationGoal.sp_hours_today) || 0;
+                        const wd = Number(conversationGoal.work_day_hours) || 0;
+                        const proRated =
+                          conversationGoal.effective_ideal !== conversationGoal.base_ideal;
+                        const lines = [
+                          `Min ${conversationGoal.effective_minimum} · Ideal ${conversationGoal.effective_ideal}`,
+                        ];
+                        if (proRated) {
+                          lines.push(
+                            `Pro-rated from ${conversationGoal.base_minimum} / ${conversationGoal.base_ideal} (${sp}h SP today / ${wd}h work-day)`,
+                          );
+                        }
+                        if (conversationGoal.is_below_minimum) {
+                          lines.push(`Below minimum — end-of-day alert will fire.`);
+                        } else if (conversationGoal.is_at_minimum) {
+                          lines.push(`Hit minimum but not ideal — no alert.`);
+                        }
+                        return lines.join('\n');
+                      })()
                 }
               >
                 <Target className="w-3 h-3" />
-                <span className="font-semibold tabular-nums">{conversationGoal.conversation_count}</span>
+                <span className="font-semibold tabular-nums">
+                  {conversationGoal.conversation_count}
+                </span>
                 {!conversationGoal.is_exempt && (
                   <>
-                    /<span className="font-semibold tabular-nums">{conversationGoal.target}</span>{' '}
+                    /<span className="font-semibold tabular-nums">
+                      {conversationGoal.effective_ideal}
+                    </span>{' '}
                     convos
+                    {/* Surface the min/ideal split when they differ so reps
+                        see how much breathing room they have before the
+                        alert fires. */}
+                    {conversationGoal.effective_minimum !== conversationGoal.effective_ideal && (
+                      <span className="text-[10px] uppercase tracking-wider opacity-70 ml-1">
+                        min {conversationGoal.effective_minimum}
+                      </span>
+                    )}
                   </>
                 )}
                 {conversationGoal.is_exempt && <> convos · exempt</>}
+                {!conversationGoal.is_exempt &&
+                  conversationGoal.effective_ideal !== conversationGoal.base_ideal && (
+                    <span
+                      className="text-[10px] uppercase tracking-wider opacity-70 ml-1"
+                      title="Pro-rated by today's Special Projects hours"
+                    >
+                      pro-rated
+                    </span>
+                  )}
               </span>
             )}
             {!isAdminView && cancellationCount > 0 && (
@@ -886,6 +945,40 @@ export default function DailyLogV2() {
           </div>
         </div>
       )}
+
+      {/* Round 12 Addendum (2026-05-14) — Conversation goal alert. Fires
+          on the rep's "Today" view when conversation_count < effective
+          minimum AND the rep is not exempt. Wording matches the spec
+          ("end-of-day alert"). Only shown after 14:00 local so a rep mid-
+          day still has runway; the actual scheduled email/notification
+          fan-out lands later via the cron worker. */}
+      {!isAdminView &&
+        conversationGoal &&
+        conversationGoal.is_below_minimum &&
+        new Date().getHours() >= 14 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+            <Target className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex-1 text-sm">
+              <p className="font-semibold text-amber-800">Conversation goal — below minimum</p>
+              <p className="text-amber-700 mt-0.5">
+                You&apos;re at{' '}
+                <strong className="tabular-nums">{conversationGoal.conversation_count}</strong>{' '}
+                conversations today; minimum is{' '}
+                <strong className="tabular-nums">{conversationGoal.effective_minimum}</strong>{' '}
+                (ideal{' '}
+                <strong className="tabular-nums">{conversationGoal.effective_ideal}</strong>).
+                {conversationGoal.effective_ideal !== conversationGoal.base_ideal && (
+                  <>
+                    {' '}Pro-rated for{' '}
+                    <strong>{Number(conversationGoal.sp_hours_today).toFixed(2)}h</strong> Special
+                    Projects logged today (work-day{' '}
+                    <strong>{Number(conversationGoal.work_day_hours).toFixed(1)}h</strong>).
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
 
       {/* Performance Lag Alert (Section 12 / Round 6 payload). Shown only if
           a recent alert is still inside the quiet window. */}

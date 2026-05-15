@@ -199,6 +199,8 @@ const navigationSections: NavSection[] = [
           { name: 'Activity vs Targets', href: '/reports/activity-targets', permission: 'reports.read' },
           { name: 'Advisor Production', href: '/reports/advisor-production', permission: 'reports.read' },
           { name: 'Quote Results Returned', href: '/reports/quote-results-returned', permission: 'reports.read' },
+          // Round 13 (2026-05-15) — Sales vs Cancellations vs Leads snapshot.
+          { name: 'Sales vs Cancellations vs Leads', href: '/reports/sales-cancellations-leads', permission: 'reports.read' },
           { name: 'Daily activity log', href: '/reports/daily-log', permission: 'reports.read' },
           { name: 'Milestones', href: '/milestones', permission: 'targets.read' },
         ],

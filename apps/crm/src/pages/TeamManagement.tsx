@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import {
   Users,
   UserPlus,
+  UserCheck,
   Shield,
   Mail,
   MoreVertical,
@@ -38,6 +39,7 @@ import {
   permissionService,
   type Permission,
 } from '@mpbhealth/auth';
+import CreateUserModal from '../components/CreateUserModal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -526,6 +528,7 @@ function MembersTab({
   onReactivate,
   onRemove,
   onInvite,
+  onCreateUser,
 }: {
   members: MemberWithProfile[];
   loading: boolean;
@@ -539,6 +542,7 @@ function MembersTab({
   onReactivate: (member: MemberWithProfile) => void;
   onRemove: (member: MemberWithProfile) => void;
   onInvite: () => void;
+  onCreateUser: () => void;
 }) {
   const [search, setSearch] = useState('');
 
@@ -589,13 +593,24 @@ function MembersTab({
           />
         </div>
         {canManage && (
-          <button
-            onClick={onInvite}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors flex-shrink-0"
-          >
-            <UserPlus className="w-4 h-4" />
-            Invite User
-          </button>
+          <>
+            <button
+              onClick={onCreateUser}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors flex-shrink-0"
+              title="Create a new CRM user with a temporary password"
+            >
+              <UserPlus className="w-4 h-4" />
+              Create User
+            </button>
+            <button
+              onClick={onInvite}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-surface-secondary text-th-text-primary border border-th-border rounded-lg hover:bg-surface-tertiary transition-colors flex-shrink-0"
+              title="Send an email invite — the recipient sets their own password"
+            >
+              <UserCheck className="w-4 h-4" />
+              Invite Existing
+            </button>
+          </>
         )}
       </div>
 
@@ -1036,6 +1051,7 @@ export default function TeamManagement() {
 
   // Modal state
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
 
   // Confirm dialog
   const [confirmState, setConfirmState] = useState<{

@@ -792,10 +792,19 @@ export default function Users() {
       <AddUserModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        suggestedRole={activeTab === 'concierge' ? 'concierge' : undefined}
+        suggestedUserType={
+          activeTab === 'advisor'
+            ? 'advisor'
+            : activeTab === 'member'
+              ? 'member'
+              : 'admin_staff'
+        }
+        suggestedAdminRole={activeTab === 'concierge' ? 'concierge' : undefined}
         onSuccess={() => {
           if (activeTab === 'admin') loadAdminUsers();
           else if (activeTab === 'concierge') loadCrossPortalUsers('concierge');
+          else if (activeTab === 'advisor') loadCrossPortalUsers('advisor');
+          else if (activeTab === 'member') loadCrossPortalUsers('member');
           else loadCrossPortalUsers();
         }}
       />

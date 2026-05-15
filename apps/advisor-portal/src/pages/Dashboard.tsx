@@ -509,10 +509,6 @@ export default function Dashboard() {
                     return 'Good evening';
                   })()}, {profile?.first_name}
                 </span>
-                {/* TODO: remove after May 12 advisor call */}
-                <span className="text-base md:text-lg font-semibold text-red-600 dark:text-red-400 leading-snug">
-                  IMPORTANT: May 12 Advisor Call – Walkthrough of New Landing Pages
-                </span>
               </h1>
               <p className="text-th-text-tertiary text-sm max-w-md">
                 Empowering Healthcare Advisors — Making a Difference Every Day.

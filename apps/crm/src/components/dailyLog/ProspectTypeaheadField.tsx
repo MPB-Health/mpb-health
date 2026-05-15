@@ -120,8 +120,12 @@ export function ProspectTypeaheadField({ value, onChange, required, placeholder 
             subtitle: row.email || row.phone || undefined,
           });
         }
+        // Supabase's generic types treat embedded joins as arrays even when
+        // the underlying FK is many-to-one (crm_contacts.account_id → crm_accounts.id),
+        // so PostgREST returns a single object at runtime. Cast through `unknown` to
+        // bypass the conservative inferred shape.
         type ContactRow = { id: string; first_name?: string | null; last_name?: string | null; email?: string | null; account?: { name: string | null } | null };
-        for (const row of (contactsRes.data ?? []) as ContactRow[]) {
+        for (const row of (contactsRes.data ?? []) as unknown as ContactRow[]) {
           next.push({
             id: row.id,
             type: 'contact',

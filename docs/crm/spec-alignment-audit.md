@@ -405,7 +405,7 @@ All three producers now feed `crm_register_engagement_signal`:
 |---|---|---|
 | `reply` | `supabase/functions/receive-crm-email/index.ts` | Inbound email parser. Strips quoted history + signature first; opt-out keyword detector runs before the engagement path. |
 | `link_click` | DB trigger `trg_crm_tracking_to_engagement` on `public.crm_email_tracking` (migration `20260620510000`) | Fires once per click row regardless of source (custom rewriter or Resend native). Opens are deliberately excluded — too noisy (Microsoft Defender prefetch, image scanners). |
-| `calendar_booking` | `supabase/functions/crm-calendar-booking-webhook/index.ts` (Calendly v2) | HMAC-SHA256 signature verification + 5-minute replay window. Idempotent on `(provider, external_uri)` via `crm_calendar_booking_log` so Calendly retries don't double-fire. Outlook / Google calendar bookings can re-use the same log table by writing rows with `provider='outlook'`/`'google'`. |
+| `calendar_booking` | Three producers, one dedupe table | (1) **Calendly v2** webhook: `supabase/functions/crm-calendar-booking-webhook/index.ts` — HMAC-SHA256 signature verification + 5-minute replay window. (2) **Outlook calendar pull**: `supabase/functions/calendar-sync/index.ts` PULL phase fires the signal during the Microsoft Graph event sync once an attendee email resolves to a lead in the org. (3) **Google Calendar pull**: same hook on the Google PULL phase (free byproduct of the shared `tryFireBookingEngagementSignal` helper). All three converge on `crm_calendar_booking_log` with unique index on `(provider, external_uri)` so retries / re-syncs never double-fire. |
 
 **Deployment checklist for the calendar-booking webhook**:
 
@@ -418,10 +418,37 @@ All three producers now feed `crm_register_engagement_signal`:
 4. Confirm with the Calendly "Send test event" button — function should
    log "Received invitee.created" and return `200 {received: true, action: ...}`.
 
-Outlook + Google calendar bookings still need their own webhook
-producers (deferred per `integrations-recruiting-plan.md`). The
-downstream RPC, dedupe table, and stage-advance behaviour are already
-in place — adding those producers is a producer-only change.
+**Outlook + Google calendar bookings** are picked up by the existing
+`calendar-sync` edge function during its PULL phase (the rep's
+`crm_calendar_integrations` row is the OAuth grant — no per-event
+webhook required). The shared `tryFireBookingEngagementSignal()` helper
+in `calendar-sync/index.ts` runs the same dedupe/match/fire pipeline
+the Calendly webhook uses, just sourced from a Microsoft Graph or
+Google Calendar event payload.
+
+Inbound-booking heuristic for the sync path:
+
+1. We have not seen `(provider, external_event_id)` before in
+   `crm_calendar_booking_log`.
+2. Event `start_time` is in the future (or within the last 4 hours —
+   live meetings still count; backfills of old events do not).
+3. At least one attendee email (lowercased) matches an active
+   `lead_submissions.email` row in the rep's org. Preference goes to a
+   matched lead currently in `quoted` or `working` (those are the
+   stages the signal will actually advance).
+
+When all three are true, fire `crm_register_engagement_signal(lead_id, 'calendar_booking')`,
+upsert the booking into `crm_calendar_booking_log`, and continue the
+sync. A signal failure is logged but never blocks the primary
+`calendar_events` upsert — losing one booking-log row is strictly
+better than losing the calendar sync.
+
+False positive note: a rep who manually scheduled an Outlook meeting
+with a lead will fire the signal on the first sync. The downstream
+behaviour (pause cadence + advance Quoted/Working → Engaged) is the
+correct response in that case anyway — the rep is now meeting with the
+lead, so cadence sends should stop and the stage should reflect
+engagement. This is treated as a feature, not a bug.
 
 ## Cron snapshot after Phase 6
 
@@ -447,9 +474,10 @@ in place — adding those producers is a producer-only change.
   block in Section 13 / 14 for the step-by-step paste-and-wire
   checklist.
 - ~~Engagement-signal callers for `link_click` and `calendar_booking`~~
-  ✅ shipped Phase 7 / Round 7 (migration `20260620510000` + edge
-  function `crm-calendar-booking-webhook`). Outlook + Google calendar
-  webhooks remain deferred.
+  ✅ shipped Phase 7 / Round 7. Three calendar producers cover the
+  spec: Calendly webhook (`crm-calendar-booking-webhook`), Outlook
+  pull (in `calendar-sync`), Google pull (same helper). All converge
+  on `crm_calendar_booking_log` and the shared engagement-signal RPC.
 - Recruiting cadence enrollment runner — schema is ready
   (`crm_follow_up_cadences.module_scope='recruiting'` and the empty
   `crm_recruit_cadence_state` table), and the in-profile composer +

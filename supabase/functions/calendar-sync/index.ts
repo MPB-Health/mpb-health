@@ -98,6 +98,145 @@ async function verifyAuth(req: Request) {
 }
 
 // ============================================================================
+// Round 7 — Calendar booking → engagement signal producer
+//
+// During the PULL phase, when an external calendar event is freshly seen for
+// the first time and at least one attendee email resolves to a lead in this
+// org, fire `crm_register_engagement_signal(lead_id, 'calendar_booking')`
+// and persist the booking to `crm_calendar_booking_log`. Idempotent on
+// `(provider, external_uri)` — Calendly webhook + Outlook/Google syncs all
+// share the same dedupe table, so a lead can't get double-counted no matter
+// which path discovers the booking first.
+//
+// Heuristic for "this is an engagement-worthy booking":
+//   1. We have not seen (provider, external_event_id) before in
+//      `crm_calendar_booking_log` (dedupe key).
+//   2. Event start_time is in the future, or within the last 4 hours
+//      (live meetings still count; old backfills do not).
+//   3. At least one attendee email (lowercased) matches an active
+//      `lead_submissions` row in this org. We do not exclude the rep — a
+//      lead-and-rep meeting is the most common case and is exactly what
+//      should pause the cadence.
+//
+// False-positive case: a rep manually scheduled an Outlook meeting with a
+// lead and we later pull that event. We will fire the signal once. The
+// downstream behaviour (pause cadence + advance Quoted/Working → Engaged)
+// is the *correct* response to a rep starting to meet with a lead, so this
+// is treated as a feature, not a bug.
+// ============================================================================
+
+interface BookingAttendee {
+  email: string;
+  name?: string | null;
+}
+
+interface BookingInput {
+  org_id: string;
+  user_id: string;
+  provider: 'google' | 'outlook';
+  external_id: string;
+  title: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  attendees: BookingAttendee[];
+  external_link?: string | null;
+  raw: unknown;
+}
+
+const ENGAGEMENT_BACKDATE_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+async function tryFireBookingEngagementSignal(
+  supabase: ReturnType<typeof getServiceClient>,
+  input: BookingInput,
+): Promise<void> {
+  if (!input.external_id) return;
+
+  // Step 1: dedupe — has any path already logged this booking?
+  const { data: existing, error: existingErr } = await supabase
+    .from('crm_calendar_booking_log')
+    .select('id, engagement_signal_fired')
+    .eq('provider', input.provider)
+    .eq('external_uri', input.external_id)
+    .maybeSingle();
+
+  if (existingErr) {
+    log.warn(
+      `booking dedupe lookup failed for ${input.provider}/${input.external_id}: ${existingErr.message}`,
+    );
+    return;
+  }
+  if (existing?.engagement_signal_fired) {
+    return; // already counted
+  }
+
+  // Step 2: time-window check
+  const startMs = input.start_time ? Date.parse(input.start_time) : NaN;
+  if (!Number.isFinite(startMs)) return;
+  if (startMs < Date.now() - ENGAGEMENT_BACKDATE_MS) return;
+
+  // Step 3: attendee → lead resolution
+  const inviteeEmails = input.attendees
+    .map((a) => a.email?.trim().toLowerCase())
+    .filter((e): e is string => Boolean(e));
+  if (inviteeEmails.length === 0) return;
+
+  const { data: leads, error: leadErr } = await supabase
+    .from('lead_submissions')
+    .select('id, org_id, email, pipeline_stage, assigned_to')
+    .eq('org_id', input.org_id)
+    .in('email', inviteeEmails);
+
+  if (leadErr) {
+    log.warn(`lead lookup failed for booking ${input.external_id}: ${leadErr.message}`);
+    return;
+  }
+  if (!leads || leads.length === 0) return;
+
+  // Pick the most engagement-relevant lead — prefer one in quoted/working
+  // (those are the stages the signal will advance) over any other match.
+  const lead =
+    leads.find((l) => l.pipeline_stage === 'quoted' || l.pipeline_stage === 'working') ??
+    leads[0];
+
+  // Step 4: fire signal + log
+  const { error: signalErr } = await supabase.rpc('crm_register_engagement_signal', {
+    p_lead_id: lead.id,
+    p_signal_type: 'calendar_booking',
+  });
+  if (signalErr) {
+    log.error(`engagement signal failed for lead ${lead.id}: ${signalErr.message}`);
+  } else {
+    log.info(`engagement signal fired for lead ${lead.id} (calendar_booking via ${input.provider})`);
+  }
+
+  const matchedInvitee = input.attendees.find(
+    (a) => a.email?.trim().toLowerCase() === lead.email?.toLowerCase(),
+  );
+
+  const { error: logErr } = await supabase.from('crm_calendar_booking_log').upsert(
+    {
+      org_id: lead.org_id,
+      lead_id: lead.id,
+      recruit_id: null,
+      provider: input.provider,
+      external_uri: input.external_id,
+      invitee_email: matchedInvitee?.email ?? lead.email ?? null,
+      invitee_name: matchedInvitee?.name ?? null,
+      scheduled_start: input.start_time,
+      scheduled_end: input.end_time,
+      event_type_name: input.title,
+      raw_payload: (input.raw ?? {}) as Record<string, unknown>,
+      engagement_signal_fired: !signalErr,
+      activity_id: null,
+    },
+    { onConflict: 'provider,external_uri', ignoreDuplicates: false },
+  );
+  if (logErr) {
+    log.warn(`booking log upsert failed for ${input.external_id}: ${logErr.message}`);
+  }
+}
+
+// ============================================================================
 // Action: auth_url — Generate OAuth2 authorization URL
 // ============================================================================
 
@@ -517,6 +656,29 @@ async function handleSync(req: Request): Promise<Response> {
           );
 
         if (!upsertErr) pulled++;
+
+        // Round 7 — engagement signal producer for inbound calendar bookings.
+        // Runs after the upsert so a sync failure on the booking-log path
+        // never blocks the primary calendar_events sync.
+        try {
+          await tryFireBookingEngagementSignal(supabase, {
+            org_id,
+            user_id,
+            provider: 'google',
+            external_id: event.id,
+            title: event.summary ?? null,
+            start_time: startTime || null,
+            end_time: endTime || null,
+            attendees: (event.attendees ?? []).map((a) => ({
+              email: a.email,
+              name: null,
+            })),
+            external_link: event.htmlLink ?? null,
+            raw: event,
+          });
+        } catch (signalErr) {
+          log.warn(`booking signal failed for google/${event.id}: ${(signalErr as Error).message}`);
+        }
       }
     } else {
       // Outlook
@@ -543,6 +705,29 @@ async function handleSync(req: Request): Promise<Response> {
           );
 
         if (!upsertErr) pulled++;
+
+        // Round 7 — engagement signal producer for inbound Outlook bookings.
+        // Runs after the upsert so a sync failure on the booking-log path
+        // never blocks the primary calendar_events sync.
+        try {
+          await tryFireBookingEngagementSignal(supabase, {
+            org_id,
+            user_id,
+            provider: 'outlook',
+            external_id: event.id,
+            title: event.subject ?? null,
+            start_time: event.start?.dateTime ?? null,
+            end_time: event.end?.dateTime ?? null,
+            attendees: (event.attendees ?? []).map((a) => ({
+              email: a.emailAddress?.address ?? '',
+              name: null,
+            })),
+            external_link: event.webLink ?? null,
+            raw: event,
+          });
+        } catch (signalErr) {
+          log.warn(`booking signal failed for outlook/${event.id}: ${(signalErr as Error).message}`);
+        }
       }
     }
 

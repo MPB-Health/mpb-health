@@ -37,6 +37,18 @@ interface RequestBody {
 
   // Sender
   from_name?: string;
+  /**
+   * CRM rebuild Section 13 — optional per-send sender address override. When
+   * omitted we fall back to the `CRM_FROM_EMAIL` env var. The website auto-
+   * response path (`crm-website-lead-intake`) supplies `sales@mympb.com` so
+   * Email #1 ships from the shared sales inbox even though the env var
+   * default (`crm@mpb.health`) is used for general rep-driven sends.
+   *
+   * Validation is intentionally loose at this layer; Resend will reject any
+   * address whose domain is not verified, which is the only safety we need
+   * since this function is service-role-only from trusted callers.
+   */
+  from_email?: string;
   reply_to?: string;
 
   // Attachments
@@ -148,6 +160,7 @@ serve(async (req) => {
       html,
       text,
       from_name,
+      from_email,
       reply_to,
       attachments,
       track_opens = true,
@@ -208,9 +221,13 @@ serve(async (req) => {
       tags.forEach((tag, i) => resendTags.push({ name: `custom_${i}`, value: tag }));
     }
 
-    // Build Resend payload
+    // Section 13: resolve effective sender once and reuse for both the
+    // outbound Resend payload and the audit row so they cannot drift.
+    const effectiveFromEmail = from_email || FROM_EMAIL;
+    const effectiveFromName = from_name || FROM_NAME;
+
     const resendPayload: Record<string, unknown> = {
-      from: `${from_name || FROM_NAME} <${FROM_EMAIL}>`,
+      from: `${effectiveFromName} <${effectiveFromEmail}>`,
       to,
       subject,
       html: finalHtml,
@@ -277,8 +294,8 @@ serve(async (req) => {
         master_template_id: master_template_id || null,
         thread_id: thread_id || null,
         direction: 'outbound',
-        from_address: FROM_EMAIL,
-        from_name: from_name || FROM_NAME,
+        from_address: effectiveFromEmail,
+        from_name: effectiveFromName,
         to_email: to[0], // Primary recipient
         to_addresses: to,
         cc_addresses: cc || [],

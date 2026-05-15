@@ -208,6 +208,12 @@ serve(async (req) => {
           to: [lead.email],
           subject,
           html,
+          // Section 13 (Round 7 Addendum): the website auto-response ships
+          // from the shared MPB Sales inbox, not the org's generic
+          // `crm@mpb.health` envelope. send-crm-email-v2 honors per-send
+          // overrides so rep-driven sends from other CRM surfaces still use
+          // the env-default sender.
+          from_email: FROM_ADDRESS,
           from_name: FROM_NAME,
           reply_to: REPLY_TO,
           track_opens: true,

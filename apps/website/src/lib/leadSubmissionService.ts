@@ -38,14 +38,49 @@ export interface LeadSubmissionResult {
   warnings?: string[];
 }
 
+// CRM rebuild Section 13 (Round 7 Addendum, 2026-05-13) — website Get-a-Quote
+// submissions are the only inbound channel that auto-fires Email #1. Manual
+// rep entry, referrals, and LinkedIn imports take other code paths in the
+// CRM app and intentionally do NOT touch this service.
+//
+// Pipeline:
+//   1. POST payload → `crm-website-lead-intake` edge function (service-role).
+//      The function itself:
+//        a. Inserts the lead via `submit_public_lead` (anon-safe RPC).
+//        b. Enrolls the lead in the org's "Quote Response" cadence.
+//        c. Sends Email #1 from `sales@mympb.com` / "MPB.Health Sales" using
+//           the cadence-linked master template + shared MPB Sales signature.
+//        d. On send success, advances stage `new → quoted` and tags the lead
+//           with `lead_source_attribution = 'website_auto_response'` so the
+//           website channel can be measured separately from rep-enrolled
+//           cadence sends.
+//   2. Staff notification (`sendLeadNotification`) still fires async so the
+//      inbox of `info@mympb.com` + the on-call reps see the new lead.
+//   3. The legacy plan-comparison "welcome" email is reserved as a
+//      transitional fallback that only runs when the edge function reports
+//      `auto_response_pending=true` (i.e., the admin hasn't yet pasted the
+//      verbatim Email #1 content from the Round 7 OneDrive doc into the
+//      Master Template). Once Email #1 is fully configured the fallback
+//      will never trigger.
+
+const INTAKE_FUNCTION = 'crm-website-lead-intake';
+
+interface IntakeResponse {
+  success: boolean;
+  lead_id?: string;
+  email_sent?: boolean;
+  email_error?: string | null;
+  cadence_enrolled?: boolean;
+  auto_response_pending?: boolean;
+  error?: string;
+}
+
 class LeadSubmissionService {
   async submitLead(formData: LeadFormData): Promise<LeadSubmissionResult> {
     const warnings: string[] = [];
 
     try {
-      // user_id is set on the server side from auth.uid() inside the RPC; no
-      // need to fetch the session here.
-      const submissionData = {
+      const payload = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
@@ -68,44 +103,53 @@ class LeadSubmissionService {
         form_data: formData.formData,
       };
 
-      // Public lead intake routes through the submit_public_lead RPC, which is
-      // the single architectural boundary for anonymous form submissions. The
-      // table itself is no longer writable by anon (see migration
-      // 20260429140000_public_lead_intake_rpc.sql).
-      const { data: submission, error: dbError } = await supabase
-        .rpc('submit_public_lead', { payload: submissionData });
-
-      if (dbError) {
-        console.error('Database submission error:', {
-          code: dbError.code,
-          message: dbError.message,
-          details: dbError.details,
-          hint: dbError.hint,
+      const { data: intake, error: intakeError } =
+        await supabase.functions.invoke<IntakeResponse>(INTAKE_FUNCTION, {
+          body: payload,
         });
 
-        if (dbError.code === '23505') {
-          throw new Error('It looks like you already submitted this form. Please check your email.');
-        }
-
-        // Validation errors raised by the RPC use SQLSTATE 22023.
-        if (dbError.code === '22023') {
-          throw new Error(dbError.message);
-        }
-
-        throw new Error(`Failed to save submission: ${dbError.message}`);
+      if (intakeError) {
+        console.error('Lead intake function error:', intakeError);
+        // Soft-fall back to the legacy direct RPC so an outage of the edge
+        // function never silently drops the lead. The fallback path will not
+        // fire Email #1, advance stage, or tag attribution — those rely on
+        // the edge function — but the lead row will still be written.
+        return await this.fallbackSubmit(payload, formData);
       }
 
-      this.sendNotificationsAsync(formData).catch(error => {
-        console.error('Async notification error:', error);
-        warnings.push('Email notifications may have failed');
-      });
+      if (!intake?.success || !intake.lead_id) {
+        // Surface validation errors verbatim — the RPC inside the edge
+        // function raises SQLSTATE 22023 with a human-readable message.
+        const message = intake?.error || 'Failed to save submission';
+        if (/already submitted/i.test(message)) {
+          throw new Error(
+            'It looks like you already submitted this form. Please check your email.',
+          );
+        }
+        throw new Error(message);
+      }
+
+      if (intake.auto_response_pending) {
+        warnings.push('auto_response_pending');
+      }
+
+      // Staff notification + transitional welcome fallback run async so they
+      // do not block the form's success state. Failures here are non-fatal.
+      this.sendStaffNotification(formData).catch((err) =>
+        console.error('Staff email notification error:', err),
+      );
+
+      if (intake.auto_response_pending) {
+        this.sendLegacyWelcomeFallback(formData).catch((err) =>
+          console.error('Legacy welcome fallback error:', err),
+        );
+      }
 
       return {
         success: true,
-        submissionId: submission.id,
+        submissionId: intake.lead_id,
         warnings: warnings.length > 0 ? warnings : undefined,
       };
-
     } catch (error) {
       console.error('Lead submission error:', error);
       return {
@@ -115,50 +159,94 @@ class LeadSubmissionService {
     }
   }
 
-  private async sendNotificationsAsync(formData: LeadFormData): Promise<void> {
-    // Send notification to staff
-    try {
-      await sendLeadNotification({
-        name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        phone: formData.phone,
-        householdType: formData.householdSize ? `${formData.householdSize} ${formData.householdSize === 1 ? 'person' : 'people'}` : undefined,
-        source: formData.sourcePage || 'Get a Quote Form',
-      });
-    } catch (error) {
-      console.error('Staff email notification error:', error);
+  /**
+   * Direct-RPC fallback used only when the intake edge function is
+   * unreachable. We keep the original submit_public_lead path so the lead
+   * row is never lost; the cadence/Email #1 wiring is intentionally skipped
+   * here — those are the edge function's responsibility.
+   */
+  private async fallbackSubmit(
+    payload: Record<string, unknown>,
+    formData: LeadFormData,
+  ): Promise<LeadSubmissionResult> {
+    const { data: submission, error: dbError } = await supabase.rpc(
+      'submit_public_lead',
+      { payload },
+    );
+    if (dbError) {
+      if (dbError.code === '23505') {
+        throw new Error(
+          'It looks like you already submitted this form. Please check your email.',
+        );
+      }
+      if (dbError.code === '22023') {
+        throw new Error(dbError.message);
+      }
+      throw new Error(`Failed to save submission: ${dbError.message}`);
     }
 
-    // Send welcome email to the lead (with plan comparison when from hero calculator)
-    try {
-      const fd = formData.formData;
-      const householdSize = formData.householdSize ?? (fd?.household_type === 'member-only' ? 1 : fd?.household_type === 'member-spouse' ? 2 : fd?.household_type === 'member-child' ? 1 + (fd?.dependents_count || 0) : fd?.household_type === 'member-family' ? 2 + (fd?.dependents_count || 0) : undefined);
-      const membershipPriorities = fd?.membership_priorities ?? fd?.priorities_matched ?? [];
-      const planData = fd?.all_plan_rates
-        ? {
-            all_plan_rates: fd.all_plan_rates,
-            traditional_cost_estimate: fd.traditional_cost_estimate,
-            best_match_plan: fd.best_match_plan ?? null,
-            best_match_percentage: fd.best_match_percentage,
-            household_size: householdSize,
-            household_type: fd.household_type,
-            membership_priorities: membershipPriorities,
-          }
-        : undefined;
-      await sendLeadWelcomeEmail({
-        firstName: formData.firstName,
-        email: formData.email,
-        planData,
-        householdSize: planData?.household_size ?? householdSize,
-        membershipPriorities: planData?.membership_priorities ?? membershipPriorities,
-      });
-      log.info(`[LeadSubmission] Welcome email sent to ${formData.email}`);
-    } catch (error) {
-      console.error('Lead welcome email error:', error);
-    }
+    this.sendStaffNotification(formData).catch((err) =>
+      console.error('Staff email notification error:', err),
+    );
+    this.sendLegacyWelcomeFallback(formData).catch((err) =>
+      console.error('Legacy welcome fallback error:', err),
+    );
 
+    return {
+      success: true,
+      submissionId: submission.id,
+      warnings: ['intake_function_unavailable'],
+    };
   }
 
+  private async sendStaffNotification(formData: LeadFormData): Promise<void> {
+    await sendLeadNotification({
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      phone: formData.phone,
+      householdType: formData.householdSize
+        ? `${formData.householdSize} ${formData.householdSize === 1 ? 'person' : 'people'}`
+        : undefined,
+      source: formData.sourcePage || 'Get a Quote Form',
+    });
+  }
+
+  private async sendLegacyWelcomeFallback(formData: LeadFormData): Promise<void> {
+    const fd = formData.formData;
+    const householdSize =
+      formData.householdSize ??
+      (fd?.household_type === 'member-only'
+        ? 1
+        : fd?.household_type === 'member-spouse'
+          ? 2
+          : fd?.household_type === 'member-child'
+            ? 1 + (fd?.dependents_count || 0)
+            : fd?.household_type === 'member-family'
+              ? 2 + (fd?.dependents_count || 0)
+              : undefined);
+    const membershipPriorities =
+      fd?.membership_priorities ?? fd?.priorities_matched ?? [];
+    const planData = fd?.all_plan_rates
+      ? {
+          all_plan_rates: fd.all_plan_rates,
+          traditional_cost_estimate: fd.traditional_cost_estimate,
+          best_match_plan: fd.best_match_plan ?? null,
+          best_match_percentage: fd.best_match_percentage,
+          household_size: householdSize,
+          household_type: fd.household_type,
+          membership_priorities: membershipPriorities,
+        }
+      : undefined;
+    await sendLeadWelcomeEmail({
+      firstName: formData.firstName,
+      email: formData.email,
+      planData,
+      householdSize: planData?.household_size ?? householdSize,
+      membershipPriorities:
+        planData?.membership_priorities ?? membershipPriorities,
+    });
+    log.info(`[LeadSubmission] Legacy welcome fallback sent to ${formData.email}`);
+  }
 }
 
 export const leadSubmissionService = new LeadSubmissionService();

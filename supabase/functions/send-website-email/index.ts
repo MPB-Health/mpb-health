@@ -25,6 +25,22 @@ interface RequestBody {
 const DEFAULT_FROM = 'MPB Health <notifications@mpb.health>';
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
+/**
+ * `emailType` values that are allowed to target recipients outside of
+ * `@mympb.com` / `@mpb.health`. These are transactional flows where the
+ * recipient is, by design, an external user (newsletter subscriber, lead,
+ * invitee, etc.). For every type on this list we additionally require a
+ * single recipient so the function still cannot be abused as a fan-out
+ * spam relay.
+ */
+const EXTERNAL_RECIPIENT_EMAIL_TYPES = new Set<string>([
+  'newsletter-welcome',
+  'lead-welcome',
+  'user-invitation',
+]);
+
+const INTERNAL_RECIPIENT_DOMAINS = ['@mympb.com', '@mpb.health'];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return handleCorsPreflightRequest(req);
@@ -64,6 +80,17 @@ serve(async (req) => {
 
     // Validate each recipient address
     const recipients = Array.isArray(to) ? to : [to];
+    const externalAllowed = !!emailType && EXTERNAL_RECIPIENT_EMAIL_TYPES.has(emailType);
+
+    // Externally-addressed transactional emails must be 1:1 — the allowlist
+    // exists so we can reach a known user, not so we can blast many addresses.
+    if (externalAllowed && recipients.length !== 1) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'External recipients are limited to a single address' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     for (const addr of recipients) {
       if (!isValidEmail(addr)) {
         return new Response(
@@ -72,9 +99,12 @@ serve(async (req) => {
         );
       }
 
-      // Restrict to internal staff domains only — prevents use as a spam relay
+      if (externalAllowed) continue;
+
+      // Default policy: restrict to internal staff domains to prevent use as a spam relay.
       const lower = addr.toLowerCase();
-      if (!lower.endsWith('@mympb.com') && !lower.endsWith('@mpb.health')) {
+      const isInternal = INTERNAL_RECIPIENT_DOMAINS.some((domain) => lower.endsWith(domain));
+      if (!isInternal) {
         return new Response(
           JSON.stringify({ success: false, error: 'Recipient not allowed' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

@@ -29,6 +29,21 @@ export function AddLeadModal({ open, onClose, onSuccess }: AddLeadModalProps) {
       ? String(values.tags).split(',').map((t: string) => t.trim()).filter(Boolean)
       : [];
 
+    // Round 10 Addendum (Section 17 + Section 15): when Coverage Preferred is
+    // Group, persist business_name / website / linked account_id into
+    // form_data. Stored as jsonb until a column-level migration ships, but
+    // surfaces in the existing Lead Profile form_data viewer + Convert flow.
+    const isGroup = values.coverage_preference === 'group';
+    const groupFormData = isGroup
+      ? {
+          coverage_preferred_group: {
+            business_name: (values.business_name || '').trim() || null,
+            website: (values.website || '').trim() || null,
+            account_id: values.account_id || null,
+          },
+        }
+      : undefined;
+
     const result = await leadService.createLead({
       first_name: values.first_name,
       last_name: values.last_name,
@@ -54,6 +69,7 @@ export function AddLeadModal({ open, onClose, onSuccess }: AddLeadModalProps) {
       lead_source: values.lead_source || undefined,
       outside_advisor_id: values.outside_advisor_id || undefined,
       referral_partner_id: values.referral_partner_id || undefined,
+      form_data: groupFormData,
     });
 
     if (!result.success) {

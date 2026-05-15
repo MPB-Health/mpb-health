@@ -277,4 +277,9 @@ export interface LeadUpdateInput {
   workflow_subsection?: 'working' | 'nurture' | 'linkedin' | 'do_not_contact' | null;
   linkedin_workflow_status?: string | null;
   do_not_contact?: boolean | null;
+  // Round 10 Addendum (Section 17 / Section 15): persists Group-only
+  // Coverage Preferred extras (`coverage_preferred_group`) until a
+  // dedicated column lands. Generic to leave room for future intake
+  // payloads from other surfaces.
+  form_data?: Record<string, unknown> | null;
 }

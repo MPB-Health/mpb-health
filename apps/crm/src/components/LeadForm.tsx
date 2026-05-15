@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { InputField, SelectField, TextareaField, SubmitButton } from './FormField';
 import { SaveIndicator } from './SaveIndicator';
 import { useForm } from '../hooks/useForm';
 import { supabase } from '../lib/supabase';
-import { AlertCircle, RotateCcw } from 'lucide-react';
+import { AlertCircle, RotateCcw, Building2, Check, Loader2, X } from 'lucide-react';
 import {
   createCarrierService,
   createLeadSourceService,
@@ -51,6 +51,15 @@ interface LeadFormValues {
   lead_source: string;
   outside_advisor_id: string;
   referral_partner_id: string;
+  // Round 10 Addendum (Section 17 — Coverage Preferred = Group):
+  // Business Name (required), Website (optional), and an optional auto-link
+  // to an existing crm_accounts row via typeahead (Section 15). Persisted
+  // into form_data by the Add/Edit modals until a column-level migration
+  // lands so reporting + the Convert-to-Account flow can hydrate from a
+  // dedicated field instead of jsonb.
+  business_name: string;
+  website: string;
+  account_id: string;
 }
 
 interface LeadFormProps {
@@ -64,16 +73,16 @@ interface LeadFormProps {
   saveErrorMessage?: string | null;
 }
 
+// Round 10 Addendum (Section 17): Coverage Preferred drops Medicare,
+// Medicaid, and Life. Group is the trigger for the conditional Business
+// Name + Website fields and the Company auto-link.
 const COVERAGE_OPTIONS = [
   { value: '', label: 'Select...' },
   { value: 'individual', label: 'Individual' },
   { value: 'family', label: 'Family' },
   { value: 'group', label: 'Group' },
-  { value: 'medicare', label: 'Medicare' },
-  { value: 'medicaid', label: 'Medicaid' },
   { value: 'dental', label: 'Dental' },
   { value: 'vision', label: 'Vision' },
-  { value: 'life', label: 'Life' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -130,6 +139,11 @@ const defaultValues: LeadFormValues = {
   lead_source: 'inhouse_round_robin',
   outside_advisor_id: '',
   referral_partner_id: '',
+  // Round 10 Addendum (Section 17 / Section 15) — populated only when
+  // Coverage Preferred = Group; account_id is set by the Company typeahead.
+  business_name: '',
+  website: '',
+  account_id: '',
 };
 
 function SectionDivider({ label }: { label: string }) {
@@ -144,6 +158,157 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
+// ─── CompanyTypeaheadField ──────────────────────────────────────────────
+// Round 10 Addendum (Section 15 + Section 17). Live search against
+// crm_accounts (debounced) so reps can auto-link a Group lead to an
+// existing Company. Picking a row stamps `account_id` and autofills
+// `website`; typing a brand-new business name leaves `account_id` empty
+// (a fresh crm_accounts row will be created downstream during convert).
+interface CompanyMatch { id: string; name: string; website: string | null }
+interface CompanyTypeaheadFieldProps {
+  label: string;
+  required?: boolean;
+  value: string;
+  selectedAccountId: string;
+  onValueChange: (next: string) => void;
+  onPickAccount: (account: CompanyMatch | null) => void;
+  search: (q: string) => Promise<CompanyMatch[]>;
+  error?: string;
+  placeholder?: string;
+}
+
+function CompanyTypeaheadField({
+  label,
+  required,
+  value,
+  selectedAccountId,
+  onValueChange,
+  onPickAccount,
+  search,
+  error,
+  placeholder,
+}: CompanyTypeaheadFieldProps) {
+  const [open, setOpen] = useState(false);
+  const [matches, setMatches] = useState<CompanyMatch[]>([]);
+  const [loading, setLoading] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Outside-click closes the menu — keeps the rest of the form clickable.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  // Debounced search (~250ms). When the picker is closed we never query.
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = value.trim();
+    if (trimmed.length < 2) {
+      setMatches([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const handle = window.setTimeout(() => {
+      search(trimmed)
+        .then((rows) => setMatches(rows))
+        .catch(() => setMatches([]))
+        .finally(() => setLoading(false));
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [value, open, search]);
+
+  const linked = Boolean(selectedAccountId);
+
+  return (
+    <div ref={wrapRef}>
+      <label className="block text-sm font-medium text-th-text-secondary mb-1">
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-th-text-tertiary">
+          <Building2 className="w-4 h-4" />
+        </div>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => {
+            // Editing the name after a link breaks the link — reps
+            // shouldn't keep an account_id pinned to a different name.
+            if (linked) onPickAccount(null);
+            onValueChange(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          required={required}
+          placeholder={placeholder}
+          className={`w-full border rounded-lg pl-10 pr-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent transition-colors ${
+            error ? 'border-red-300 focus:ring-red-500' : 'border-th-border'
+          }`}
+        />
+        {linked && (
+          <button
+            type="button"
+            onClick={() => {
+              onPickAccount(null);
+              onValueChange('');
+            }}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-th-text-tertiary hover:text-th-text-primary"
+            aria-label="Unlink company"
+            title="Unlink company"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      {linked && (
+        <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+          <Check className="w-3 h-3" /> Linked to existing Company
+        </p>
+      )}
+      {open && value.trim().length >= 2 && (
+        <div className="relative">
+          <div className="absolute z-20 mt-1 w-full bg-surface-primary border border-th-border rounded-lg shadow-lg overflow-hidden">
+            {loading && (
+              <div className="px-3 py-2 text-xs text-th-text-tertiary flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" /> Searching companies…
+              </div>
+            )}
+            {!loading && matches.length === 0 && (
+              <div className="px-3 py-2 text-xs text-th-text-tertiary">
+                No matches — saving will create a new Company.
+              </div>
+            )}
+            {!loading &&
+              matches.map((m) => (
+                <button
+                  type="button"
+                  key={m.id}
+                  onClick={() => {
+                    onPickAccount(m);
+                    onValueChange(m.name);
+                    setOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-surface-secondary border-t border-th-border first:border-t-0"
+                >
+                  <div className="text-sm text-th-text-primary">{m.name}</div>
+                  {m.website && (
+                    <div className="text-xs text-th-text-tertiary truncate">{m.website}</div>
+                  )}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 export function LeadForm({
   initialValues,
   onSubmit,
@@ -154,7 +319,7 @@ export function LeadForm({
   saveStatus = 'idle',
   saveErrorMessage,
 }: LeadFormProps) {
-  const { referralService, outsideAdvisorService, orgId } = useCRMService();
+  const { referralService, outsideAdvisorService, accountService, orgId } = useCRMService();
   const [carriers, setCarriers] = useState<InsuranceCarrier[]>([]);
   const [loadingCarriers, setLoadingCarriers] = useState(true);
   const [leadSources, setLeadSources] = useState<LeadSourceType[]>([]);
@@ -205,7 +370,7 @@ export function LeadForm({
     ...outsideAdvisors.map((p) => ({ value: p.id, label: p.name })),
   ];
 
-  const { values, errors, loading, submitError, handleChange, handleSubmit, retry } = useForm<LeadFormValues>({
+  const { values, errors, loading, submitError, handleChange, handleSubmit, setFieldValue, retry } = useForm<LeadFormValues>({
     initialValues: { ...defaultValues, ...initialValues } as LeadFormValues,
     validate: (vals) => {
       const errs: Partial<Record<keyof LeadFormValues, string>> = {};
@@ -214,6 +379,10 @@ export function LeadForm({
       if (!vals.email.trim()) errs.email = 'Email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email)) errs.email = 'Invalid email format';
       if (!vals.lead_source.trim()) errs.lead_source = 'Lead source is required';
+      // Round 10 Addendum (Section 17): Group requires Business Name.
+      if (vals.coverage_preference === 'group' && !vals.business_name.trim()) {
+        errs.business_name = 'Business name is required for Group coverage';
+      }
       return errs;
     },
     onSubmit,
@@ -223,6 +392,35 @@ export function LeadForm({
     onDirty?.();
     handleChange(e);
   };
+
+  const isGroup = values.coverage_preference === 'group';
+
+  // Live company search bound to the current org. Returns the top 8 matches
+  // ordered by recency from `crm_accounts` (Section 15 typeahead source).
+  const searchCompanies = useMemo(
+    () => async (q: string): Promise<CompanyMatch[]> => {
+      if (!orgId) return [];
+      const { accounts } = await accountService.getAccounts({ search: q }, 8, 0);
+      return accounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        website: a.website ?? null,
+      }));
+    },
+    [accountService, orgId],
+  );
+
+  // Reset the Group-only fields if the rep flips Coverage Preferred away
+  // from Group — leaving stale business_name / website / account_id behind
+  // would silently leak into form_data on submit.
+  useEffect(() => {
+    if (isGroup) return;
+    if (values.business_name || values.website || values.account_id) {
+      setFieldValue('business_name', '');
+      setFieldValue('website', '');
+      setFieldValue('account_id', '');
+    }
+  }, [isGroup, values.business_name, values.website, values.account_id, setFieldValue]);
 
   const displayError = submitError || (saveStatus === 'error' ? saveErrorMessage : null);
 
@@ -254,9 +452,40 @@ export function LeadForm({
         <SelectField label="Carrier" name="carrier_id" value={values.carrier_id} onChange={wrappedChange} options={carrierOptions} disabled={loadingCarriers} />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <SelectField label="Coverage Preference" name="coverage_preference" value={values.coverage_preference} onChange={wrappedChange} options={COVERAGE_OPTIONS} />
+        <SelectField label="Coverage Preferred" name="coverage_preference" value={values.coverage_preference} onChange={wrappedChange} options={COVERAGE_OPTIONS} />
         <SelectField label="Group Type" name="group_type" value={values.group_type} onChange={wrappedChange} options={GROUP_TYPE_OPTIONS} />
       </div>
+      {isGroup && (
+        <div className="grid grid-cols-2 gap-4 rounded-lg border border-th-accent-500/30 bg-th-accent-500/5 p-3">
+          <CompanyTypeaheadField
+            label="Business Name"
+            required
+            value={values.business_name}
+            selectedAccountId={values.account_id}
+            onValueChange={(next) => {
+              onDirty?.();
+              setFieldValue('business_name', next);
+            }}
+            onPickAccount={(account) => {
+              onDirty?.();
+              setFieldValue('account_id', account?.id ?? '');
+              if (account?.website && !values.website) {
+                setFieldValue('website', account.website);
+              }
+            }}
+            search={searchCompanies}
+            error={errors.business_name}
+            placeholder="Start typing a company…"
+          />
+          <InputField
+            label="Website"
+            name="website"
+            value={values.website}
+            onChange={wrappedChange}
+            placeholder="https://example.com"
+          />
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <InputField label="Current Insurance" name="current_insurance" value={values.current_insurance} onChange={wrappedChange} placeholder="e.g. Blue Cross" />
         <InputField label="Monthly Premium" name="monthly_premium" value={values.monthly_premium} onChange={wrappedChange} placeholder="e.g. $350" />

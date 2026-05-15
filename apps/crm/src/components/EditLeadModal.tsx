@@ -23,6 +23,22 @@ export function EditLeadModal({ open, onClose, lead, onSuccess }: EditLeadModalP
 
   useUnsavedChanges(dirtyRef.current && open);
 
+  // Round 10 Addendum (Section 17): hydrate Group-only extras from the
+  // existing `form_data.coverage_preferred_group` blob if present.
+  const groupExtras = (() => {
+    const raw = (lead.form_data ?? {}) as Record<string, unknown>;
+    const block = raw['coverage_preferred_group'];
+    if (block && typeof block === 'object') {
+      const g = block as Record<string, unknown>;
+      return {
+        business_name: typeof g.business_name === 'string' ? g.business_name : '',
+        website: typeof g.website === 'string' ? g.website : '',
+        account_id: typeof g.account_id === 'string' ? g.account_id : '',
+      };
+    }
+    return { business_name: '', website: '', account_id: '' };
+  })();
+
   const initialValues = {
     first_name: lead.first_name,
     last_name: lead.last_name,
@@ -52,6 +68,9 @@ export function EditLeadModal({ open, onClose, lead, onSuccess }: EditLeadModalP
     next_followup_at: lead.next_followup_at
       ? new Date(lead.next_followup_at).toISOString().slice(0, 16)
       : '',
+    business_name: groupExtras.business_name,
+    website: groupExtras.website,
+    account_id: groupExtras.account_id,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,6 +80,26 @@ export function EditLeadModal({ open, onClose, lead, onSuccess }: EditLeadModalP
     const tags = values.tags
       ? String(values.tags).split(',').map((t: string) => t.trim()).filter(Boolean)
       : [];
+
+    // Round 10 Addendum (Section 17 + Section 15): merge the Group-only
+    // extras into the lead's existing form_data so unrelated keys (e.g.
+    // intake-form payloads) are preserved untouched. When Coverage Preferred
+    // moves away from Group, drop the block entirely so reporting doesn't
+    // see stale business fields on a non-Group lead.
+    const isGroup = values.coverage_preference === 'group';
+    const existingFormData = (lead.form_data ?? {}) as Record<string, unknown>;
+    const { coverage_preferred_group: _drop, ...preservedFormData } = existingFormData;
+    void _drop;
+    const nextFormData: Record<string, unknown> = isGroup
+      ? {
+          ...preservedFormData,
+          coverage_preferred_group: {
+            business_name: (values.business_name || '').trim() || null,
+            website: (values.website || '').trim() || null,
+            account_id: values.account_id || null,
+          },
+        }
+      : preservedFormData;
 
     const result = await leadService.updateLead(lead.id, {
       first_name: values.first_name,
@@ -88,6 +127,7 @@ export function EditLeadModal({ open, onClose, lead, onSuccess }: EditLeadModalP
       premium_amount: values.premium_amount ? Number(values.premium_amount) : undefined,
       subsidy_amount: values.subsidy_amount ? Number(values.subsidy_amount) : undefined,
       member_responsibility: values.member_responsibility ? Number(values.member_responsibility) : undefined,
+      form_data: nextFormData,
     });
 
     if (!result.success) {

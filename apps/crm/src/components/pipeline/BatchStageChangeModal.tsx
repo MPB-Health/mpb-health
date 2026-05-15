@@ -24,8 +24,10 @@ const MOCK_STAGES: StageOption[] = [
   { name: 'won', display_name: 'Won', color: '#22c55e' },
 ];
 
+// Round 12 Addendum (2026-05-14): Leo departed. Mock lead renamed so the
+// Batch Stage Change modal preview doesn't surface a lookalike name.
 const MOCK_LEADS: LeadItem[] = [
-  { id: '1', name: 'Leo Test', email: 'test@gmail.com', currentStage: 'new', score: 42 },
+  { id: '1', name: 'Sample Prospect', email: 'test@gmail.com', currentStage: 'new', score: 42 },
   { id: '2', name: 'Test Moraes', email: 'test@gmail.com', currentStage: 'new', score: 38 },
   { id: '3', name: 'Brett Baker', email: 'brettbaker7@me.com', currentStage: 'new', score: 71 },
   { id: '4', name: 'Patricia Moore', email: 'patricia@example.com', currentStage: 'contacted', score: 55 },

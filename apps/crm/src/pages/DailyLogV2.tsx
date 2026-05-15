@@ -22,6 +22,10 @@ import {
   Trash2,
   ShieldAlert,
   Filter,
+  Search,
+  MessageSquare,
+  Target,
+  ShieldCheck,
 } from 'lucide-react';
 import { GradientHeader } from '@mpbhealth/ui';
 import toast from 'react-hot-toast';
@@ -73,6 +77,23 @@ interface DailyLogEvent {
   manual: boolean;
   occurred_at: string;
   created_at: string;
+  // Round 12 — Section 15 capture + searchable backend.
+  prospect_name?: string | null;
+  company_name?: string | null;
+  linked_record_type?: 'lead' | 'contact' | 'recruit' | 'account' | null;
+  linked_record_id?: string | null;
+}
+
+interface ConversationGoalRow {
+  conversation_count: number;
+  target: number;
+  is_special_projects_day: boolean;
+  is_exempt: boolean;
+}
+
+interface CorroborationRow {
+  id: string;
+  effective_corroborated: boolean;
 }
 
 interface PerformanceAlert {
@@ -162,6 +183,9 @@ export default function DailyLogV2() {
   );
   const [adminDateTo, setAdminDateTo] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [adminSourceFilter, setAdminSourceFilter] = useState<'all' | 'auto' | 'manual'>('all');
+  // Round 12 — admin full-text search across the searchable backend.
+  const [adminSearchQuery, setAdminSearchQuery] = useState<string>('');
+  const [adminSectionFilter, setAdminSectionFilter] = useState<'all' | Section>('all');
 
   const { data: orgReps = [] } = useOrgReps();
 
@@ -236,7 +260,8 @@ export default function DailyLogV2() {
     staleTime: 5_000,
   });
 
-  // Admin filter view (Section 8): per-rep, date range, auto-vs-manual.
+  // Admin filter view (Section 8 + Round 12 search): per-rep, date range,
+  // auto-vs-manual + full-text search via crm_daily_log_search RPC.
   const adminQueryKey = [
     'dailyLogEventsAdmin',
     activeOrgId,
@@ -244,11 +269,36 @@ export default function DailyLogV2() {
     adminDateFrom,
     adminDateTo,
     adminSourceFilter,
+    adminSectionFilter,
+    adminSearchQuery.trim(),
   ] as const;
   const { data: adminEvents = [], isLoading: adminLoading } = useQuery({
     queryKey: adminQueryKey,
     enabled: !!activeOrgId && isAdminView,
     queryFn: async () => {
+      const trimmedQ = adminSearchQuery.trim();
+      const useRpc =
+        trimmedQ.length > 0 || adminSectionFilter !== 'all'; // RPC handles tsv + section filter cleanly
+      if (useRpc) {
+        const { data, error } = await supabase.rpc('crm_daily_log_search', {
+          p_org_id: activeOrgId!,
+          p_q: trimmedQ.length > 0 ? trimmedQ : null,
+          p_from: adminDateFrom,
+          p_to: adminDateTo,
+          p_user_id: adminRepFilter !== 'all' ? adminRepFilter : null,
+          p_section: adminSectionFilter !== 'all' ? adminSectionFilter : null,
+          p_activity_type: null,
+          p_source:
+            adminSourceFilter === 'auto' ? 'auto' :
+            adminSourceFilter === 'manual' ? 'manual' : null,
+          p_linked_record_type: null,
+          p_linked_record_id: null,
+          p_limit: 500,
+          p_offset: 0,
+        });
+        if (error) throw error;
+        return (data ?? []) as DailyLogEvent[];
+      }
       let q = supabase
         .from('crm_daily_log_events')
         .select('*')
@@ -267,6 +317,43 @@ export default function DailyLogV2() {
     },
     staleTime: 5_000,
   });
+
+  // Round 12 — anti-fabrication corroboration view, scoped to the
+  // current admin filter set so the badge can be shown next to a row.
+  const { data: corroborationFlags = [] } = useQuery({
+    queryKey: [
+      'dailyLogCorroboration',
+      activeOrgId,
+      adminRepFilter,
+      adminDateFrom,
+      adminDateTo,
+    ] as const,
+    enabled: !!activeOrgId && isAdminView,
+    queryFn: async () => {
+      let q = supabase
+        .from('crm_v_daily_log_corroboration')
+        .select('id, effective_corroborated')
+        .eq('org_id', activeOrgId!)
+        .gte('log_date', adminDateFrom)
+        .lte('log_date', adminDateTo)
+        .eq('manual', true)
+        .eq('effective_corroborated', false)
+        .limit(500);
+      if (adminRepFilter !== 'all') q = q.eq('user_id', adminRepFilter);
+      const { data, error } = await q;
+      if (error) {
+        // View may not have been provisioned yet — degrade silently.
+        console.warn('[DailyLogV2] corroboration view query failed', error.message);
+        return [] as CorroborationRow[];
+      }
+      return (data ?? []) as CorroborationRow[];
+    },
+    staleTime: 30_000,
+  });
+  const uncorroboratedIds = useMemo(
+    () => new Set(corroborationFlags.map((c) => c.id)),
+    [corroborationFlags],
+  );
 
   const events = isAdminView ? adminEvents : repEvents;
   const isLoading = isAdminView ? adminLoading : repLoading;
@@ -319,6 +406,27 @@ export default function DailyLogV2() {
       return (data as number) ?? 0;
     },
     staleTime: 10_000,
+  });
+
+  // Round 12 — daily conversation goal (25/day FT, scaled PT, SP day exempt).
+  const { data: conversationGoal } = useQuery({
+    queryKey: ['conversationGoal', activeOrgId, user?.id, today] as const,
+    enabled: !!activeOrgId && !!user?.id && !isAdminView,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('crm_count_conversations', {
+        p_org_id: activeOrgId,
+        p_user_id: user!.id,
+        p_date: today,
+      });
+      if (error) {
+        console.warn('[DailyLogV2] conversation goal RPC failed', error.message);
+        return null;
+      }
+      // Supabase rpc returns a single-row table; either an array or the row itself.
+      const row = Array.isArray(data) ? data[0] : data;
+      return (row as ConversationGoalRow | null) ?? null;
+    },
+    staleTime: 15_000,
   });
 
   // ── Latest performance lag alert (passive — surfaces existing alerts) ──
@@ -553,6 +661,39 @@ export default function DailyLogV2() {
                 {leadsWorked === 1 ? '' : 's'} worked
               </span>
             )}
+            {/* Round 12 — Daily conversation goal badge.
+                Spec: 25/day full-time, scaled for part-time, exempt on
+                Special Projects days. SP-day exemption shows the badge
+                in slate ("exempt"); below-target shows amber; at/above
+                shows emerald. */}
+            {!isAdminView && conversationGoal && (
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${
+                  conversationGoal.is_exempt
+                    ? 'bg-slate-100 text-slate-700'
+                    : conversationGoal.conversation_count >= conversationGoal.target
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-amber-50 text-amber-700'
+                }`}
+                title={
+                  conversationGoal.is_exempt
+                    ? conversationGoal.is_special_projects_day
+                      ? 'Special Projects day — conversation goal is exempt'
+                      : 'Conversation goal exempt for this rep'
+                    : `Daily conversation goal: ${conversationGoal.target}`
+                }
+              >
+                <Target className="w-3 h-3" />
+                <span className="font-semibold tabular-nums">{conversationGoal.conversation_count}</span>
+                {!conversationGoal.is_exempt && (
+                  <>
+                    /<span className="font-semibold tabular-nums">{conversationGoal.target}</span>{' '}
+                    convos
+                  </>
+                )}
+                {conversationGoal.is_exempt && <> convos · exempt</>}
+              </span>
+            )}
             {!isAdminView && cancellationCount > 0 && (
               <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full">
                 <XCircle className="w-3 h-3" />
@@ -617,60 +758,118 @@ export default function DailyLogV2() {
       )}
 
       {isAdminView && (
-        <div className="bg-surface-primary border border-th-border rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="bg-surface-primary border border-th-border rounded-2xl p-4 space-y-3">
+          {/* Round 12 — searchable backend. Full-text query against prospect
+              name, company name, notes, activity type. Powered by the
+              `crm_daily_log_search` RPC + the generated tsvector on
+              `crm_daily_log_events.search_tsv`. Spec example query:
+              "every entry mentioning [name / company]". */}
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
-              Rep
+              Search
             </label>
-            <select
-              value={adminRepFilter}
-              onChange={(e) => setAdminRepFilter(e.target.value)}
-              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
-            >
-              <option value="all">All reps</option>
-              {orgReps.map((r) => (
-                <option key={r.user_id} value={r.user_id}>
-                  {r.display_name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-th-text-tertiary">
+                <Search className="w-4 h-4" />
+              </div>
+              <input
+                type="search"
+                value={adminSearchQuery}
+                onChange={(e) => setAdminSearchQuery(e.target.value)}
+                placeholder='e.g. "Sarah Johnson", call no answer, or Acme Corp'
+                className="w-full border border-th-border rounded-lg pl-10 pr-3 py-2 text-sm bg-surface-primary"
+              />
+            </div>
+            {adminSearchQuery.trim().length > 0 && (
+              <p className="text-[11px] text-th-text-tertiary mt-1">
+                Full-text search across prospect, company, notes, and activity
+                type. Combine with rep + date + section filters below.
+              </p>
+            )}
           </div>
-          <div>
-            <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
-              From
-            </label>
-            <input
-              type="date"
-              value={adminDateFrom}
-              onChange={(e) => setAdminDateFrom(e.target.value)}
-              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
-            />
+
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+                Rep
+              </label>
+              <select
+                value={adminRepFilter}
+                onChange={(e) => setAdminRepFilter(e.target.value)}
+                className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+              >
+                <option value="all">All reps</option>
+                {orgReps.map((r) => (
+                  <option key={r.user_id} value={r.user_id}>
+                    {r.display_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+                From
+              </label>
+              <input
+                type="date"
+                value={adminDateFrom}
+                onChange={(e) => setAdminDateFrom(e.target.value)}
+                className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+                To
+              </label>
+              <input
+                type="date"
+                value={adminDateTo}
+                onChange={(e) => setAdminDateTo(e.target.value)}
+                className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+                Section
+              </label>
+              <select
+                value={adminSectionFilter}
+                onChange={(e) => setAdminSectionFilter(e.target.value as 'all' | Section)}
+                className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+              >
+                <option value="all">All sections</option>
+                {SECTIONS.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
+                Source
+              </label>
+              <select
+                value={adminSourceFilter}
+                onChange={(e) => setAdminSourceFilter(e.target.value as 'all' | 'auto' | 'manual')}
+                className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+              >
+                <option value="all">Auto + manual</option>
+                <option value="auto">Auto-captured only</option>
+                <option value="manual">Manual only</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
-              To
-            </label>
-            <input
-              type="date"
-              value={adminDateTo}
-              onChange={(e) => setAdminDateTo(e.target.value)}
-              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-medium uppercase tracking-wider text-th-text-tertiary mb-1">
-              Source
-            </label>
-            <select
-              value={adminSourceFilter}
-              onChange={(e) => setAdminSourceFilter(e.target.value as 'all' | 'auto' | 'manual')}
-              className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
-            >
-              <option value="all">Auto + manual</option>
-              <option value="auto">Auto-captured only</option>
-              <option value="manual">Manual only</option>
-            </select>
-          </div>
+
+          {uncorroboratedIds.size > 0 && (
+            <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 inline-flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" />
+              {uncorroboratedIds.size} manual conversation
+              {uncorroboratedIds.size === 1 ? '' : 's'} in this view lack a
+              same-day auto-captured touch — flagged for review (Round 12
+              anti-fabrication).
+            </div>
+          )}
         </div>
       )}
 
@@ -913,12 +1112,38 @@ export default function DailyLogV2() {
                                     <ShieldAlert className="w-2.5 h-2.5" /> corrected
                                   </span>
                                 )}
+                                {/* Round 12 — admin sees the anti-fabrication
+                                    flag when the conversation lacks a
+                                    same-day auto-captured touch on the same
+                                    lead. */}
+                                {isAdminView && uncorroboratedIds.has(e.id) && (
+                                  <span
+                                    className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 inline-flex items-center gap-0.5"
+                                    title="Manual conversation row with no same-day GoTo call / email / SMS / meeting touching this lead. Round 12 anti-fabrication flag."
+                                  >
+                                    <ShieldCheck className="w-2.5 h-2.5" /> uncorroborated
+                                  </span>
+                                )}
                               </div>
                               <p className="text-[11px] text-th-text-tertiary mt-0.5">
                                 {prettyType(e.activity_type)} · {e.source} ·{' '}
                                 {formatTimeAgo(e.occurred_at)}
                                 {repName ? <> · {repName}</> : null}
                               </p>
+                              {/* Round 12 — surface the typeahead-resolved
+                                  prospect / company so admins can scan a
+                                  long list quickly. */}
+                              {(e.prospect_name || e.company_name) && (
+                                <p className="text-[11px] text-th-text-secondary mt-0.5 inline-flex items-center gap-1">
+                                  <MessageSquare className="w-3 h-3 text-th-text-tertiary" />
+                                  {e.prospect_name ?? e.company_name}
+                                  {e.prospect_name && e.company_name ? (
+                                    <span className="text-th-text-tertiary">
+                                      {' '}· {e.company_name}
+                                    </span>
+                                  ) : null}
+                                </p>
+                              )}
                             </div>
                             {/* Per-row actions */}
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

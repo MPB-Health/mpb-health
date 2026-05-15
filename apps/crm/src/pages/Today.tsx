@@ -65,9 +65,11 @@ export default function Today() {
   const { activeOrgId } = useOrg();
   const navigate = useNavigate();
 
-  // CRM rebuild Section 5 + Round 5: Today + Dashboard merged, with a
-  // salesperson FILTER dropdown (Adam / Leo / Tupac / All). Default = 'all',
-  // selection persists per-rep in localStorage.
+  // CRM rebuild Section 5 + Round 5 + Round 12 Addendum (2026-05-14):
+  // Today + Dashboard merged, with a salesperson FILTER dropdown.
+  // Active inside-sales roster is now Adam (part-time) + Tupac (full-time).
+  // Leo departed; references swept. Default = 'all', selection persists
+  // per-rep in localStorage.
   const SALESPERSON_FILTER_KEY = 'crm.today.salespersonFilter';
   const [salespersonFilter, setSalespersonFilter] = useState<string>(() => {
     if (typeof window === 'undefined') return 'all';

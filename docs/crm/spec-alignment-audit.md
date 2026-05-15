@@ -596,6 +596,143 @@ fire_alert :=
 
 ---
 
+## Round 12 — Daily Log backend, prospect tracking, conversation goals (2026-05-14)
+
+Spec source: Round 12 Adjustments image (2026-05-14):
+
+> Reinforces prospect-name capture and anti-fabrication controls from
+> Section 15, adds a searchable concierge-style backend for the Daily
+> Log, and introduces per-rep daily conversation goals (25/day full-time,
+> scaled for part-time, exempt on Special Projects days).
+
+### Daily Log — backend & searchability
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| Daily Log backend mirrors the concierge log's structure: every entry is a discrete row with timestamp, rep, section (Section 11), activity type, linked record (Lead / Member / Recruiting / Company), notes, source (auto / manual). | ✅ | `crm_daily_log_events` was already row-per-action (Phase 4 / Section 8). Round 12 migration `20260620530000_crm_p7_round12_daily_log_search.sql` adds `prospect_name`, `company_name`, `linked_record_type`, `linked_record_id` columns + backfills them from `metadata.lead_id` / `recruit_id` / `contact_id` / `account_id`. Auto-rows continue to mirror metadata into the new columns via the existing `crm_dl_emit_*` triggers (read-time hydration). |
+| Same backing data model as concierge → reporting + audit tooling reuses existing patterns. | ✅ | `crm_v_special_project_rollup`, `crm_v_call_breakdown`, and the new `crm_v_daily_log_corroboration` view all read straight off `crm_daily_log_events` so the reporting pipeline is shared. |
+| Full-text search across Daily Log entries (prospect, company, notes, activity type, rep). | ✅ | `crm_daily_log_events.search_tsv` is a `GENERATED ALWAYS … STORED` `tsvector` with weighted terms (A: prospect/company, B: activity type, C: description). GIN index `idx_daily_log_events_search_tsv` powers the lookup. The new `crm_daily_log_search` RPC accepts a free-text `p_q` (`websearch_to_tsquery('english', …)`) plus structured filters and is what the admin Daily Log page calls. The rep dropdown is the Section 4 reps list (`useOrgReps`). |
+| Filters: date range, rep, section, activity type, source (auto / manual), linked record. | ✅ | `crm_daily_log_search` accepts `p_from`, `p_to`, `p_user_id`, `p_section`, `p_activity_type`, `p_source`, `p_linked_record_type`, `p_linked_record_id`. The Daily Log Admin View bar in `apps/crm/src/pages/DailyLogV2.tsx` exposes Search / Rep / From / To / Section / Source. Linked-record filter is wired via the RPC and is reachable from the Lead Profile (deep-link follow-up). |
+| Admin can pull "every entry mentioning [name / company]" in one query. | ✅ | Admin Daily Log View → search for the name/company; the page calls `crm_daily_log_search` with `p_q` set so reporting + ad-hoc audit share one path. |
+
+### Daily Log — Prospect Name Capture (reinforces Section 15)
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| Every Daily Log entry captures the Person / Company spoken with — REINFORCES Section 15 Round 8. | ✅ | `prospect_name` + `company_name` + `linked_record_type/id` columns on `crm_daily_log_events`. Manual conversation rows must populate the typeahead-resolved record (`crm_daily_log_add_manual_v2` RAISES on missing prospect for conversation activity types). Auto-captured rows hydrate from the linked record via existing triggers + the migration's backfill. |
+| Field is typeahead against CRM records — NOT free text — REINFORCES anti-fabrication. | ✅ | New `apps/crm/src/components/dailyLog/ProspectTypeaheadField.tsx` queries `lead_submissions` + `crm_contacts` + `crm_recruiting_records` + `crm_accounts` in parallel (limit 5 each). Manual Entry modal's "Person / Company spoken with" field is bound to this picker; there is no free-text fallback. The "no matches" hint tells reps to add the prospect under Leads first instead of typing a fabricated name. |
+| Implementer note: do not re-build; verify Section 15 spec is being followed. | ✅ | The migration is purely additive (no Section 15 schema changed); the typeahead component is new but reuses the existing CRM-record tables. No re-build of Section 15 logic. |
+
+### Anti-Fabrication — Reinforcement
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| Cross-check manual entries against auto-captured activity (Section 8 / 15): if a rep claims a conversation with X but no GoTo call, SMS, email, or meeting touches X that day, flag the row for admin review. | ✅ | `crm_v_daily_log_corroboration` view returns `effective_corroborated boolean` for every row. False = admin-visible amber chip ("uncorroborated") on the Daily Log Admin View row, plus a banner counting how many in the current filter set are flagged. |
+| Pattern detection: if a rep repeatedly logs un-corroborated conversations, raise a persistent flag on the rep record (admin-visible only). | ✅ | `crm_rep_anti_fabrication_flags` table (admin-only RLS). `crm_scan_anti_fabrication_flags(p_org_id, p_window_days, p_threshold)` RPC rolls the corroboration view over a 30-day window (default ≥5 uncorroborated rows triggers a persistent flag). Future round will wire the cron job + Today-page admin tile that surfaces active flags. |
+| Cross-check window expands when GoTo Connect integration is live (Section 19) — call answer-status will become a reliable corroborating signal for "spoke to." | ✅ planned | The view already counts `crm_daily_log_events` of type `call`, so as soon as the GoTo Connect webhook starts emitting auto-`call` rows with `metadata.outcome='answered'`, those rows become corroborating signals automatically (the activity-type set in the view is `call/email/sms/text/meeting`). When the webhook lands we'll tighten the corroboration to `answered`-only by extending the predicate. Tracked under Round 11 "Integrations build-blocker." |
+
+### Conversation goals (Round 12 — new)
+
+| Spec bullet | Status | Implementation |
+|---|---|---|
+| 25/day full-time, scaled for part-time, exempt on Special Projects days. | ✅ | `crm_conversation_goal_config` (org defaults: 25 FT / 10 PT default / SP-day exempt). `crm_user_conversation_goal_overrides` (per-user override; `daily_target=0` marks a rep entirely exempt). `crm_count_conversations(org, user, date)` returns `{conversation_count, target, is_special_projects_day, is_exempt}`. The Daily Log "Today" header surfaces the goal as a chip — slate when exempt, emerald when met, amber when behind. SP-day exemption auto-fires when at least one Special Projects entry exists for the day. |
+| Counted activity types (which rows count as a "conversation"). | ✅ | Default set is `lead_communication.{call,email,sms,text}` + `activities.{meeting,demo,presentation}`. Configurable per-org via `counted_sections` + `counted_activity_types` arrays (admins can flip these in Settings → Daily Log later; the schema supports it now). `spec_locked = true` on every existing org so the defaults match the spec out of the box. |
+
+### Files touched (Round 12)
+
+- `supabase/migrations/20260620530000_crm_p7_round12_daily_log_search.sql` — backend additions + migration backfill.
+- `apps/crm/src/components/dailyLog/ProspectTypeaheadField.tsx` — new typeahead bound to leads / members / recruits / accounts.
+- `apps/crm/src/components/dailyLog/ManualEntryModal.tsx` — wires the typeahead, requires it for conversation rows, calls `crm_daily_log_add_manual_v2`.
+- `apps/crm/src/pages/DailyLogV2.tsx` — Daily Log Admin View gets a search box + section filter + corroboration banner + per-row "uncorroborated" chip + per-row prospect/company line. Rep "Today" view gets the conversation-goal chip.
+
+### Outstanding / follow-ups
+
+- Wire `crm_scan_anti_fabrication_flags` into the existing `crm-scheduled-jobs` runner (suggested: weekday 06:00 local). Not blocking — admin can call the RPC manually today.
+- Tighten the corroboration predicate to `metadata.outcome='answered'` once the GoTo Connect webhook lands so missed-call auto rows don't accidentally satisfy the check (carry-over from Round 11 integrations build-blocker).
+- Surface active anti-fabrication flags on the Today admin tile + Rep profile (Today widget redesign — separate ticket).
+
+## Round 11 — Integrations build-blocker + IA cleanup (2026-05-15)
+
+### 🚨 Build-Blocking Priority — GoTo Connect + Outlook integrations
+
+> **FLAG**: Connect the CRM to GoTo Connect AND Outlook as a top-priority,
+> build-blocking item. Section 19 button behavior (Call, Text, Email) does
+> not function end-to-end without these integrations live. Sequence both
+> integrations BEFORE any further Lead Profile work that depends on
+> call / text / email actions.
+
+| Integration | Scope (per Section 2 Integrations) | Owner / next step |
+|---|---|---|
+| **GoTo Connect** | Click-to-dial, call logging, **call duration capture**, SMS send/receive, voicemail capture | Implementer + admin must confirm dev-environment credentials and API access **before sprint start**. Today's Section 19 behavior uses a deep-link best-effort to the desktop client (`apps/crm/src/lib/clickToCall.ts`) + auto-log via `crm_activities`; full webhook capture lands when the OAuth + sync worker is provisioned. |
+| **Outlook** | Calendar two-way sync (Section 13 / Round 7 already wires the inbound `calendar-sync` PULL phase for engagement signals), email send / receive logging into lead activity | Implementer + admin must confirm dev-environment credentials and API access **before sprint start**. Outbound Outlook send is the current gap; inbound is wired through `receive-crm-email` + `crm_email_log`. |
+
+This block is the canonical reference for the CRM rebuild's
+"integrations gate." Until both producers are live, any new Lead-Profile
+feature that depends on call / text / email completion telemetry should
+ship with a deep-link fallback (already done for Section 19 buttons in
+Round 10) and a comment pointing back at this section.
+
+### Section 19 — Lead Profile Action Buttons Execute + Auto-Log (Round 10)
+
+Shipped 2026-05-15:
+
+- `apps/crm/src/lib/clickToCall.ts` — `initiateGotoConnectCall` invokes
+  the GoTo Connect URL scheme (with `tel:` fallback), then opens
+  `LogCallModal` so the rep confirms outcome. Both write a
+  `crm_activities` row, which fires `crm_dl_emit_from_activity` (Section
+  8 / Section 11 → Lead Communication).
+- `apps/crm/src/components/leads/SendSmsModal.tsx` — auto-logs the
+  outbound SMS to `crm_activities` (`activity_type='sms'`) and hands off
+  to GoTo Connect via the `gotoconnect://sms/<E.164>` deep link
+  (`sms:` fallback for mobile). Same handler shape so a future
+  scheduled-task worker can call it without UI changes.
+- `EmailComposer.focus()` + `LeadProfileEmailTab.scrollIntoViewAndFocus()`
+  — Email button in the top action row switches to the email tab,
+  scrolls the composer into view, and focuses the rich-text editor in
+  one shot. From the lead list (or anywhere outside the profile) deep
+  link with `?compose=email` lands the rep on the focused composer; the
+  effect strips the param so a refresh doesn't re-fire.
+
+### Lead Profile — Stage / Workflow Subsection pairing
+
+Per Section 6 Round 3 reinforcement:
+
+- The Stage selector is now rendered next to the Workflow Subsection
+  picker on `LeadMpWorkflowPanel`, paired as a single visual control
+  (2-col grid; 3-col when the LinkedIn sub-section adds the funnel
+  status field). Both controls remain inline-editable (no modal).
+- LeadDetail's top status bar now shows Stage + Subsection as
+  read-only chips that scroll the rep down to the canonical paired
+  editor on click. The `handleStageChange` handler still runs from
+  LeadDetail (so audit log + automation event evaluation fire
+  unchanged) — `LeadMpWorkflowPanel` accepts it via `onStageChange`.
+
+### Navigation — Additional section removals (Round 11 IA cleanup)
+
+Following the Section 9 pattern: sidebar entry removed, primary route
+redirects to a surviving module, `/X/legacy*` keeps the audit-only
+view alive for one cutover cycle.
+
+| Removed entry | Old route | New behaviour | Surviving home for the data |
+|---|---|---|---|
+| Accounts | `/accounts`, `/accounts/:id` | `/accounts` → `/today`; `/accounts/:id` → `/accounts/legacy/:id`; `/accounts/legacy*` mounts the previous Accounts pages for admin audit | Group leads link to a `crm_accounts` row via the Round 10 Coverage Preferred typeahead (`form_data.coverage_preferred_group.account_id`); the standalone module is paused. |
+| Deals | `/deals`, `/deals/:id` | `/deals` → `/today`; `/deals/:id` → `/deals/legacy/:id`; `/deals/legacy*` mounts the previous Deals pages | Lead Pipeline (`/pipeline`) is the only pipeline going forward (Section 1 / Section 5). Lead Profile carries quote history (`crm_lead_quote_history`) + Mark-Enrolled flow which is the canonical "deal" surface. |
+| Deal Pipeline | `/deal-pipeline` | `/deal-pipeline` → `/pipeline`; `/deal-pipeline/legacy` keeps the standalone view | Same as above — the Lead Pipeline absorbs the role. |
+| Campaigns | `/campaigns`, `/campaigns/:id` | `/campaigns` → `/today`; `/campaigns/:id` → `/campaigns/legacy/:id`; `/campaigns/legacy*` mounts the previous Campaigns pages | Marketing campaign tracking is paused; future round will revisit if needed. The Section 9 social-media legacy redirects (which previously forwarded to `/campaigns`) now forward to `/today`. |
+| Referral Partners | `/referral-partners`, `/referral-partners/:id` | `/referral-partners` → `/today`; `/referral-partners/:id` → `/referral-partners/legacy/:id`; `/referral-partners/legacy*` mounts the previous Referral Partners pages | **The "Referral" lead-source tag value on `lead_submissions.lead_source` SURVIVES** (Section 2 / 3 / 4 attribution). Only the partner-roster admin page is hidden. |
+
+Command palette (`apps/crm/src/hooks/useCommandPalette.ts`) and AI
+command palette (`apps/crm/src/components/AICommandPaletteModal.tsx`)
+no longer surface Accounts / Deals / Deal Pipeline / Campaigns
+navigation entries. The "Go to Lead Pipeline" entry replaces the
+prior "Go to Deal Pipeline" suggestion.
+
+Sidebar removals also drop the now-unused `Building2`, `DollarSign`,
+`GitBranch`, `Megaphone`, `Handshake` icon imports from
+`apps/crm/src/layouts/MainLayout.tsx`. The full audit (orphaned-data
+notes, sidebar diff, route handler diff) lives in
+`docs/crm/section9-removals.md` Round 11 block.
+
 ## Round 10 — Section 12 (Round 6 Addendum) lock
 
 The 2026-05-13 Round 6 Addendum supersedes Section 11's placeholders

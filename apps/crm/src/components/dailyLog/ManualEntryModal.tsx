@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal } from '../Modal';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useOrg } from '../../contexts/OrgContext';
+import { ProspectTypeaheadField, type ProspectMatch } from './ProspectTypeaheadField';
 
 // ----------------------------------------------------------------------------
 // CRM rebuild Section 8 — Manual entry (Round 4) + Section 11 (Round 6)
@@ -119,6 +120,18 @@ const optionKey = (o: ActivityOption) => (o.subtype ? `${o.value}::${o.subtype}`
 const findOption = (section: ManualEntrySection, key: string) =>
   ACTIVITY_OPTIONS[section].find((o) => optionKey(o) === key) ?? ACTIVITY_OPTIONS[section][0];
 
+// Round 12 — activity types that require a prospect/company per Section 15
+// (the spec's "conversation" set). Manual entries for these MUST resolve a
+// CRM record via the typeahead; the v2 RPC enforces this server-side too.
+const CONVERSATION_REQUIRES_PROSPECT: Record<ManualEntrySection, Set<string>> = {
+  lead_communication: new Set(['call', 'email', 'sms', 'text']),
+  linkedin_activity: new Set(['linkedin_message', 'linkedin_reply']),
+  pipeline: new Set(),
+  deals_closed: new Set(),
+  activities: new Set(['meeting', 'demo', 'presentation']),
+  content_creation: new Set(),
+};
+
 export function ManualEntryModal({ open, onClose, defaultSection, onSuccess }: Props) {
   const { activeOrgId } = useOrg();
   const [section, setSection] = useState<ManualEntrySection>(
@@ -129,22 +142,35 @@ export function ManualEntryModal({ open, onClose, defaultSection, onSuccess }: P
   );
   const [description, setDescription] = useState('');
   const [occurredAt, setOccurredAt] = useState<string>(() => {
-    // local datetime-input value (YYYY-MM-DDTHH:mm) for the current time.
     const d = new Date();
     const tzOffsetMs = d.getTimezoneOffset() * 60_000;
     return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 16);
   });
   const [saving, setSaving] = useState(false);
+  // Round 12 / Section 15 — typeahead-resolved person/company for the row.
+  const [prospect, setProspect] = useState<ProspectMatch | null>(null);
 
   const handleSectionChange = (next: ManualEntrySection) => {
     setSection(next);
     setActivityKey(optionKey(ACTIVITY_OPTIONS[next][0]));
   };
 
+  // Conversation-vs-non-conversation determines whether the typeahead is
+  // required. Reps logging "networking event" or "content drafted" don't
+  // need to name a single person — those rows skip the typeahead block.
+  const requiresProspect = useMemo(() => {
+    const opt = findOption(section, activityKey);
+    return CONVERSATION_REQUIRES_PROSPECT[section]?.has(opt.value) ?? false;
+  }, [section, activityKey]);
+
   const handleSave = async () => {
     if (!activeOrgId) return;
     if (!description.trim()) {
       toast.error('Add a short description so the row is meaningful in the log');
+      return;
+    }
+    if (requiresProspect && !prospect) {
+      toast.error('Pick the person you spoke with from the typeahead (Section 15 requirement).');
       return;
     }
     const opt = findOption(section, activityKey);
@@ -153,14 +179,32 @@ export function ManualEntryModal({ open, onClose, defaultSection, onSuccess }: P
       metadata.subtype = opt.subtype;
       if (opt.subtype === 'cancellation') metadata.is_cancellation = true;
     }
+    if (prospect) {
+      // Mirror the typeahead pick into metadata too so legacy consumers
+      // that already read e.g. metadata.lead_id keep working unchanged.
+      const idKeyByType: Record<ProspectMatch['type'], string> = {
+        lead: 'lead_id',
+        contact: 'contact_id',
+        recruit: 'recruit_id',
+        account: 'account_id',
+      };
+      metadata[idKeyByType[prospect.type]] = prospect.id;
+    }
     setSaving(true);
-    const { error } = await supabase.rpc('crm_daily_log_add_manual', {
+    // Round 12 — call the v2 RPC so prospect_name / company_name /
+    // linked_record_* land on the row. The v1 RPC remains for callers that
+    // don't capture a person (none in our UI today).
+    const { error } = await supabase.rpc('crm_daily_log_add_manual_v2', {
       p_org_id: activeOrgId,
       p_section: section,
       p_activity_type: opt.value,
       p_description: description.trim(),
       p_occurred_at: new Date(occurredAt).toISOString(),
       p_metadata: metadata,
+      p_prospect_name: prospect?.name ?? null,
+      p_company_name: prospect?.company ?? null,
+      p_linked_record_type: prospect?.type ?? null,
+      p_linked_record_id: prospect?.id ?? null,
     });
     setSaving(false);
     if (error) {
@@ -169,6 +213,7 @@ export function ManualEntryModal({ open, onClose, defaultSection, onSuccess }: P
     }
     toast.success('Manual entry logged');
     setDescription('');
+    setProspect(null);
     onSuccess();
     onClose();
   };
@@ -220,6 +265,17 @@ export function ManualEntryModal({ open, onClose, defaultSection, onSuccess }: P
             </select>
           </div>
         </div>
+
+        {/* Round 12 / Section 15 Round 8 — prospect / company spoken with.
+            Required for conversation activity types; optional for off-CRM
+            networking-style rows. Typeahead-bound, never free text. */}
+        {(requiresProspect || prospect) && (
+          <ProspectTypeaheadField
+            value={prospect}
+            onChange={setProspect}
+            required={requiresProspect}
+          />
+        )}
 
         <div>
           <label className="block text-xs font-medium text-th-text-secondary mb-1">

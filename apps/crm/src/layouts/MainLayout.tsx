@@ -20,15 +20,10 @@ import {
   Zap,
   Mail,
   ShieldCheck,
-  Building2,
   UserCircle,
-  DollarSign,
-  GitBranch,
   Package,
-  Megaphone,
   Command,
   Sparkles,
-  Handshake,
   UserCheck,
   BookOpen,
   ClipboardList,
@@ -99,18 +94,22 @@ interface NavSection {
 }
 
 // ============================================================================
-// CRM Rebuild — Section 9 IA cleanup (2026-05-12)
+// CRM Rebuild — Section 9 IA cleanup (2026-05-12) + Round 11 (2026-05-15)
 //
-// Removed from sidebar: Quick Rate Leads, Reactivation, Quotes, Invoices,
-//   Social Media, Ad Campaigns, Community Events, Sales Activity, Studio,
-//   End of Day (folded into Sales Daily Logs as Multi-entry tab),
-//   Meetings (folded into Calendar).
-// Renamed: Contacts → Members.
-// Consolidated: Email parent now holds Inbox/Sent/Schedules/Sequences/
-//   Deliverability/My templates/Signatures. Settings hosts Automation +
-//   Integrations as subsections.
-// New section: Recruiting (Section 9 + Round 5 Addendum).
-// Merged: Today + Dashboard → single "Today" tab. /dashboard redirects.
+// Section 9 (2026-05-12): Removed Quick Rate Leads, Reactivation, Quotes,
+//   Invoices, Social Media, Ad Campaigns, Community Events, Sales Activity,
+//   Studio, End of Day (→ Sales Daily Logs Multi-entry), Meetings (→ Calendar).
+//   Renamed Contacts → Members. Consolidated Email + Settings sub-sections.
+//   New Recruiting section. Merged Today + Dashboard.
+//
+// Round 11 (2026-05-15): Additional Section Removals — Accounts, Deals,
+//   Deal Pipeline, Campaigns, Referral Partners. Lead Pipeline (Section 1/5)
+//   is the only pipeline going forward. The "Referral" lead-source tag value
+//   survives on `lead_submissions.lead_source` (Section 2/3/4 attribution);
+//   only the Referral Partners admin surface is removed from the sidebar.
+//   Routes redirect to surviving modules + `/legacy` keeps the audit-only
+//   view alive for one cutover cycle (matches the Section 9 pattern). See
+//   `docs/crm/section9-removals.md` Round 11 block for owner / next-step.
 // ============================================================================
 const navigationSections: NavSection[] = [
   {
@@ -138,12 +137,13 @@ const navigationSections: NavSection[] = [
     id: 'crm',
     label: 'CRM',
     items: [
-      { name: 'Accounts', href: '/accounts', icon: Building2, permission: 'accounts.read' },
+      // Round 11 (2026-05-15) — Accounts removed from sidebar; Deals + Deal
+      // Pipeline removed (Lead Pipeline is the only pipeline). Routes redirect
+      // to /today; legacy admin views survive at `/X/legacy` for one cutover
+      // cycle. See `docs/crm/section9-removals.md` Round 11.
       // Renamed: Contacts → Members. Underlying route /members ships in P1
       // as a redirect alias of /contacts so deep links survive.
       { name: 'Members', href: '/members', icon: UserCircle, permission: 'contacts.read' },
-      { name: 'Deals', href: '/deals', icon: DollarSign, permission: 'deals.read' },
-      { name: 'Deal Pipeline', href: '/deal-pipeline', icon: GitBranch, permission: 'deals.read' },
     ],
   },
   {
@@ -156,20 +156,16 @@ const navigationSections: NavSection[] = [
       { name: 'Products', href: '/products', icon: Package, permission: 'products.read' },
     ],
   },
-  {
-    id: 'marketing',
-    label: 'Marketing',
-    items: [
-      // Social Media + Ad Campaigns + Community Events removed from sidebar
-      // per Section 9. Routes still resolve via deep link until P5 retires.
-      { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns.read' },
-    ],
-  },
+  // Marketing parent removed in Round 11 (Campaigns retired). Social Media +
+  // Ad Campaigns + Community Events were already gone in Section 9.
   {
     id: 'network',
     label: 'Network',
     items: [
-      { name: 'Referral Partners', href: '/referral-partners', icon: Handshake, permission: 'referrals.read' },
+      // Round 11 — Referral Partners removed from sidebar. The "Referral"
+      // value on `lead_submissions.lead_source` is preserved; only the
+      // admin partner-roster page is hidden. /referral-partners → /today
+      // (admin audit at /referral-partners/legacy).
       { name: 'Outside Advisors', href: '/outside-advisors', icon: UserCheck, permission: 'outside_advisors.read' },
     ],
   },

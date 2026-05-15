@@ -244,6 +244,34 @@ function NavigateInvoiceToLegacy() {
   return <Navigate to={`/invoices/legacy/${id}`} replace />;
 }
 
+/**
+ * Round 11 (2026-05-15) — IA cleanup. The Accounts / Deals / Campaigns /
+ * Referral Partners sections are removed from the sidebar; existing
+ * deep links continue to resolve via `/X/legacy/:id` so admins can audit
+ * stragglers during cutover. Pattern mirrors Section 9 quote/invoice
+ * forwards above. Audit owner / next steps live in
+ * `docs/crm/section9-removals.md` Round 11.
+ */
+function NavigateAccountToLegacy() {
+  const { id } = useParams();
+  return <Navigate to={`/accounts/legacy/${id}`} replace />;
+}
+
+function NavigateDealToLegacy() {
+  const { id } = useParams();
+  return <Navigate to={`/deals/legacy/${id}`} replace />;
+}
+
+function NavigateCampaignToLegacy() {
+  const { id } = useParams();
+  return <Navigate to={`/campaigns/legacy/${id}`} replace />;
+}
+
+function NavigateReferralPartnerToLegacy() {
+  const { id } = useParams();
+  return <Navigate to={`/referral-partners/legacy/${id}`} replace />;
+}
+
 /** Public landing page -- redirects to /today if already logged in (Section 9
  *  Round 5 merged Today + Dashboard tabs into a single "Today" tab). */
 function LandingRoute() {
@@ -495,8 +523,16 @@ export default function App() {
                 />
 
                 {/* Sales Plan 2026 Entities */}
-                <Route path="/referral-partners" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartners /></Suspense></Guarded>} />
-                <Route path="/referral-partners/:id" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartnerDetail /></Suspense></Guarded>} />
+                {/* Round 11: Referral Partners removed from sidebar.
+                    /referral-partners → /today; legacy admin views at
+                    /referral-partners/legacy*. The "Referral" lead-source tag
+                    on `lead_submissions.lead_source` survives intact (Section
+                    2/3/4 attribution); this only retires the partner-roster
+                    page from primary navigation. */}
+                <Route path="/referral-partners" element={<Navigate to="/today" replace />} />
+                <Route path="/referral-partners/:id" element={<NavigateReferralPartnerToLegacy />} />
+                <Route path="/referral-partners/legacy" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartners /></Suspense></Guarded>} />
+                <Route path="/referral-partners/legacy/:id" element={<Guarded permission="referrals.read"><Suspense fallback={<PageLoader />}><ReferralPartnerDetail /></Suspense></Guarded>} />
                 <Route path="/outside-advisors" element={<Guarded permission="outside_advisors.read"><Suspense fallback={<PageLoader />}><OutsideAdvisors /></Suspense></Guarded>} />
                 <Route path="/outside-advisors/:id" element={<Guarded permission="outside_advisors.read"><Suspense fallback={<PageLoader />}><OutsideAdvisorDetail /></Suspense></Guarded>} />
                 {/* Section 9: Community Events removed from sidebar AND the
@@ -740,9 +776,13 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* Accounts */}
+                {/* Round 11: Accounts removed from sidebar. Legacy admin
+                    views survive at /accounts/legacy* for one cycle of
+                    cutover (Section 9 pattern). */}
+                <Route path="/accounts" element={<Navigate to="/today" replace />} />
+                <Route path="/accounts/:id" element={<NavigateAccountToLegacy />} />
                 <Route
-                  path="/accounts"
+                  path="/accounts/legacy"
                   element={
                     <Guarded permission="accounts.read">
                       <Suspense fallback={<PageLoader />}>
@@ -752,7 +792,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/accounts/:id"
+                  path="/accounts/legacy/:id"
                   element={
                     <Guarded permission="accounts.read">
                       <Suspense fallback={<PageLoader />}>
@@ -808,9 +848,15 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* Deals */}
+                {/* Round 11: Deals + Deal Pipeline removed. The Lead
+                    Pipeline (`/pipeline`) is the only pipeline going
+                    forward (Section 1 / Section 5). /deal-pipeline →
+                    /pipeline; /deals → /today; deal detail forwards to
+                    /deals/legacy/:id. */}
+                <Route path="/deals" element={<Navigate to="/today" replace />} />
+                <Route path="/deals/:id" element={<NavigateDealToLegacy />} />
                 <Route
-                  path="/deals"
+                  path="/deals/legacy"
                   element={
                     <Guarded permission="deals.read">
                       <Suspense fallback={<PageLoader />}>
@@ -820,7 +866,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/deals/:id"
+                  path="/deals/legacy/:id"
                   element={
                     <Guarded permission="deals.read">
                       <Suspense fallback={<PageLoader />}>
@@ -829,8 +875,9 @@ export default function App() {
                     </Guarded>
                   }
                 />
+                <Route path="/deal-pipeline" element={<Navigate to="/pipeline" replace />} />
                 <Route
-                  path="/deal-pipeline"
+                  path="/deal-pipeline/legacy"
                   element={
                     <Guarded permission="deals.read">
                       <Suspense fallback={<PageLoader />}>
@@ -1021,9 +1068,14 @@ export default function App() {
                     </Guarded>
                   }
                 />
-                {/* Campaigns */}
+                {/* Round 11: Campaigns removed from sidebar. Legacy admin
+                    views survive at /campaigns/legacy* for cutover; the
+                    Section 9 social-media legacy redirects (which used to
+                    forward to /campaigns) now forward to /today. */}
+                <Route path="/campaigns" element={<Navigate to="/today" replace />} />
+                <Route path="/campaigns/:id" element={<NavigateCampaignToLegacy />} />
                 <Route
-                  path="/campaigns"
+                  path="/campaigns/legacy"
                   element={
                     <Guarded permission="campaigns.read">
                       <Suspense fallback={<PageLoader />}>
@@ -1033,7 +1085,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/campaigns/:id"
+                  path="/campaigns/legacy/:id"
                   element={
                     <Guarded permission="campaigns.read">
                       <Suspense fallback={<PageLoader />}>
@@ -1043,12 +1095,13 @@ export default function App() {
                   }
                 />
                 {/* Section 9: Social Media + Ad Campaigns removed.
-                    /campaigns is the single channel surface going forward.
+                    Originally folded into /campaigns; Round 11 retired
+                    Campaigns too, so these now forward to /today.
                     Legacy variants kept for one cutover cycle; backing
                     tables (`crm_social_posts`, etc.) are empty so there
                     is no orphaned data to migrate. */}
-                <Route path="/social-media/ads" element={<Navigate to="/campaigns" replace />} />
-                <Route path="/social-media" element={<Navigate to="/campaigns" replace />} />
+                <Route path="/social-media/ads" element={<Navigate to="/today" replace />} />
+                <Route path="/social-media" element={<Navigate to="/today" replace />} />
                 <Route
                   path="/social-media/legacy/ads"
                   element={

@@ -81,11 +81,13 @@ export function AICommandPaletteModal({ open, onClose }: AICommandPaletteModalPr
       });
     }
     if (lower.includes('deal') || lower.includes('pipeline')) {
+      // Round 11: Deal Pipeline retired. The Lead Pipeline is the only
+      // pipeline going forward (Section 1 / Section 5).
       generated.push({
-        id: 'nav-pipeline', type: 'navigate', label: 'Go to Deal Pipeline',
-        description: 'View deals in pipeline board',
+        id: 'nav-pipeline', type: 'navigate', label: 'Go to Lead Pipeline',
+        description: 'View leads in the pipeline board',
         icon: Kanban, iconColor: 'text-violet-500',
-        action: () => { navigate('/deal-pipeline'); onClose(); },
+        action: () => { navigate('/pipeline'); onClose(); },
       });
     }
     if (lower.includes('email') || lower.includes('draft') || lower.includes('follow')) {

@@ -23,6 +23,45 @@ in flight for full retirement of the surviving routes.
 | Dashboard (sidebar entry) | `/dashboard` → 302 to `/today` | `/dashboard/legacy` mounts the legacy Dashboard for a cycle of cutover. | New merged "Today" page. Default authenticated landing route is `/today`. | P2 — merged Today page absorbs unique Dashboard widgets. |
 | Contacts (sidebar entry) | `/contacts` → 302 to `/members`; `/contacts/:id` → 302 to `/members/:id` | `/contacts/legacy` and `/contacts/legacy/:id` keep the old `Contacts` / `ContactDetail` mounted for admin audit. | Section 9 rename: `/members` is the canonical route, served by the same components. The page header, breadcrumbs, sidebar label, command palette, global search results, AI chat context, and `NotificationTicker` deep links all use "Members" / `/members/...` going forward. | P5 — drop the `/contacts/legacy*` redirects after one cutover cycle. |
 
+## Round 11 — Additional section removals (2026-05-15)
+
+Audit reference: spec image *"Navigation — Additional Section Removals"*
+(2026-05-15). Pattern matches the original Section 9 cleanup above:
+sidebar entry retired, primary route redirects to a surviving module,
+`/X/legacy*` keeps the audit-only view alive for one cycle of cutover.
+
+| Removed entry | Old route | Status of route handler | Where the data goes now | Owner / next step |
+|---|---|---|---|---|
+| Accounts | `/accounts` → 302 to `/today`; `/accounts/:id` → 302 to `/accounts/legacy/:id` | `/accounts/legacy` + `/accounts/legacy/:id` keep `Accounts` + `AccountDetail` mounted for admin audit. | Group leads link to a `crm_accounts` row via the Round 10 Coverage Preferred typeahead (`form_data.coverage_preferred_group.account_id`). The standalone Accounts module is paused — no row data moves in this round. Existing `crm_accounts` rows remain reachable via `/accounts/legacy/:id` deep link. | Audit row counts before P5 retires the legacy view; if non-empty, design a Members-side surface to absorb the few records. |
+| Deals | `/deals` → 302 to `/today`; `/deals/:id` → 302 to `/deals/legacy/:id` | `/deals/legacy` + `/deals/legacy/:id` keep `Deals` + `DealDetail` mounted for admin audit. | Lead Pipeline (`/pipeline`) is the only pipeline going forward (Section 1 / Section 5). The Lead Profile already carries Quote History (`crm_lead_quote_history`) and the Mark Enrolled flow (`crm_apply_enrollment_won`), which is the canonical "deal" surface. `crm_deals` rows still reachable via `/deals/legacy/:id`. | Audit `crm_deals` row counts before P5 retires the legacy view; if any exist, decide whether to migrate into the Lead Profile or document the loss. |
+| Deal Pipeline | `/deal-pipeline` → 302 to `/pipeline` | `/deal-pipeline/legacy` keeps the standalone DealPipeline view mounted for admin audit. | Lead Pipeline (`/pipeline`) is the canonical pipeline surface. The Round 11 spec is explicit: *"The Lead Pipeline from Section 1 / 5 is the only pipeline — there is no separate Deal Pipeline."* | P5 — drop `/deal-pipeline/legacy` once Lead Pipeline parity is confirmed. |
+| Campaigns | `/campaigns` → 302 to `/today`; `/campaigns/:id` → 302 to `/campaigns/legacy/:id` | `/campaigns/legacy` + `/campaigns/legacy/:id` keep `Campaigns` + `CampaignDetail` mounted for admin audit. The Section 9 social-media legacy redirects (`/social-media`, `/social-media/ads`) which used to forward into `/campaigns` now forward to `/today`. | Marketing campaign tracking is paused. `crm_campaigns` + `marketing_campaigns` rows still reachable via `/campaigns/legacy/:id`. | Audit row counts; if non-empty, document the loss or design a future surface. |
+| Referral Partners | `/referral-partners` → 302 to `/today`; `/referral-partners/:id` → 302 to `/referral-partners/legacy/:id` | `/referral-partners/legacy` + `/referral-partners/legacy/:id` keep `ReferralPartners` + `ReferralPartnerDetail` mounted for admin audit. | **The "Referral" lead-source tag value on `lead_submissions.lead_source` SURVIVES** (Section 2 / 3 / 4 attribution). Only the partner-roster admin page is hidden from the sidebar. The Lead Form's optional `referral_partner_id` dropdown still resolves rows from `referralService.getPartners()`; admins can manage rows through the legacy view. | Confirm with admins whether they need a non-legacy surface to add new partners; if not, retire `/referral-partners/legacy` in a future round. |
+
+### Round 11 callers updated
+
+| Caller | Change |
+|---|---|
+| `apps/crm/src/layouts/MainLayout.tsx` | `Accounts`, `Deals`, `Deal Pipeline`, `Campaigns`, `Referral Partners` removed from `navigationSections`. The `marketing` section is removed entirely (only Campaigns lived there). The `network` section keeps Outside Advisors. Unused icon imports (`Building2`, `DollarSign`, `GitBranch`, `Megaphone`, `Handshake`) dropped. |
+| `apps/crm/src/App.tsx` | New `NavigateAccountToLegacy` / `NavigateDealToLegacy` / `NavigateCampaignToLegacy` / `NavigateReferralPartnerToLegacy` redirect helpers (mirror existing `NavigateQuoteToLegacy` / `NavigateInvoiceToLegacy`). Primary routes flipped to `<Navigate>`; legacy mounts moved to `/X/legacy*`. |
+| `apps/crm/src/hooks/useCommandPalette.ts` | `nav-accounts`, `nav-deals`, `nav-deal-pipeline`, `nav-campaigns`, `create-account`, `create-deal` entries removed. Existing permission filters left in place — they're just no-op gates now. |
+| `apps/crm/src/components/AICommandPaletteModal.tsx` | "Go to Deal Pipeline" navigates to `/pipeline` (Lead Pipeline). |
+
+### Round 11 outstanding sweeps (P5)
+
+- Today/Dashboard widgets that still surface Deals or Accounts data
+  (`DealsWidget`, account-health widgets in `widgetRegistry`) remain in
+  place for one cutover cycle. They'll either degrade gracefully (no
+  rows) or admins can hide them from the dashboard editor; full retire
+  in P5 once the audit confirms no live data.
+- The `LeadForm` Attribution section continues to expose
+  `referral_partner_id` when `lead_source = 'referrals'`. Spec is
+  explicit that the lead-source value survives — this dropdown stays.
+- Sweep Sections 1–18 of the spec for any references to the removed
+  sections (no doc edits required outside this monorepo; this Round 11
+  block + the spec-alignment-audit Round 11 block document the
+  delta).
+
 ## Routes added in P1
 
 | Route | Renders | Why |

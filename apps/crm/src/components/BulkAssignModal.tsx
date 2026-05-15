@@ -15,7 +15,9 @@ interface Props {
 // ----------------------------------------------------------------------------
 // CRM rebuild Section 6 / Round 3 — Leads list bulk-assign-to-salesperson
 // ----------------------------------------------------------------------------
-// Spec: "select leads → choose owner (Adam / Leo / Tupac) → confirm".
+// Spec: "select leads → choose owner → confirm".
+// Round 12 Addendum (2026-05-14) — active inside-sales roster is now Adam
+// (part-time) + Tupac (full-time). Leo departed; references swept.
 // "Bulk-assign preserves existing tasks and activity history on each lead."
 //
 // Activity history lives on `crm_activities` keyed to `lead_id`, and tasks

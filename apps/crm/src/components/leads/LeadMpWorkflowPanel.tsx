@@ -38,9 +38,21 @@ const LI_STATUSES = [
   'No Response',
 ];
 
-export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh: () => void }) {
+interface LeadMpWorkflowPanelProps {
+  lead: Lead;
+  onRefresh: () => void;
+  /**
+   * Round 11 (2026-05-15): Stage editor moved into this panel as a paired
+   * control with Workflow Subsection. The parent (`LeadDetail`) owns the
+   * full stage-change flow (audit log + automation event eval) and passes
+   * the handler in so we don't duplicate that side-effect plumbing here.
+   */
+  onStageChange?: (newStage: string) => Promise<void> | void;
+}
+
+export function LeadMpWorkflowPanel({ lead, onRefresh, onStageChange }: LeadMpWorkflowPanelProps) {
   const { user } = useAuth();
-  const { leadService } = useCRM();
+  const { leadService, activityService, pipelineStages } = useCRM();
   const queryClient = useQueryClient();
 
   const [qPlan, setQPlan] = useState('');
@@ -172,6 +184,28 @@ export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh
     } else toast.error(r.error || 'Failed');
   };
 
+  // Round 11 (2026-05-15) — Lead Profile Stage / Workflow Subsection
+  // Pairing. Stage editor lives here as a single visual control next to
+  // Workflow Subsection. Prefer the parent-supplied handler so audit log +
+  // automation event evaluation still fire from LeadDetail; fall back to
+  // a minimal updateLeadStage path so the panel is still usable in tests
+  // / preview environments where no parent handler is wired.
+  const handleStage = async (newStage: string) => {
+    if (newStage === lead.pipeline_stage) return;
+    if (onStageChange) {
+      await onStageChange(newStage);
+      return;
+    }
+    const result = await leadService.updateLeadStage(lead.id, newStage);
+    if (result.success) {
+      await activityService.logStageChange(lead.id, lead.pipeline_stage, newStage);
+      toast.success('Stage updated');
+      onRefresh();
+    } else {
+      toast.error(result.error || 'Failed to update stage');
+    }
+  };
+
   const handleLiStatus = async (v: string) => {
     const r = await leadService.updateLead(lead.id, { linkedin_workflow_status: v });
     if (r.success) {
@@ -237,7 +271,7 @@ export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh
   };
 
   return (
-    <div className="bg-surface-primary rounded-2xl border border-th-border p-6 space-y-6">
+    <div id="lead-pipeline-workflow-panel" className="bg-surface-primary rounded-2xl border border-th-border p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-th-text-primary">Pipeline &amp; workflow</h2>
@@ -312,17 +346,34 @@ export function LeadMpWorkflowPanel({ lead, onRefresh }: { lead: Lead; onRefresh
         </p>
       )}
 
-      {/* Section 6 / Round 3 — Workflow subsection picker. The LinkedIn
-          funnel status field below is conditional: shown only when the
-          subsection is 'linkedin' and hidden entirely for every other
-          subsection. */}
+      {/* Section 6 / Round 3 + Round 11 (2026-05-15) — Stage and Workflow
+          Subsection are paired side-by-side as the canonical inline editor.
+          Both are inline-editable (no modal) and remain editable from this
+          panel; LeadDetail's top status bar shows them as read-only chips.
+          The LinkedIn funnel-status field below stays conditional on the
+          subsection being 'linkedin'. */}
       <div
         className={`grid gap-4 ${
           lead.workflow_subsection === 'linkedin'
-            ? 'grid-cols-1 sm:grid-cols-2'
-            : 'grid-cols-1'
+            ? 'grid-cols-1 sm:grid-cols-3'
+            : 'grid-cols-1 sm:grid-cols-2'
         }`}
       >
+        <div>
+          <label className="text-xs font-medium text-th-text-tertiary">Stage</label>
+          <select
+            value={lead.pipeline_stage}
+            onChange={(e) => handleStage(e.target.value)}
+            aria-label="Pipeline stage"
+            className="mt-1 w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary"
+          >
+            {pipelineStages.map((s) => (
+              <option key={s.id} value={s.name}>
+                {s.display_name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="text-xs font-medium text-th-text-tertiary">Workflow subsection</label>
           <select

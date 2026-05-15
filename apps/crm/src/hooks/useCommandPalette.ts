@@ -42,23 +42,23 @@ export interface QuickAction {
 
 const CRM_QUICK_ACTIONS: QuickAction[] = [
   // Navigation
+  // Round 11 (2026-05-15): Accounts / Deals / Deal Pipeline / Campaigns
+  // entries removed from the palette to match the sidebar removal.
+  // /deal-pipeline still resolves (now redirects to /pipeline) so any
+  // bookmarked palette workflows survive; we just don't surface them in
+  // the picker. The Lead Pipeline (`/pipeline`) is the only pipeline
+  // surface going forward.
   { id: 'nav-dashboard', name: 'Go to Dashboard', icon: 'layout-dashboard', category: 'navigation', action_type: 'navigate', action_data: { url: '/' } },
   { id: 'nav-leads', name: 'Go to Leads', icon: 'users', category: 'navigation', action_type: 'navigate', action_data: { url: '/leads' } },
-  { id: 'nav-accounts', name: 'Go to Accounts', icon: 'building-2', category: 'navigation', action_type: 'navigate', action_data: { url: '/accounts' } },
   { id: 'nav-members', name: 'Go to Members', icon: 'user-circle', category: 'navigation', action_type: 'navigate', action_data: { url: '/members' } },
-  { id: 'nav-deals', name: 'Go to Deals', icon: 'dollar-sign', category: 'navigation', action_type: 'navigate', action_data: { url: '/deals' } },
-  { id: 'nav-deal-pipeline', name: 'Go to Deal Pipeline', icon: 'git-branch', category: 'navigation', action_type: 'navigate', action_data: { url: '/deal-pipeline' } },
   { id: 'nav-tasks', name: 'Go to Tasks', icon: 'check-square', category: 'navigation', action_type: 'navigate', action_data: { url: '/tasks' } },
   { id: 'nav-calendar', name: 'Go to Calendar', icon: 'calendar-days', category: 'navigation', action_type: 'navigate', action_data: { url: '/calendar' } },
-  { id: 'nav-campaigns', name: 'Go to Campaigns', icon: 'megaphone', category: 'navigation', action_type: 'navigate', action_data: { url: '/campaigns' } },
   { id: 'nav-reports', name: 'Go to Reports', icon: 'bar-chart-3', category: 'navigation', action_type: 'navigate', action_data: { url: '/reports' } },
   { id: 'nav-settings', name: 'Go to Settings', icon: 'settings', category: 'navigation', action_type: 'navigate', action_data: { url: '/settings' } },
 
   // Create
   { id: 'create-lead', name: 'Create Lead', description: 'Add a new lead', icon: 'user-plus', shortcut: 'L', category: 'create', action_type: 'create', action_data: { entity: 'lead' } },
-  { id: 'create-account', name: 'Create Account', description: 'Add a new account', icon: 'building-2', category: 'create', action_type: 'create', action_data: { entity: 'account' } },
   { id: 'create-member', name: 'Create Member', description: 'Add a new member', icon: 'user-circle', category: 'create', action_type: 'create', action_data: { entity: 'contact' } },
-  { id: 'create-deal', name: 'Create Deal', description: 'Add a new deal', icon: 'dollar-sign', category: 'create', action_type: 'create', action_data: { entity: 'deal' } },
   { id: 'create-task', name: 'Create Task', description: 'Add a new task', icon: 'check-square', shortcut: 'T', category: 'create', action_type: 'create', action_data: { entity: 'task' } },
 
   // Navigation — Workspaces (Section 9: Today + Dashboard merged into /today.

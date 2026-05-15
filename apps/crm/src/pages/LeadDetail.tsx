@@ -782,31 +782,35 @@ export default function LeadDetail() {
           </div>
         </div>
 
-        {/* Status bar — Section 6: Stage and Subsection are now paired
-            visually so reps see them together. The full subsection editor
-            (with concierge / DNC routing) lives in LeadMpWorkflowPanel
-            below; the chip here is a read-only quick reference that mirrors
-            it. */}
+        {/* Status bar — Section 6 + Round 11 (2026-05-15): Stage and
+            Workflow Subsection are read-only chips here; the canonical
+            inline editor lives in `LeadMpWorkflowPanel` below as a single
+            paired control. Clicking either chip jumps to that panel for
+            quick edit access. */}
         <div className="mt-6 pt-6 border-t border-th-border flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium text-th-text-tertiary uppercase tracking-wider">Stage</label>
-            <select
-              value={lead.pipeline_stage}
-              onChange={(e) => handleStageChange(e.target.value)}
-              aria-label="Pipeline stage"
-              className="border border-th-border rounded-lg px-3 py-1.5 text-sm font-medium bg-surface-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
+            <button
+              type="button"
+              onClick={() => {
+                document.getElementById('lead-pipeline-workflow-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-th-accent-200 bg-th-accent-50 text-th-accent-800 hover:bg-th-accent-100"
+              title="Edit Stage on the Pipeline & Workflow panel"
             >
-              {pipelineStages.map((s) => (
-                <option key={s.id} value={s.name}>{s.display_name}</option>
-              ))}
-            </select>
+              {pipelineStages.find((s) => s.name === lead.pipeline_stage)?.display_name ?? lead.pipeline_stage}
+            </button>
             {lead.workflow_subsection && (
-              <span
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-th-accent-200 bg-th-accent-50 text-th-accent-800"
-                title="Lead's current workflow subsection. Edit below."
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('lead-pipeline-workflow-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-th-accent-200 bg-th-accent-50 text-th-accent-800 hover:bg-th-accent-100"
+                title="Edit Workflow Subsection on the Pipeline & Workflow panel"
               >
                 {SUBSECTION_LABELS[lead.workflow_subsection] || lead.workflow_subsection}
-              </span>
+              </button>
             )}
           </div>
           {lead.lead_score > 0 && (
@@ -830,7 +834,11 @@ export default function LeadDetail() {
           )}
         </div>
 
-        <LeadMpWorkflowPanel lead={lead} onRefresh={refreshLead} />
+        <LeadMpWorkflowPanel
+          lead={lead}
+          onRefresh={refreshLead}
+          onStageChange={handleStageChange}
+        />
       </div>
 
       {/* ─── Main Content + Sidebar ─── */}

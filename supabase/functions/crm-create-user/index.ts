@@ -266,12 +266,28 @@ Deno.serve(async (req: Request) => {
     }
 
     // ----- 5. Look up org name for the invite email ----------------------
-    const { data: orgRow } = await supabaseAdmin
-      .from("organizations")
-      .select("name")
-      .eq("id", org_id)
-      .maybeSingle();
-    const orgName = orgRow?.name ?? "your organization";
+    // CRM resolves org_id against `public.orgs` (the `org_memberships` FK
+    // target). The legacy `organizations` table uses different UUIDs — fall
+    // back to it only if `orgs` doesn't have a row, so this works on either
+    // tenant model.
+    let orgName = "your organization";
+    {
+      const { data: orgsRow } = await supabaseAdmin
+        .from("orgs")
+        .select("name")
+        .eq("id", org_id)
+        .maybeSingle();
+      if (orgsRow?.name) {
+        orgName = orgsRow.name;
+      } else {
+        const { data: legacyRow } = await supabaseAdmin
+          .from("organizations")
+          .select("name")
+          .eq("id", org_id)
+          .maybeSingle();
+        if (legacyRow?.name) orgName = legacyRow.name;
+      }
+    }
 
     // ----- 6. Reject duplicates: same email already in this org ----------
     //  (We *don't* reject if the auth user exists elsewhere — they might be

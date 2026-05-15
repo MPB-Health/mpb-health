@@ -119,6 +119,21 @@ function cn(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
+// The DB `org_memberships.role` constraint allows 'owner' | 'admin' | 'manager'
+// | 'agent' | 'member', while the @mpbhealth/auth OrgRole type only knows
+// 'owner' | 'admin' | 'manager' | 'advisor'. Rows written by older flows
+// (and by the new crm-create-user edge function) use 'agent' — without this
+// normalize step, RoleBadge crashes with React error #130 because
+// ROLE_ICONS['agent'] is undefined.
+function normalizeOrgRole(role: string | null | undefined): OrgRole {
+  if (role === 'agent') return 'advisor';
+  if (role === 'owner' || role === 'admin' || role === 'manager' || role === 'advisor') {
+    return role;
+  }
+  // 'member' or any unexpected value: fall back to the lowest-privilege known role.
+  return 'advisor';
+}
+
 function displayName(p: MemberWithProfile['profile']) {
   if (!p) return 'Unknown';
   if (p.display_name) return p.display_name;
@@ -218,17 +233,18 @@ function ConfirmDialog({
 // Role Badge
 // ---------------------------------------------------------------------------
 
-function RoleBadge({ role }: { role: OrgRole }) {
-  const Icon = ROLE_ICONS[role];
+function RoleBadge({ role }: { role: OrgRole | string }) {
+  const safe = normalizeOrgRole(role);
+  const Icon = ROLE_ICONS[safe];
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
-        ROLE_COLORS[role]
+        ROLE_COLORS[safe]
       )}
     >
       <Icon className="w-3.5 h-3.5" />
-      {ORG_ROLE_LABELS[role]}
+      {ORG_ROLE_LABELS[safe]}
     </span>
   );
 }
@@ -280,8 +296,9 @@ function ActionsDropdown({
   const [open, setOpen] = useState(false);
 
   const isSelf = member.user_id === currentUserId;
+  const memberRole = normalizeOrgRole(member.role);
   const isHigherOrEqual =
-    currentRole && ORG_ROLE_HIERARCHY[member.role] <= ORG_ROLE_HIERARCHY[currentRole];
+    currentRole && ORG_ROLE_HIERARCHY[memberRole] <= ORG_ROLE_HIERARCHY[currentRole];
 
   if (!canManage || isSelf || isHigherOrEqual) return null;
 
@@ -304,7 +321,7 @@ function ActionsDropdown({
             </div>
             {ALL_ROLES.filter(
               (r) =>
-                r !== member.role &&
+                r !== memberRole &&
                 currentRole &&
                 ORG_ROLE_HIERARCHY[r] > ORG_ROLE_HIERARCHY[currentRole]
             ).map((r) => {
@@ -1350,6 +1367,7 @@ export default function TeamManagement() {
                   onReactivate={handleReactivate}
                   onRemove={handleRemove}
                   onInvite={() => setInviteOpen(true)}
+                  onCreateUser={() => setCreateUserOpen(true)}
                 />
               </motion.div>
             )}
@@ -1384,6 +1402,16 @@ export default function TeamManagement() {
         onClose={() => setInviteOpen(false)}
         onSuccess={() => {
           fetchInvites();
+          fetchMembers();
+        }}
+      />
+
+      {/* Create User Modal — owner/admin can create a member directly with a temp password */}
+      <CreateUserModal
+        open={createUserOpen}
+        orgId={activeOrgId}
+        onClose={() => setCreateUserOpen(false)}
+        onSuccess={() => {
           fetchMembers();
         }}
       />

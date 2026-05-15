@@ -1,14 +1,23 @@
-import { useMemo, useState } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Mail, Reply, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { EmailComposer } from '../email/EmailComposer';
+import { EmailComposer, type EmailComposerHandle } from '../email/EmailComposer';
 import { formatTimeAgo } from '@mpbhealth/crm-core';
 import type { Lead } from '@mpbhealth/crm-core';
 
 interface LeadProfileEmailTabProps {
   lead: Lead;
+}
+
+/**
+ * Round 10 — Lead Profile action-row contract. Lets the parent scroll the
+ * tab into view AND focus the body editor in one shot when the rep clicks
+ * the top-row Email button (or a scheduled email task fires).
+ */
+export interface LeadProfileEmailTabHandle {
+  scrollIntoViewAndFocus: () => void;
 }
 
 interface ThreadMessageRow {
@@ -32,10 +41,31 @@ interface ThreadMessageRow {
  * CRM (via `crm-send-email`) so it shows in the timeline. Reps never need to
  * leave the profile to email a lead.
  */
-export function LeadProfileEmailTab({ lead }: LeadProfileEmailTabProps) {
+export const LeadProfileEmailTab = forwardRef<LeadProfileEmailTabHandle, LeadProfileEmailTabProps>(
+  function LeadProfileEmailTab({ lead }, ref) {
   const queryClient = useQueryClient();
   const [composerKey, setComposerKey] = useState(0);
   const [replyTo, setReplyTo] = useState<ThreadMessageRow | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<EmailComposerHandle>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      scrollIntoViewAndFocus: () => {
+        // Two rAFs so the layout settles after the parent flips activeTab to
+        // 'email' (Suspense boundary or conditional render). Without this the
+        // scroll runs before the composer is in the DOM.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            wrapperRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            composerRef.current?.focus();
+          });
+        });
+      },
+    }),
+    [],
+  );
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['leadEmailMessages', lead.id],
@@ -88,7 +118,7 @@ export function LeadProfileEmailTab({ lead }: LeadProfileEmailTabProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={wrapperRef}>
       {/* Composer card */}
       <div className="bg-surface-secondary/40 border border-th-border rounded-xl p-3">
         <div className="flex items-center gap-2 mb-2 text-xs text-th-text-tertiary">
@@ -99,6 +129,7 @@ export function LeadProfileEmailTab({ lead }: LeadProfileEmailTabProps) {
         </div>
         <EmailComposer
           key={composerKey}
+          ref={composerRef}
           mode={replyTo ? 'reply' : 'compose'}
           replyToEmailId={replyTo?.id}
           leadId={lead.id}
@@ -172,7 +203,8 @@ export function LeadProfileEmailTab({ lead }: LeadProfileEmailTabProps) {
       </div>
     </div>
   );
-}
+  },
+);
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();

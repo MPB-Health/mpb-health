@@ -72,6 +72,13 @@ interface EmailComposerProps {
 export interface EmailComposerHandle {
   /** Same as Discard / header close — runs confirm when there is unsaved content. */
   discard: () => void;
+  /**
+   * Section 6 / Round 10 — moves keyboard focus into the rich-text body so
+   * the rep can start typing immediately when the top-row Email button or
+   * a scheduled task fires. Safe to call before the editor mounts; the
+   * implementation no-ops until Tiptap is ready.
+   */
+  focus: () => void;
 }
 
 interface RecipientFieldProps {
@@ -797,7 +804,19 @@ export const EmailComposer = forwardRef<EmailComposerHandle, EmailComposerProps>
     onClose?.();
   }, [editor, to, subject, attachments, onDiscard, onClose]);
 
-  useImperativeHandle(ref, () => ({ discard: handleDiscard }), [handleDiscard]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      discard: handleDiscard,
+      focus: () => {
+        // Tiptap may still be mounting on first render — chained `focus()`
+        // is a no-op when the editor isn't ready, so this is safe to call
+        // immediately after switching tabs.
+        editor?.commands.focus('end');
+      },
+    }),
+    [handleDiscard, editor],
+  );
 
   useEffect(() => {
     const onDocKey = (e: KeyboardEvent) => {

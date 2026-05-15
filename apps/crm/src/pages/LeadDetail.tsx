@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Breadcrumbs } from '@mpbhealth/ui';
 import {
   ArrowLeft,
@@ -64,7 +64,9 @@ import { AttachmentList } from '../components/AttachmentList';
 import { RelationshipSidebar } from '../components/RelationshipSidebar';
 import { SunbizLookup } from '../components/SunbizLookup';
 import { LeadMpWorkflowPanel } from '../components/leads/LeadMpWorkflowPanel';
-import { LeadProfileEmailTab } from '../components/leads/LeadProfileEmailTab';
+import { LeadProfileEmailTab, type LeadProfileEmailTabHandle } from '../components/leads/LeadProfileEmailTab';
+import { SendSmsModal } from '../components/leads/SendSmsModal';
+import { initiateGotoConnectCall } from '../lib/clickToCall';
 import { useFocusItems } from '../hooks/useFocusItems';
 import { useProfileTimeTracker } from '../hooks/useProfileTimeTracker';
 import { useOrg } from '../contexts/OrgContext';
@@ -211,6 +213,39 @@ export default function LeadDetail() {
   const [showLogCall, setShowLogCall] = useState(false);
   const [showLogMeeting, setShowLogMeeting] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showSendSms, setShowSendSms] = useState(false);
+
+  // Round 10 — Email button scroll-to-composer + focus. The handle lets us
+  // jump from the top action row OR from a `?compose=email` deep link
+  // (clicked from the lead list) straight into the body editor.
+  const emailTabRef = useRef<LeadProfileEmailTabHandle>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  /**
+   * Round 10 — Action button: clicking initiates a GoTo Connect call AND
+   * opens LogCallModal so the rep can confirm outcome / duration on
+   * completion. LogCallModal writes a `crm_activities` row, which fires
+   * the Section 8 Daily Log auto-capture trigger.
+   */
+  const handleClickToCall = useCallback(() => {
+    if (!lead?.phone) {
+      toast.error('Lead has no phone number on file');
+      return;
+    }
+    initiateGotoConnectCall({ phone: lead.phone, leadId: lead.id });
+    setShowLogCall(true);
+  }, [lead?.id, lead?.phone]);
+
+  /** Round 10 — Email button: switch to the email tab + auto-scroll + focus. */
+  const handleOpenEmailComposer = useCallback(() => {
+    if (!lead?.email) {
+      toast.error('Lead has no email on file');
+      return;
+    }
+    setActiveTab('email');
+    // Wait for the tab body to render before focusing the editor.
+    requestAnimationFrame(() => emailTabRef.current?.scrollIntoViewAndFocus());
+  }, [lead?.email]);
   // CRM rebuild Section 6: Mark as Lost manual override + opt-out reason capture.
   const [showMarkLost, setShowMarkLost] = useState(false);
   const [markLostReason, setMarkLostReason] = useState('');
@@ -258,6 +293,24 @@ export default function LeadDetail() {
     if (moreMenuOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [moreMenuOpen]);
+
+  // Round 10 — `?compose=email` lands the rep on the focused composer when
+  // they click Email from a list view. We consume the param and clean it
+  // off the URL so a refresh doesn't re-trigger the focus.
+  useEffect(() => {
+    if (!lead) return;
+    const compose = searchParams.get('compose');
+    if (compose !== 'email') return;
+    if (!lead.email) {
+      toast.error('Lead has no email on file');
+    } else {
+      setActiveTab('email');
+      requestAnimationFrame(() => emailTabRef.current?.scrollIntoViewAndFocus());
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('compose');
+    setSearchParams(next, { replace: true });
+  }, [lead, searchParams, setSearchParams]);
 
   const openAction = useCallback((action: DetailAction) => {
     setMoreMenuOpen(false);
@@ -566,37 +619,32 @@ export default function LeadDetail() {
                 <MessageSquare className="w-3.5 h-3.5" /> Note
               </button>
               <button
-                onClick={() => setShowLogCall(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all"
-                title="Log call"
+                onClick={handleClickToCall}
+                disabled={!lead?.phone}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                title={lead?.phone ? 'Call via GoTo Connect — auto-logs on completion' : 'No phone on file'}
               >
                 <PhoneCall className="w-3.5 h-3.5" /> Call
               </button>
               <button
-                onClick={() => {
-                  // Section 6 / Round 5 — switch to the in-profile Email
-                  // composer tab. Reps never leave the lead. Templates load
-                  // from the master library (P3); the rep's CRM identity is
-                  // the sender (never Outlook).
-                  if (!lead?.email) {
-                    toast.error('Lead has no email on file');
-                    return;
-                  }
-                  setActiveTab('email');
-                }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all"
-                title="Send email from your CRM"
+                onClick={handleOpenEmailComposer}
+                disabled={!lead?.email}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                title={lead?.email ? 'Open in-profile email composer (auto-logs on send)' : 'No email on file'}
               >
                 <Mail className="w-3.5 h-3.5" /> Email
               </button>
               <button
                 onClick={() => {
-                  // SMS composer wires up in P5 (GoTo Connect). For now, log
-                  // a placeholder note so reps know the action is captured.
-                  toast('SMS composer ships with GoTo Connect (P5).', { icon: '📱' });
+                  if (!lead?.phone) {
+                    toast.error('Lead has no phone number on file');
+                    return;
+                  }
+                  setShowSendSms(true);
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all"
-                title="Send text"
+                disabled={!lead?.phone}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-th-text-secondary hover:bg-surface-primary hover:shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                title={lead?.phone ? 'Text via GoTo Connect — auto-logs on send' : 'No phone on file'}
               >
                 <Send className="w-3.5 h-3.5" /> Text
               </button>
@@ -1003,7 +1051,7 @@ export default function LeadDetail() {
               {activeTab === 'timeline' ? (
                 <UnifiedTimeline leadId={id} />
               ) : activeTab === 'email' ? (
-                <LeadProfileEmailTab lead={lead} />
+                <LeadProfileEmailTab ref={emailTabRef} lead={lead} />
               ) : activeTab === 'attachments' ? (
                 <AttachmentList entityType="lead" entityId={id!} />
               ) : (
@@ -1069,6 +1117,14 @@ export default function LeadDetail() {
       <EditLeadModal open={showEditLead} onClose={() => setShowEditLead(false)} lead={lead} onSuccess={() => refreshLead()} />
       <AddNoteModal open={showAddNote} onClose={() => setShowAddNote(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
       <LogCallModal open={showLogCall} onClose={() => setShowLogCall(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
+      <SendSmsModal
+        open={showSendSms}
+        onClose={() => setShowSendSms(false)}
+        leadId={lead.id}
+        leadName={`${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim() || 'this lead'}
+        phone={lead.phone || ''}
+        onSuccess={() => refreshLead()}
+      />
       <LogMeetingModal open={showLogMeeting} onClose={() => setShowLogMeeting(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
       <AddTaskModal open={showAddTask} onClose={() => setShowAddTask(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
 

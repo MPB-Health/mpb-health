@@ -10,7 +10,7 @@ export function CTASection() {
   return (
     <section ref={ref} className="relative py-24 overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0E2D41] via-[#0A4E8E] to-[#0C71C3]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1B2D5C] via-[#284E84] to-[#3D72BC]" />
 
       {/* Dot grid */}
       <div className="absolute inset-0 opacity-[0.03]" style={{

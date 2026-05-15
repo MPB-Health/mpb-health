@@ -136,7 +136,7 @@ export function HeroSection() {
   return (
     <section ref={ref} className="relative min-h-screen flex items-center overflow-hidden">
       {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0E2D41] via-[#0A4E8E] to-[#0C71C3]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1B2D5C] via-[#284E84] to-[#3D72BC]" />
 
       {/* Animated mesh blurs */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">

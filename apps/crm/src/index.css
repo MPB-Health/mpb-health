@@ -5,30 +5,34 @@
 @tailwind utilities;
 
 /* ============================================================================
-   MPB Health CRM — Starship-Level Design System
-   High-tech palette: electric cyan/blue accents, deep space sidebar
-   Brand: #0EA5E9 (electric sky), #0284C7 (deep sky), #0A0F1A (space dark)
+   MPB Health CRM — Peacock Design System (2026-05-15)
+   Palette inspired by peacock feathers (notebookandpenguin.com palette):
+     • Deep navy   #1B2D5C  (sidebar bg, secondary text)
+     • Royal blue  #3D72BC  (primary accent — buttons, links, rings)
+     • Forest      #3F5E29  (brand "deep green" for charts + nav rails)
+     • Peacock     #5BA85A  (sidebar-active highlight, success accents)
+     • Warm tan    #A18C5E  (brand secondary for subtle tints + chips)
    ============================================================================ */
 
 :root {
-  /* ---- Accent Scale (Electric Sky Blue — high-tech, vivid) ---- */
-  --accent-50: 240 249 255;
-  --accent-100: 224 242 254;
-  --accent-200: 186 230 253;
-  --accent-300: 125 211 252;
-  --accent-400: 56 189 248;
-  --accent-500: 14 165 233;
-  --accent-600: 2 132 199;
-  --accent-700: 3 105 161;
-  --accent-800: 7 89 133;
-  --accent-900: 12 74 110;
+  /* ---- Accent Scale (Peacock Royal Blue — primary action) ---- */
+  --accent-50:  240 246 252;
+  --accent-100: 226 235 247;
+  --accent-200: 200 219 240;
+  --accent-300: 158 191 230;
+  --accent-400: 105 152 215;
+  --accent-500:  61 114 188;   /* #3D72BC — peacock royal */
+  --accent-600:  50  95 160;
+  --accent-700:  40  78 132;
+  --accent-800:  33  65 110;
+  --accent-900:  27  50  88;
 
-  /* ---- Deep Space Sidebar ---- */
-  --sidebar-bg: 10 15 26;
-  --sidebar-text: 148 175 210;
+  /* ---- Peacock Sidebar (deep navy + bright feather-green active) ---- */
+  --sidebar-bg:           27  45  92;   /* #1B2D5C — dark peacock navy */
+  --sidebar-text:        180 198 220;   /* warm cool-grey, AAA on navy  */
   --sidebar-text-active: 255 255 255;
-  --sidebar-hover: 15 25 50;
-  --sidebar-active-bg: 14 165 233;
+  --sidebar-hover:        37  60 116;   /* slightly lifted navy         */
+  --sidebar-active-bg:    91 168  90;   /* #5BA85A — peacock feather    */
 
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -39,17 +43,19 @@
 }
 
 .dark {
-  --surface-primary: 3 7 18;
-  --surface-secondary: 15 23 42;
-  --surface-tertiary: 30 41 59;
-  --surface-elevated: 20 30 52;
-  --surface-inset: 2 6 23;
+  /* Surfaces stay near-black so the peacock accents pop without losing
+     OLED-friendly contrast in dark mode. */
+  --surface-primary:    8  12  24;
+  --surface-secondary: 16  22  40;
+  --surface-tertiary:  28  38  62;
+  --surface-elevated:  20  30  52;
+  --surface-inset:      4   8  16;
 
-  --sidebar-bg: 2 5 15;
-  --sidebar-hover: 12 20 40;
-  --sidebar-text: 148 175 210;
+  --sidebar-bg:           14  24  52;   /* deeper navy in dark mode      */
+  --sidebar-hover:        24  40  78;
+  --sidebar-text:        180 198 220;
   --sidebar-text-active: 240 249 255;
-  --sidebar-active-bg: 14 165 233;
+  --sidebar-active-bg:    91 168  90;
 }
 
 body {

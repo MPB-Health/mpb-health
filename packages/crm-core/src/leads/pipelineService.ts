@@ -10,9 +10,13 @@ export class PipelineService {
    */
   async getPipelineStages(orgId?: string | null): Promise<PipelineStage[]> {
     try {
+      // `pipeline_id` and `probability` were referenced by an earlier schema
+      // draft but never added to crm_pipeline_stages. Selecting them returns
+      // a 400 from PostgREST, which broke initial pipeline load on every CRM
+      // page. Drop them; PipelineStage doesn't expose either field.
       let query  = this.supabase
         .from('crm_pipeline_stages')
-        .select('id, pipeline_id, name, display_name, probability, sort_order, is_won_stage, is_lost_stage, is_active, color, created_at')
+        .select('id, name, display_name, sort_order, is_won_stage, is_lost_stage, is_active, color, created_at')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 

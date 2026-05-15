@@ -27,6 +27,27 @@
   --accent-800:  33  65 110;
   --accent-900:  27  50  88;
 
+  /* ---- Peacock Surfaces (subtle navy chill in the body chrome) ----
+     Replaces the slate-cool defaults so cards + the page background sit
+     inside the peacock family. surface-primary stays effectively white
+     so card content reads as crisp; surface-secondary/tertiary carry
+     the peacock tint that the screenshots flagged as too neutral. */
+  --surface-primary:   253 254 255;   /* #FDFEFF — barely-tinted white   */
+  --surface-secondary: 240 245 251;   /* #F0F5FB — peacock-chilled grey  */
+  --surface-tertiary:  226 235 247;   /* matches accent-100 on purpose   */
+  --surface-elevated:  253 254 255;
+  --surface-inset:     232 240 250;
+
+  /* ---- Peacock Borders ---- */
+  --border-primary: 200 215 232;       /* navy-leaning slate              */
+  --border-subtle:  226 235 247;       /* matches accent-100              */
+  --border-strong:  158 180 205;
+
+  /* ---- Peacock Text (slight navy lean for body text) ---- */
+  --text-primary:    19  35  63;       /* deep peacock navy, near-black   */
+  --text-secondary:  74  92 122;
+  --text-tertiary:  120 138 168;
+
   /* ---- Peacock Sidebar (deep navy + bright feather-green active) ---- */
   --sidebar-bg:           27  45  92;   /* #1B2D5C — dark peacock navy */
   --sidebar-text:        180 198 220;   /* warm cool-grey, AAA on navy  */

@@ -218,25 +218,29 @@ export default function Today() {
       {/* KPI strip */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* 2026-05-15 — Peacock palette: KPI tiles use the peacock royal
+              (Tasks Due), peacock feather green (New Leads, Pipeline Value),
+              and deep forest (Overdue when at zero). Red is reserved for
+              true danger (Overdue > 0) so the semantic still reads. */}
           <KPICard
             label="Tasks Due"
             value={summary.tasks_due_today}
             icon={CheckSquare}
-            color="blue"
+            color="peacock"
             onClick={() => navigate('/tasks')}
           />
           <KPICard
             label="Overdue"
             value={summary.tasks_overdue}
             icon={AlertTriangle}
-            color={summary.tasks_overdue > 0 ? 'red' : 'green'}
+            color={summary.tasks_overdue > 0 ? 'red' : 'forest'}
             onClick={() => navigate('/tasks')}
           />
           <KPICard
             label="New Leads Today"
             value={summary.new_leads_today}
             icon={UserPlus}
-            color="emerald"
+            color="feather"
             subtitle={`${summary.new_leads_this_week} this week`}
             onClick={() => navigate('/leads')}
           />
@@ -244,7 +248,7 @@ export default function Today() {
             label="Pipeline Value"
             value={`$${(summary.open_deals_value / 1000).toFixed(0)}k`}
             icon={DollarSign}
-            color="violet"
+            color="tan"
             onClick={() => navigate('/deals')}
           />
         </div>
@@ -302,8 +306,8 @@ export default function Today() {
               icon={CheckSquare}
               title="Due Today"
               count={todayTasks.length}
-              color="text-blue-600"
-              bgColor="bg-blue-100"
+              color="text-th-accent-700"
+              bgColor="bg-th-accent-100"
               linkTo="/tasks"
             />
             {todayTasks.length > 0 ? (
@@ -327,8 +331,8 @@ export default function Today() {
               icon={UserPlus}
               title="Recent Leads"
               count={recentLeads.length}
-              color="text-emerald-600"
-              bgColor="bg-emerald-100"
+              color="text-brand-green-deep"
+              bgColor="bg-brand-green/20"
               linkTo="/leads"
             />
             {recentLeads.length > 0 ? (
@@ -351,8 +355,8 @@ export default function Today() {
               icon={Calendar}
               title="Upcoming"
               count={upcomingEvents.length}
-              color="text-violet-600"
-              bgColor="bg-violet-100"
+              color="text-brand-tan"
+              bgColor="bg-brand-tan/20"
               linkTo="/calendar"
             />
             {upcomingEvents.length > 0 ? (
@@ -433,14 +437,60 @@ function KPICard({
   subtitle?: string;
   onClick?: () => void;
 }) {
+  // 2026-05-15 — Peacock palette. `peacock` = royal blue (#3D72BC),
+  // `feather` = leaf green (#5BA85A), `forest` = deep green (#3F5E29),
+  // `tan` = warm secondary (#A18C5E). `red` stays semantic for true
+  // danger states (overdue counts > 0). Legacy `blue` / `green` /
+  // `emerald` / `violet` keys map to the peacock equivalents so any
+  // older callsite continues to work without churn.
   const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-    blue: { bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-200 dark:border-blue-500/20' },
-    red: { bg: 'bg-red-50 dark:bg-red-500/10', text: 'text-red-600', border: 'border-red-200 dark:border-red-500/20' },
-    green: { bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-200 dark:border-emerald-500/20' },
-    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-200 dark:border-emerald-500/20' },
-    violet: { bg: 'bg-violet-50 dark:bg-violet-500/10', text: 'text-violet-600', border: 'border-violet-200 dark:border-violet-500/20' },
+    peacock: {
+      bg: 'bg-th-accent-50 dark:bg-th-accent-500/10',
+      text: 'text-th-accent-700 dark:text-th-accent-300',
+      border: 'border-th-accent-200 dark:border-th-accent-500/20',
+    },
+    feather: {
+      bg: 'bg-brand-green/10 dark:bg-brand-green/15',
+      text: 'text-brand-green-deep dark:text-brand-green',
+      border: 'border-brand-green/30 dark:border-brand-green/25',
+    },
+    forest: {
+      bg: 'bg-brand-green-deep/10 dark:bg-brand-green-deep/20',
+      text: 'text-brand-green-deep dark:text-brand-green',
+      border: 'border-brand-green-deep/25 dark:border-brand-green-deep/30',
+    },
+    tan: {
+      bg: 'bg-brand-tan/15 dark:bg-brand-tan/15',
+      text: 'text-brand-tan dark:text-brand-tan',
+      border: 'border-brand-tan/30 dark:border-brand-tan/30',
+    },
+    red: {
+      bg: 'bg-red-50 dark:bg-red-500/10',
+      text: 'text-red-600',
+      border: 'border-red-200 dark:border-red-500/20',
+    },
+    blue: {
+      bg: 'bg-th-accent-50 dark:bg-th-accent-500/10',
+      text: 'text-th-accent-700 dark:text-th-accent-300',
+      border: 'border-th-accent-200 dark:border-th-accent-500/20',
+    },
+    green: {
+      bg: 'bg-brand-green/10 dark:bg-brand-green/15',
+      text: 'text-brand-green-deep dark:text-brand-green',
+      border: 'border-brand-green/30 dark:border-brand-green/25',
+    },
+    emerald: {
+      bg: 'bg-brand-green/10 dark:bg-brand-green/15',
+      text: 'text-brand-green-deep dark:text-brand-green',
+      border: 'border-brand-green/30 dark:border-brand-green/25',
+    },
+    violet: {
+      bg: 'bg-brand-tan/15 dark:bg-brand-tan/15',
+      text: 'text-brand-tan dark:text-brand-tan',
+      border: 'border-brand-tan/30 dark:border-brand-tan/30',
+    },
   };
-  const c = colorMap[color] || colorMap.blue;
+  const c = colorMap[color] || colorMap.peacock;
 
   return (
     <button

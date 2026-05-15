@@ -587,11 +587,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           });
           document.dispatchEvent(event);
         }}
-        className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-violet-500/10 to-blue-500/10 hover:from-violet-500/20 hover:to-blue-500/20 rounded-lg text-xs text-violet-600 dark:text-violet-400 transition-colors border border-violet-200/50 dark:border-violet-500/20"
+        className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-brand-tan/15 to-th-accent-500/10 hover:from-brand-tan/25 hover:to-th-accent-500/20 rounded-lg text-xs text-th-accent-700 dark:text-th-accent-300 transition-colors border border-th-accent-200/60 dark:border-th-accent-500/20"
         title="AI Command Bar (⌘J)"
       >
         <Sparkles className="w-3.5 h-3.5" />
-        <kbd className="text-[10px] bg-violet-100/50 dark:bg-violet-500/10 px-1 py-0.5 rounded font-mono">⌘J</kbd>
+        <kbd className="text-[10px] bg-th-accent-100/60 dark:bg-th-accent-500/10 px-1 py-0.5 rounded font-mono">⌘J</kbd>
       </button>
 
       {/* Command Palette Trigger */}
@@ -617,14 +617,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* Stats badges */}
       {dashboardStats && (
         <div className="hidden lg:flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{dashboardStats.new_leads}</span>
-            <span className="text-xs text-emerald-600/70 dark:text-emerald-400/70">new</span>
+          {/* 2026-05-15 — Peacock palette: live "new" pip uses peacock
+              feather green, "total" uses the peacock royal-blue accent. */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-green/15 dark:bg-brand-green/15">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
+            <span className="text-xs font-bold text-brand-green-deep dark:text-brand-green tabular-nums">{dashboardStats.new_leads}</span>
+            <span className="text-xs text-brand-green-deep/70 dark:text-brand-green/70">new</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10">
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 tabular-nums">{dashboardStats.total_leads}</span>
-            <span className="text-xs text-blue-600/70 dark:text-blue-400/70">total</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-th-accent-50 dark:bg-th-accent-500/10">
+            <span className="text-xs font-bold text-th-accent-700 dark:text-th-accent-300 tabular-nums">{dashboardStats.total_leads}</span>
+            <span className="text-xs text-th-accent-700/70 dark:text-th-accent-300/70">total</span>
           </div>
         </div>
       )}

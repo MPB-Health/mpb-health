@@ -349,9 +349,79 @@ Settings UI: `Settings → Performance Lag` tab
 - Lead is tagged `lead_source_attribution = 'website_auto_response'`
   for source attribution per Section 13.
 
-Open follow-up: admins must paste the verbatim subject + body for
-Email #1 / TP#1–#5 from the source `.docx` into Master Templates before
-cadence sends start firing for non-website-channel inbounds.
+### Round 7 Adjustment — Cadence Import & Website Auto-Response (2026-05-13)
+
+Spec note (verbatim source, 2026-05-13): *"Imports the Quote Response
+cadence into the new Templates section as master templates and specifies
+the website-lead auto-response: first touch sent from
+`sales@mympb.com` using Email #1. Reinforces / supersedes earlier
+language in Section 2 / 3 / 4 'Migrate the Quote-Response 5-touch
+cadence.'"*
+
+| Spec bullet (Round 7 note) | Status | Implementation pointer |
+|---|---|---|
+| Import source `Quote Response Email Cadence (Call to Action LinkedIn).docx` in OneDrive `MPowering Benefits/Sales/` | 🟡 **Pending admin paste** | `.docx` not in repo. Admin must paste each email into `crm_master_templates` via the Master Templates page. See "Pre-launch checklist" below. |
+| Import all six emails: Email #1 (Day 0) + TP#1–#5 (Day 3 / 7 / 14 / 21 / 30) | ✅ **Cadence scaffold** | `20260620110000_crm_p3_cadence_v2_schema.sql` seeds the 6-step `Quote Response` cadence with the exact `day_offset` values `[0, 3, 7, 14, 21, 30]` and `halt_on_engagement: true` on every step. `template_id` on each step is `null` until the admin paste lands. |
+| Import into Master Template Library (Section 7) — admin-view-only — under a "Quote Response" template group | ✅ **Library exists; group = tag** | `crm_master_templates` has a `tags text[]` column for loose grouping (no formal group column by design). Convention: every imported template is tagged `quote_response` (and a step-marker like `email_1` / `tp_1` … `tp_5`). The Master Templates UI filters on the tag chip. |
+| Preserve subject lines and body content verbatim from the source doc | 🟡 **Pending paste** | No automated importer — admin pastes subject + body directly into the form. |
+| Preserve merge tokens (`#lead name`, `#yoursignature`) and map them to the CRM's token system | ✅ **Already mapped** | `packages/crm-core/src/email/emailService.ts` regex map: `#lead\s*name` (note: matches the space in `#lead name` exactly), `#firstname`, `#lastname`, `#email`, `#phone`, `#yoursignature` (the last is resolved server-side by `send-crm-email-v2` from the sender's `email_signatures` row). No additional code needed; tokens render as-is on paste. |
+| Wire the six imported templates as the Quote Response multi-channel cadence (per Section 2 cadence builder) | ✅ **Pre-wired by `step` index** | `crm-cadence-ticker` reads `crm_follow_up_cadences.steps[i].template_id`. Once admin pastes Email #1 and saves, the corresponding step's `template_id` is updated in-place via the Cadences UI (`Cadences.tsx`). |
+| Cadence timing: Email #1 Day 0, TP#1 Day 3, TP#2 Day 7, TP#3 Day 14, TP#4 Day 21, TP#5 Day 30 (per Sales Plan 2026) | ✅ **Confirmed in seed** | See `day_offset` values in `20260620110000_crm_p3_cadence_v2_schema.sql` §2 — match the spec exactly. |
+| Engagement-signal interrupt: reply OR calendar booking OR tracked-link click halts remaining sends and advances stage | ✅ **Phase 7 — Round 7** | All three producers wired against the existing `crm_register_engagement_signal(p_lead_id, p_signal_type)` RPC. (1) **Reply** — `receive-crm-email` → `p_signal_type='reply'`. (2) **Tracked-link click** — DB trigger `trg_crm_tracking_to_engagement` (migration `20260620510000`) on `crm_email_tracking` fires `p_signal_type='link_click'` for every CLICK row regardless of whether it came from the custom click rewriter (`send-crm-email-v2` → `email-tracking` edge function) or Resend's native click webhook (`resend-webhook`). Both paths converge in one trigger. (3) **Calendar booking** — new edge function `crm-calendar-booking-webhook` accepts Calendly `invitee.created` payloads, verifies the HMAC-SHA256 signature, resolves the lead by invitee email, fires `p_signal_type='calendar_booking'`, logs a `crm_activities` row (`activity_type='meeting'`), and persists the raw booking into `crm_calendar_booking_log` (dedupe key `(provider, external_uri)` — Calendly retries are idempotent). |
+| Opt-out interrupt: unsubscribe / hard bounce / opt-out keyword routes the lead to Lost (Section 5) | ✅ | Three independent paths converge on `crm_apply_lead_opt_out` (sets `pipeline_stage='lost'` + DNC + halts cadence). Keyword: `crm_detect_opt_out` (data-driven via `crm_optout_keywords`) called from `receive-crm-email`. Hard bounce: `receive-crm-email` bounce-classification branch. Unsubscribe link: `send-crm-email-v2` injects a one-click List-Unsubscribe header that posts to the unsubscribe edge function which calls the same RPC. |
+| Website-lead auto-response: first touch sent from `sales@mympb.com` using Email #1 | ✅ | `crm-website-lead-intake` uses the constants documented above. Reinforces / supersedes the earlier Section 2 / 3 / 4 "Migrate the Quote-Response 5-touch cadence" language. |
+| Reinforces / supersedes earlier language in Section 2 / 3 / 4 "Migrate the Quote-Response 5-touch cadence" | ✅ **Documented** | The Round 7 note is now the canonical specification for this cadence. Earlier 5-touch language is superseded — the current cadence is **6 touches** (Email #1 + TP#1–#5 = 6 emails). |
+
+### Pre-launch checklist before website auto-response goes live
+
+1. Get admin access to the source `.docx` in OneDrive
+   `MPowering Benefits/Sales/Quote Response Email Cadence (Call to Action LinkedIn).docx`.
+2. In the CRM, open **Templates → Master Templates** (admin only, gated
+   by `templates.master.manage`).
+3. For each of the six emails, click "New master template", pick channel
+   = `email`, paste the verbatim subject + body, and tag the row
+   `quote_response` plus a step marker (`email_1`, `tp_1`, `tp_2`, `tp_3`,
+   `tp_4`, `tp_5`). Keep the `#lead name` / `#yoursignature` tokens
+   exactly as they appear in the source — the existing token mapper
+   matches them character-for-character (regex `/#lead\s*name/gi` and
+   `/#yoursignature/gi`).
+4. Open **Cadences → Quote Response**, click each of the 6 steps, and
+   bind the step's `template_id` to the matching master template row
+   from step 3 (Day 0 → `email_1`, Day 3 → `tp_1`, …, Day 30 → `tp_5`).
+5. Smoke-test: submit a Get-a-Quote form on a staging deploy with a
+   throwaway address. Verify (a) Email #1 arrives within seconds, (b) the
+   lead's `pipeline_stage` flips to `quoted`, (c) `crm_lead_cadence_state`
+   shows `current_step=0`, `paused=false`, `next_action_at` ≈ now+3d.
+6. Reply to that email from the throwaway address. Verify (a) the lead
+   advances to `engaged`, (b) `crm_lead_cadence_state.paused=true` with
+   `paused_reason='engagement_detected:reply'`, (c) no further TP emails
+   send.
+
+### Engagement-signal coverage (Phase 7 — Round 7, shipped 2026-05-15)
+
+All three producers now feed `crm_register_engagement_signal`:
+
+| Signal | Producer | Notes |
+|---|---|---|
+| `reply` | `supabase/functions/receive-crm-email/index.ts` | Inbound email parser. Strips quoted history + signature first; opt-out keyword detector runs before the engagement path. |
+| `link_click` | DB trigger `trg_crm_tracking_to_engagement` on `public.crm_email_tracking` (migration `20260620510000`) | Fires once per click row regardless of source (custom rewriter or Resend native). Opens are deliberately excluded — too noisy (Microsoft Defender prefetch, image scanners). |
+| `calendar_booking` | `supabase/functions/crm-calendar-booking-webhook/index.ts` (Calendly v2) | HMAC-SHA256 signature verification + 5-minute replay window. Idempotent on `(provider, external_uri)` via `crm_calendar_booking_log` so Calendly retries don't double-fire. Outlook / Google calendar bookings can re-use the same log table by writing rows with `provider='outlook'`/`'google'`. |
+
+**Deployment checklist for the calendar-booking webhook**:
+
+1. `supabase functions deploy crm-calendar-booking-webhook`
+2. Generate / fetch a signing key in Calendly: Integrations → Webhook
+   subscriptions → New subscription → URL
+   `https://<project>.supabase.co/functions/v1/crm-calendar-booking-webhook`
+   → events `invitee.created`, `invitee.canceled` → copy signing key.
+3. `supabase secrets set CRM_CALENDLY_WEBHOOK_SIGNING_KEY=<key>`
+4. Confirm with the Calendly "Send test event" button — function should
+   log "Received invitee.created" and return `200 {received: true, action: ...}`.
+
+Outlook + Google calendar bookings still need their own webhook
+producers (deferred per `integrations-recruiting-plan.md`). The
+downstream RPC, dedupe table, and stage-advance behaviour are already
+in place — adding those producers is a producer-only change.
 
 ## Cron snapshot after Phase 6
 
@@ -373,7 +443,13 @@ cadence sends start firing for non-website-channel inbounds.
   LinkedIn manual-workflow polish — see
   `docs/crm/integrations-recruiting-plan.md`.
 - Quote-Response cadence verbatim content paste — admin task before
-  going live with the website auto-response.
+  going live with the website auto-response. See Round 7 Adjustment
+  block in Section 13 / 14 for the step-by-step paste-and-wire
+  checklist.
+- ~~Engagement-signal callers for `link_click` and `calendar_booking`~~
+  ✅ shipped Phase 7 / Round 7 (migration `20260620510000` + edge
+  function `crm-calendar-booking-webhook`). Outlook + Google calendar
+  webhooks remain deferred.
 - Recruiting cadence enrollment runner — schema is ready
   (`crm_follow_up_cadences.module_scope='recruiting'` and the empty
   `crm_recruit_cadence_state` table), and the in-profile composer +

@@ -8,7 +8,7 @@ export class SavedViewService {
     try {
       const { data, error } = await this.supabase
         .from('crm_saved_views')
-        .select('id, org_id, user_id, entity_type, name, filters, columns, sort_config, is_default, is_shared, created_at, updated_at')
+        .select('id, org_id, owner_id, module, name, filters, columns, sort_field, sort_direction, is_default, is_shared, created_at, updated_at')
         .eq('module', module)
         .order('is_default', { ascending: false })
         .order('name', { ascending: true });
@@ -57,7 +57,7 @@ export class SavedViewService {
           is_shared: input.is_shared ?? false,
           owner_id: user.user.id,
         })
-        .select('id, org_id, user_id, entity_type, name, filters, columns, sort_config, is_default, is_shared, created_at, updated_at')
+        .select('id, org_id, owner_id, module, name, filters, columns, sort_field, sort_direction, is_default, is_shared, created_at, updated_at')
         .single();
 
       if (error) {

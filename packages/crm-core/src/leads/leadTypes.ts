@@ -111,6 +111,12 @@ export interface Lead {
   enrollment_approved_at?: string | null;
   /** CRM rebuild Phase 1: Last Touched (rep-initiated activity timestamp). */
   last_touched_at?: string | null;
+  /**
+   * Generated column = COALESCE(last_touched_at, created_at). Used as the
+   * Leads list default sort so brand-new leads (no rep-initiated touch yet)
+   * still surface at the top by their created_at.
+   */
+  last_activity_at?: string | null;
   /** CRM rebuild Phase 1: opt-out audit trail. */
   opt_out_reason?: string | null;
   opt_out_phrase?: string | null;
@@ -145,6 +151,7 @@ export interface LeadFilters {
     | 'created_at'
     | 'last_contacted_at'
     | 'last_touched_at'
+    | 'last_activity_at'
     | 'pipeline_stage'
     | 'assigned_to';
   sortDir?: 'asc' | 'desc';

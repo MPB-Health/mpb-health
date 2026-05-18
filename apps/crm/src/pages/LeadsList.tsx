@@ -83,10 +83,15 @@ export default function LeadsList() {
       window.localStorage.setItem('crm.leads.workflowTab', workflowTab);
     }
   }, [workflowTab]);
+  // Default sort = last_activity_at desc (server-side generated column
+  // = COALESCE(last_touched_at, created_at)). This puts brand-new leads at
+  // the top by created_at while still ordering worked leads by their most
+  // recent rep activity, so reps don't have to fall back to the dashboard
+  // "Recent Leads" widget to find new submissions.
   const [listSort, setListSort] = useState<{
     by: NonNullable<LeadFilters['sortBy']>;
     dir: 'asc' | 'desc';
-  }>({ by: 'last_touched_at', dir: 'desc' });
+  }>({ by: 'last_activity_at', dir: 'desc' });
 
   const listFilters = useMemo(
     (): LeadFilters => ({
@@ -698,7 +703,10 @@ export default function LeadsList() {
                       >
                         Last touched
                         {listSort.by === 'last_touched_at' ? (listSort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
-                        <HelpTooltip text="Last rep-initiated activity (call/email/SMS/note/task complete/profile edit). Inbound replies and link clicks do NOT bump this — see Section 7 Round 3 Addendum." size="sm" />
+                        <HelpTooltip
+                          text="Last rep-initiated activity (call/email/SMS/note/task complete/profile edit). Inbound replies and link clicks do NOT bump this — see Section 7 Round 3 Addendum. The list's default sort uses last activity (touch OR created), so new leads still appear at the top. Click this header to sort strictly by touch."
+                          size="sm"
+                        />
                       </button>
                     </th>
                     <th className="text-left px-6 py-3.5 text-xs font-semibold text-th-text-tertiary uppercase tracking-wider">

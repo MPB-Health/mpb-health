@@ -11,7 +11,7 @@ import { sanitizeSearchInput } from '../utils/sanitize';
 /** Columns for list/detail fetches (PostgREST select) */
 export const LEAD_ROW_SELECT = `
   id, org_id, first_name, last_name, email, phone, household_size, zip_code, city, state, contact_preference, primary_concern, source_page, source_cta, created_at, updated_at,
-  pipeline_stage, priority, plan_type, assigned_to, lead_score, tags, lead_source, next_followup_at, last_contacted_at, last_touched_at, stage_changed_at,
+  pipeline_stage, priority, plan_type, assigned_to, lead_score, tags, lead_source, next_followup_at, last_contacted_at, last_touched_at, last_activity_at, stage_changed_at,
   workflow_subsection, linkedin_workflow_status, do_not_contact,
   opt_out_reason, opt_out_phrase, opt_out_detected_at,
   carrier:insurance_carriers!lead_submissions_carrier_id_fkey(id, name, carrier_type)
@@ -76,8 +76,12 @@ export class LeadService {
         query = query.eq('state', filters.state);
       }
 
+      // Default sort = last_activity_at DESC (generated COALESCE(last_touched_at, created_at)).
+      // Surfaces brand-new leads (no rep-initiated touch yet) at the top by their created_at,
+      // while still ordering worked leads by their most recent rep activity. See migration
+      // 20260620590000_crm_lead_last_activity_default_sort.sql.
       const { data, error, count } = await query
-        .order(filters.sortBy || 'created_at', {
+        .order(filters.sortBy || 'last_activity_at', {
           ascending: filters.sortDir === 'asc',
           nullsFirst: false,
         })

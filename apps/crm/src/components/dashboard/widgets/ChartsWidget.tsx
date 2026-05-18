@@ -88,6 +88,14 @@ export default function ChartsWidget({ config, size }: BaseWidgetProps) {
 
   const height = size === 'lg' || size === 'full' ? 300 : 200;
 
+  if (chartData.length === 0) {
+    return (
+      <div className="p-4 flex items-center justify-center" style={{ height }}>
+        <p className="text-sm text-th-text-tertiary">No data available</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4">
       <ResponsiveContainer width="100%" height={height}>
@@ -125,7 +133,7 @@ export default function ChartsWidget({ config, size }: BaseWidgetProps) {
         ) : (
           <BarChart data={chartData}>
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} domain={[0, (dataMax: number) => Math.max(dataMax, 1)]} />
             <Tooltip />
             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
               {chartData.map((entry, index) => (

@@ -13,14 +13,17 @@ import {
   ChevronRight,
   RefreshCw,
 } from 'lucide-react';
-import { Button, GradientHeader, MetricCard, SkeletonAvatar, SkeletonLine } from '@mpbhealth/ui';
+import { Button, GradientHeader, MetricCard } from '@mpbhealth/ui';
 import { useConversations, useInboxSummary, useInboxActions } from '../hooks/useInbox';
 import type { ConversationWithLead } from '@mpbhealth/champion-core';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { PageQueryBoundary } from '../components/loading';
 
 type ChannelFilter = 'all' | 'sms' | 'email';
 type StatusFilter = 'active' | 'archived';
 
 export default function Inbox() {
+  useAdvisorPageDebugLog('Inbox');
   const navigate = useNavigate();
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
@@ -35,7 +38,7 @@ export default function Inbox() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { conversations, loading, refresh } = useConversations({
+  const { conversations, loading, error, refresh } = useConversations({
     status: statusFilter,
     channel: channelFilter === 'all' ? undefined : channelFilter,
     unreadOnly,
@@ -170,22 +173,17 @@ export default function Inbox() {
       </div>
 
       {/* Conversation list */}
-      {loading ? (
-        <div className="bg-surface-primary rounded-xl border border-th-border divide-y divide-th-border-subtle">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center p-4">
-              <SkeletonAvatar size="w-12 h-12" />
-              <div className="flex-1 min-w-0 ml-4 space-y-2">
-                <SkeletonLine width="w-1/3" />
-                <SkeletonLine width="w-2/3" className="h-3" />
-              </div>
-              <div className="ml-4 flex-shrink-0">
-                <SkeletonLine width="w-16" className="h-3" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : conversations.length === 0 ? (
+      <PageQueryBoundary
+        isLoading={loading && conversations.length === 0}
+        loadingMessage="Loading inbox…"
+        loadingSubtitle="Fetching your conversations."
+        isError={Boolean(error)}
+        errorMessage={
+          error instanceof Error ? error.message : 'Something went wrong while loading conversations.'
+        }
+        onRetry={refresh}
+      >
+      {conversations.length === 0 ? (
         <div className="text-center py-16 bg-surface-primary rounded-xl border border-th-border">
           <InboxIcon className="w-12 h-12 text-th-text-tertiary mx-auto mb-3" />
           <p className="text-th-text-secondary">
@@ -262,6 +260,7 @@ export default function Inbox() {
           ))}
         </div>
       )}
+      </PageQueryBoundary>
     </div>
   );
 }

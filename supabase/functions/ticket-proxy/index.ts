@@ -17,6 +17,7 @@ type ProxyAction =
   | "add_comment"
   | "create"
   | "reply"
+  | "save_ticket_files"
   | "update_ticket"
   | "get_categories"
   | "create_for_advisor"
@@ -49,6 +50,9 @@ interface ProxyRequest {
   search?: string;
   page?: number;
   per_page?: number;
+  /** created_desc | created_asc | updated_desc | updated_asc */
+  sort?: string;
+  category?: string;
   content?: string;
   /** When "html", content is sanitized server-side before insert. Default plain (legacy). */
   content_format?: "plain" | "html";
@@ -57,6 +61,14 @@ interface ProxyRequest {
   storage_paths?: string[];
   /** Ticket IDs for bulk delete_tickets action */
   ticket_ids?: string[];
+  /** For save_ticket_files — metadata for rows inserted into ITSTS `ticket_files` */
+  files?: Array<{
+    filename: string;
+    storage_path: string;
+    file_size: number;
+    mime_type?: string | null;
+    comment_id?: string | null;
+  }>;
 }
 
 function normalizeContentFormat(raw: unknown): "plain" | "html" {
@@ -136,31 +148,174 @@ async function getOrCreateItstsUserId(
   return uid;
 }
 
+/** Prefer full name, then email, for ITSTS profile display. */
+function profileDisplayName(p: { full_name?: string | null; email?: string | null }): string | null {
+  const n = typeof p.full_name === "string" ? p.full_name.trim() : "";
+  if (n) return n;
+  const e = typeof p.email === "string" ? p.email.trim() : "";
+  if (e) return e;
+  return null;
+}
+
 async function listTickets(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
-  opts: { status?: string; priority?: string; search?: string; page: number; perPage: number },
+  opts: {
+    status?: string;
+    priority?: string;
+    search?: string;
+    page: number;
+    perPage: number;
+    sort?: string;
+    category?: string;
+  },
 ) {
+  const sortRaw = (opts.sort || "created_desc").trim();
+  let sortColumn: "created_at" | "updated_at" = "created_at";
+  let sortAscending = false;
+  if (sortRaw === "created_asc") sortAscending = true;
+  else if (sortRaw === "updated_desc") sortColumn = "updated_at";
+  else if (sortRaw === "updated_asc") {
+    sortColumn = "updated_at";
+    sortAscending = true;
+  }
+
   let query = itstsAdmin
     .from("tickets")
-    .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at", { count: "exact" })
+    .select("id, ticket_number, subject, description, status, priority, category, assignee_id, created_at, updated_at", { count: "exact" })
     .eq("requester_id", userId)
-    .order("created_at", { ascending: false })
+    .order(sortColumn, { ascending: sortAscending, nullsFirst: false })
     .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
 
-  if (opts.status) query = query.eq("status", opts.status);
+  const st = (opts.status || "").trim();
+  // "Active" = new + open (matches ITSTS triage list semantics)
+  if (st === "active") {
+    query = query.in("status", ["new", "open"]);
+  } else if (st) {
+    query = query.eq("status", st);
+  }
+
   if (opts.priority) query = query.eq("priority", opts.priority);
+
+  const cat = (opts.category || "").trim();
+  if (cat) query = query.eq("category", cat);
+
   if (opts.search) {
     const safe = sanitizeSearch(opts.search);
     if (safe) {
-      query = query.or(`subject.ilike.%${safe}%,ticket_number.eq.${parseInt(safe) || 0}`);
+      const numeric = /^\d+$/.test(safe) ? parseInt(safe, 10) : NaN;
+      const parts = [`subject.ilike.%${safe}%`, `description.ilike.%${safe}%`];
+      if (!Number.isNaN(numeric)) {
+        parts.push(`ticket_number.eq.${numeric}`);
+      }
+      query = query.or(parts.join(","));
     }
   }
 
   const { data, count, error } = await query;
   if (error) throw error;
 
-  return { tickets: data || [], total: count || 0, page: opts.page, per_page: opts.perPage };
+  const rows = (data || []) as Array<Record<string, unknown> & { assignee_id?: string | null }>;
+  const assigneeIds = [...new Set(rows.map((t) => t.assignee_id).filter(Boolean) as string[])];
+  let assigneeMap: Record<string, string | null> = {};
+  if (assigneeIds.length > 0) {
+    const { data: profiles } = await itstsAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", assigneeIds);
+    assigneeMap = Object.fromEntries(
+      (profiles || []).map((p: { id: string; full_name?: string | null; email?: string | null }) => [
+        p.id,
+        profileDisplayName(p),
+      ]),
+    );
+  }
+
+  const tickets = rows.map((t) => ({
+    ...t,
+    assignee_name: t.assignee_id ? (assigneeMap[t.assignee_id as string] ?? null) : null,
+  }));
+
+  return { tickets, total: count || 0, page: opts.page, per_page: opts.perPage };
+}
+
+/** Files attached at ticket creation (`comment_id` IS NULL); matches ITSTS `ticket_files` pattern. */
+async function fetchTicketOpeningFiles(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketId: string,
+): Promise<
+  Array<{
+    id: string;
+    filename: string;
+    storage_path: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+    comment_id: string | null;
+  }>
+> {
+  const { data, error } = await itstsAdmin
+    .from("ticket_files")
+    .select("id, filename, storage_path, file_size, mime_type, created_at, comment_id")
+    .eq("ticket_id", ticketId)
+    .is("comment_id", null)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    log.error("ticket_files fetch failed (advisor opening)", {
+      ticketId,
+      message: error.message,
+    });
+    return [];
+  }
+  return (data || []) as Array<{
+    id: string;
+    filename: string;
+    storage_path: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+    comment_id: string | null;
+  }>;
+}
+
+/** All `ticket_files` rows for admin ticket view. */
+async function fetchTicketAllFiles(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketId: string,
+): Promise<
+  Array<{
+    id: string;
+    filename: string;
+    storage_path: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+    comment_id: string | null;
+  }>
+> {
+  const { data, error } = await itstsAdmin
+    .from("ticket_files")
+    .select("id, filename, storage_path, file_size, mime_type, created_at, comment_id")
+    .eq("ticket_id", ticketId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    log.error("ticket_files fetch failed (admin)", {
+      ticketId,
+      message: error.message,
+    });
+    return [];
+  }
+  return (data || []) as Array<{
+    id: string;
+    filename: string;
+    storage_path: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+    comment_id: string | null;
+  }>;
 }
 
 async function getTicketDetail(
@@ -202,15 +357,22 @@ async function getTicketDetail(
     throw new Error(`Failed to load conversation: ${commentsError.message}`);
   }
 
-  // Fetch author names for comments
-  const authorIds = [...new Set((comments || []).map((c) => c.author_id).filter(Boolean))];
-  let authorMap: Record<string, string> = {};
+  const assigneeId = (ticket as { assignee_id?: string | null }).assignee_id;
+  const authorIds = [...new Set(
+    [...(comments || []).map((c) => c.author_id).filter(Boolean), assigneeId].filter(Boolean) as string[],
+  )];
+  let authorMap: Record<string, null | string> = {};
   if (authorIds.length > 0) {
     const { data: profiles } = await itstsAdmin
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, email")
       .in("id", authorIds);
-    authorMap = Object.fromEntries((profiles || []).map((p) => [p.id, p.full_name]));
+    authorMap = Object.fromEntries(
+      (profiles || []).map((p: { id: string; full_name?: string | null; email?: string | null }) => [
+        p.id,
+        profileDisplayName(p),
+      ]),
+    );
   }
 
   const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
@@ -219,14 +381,22 @@ async function getTicketDetail(
     content_format: (c.content_format as string) || "plain",
   }));
 
-  return { ticket, comments: enrichedComments };
+  const assigneeName = assigneeId ? (authorMap[assigneeId] ?? null) : null;
+
+  const ticket_files = await fetchTicketOpeningFiles(itstsAdmin, ticketId);
+
+  return {
+    ticket: { ...ticket, assignee_name: assigneeName },
+    comments: enrichedComments,
+    ticket_files,
+  };
 }
 
 async function getTicketStats(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
 ) {
-  const statuses = ["new", "open", "pending", "closed"] as const;
+  const statuses = ["new", "open", "pending", "resolved", "closed"] as const;
 
   const results = await Promise.all(
     statuses.map((status) =>
@@ -247,7 +417,14 @@ async function getTicketStats(
     total += c;
   }
 
-  return { total, ...counts };
+  return {
+    total,
+    new: counts.new ?? 0,
+    open: counts.open ?? 0,
+    pending: counts.pending ?? 0,
+    resolved: counts.resolved ?? 0,
+    closed: counts.closed ?? 0,
+  };
 }
 
 // ── Admin helpers ──────────────────────────────────────────────────────────
@@ -270,7 +447,7 @@ async function listAllTickets(
 ) {
   let query = itstsAdmin
     .from("tickets")
-    .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at, requester_id", { count: "exact" })
+    .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at, requester_id, assignee_id", { count: "exact" })
     .order("created_at", { ascending: false })
     .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
 
@@ -286,15 +463,17 @@ async function listAllTickets(
   const { data: tickets, count, error } = await query;
   if (error) throw error;
 
-  // Enrich with requester info
+  // Enrich with requester + assignee display names
   const requesterIds = [...new Set((tickets || []).map((t: { requester_id: string }) => t.requester_id).filter(Boolean))];
-  let requesterMap: Record<string, { full_name: string; email: string }> = {};
-  if (requesterIds.length > 0) {
+  const assigneeIds = [...new Set((tickets || []).map((t: { assignee_id?: string | null }) => t.assignee_id).filter(Boolean) as string[])];
+  const profileIds = [...new Set([...requesterIds, ...assigneeIds])];
+  let profileById: Record<string, { full_name?: string | null; email?: string | null; agent_id?: string | null; company_name?: string | null }> = {};
+  if (profileIds.length > 0) {
     const { data: profiles } = await itstsAdmin
       .from("profiles")
       .select("id, full_name, email, agent_id, company_name")
-      .in("id", requesterIds);
-    requesterMap = Object.fromEntries(
+      .in("id", profileIds);
+    profileById = Object.fromEntries(
       (profiles || []).map((p: { id: string; full_name: string; email: string; agent_id?: string; company_name?: string }) => [
         p.id,
         { full_name: p.full_name, email: p.email, agent_id: p.agent_id || null, company_name: p.company_name || null },
@@ -304,10 +483,13 @@ async function listAllTickets(
 
   const enriched = (tickets || []).map((t: Record<string, unknown>) => ({
     ...t,
-    requester_name: (requesterMap[t.requester_id as string]?.full_name) || "Unknown",
-    requester_email: (requesterMap[t.requester_id as string]?.email) || "",
-    requester_agent_id: (requesterMap[t.requester_id as string]?.agent_id) ?? null,
-    requester_company: (requesterMap[t.requester_id as string]?.company_name) ?? null,
+    requester_name: (profileById[t.requester_id as string]?.full_name) || "Unknown",
+    requester_email: (profileById[t.requester_id as string]?.email) || "",
+    requester_agent_id: (profileById[t.requester_id as string]?.agent_id) ?? null,
+    requester_company: (profileById[t.requester_id as string]?.company_name) ?? null,
+    assignee_name: t.assignee_id
+      ? (profileDisplayName(profileById[t.assignee_id as string] || { full_name: null, email: null }) ?? null)
+      : null,
   }));
 
   return { tickets: enriched, total: count || 0, page: opts.page, per_page: opts.perPage };
@@ -367,13 +549,19 @@ async function getTicketDetailAdmin(
   }
 
   const authorIds = [...new Set((comments || []).map((c: { author_id: string }) => c.author_id).filter(Boolean))];
-  let authorMap: Record<string, string> = {};
-  if (authorIds.length > 0) {
+  const idsForProfiles = [...new Set([...authorIds, ticket.assignee_id].filter(Boolean) as string[])];
+  let authorMap: Record<string, null | string> = {};
+  if (idsForProfiles.length > 0) {
     const { data: profiles } = await itstsAdmin
       .from("profiles")
-      .select("id, full_name")
-      .in("id", authorIds);
-    authorMap = Object.fromEntries((profiles || []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+      .select("id, full_name, email")
+      .in("id", idsForProfiles);
+    authorMap = Object.fromEntries(
+      (profiles || []).map((p: { id: string; full_name?: string | null; email?: string | null }) => [
+        p.id,
+        profileDisplayName(p),
+      ]),
+    );
   }
 
   const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
@@ -382,9 +570,21 @@ async function getTicketDetailAdmin(
     content_format: (c.content_format as string) || "plain",
   }));
 
+  const assigneeName = ticket.assignee_id ? (authorMap[ticket.assignee_id] ?? null) : null;
+
+  const ticket_files = await fetchTicketAllFiles(itstsAdmin, ticketId);
+
   return {
-    ticket: { ...ticket, requester_name: requesterName, requester_email: requesterEmail, requester_agent_id: requesterAgentId, requester_company: requesterCompany },
+    ticket: {
+      ...ticket,
+      requester_name: requesterName,
+      requester_email: requesterEmail,
+      requester_agent_id: requesterAgentId,
+      requester_company: requesterCompany,
+      assignee_name: assigneeName,
+    },
     comments: enrichedComments,
+    ticket_files,
   };
 }
 
@@ -603,6 +803,59 @@ async function replyToTicket(
   return { ok: true };
 }
 
+const MAX_SAVE_TICKET_FILES = 20;
+const MAX_REGISTER_FILENAME_LEN = 512;
+const MAX_REGISTER_STORAGE_PATH_LEN = 1024;
+
+/** Register advisor-uploaded storage paths into ITSTS `ticket_files` (table does not exist on primary MPB DB). */
+async function saveTicketFilesForRequester(
+  itstsAdmin: ReturnType<typeof createClient>,
+  advisorItstsId: string,
+  ticketId: string,
+  files: Array<{ filename: string; storage_path: string; file_size: number; mime_type?: string | null; comment_id?: string | null }>,
+) {
+  const { data: ticket, error: ticketErr } = await itstsAdmin
+    .from("tickets")
+    .select("id")
+    .eq("id", ticketId)
+    .eq("requester_id", advisorItstsId)
+    .maybeSingle();
+
+  if (ticketErr || !ticket) throw new Error("Ticket not found or access denied");
+
+  if (!files?.length) throw new Error("No files to register");
+  if (files.length > MAX_SAVE_TICKET_FILES) {
+    throw new Error(`Too many files (max ${MAX_SAVE_TICKET_FILES})`);
+  }
+
+  const rows = files.map((f) => {
+    const filename = (f.filename || "").trim().slice(0, MAX_REGISTER_FILENAME_LEN);
+    const storage_path = (f.storage_path || "").trim().slice(0, MAX_REGISTER_STORAGE_PATH_LEN);
+    if (!filename || !storage_path) throw new Error("Invalid file metadata");
+    const file_size = typeof f.file_size === "number" && Number.isFinite(f.file_size) && f.file_size >= 0
+      ? Math.min(Math.floor(f.file_size), 200 * 1024 * 1024)
+      : 0;
+    const mime_type = f.mime_type != null ? String(f.mime_type).slice(0, 200) : null;
+    const row: Record<string, unknown> = {
+      ticket_id: ticketId,
+      filename,
+      storage_path,
+      file_size,
+      mime_type,
+      uploaded_by: advisorItstsId,
+    };
+    if (f.comment_id && UUID_RE.test(f.comment_id)) {
+      row.comment_id = f.comment_id;
+    }
+    return row;
+  });
+
+  const { error } = await itstsAdmin.from("ticket_files").insert(rows);
+  if (error) throw new Error(error.message);
+
+  return { ok: true };
+}
+
 async function updateTicket(
   itstsAdmin: ReturnType<typeof createClient>,
   ticketId: string,
@@ -761,10 +1014,10 @@ Deno.serve(async (req: Request) => {
       if (READ_STUB_ACTIONS.includes(action as string)) {
         const stubs: Record<string, unknown> = {
           list:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats:         { total: 0, new: 0, open: 0, pending: 0, closed: 0 },
+          stats:         { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
           get_categories:{ categories: [] },
           list_all:      { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats_all:     { total: 0, new: 0, open: 0, pending: 0, closed: 0 },
+          stats_all:     { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
         };
         return new Response(
           JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId }),
@@ -826,7 +1079,7 @@ Deno.serve(async (req: Request) => {
         }
         if (action === "stats") {
           return new Response(
-            JSON.stringify({ success: true, total: 0, new: 0, open: 0, pending: 0, closed: 0 }),
+            JSON.stringify({ success: true, total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 }),
             { status: 200, headers },
           );
         }
@@ -848,6 +1101,8 @@ Deno.serve(async (req: Request) => {
             search: body.search,
             page: body.page || 1,
             perPage: body.per_page || 20,
+            sort: body.sort,
+            category: body.category,
           });
         } catch (listErr) {
           log.error("listTickets failed", { correlationId, error: String(listErr) });
@@ -1015,6 +1270,31 @@ Deno.serve(async (req: Request) => {
         result = await replyToTicket(itstsAdmin, itstsUserId!, body.ticket_id, raw, fmt);
         // Staff notifications for advisor replies are handled by ITSTS
         // database triggers on ticket_comments — not by this project.
+        break;
+      }
+      case "save_ticket_files": {
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Valid ticket_id required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        const fileRows = body.files;
+        if (!Array.isArray(fileRows) || fileRows.length === 0) {
+          return new Response(
+            JSON.stringify({ success: false, error: "files array required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        try {
+          result = await saveTicketFilesForRequester(itstsAdmin, itstsUserId!, body.ticket_id, fileRows);
+        } catch (saveErr) {
+          const msg = saveErr instanceof Error ? saveErr.message : String(saveErr);
+          return new Response(
+            JSON.stringify({ success: false, error: msg, correlationId }),
+            { status: 400, headers },
+          );
+        }
         break;
       }
       case "get_categories":

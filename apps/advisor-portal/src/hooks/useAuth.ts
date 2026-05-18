@@ -4,6 +4,7 @@
 
 import { useMemo } from 'react';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 
 export interface AuthUser {
   id: string;
@@ -12,7 +13,8 @@ export interface AuthUser {
 }
 
 export function useAuth() {
-  const { profile, loading, profileLoading, logout } = useAdvisor();
+  const { profile, loading, hasSession, logout } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
 
   const user = useMemo<AuthUser | null>(() => {
     if (!profile) return null;
@@ -23,12 +25,16 @@ export function useAuth() {
     };
   }, [profile]);
 
-  const isAuthenticated = !!profile || profileLoading;
+  /** True only when we have a hydrated advisor profile — not while profile is still loading. */
+  const isAuthenticated = !!profile;
+  /** Initial Supabase auth or advisor row not yet stable for user-scoped work (matches query `enabled` gates). */
+  const isBootstrapping = loading || (hasSession && !advisorReady);
 
   return {
     user,
-    loading: loading || profileLoading,
+    loading: isBootstrapping,
     isAuthenticated,
+    isBootstrapping,
     logout,
   };
 }

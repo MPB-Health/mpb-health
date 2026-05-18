@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@mpbhealth/ui';
 import { useAuditLogs } from '../hooks/useCompliance';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { PageQueryBoundary } from '../components/loading';
 
 const ACTION_ICONS: Record<string, typeof User> = {
   lead: User,
@@ -39,6 +41,7 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function AuditLog() {
+  useAdvisorPageDebugLog('AuditLog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedResourceType, setSelectedResourceType] = useState<string>('');
   const [selectedAction, setSelectedAction] = useState<string>('');
@@ -47,7 +50,7 @@ export default function AuditLog() {
   const [page, setPage] = useState(0);
   const pageSize = 50;
 
-  const { logs, total, loading, refresh } = useAuditLogs({
+  const { logs, total, loading, error, refresh } = useAuditLogs({
     action: selectedAction || undefined,
     resourceType: selectedResourceType || undefined,
     startDate: dateRange.start,
@@ -205,13 +208,19 @@ export default function AuditLog() {
       </div>
 
       {/* Log List */}
+      <PageQueryBoundary
+        isLoading={loading && logs.length === 0}
+        loadingMessage="Loading audit logs…"
+        loadingSubtitle="Fetching recent activity for your organization."
+        isError={Boolean(error) && logs.length === 0}
+        errorMessage={
+          error instanceof Error ? error.message : 'Something went wrong while loading audit logs.'
+        }
+        onRetry={refresh}
+        compact
+      >
       <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
-        {loading && logs.length === 0 ? (
-          <div className="p-8 text-center text-th-text-secondary">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
-            <p>Loading audit logs...</p>
-          </div>
-        ) : filteredLogs.length === 0 ? (
+        {filteredLogs.length === 0 ? (
           <div className="p-8 text-center text-th-text-secondary">
             <Clock className="h-8 w-8 mx-auto mb-2 text-th-text-tertiary" />
             <p>No audit events found</p>
@@ -339,6 +348,7 @@ export default function AuditLog() {
           </div>
         )}
       </div>
+      </PageQueryBoundary>
 
       {/* Pagination */}
       {totalPages > 1 && (

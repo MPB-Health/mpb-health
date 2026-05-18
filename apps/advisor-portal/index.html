@@ -50,44 +50,6 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').then(function(reg) {
-            console.log('[PWA] Service Worker registered:', reg.scope);
-
-            reg.addEventListener('updatefound', function() {
-              var newWorker = reg.installing;
-              if (!newWorker) return;
-              newWorker.addEventListener('statechange', function() {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  newWorker.postMessage({ type: 'SKIP_WAITING' });
-                }
-              });
-            });
-          }).catch(function(error) {
-            console.log('[PWA] Service Worker registration failed:', error);
-          });
-
-          navigator.serviceWorker.addEventListener('controllerchange', function() {
-            if (!window.__swReloading) {
-              window.__swReloading = true;
-              window.location.reload();
-            }
-          });
-
-          navigator.serviceWorker.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'RELOAD_PAGE') {
-              if (!window.__swReloading) {
-                window.__swReloading = true;
-                window.location.reload();
-              }
-            }
-          });
-        });
-      }
-    </script>
+    <!-- Service worker: registered from src/registerServiceWorker.ts (disabled on localhost dev unless advisor-pwa-dev=1). -->
   </body>
 </html>

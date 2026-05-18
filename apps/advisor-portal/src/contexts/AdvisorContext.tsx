@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react';
-import { supabase, isSupabaseConfigured, SUPABASE_AUTH_STORAGE_KEY } from '@mpbhealth/database';
+import { supabase, isSupabaseConfigured, SUPABASE_AUTH_STORAGE_KEY, refreshSessionOnce } from '@mpbhealth/database';
 import {
   profileService,
   trainingService,
@@ -14,6 +14,22 @@ import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 import { secureAuthService } from '@mpbhealth/auth';
 import { clearNavCache } from '../utils/navCache';
 import { startEdgeFunctionWarmup, stopEdgeFunctionWarmup } from '../utils/edgeFunctionWarmup';
+import { getAdvisorQueryClient } from '../query/advisorQueryClient';
+import { nudgeAdvisorQueries } from '../query/nudgeAdvisorQueries';
+
+/** Every `getSession` must be bounded — a hung client leaves `profileLoading` true forever (no `finally`). */
+const GET_SESSION_QUICK_MS = 12_000;
+
+async function getSessionWithDeadline(
+  ms: number,
+): Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>> {
+  return Promise.race([
+    supabase.auth.getSession(),
+    new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error('GET_SESSION_TIMEOUT')), ms);
+    }),
+  ]);
+}
 
 interface AdvisorContextType {
   // Profile
@@ -47,6 +63,8 @@ interface AdvisorContextType {
 const AdvisorContext = createContext<AdvisorContextType | undefined>(undefined);
 
 export function AdvisorProvider({ children }: { children: ReactNode }) {
+  const loadProfileGenRef = useRef(0);
+  const profileRef = useRef<AdvisorProfile | null>(null);
   const [profile, setProfile] = useState<AdvisorProfile | null>(null);
   const [sessionUserCreatedAt, setSessionUserCreatedAt] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -63,6 +81,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   });
 
   const [unreadBulletinCount, setUnreadBulletinCount] = useState(0);
+
+  profileRef.current = profile;
 
   const buildSessionFallbackProfile = (sessionUser: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }): AdvisorProfile => {
     const fullName = String(sessionUser.user_metadata?.full_name || '').trim();
@@ -102,24 +122,63 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  // Load profile (called when we have session — does not block initial shell)
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
+    const gen = ++loadProfileGenRef.current;
+    const PROFILE_DEADLINE_MS = 25_000;
+    /** `getSession` can exceed 10s on cold start, storage contention, or dev throttling — recovery still runs after this. */
+    const GET_SESSION_DEADLINE_MS = 22_000;
     setProfileLoading(true);
+    setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      let session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] = null;
+      try {
+        const sessionRes = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<never>((_, reject) => {
+            window.setTimeout(() => reject(new Error('GET_SESSION_TIMEOUT')), GET_SESSION_DEADLINE_MS);
+          }),
+        ]);
+        session = sessionRes.data.session;
+      } catch (e) {
+        if (e instanceof Error && e.message === 'GET_SESSION_TIMEOUT') {
+          if (gen !== loadProfileGenRef.current) return;
+          console.debug('[AdvisorContext] getSession slow — trying refreshSessionOnce');
+          const { error: refreshErr } = await refreshSessionOnce();
+          if (refreshErr) {
+            console.warn('[AdvisorContext] Session refresh after slow getSession failed:', refreshErr);
+            setError('Could not verify your session. Check your connection or refresh the page.');
+            return;
+          }
+          try {
+            const sessionRes = await getSessionWithDeadline(GET_SESSION_QUICK_MS);
+            session = sessionRes.data.session;
+          } catch {
+            setError('Could not verify your session. Check your connection or refresh the page.');
+            return;
+          }
+        } else {
+          throw e;
+        }
+      }
+      if (gen !== loadProfileGenRef.current) return;
+
       if (!session?.user) {
         setProfile(null);
         setSessionUserCreatedAt(undefined);
-        setProfileLoading(false);
         return;
       }
 
       setSessionUserCreatedAt(session.user.created_at);
 
-      const advisorProfile = await profileService.getProfile(session.user.id);
-      if (advisorProfile) {
-        setProfile(advisorProfile);
-      } else {
+      const runBody = async () => {
+        const advisorProfile = await profileService.getProfile(session.user.id);
+        if (gen !== loadProfileGenRef.current) return;
+
+        if (advisorProfile) {
+          setProfile(advisorProfile);
+          return;
+        }
+
         console.warn('[AdvisorContext] advisor_profiles row missing; attempting self-heal upsert');
         const fallback = buildSessionFallbackProfile(session.user);
         setProfile(fallback);
@@ -140,6 +199,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
             training_completed: healExempt,
             training_completed_at: healExempt ? new Date().toISOString() : null,
           });
+          if (gen !== loadProfileGenRef.current) return;
           if (healed) {
             console.info('[AdvisorContext] Self-healed advisor_profiles row created');
             setProfile(healed);
@@ -147,18 +207,46 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         } catch (healErr) {
           console.warn('[AdvisorContext] Self-heal upsert failed (non-blocking):', healErr);
         }
-      }
+      };
+
+      await Promise.race([
+        runBody(),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('PROFILE_LOAD_TIMEOUT')), PROFILE_DEADLINE_MS);
+        }),
+      ]);
     } catch (err) {
-      // Ignore AbortError from Web Locks API - these are benign and occur during navigation
+      if (err instanceof Error && err.message === 'PROFILE_LOAD_TIMEOUT') {
+        if (gen === loadProfileGenRef.current) {
+          console.warn('[AdvisorContext] Profile load timed out — using session fallback');
+          try {
+            const sessionRes = await getSessionWithDeadline(GET_SESSION_QUICK_MS);
+            const s2 = sessionRes.data.session;
+            if (s2?.user) {
+              setProfile((prev) => prev ?? buildSessionFallbackProfile(s2.user));
+              setError(
+                'Your profile took too long to load. Check your connection or use Refresh — you can keep working with limited data.'
+              );
+            } else {
+              setError('Session unavailable while loading profile.');
+            }
+          } catch {
+            setError('Session unavailable while loading profile.');
+          }
+        }
+        return;
+      }
       if (err instanceof Error && err.name === 'AbortError') {
         console.debug('[AdvisorContext] Session check aborted (likely due to navigation)');
         return;
       }
       setError(err instanceof Error ? err.message : 'Failed to load profile');
     } finally {
-      setProfileLoading(false);
+      if (gen === loadProfileGenRef.current) {
+        setProfileLoading(false);
+      }
     }
-  };
+  }, []);
 
   // Load training data
   const refreshTraining = useCallback(async () => {
@@ -199,38 +287,45 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   const refreshProfile = useCallback(async () => {
     setProfileLoading(true);
     await loadProfile();
-  }, []);
+  }, [loadProfile]);
 
   // Handle authentication errors by refreshing session
   const handleAuthError = useCallback(async () => {
     try {
       setProfileLoading(true);
-      // Try to refresh the session
-      const { data: { session }, error } = await supabase.auth.refreshSession();
+      const { data, error } = await refreshSessionOnce();
       if (error) {
         throw error;
       }
 
+      const session = data?.session;
       if (!session?.user) {
-        // No valid session, redirect to login
         setProfile(null);
         setSessionUserCreatedAt(undefined);
         window.location.href = '/login';
         return;
       }
 
-      // Session refreshed successfully, reload profile
       await loadProfile();
     } catch (err) {
-      console.error('Auth error handling failed:', err);
-      // Force logout if refresh fails
+      if (err instanceof Error && err.message === 'REFRESH_SESSION_TIMEOUT') {
+        console.warn('[AdvisorContext] Session refresh timed out — retrying profile with existing cookies');
+        try {
+          await loadProfile();
+          return;
+        } catch (inner) {
+          console.error('Auth error handling failed after refresh timeout:', inner);
+        }
+      } else {
+        console.error('Auth error handling failed:', err);
+      }
       setProfile(null);
       setSessionUserCreatedAt(undefined);
       window.location.href = '/login';
     } finally {
       setProfileLoading(false);
     }
-  }, []);
+  }, [loadProfile]);
 
   // Logout
   const logout = useCallback(async () => {
@@ -273,13 +368,28 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     // corrupted local storage or stale service-worker token), force the app
     // out of the loading state so the user isn't stuck on an infinite spinner.
     const timeout = setTimeout(() => {
-      setLoading((prev) => {
-        if (prev) {
-          console.warn('[AdvisorContext] Auth timed out after 8 s — forcing load complete');
-          return false;
+      void (async () => {
+        if (initialHandled.current) return;
+        console.warn('[AdvisorContext] Auth listener slow (>8s) — recovering via getSession()');
+        try {
+          const { data: { session } } = await getSessionWithDeadline(GET_SESSION_QUICK_MS);
+          setHasSession(!!session);
+          initialHandled.current = true;
+          if (session?.user) {
+            await loadProfile();
+          } else {
+            setProfile(null);
+            setSessionUserCreatedAt(undefined);
+          }
+        } catch (err) {
+          console.warn('[AdvisorContext] Session recovery failed:', err);
+          setHasSession(false);
+          setProfile(null);
+          setSessionUserCreatedAt(undefined);
+        } finally {
+          setLoading(false);
         }
-        return prev;
-      });
+      })();
     }, 8_000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -300,6 +410,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setSessionUserCreatedAt(undefined);
+          setProfileLoading(false);
         } else if (event === 'TOKEN_REFRESHED') {
           // Session refreshed — no need to reload profile
         }
@@ -348,7 +459,73 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
       window.fetch = origFetch;
     };
-  }, []);
+  }, [loadProfile]);
+
+  /** Last resort if `loadProfile` hangs in an edge we did not anticipate — never leave shell stuck on skeleton. */
+  useEffect(() => {
+    if (!profileLoading) return;
+    const t = globalThis.setTimeout(() => {
+      if (profileRef.current) {
+        console.warn(
+          '[AdvisorContext] profileLoading hung past threshold — clearing spinner (profile already hydrated)',
+        );
+        setProfileLoading(false);
+        return;
+      }
+      console.warn('[AdvisorContext] profileLoading stuck past threshold — forcing shell to recover');
+      setProfileLoading(false);
+      setError(
+        (prev) =>
+          prev ??
+          'Your account took too long to load. Use Refresh, or sign out and back in if this continues.',
+      );
+    }, 45_000);
+    return () => globalThis.clearTimeout(t);
+  }, [profileLoading]);
+
+  // After tab sleep / bfcache / background, Supabase + in-flight profile loads can stall.
+  // Nudge auth + profile so the shell and TanStack queries are not stuck until a full reload.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    let debounce: ReturnType<typeof setTimeout> | undefined;
+
+    const recover = () => {
+      void (async () => {
+        try {
+          nudgeAdvisorQueries(getAdvisorQueryClient(), 'tab-wake');
+          const { data: { session } } = await getSessionWithDeadline(GET_SESSION_QUICK_MS);
+          if (!session?.user) return;
+          setHasSession(true);
+          // Re-load when signed in but profile never hydrated (stalled auth / tab discard).
+          if (!profileRef.current) {
+            await loadProfile();
+          }
+        } catch (err) {
+          console.warn('[AdvisorContext] Tab visibility recovery failed:', err);
+        }
+      })();
+    };
+
+    const onVisible = () => {
+      if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+      window.clearTimeout(debounce);
+      debounce = window.setTimeout(recover, 280);
+    };
+
+    const onPageShow = (e: PageTransitionEvent) => {
+      window.clearTimeout(debounce);
+      debounce = window.setTimeout(recover, e.persisted ? 0 : 280);
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onPageShow);
+      window.clearTimeout(debounce);
+    };
+  }, [loadProfile]);
 
   // Load data when profile is available — deferred so the initial render
   // (profile + auth check) completes first before firing secondary requests.

@@ -4,6 +4,7 @@
 
 import { useMemo } from 'react';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 
 export interface Organization {
   id: string;
@@ -11,8 +12,10 @@ export interface Organization {
 }
 
 export function useOrganization() {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const loading = authLoading || profileLoading;
+  const { profile, loading: authInitializing, hasSession } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
+  /** Don’t block org-scoped fetches on background profile refresh once the advisor row is hydrated. */
+  const loading = authInitializing || (hasSession && !advisorReady);
 
   const organization = useMemo<Organization | null>(() => {
     if (!profile?.org_id) return null;

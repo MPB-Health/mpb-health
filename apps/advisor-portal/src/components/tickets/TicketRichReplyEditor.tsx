@@ -5,6 +5,7 @@ import {
   forwardRef,
   useRef,
 } from 'react';
+import type { ChangeEvent } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -16,6 +17,8 @@ export interface TicketRichReplyEditorRef {
   getHtml: () => string;
   getText: () => string;
   clear: () => void;
+  /** Move caret into the editor (e.g. after a successful send). */
+  focusComposer: () => void;
 }
 
 interface TicketRichReplyEditorProps {
@@ -23,10 +26,12 @@ interface TicketRichReplyEditorProps {
   disabled?: boolean;
   variant?: 'default' | 'admin';
   onDraftChange?: (hasContent: boolean) => void;
-  /** Upload an image to storage; returns signed URL for inline embed. */
+  /** Upload an image for inline embed. */
   uploadImage?: (file: File) => Promise<string>;
-  /** Add non-inline files (shown as links after send). */
   onAttachFiles?: (files: File[]) => void;
+  /** After a failed send, parent restores HTML once TipTap is mounted (then callback clears). */
+  recoverHtml?: string | null;
+  onRecoverHtmlConsumed?: () => void;
 }
 
 /** Rich reply for advisor tickets (default) or admin ticket management (admin tokens). */
@@ -39,11 +44,15 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
       onDraftChange,
       uploadImage,
       onAttachFiles,
+      recoverHtml = null,
+      onRecoverHtmlConsumed,
     },
     ref,
   ) {
     const imageInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const onDraftChangeRef = useRef(onDraftChange);
+    onDraftChangeRef.current = onDraftChange;
 
     const editor = useEditor({
       extensions: [
@@ -109,7 +118,7 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
         },
       },
       onUpdate: ({ editor: ed }) => {
-        onDraftChange?.(!ed.isEmpty);
+        onDraftChangeRef.current?.(!ed.isEmpty);
       },
     });
 
@@ -120,10 +129,17 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
     }, [editor, disabled]);
 
     useEffect(() => {
+      if (!editor || recoverHtml == null || recoverHtml === '') return;
+      editor.commands.setContent(recoverHtml, { emitUpdate: true });
+      onRecoverHtmlConsumed?.();
+    }, [editor, recoverHtml, onRecoverHtmlConsumed]);
+
+    /** Sync once when the editor instance is ready (do not depend on callback identity — unstable parents would loop). */
+    useEffect(() => {
       if (editor) {
-        onDraftChange?.(!editor.isEmpty);
+        onDraftChangeRef.current?.(!editor.isEmpty);
       }
-    }, [editor, onDraftChange]);
+    }, [editor]);
 
     useImperativeHandle(
       ref,
@@ -131,11 +147,14 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
         getHtml: () => editor?.getHTML() ?? '',
         getText: () => editor?.getText() ?? '',
         clear: () => {
-          editor?.commands.clearContent();
-          onDraftChange?.(false);
+          editor?.chain().focus().clearContent().run();
+          onDraftChangeRef.current?.(false);
+        },
+        focusComposer: () => {
+          editor?.chain().focus('end').run();
         },
       }),
-      [editor, onDraftChange],
+      [editor],
     );
 
     const setLink = useCallback(() => {
@@ -152,7 +171,7 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
     }, [editor]);
 
     const onPickImage = useCallback(
-      async (e: React.ChangeEvent<HTMLInputElement>) => {
+      async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         e.target.value = '';
         if (!file || !uploadImage || !editor) return;
@@ -168,13 +187,16 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
     );
 
     const onPickFiles = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
+      (e: ChangeEvent<HTMLInputElement>) => {
         const list = e.target.files;
         e.target.value = '';
         if (!list?.length || !onAttachFiles) return;
-        onAttachFiles(Array.from(list));
+        const files = Array.from(list);
+        onAttachFiles(files);
+        if (files.length) onDraftChangeRef.current?.(true);
+        editor?.chain().focus().run();
       },
-      [onAttachFiles],
+      [editor, onAttachFiles],
     );
 
     if (!editor) {

@@ -19,11 +19,24 @@ function isTrainingAllowedPath(pathname: string): boolean {
  * Redirects advisors who must complete the new training track to /training.
  * Admins bypass. Advisors created before the configured cutoff are grandfathered.
  */
-export function TrainingGate({ children, isAdmin }: { children: React.ReactNode; isAdmin: boolean }) {
+export function TrainingGate({
+  children,
+  isAdmin,
+  isAdminPending = false,
+}: {
+  children: React.ReactNode;
+  isAdmin: boolean;
+  /** True while the admin role query is still resolving — must not treat as non-admin (default false). */
+  isAdminPending?: boolean;
+}) {
   const { profile, sessionUserCreatedAt } = useAdvisor();
   const location = useLocation();
 
   if (!profile) return <>{children}</>;
+
+  // While role is loading, `isAdmin` defaults to false — never redirect to /training on that alone
+  // (avoids navigation thrash, aborted fetches, and “infinite” loading on /chat, /admin/tickets, etc.).
+  if (isAdminPending) return <>{children}</>;
 
   // Admins/super_admins bypass training requirement
   if (isAdmin) return <>{children}</>;

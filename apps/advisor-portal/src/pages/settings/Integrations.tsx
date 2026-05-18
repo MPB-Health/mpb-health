@@ -20,6 +20,7 @@ import {
 import { useIntegrations } from '../../hooks/useSettings';
 import type { IntegrationConfig, CreateIntegrationInput, IntegrationType } from '@mpbhealth/champion-core';
 import { Button } from '@mpbhealth/ui';
+import { useAdvisorPageDebugLog } from '../../hooks/useAdvisorPageDebugLog';
 
 // Icon mapping for providers
 const PROVIDER_ICONS: Record<string, string> = {
@@ -65,6 +66,7 @@ function getCategoryColor(type: IntegrationType): string {
 }
 
 export default function Integrations() {
+  useAdvisorPageDebugLog('Integrations');
   const {
     integrations,
     availableIntegrations,

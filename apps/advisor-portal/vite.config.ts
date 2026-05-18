@@ -29,9 +29,16 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, './src'),
-      },
+      // Resolve `@mpbhealth/ui` from source so Vite shares one React instance with the app.
+      // The published `dist` entry is prebundled tsup output; when Vite serves it via `/@fs/…`,
+      // dependency optimization can pull in a second React (invalid hook call in ThemeProvider).
+      alias: [
+        {
+          find: /^@mpbhealth\/ui$/,
+          replacement: path.resolve(__dirname, '../../packages/ui/src/index.ts'),
+        },
+        { find: '@', replacement: path.resolve(__dirname, './src') },
+      ],
       dedupe: ['react', 'react-dom', 'react-router-dom'],
     },
     server: {

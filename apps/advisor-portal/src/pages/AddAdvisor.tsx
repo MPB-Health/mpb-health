@@ -18,6 +18,7 @@ import {
 import { supabaseUrl } from '@mpbhealth/database';
 import { getResolvedAuthHeader } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 interface CreateUserResponse {
   success: boolean;
@@ -73,6 +74,7 @@ const US_STATES = [
 ] as const;
 
 export default function AddAdvisor() {
+  useAdvisorPageDebugLog('AddAdvisor');
   const navigate = useNavigate();
   const { profile } = useAdvisor();
   const [form, setForm] = useState<IntakeForm>(INITIAL_FORM);

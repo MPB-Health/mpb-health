@@ -25,6 +25,8 @@ import {
 } from '@mpbhealth/advisor-core';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import DocumentCard from '../components/DocumentCard';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 
 interface SOPLibraryProps {
   section?: string;
@@ -158,7 +160,9 @@ function buildSectionConfig(categories: SOPCategory[]): Record<string, SectionEn
 }
 
 export default function SOPLibrary({ section }: SOPLibraryProps) {
+  useAdvisorPageDebugLog('SOPLibrary');
   const navigate = useNavigate();
+  const { advisorReady } = useAdvisorQueryReady();
   const [searchQuery, setSearchQuery] = useState('');
   const [previewDoc, setPreviewDoc] = useState<SOPDocument | null>(null);
 
@@ -172,6 +176,9 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       ]);
       return { documents: docs, categories: cats, popularDocs: popular };
     },
+    enabled: advisorReady,
+    staleTime: 60 * 1000,
+    retry: 1,
   });
 
   const documents = sopData?.documents ?? [];

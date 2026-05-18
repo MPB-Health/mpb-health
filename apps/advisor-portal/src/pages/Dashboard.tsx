@@ -41,6 +41,8 @@ import { meetingService, enrollmentService, portalSettingsService, announcementS
 import { supabase, supabaseUrl } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import SafeImage from '../components/SafeImage';
 
 const JOIN_MPB_BASE = 'https://join.mpb.health';
@@ -217,6 +219,7 @@ const ADVISOR_VIDEOS = [
 ];
 
 export default function Dashboard() {
+  useAdvisorPageDebugLog('Dashboard');
   const navigate = useNavigate();
   const {
     profile,
@@ -225,6 +228,7 @@ export default function Dashboard() {
     trainingProgress,
     unreadBulletinCount,
   } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
 
   const { isVisible } = useWidgetVisibility();
   const queryClient = useQueryClient();
@@ -261,40 +265,68 @@ export default function Dashboard() {
   const { data: announcements = [] } = useQuery({
     queryKey: ['dashboardAnnouncements'],
     queryFn: () => announcementService.getActiveAnnouncements(),
+    enabled: advisorReady,
     staleTime: 2 * 60 * 1000,
   });
 
   const { data: portalSettings = {} } = useQuery({
     queryKey: ['dashboardPortalSettings'],
     queryFn: () => portalSettingsService.getMultipleSettings([...PORTAL_SETTINGS_KEYS]),
+    enabled: advisorReady,
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: cmsEnrollLinks = [] } = useQuery({
     queryKey: ['dashboardEnrollLinks'],
     queryFn: () => enrollmentService.getLinks(),
+    enabled: advisorReady,
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: memberForms = [], isLoading: memberFormsLoading } = useQuery({
-    queryKey: ['dashboardMemberForms'],
+  const advisorFormScopeKey = profile?.id ?? profile?.user_id ?? 'none';
+
+  const {
+    data: memberForms = [],
+    isPending: memberFormsPending,
+    isFetching: memberFormsFetching,
+  } = useQuery({
+    queryKey: ['dashboardMemberForms', advisorFormScopeKey],
     queryFn: async () => {
       const forms = await formsService.getForms('member');
       return [...forms].sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label));
     },
+    enabled: advisorReady,
     staleTime: 2 * 60 * 1000,
+    /** Avoid sticky empty rows when the first fetch ran before auth/RLS was fully ready. */
+    refetchOnMount: 'always',
+    retry: 2,
   });
+
+  /** `isLoading` alone misses disabled/paused queries and hides spinner during background refetch of an empty cache. */
+  const memberFormsLoading =
+    memberFormsPending || (memberFormsFetching && memberForms.length === 0);
+
+  // Second fetch shortly after mount/profile scope: first `getForms` can race Supabase session wiring
+  // and cache an empty list under RLS; a delayed invalidate matches "refresh fixes it" without full reload.
+  useEffect(() => {
+    if (!advisorReady) return;
+    const t = window.setTimeout(() => {
+      void queryClient.invalidateQueries({ queryKey: ['dashboardMemberForms'] });
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [advisorReady, advisorFormScopeKey, queryClient]);
 
   const { data: cmsQuickLinks = [] } = useQuery({
     queryKey: ['dashboardQuickLinks'],
     queryFn: () => navigationService.getResourceCenterQuickLinks(8),
+    enabled: advisorReady,
     staleTime: 2 * 60 * 1000,
   });
 
   const { data: upcomingMeetings = [], isLoading: meetingsLoading } = useQuery({
     queryKey: ['dashboardMeetings', profile?.id],
     queryFn: () => meetingService.getUpcomingMeetings(profile!.id, 4),
-    enabled: !!profile?.id,
+    enabled: advisorReady,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -308,7 +340,7 @@ export default function Dashboard() {
         .maybeSingle();
       return !error && data?.has_advisor_page_access === true;
     },
-    enabled: !!profile?.id,
+    enabled: advisorReady,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -316,6 +348,8 @@ export default function Dashboard() {
 
   // Realtime subscriptions — invalidate query cache so stale-while-revalidate kicks in
   useEffect(() => {
+    if (!advisorReady) return;
+
     const annChannel = announcementService.subscribeToAnnouncements(() => {
       queryClient.invalidateQueries({ queryKey: ['dashboardAnnouncements'] });
     });
@@ -338,7 +372,7 @@ export default function Dashboard() {
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(quickLinksChannel);
     };
-  }, [queryClient]);
+  }, [advisorReady, queryClient]);
 
   const handleDismissAnnouncement = (id: string) => {
     announcementService.dismissAnnouncement(id);

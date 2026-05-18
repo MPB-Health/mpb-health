@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 export default function ResetPassword() {
+  useAdvisorPageDebugLog('ResetPassword');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');

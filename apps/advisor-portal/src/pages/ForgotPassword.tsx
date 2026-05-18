@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabaseUrl } from '@mpbhealth/database';
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 /**
  * Sends password reset via the advisor-forgot-password edge function.
@@ -10,6 +11,7 @@ import { Mail, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
  * token_hash URL that only real browsers (executing JS) can exchange for a session.
  */
 export default function ForgotPassword() {
+  useAdvisorPageDebugLog('ForgotPassword');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);

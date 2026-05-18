@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Breadcrumbs, Button } from '@mpbhealth/ui';
 import { format } from 'date-fns';
 import {
@@ -12,18 +13,28 @@ import {
   Share2,
   Bell,
 } from 'lucide-react';
-import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
+import { contentService } from '@mpbhealth/advisor-core';
 import SafeImage from '../components/SafeImage';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
+import { AdvisorPageLoader } from '../components/loading';
 
 export default function BulletinDetail() {
+  useAdvisorPageDebugLog('BulletinDetail');
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { profile } = useAdvisor();
-  const [bulletin, setBulletin] = useState<Bulletin | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { advisorReady } = useAdvisorQueryReady();
+  const { data: bulletin = null, isPending: loading } = useQuery({
+    queryKey: ['bulletinDetail', slug],
+    queryFn: () => contentService.getBulletinBySlug(slug!),
+    enabled: advisorReady && Boolean(slug),
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [pdfModal, setPdfModal] = useState<{ isOpen: boolean; title: string; fileUrl: string }>({
     isOpen: false,
@@ -33,34 +44,9 @@ export default function BulletinDetail() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-
-    const loadBulletin = async () => {
-      try {
-        const data = await contentService.getBulletinBySlug(slug);
-        if (cancelled) return;
-        setBulletin(data);
-
-        if (data && profile?.id) {
-          await contentService.markBulletinRead(data.id, profile.id);
-        }
-      } catch (err) {
-        if (cancelled) return;
-        console.error('Failed to load bulletin:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15_000);
-    loadBulletin();
-
-    return () => { cancelled = true; clearTimeout(timeout); };
-  }, [slug, profile?.id]);
+    if (!bulletin?.id || !profile?.id) return;
+    void contentService.markBulletinRead(bulletin.id, profile.id);
+  }, [bulletin?.id, profile?.id]);
 
   const handleBookmark = async () => {
     if (!bulletin || !profile?.id) return;
@@ -110,9 +96,10 @@ export default function BulletinDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
-      </div>
+      <AdvisorPageLoader
+        message="Loading bulletin…"
+        subtitle="Fetching announcement details and attachments."
+      />
     );
   }
 

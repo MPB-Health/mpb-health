@@ -17,6 +17,7 @@ import {
 import { Button } from '@mpbhealth/ui';
 import { useOrgSettings } from '../../hooks/useSettings';
 import type { BusinessHours, BusinessAddress, UpdateOrgSettingsInput } from '@mpbhealth/champion-core';
+import { useAdvisorPageDebugLog } from '../../hooks/useAdvisorPageDebugLog';
 
 const TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -46,6 +47,7 @@ function sanitizeHexColor(value: string | undefined, fallback: string): string {
 }
 
 export default function OrganizationSettings() {
+  useAdvisorPageDebugLog('OrganizationSettings');
   const { settings, loading, error, saving, updateSettings } = useOrgSettings();
   const [activeTab, setActiveTab] = useState<'general' | 'branding' | 'hours' | 'messaging' | 'compliance'>('general');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);

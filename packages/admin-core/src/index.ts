@@ -408,4 +408,5 @@ export {
   type CreateTicketOptions,
   type CreateTicketResult,
   type TicketAttachmentUploadResult,
+  type TicketFileRow,
 } from './support/AdminTicketService';

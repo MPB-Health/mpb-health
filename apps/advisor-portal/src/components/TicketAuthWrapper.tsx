@@ -6,37 +6,19 @@ interface TicketAuthWrapperProps {
 }
 
 /**
- * Wrapper component that automatically handles authentication errors for ticket operations
- * This ensures that when a ticket operation fails due to authentication, the user is
- * automatically re-authenticated and the operation is retried
+ * Optional layout wrapper — children use `useTicketAuth().executeWithAuth` for retries.
  */
 export function TicketAuthWrapper({ children }: TicketAuthWrapperProps) {
-  const { withAuthRetry } = useAdvisorAuth();
-
-  // Create a context for ticket operations that can be used by child components
-  const ticketContext = {
-    withAuthRetry,
-  };
-
-  // Make the context available through a React context or prop drilling
-  // For now, we'll use a simple approach where child components can access it
-  return (
-    <div data-ticket-auth-wrapper="true">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
 
 /**
- * Hook for components that need to perform ticket operations with automatic auth handling
+ * Hook for components that need ticket operations with automatic refresh + retry on auth errors.
  */
 export function useTicketAuth() {
   const { withAuthRetry } = useAdvisorAuth();
 
   return {
-    /**
-     * Execute a ticket operation with automatic authentication retry
-     */
     executeWithAuth: withAuthRetry,
   };
 }

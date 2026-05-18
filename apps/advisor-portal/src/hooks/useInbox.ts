@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   conversationService,
   templateService,
@@ -10,7 +11,7 @@ import {
   type InboxSummary,
 } from '@mpbhealth/champion-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
-
+import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 export function useConversations(options: {
   status?: 'active' | 'archived' | 'spam';
   channel?: 'sms' | 'email' | 'both';
@@ -18,183 +19,184 @@ export function useConversations(options: {
   search?: string;
 } = {}) {
   const { profile } = useAdvisor();
-  const [conversations, setConversations] = useState<ConversationWithLead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = profile?.org_id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!profile?.org_id) {
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      const data = await conversationService.getConversations(profile!.org_id, options);
-      setConversations(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load conversations'));
-    } finally {
-      setLoading(false);
-    }
-  }, [profile?.org_id, options.status, options.channel, options.unreadOnly, options.search]);
+  const query = useQuery({
+    queryKey: [
+      'inboxConversations',
+      orgId,
+      options.status,
+      options.channel,
+      options.unreadOnly,
+      options.search,
+    ] as const,
+    queryFn: () => conversationService.getConversations(orgId!, options),
+    enabled: Boolean(advisorReady && orgId),
+  });
+
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['inboxConversations', orgId] });
+  }, [queryClient, orgId]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!advisorReady || !orgId) return;
 
-  // Subscribe to realtime updates
-  useEffect(() => {
-    if (!profile?.org_id) return;
-
-    const subscription = conversationService.subscribeToConversations(
-      profile!.org_id,
-      () => {
-        refresh();
-      }
-    );
+    const subscription = conversationService.subscribeToConversations(orgId, () => {
+      void queryClient.invalidateQueries({ queryKey: ['inboxConversations', orgId] });
+    });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [profile?.org_id, refresh]);
+  }, [advisorReady, orgId, queryClient]);
 
-  return { conversations, loading, error, refresh };
+  return {
+    conversations: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 export function useConversation(conversationId: string | null) {
-  const [conversation, setConversation] = useState<ConversationWithLead | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const loadConversation = useCallback(async () => {
-    if (!conversationId) return;
-    try {
-      setLoading(true);
+  const query = useQuery({
+    queryKey: ['inboxConversation', conversationId] as const,
+    queryFn: async () => {
+      const cid = conversationId!;
       const [convData, messagesData] = await Promise.all([
-        conversationService.getConversation(conversationId),
-        conversationService.getMessages(conversationId),
+        conversationService.getConversation(cid),
+        conversationService.getMessages(cid),
       ]);
-      setConversation(convData);
-      setMessages(messagesData);
-      setError(null);
 
-      // Mark as read
-      if (convData && convData.unread_count > 0) {
-        await conversationService.markAsRead(conversationId);
+      if (convData?.unread_count && convData.unread_count > 0) {
+        try {
+          await conversationService.markAsRead(cid);
+        } catch {
+          /* non-blocking */
+        }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load conversation'));
-    } finally {
-      setLoading(false);
-    }
-  }, [conversationId]);
 
-  useEffect(() => {
-    loadConversation();
-  }, [loadConversation]);
+      return {
+        conversation: convData as ConversationWithLead,
+        messages: messagesData as Message[],
+      };
+    },
+    enabled: Boolean(conversationId),
+  });
 
-  // Subscribe to new messages
   useEffect(() => {
     if (!conversationId) return;
 
-    const subscription = conversationService.subscribeToMessages(
-      conversationId,
-      (payload) => {
-        setMessages((prev) => [...prev, payload.new as Message]);
-      }
-    );
+    const subscription = conversationService.subscribeToMessages(conversationId, (payload) => {
+      queryClient.setQueryData<{ conversation: ConversationWithLead | null; messages: Message[] }>(
+        ['inboxConversation', conversationId],
+        (prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: [...prev.messages, payload.new as Message],
+              }
+            : prev,
+      );
+    });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [conversationId]);
+  }, [conversationId, queryClient]);
 
-  return { conversation, messages, loading, error, refresh: loadConversation };
+  const refresh = useCallback(() => {
+    if (!conversationId) return;
+    void queryClient.invalidateQueries({ queryKey: ['inboxConversation', conversationId] });
+  }, [conversationId, queryClient]);
+
+  return {
+    conversation: query.data?.conversation ?? null,
+    messages: query.data?.messages ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 export function useInboxSummary() {
   const { profile } = useAdvisor();
-  const [summary, setSummary] = useState<InboxSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = profile?.org_id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!profile?.org_id) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const data = await conversationService.getInboxSummary(profile!.org_id);
-      setSummary(data);
-    } catch (err) {
-      console.error('Failed to load inbox summary:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [profile?.org_id]);
+  const query = useQuery({
+    queryKey: ['inboxSummary', orgId] as const,
+    queryFn: () => conversationService.getInboxSummary(orgId!),
+    enabled: Boolean(advisorReady && orgId),
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['inboxSummary', orgId] });
+  }, [queryClient, orgId]);
 
-  return { summary, loading, refresh };
+  return {
+    summary: query.data ?? null,
+    loading: query.isPending,
+    refresh,
+  };
 }
 
 export function useTemplates(channel?: 'sms' | 'email' | 'both') {
   const { profile } = useAdvisor();
-  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = profile?.org_id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!profile?.org_id) {
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      const data = await templateService.getTemplates(profile!.org_id, { channel });
-      setTemplates(data);
-    } catch (err) {
-      console.error('Failed to load templates:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [profile?.org_id, channel]);
+  const query = useQuery({
+    queryKey: ['messageTemplates', orgId, channel] as const,
+    queryFn: () => templateService.getTemplates(orgId!, { channel }),
+    enabled: Boolean(advisorReady && orgId),
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['messageTemplates', orgId] });
+  }, [queryClient, orgId]);
 
-  return { templates, loading, refresh };
+  return {
+    templates: query.data ?? [],
+    loading: query.isPending,
+    refresh,
+  };
 }
 
 export function useSequences(status?: 'draft' | 'active' | 'paused' | 'archived') {
   const { profile } = useAdvisor();
-  const [sequences, setSequences] = useState<Sequence[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = profile?.org_id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!profile?.org_id) {
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      const data = await sequenceService.getSequences(profile!.org_id, { status });
-      setSequences(data as unknown as Sequence[]);
-    } catch (err) {
-      console.error('Failed to load sequences:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [profile?.org_id, status]);
+  const query = useQuery({
+    queryKey: ['sequences', orgId, status] as const,
+    queryFn: () => sequenceService.getSequences(orgId!, { status }),
+    enabled: Boolean(advisorReady && orgId),
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['sequences', orgId] });
+  }, [queryClient, orgId]);
 
-  return { sequences, loading, refresh };
+  const sequencesData = query.data ?? [];
+  const sequencesTyped = sequencesData as unknown as Sequence[];
+
+  return {
+    sequences: sequencesTyped,
+    loading: query.isPending,
+    refresh,
+  };
 }
 
 export function useInboxActions() {
@@ -205,10 +207,10 @@ export function useInboxActions() {
       conversationId: string,
       channel: 'sms' | 'email',
       content: string,
-      options?: { subject?: string; bodyHtml?: string }
+      options?: { subject?: string; bodyHtml?: string },
     ) => {
       if (!profile?.org_id) throw new Error('No active organization');
-      return conversationService.sendMessage(profile!.org_id, {
+      return conversationService.sendMessage(profile.org_id, {
         conversation_id: conversationId,
         channel,
         content,
@@ -216,7 +218,7 @@ export function useInboxActions() {
         body_html: options?.bodyHtml,
       });
     },
-    [profile?.org_id]
+    [profile?.org_id],
   );
 
   const archiveConversation = useCallback(async (conversationId: string) => {
@@ -226,17 +228,17 @@ export function useInboxActions() {
   const getOrCreateConversation = useCallback(
     async (leadId: string, channel: 'sms' | 'email' | 'both' = 'both') => {
       if (!profile?.org_id) throw new Error('No active organization');
-      return conversationService.getOrCreateForLead(profile!.org_id, leadId, channel);
+      return conversationService.getOrCreateForLead(profile.org_id, leadId, channel);
     },
-    [profile?.org_id]
+    [profile?.org_id],
   );
 
   const enrollInSequence = useCallback(
     async (sequenceId: string, leadId: string) => {
       if (!profile?.org_id) throw new Error('No active organization');
-      return sequenceService.enrollLead(profile!.org_id, sequenceId, leadId);
+      return sequenceService.enrollLead(profile.org_id, sequenceId, leadId);
     },
-    [profile?.org_id]
+    [profile?.org_id],
   );
 
   return {

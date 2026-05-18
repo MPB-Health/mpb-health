@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -18,65 +19,69 @@ import {
 } from '@mpbhealth/advisor-core';
 import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import Training from './Training';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { AdvisorPageLoader } from '../components/loading';
+
+type TrainingModulePageData =
+  | { kind: 'mpb' }
+  | { kind: 'normal'; module: TrainingModuleType | null; progress: TrainingProgress | null };
 
 export default function TrainingModule() {
+  useAdvisorPageDebugLog('TrainingModule');
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { profile, refreshTraining } = useAdvisor();
-  const [module, setModule] = useState<TrainingModuleType | null>(null);
-  const [progress, setProgress] = useState<TrainingProgress | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { advisorReady } = useAdvisorQueryReady();
   const [completing, setCompleting] = useState(false);
-  const [isMpbCourse, setIsMpbCourse] = useState(false);
+
+  const { data, isPending: queryPending, isError } = useQuery({
+    queryKey: ['advisorTrainingModule', moduleId, profile?.id],
+    queryFn: async (): Promise<TrainingModulePageData> => {
+      const mod = await trainingService.getModule(moduleId!);
+      const prog = await trainingService.getModuleProgress(profile!.id, moduleId!);
+      if (!mod) {
+        return { kind: 'normal', module: null, progress: prog };
+      }
+      if (
+        mod.category?.toLowerCase().includes('mpb') ||
+        mod.title?.toLowerCase().includes('become an mpb')
+      ) {
+        return { kind: 'mpb' };
+      }
+      return { kind: 'normal', module: mod, progress: prog };
+    },
+    enabled: Boolean(advisorReady && moduleId && profile?.id),
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
+
+  const isMpbCourse = data?.kind === 'mpb';
+  const trainingModule = data?.kind === 'normal' ? data.module : null;
+  const progress = data?.kind === 'normal' ? data.progress : null;
+
+  const loading = !moduleId ? false : !advisorReady || queryPending;
 
   useEffect(() => {
-    if (!moduleId || !profile) {
-      if (!moduleId) setLoading(false);
-      return;
-    }
-    let cancelled = false;
-
-    const loadModule = async () => {
-      try {
-        const [mod, prog] = await Promise.all([
-          trainingService.getModule(moduleId),
-          trainingService.getModuleProgress(profile.id, moduleId),
-        ]);
-        if (cancelled) return;
-
-        if (
-          mod?.category?.toLowerCase().includes('mpb') ||
-          mod?.title?.toLowerCase().includes('become an mpb')
-        ) {
-          setIsMpbCourse(true);
-          setLoading(false);
-          return;
-        }
-
-        setModule(mod);
-        setProgress(prog);
-      } catch (err) {
-        if (cancelled) return;
-        toast.error('Failed to load module');
-        navigate('/training');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15_000);
-    loadModule();
-
-    return () => { cancelled = true; clearTimeout(timeout); };
-  }, [moduleId, profile?.id, navigate]);
+    if (!isError || !moduleId || !advisorReady) return;
+    toast.error('Failed to load module');
+    navigate('/training');
+  }, [isError, moduleId, advisorReady, navigate]);
 
   const handleStart = async () => {
-    if (!profile || !moduleId) return;
+    if (!profile || !moduleId || !trainingModule) return;
 
     try {
       const prog = await trainingService.startModule(profile.id, moduleId);
-      setProgress(prog);
+      queryClient.setQueryData<TrainingModulePageData>(
+        ['advisorTrainingModule', moduleId, profile.id],
+        (old) =>
+          old?.kind === 'normal'
+            ? { ...old, progress: prog }
+            : { kind: 'normal', module: trainingModule, progress: prog },
+      );
       await refreshTraining();
       toast.success('Module started!');
     } catch (err) {
@@ -85,12 +90,18 @@ export default function TrainingModule() {
   };
 
   const handleComplete = async () => {
-    if (!profile || !moduleId) return;
+    if (!profile || !moduleId || !trainingModule) return;
 
     setCompleting(true);
     try {
       const prog = await trainingService.completeModule(profile.id, moduleId);
-      setProgress(prog);
+      queryClient.setQueryData<TrainingModulePageData>(
+        ['advisorTrainingModule', moduleId, profile.id],
+        (old) =>
+          old?.kind === 'normal'
+            ? { ...old, progress: prog }
+            : { kind: 'normal', module: trainingModule, progress: prog },
+      );
       await refreshTraining();
       toast.success('Module completed!');
     } catch (err) {
@@ -101,7 +112,7 @@ export default function TrainingModule() {
   };
 
   const getContentIcon = () => {
-    switch (module?.content_type) {
+    switch (trainingModule?.content_type) {
       case 'video':
         return Video;
       case 'document':
@@ -115,9 +126,10 @@ export default function TrainingModule() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
-      </div>
+      <AdvisorPageLoader
+        message="Loading training module…"
+        subtitle="Preparing lessons and your progress."
+      />
     );
   }
 
@@ -125,7 +137,7 @@ export default function TrainingModule() {
     return <Training section="mpb" />;
   }
 
-  if (!module) {
+  if (!trainingModule) {
     return (
       <div className="text-center py-12">
         <p className="text-th-text-tertiary">Module not found</p>
@@ -174,25 +186,25 @@ export default function TrainingModule() {
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-2xl font-bold text-th-text-primary">
-                  {module.title}
+                  {trainingModule.title}
                 </h1>
-                {module.is_required && (
+                {trainingModule.is_required && (
                   <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
                     Required
                   </span>
                 )}
               </div>
-              <p className="text-th-text-tertiary mt-1">{module.category}</p>
+              <p className="text-th-text-tertiary mt-1">{trainingModule.category}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2 text-th-text-tertiary">
             <Clock className="w-5 h-5" />
-            <span>{module.duration_minutes} minutes</span>
+            <span>{trainingModule.duration_minutes} minutes</span>
           </div>
         </div>
 
-        {module.description && (
-          <p className="text-th-text-secondary mt-4">{module.description}</p>
+        {trainingModule.description && (
+          <p className="text-th-text-secondary mt-4">{trainingModule.description}</p>
         )}
 
         {/* Progress bar */}
@@ -201,7 +213,7 @@ export default function TrainingModule() {
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-th-text-tertiary">Progress</span>
               <span className="text-th-text-secondary">
-                {progress?.time_spent_minutes || 0} / {module.duration_minutes} min
+                {progress?.time_spent_minutes || 0} / {trainingModule.duration_minutes} min
               </span>
             </div>
             <div className="h-2 bg-surface-tertiary rounded-full overflow-hidden">
@@ -209,7 +221,7 @@ export default function TrainingModule() {
                 className="h-full bg-blue-500 rounded-full transition-all"
                 style={{
                   width: `${Math.min(
-                    ((progress?.time_spent_minutes || 0) / module.duration_minutes) * 100,
+                    ((progress?.time_spent_minutes || 0) / trainingModule.duration_minutes) * 100,
                     100
                   )}%`,
                 }}
@@ -221,10 +233,10 @@ export default function TrainingModule() {
 
       {/* Module content */}
       <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
-        {module.content_type === 'video' && module.content_url && (
+        {trainingModule.content_type === 'video' && trainingModule.content_url && (
           <div className="aspect-video bg-neutral-900 dark:bg-black">
             <iframe
-              src={module.content_url}
+              src={trainingModule.content_url}
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -232,10 +244,10 @@ export default function TrainingModule() {
           </div>
         )}
 
-        {module.content_type === 'external_link' && module.content_url && (
+        {trainingModule.content_type === 'external_link' && trainingModule.content_url && (
           <div className="p-6">
             <a
-              href={module.content_url}
+              href={trainingModule.content_url}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center space-x-2 py-4 px-6 bg-th-accent-50 text-th-accent-700 rounded-lg hover:bg-th-accent-100 transition-colors"
@@ -246,8 +258,8 @@ export default function TrainingModule() {
           </div>
         )}
 
-        {(module.content_type === 'document' ||
-          module.content_type === 'interactive') && (
+        {(trainingModule.content_type === 'document' ||
+          trainingModule.content_type === 'interactive') && (
           <div className="p-6">
             <div className="prose max-w-none dark:prose-invert">
               {/* Document content would be rendered here */}

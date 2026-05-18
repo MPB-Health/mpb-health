@@ -19,16 +19,38 @@ type InvokeFunctionOptions = NonNullable<Parameters<typeof supabase.functions.in
 /** Seconds before JWT expiry that we proactively force a synchronous refresh. */
 const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
 
+type RefreshResult = Awaited<ReturnType<typeof supabase.auth.refreshSession>>;
+
 /** Single app-wide pending refresh — shared by all services. */
-let _pendingRefresh: Promise<Awaited<ReturnType<typeof supabase.auth.refreshSession>>> | null = null;
+let _pendingRefresh: Promise<RefreshResult> | null = null;
+
+/**
+ * Hard cap — if the Supabase client never settles (network hang, service worker, proxy stall),
+ * callers would await forever. That left advisor-portal stuck in `profileLoading` with no `finally`.
+ */
+const REFRESH_SESSION_DEADLINE_MS = 20_000;
 
 /**
  * Refresh the Supabase session exactly once at a time. Concurrent callers all
  * await the same in-flight request rather than each consuming the refresh token.
  */
-export function refreshSessionOnce() {
+export function refreshSessionOnce(): Promise<RefreshResult> {
   if (!_pendingRefresh) {
-    _pendingRefresh = supabase.auth.refreshSession().finally(() => {
+    _pendingRefresh = new Promise<RefreshResult>((resolve, reject) => {
+      const t = globalThis.setTimeout(() => {
+        reject(new Error('REFRESH_SESSION_TIMEOUT'));
+      }, REFRESH_SESSION_DEADLINE_MS);
+      void supabase.auth.refreshSession().then(
+        (v) => {
+          globalThis.clearTimeout(t);
+          resolve(v);
+        },
+        (e) => {
+          globalThis.clearTimeout(t);
+          reject(e);
+        },
+      );
+    }).finally(() => {
       _pendingRefresh = null;
     });
   }
@@ -49,9 +71,13 @@ export async function getResolvedAuthHeader(): Promise<{ Authorization: string }
     !session.expires_at || session.expires_at < nowSec + TOKEN_EXPIRY_BUFFER_SECONDS;
 
   if (needsRefresh) {
-    const { data: refreshed, error } = await refreshSessionOnce();
-    if (error || !refreshed?.session?.access_token) return null;
-    return { Authorization: `Bearer ${refreshed.session.access_token}` };
+    try {
+      const { data: refreshed, error } = await refreshSessionOnce();
+      if (error || !refreshed?.session?.access_token) return null;
+      return { Authorization: `Bearer ${refreshed.session.access_token}` };
+    } catch {
+      return null;
+    }
   }
 
   return { Authorization: `Bearer ${session.access_token}` };

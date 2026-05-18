@@ -2,22 +2,17 @@
 // Compliance & AI Hooks
 // ============================================================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   complianceService,
   aiService,
-  ComplianceDocument,
-  ComplianceAcknowledgmentWithDocument,
-  ComplianceViolation,
-  UserComplianceStatus,
-  OrgComplianceSummary,
-  AISuggestion,
-  AIScoringFactor,
-  AuditLogDetailed,
+  type AuditLogDetailed,
   MessageAssistRequest,
   MessageAssistResponse,
 } from '@mpbhealth/champion-core';
 import { useOrganization } from './useOrganization';
+import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 
 // ============================================================================
 // COMPLIANCE DOCUMENTS
@@ -25,61 +20,41 @@ import { useOrganization } from './useOrganization';
 
 export function useComplianceDocuments(options: { category?: string; activeOnly?: boolean } = {}) {
   const { organization } = useOrganization();
-  const [documents, setDocuments] = useState<ComplianceDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = organization?.id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+  const query = useQuery({
+    queryKey: ['complianceDocuments', orgId, options.category, options.activeOnly] as const,
+    queryFn: () => complianceService.getDocuments(orgId!, options),
+    enabled: Boolean(advisorReady && orgId),
+  });
 
-    setLoading(true);
-    try {
-      const data = await complianceService.getDocuments(organization.id, options);
-      setDocuments(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load documents'));
-    } finally {
-      setLoading(false);
-    }
-  }, [organization?.id, options.category, options.activeOnly]);
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['complianceDocuments', orgId] });
+  }, [queryClient, orgId]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { documents, loading, error, refresh };
+  return {
+    documents: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 export function useComplianceDocument(documentId: string | undefined) {
-  const [document, setDocument] = useState<ComplianceDocument | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const query = useQuery({
+    queryKey: ['complianceDocument', documentId] as const,
+    queryFn: () => complianceService.getDocument(documentId!),
+    enabled: Boolean(documentId),
+  });
 
-  useEffect(() => {
-    if (!documentId) {
-      setDocument(null);
-      setLoading(false);
-      return;
-    }
-
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const data = await complianceService.getDocument(documentId);
-        setDocument(data);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to load document'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetch();
-  }, [documentId]);
-
-  return { document, loading, error };
+  return {
+    document: query.data ?? null,
+    loading: query.isPending,
+    error: query.error ?? null,
+  };
 }
 
 // ============================================================================
@@ -87,60 +62,51 @@ export function useComplianceDocument(documentId: string | undefined) {
 // ============================================================================
 
 export function useUserAcknowledgments(userId: string | undefined, options: { status?: string } = {}) {
-  const [acknowledgments, setAcknowledgments] = useState<ComplianceAcknowledgmentWithDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!userId) return;
-
-    setLoading(true);
-    try {
-      const data = await complianceService.getUserAcknowledgments(userId, {
+  const query = useQuery({
+    queryKey: ['userAcknowledgments', userId, options.status] as const,
+    queryFn: () =>
+      complianceService.getUserAcknowledgments(userId!, {
         ...options,
         includeDocument: true,
-      });
-      setAcknowledgments(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load acknowledgments'));
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, options.status]);
+      }),
+    enabled: Boolean(userId),
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const refresh = useCallback(() => {
+    if (!userId) return;
+    void queryClient.invalidateQueries({ queryKey: ['userAcknowledgments', userId] });
+  }, [queryClient, userId]);
 
-  return { acknowledgments, loading, error, refresh };
+  return {
+    acknowledgments: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 export function usePendingAcknowledgments(userId: string | undefined) {
-  const [pending, setPending] = useState<ComplianceAcknowledgmentWithDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
+  const query = useQuery({
+    queryKey: ['pendingAcknowledgments', userId] as const,
+    queryFn: () => complianceService.getPendingAcknowledgments(userId!),
+    enabled: Boolean(userId),
+  });
+
+  const refresh = useCallback(() => {
     if (!userId) return;
+    void queryClient.invalidateQueries({ queryKey: ['pendingAcknowledgments', userId] });
+  }, [queryClient, userId]);
 
-    setLoading(true);
-    try {
-      const data = await complianceService.getPendingAcknowledgments(userId);
-      setPending(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load pending acknowledgments'));
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { pending, loading, error, refresh };
+  return {
+    pending: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 // ============================================================================
@@ -149,90 +115,95 @@ export function usePendingAcknowledgments(userId: string | undefined) {
 
 export function useUserComplianceStatus(userId: string | undefined) {
   const { organization } = useOrganization();
-  const [status, setStatus] = useState<UserComplianceStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = organization?.id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!organization?.id || !userId) return;
+  const query = useQuery({
+    queryKey: ['userComplianceStatus', orgId, userId] as const,
+    queryFn: () => complianceService.getUserComplianceStatus(orgId!, userId!),
+    enabled: Boolean(advisorReady && orgId && userId),
+  });
 
-    setLoading(true);
-    try {
-      const data = await complianceService.getUserComplianceStatus(organization.id, userId);
-      setStatus(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load compliance status'));
-    } finally {
-      setLoading(false);
-    }
-  }, [organization?.id, userId]);
+  const refresh = useCallback(() => {
+    if (!orgId || !userId) return;
+    void queryClient.invalidateQueries({
+      queryKey: ['userComplianceStatus', orgId, userId],
+    });
+  }, [queryClient, orgId, userId]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { status, loading, error, refresh };
+  return {
+    status: query.data ?? null,
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 export function useOrgComplianceSummary() {
   const { organization } = useOrganization();
-  const [summary, setSummary] = useState<OrgComplianceSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = organization?.id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+  const query = useQuery({
+    queryKey: ['orgComplianceSummary', orgId] as const,
+    queryFn: () => complianceService.getOrgComplianceSummary(orgId!),
+    enabled: Boolean(advisorReady && orgId),
+  });
 
-    setLoading(true);
-    try {
-      const data = await complianceService.getOrgComplianceSummary(organization.id);
-      setSummary(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load org summary'));
-    } finally {
-      setLoading(false);
-    }
-  }, [organization?.id]);
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['orgComplianceSummary', orgId] });
+  }, [queryClient, orgId]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { summary, loading, error, refresh };
+  return {
+    summary: query.data ?? null,
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 // ============================================================================
 // VIOLATIONS
 // ============================================================================
 
-export function useViolations(options: { status?: string; severity?: string; userId?: string; limit?: number } = {}) {
+export function useViolations(options: {
+  status?: string;
+  severity?: string;
+  userId?: string;
+  limit?: number;
+} = {}) {
   const { organization } = useOrganization();
-  const [violations, setViolations] = useState<ComplianceViolation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = organization?.id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+  const query = useQuery({
+    queryKey: [
+      'complianceViolations',
+      orgId,
+      options.status,
+      options.severity,
+      options.userId,
+      options.limit,
+    ] as const,
+    queryFn: () => complianceService.getViolations(orgId!, options),
+    enabled: Boolean(advisorReady && orgId),
+  });
 
-    setLoading(true);
-    try {
-      const data = await complianceService.getViolations(organization.id, options);
-      setViolations(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load violations'));
-    } finally {
-      setLoading(false);
-    }
-  }, [organization?.id, options.status, options.severity, options.userId, options.limit]);
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['complianceViolations', orgId] });
+  }, [queryClient, orgId]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { violations, loading, error, refresh };
+  return {
+    violations: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 // ============================================================================
@@ -249,95 +220,108 @@ export function useAuditLogs(options: {
   offset?: number;
 } = {}) {
   const { organization } = useOrganization();
-  const [logs, setLogs] = useState<AuditLogDetailed[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = organization?.id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+  const startKey = options.startDate?.toISOString() ?? '';
+  const endKey = options.endDate?.toISOString() ?? '';
 
-    setLoading(true);
-    try {
-      const data = await complianceService.getAuditLogs(organization.id, options);
-      setLogs(data.logs as unknown as AuditLogDetailed[]);
-      setTotal(data.total);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load audit logs'));
-    } finally {
-      setLoading(false);
-    }
-  }, [organization?.id, JSON.stringify(options)]);
+  const query = useQuery({
+    queryKey: [
+      'auditLogs',
+      orgId,
+      options.userId,
+      options.action,
+      options.resourceType,
+      options.limit,
+      options.offset,
+      startKey,
+      endKey,
+    ] as const,
+    queryFn: async () => {
+      const data = await complianceService.getAuditLogs(orgId!, options);
+      return {
+        logs: data.logs as unknown as AuditLogDetailed[],
+        total: data.total,
+      };
+    },
+    enabled: Boolean(advisorReady && orgId),
+    placeholderData: (prev) => prev,
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['auditLogs', orgId] });
+  }, [queryClient, orgId]);
 
-  return { logs, total, loading, error, refresh };
+  return {
+    logs: query.data?.logs ?? [],
+    total: query.data?.total ?? 0,
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 // ============================================================================
 // AI SUGGESTIONS
 // ============================================================================
 
-export function useAISuggestions(userId: string | undefined, options: { type?: string; status?: string; leadId?: string; limit?: number } = {}) {
-  const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+export function useAISuggestions(
+  userId: string | undefined,
+  options: { type?: string; status?: string; leadId?: string; limit?: number } = {},
+) {
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!userId) return;
-
-    setLoading(true);
-    try {
-      const data = await aiService.getSuggestions(userId, {
+  const query = useQuery({
+    queryKey: ['aiSuggestions', userId, options.type, options.status, options.leadId, options.limit] as const,
+    queryFn: () =>
+      aiService.getSuggestions(userId!, {
         type: options.type as never,
         status: options.status,
         leadId: options.leadId,
         limit: options.limit,
-      });
-      setSuggestions(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load suggestions'));
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, options.type, options.status, options.leadId, options.limit]);
+      }),
+    enabled: Boolean(userId),
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const refresh = useCallback(() => {
+    if (!userId) return;
+    void queryClient.invalidateQueries({ queryKey: ['aiSuggestions', userId] });
+  }, [queryClient, userId]);
 
-  return { suggestions, loading, error, refresh };
+  return {
+    suggestions: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
-export function usePendingAISuggestions(userId: string | undefined, context: { leadId?: string; conversationId?: string } = {}) {
-  const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+export function usePendingAISuggestions(
+  userId: string | undefined,
+  context: { leadId?: string; conversationId?: string } = {},
+) {
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
+  const query = useQuery({
+    queryKey: ['pendingAISuggestions', userId, context.leadId, context.conversationId] as const,
+    queryFn: () => aiService.getPendingSuggestions(userId!, context),
+    enabled: Boolean(userId),
+  });
+
+  const refresh = useCallback(() => {
     if (!userId) return;
+    void queryClient.invalidateQueries({ queryKey: ['pendingAISuggestions', userId] });
+  }, [queryClient, userId]);
 
-    setLoading(true);
-    try {
-      const data = await aiService.getPendingSuggestions(userId, context);
-      setSuggestions(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load pending suggestions'));
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, context.leadId, context.conversationId]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { suggestions, loading, error, refresh };
+  return {
+    suggestions: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 // ============================================================================
@@ -345,30 +329,25 @@ export function usePendingAISuggestions(userId: string | undefined, context: { l
 // ============================================================================
 
 export function useLeadScoringFactors(leadId: string | undefined) {
-  const [factors, setFactors] = useState<AIScoringFactor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
+  const query = useQuery({
+    queryKey: ['leadScoringFactors', leadId] as const,
+    queryFn: () => aiService.getLeadScoringFactors(leadId!),
+    enabled: Boolean(leadId),
+  });
+
+  const refresh = useCallback(() => {
     if (!leadId) return;
+    void queryClient.invalidateQueries({ queryKey: ['leadScoringFactors', leadId] });
+  }, [queryClient, leadId]);
 
-    setLoading(true);
-    try {
-      const data = await aiService.getLeadScoringFactors(leadId);
-      setFactors(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load scoring factors'));
-    } finally {
-      setLoading(false);
-    }
-  }, [leadId]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { factors, loading, error, refresh };
+  return {
+    factors: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }
 
 // ============================================================================
@@ -511,35 +490,25 @@ export function useComplianceActions() {
 
 export function useAISuggestionStats(options: { userId?: string; days?: number } = {}) {
   const { organization } = useOrganization();
-  const [stats, setStats] = useState<{
-    total: number;
-    accepted: number;
-    rejected: number;
-    modified: number;
-    ignored: number;
-    acceptanceRate: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { advisorReady } = useAdvisorQueryReady();
+  const orgId = organization?.id;
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+  const query = useQuery({
+    queryKey: ['aiSuggestionStats', orgId, options.userId, options.days] as const,
+    queryFn: () => aiService.getSuggestionStats(orgId!, options),
+    enabled: Boolean(advisorReady && orgId),
+  });
 
-    setLoading(true);
-    try {
-      const data = await aiService.getSuggestionStats(organization.id, options);
-      setStats(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load stats'));
-    } finally {
-      setLoading(false);
-    }
-  }, [organization?.id, options.userId, options.days]);
+  const refresh = useCallback(() => {
+    if (!orgId) return;
+    void queryClient.invalidateQueries({ queryKey: ['aiSuggestionStats', orgId] });
+  }, [queryClient, orgId]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { stats, loading, error, refresh };
+  return {
+    stats: query.data ?? null,
+    loading: query.isPending,
+    error: query.error ?? null,
+    refresh,
+  };
 }

@@ -22,9 +22,13 @@ import {
 import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { generateCertificate } from '../utils/generateCertificate';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 export default function Profile() {
+  useAdvisorPageDebugLog('Profile');
   const { profile, trainingStats, refreshProfile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -43,7 +47,7 @@ export default function Profile() {
       ]);
       return { certifications: certs, stats: advisorStats };
     },
-    enabled: !!profile?.id,
+    enabled: advisorReady,
     staleTime: 2 * 60 * 1000,
   });
 

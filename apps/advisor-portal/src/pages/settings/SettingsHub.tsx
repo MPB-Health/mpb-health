@@ -14,6 +14,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useTeamManagement, useApiKeys, useIntegrations } from '../../hooks/useSettings';
+import { useAdvisorPageDebugLog } from '../../hooks/useAdvisorPageDebugLog';
+import { AdvisorPageLoader } from '../../components/loading';
 
 const settingsCategories = [
   {
@@ -86,10 +88,24 @@ const settingsCategories = [
 ];
 
 export default function SettingsHub() {
+  useAdvisorPageDebugLog('SettingsHub');
   // Fetch real stats from hooks
   const { members, loading: teamLoading } = useTeamManagement();
   const { apiKeys, loading: keysLoading } = useApiKeys();
   const { integrations, loading: integrationsLoading } = useIntegrations();
+
+  const settingsBootstrapLoading = teamLoading || keysLoading || integrationsLoading;
+
+  if (settingsBootstrapLoading) {
+    return (
+      <div className="p-8">
+        <AdvisorPageLoader
+          message="Loading settings…"
+          subtitle="Fetching team, API keys, and integrations."
+        />
+      </div>
+    );
+  }
 
   // Calculate stats
   const teamMemberCount = members?.length ?? 0;

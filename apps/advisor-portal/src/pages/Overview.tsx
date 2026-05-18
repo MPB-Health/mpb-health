@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Compass, FileType } from 'lucide-react';
 import PDFThumbnail from '../components/PDFThumbnail';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 interface OverviewCard {
   title: string;
@@ -28,6 +29,7 @@ const CARDS: OverviewCard[] = [
 ];
 
 export default function Overview() {
+  useAdvisorPageDebugLog('Overview');
   const [previewCard, setPreviewCard] = useState<OverviewCard | null>(null);
 
   return (

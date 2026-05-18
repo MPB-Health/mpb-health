@@ -1,4 +1,5 @@
 import { supabase, getResolvedAuthHeader, refreshSessionOnce } from '@mpbhealth/database';
+import { escapeHtml } from '@mpbhealth/utils';
 
 /**
  * Generate a short random correlation ID for request tracing.
@@ -29,7 +30,7 @@ async function extractFunctionError(error: unknown): Promise<string> {
   return error instanceof Error ? error.message : 'Unknown error';
 }
 
-export type TicketStatus = 'new' | 'open' | 'pending' | 'resolved' | 'closed';
+export type TicketStatus = 'new' | 'open' | 'pending' | 'in_progress' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TicketContentFormat = 'plain' | 'html';
 
@@ -43,6 +44,12 @@ export interface Ticket {
   category: string | null;
   created_at: string;
   updated_at: string;
+  /** Present on detail responses; identifies opening requester vs support replies in the thread. */
+  requester_id?: string;
+  /** ITSTS `tickets.assignee_id` (support agent); `assignee_name` is from ITSTS `profiles` when present. */
+  assignee_id?: string | null;
+  /** Resolved from ITSTS `profiles` for the user in `assignee_id`. */
+  assignee_name?: string | null;
 }
 
 export interface TicketComment {
@@ -55,9 +62,22 @@ export interface TicketComment {
   author_name: string;
 }
 
+/** Row from ITSTS `ticket_files` (opening attachments use `comment_id` = null). */
+export interface TicketFileRow {
+  id: string;
+  filename: string;
+  storage_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  created_at: string;
+  comment_id?: string | null;
+}
+
 export interface TicketDetail {
   ticket: Ticket;
   comments: TicketComment[];
+  /** Files attached at ticket creation (not linked to a thread comment). */
+  ticket_files?: TicketFileRow[];
 }
 
 export interface TicketStats {
@@ -77,11 +97,14 @@ export interface TicketListResult {
 }
 
 export interface ListTicketsOptions {
-  status?: TicketStatus;
+  status?: TicketStatus | 'active';
   priority?: TicketPriority;
   search?: string;
   page?: number;
   perPage?: number;
+  /** Matches ITSTS list: created_desc (default), created_asc, updated_desc, updated_asc */
+  sort?: 'created_desc' | 'created_asc' | 'updated_desc' | 'updated_asc';
+  category?: string;
 }
 
 export interface AdminTicket extends Ticket {
@@ -94,6 +117,7 @@ export interface AdminTicket extends Ticket {
 export interface AdminTicketDetail {
   ticket: Ticket & { requester_name: string; requester_email: string; requester_agent_id?: string | null; requester_company?: string | null };
   comments: TicketComment[];
+  ticket_files?: TicketFileRow[];
 }
 
 export interface AdminTicketListResult {
@@ -134,6 +158,9 @@ export interface TicketAttachmentUploadResult {
   fileName: string;
   accessUrl: string;
   size: number;
+  /** Path within `ticket-attachments` — stored on `ticket_files.storage_path`. */
+  storagePath: string;
+  mimeType: string;
 }
 
 export interface UpdateTicketOptions {
@@ -157,14 +184,6 @@ export class TicketService {
     return ext ? `${base}.${ext.slice(0, 10)}` : base;
   }
 
-  private formatAttachmentComment(uploads: TicketAttachmentUploadResult[]): string {
-    const lines = uploads.map((upload) => {
-      const kb = Math.max(1, Math.round(upload.size / 1024));
-      return `- ${upload.fileName} (${kb} KB): ${upload.accessUrl}`;
-    });
-    return ['Attachments uploaded by advisor:', ...lines].join('\n');
-  }
-
   private async uploadAttachments(ticketId: string, attachments: File[]): Promise<TicketAttachmentUploadResult[]> {
     if (!attachments.length) return [];
 
@@ -174,7 +193,11 @@ export class TicketService {
     const { data: { session } } = await supabase.auth.getSession();
     const nowSec = Math.floor(Date.now() / 1000);
     if (!session || !session.expires_at || session.expires_at < nowSec + 60) {
-      await refreshSessionOnce();
+      try {
+        await refreshSessionOnce();
+      } catch {
+        // Refresh can time out (network / hung client); storage upload may still work with current JWT.
+      }
     }
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -225,6 +248,8 @@ export class TicketService {
           fileName: file.name,
           accessUrl: signedData.signedUrl,
           size: file.size,
+          storagePath: path,
+          mimeType: file.type || 'application/octet-stream',
         });
       }
 
@@ -242,6 +267,24 @@ export class TicketService {
       }
       throw error;
     }
+  }
+
+  /** Persist storage paths to ITSTS `ticket_files` via ticket-proxy (table exists on ITSTS only, not on MPB). */
+  private async saveTicketFileReferences(ticketId: string, uploads: TicketAttachmentUploadResult[]): Promise<void> {
+    if (!uploads.length) return;
+    await this.call<{ success: boolean }>(
+      'save_ticket_files',
+      {
+        ticket_id: ticketId,
+        files: uploads.map((u) => ({
+          filename: u.fileName,
+          storage_path: u.storagePath,
+          file_size: u.size,
+          mime_type: u.mimeType,
+        })),
+      },
+      { timeoutMs: 25_000, maxRetries: 1 },
+    );
   }
 
   /**
@@ -264,7 +307,14 @@ export class TicketService {
   private async call<T extends { success: boolean }>(
     action: string,
     body: Record<string, unknown> = {},
-    opts: { allowUnauthenticated?: boolean; timeoutMs?: number; maxRetries?: number } = {},
+    opts: {
+      allowUnauthenticated?: boolean;
+      timeoutMs?: number;
+      maxRetries?: number;
+      signal?: AbortSignal;
+      /** Passed as `x-idempotency-key` for write actions that support it (e.g. create). */
+      idempotencyKey?: string;
+    } = {},
   ): Promise<T> {
     const correlationId = newCorrelationId();
     const timeoutMs = opts.timeoutMs ?? TicketService.CALL_TIMEOUT_MS;
@@ -278,14 +328,38 @@ export class TicketService {
         await new Promise((r) => setTimeout(r, delay));
       }
 
+      if (opts.signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
+
       try {
+        const onAbort = new Promise<never>((_, reject) => {
+          const sig = opts.signal;
+          if (!sig) return;
+          if (sig.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+          }
+          sig.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), {
+            once: true,
+          });
+        });
+
         // Single timeout covers auth resolution + invoke so a hung
         // refreshSession() can't leave the UI spinning forever.
         const attemptResult = await Promise.race([
-          this.executeAttempt<T>(action, body, correlationId, attempt > 0, opts.allowUnauthenticated),
+          this.executeAttempt<T>(
+            action,
+            body,
+            correlationId,
+            attempt > 0,
+            opts.allowUnauthenticated,
+            opts.idempotencyKey,
+          ),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs),
           ),
+          onAbort,
         ]);
 
         if (attemptResult === null) {
@@ -294,6 +368,9 @@ export class TicketService {
 
         return attemptResult;
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          throw err;
+        }
         if (err instanceof Error) {
           if (err.message === 'TIMEOUT' || err.message === '_RETRYABLE') {
             lastError = err;
@@ -322,9 +399,14 @@ export class TicketService {
     correlationId: string,
     forceRefresh: boolean,
     allowUnauthenticated?: boolean,
+    idempotencyKey?: string,
   ): Promise<T | null> {
     if (forceRefresh) {
-      await refreshSessionOnce();
+      try {
+        await refreshSessionOnce();
+      } catch {
+        /* timed-out or failed refresh — still try invoke with getResolvedAuthHeader */
+      }
     }
 
     const authHeader = await getResolvedAuthHeader();
@@ -339,6 +421,7 @@ export class TicketService {
       headers: {
         ...authHeader,
         'x-request-id': correlationId,
+        ...(idempotencyKey ? { 'x-idempotency-key': idempotencyKey } : {}),
       },
     });
 
@@ -371,21 +454,43 @@ export class TicketService {
 
   // ── Advisor read methods ───────────────────────────────────────────────
 
-  async getMyTickets(opts: ListTicketsOptions = {}): Promise<TicketListResult> {
-    const data = await this.call<TicketListResult & { success: boolean }>('list', {
-      status: opts.status,
-      priority: opts.priority,
-      search: opts.search,
-      page: opts.page ?? 1,
-      per_page: opts.perPage ?? 20,
-    });
+  /**
+   * @param runtime.signal — pass React Query's `signal` so navigations cancel in-flight lists
+   *   (avoids stuck spinners when TanStack Query aborts the fetch).
+   */
+  async getMyTickets(
+    opts: ListTicketsOptions = {},
+    runtime?: { signal?: AbortSignal },
+  ): Promise<TicketListResult> {
+    // Shorter than generic proxy calls: list must feel snappy; long multi-retry feels "infinite".
+    const data = await this.call<TicketListResult & { success: boolean }>(
+      'list',
+      {
+        status: opts.status,
+        priority: opts.priority,
+        search: opts.search,
+        page: opts.page ?? 1,
+        per_page: opts.perPage ?? 20,
+        sort: opts.sort,
+        category: opts.category,
+      },
+      { timeoutMs: 18_000, maxRetries: 1, signal: runtime?.signal },
+    );
 
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 
   async getTicketDetail(ticketId: string): Promise<TicketDetail> {
-    const data = await this.call<TicketDetail & { success: boolean }>('detail', { ticket_id: ticketId });
-    return { ticket: data.ticket, comments: data.comments };
+    const data = await this.call<TicketDetail & { success: boolean }>(
+      'detail',
+      { ticket_id: ticketId },
+      { timeoutMs: 20_000, maxRetries: 1 },
+    );
+    return {
+      ticket: data.ticket,
+      comments: data.comments,
+      ticket_files: data.ticket_files ?? [],
+    };
   }
 
   async getTicketStats(): Promise<TicketStats> {
@@ -414,12 +519,25 @@ export class TicketService {
   // ── Advisor write methods ──────────────────────────────────────────────
 
   async createTicket(opts: CreateTicketOptions): Promise<CreateTicketResult & { attachmentError?: string }> {
-    const data = await this.call<CreateTicketResult & { success: boolean }>('create', {
-      subject: opts.subject,
-      description: opts.description,
-      category: opts.category,
-      priority: opts.priority,
-    });
+    const idempotencyKey =
+      typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.randomUUID === 'function'
+        ? globalThis.crypto.randomUUID()
+        : `create-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    const data = await this.call<CreateTicketResult & { success: boolean }>(
+      'create',
+      {
+        subject: opts.subject,
+        description: opts.description,
+        category: opts.category,
+        priority: opts.priority,
+      },
+      {
+        timeoutMs: 45_000,
+        maxRetries: 1,
+        idempotencyKey,
+      },
+    );
 
     const result: CreateTicketResult & { attachmentError?: string } = {
       ticket_id: data.ticket_id,
@@ -431,14 +549,25 @@ export class TicketService {
       try {
         const uploadPromise = (async () => {
           const uploads = await this.uploadAttachments(data.ticket_id, opts.attachments!);
-          if (uploads.length) {
-            await this.replyToTicket(data.ticket_id, this.formatAttachmentComment(uploads));
+          if (!uploads.length) return;
+          try {
+            await this.saveTicketFileReferences(data.ticket_id, uploads);
+          } catch (saveErr) {
+            await Promise.all(
+              uploads.map((u) =>
+                supabase.storage
+                  .from(TicketService.ATTACHMENTS_BUCKET)
+                  .remove([u.storagePath])
+                  .catch(() => undefined),
+              ),
+            );
+            throw saveErr;
           }
         })();
 
-        // 45-second timeout for attachment upload
+        const attachDeadlineMs = 120_000;
         const timeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Attachment upload timed out')), 45_000),
+          setTimeout(() => reject(new Error('Attachment upload timed out')), attachDeadlineMs),
         );
 
         await Promise.race([uploadPromise, timeout]);
@@ -462,23 +591,34 @@ export class TicketService {
 
   // ── Admin read methods ─────────────────────────────────────────────────
 
-  async getAllTickets(opts: AdminListTicketsOptions = {}): Promise<AdminTicketListResult> {
-    const data = await this.call<AdminTicketListResult & { success: boolean }>('list_all', {
-      status: opts.status,
-      priority: opts.priority,
-      search: opts.search,
-      requester_id: opts.requesterId,
-      sort_by: opts.sortBy,
-      sort_order: opts.sortOrder,
-      page: opts.page ?? 1,
-      per_page: opts.perPage ?? 20,
-    });
+  async getAllTickets(
+    opts: AdminListTicketsOptions = {},
+    runtime?: { signal?: AbortSignal },
+  ): Promise<AdminTicketListResult> {
+    const data = await this.call<AdminTicketListResult & { success: boolean }>(
+      'list_all',
+      {
+        status: opts.status,
+        priority: opts.priority,
+        search: opts.search,
+        requester_id: opts.requesterId,
+        sort_by: opts.sortBy,
+        sort_order: opts.sortOrder,
+        page: opts.page ?? 1,
+        per_page: opts.perPage ?? 20,
+      },
+      { timeoutMs: 18_000, maxRetries: 1, signal: runtime?.signal },
+    );
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 
   async getTicketDetailAdmin(ticketId: string): Promise<AdminTicketDetail> {
     const data = await this.call<AdminTicketDetail & { success: boolean }>('detail_admin', { ticket_id: ticketId });
-    return { ticket: data.ticket, comments: data.comments };
+    return {
+      ticket: data.ticket,
+      comments: data.comments,
+      ticket_files: data.ticket_files ?? [],
+    };
   }
 
   async getAllTicketStats(): Promise<TicketStats> {
@@ -632,7 +772,9 @@ export function appendTicketAttachmentsHtml(html: string, uploads: TicketAttachm
   const links = uploads
     .map((u) => {
       const kb = Math.max(1, Math.round(u.size / 1024));
-      return `<li><a href="${u.accessUrl}" target="_blank" rel="noopener">${u.fileName}</a> (${kb} KB)</li>`;
+      const safeHref = escapeHtml(u.accessUrl);
+      const safeName = escapeHtml(u.fileName);
+      return `<li><a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeName}</a> (${kb} KB)</li>`;
     })
     .join('');
   return `${html}<br/><p><strong>Attachments:</strong></p><ul>${links}</ul>`;

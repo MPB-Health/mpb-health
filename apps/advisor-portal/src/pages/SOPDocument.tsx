@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -10,51 +11,41 @@ import {
   Download,
   ExternalLink,
 } from 'lucide-react';
-import { contentService, type SOPDocument as SOPDocumentType } from '@mpbhealth/advisor-core';
+import { contentService } from '@mpbhealth/advisor-core';
 import { sanitizeHtml } from '@mpbhealth/utils';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { AdvisorPageLoader } from '../components/loading';
 
 export default function SOPDocument() {
+  useAdvisorPageDebugLog('SOPDocument');
   const { documentId } = useParams<{ documentId: string }>();
   const navigate = useNavigate();
-  const [document, setDocument] = useState<SOPDocumentType | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { advisorReady } = useAdvisorQueryReady();
+  const { data: document = null, isPending: loading, isError } = useQuery({
+    queryKey: ['sopDocument', documentId],
+    queryFn: async () => {
+      const doc = await contentService.getSOPDocument(documentId!);
+      if (doc) await contentService.trackSOPView(documentId!);
+      return doc;
+    },
+    enabled: advisorReady && Boolean(documentId),
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
 
   useEffect(() => {
-    if (!documentId) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-
-    const loadDocument = async () => {
-      try {
-        const doc = await contentService.getSOPDocument(documentId);
-        if (cancelled) return;
-        setDocument(doc);
-
-        if (doc) {
-          await contentService.trackSOPView(documentId);
-        }
-      } catch (err) {
-        if (cancelled) return;
-        console.error('Failed to load document:', err);
-        navigate('/sops');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15_000);
-    loadDocument();
-
-    return () => { cancelled = true; clearTimeout(timeout); };
-  }, [documentId, navigate]);
+    if (!isError) return;
+    console.error('Failed to load document');
+    navigate('/sops');
+  }, [isError, navigate]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-th-accent-600"></div>
-      </div>
+      <AdvisorPageLoader
+        message="Loading document…"
+        subtitle="Opening this resource from the library."
+      />
     );
   }
 

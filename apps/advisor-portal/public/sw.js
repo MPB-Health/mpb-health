@@ -2,7 +2,7 @@
 // Service Worker for MPB Health Advisor Portal PWA
 // ============================================================================
 
-const CACHE_VERSION = 11;
+const CACHE_VERSION = 13;
 const CACHE_NAME = `advisor-portal-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `advisor-runtime-v${CACHE_VERSION}`;
 const MAX_RUNTIME_ENTRIES = 200;
@@ -56,6 +56,18 @@ function isValidCachedResponse(response) {
   if (response.status >= 400) return false;
   if (response.bodyUsed) return false;
   return true;
+}
+
+/** Avoid hung fetch() in the service worker when the browser/OS TCP stack stalls. */
+const FETCH_NETWORK_TIMEOUT_MS = 20000;
+
+function fetchWithNetworkTimeout(request) {
+  return Promise.race([
+    fetch(request),
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('FETCH_TIMEOUT')), FETCH_NETWORK_TIMEOUT_MS);
+    }),
+  ]);
 }
 
 /**
@@ -151,6 +163,17 @@ self.addEventListener('fetch', (event) => {
     trimCache(RUNTIME_CACHE, MAX_RUNTIME_ENTRIES);
   }
 
+  // Vite dev server (`pnpm dev`): modules live under `/@vite`, `/@fs`, `/src`, etc.
+  // Intercepting/caching these as static `.js` returns stale graphs and duplicates
+  // React (invalid hook call, mismatched chunk ?v= hashes). Use the network only.
+  if (
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.includes('/node_modules/.vite/')
+  ) {
+    return;
+  }
+
   // API → network-first
   if (API_CACHE_PATTERNS.some((p) => p.test(url.pathname))) {
     event.respondWith(networkFirstStrategy(request));
@@ -198,7 +221,7 @@ async function cacheFirstStrategy(request) {
 
   // 2. Network
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetchWithNetworkTimeout(request);
 
     if (networkResponse.ok) {
       safeCachePut(RUNTIME_CACHE, request, networkResponse.clone());
@@ -216,7 +239,7 @@ async function cacheFirstStrategy(request) {
 
 async function networkFirstStrategy(request) {
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetchWithNetworkTimeout(request);
     if (networkResponse.ok) {
       safeCachePut(RUNTIME_CACHE, request, networkResponse.clone());
     }
@@ -236,7 +259,7 @@ async function networkFirstStrategy(request) {
 
 async function navigationStrategy(request) {
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetchWithNetworkTimeout(request);
 
     if (networkResponse.ok) {
       safeCachePut(CACHE_NAME, request, networkResponse.clone());
@@ -254,7 +277,7 @@ async function navigationStrategy(request) {
 
 async function networkWithCacheFallback(request) {
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetchWithNetworkTimeout(request);
     if (networkResponse.ok) {
       safeCachePut(RUNTIME_CACHE, request, networkResponse.clone());
     }
@@ -288,7 +311,7 @@ async function spaFallback(request) {
 
 async function refreshCache(request) {
   try {
-    const response = await fetch(request);
+    const response = await fetchWithNetworkTimeout(request);
     if (response.ok) {
       await safeCachePut(RUNTIME_CACHE, request, response.clone());
     }

@@ -23,4 +23,5 @@ export {
   type CreateTicketOptions,
   type CreateTicketResult,
   type TicketAttachmentUploadResult,
+  type TicketFileRow,
 } from '@mpbhealth/advisor-core';

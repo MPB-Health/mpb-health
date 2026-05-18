@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { pushService } from '@mpbhealth/advisor-core';
 import type { PushSettings } from '@mpbhealth/advisor-core';
+import { advisorServiceWorkerEnabled } from '../registerServiceWorker';
 
 // ============================================================================
 // usePushNotifications — push opt-in, permission, settings
@@ -28,6 +29,7 @@ export function usePushNotifications() {
     async function checkSubscription() {
       try {
         if (!('serviceWorker' in navigator)) return;
+        if (!advisorServiceWorkerEnabled()) return;
 
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
@@ -59,6 +61,11 @@ export function usePushNotifications() {
   // Subscribe to push notifications
   const subscribe = useCallback(async () => {
     if (!isSupported) throw new Error('Push notifications not supported');
+    if (!advisorServiceWorkerEnabled()) {
+      throw new Error(
+        'Service worker is disabled in local dev. Set localStorage advisor-pwa-dev=1 and reload, or test on a deployed build.',
+      );
+    }
 
     // Request notification permission
     const perm = await Notification.requestPermission();
@@ -105,6 +112,13 @@ export function usePushNotifications() {
   // Unsubscribe from push notifications
   const unsubscribe = useCallback(async () => {
     try {
+      if (!advisorServiceWorkerEnabled()) {
+        await pushService.updateSettings({ push_enabled: false });
+        setIsSubscribed(false);
+        setSettings((prev) => (prev ? { ...prev, push_enabled: false } : prev));
+        return;
+      }
+
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
 

@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus, Search, Calendar, MapPin, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@mpbhealth/ui';
-import { eventsService } from '@mpbhealth/advisor-core';
-import type { CmsEvent } from '@mpbhealth/advisor-core/src/types';
+import { eventsService, type CmsEvent } from '@mpbhealth/advisor-core';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   conference: 'Conference',
@@ -24,45 +26,37 @@ const LOCATION_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function EventsManager() {
+  useAdvisorPageDebugLog('EventsManager');
   const navigate = useNavigate();
-  const [events, setEvents] = useState<CmsEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { advisorReady } = useAdvisorQueryReady();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | 'published' | 'draft'>('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const fetchEvents = async () => {
-    setLoading(true);
-    try {
-      const data = await eventsService.getEvents({
+  const { data: events = [], isPending: loading } = useQuery({
+    queryKey: ['eventsManager', search, filterType, filterStatus],
+    queryFn: () =>
+      eventsService.getEvents({
         search: search || undefined,
         event_type: filterType || undefined,
         is_published: filterStatus === '' ? undefined : filterStatus === 'published',
-      });
-      if (mountedRef.current) setEvents(data);
-    } catch (err) {
-      console.error('Failed to load events:', err);
-      if (mountedRef.current) toast.error('Failed to load events');
-    } finally {
-      if (mountedRef.current) setLoading(false);
-    }
-  };
+      }),
+    enabled: advisorReady,
+    staleTime: 30 * 1000,
+    retry: 1,
+  });
 
-  useEffect(() => {
-    const timeout = setTimeout(() => { if (mountedRef.current) setLoading(false); }, 15_000);
-    fetchEvents();
-    return () => clearTimeout(timeout);
-  }, [search, filterType, filterStatus]);
+  const refreshEvents = () =>
+    void queryClient.invalidateQueries({ queryKey: ['eventsManager'] });
 
   const handleDelete = async (id: string) => {
     try {
       await eventsService.deleteEvent(id);
       toast.success('Event deleted');
       setDeleteId(null);
-      fetchEvents();
+      refreshEvents();
     } catch (err) {
       console.error('Delete failed:', err);
       toast.error('Failed to delete event');
@@ -73,7 +67,7 @@ export default function EventsManager() {
     try {
       await eventsService.updateEvent(event.id, { is_published: !event.is_published });
       toast.success(event.is_published ? 'Event unpublished' : 'Event published');
-      fetchEvents();
+      refreshEvents();
     } catch (err) {
       console.error('Toggle failed:', err);
       toast.error('Failed to update event');

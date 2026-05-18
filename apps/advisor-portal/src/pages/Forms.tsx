@@ -25,6 +25,8 @@ import {
 } from '@mpbhealth/advisor-core';
 import { supabase } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import { sanitizeHtml } from '@mpbhealth/utils';
 
 const WEBSITE_BASE_URL = 'https://mpb.health';
@@ -86,7 +88,9 @@ const sectionConfig = {
 };
 
 export default function Forms({ section }: FormsProps) {
+  useAdvisorPageDebugLog('Forms');
   const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedForm, setSelectedForm] = useState<AdvisorForm | null>(null);
@@ -110,7 +114,7 @@ export default function Forms({ section }: FormsProps) {
       ]);
       return { forms: formsList, submissions: subs };
     },
-    enabled: !!profile?.id,
+    enabled: advisorReady,
   });
 
   const forms = formsData?.forms ?? [];
